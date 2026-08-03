@@ -1062,11 +1062,12 @@ if [ "$KIND" = secondmate ]; then
   WT="$PROJ_ABS"
   # Local-HEAD sync: before launch, fast-forward this secondmate's worktree to the
   # PRIMARY checkout's current default-branch commit, so a freshly spawned or
-  # recovery-respawned secondmate always runs the primary's version (AGENTS.md
-  # spawn section). Purely local - no fetch: the home is a worktree of this same
-  # repo and already holds the commit. ff-only and guarded; a dirty, diverged, or
-  # wrong-branch home is left untouched and launches as-is. The agent reads the
-  # role gateway, charter, and primary runtime fresh on launch, so no nudge is needed here.
+  # recovery-respawned secondmate always runs the primary's version
+  # (primary-runtime spawn contract). Purely local - no fetch: the home is a
+  # worktree of this same repo and already holds the commit. ff-only and
+  # guarded; a dirty, diverged, or wrong-branch home is left untouched and
+  # launches as-is. The agent reads the role gateway, charter, and primary
+  # runtime fresh on launch, so no nudge is needed here.
   if sm_primary_head=$(primary_head_commit "$FM_ROOT"); then
     sm_ff_out=$(ff_target "$PROJ_ABS" "secondmate $ID" "$sm_primary_head" yes yes 2>&1 || true)
     case "$sm_ff_out" in
