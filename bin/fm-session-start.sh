@@ -462,7 +462,7 @@ Do NOT bulk-read state/*.status now either: their bounded tails were just
 printed with full log paths for targeted follow-up when older wake-event
 history is actually needed. Re-reading everything defeats the entire point
 of this command. Re-read a file only if this digest flagged it ABSENT (then
-rebuild or create it per AGENTS.md), its contents looked unparseable/corrupt,
+rebuild or create it per primary-runtime), its contents looked unparseable/corrupt,
 or an individual full status log is needed for older wake-event history.
 EOF
 
