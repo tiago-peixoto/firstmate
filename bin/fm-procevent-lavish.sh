@@ -3,11 +3,20 @@
 #
 # Usage:
 #   fm-procevent-lavish.sh arm <artifact.html>
+#   fm-procevent-lavish.sh rearm <artifact.html> --agent-reply <text>
 #   fm-procevent-lavish.sh classify <result-file>
 #   fm-procevent-lavish.sh terminal <result-file>
 #   fm-procevent-lavish.sh source-id <artifact.html>
 #   fm-procevent-lavish.sh retire <artifact.html>
 #
+# arm        Register the source, verify this home owns a live runner, use the
+#            generic runner's supported reconciliation repair when ownership is
+#            absent, then re-verify liveness before returning success. An
+#            `armed:` registration alone is never presentation authority.
+# rearm      Retire this exact source generation, then arm a new poll carrying
+#            one literal agent acknowledgement. This prevents an already-live
+#            old poll from swallowing the replacement registration without
+#            delivering the reply that re-enables browser feedback.
 # classify   Print the lifecycle state a handler should act on: feedback, ended,
 #            waiting, missing, or unknown.
 # terminal   Exit 0 when the captured result means this Lavish source will never
@@ -47,7 +56,7 @@ FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 . "$SCRIPT_DIR/fm-procevent-lib.sh"
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,35p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,44p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
 
 # Canonical identity is physical, not the path string: Lavish itself keys a
 # session on the realpath of the artifact, so two names for one file are one
@@ -66,17 +75,104 @@ cmd_source_id() {
   fi
 }
 
+source_owner_state() {  # <source-id>
+  "$SCRIPT_DIR/fm-procevent.sh" owner "$1"
+}
+
+# Require two owner reads around a short delay so a poll that exits immediately
+# cannot look live at one transient claim read and authorize presentation.
+source_owner_stably_live() {  # <source-id>
+  local state
+  state=$(source_owner_state "$1") || return 1
+  [ "$state" = live ] || { printf '%s\n' "$state"; return 1; }
+  sleep 0.1
+  state=$(source_owner_state "$1") || return 1
+  printf '%s\n' "$state"
+  [ "$state" = live ]
+}
+
+wait_for_live_owner() {  # <source-id>
+  local id=$1 state=none attempt=0
+  while [ "$attempt" -lt 20 ]; do
+    attempt=$((attempt + 1))
+    if state=$(source_owner_stably_live "$id"); then
+      printf '%s\n' "$state"
+      return 0
+    fi
+    case "$state" in
+      foreign|uncertain|terminal|missing)
+        printf '%s\n' "$state"
+        return 1
+        ;;
+    esac
+    sleep 0.05
+  done
+  printf '%s\n' "$state"
+  return 1
+}
+
 cmd_arm() {
-  local artifact=${1-} id real
+  local artifact=${1-} id real owner repair agent_reply=''
+  local -a poll_argv
   [ -n "$artifact" ] || usage
+  shift 2>/dev/null || usage
+  case "$#" in
+    0) ;;
+    2)
+      [ "$1" = --agent-reply ] || usage
+      agent_reply=$2
+      [ -n "$agent_reply" ] || die "--agent-reply must not be empty"
+      case "$agent_reply" in *$'\n'*) die "--agent-reply must be one line" ;; esac
+      ;;
+    *) usage ;;
+  esac
   command -v lavish-axi >/dev/null 2>&1 || die "lavish-axi is not installed"
   id=$(cmd_source_id "$artifact") || exit 1
   real=$(perl -MCwd=realpath -e '$p = realpath($ARGV[0]); defined($p) or exit 1; print "$p\n"' "$artifact" 2>/dev/null) \
     || die "cannot resolve the artifact path: $artifact"
   # The plain blocking form: no --timeout-ms, so completion is a server event.
-  "$SCRIPT_DIR/fm-procevent.sh" register lavish "$id" -- lavish-axi poll "$real" || exit 1
+  poll_argv=(lavish-axi poll "$real")
+  [ -z "$agent_reply" ] || poll_argv+=(--agent-reply "$agent_reply")
+  "$SCRIPT_DIR/fm-procevent.sh" register lavish "$id" -- "${poll_argv[@]}" || exit 1
+
+  owner=$(source_owner_state "$id") \
+    || die "cannot read Lavish feedback owner for source $id; source remains registered and the artifact must not be presented"
+  if [ "$owner" = live ]; then
+    if owner=$(source_owner_stably_live "$id"); then
+      printf 'armed: %s\n' "$id"
+      printf 'owner: live\n'
+      printf 'artifact: %s\n' "$real"
+      return 0
+    fi
+  fi
+
+  case "$owner" in
+    none|orphaned)
+      if ! repair=$("$SCRIPT_DIR/fm-procevent.sh" reconcile 2>&1); then
+        die "Lavish feedback source $id has owner=$owner and reconciliation failed: $repair; source remains registered and the artifact must not be presented"
+      fi
+      ;;
+    *)
+      die "Lavish feedback source $id has owner=$owner; reconciliation cannot safely establish this home's live owner, the source remains registered, and the artifact must not be presented"
+      ;;
+  esac
+
+  if ! owner=$(wait_for_live_owner "$id"); then
+    die "Lavish feedback source $id has owner=$owner after reconciliation; source remains registered and the artifact must not be presented"
+  fi
   printf 'armed: %s\n' "$id"
+  printf 'owner: live\n'
+  printf 'liveness: reconciliation established this source owner\n'
   printf 'artifact: %s\n' "$real"
+}
+
+cmd_rearm() {
+  local artifact=${1-} flag=${2-} agent_reply=${3-} id
+  [ "$#" -eq 3 ] && [ "$flag" = --agent-reply ] || usage
+  id=$(cmd_source_id "$artifact") || exit 1
+  "$SCRIPT_DIR/fm-procevent.sh" retire "$id" >/dev/null \
+    || die "cannot retire the prior Lavish feedback generation before re-arming: $id"
+  cmd_arm "$artifact" --agent-reply "$agent_reply"
 }
 
 cmd_retire() {
@@ -146,7 +242,8 @@ cmd_terminal() {
 }
 
 case "${1-}" in
-  arm)       shift; cmd_arm "$@" ;;
+  arm)       shift; [ "$#" -eq 1 ] || usage; cmd_arm "$@" ;;
+  rearm)     shift; cmd_rearm "$@" ;;
   retire)    shift; cmd_retire "$@" ;;
   source-id) shift; cmd_source_id "$@" ;;
   classify)  shift; cmd_classify "$@" ;;

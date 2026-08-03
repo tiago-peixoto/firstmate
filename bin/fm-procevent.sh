@@ -10,6 +10,7 @@
 #   fm-procevent.sh handled <source-id> <sequence>
 #   fm-procevent.sh retire <source-id>
 #   fm-procevent.sh sweep-home [--preflight]
+#   fm-procevent.sh owner <source-id>
 #   fm-procevent.sh list
 #
 # register   Record a source: its adapter, its canonical id, and the exact argv
@@ -43,6 +44,10 @@
 # sweep-home Retire a bounded snapshot of this home's registrations and owned
 #            claims, then refuse unless no registration, runner record, or owned
 #            claim remains. Used by supported Firstmate home retirement.
+# owner      Print one machine-readable owner state for an exact source:
+#            live, foreign, none, orphaned, uncertain, terminal, or missing.
+#            `live` means this home owns a verified live runner; `foreign` means
+#            another home does, so this home must not present a feedback surface.
 # list       Show registered sources, owners, and pending captured results.
 #
 # Terminal knowledge is adapter-owned. This runner never inspects a result and
@@ -79,7 +84,7 @@ REG=$(fm_procevent_registry_dir "$STATE")
 MAX_OUTPUT_BYTES=${FM_PROCEVENT_MAX_OUTPUT_BYTES:-1048576}
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,63p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,68p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
 
 adapter_script() { printf '%s/bin/fm-procevent-%s.sh\n' "$FM_ROOT" "$1"; }
 
@@ -690,6 +695,30 @@ cmd_sweep_home() {
   printf 'swept: attempted=%s\n' "$attempted"
 }
 
+cmd_owner() {
+  local id=${1-} claim_state state
+  fm_procevent_source_id_valid "$id" || die "source id must be path-safe: $id"
+  if [ ! -f "$(source_file "$id")" ] || [ -L "$(source_file "$id")" ]; then
+    printf 'missing\n'
+    return 0
+  fi
+  fm_procevent_source_lock_acquire "$id" || die "cannot lock source: $id"
+  fm_procevent_claim_state_locked "$id"
+  claim_state=$?
+  case "$claim_state" in
+    0)
+      if [ "$FM_PROCEVENT_CLAIM_HOME" = "$FM_HOME" ]; then state=live; else state=foreign; fi
+      ;;
+    1) state=none ;;
+    2) state=uncertain ;;
+    3) state=orphaned ;;
+    4) state=terminal ;;
+    *) state=uncertain ;;
+  esac
+  fm_procevent_source_lock_release "$id"
+  printf '%s\n' "$state"
+}
+
 cmd_list() {
   local rec id adapter owner pending
   if ! fm_procevent_any_registered "$STATE"; then
@@ -718,6 +747,7 @@ case "${1-}" in
   handled)   shift; cmd_handled "$@" ;;
   retire)    shift; cmd_retire "$@" ;;
   sweep-home) shift; cmd_sweep_home "$@" ;;
+  owner)     shift; cmd_owner "$@" ;;
   list)      shift; cmd_list "$@" ;;
   ''|-h|--help|help) usage ;;
   *) die "unknown command: $1" ;;

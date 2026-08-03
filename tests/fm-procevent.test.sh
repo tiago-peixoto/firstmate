@@ -451,15 +451,18 @@ HLT="$TMP_ROOT/hlt"; new_home "$HLT"
 LAVISH_BIN=$(fm_fakebin "$TMP_ROOT/lavish-stub")
 LAVISH_POLL_COUNT="$TMP_ROOT/lavish-poll-count"
 export LAVISH_POLL_COUNT
+LAVISH_FEEDBACK_TRIGGER="$TMP_ROOT/lavish-feedback-trigger"
+export LAVISH_FEEDBACK_TRIGGER
 cat > "$LAVISH_BIN/lavish-axi" <<'SH'
 #!/usr/bin/env bash
-# Stand-in for `lavish-axi poll <file>` around a human `Send & End`: the final
-# feedback is delivered exactly once carrying session_ended, and every later
-# poll returns an empty ended session immediately.
+# Stand-in for `lavish-axi poll <file>` around a human `Send & End`: the first
+# poll stays live until the human feedback trigger, then delivers the final
+# feedback once. Any later poll returns an empty ended session immediately.
 n=$(cat "$LAVISH_POLL_COUNT" 2>/dev/null || echo 0)
 n=$((n + 1))
 printf '%s\n' "$n" > "$LAVISH_POLL_COUNT"
 if [ "$n" = 1 ]; then
+  while [ ! -e "$LAVISH_FEEDBACK_TRIGGER" ]; do sleep 0.05; done
   printf 'session:\n  file: /review.html\n  status: feedback\n  session_ended: true\n  ended_by: user\nfeedback[1]{text}:\n  ship it\n'
 else
   printf 'session:\n  file: /review.html\n  status: ended\n  ended_by: user\n'
@@ -470,7 +473,11 @@ REVIEW_ART="$TMP_ROOT/review.html"
 printf '<h1>review</h1>\n' > "$REVIEW_ART"
 lavish_id=$("$ROOT/bin/fm-procevent-lavish.sh" source-id "$REVIEW_ART")
 PE_TRACKED+=("$HLT|$lavish_id")
-PATH="$LAVISH_BIN:$PATH" FM_HOME="$HLT" "$ROOT/bin/fm-procevent-lavish.sh" arm "$REVIEW_ART" >/dev/null
+arm_out=$(PATH="$LAVISH_BIN:$PATH" FM_HOME="$HLT" "$ROOT/bin/fm-procevent-lavish.sh" arm "$REVIEW_ART")
+assert_contains "$arm_out" "owner: live" "Lavish arm did not establish a live feedback owner"
+assert_contains "$(pe "$HLT" list)" "$lavish_id      lavish       live" \
+  "Lavish arm returned before its exact source had a live owner"
+touch "$LAVISH_FEEDBACK_TRIGGER"
 for _ in $(seq 1 6); do
   PATH="$LAVISH_BIN:$PATH" pe "$HLT" reconcile >/dev/null
   sleep 0.3
@@ -489,6 +496,62 @@ assert_grep 'ship it' "$LAVISH_RESULT" "automatic retirement retains the human's
 out=$(PATH="$LAVISH_BIN:$PATH" FM_HOME="$HLT" "$ROOT/bin/fm-procevent-lavish.sh" retire "$REVIEW_ART")
 assert_contains "$out" "retired: $lavish_id" "explicit adapter retirement stays supported after automatic retirement"
 pass "one Send & End yields exactly one captured result, automatic retirement, and no recurring poll"
+
+# --- arm refuses unless reconciliation establishes this home's live owner ----
+HARMOWNER="$TMP_ROOT/harmowner"; new_home "$HARMOWNER"
+HARMFAIL="$TMP_ROOT/harmfail"; new_home "$HARMFAIL"
+ARMFAIL_BIN=$(fm_fakebin "$TMP_ROOT/lavish-arm-fail")
+cat > "$ARMFAIL_BIN/lavish-axi" <<'SH'
+#!/usr/bin/env bash
+[ "${1-}" = poll ] || exit 2
+while :; do sleep 1; done
+SH
+chmod +x "$ARMFAIL_BIN/lavish-axi"
+ARMFAIL_ART="$TMP_ROOT/arm-fail.html"
+printf '<h1>review</h1>\n' > "$ARMFAIL_ART"
+armfail_id=$("$ROOT/bin/fm-procevent-lavish.sh" source-id "$ARMFAIL_ART")
+PE_TRACKED+=("$HARMOWNER|$armfail_id" "$HARMFAIL|$armfail_id")
+PATH="$ARMFAIL_BIN:$PATH" FM_HOME="$HARMOWNER" \
+  "$ROOT/bin/fm-procevent-lavish.sh" arm "$ARMFAIL_ART" >/dev/null \
+  || fail "foreign-owner fixture could not establish its live source"
+armfail_status=0
+armfail_out=$(PATH="$ARMFAIL_BIN:$PATH" FM_HOME="$HARMFAIL" \
+  "$ROOT/bin/fm-procevent-lavish.sh" arm "$ARMFAIL_ART" 2>&1) || armfail_status=$?
+[ "$armfail_status" -ne 0 ] || fail "Lavish arm accepted another home's live feedback owner"
+assert_contains "$armfail_out" "$armfail_id" "failed Lavish arm did not identify the exact source"
+assert_contains "$armfail_out" "owner=foreign" "failed Lavish arm did not report the observed owner state"
+assert_contains "$armfail_out" "artifact must not be presented" \
+  "failed Lavish arm did not explicitly refuse the handoff"
+assert_present "$HARMFAIL/state/procevent/$armfail_id.source" \
+  "failed liveness establishment silently retired the registered source"
+pass "Lavish arm repairs absent ownership and refuses presentation unless this home is the live owner"
+
+# --- re-arm carries one literal agent acknowledgement into the next poll -----
+HREPLY="$TMP_ROOT/hreply"; new_home "$HREPLY"
+REPLY_BIN=$(fm_fakebin "$TMP_ROOT/lavish-reply")
+REPLY_ARGS="$TMP_ROOT/lavish-reply-args"
+export REPLY_ARGS
+cat > "$REPLY_BIN/lavish-axi" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$@" > "$REPLY_ARGS"
+while :; do sleep 1; done
+SH
+chmod +x "$REPLY_BIN/lavish-axi"
+REPLY_ART="$TMP_ROOT/reply.html"
+printf '<h1>review</h1>\n' > "$REPLY_ART"
+reply_id=$("$ROOT/bin/fm-procevent-lavish.sh" source-id "$REPLY_ART")
+PE_TRACKED+=("$HREPLY|$reply_id")
+PATH="$REPLY_BIN:$PATH" FM_HOME="$HREPLY" "$ROOT/bin/fm-procevent-lavish.sh" \
+  rearm "$REPLY_ART" --agent-reply "Feedback recorded; please retry the failed step." >/dev/null \
+  || fail "Lavish feedback source could not re-arm with an agent acknowledgement"
+wait_for "$REPLY_ARGS" || fail "re-armed Lavish poll never received its argv"
+[ "$(sed -n '1p' "$REPLY_ARGS")" = poll ] || fail "re-arm changed the published poll command"
+[ "$(sed -n '3p' "$REPLY_ARGS")" = --agent-reply ] || fail "re-arm omitted the acknowledgement flag"
+[ "$(sed -n '4p' "$REPLY_ARGS")" = "Feedback recorded; please retry the failed step." ] \
+  || fail "re-arm split or changed the literal acknowledgement"
+assert_contains "$(pe "$HREPLY" list)" "$reply_id      lavish       live" \
+  "re-arm returned before its acknowledgement poll had a live owner"
+pass "Lavish feedback can be acknowledged in-browser while the registered source re-arms"
 
 # --- end-user-aligned regression: the exact drain-before-handling restart cut
 # Reproduces the confirmed defect through the public interface end to end: a

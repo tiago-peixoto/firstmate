@@ -127,6 +127,7 @@ init_changed_fixture_repo() {
   : >"$repo/.pi/extensions/fm-primary-turnend-guard.ts"
   : >"$repo/src/unmapped.ts"
   git -C "$repo" init -q
+  git -C "$repo" config commit.gpgsign false
   git -C "$repo" add .
   git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm baseline
 }
