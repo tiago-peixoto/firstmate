@@ -57,8 +57,8 @@
 #          with update --archive-body and mv [<id>...]); an installed but
 #          incompatible build reports MISSING like no-mistakes. A compatible
 #          tasks-axi default backend is silent. quota-axi is required for the
-#          agent-owned dispatch-profile array procedure in AGENTS.md section 4
-#          and .agents/skills/quota-array-dispatch/SKILL.md, and is also version
+#          agent-owned dispatch-profile array trigger in primary-runtime
+#          and procedure in .agents/skills/quota-array-dispatch/SKILL.md, and is also version
 #          gated by fm-quota-axi-lib.sh, which owns that floor and its rationale.
 #          An older build reports MISSING like no-mistakes rather than passing
 #          silently while emitting auth semantics dispatch cannot scope.

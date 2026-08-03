@@ -65,6 +65,7 @@ case "$REMOTE_HOME/" in "$REMOTE_ROOT/"*) die "remote home must not be inside th
 case "$REMOTE_ROOT/" in "$REMOTE_HOME/"*) die "remote code root must not be inside the remote home" ;; esac
 
 NO_PROJECTS=0
+PROJECT_COUNT=0
 PROJECT_NAMES=()
 for arg in "$@"; do
   if [ "$arg" = --no-projects ]; then
@@ -72,12 +73,13 @@ for arg in "$@"; do
   else
     safe_id "$arg" || die "invalid project name: $arg"
     PROJECT_NAMES+=("$arg")
+    PROJECT_COUNT=$((PROJECT_COUNT + 1))
   fi
 done
 if [ "$NO_PROJECTS" -eq 1 ]; then
-  [ "${#PROJECT_NAMES[@]}" -eq 0 ] || die "--no-projects cannot be combined with project names"
+  [ "$PROJECT_COUNT" -eq 0 ] || die "--no-projects cannot be combined with project names"
 else
-  [ "${#PROJECT_NAMES[@]}" -gt 0 ] || die "at least one project or --no-projects is required"
+  [ "$PROJECT_COUNT" -gt 0 ] || die "at least one project or --no-projects is required"
 fi
 
 mkdir -p "$STATE" || die "cannot create parent state directory"
@@ -132,7 +134,7 @@ done < "$BRIEF" > "$TMP/charter.remote"
 
 PROJECTS_CSV=
 : > "$TMP/project.records"
-for project in "${PROJECT_NAMES[@]}"; do
+for project in ${PROJECT_NAMES[@]+"${PROJECT_NAMES[@]}"}; do
   SRC="$PROJECTS/$project"
   [ -d "$SRC/.git" ] || die "project clone is unavailable: $SRC"
   MODE_LINE=$(FM_HOME="$FM_HOME" FM_DATA_OVERRIDE="$DATA" "$SCRIPT_DIR/fm-project-mode.sh" "$project")
@@ -160,7 +162,7 @@ done
   printf 'schema=fm-remote-home-provision.v1\n'
   printf 'id_b64=%s\n' "$(printf '%s' "$ID" | encode)"
   printf 'charter_b64=%s\n' "$(encode < "$TMP/charter.remote")"
-  printf 'project_count=%s\n' "${#PROJECT_NAMES[@]}"
+  printf 'project_count=%s\n' "$PROJECT_COUNT"
   cat "$TMP/project.records"
 } > "$TMP/manifest"
 MANIFEST_BYTES=$(LC_ALL=C wc -c < "$TMP/manifest" | tr -d ' ')
