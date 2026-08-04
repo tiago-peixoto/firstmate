@@ -102,6 +102,11 @@
 #   even when they select different backends. A fresh spawn first takes the
 #   per-home task-set lock and refuses rather than waits when forced teardown owns
 #   it; relaunch is exempt because the existing task's control lock covers it.
+#   Metadata publication is staged into <id>.meta.tmp.<pid>, verified, and then
+#   renamed into place, so state/<id>.meta is only ever a complete task record:
+#   a compose, write, or rename failure publishes nothing, removes the staging
+#   file, and discards the endpoint this spawn created rather than stranding a
+#   window no task record names.
 #   With no harness arg, a crewmate/scout spawn resolves the CREW harness only when
 #   config/crew-dispatch.json is absent. When that file exists, crewmate/scout
 #   spawns require an explicit harness so firstmate cannot silently skip dispatch
@@ -2472,13 +2477,11 @@ fi
 
 META_WINDOW=$T
 [ "$BACKEND" = orca ] && META_WINDOW=$W
-SPAWN_META_PATH="$STATE/$ID.meta"
+SPAWN_META_TMP="$STATE/$ID.meta.tmp.$$"
 if [ "$RELAUNCH" -eq 1 ]; then
   SPAWN_META_LOCK=$(fm_meta_lock_path "$STATE/$ID.meta") || exit 1
   fm_lock_acquire_wait "$SPAWN_META_LOCK"
   SPAWN_META_LOCK_HELD=1
-  SPAWN_META_TMP="$STATE/.$ID.meta.relaunch.${BASHPID:-$$}"
-  SPAWN_META_PATH=$SPAWN_META_TMP
 fi
 preserve_relaunch_meta() {
   awk -F= '
@@ -2489,7 +2492,44 @@ preserve_relaunch_meta() {
     !($1 in owned)
   ' "$RELAUNCH_META"
 }
-{
+
+# The endpoint created above is reachable only through the task record, so a
+# spawn that never publishes one would otherwise strand a window no teardown
+# can find. Orca terminals/worktrees and a pending herdr projection are unwound
+# by the EXIT trap instead, which still holds their cleanup flags here.
+discard_unpublished_endpoint() {
+  [ "$RELAUNCH" -ne 1 ] || return 0
+  [ "$BACKEND" != orca ] || return 0
+  [ "${HERDR_PROJECTION_ABORT_CLEANUP:-0}" != 1 ] || return 0
+  [ -n "${T:-}" ] || return 0
+  fm_backend_kill "$BACKEND" "$T" "${ZELLIJ_TAB_ID:-}" "$W" 2>/dev/null && return 0
+  echo "warning: the $BACKEND endpoint $T for $ID outlived the failed spawn and no task record names it; remove it by hand" >&2
+  return 1
+}
+
+# Report only what this path actually did: the EXIT trap owns the rest of the
+# unwind and prints its own diagnostics, so nothing here claims a complete
+# cleanup it cannot verify.
+abort_unpublished_meta() {  # <detail>
+  if [ "$RELAUNCH" -eq 1 ]; then
+    SPAWN_META_PUBLISH_STARTED=0
+  fi
+  rm -f "$SPAWN_META_TMP" 2>/dev/null || true
+  if [ "$RELAUNCH" -eq 1 ]; then
+    echo "error: replacement metadata could not be published at $STATE/$ID.meta ($1); the previous complete task record remains" >&2
+  else
+    echo "error: task metadata could not be published at $STATE/$ID.meta ($1); no task record was written for $ID" >&2
+  fi
+  discard_unpublished_endpoint || true
+  exit 1
+}
+
+# Publish atomically. A truncated meta is worse than no meta at all, because
+# teardown and crew-state reconciliation read a record missing window= or
+# worktree= as authoritative. Compose in memory, write once, verify the bytes
+# landed, and only then rename into place, so a write that fails partway
+# (ENOSPC, quota) leaves the final path untouched rather than half written.
+if ! META_BODY=$(
   echo "window=$META_WINDOW"
   echo "endpoint_task_id=$ID"
   echo "worktree=$WT"
@@ -2536,19 +2576,25 @@ preserve_relaunch_meta() {
   if [ "$SPAWN_CONTROL_PARENT" = 1 ] && [ -n "${FM_CONTROL_RELAUNCH_TX:-}" ]; then
     echo "control_relaunch_tx=$FM_CONTROL_RELAUNCH_TX"
   fi
-} > "$SPAWN_META_PATH" || {
-  echo "error: task metadata could not be published at $STATE/$ID.meta; cleaning up the incomplete spawn" >&2
-  exit 1
-}
+); then
+  abort_unpublished_meta "the record could not be composed"
+fi
+printf '%s\n' "$META_BODY" > "$SPAWN_META_TMP" \
+  || abort_unpublished_meta "the staged record could not be written"
+[ "$(cat "$SPAWN_META_TMP" 2>/dev/null)" = "$META_BODY" ] \
+  || abort_unpublished_meta "the staged record was written incompletely"
 if [ "$RELAUNCH" -eq 1 ]; then
   SPAWN_META_PUBLISH_STARTED=1
-  mv -f "$SPAWN_META_TMP" "$STATE/$ID.meta"
+fi
+mv -f -- "$SPAWN_META_TMP" "$STATE/$ID.meta" \
+  || abort_unpublished_meta "the staged record could not be renamed into place"
+if [ "$RELAUNCH" -eq 1 ]; then
   RELAUNCH_REPLACEMENT_PENDING=0
   SPAWN_META_PUBLISH_STARTED=0
-  SPAWN_META_TMP=
   fm_lock_release "$SPAWN_META_LOCK"
   SPAWN_META_LOCK_HELD=0
 fi
+SPAWN_META_TMP=
 if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
   # The record is published, so this task is now part of the set a teardown
   # enumerates and locks per task. The set lock is only needed across that
