@@ -29,6 +29,9 @@ After each drain, `fm-wake-drain.sh` runs the same liveness guard as the supervi
 Routine watcher polling, supervision no-ops, elapsed waiting time, and absorbed benign wakes stay silent.
 A declared external wait trades that silence for one bounded recheck per pause window, so a forgotten pause cannot remain invisible indefinitely.
 Crew status files are append-only wake-event logs, not current-state fields.
+Session start leaves those logs unchanged and emits a deterministic historical projection per task: the newest recognized event, the unresolved keyed decisions from `fm-classify-lib.sh`'s existing authoritative fold, omitted-event counts, and the exact full-log path.
+Event, task, and fleet-wide text budgets bound prose, while explicit receipts name every truncation's original byte count and source; state verbs, decision keys, full PR URLs, exact heads, and run identities remain separate structured fields after text truncation.
+This projection preserves restart recovery without turning historical status into current state or adding another decision fold, and targeted `bin/fm-crew-state.sh <id>` reconciliation remains required whenever current state matters.
 `bin/fm-crew-state.sh <id>` is the cheap current-state read for an actionable heartbeat review: it attributes a no-mistakes run, active or terminal, only when it matches the crew's branch and current code identity, then keeps that run-step authoritative even if the pane has closed.
 The script header owns the exact run-head ancestry rules.
 During no-mistakes' `ci` monitor phase, it also reads the ci step log tail because `axi status` reports both "still waiting on checks" and "checks green, waiting on merge" as `ci,running`.
