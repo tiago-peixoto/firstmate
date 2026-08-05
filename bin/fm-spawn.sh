@@ -2586,6 +2586,11 @@ printf '%s\n' "$META_BODY" > "$SPAWN_META_TMP" \
 if [ "$RELAUNCH" -eq 1 ]; then
   SPAWN_META_PUBLISH_STARTED=1
 fi
+# A directory (or a symlink to one) at the record path would absorb the rename:
+# mv moves the staged file INSIDE it and reports success, leaving no readable
+# task record while this spawn claims to have published one. Refuse instead.
+[ ! -d "$STATE/$ID.meta" ] \
+  || abort_unpublished_meta "the record path exists as a directory"
 mv -f -- "$SPAWN_META_TMP" "$STATE/$ID.meta" \
   || abort_unpublished_meta "the staged record could not be renamed into place"
 if [ "$RELAUNCH" -eq 1 ]; then
