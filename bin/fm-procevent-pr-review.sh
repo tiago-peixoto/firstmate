@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Automatic pull-request review adapter for the generic process-event runner.
+# Open Sourcerer Monitor adapter for the generic process-event runner.
 #
 # Usage:
 #   fm-procevent-pr-review.sh arm
@@ -15,7 +15,8 @@
 # work or one deduplicated diagnostic exists; feedback bodies and response text
 # never enter the wake queue. Every captured result classifies terminal, so the
 # generic runner retires this registration; coverage resumes when the adjudication
-# owner acknowledges the event and re-arms, or when a locked bootstrap re-arms.
+# owner routes the bounded body-free change set, acknowledges the event, and
+# re-arms, or when a locked bootstrap re-arms.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,6 +38,14 @@ classify() {
         || !Number.isSafeInteger(x.pending) || x.pending<0
         || !Number.isSafeInteger(x.response_pending) || x.response_pending<0
         || !Number.isSafeInteger(x.degraded ?? 0) || (x.degraded ?? 0)<0
+        || !Array.isArray(x.changes) || x.changes.length>200
+        || x.changes.some(c => !c || !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/[1-9][0-9]*$/.test(c.url)
+          || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(c.repository)
+          || !Number.isSafeInteger(c.number) || c.number<1 || !/^[0-9a-f]{40}$/.test(c.head)
+          || !Array.isArray(c.categories) || c.categories.length===0
+          || c.categories.some(v => !/^(discovered|head|checks|conflicts|reviews|inline-replies|conversation-comments|merged|closed|reopened)$/.test(v))
+          || !/^(existing-owner|project-secondmate)$/.test(c.route)
+          || (c.owner_task!==null && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(c.owner_task)))
         || typeof x.message!=="string" || x.message.length>1000) process.exit(2);
       process.stdout.write([x.category,x.pending,x.response_pending].join("\t"));
     } catch { process.exit(2); }

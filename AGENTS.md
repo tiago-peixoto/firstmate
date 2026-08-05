@@ -376,7 +376,7 @@ Handle actionable wakes as follows:
 
 1. For `signal:`, read the listed event lines first, then reconcile current state only where action depends on it.
 2. For `stale:`, inspect the recorded endpoint and load `stuck-crewmate-recovery` for a stopped, looping, confused, or unresponsive worker; a deep-inspection reason also requires current-state and validation-log inspection.
-3. For `check:`, act on the named poll result, including merges, X-mode events, and process-to-event source results; a `procevent pr-review <source-id> <sequence>` result requires `pr-review-owner` before any queue, worker, or GitHub action.
+3. For `check:`, act on the named poll result, including merges, X-mode events, and process-to-event source results; an Open Sourcerer Monitor `procevent pr-review <source-id> <sequence>` result requires `pr-review-owner` before any route, queue, worker, or GitHub action.
 4. For `heartbeat:`, review the whole fleet from the structured fleet view, reconcile suspicious tasks and PR state, update the backlog, and never report an unchanged fleet as progress.
 
 When any wake reports a merged PR for a project cloned in this home, refresh that clone through the guarded fleet-sync path.
@@ -512,7 +512,7 @@ These skills are not captain-invocable; load them only at their precise triggers
 - `decision-hold-lifecycle` - load before treating an investigation or visual review as complete, before ending a visual review that exposed a decision, and when recording or routing the captain's answer.
 - `process-event-sources` - load before arming a long-polling source, and on any `procevent <adapter> <source-id> <sequence>` check wake.
   Never run a registered source's blocking command yourself in a conversational turn.
-- `pr-review-owner` - load on any `procevent pr-review <source-id> <sequence>` check wake, on milestones from a worker claimed by `state/pr-review`, and before acting on queued automatic review or feedback work.
+- `pr-review-owner` - load on any Open Sourcerer Monitor `procevent pr-review <source-id> <sequence>` check wake, on milestones from a worker claimed by `state/pr-review`, and before acting on its routed transitions, automatic review, or feedback work.
 - `fmx-respond` - load on an `x-mention <request_id>` `check:` wake to handle the mention, on an `x-mode-error ...` `check:` wake to report the X-mode configuration blocker, on a `public-followup ...` `check:` wake or a startup-surfaced public commitment, and on any milestone or terminal wake for an X-mode-linked task before posting its completion follow-up; relevant only when X mode is on.
 - `firstmate-codexapp` - load before coordinating a visible Codex Desktop thread, evaluating a Codex App backend request, or reconciling Codex Desktop host-tool smoke evidence for Firstmate work.
 - `firstmate-coding-guidelines` - load before changing firstmate's shared, tracked material, as defined by section 1's list, whether editing directly or briefing a crewmate for a firstmate-repo task.

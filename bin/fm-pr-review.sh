@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Automatic pull-request review and feedback lifecycle owner.
+# Open Sourcerer Monitor - automatic pull-request review and feedback owner.
 #
 # Usage:
 #   fm-pr-review.sh arm
@@ -26,15 +26,20 @@
 # calls `arm` automatically for the main Firstmate home, so no cron job,
 # LaunchAgent, daemon, custom watcher check, token, or separate credential is
 # needed. The source uses gh-axi and its authenticated GitHub identity, sleeps
-# until its durable slow-poll deadline, and remains silent when the relevant PR
-# set, exact heads, feedback identities, and queue actionability are unchanged.
-# An unchanged poll makes no model call and starts no worker. A pull request
-# whose live detail read answers closed is omitted; a read, pagination, or
-# schema failure for one open pull request keeps that pull request's last
-# covered head and feedback cursor, records the failure in the snapshot,
-# announces one deduplicated diagnostic, and lets the rest of the inventory
-# reconcile. Authentication, rate, and total-deadline failures still fail the
-# whole poll without publishing a partial inventory.
+# until its durable slow-poll deadline, and inventories a bounded account-wide
+# union of open PRs authored by, review-requested from, assigned to, or materially
+# involving that identity. It compares exact heads, check rollups, conflict
+# state, external reviews, inline replies, conversation comments, merge, and
+# close. One body-free event bundles every changed PR with its existing-owner or
+# project-secondmate route; an unchanged scan makes no model call and starts no
+# worker. A newly discovered stale search hit whose live detail is already
+# closed is omitted, while a previously covered pull is detail-read until close
+# or merge is durable. A read, pagination, or schema failure for one open pull
+# request keeps that pull request's last monitor state, covered head, and
+# feedback cursor, records the failure in the snapshot, announces one
+# deduplicated diagnostic, and lets the rest of the inventory reconcile.
+# Authentication, rate, and total-deadline failures still fail the whole poll
+# without publishing a partial inventory.
 #
 # `opt-out` is the explicit durable captain-takeover control for one canonical
 # pull request. It parks nonterminal work while preserving the last covered head
@@ -46,13 +51,17 @@
 # Queue and response mechanics are private under state/pr-review/. The Node state
 # owner binds every item to repository, PR number, exact head, feedback node,
 # parent thread, generation, verdict, response state, owning task, and retry
-# count. Claims serialize the standing one-at-a-time review lane. A truncated
-# feedback prefix is completed by `fetch-feedback` through bounded authenticated
-# chunks and stored privately before adjudication. Completion and response
-# delivery re-read the exact GitHub head. A moved head requeues the same
-# item at a new generation. A live read that finds the pull request closed or
-# merged ends the item with the terminal outcome pull-closed-without-response and
-# exit 7 at every completion boundary, discards any pending public response,
+# count. Claims serialize the standing one-at-a-time review lane. A lane claim
+# is generation-bound, so a moved head retires the stale pointer and returns the
+# current item for the same healthy owner rather than hiding it or dispatching a
+# duplicate. External feedback is selected before a private initial review when
+# both are pending. A truncated feedback prefix is completed by `fetch-feedback`
+# through bounded authenticated chunks and stored privately before adjudication.
+# Completion and response delivery re-read the exact GitHub head. A moved head
+# requeues the same item at a new generation. A live read that finds the pull
+# request closed or merged ends the item with the terminal outcome
+# pull-closed-without-response and exit 7 at every completion boundary, discards
+# any pending public response,
 # releases the lane, and never posts after closure; a response GitHub already
 # accepted is still reconciled instead. Observing that pull request open again
 # resumes exactly those closed items at a new generation, whether or not the

@@ -88,48 +88,58 @@ Stalled escalation delivery writes `state/.subsuper-inject-wedged` and attempts 
 On an unmarked return, `bin/fm-afk-return.sh` owns ordered shutdown, durable catch-up evidence, and the fail-closed gate that keeps ordinary work behind every live firstmate-actionable blocker.
 `fm-send.sh` selects a pre-Enter popup-settle for slash commands and for codex `$...` skill invocations using metadata-routed target `harness=` values, then adds its own `FM_SEND_SETTLE` pause after successful text sends so immediate peeks catch the receiving turn starting; the sub-supervisor uses only the shared submit core and does not pay that post-submit pause.
 
-## Automatic pull-request review and feedback
+## Open Sourcerer Monitor
 
-The main home registers one account-wide `pr-review` source through the existing process-event runner.
-The source sleeps until its private slow-poll deadline, uses the authenticated `gh-axi` identity to inventory bounded pages of relevant open pull requests and their reviews, inline comments, replies, and conversation comments, and returns no result when the inventory and actionable queue state are unchanged.
-It adds no cron job, LaunchAgent, daemon, custom watcher check, credential path, or notification channel.
-Persistent secondmate homes do not start duplicate account pollers; the main home routes claimed work through the existing marked secondmate channel when a registered scope owns it.
+The main home registers one deterministic account-wide `pr-review` source through the existing process-event runner.
+The source sleeps until its private slow-poll deadline and uses the authenticated `gh-axi` identity to inventory a bounded union of open pull requests authored by, review-requested from, assigned to, or materially involving that identity.
+The same boundary works in repositories where that identity lacks maintainer authority.
+It adds no cron job, LaunchAgent, daemon, custom watcher check, per-PR poller, credential path, or notification channel.
+Persistent secondmate homes do not start duplicate account monitors.
 
-`bin/fm-pr-review-state.mjs` is the single owner of the inventory and durable state machine.
-It keys initial reviews by canonical repository, pull-request number, and exact head, and keys feedback by immutable node, parent thread, content version, and the current verification generation.
-Private item records also retain the owning task, exact head, verdict, response state, retry count, and evidence needed to resume after interruption.
+Every scan compares the canonical pull identity, exact head, bounded check-run and commit-status rollup, conflict state, external review states, actionable review bodies, inline comments and replies, conversation comments, merge, and close.
+The snapshot stores body-free fingerprints plus the existing feedback cursor.
+One bounded event bundles all changed pull requests with their exact head, change categories, and either the unique existing implementation owner or a project-secondmate route.
+The agent-only [`pr-review-owner`](../.agents/skills/pr-review-owner/SKILL.md) verifies those routes, resumes a healthy correlated owner by canonical `pr=` identity even when its recorded head is stale, or sends one marked request to the fitting project second mate.
+A status-only transition routes as a milestone without creating a review worker.
+An unchanged scan returns no result, makes no model call, and starts no worker.
+
+`bin/fm-pr-review-state.mjs` is the single owner of inventory identity and the durable state machine.
+It keys initial reviews by canonical repository, pull-request number, and exact head, and keys feedback by immutable node, parent thread, content version, and current verification generation.
+Private item records retain the owning task, exact head, verdict, response state, retry count, and evidence needed to resume after interruption.
 The inventory stores a bounded feedback prefix and length marker; the owner reconstructs any truncated exact-node body through bounded authenticated chunks into private state before adjudication.
 Queue item publication precedes the covered inventory cursor, exact-head completion revalidates GitHub, and one home-scoped lane prevents duplicate review workers.
-A moved head invalidates incomplete evidence and requeues the same feedback generation before any fix claim or outward response.
+The lane pointer is generation-bound, so a moved head invalidates incomplete evidence, requeues the same item, retires the stale claim, and returns the retained owner for recovery instead of hiding current work.
+External feedback is selected before a private initial review when both are pending, then each class remains deterministic and oldest-first.
+A matching-generation claimed lane remains exclusive.
 
-Inventory failure is per pull request, never account-wide.
-The search index lags merges and closes, so a candidate is omitted only after its own live detail read answers closed.
-A detail, pagination, or schema failure for one eligible open pull request keeps that pull request's previous covered head and feedback cursor, leaves its queued work untouched, records the failure durably in the snapshot, and announces one deduplicated diagnostic, while every unaffected pull request still reconciles.
-Account-wide conditions - authentication, rate headroom, and the total execution bound - remain whole-poll failures that publish no partial inventory.
+Inventory failure is isolated per pull request whenever the account boundary remains trustworthy.
+A previously covered open pull remains in the bounded detail inventory even when GitHub search lags, so close and merge become durable transitions rather than silent disappearance.
+A newly discovered stale search hit already closed at its live detail read is omitted.
+A detail, pagination, response-size, or schema failure for one eligible pull request keeps its previous monitor state, covered head, and feedback cursor, leaves queued work untouched, records the failure durably, and announces one deduplicated diagnostic while unaffected pulls reconcile.
+Authentication, rate headroom, total execution bounds, and unsafe global response shapes remain whole-poll failures that publish no partial inventory.
 
 A response is bound durably before GitHub delivery.
-Delivery prepends a hidden exact-body binding marker and searches the original thread for that self-authored marker, exact head, and parent identity before posting, so a reply failure retries the same response and a crash after GitHub acceptance can reconcile the accepted post without knowingly repeating it.
-Immediately before a formal COMMENT review or any stale fallback-comment artifact could write, the state owner re-reads the live pull-request author and authenticated actor.
+Delivery prepends a hidden exact-body binding marker and searches the original thread for that self-authored marker, exact head, and parent identity before posting, so a reply failure retries the same response and a crash after GitHub acceptance reconciles it without knowingly repeating the post.
+Immediately before a formal COMMENT review or stale fallback-comment artifact could write, the state owner re-reads the live pull-request author and authenticated actor.
 Identity equality deletes the outward response and records a private route to the implementation owner; it never marks the pass as independent review evidence.
 Fallback comments are not a supported publication path.
-Original-thread responses to external feedback remain separate and permitted after verification.
+Original-thread responses to external feedback remain permitted after verification.
 The only terminal feedback outcomes are fixed-and-replied, dismissed-and-replied, duplicate-and-replied, superseded-and-replied, captain-decision-pending, and pull-closed-without-response.
-A fresh live read that finds the pull request closed or merged ends the item durably at whichever completion boundary reached it, discards the pending public response, and releases the one-at-a-time lane, so a merged pull request can never strand queued work or wedge the single lane.
-Observing that pull request open again is live proof that it reopened, so exactly the items ended by that closure resume as a new durable generation at the observed head while every other terminal disposition and the normal deduplication rules stay untouched.
-Reactivation does not depend on the covered cursor having moved, because a close and a reopen can both land between two polls, and it never runs while another nonterminal review already owns that pull request.
-An item id keeps the head it was created at while a requeue moves that item's head in place, so a reopened pull request is matched against the head each item currently records rather than against a recomputed creation identity, and two closed reviews recording one head are refused deterministically instead of guessed between.
-The lane record is a pointer rather than an owner: a lane naming a missing, terminal, or parked item is stale and is released on the next read, so a crash between a terminal write and its release cannot hold the lane or silence the poll's pending-work signal.
-An explicit per-PR opt-out preserves the last covered head and feedback cursor, so restoring coverage compares every intervening identity instead of accepting a fresh baseline.
+A monitor or completion-boundary read that finds the pull request closed or merged ends every nonterminal item durably, discards pending public responses, and releases the lane.
+Observing that pull request open again resumes exactly the items ended by that closure as a new generation at the observed head while every other terminal disposition stays untouched.
+Reactivation does not depend on the covered cursor moving because close and reopen can both occur between scans.
+An item id retains its creation head while a requeue changes its recorded head, so reopen matching uses the recorded head and refuses two ambiguous closed owners instead of guessing.
+An explicit per-PR opt-out preserves the last covered head and feedback cursor, so restoration queues every intervening review identity instead of accepting a fresh baseline.
 
-The agent-only [`pr-review-owner`](../.agents/skills/pr-review-owner/SKILL.md) is the single owner of adversarial adjudication and routing.
-It sends supported corrections back through the existing PR branch and selected validation owner, withholds scope expansion and stronger safety boundaries for the captain, and requires one original-thread evidence response even when an external claim is stale or unsupported.
-Fleet-authored exact-head findings remain private and route directly to the implementation owner; unsupported internal leads remain private.
-Fleet-authored PRs are never self-reviewed or approved on GitHub, their private passes never count as independent review evidence, foreign PRs are comment-only after a live distinct-identity check, and this path has no merge authority.
+The adjudication owner sends supported corrections through the existing PR branch and selected validation owner, withholds scope expansion and stronger safety boundaries for the captain, and requires one original-thread evidence response even when an external claim is stale or unsupported.
+Fleet-authored exact-head findings remain private and route to the implementation owner; unsupported internal leads remain private.
+Fleet-authored pull requests are never self-reviewed or approved on GitHub, private passes never count as independent review evidence, foreign pull requests are comment-only after a live distinct-identity check, and this path has no merge authority.
 
-The source returns a bounded process-event result only when model attention is needed, then classifies that result terminal, so the generic runner retires this registration instead of starting another account poll while the result waits, and the captured result stays re-announced until it is acknowledged.
-Coverage therefore resumes only on a deliberate re-arm: the adjudication owner acknowledges the review event and re-registers the source after durably handling it, and the next locked main-home bootstrap re-arms it otherwise.
-This composes with every supported primary harness through the same `check` notification path and never consults a runtime backend, so harness and backend differences are not part of its semantics.
-[`configuration.md`](configuration.md#automatic-pull-request-review-statepr-review) owns setup and limits, and [`verification/pr-review.md`](verification/pr-review.md) holds the current behavior evidence.
+The source returns a bounded process-event result only when model attention is needed, then classifies that result terminal so the generic runner does not start another account scan while the result waits.
+The captured result is re-announced until acknowledged.
+Coverage resumes only when the owner durably routes the event, acknowledges it, and re-registers the source, or when the next locked main-home bootstrap re-arms it.
+This composes with every supported primary harness through the same `check` notification path and never consults a runtime backend.
+[`configuration.md`](configuration.md#open-sourcerer-monitor-statepr-review) owns setup and limits, and [`verification/pr-review.md`](verification/pr-review.md) holds current behavior evidence.
 
 ## Busy state is semantic, per adapter
 

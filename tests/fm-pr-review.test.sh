@@ -23,7 +23,7 @@ export FM_PROCEVENT_CLAIM_ROOT="$TMP/claims"
 [ -x "$PR_REVIEW" ] || fail "automatic pull-request review owner is missing"
 [ -x "$ADAPTER" ] || fail "automatic pull-request review process-event adapter is missing"
 [ -f "$STATE_ENGINE" ] || fail "automatic pull-request review state owner is missing"
-pass "automatic pull-request review owner is installed"
+pass "Open Sourcerer Monitor is installed"
 
 sha_a=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 sha_b=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
@@ -69,7 +69,8 @@ pull_json() { # <number> <author> <head> <scopes-json> [reviews] [inline] [conve
     --argjson reviews "${5:-[]}" --argjson inline "${6:-[]}" --argjson conversation "${7:-[]}" '
     {repository:"acme/widgets",number:$number,url:("https://github.com/acme/widgets/pull/"+($number|tostring)),
      state:"open",draft:false,head:$head,author:$author,scopes:$scopes,
-     reviews:$reviews,review_comments:$inline,conversation_comments:$conversation}'
+     reviews:$reviews,review_comments:$inline,conversation_comments:$conversation,
+     check_runs:[],commit_statuses:[],mergeable:true,mergeable_state:"clean",merged:false}'
 }
 
 # --- Discovery, all inventory scopes, exact heads, and stable silence --------
@@ -116,6 +117,125 @@ item_json "$H_SCOPE" initial-review | jq -e --arg head "$sha_b" \
   '([.[]|select(.number==1)]|length)==1 and any(.[]; .number==1 and .head==$head and .generation==2 and .state=="pending")' >/dev/null \
   || fail "a new exact head did not invalidate and re-dispatch the one review owner"
 pass "discovery covers authored, requested, assigned, and participating PRs with one review per exact head and unchanged silence"
+
+# --- Live PR 3838 miss: stale owner, moved head, and unresolved P1 -----------
+# This fixture uses the exact public identities from the missed Artemis case.
+# The mutation witness is the generation-1 lane pointer: if it is allowed to
+# survive the generation-2 requeue, next reports occupied and hides the P1.
+pr3838_old=5a8f024441e280bbd4c62bac6c93fb5565b2dce8
+pr3838_live=03185ea64343fa3f5e16072a9cb3d5f1c1f9df24
+H_3838="$TMP/pr3838-home"; new_home "$H_3838"
+printf '%s\n' \
+  'window=artemis-owner' \
+  'project=artemis' \
+  'pr=https://github.com/monalee-inc/artemis/pull/3838' \
+  "pr_head=$pr3838_old" > "$H_3838/state/artemis-owner.meta"
+PR3838_OLD=$(pull_json 3838 captain "$pr3838_old" '["authored"]' | jq -c '
+  .repository="monalee-inc/artemis"
+  | .url="https://github.com/monalee-inc/artemis/pull/3838"
+  | .mergeable=null | .mergeable_state="unknown"
+  | .check_runs=[{id:1,name:"CI Status",status:"in_progress",conclusion:null}]')
+PR3838_OLD_OBS="$TMP/pr3838-old.json"; write_observation "$PR3838_OLD_OBS" 1785938400 "[$PR3838_OLD]"
+pr3838_old_event=$(poll_fixture "$H_3838" "$PR3838_OLD_OBS" 1785938400) || fail "PR 3838 stale-head setup failed"
+run_review "$H_3838" acknowledge-event "$(printf '%s' "$pr3838_old_event" | jq -r '.event_id')" >/dev/null
+PR3838_REVIEW=$(item_id_for "$H_3838" initial-review 3838)
+run_review "$H_3838" claim "$PR3838_REVIEW" --owner-task artemis-owner >/dev/null \
+  || fail "PR 3838 stale owner could not occupy its original generation"
+PR3838_INLINE=$(jq -cn --arg head "$pr3838_live" '[{
+  id:3721235541,node_id:"PRRC_kwDOQAirEc7dzYxV",
+  body:"[P1] Keep this lease press-only until the existing ground-mount threshold is crossed. `useDragSessio",body_length:655,
+  commit_id:$head,original_commit_id:$head,updated_at:"2026-08-05T14:06:19Z",
+  html_url:"https://github.com/monalee-inc/artemis/pull/3838#discussion_r3721235541",
+  user:{login:"Lipemenezes",type:"User"}
+}]')
+PR3838_LIVE=$(pull_json 3838 captain "$pr3838_live" '["authored"]' '[]' "$PR3838_INLINE" '[]' | jq -c '
+  .repository="monalee-inc/artemis"
+  | .url="https://github.com/monalee-inc/artemis/pull/3838"
+  | .mergeable=true | .mergeable_state="blocked"
+  | .check_runs=[{id:92326525345,name:"CI Status",status:"completed",conclusion:"success"}]
+  | .commit_statuses=[{id:51692927393,context:"CodeRabbit",state:"success"}]')
+PR3838_LIVE_OBS="$TMP/pr3838-live.json"; write_observation "$PR3838_LIVE_OBS" 1785940000 "[$PR3838_LIVE]"
+pr3838_event=$(poll_fixture "$H_3838" "$PR3838_LIVE_OBS" 1785940000) || fail "PR 3838 current-head P1 scan failed"
+[ "$(printf '%s\n' "$pr3838_event" | wc -l | tr -d ' ')" -eq 1 ] || fail "PR 3838 scan emitted more than one model event"
+printf '%s' "$pr3838_event" | jq -e --arg head "$pr3838_live" '
+  .changed==2 and .pending==2 and (.changes|length)==1
+  and .changes[0].url=="https://github.com/monalee-inc/artemis/pull/3838"
+  and .changes[0].head==$head and .changes[0].route=="existing-owner"
+  and .changes[0].owner_task=="artemis-owner"
+  and (.changes[0].categories|index("head")!=null)
+  and (.changes[0].categories|index("checks")!=null)
+  and (.changes[0].categories|index("conflicts")!=null)
+  and (.changes[0].categories|index("inline-replies")!=null)' >/dev/null \
+  || fail "PR 3838 event lost its body-free current-head routing contract: $pr3838_event"
+assert_absent "$H_3838/state/pr-review/lane.json" "PR 3838 stale generation kept the review lane occupied"
+PR3838_NEXT=$(run_review "$H_3838" next) || fail "PR 3838 current-head P1 was not claimable"
+printf '%s' "$PR3838_NEXT" | jq -e --arg head "$pr3838_live" '
+  .type=="feedback" and .head==$head and .generation==1
+  and .owning_task=="artemis-owner"
+  and .feedback.node_id=="PRRC_kwDOQAirEc7dzYxV"
+  and .feedback.author=="lipemenezes" and .feedback.body_truncated==true' >/dev/null \
+  || fail "PR 3838 P1 did not route to its existing implementation owner: $PR3838_NEXT"
+PR3838_FEEDBACK=$(printf '%s' "$PR3838_NEXT" | jq -r '.id')
+run_review "$H_3838" claim "$PR3838_FEEDBACK" --owner-task artemis-owner >/dev/null \
+  || fail "PR 3838 existing owner could not resume without a duplicate worker"
+run_review "$H_3838" acknowledge-event "$(printf '%s' "$pr3838_event" | jq -r '.event_id')" >/dev/null
+set +e
+pr3838_stable=$(poll_fixture "$H_3838" "$PR3838_LIVE_OBS" 1785940001 2> "$TMP/pr3838-stable.err")
+pr3838_stable_rc=$?
+set -e
+[ "$pr3838_stable_rc" -eq 3 ] && [ -z "$pr3838_stable" ] \
+  || fail "unchanged PR 3838 scan woke the model again"
+[ "$(find "$H_3838/state" -maxdepth 1 -name '*.meta' -print | wc -l | tr -d ' ')" -eq 1 ] \
+  || fail "PR 3838 routing created a duplicate implementation worker"
+pass "Open Sourcerer Monitor routes the live PR 3838 current-head P1 past a stale generation without duplicate work"
+
+# --- Body-free status transitions, close, and merge stay one event -----------
+H_MONITOR="$TMP/monitor-state-home"; new_home "$H_MONITOR"
+printf '%s\n' 'window=monitor-owner' 'pr=https://github.com/acme/widgets/pull/90' > "$H_MONITOR/state/monitor-owner.meta"
+MONITOR_90=$(pull_json 90 outsider "$sha_a" '["assigned"]' | jq -c '
+  .mergeable=null | .mergeable_state="unknown"
+  | .check_runs=[{id:900,name:"CI",status:"in_progress",conclusion:null}]')
+MONITOR_91=$(pull_json 91 outsider "$sha_a" '["review-requested"]')
+MONITOR_BASE="$TMP/monitor-base.json"; write_observation "$MONITOR_BASE" 1785940100 "[$MONITOR_90,$MONITOR_91]"
+monitor_base_event=$(poll_fixture "$H_MONITOR" "$MONITOR_BASE" 1785940100) || fail "monitor transition setup failed"
+run_review "$H_MONITOR" acknowledge-event "$(printf '%s' "$monitor_base_event" | jq -r '.event_id')" >/dev/null
+MONITOR_REVIEW=$(item_id_for "$H_MONITOR" initial-review 90)
+run_review "$H_MONITOR" claim "$MONITOR_REVIEW" --owner-task monitor-owner >/dev/null \
+  || fail "monitor transition fixture could not occupy its lane"
+MONITOR_REVIEWS=$(jq -cn --arg head "$sha_a" '[{id:901,node_id:"monitor-review",state:"APPROVED",body:"LGTM",commit_id:$head,submitted_at:"2026-08-05T14:07:00Z",user:{login:"independent",type:"User"}}]')
+MONITOR_INLINE=$(jq -cn --arg head "$sha_a" '[{id:902,node_id:"monitor-inline",body:"The retry path still loses this value.",commit_id:$head,updated_at:"2026-08-05T14:08:00Z",user:{login:"independent",type:"User"}}]')
+MONITOR_CONVERSATION=$(jq -cn '[{id:903,node_id:"monitor-conversation",body:"Please retain the documented compatibility behavior.",updated_at:"2026-08-05T14:09:00Z",user:{login:"independent",type:"User"}}]')
+MONITOR_90_CHANGED=$(pull_json 90 outsider "$sha_a" '["assigned"]' "$MONITOR_REVIEWS" "$MONITOR_INLINE" "$MONITOR_CONVERSATION" | jq -c '
+  .mergeable=false | .mergeable_state="dirty"
+  | .check_runs=[{id:900,name:"CI",status:"completed",conclusion:"failure"}]')
+MONITOR_CHANGED="$TMP/monitor-changed.json"; write_observation "$MONITOR_CHANGED" 1785940200 "[$MONITOR_90_CHANGED,$MONITOR_91]"
+monitor_changed_event=$(poll_fixture "$H_MONITOR" "$MONITOR_CHANGED" 1785940200) || fail "status-only monitor transition stayed silent"
+printf '%s' "$monitor_changed_event" | jq -e '
+  .changed==0 and (.changes|length)==1 and .changes[0].owner_task=="monitor-owner"
+  and .changes[0].route=="existing-owner"
+  and (.changes[0].categories|sort)==(["checks","conflicts","conversation-comments","inline-replies","reviews"]|sort)' >/dev/null \
+  || fail "checks, conflicts, review, reply, or conversation transition was not one actionable route: $monitor_changed_event"
+run_review "$H_MONITOR" acknowledge-event "$(printf '%s' "$monitor_changed_event" | jq -r '.event_id')" >/dev/null
+MONITOR_90_MERGED=$(printf '%s' "$MONITOR_90_CHANGED" | jq -c '.state="closed" | .merged=true')
+MONITOR_91_CLOSED=$(printf '%s' "$MONITOR_91" | jq -c '.state="closed" | .merged=false')
+MONITOR_CLOSED="$TMP/monitor-closed.json"; write_observation "$MONITOR_CLOSED" 1785940300 "[$MONITOR_90_MERGED,$MONITOR_91_CLOSED]"
+monitor_closed_event=$(poll_fixture "$H_MONITOR" "$MONITOR_CLOSED" 1785940300) || fail "close and merge transition stayed silent"
+printf '%s' "$monitor_closed_event" | jq -e '
+  .changed==2 and (.changes|length)==2
+  and any(.changes[]; .number==90 and .route=="existing-owner" and (.categories|index("merged")!=null))
+  and any(.changes[]; .number==91 and .route=="project-secondmate" and .owner_task==null and (.categories|index("closed")!=null))' >/dev/null \
+  || fail "close and merge were not bundled into one actionable event: $monitor_closed_event"
+assert_absent "$H_MONITOR/state/pr-review/lane.json" "closed monitor item retained the lane"
+run_review "$H_MONITOR" list --json | jq -e 'all(.[]; .state=="terminal" and .outcome=="pull-closed-without-response")' >/dev/null \
+  || fail "close or merge did not end every affected item durably"
+run_review "$H_MONITOR" acknowledge-event "$(printf '%s' "$monitor_closed_event" | jq -r '.event_id')" >/dev/null
+set +e
+monitor_closed_repeat=$(poll_fixture "$H_MONITOR" "$MONITOR_CLOSED" 1785940301 2> "$TMP/monitor-closed-repeat.err")
+monitor_closed_repeat_rc=$?
+set -e
+[ "$monitor_closed_repeat_rc" -eq 3 ] && [ -z "$monitor_closed_repeat" ] \
+  || fail "unchanged closed monitor state woke the model again"
+pass "Open Sourcerer Monitor compares checks, conflicts, reviews, replies, comments, merge, and close without unchanged wakes"
 
 # --- Feedback identity, bots, self replies, and non-silent dispositions ------
 H_FEEDBACK="$TMP/feedback-home"; new_home "$H_FEEDBACK"
@@ -204,6 +324,14 @@ case "$endpoint" in
     page=$(page_values "$rows" "$endpoint")
     total=$(printf '%s' "$rows" | jq 'length')
     json_body "$(jq -cn --argjson total "$total" --argjson items "$page" '{total:$total,items:$items}')" ;;
+  /repos/*/commits/*/check-runs*)
+    clean=${endpoint%%\?*}; head=${clean%/check-runs}; head=${head##*/}
+    rows=$(jq -c --arg head "$head" '[.pulls[]|select(.head==$head)|.check_runs[]]' "$FM_FAKE_DATASET")
+    json_body "$(page_values "$rows" "$endpoint")" ;;
+  /repos/*/commits/*/statuses*)
+    clean=${endpoint%%\?*}; head=${clean%/statuses}; head=${head##*/}
+    rows=$(jq -c --arg head "$head" '[.pulls[]|select(.head==$head)|.commit_statuses[]]' "$FM_FAKE_DATASET")
+    json_body "$(page_values "$rows" "$endpoint")" ;;
   /repos/*/pulls/*/reviews/[0-9]*|/repos/*/pulls/comments/[0-9]*|/repos/*/issues/comments/[0-9]*)
     clean=${endpoint%%\?*}; id=${clean##*/}; expression=${2-}
     start=$(printf '%s' "$expression" | sed -n 's/.*chunk:.*\[\([0-9][0-9]*\):\([0-9][0-9]*\)\].*/\1/p')
@@ -260,7 +388,7 @@ case "$endpoint" in
     fi ;;
   /repos/*/pulls/*)
     clean=${endpoint%%\?*}; number=${clean##*/}
-    row=$(jq -c --argjson number "$number" '.pulls[]|select(.number==$number)|{number,html_url:.url,state,draft,head,author,requested_reviewers:(.requested_reviewers//[]),assignees:(.assignees//[])}' "$FM_FAKE_DATASET")
+    row=$(jq -c --argjson number "$number" '.pulls[]|select(.number==$number)|{number,html_url:.url,state,draft,merged,mergeable,mergeable_state,head,author,requested_reviewers:(.requested_reviewers//[]),assignees:(.assignees//[])}' "$FM_FAKE_DATASET")
     # The production jq selection maps head and author from GitHub nesting; the
     # fake returns the already-selected boundary expected by the state owner.
     json_body "$row" ;;
@@ -338,6 +466,29 @@ FM_PR_REVIEW_CURRENT_HEAD="$sha_a" run_review "$H_PAGE" resolve-feedback "$LONG_
   --head "$sha_a" --generation 1 --verdict dismissed --evidence-file "$TMP/long-evidence.md" \
   --reply-file "$TMP/long-reply.md" >/dev/null || fail "complete exact-node feedback could not be adjudicated"
 pass "bounded pagination covers multiple PR, review, inline-thread, and conversation pages"
+
+# Check runs use a separate high-density bound and probe one page beyond it, so
+# an exact boundary succeeds while one extra run isolates that PR instead of
+# silently publishing an incomplete rollup.
+H_CHECK_BOUND="$TMP/check-bound-home"; new_home "$H_CHECK_BOUND"
+CHECK_RUNS_20=$(jq -cn '[range(1;21)|{id:.,name:("check-"+(.|tostring)),status:"completed",conclusion:"success"}]')
+CHECK_PULL_20=$(pull_json 30 captain "$sha_a" '["authored"]' | jq -c --argjson checks "$CHECK_RUNS_20" '.check_runs=$checks')
+make_dataset "[$CHECK_PULL_20]"; : > "$GITHUB_LOG"
+FM_PR_REVIEW_CHECK_PAGE_SIZE=10 run_fake_poll "$H_CHECK_BOUND" 1201 >/dev/null \
+  || fail "exact check-run pagination bound was rejected"
+[ "$(item_json "$H_CHECK_BOUND" initial-review | jq 'length')" -eq 1 ] \
+  || fail "exact check-run pagination bound lost its pull request"
+H_CHECK_OVER="$TMP/check-over-home"; new_home "$H_CHECK_OVER"
+CHECK_RUNS_21=$(printf '%s' "$CHECK_RUNS_20" | jq '.+[{id:21,name:"check-21",status:"completed",conclusion:"success"}]')
+CHECK_PULL_21=$(pull_json 31 captain "$sha_a" '["authored"]' | jq -c --argjson checks "$CHECK_RUNS_21" '.check_runs=$checks')
+make_dataset "[$CHECK_PULL_21]"; : > "$GITHUB_LOG"
+check_over_event=$(FM_PR_REVIEW_CHECK_PAGE_SIZE=10 run_fake_poll "$H_CHECK_OVER" 1202) \
+  || fail "check-run overflow did not become a bounded diagnostic"
+printf '%s' "$check_over_event" | jq -e '.category=="pull-read-isolated" and .degraded==1 and .changed==0' >/dev/null \
+  || fail "check-run overflow published a partial rollup: $check_over_event"
+[ "$(item_json "$H_CHECK_OVER" initial-review | jq 'length')" -eq 0 ] \
+  || fail "check-run overflow silently queued a partially observed pull request"
+pass "check-run pagination accepts the exact bound and isolates one excess record without partial coverage"
 
 # A truncated body whose bounded prefix carries CRLF line endings or leading
 # whitespace must still reconstruct. The independent oracle is the exact GitHub
@@ -1230,7 +1381,7 @@ SID1_ALIAS=$(FM_HOME="$TMP/arm-home-1-alias" "$ADAPTER" source-id)
 [ "$SID1" = "$SID1_ALIAS" ] || fail "one physical home gained duplicate source identity through a path alias"
 assert_present "$H_ARM1/state/procevent/$SID1.source" "first home registration is missing"
 assert_present "$H_ARM2/state/procevent/$SID2.source" "second home registration is missing"
-printf '%s\n' '{"schema":"fm-pr-review-event.v1","event_id":"1900-0123456789abcdef","category":"inventory","changed":1,"pending":1,"response_pending":0,"message":""}' > "$TMP/pr-review-result.json"
+printf '%s\n' '{"schema":"fm-pr-review-event.v1","event_id":"1900-0123456789abcdef","category":"inventory","changed":1,"pending":1,"response_pending":0,"degraded":0,"changes":[{"url":"https://github.com/acme/widgets/pull/1","repository":"acme/widgets","number":1,"head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","categories":["head"],"owner_task":null,"route":"project-secondmate"}],"message":""}' > "$TMP/pr-review-result.json"
 [ "$("$ADAPTER" classify "$TMP/pr-review-result.json")" = work ] || fail "adapter rejected a bounded review result"
 "$ADAPTER" terminal "$TMP/pr-review-result.json" || fail "review result did not retire its exact source generation"
 printf 'not-json\n' > "$TMP/pr-review-malformed"
@@ -1313,4 +1464,4 @@ pass "authentication and rate-limit failures stay bounded, deduplicated, and pre
 assert_no_grep 'pr merge' "$GITHUB_LOG" "automatic owner exposed a merge path"
 assert_no_grep --approve "$GITHUB_LOG" "automatic owner exposed a self-approval path"
 
-printf '\n# all automatic pull-request review tests passed\n'
+printf '\n# all Open Sourcerer Monitor tests passed\n'

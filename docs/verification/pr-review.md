@@ -1,14 +1,14 @@
-# Automatic pull-request review verification
+# Open Sourcerer Monitor verification
 
 Audience: maintainer verification.
 
-This record holds reusable current evidence for the automatic review and feedback guarantees.
-[`docs/configuration.md`](../configuration.md#automatic-pull-request-review-statepr-review) owns setup and limits.
-[`docs/architecture.md`](../architecture.md#automatic-pull-request-review-and-feedback) owns stable component and durability boundaries.
+This record holds reusable current evidence for Open Sourcerer Monitor, automatic review, and feedback guarantees.
+[`docs/configuration.md`](../configuration.md#open-sourcerer-monitor-statepr-review) owns setup and limits.
+[`docs/architecture.md`](../architecture.md#open-sourcerer-monitor) owns stable component and durability boundaries.
 [`bin/fm-pr-review.sh`](../../bin/fm-pr-review.sh) help owns commands and opt-out mechanics.
 [`pr-review-owner`](../../.agents/skills/pr-review-owner/SKILL.md) owns adjudication and routing.
 
-Verified on 2026-08-04 on macOS with:
+Verified on 2026-08-05 on macOS with:
 
 ```text
 Darwin 25.5.0 arm64
@@ -20,11 +20,18 @@ gh-axi 0.1.28
 ## Executable boundary
 
 The controlled GitHub boundary is a fake `gh-axi` executable backed by mutable JSON.
-It implements selected authenticated reads, explicit pages, inline replies, conversation comments, and COMMENT reviews while logging every attempted GitHub operation.
+It implements selected authenticated reads, explicit pages, check runs, commit statuses, conflict state, inline replies, conversation comments, lifecycle transitions, and COMMENT reviews while logging every attempted GitHub operation.
 The product entry point, Node state owner, private files, exact-head checks, and response replay all remain real.
 No live pull request is changed by the suite.
 A separate authenticated read-only smoke ran the production poll with real `gh-axi` against the work account, completed inside the default total deadline, and published an inventory result only into a disposable private home.
 The disposable home was removed after inspecting only the bounded category and counts; the smoke exposed no GitHub write command.
+
+A 2026-08-05 authenticated read-only check of https://github.com/monalee-inc/artemis/pull/3838 established the incident-shaped oracle.
+The authenticated actor and pull author are `tiago-peixoto`, the prior owner head was `5a8f024441e280bbd4c62bac6c93fb5565b2dce8`, and the live head is `03185ea64343fa3f5e16072a9cb3d5f1c1f9df24`.
+Inline node `PRRC_kwDOQAirEc7dzYxV` by `Lipemenezes` was created at `2026-08-05T14:06:19Z` on the live head and its GraphQL thread was unresolved and not outdated.
+The live head had 20 check runs plus one passing commit status, and the pull was open, unmerged, and conflict-free.
+The authenticated account had neither `admin` nor `maintain` permission in the repository, which proves the monitor boundary does not depend on maintainer authority.
+The regression reproduces those identities through the real public monitor command over the controlled GitHub boundary and proves the stale generation cannot hide the new route.
 
 Run:
 
@@ -35,10 +42,13 @@ bash tests/fm-pr-review.test.sh
 Current exact output:
 
 ```text
-ok - automatic pull-request review owner is installed
+ok - Open Sourcerer Monitor is installed
 ok - discovery covers authored, requested, assigned, and participating PRs with one review per exact head and unchanged silence
+ok - Open Sourcerer Monitor routes the live PR 3838 current-head P1 past a stale generation without duplicate work
+ok - Open Sourcerer Monitor compares checks, conflicts, reviews, replies, comments, merge, and close without unchanged wakes
 ok - feedback includes actionable bodies, inline comments, conversation, and substantive bots without self-reply loops
 ok - bounded pagination covers multiple PR, review, inline-thread, and conversation pages
+ok - check-run pagination accepts the exact bound and isolates one excess record without partial coverage
 ok - CRLF and leading-whitespace truncated bodies reconstruct and adjudicate at the exact node
 ok - a pull request closed between search and detail is omitted after its live closed-state read
 ok - one pull request's read failure stays isolated, announced once, durable, and non-destructive
@@ -61,7 +71,7 @@ ok - process-event registration is restart-idempotent and isolated per Firstmate
 ok - locked main-home bootstrap arms one account review source with one auth probe and no secondmate duplicates it
 ok - authentication and rate-limit failures stay bounded, deduplicated, and preserve the last good inventory
 
-# all automatic pull-request review tests passed
+# all Open Sourcerer Monitor tests passed
 ```
 
 ## Independent oracles and mutation witnesses
@@ -71,7 +81,10 @@ ok - authentication and rate-limit failures stay bounded, deduplicated, and pres
 | one review per exact head | the fixture explicitly contains four relevant PR identities, then changes only one SHA | keying review work by PR number alone loses the fifth exact-head item |
 | unchanged silence | item count, no task metadata, empty stdout, and the source's no-result exit are checked independently | dispatching from every timer tick creates output or task state |
 | inventory scopes | four distinct fixtures each carry one independently expected relationship | querying only authored or review-requested PRs loses assigned or participating rows |
+| PR 3838 stale-owner route | the exact stale head, live head, canonical PR URL, Lipemenezes node identity, timestamp, author, unresolved P1, and existing-owner metadata are independent fixture inputs | retaining the generation-1 lane pointer hides both generation-2 items; choosing initial review before external feedback delays the actionable P1; correlating by stale `pr_head=` loses the existing owner |
+| monitor transition bundle | two pulls independently change checks, conflicts, reviews, inline replies, conversation comments, merge, and close while one current lane is occupied | head-only or feedback-only cursors lose status transitions; one event per field creates blind model wakes; treating every lane pointer as current wedges closure |
 | bounded pagination | five records with a page size of two require pages two and three, which the fake call log proves were read | first-page-only collection loses PRs or feedback |
+| bounded check rollup | one fixture has exactly 20 checks under two ten-record pages and another has one excess check | accepting no probe silently truncates the 21st check, while treating one pull's overflow as account-wide drops unaffected coverage |
 | complete feedback body | a finding extends beyond the queued prefix and the exact-node chunk reader reconstructs its independently asserted suffix | adjudicating only the transport prefix loses the claim's final substantive text |
 | truncated CRLF and leading-whitespace bodies | separate fixtures carry CRLF line endings and leading spaces inside the bounded prefix, and the reconstructed record is asserted against the independently known first and last text | normalizing before slicing shifts the prefix window, so the reconstruction never matches and those bodies can never be adjudicated |
 | close during search | a candidate is still returned by the lagging search index while its live detail read answers closed | omitting on the index alone drops open work, and failing the whole poll on one stale hit ends account-wide coverage |
@@ -87,7 +100,7 @@ ok - authentication and rate-limit failures stay bounded, deduplicated, and pres
 | one review owner per pull | a head moves away and is force-pushed back onto a previously closed head, so a closed item and a live review owner share that exact head | reactivating behind the live owner produces two nonterminal reviews and fails the whole poll with a private-state error |
 | reopen after a head move | both supported requeue paths move a review's head in place while its id keeps the creation head, and the pull request then closes and reopens on the moved head | matching a reopened pull request by a recomputed creation id restores its external claims while silently leaving it with no exact-head private review, or creates a duplicate second review |
 | ambiguous reactivation | a closed review, a replacement created at a second head, and a force-pushed revert leave two closed reviews recording one head | guessing between them is silent and unprovable, and dropping the refusal leaves the reopened pull request with no review and no diagnostic at all |
-| lane recovery | the closure crash seam cuts between the terminal write and the lane release, and the poll itself must still announce the queued item | a lane trusted as an owner rather than a pointer keeps naming a terminal item forever, and a poll that reads the lane raw silences the very wake that would repair it |
+| lane recovery | one closure seam cuts between terminal write and lane release, while the PR 3838 fixture leaves a generation-1 claim beside its generation-2 item | a lane trusted as an owner rather than a generation-bound pointer keeps naming terminal or stale-head evidence forever and silences the current work route |
 | bounded diagnostic message | five maximum-length repository identities are announced and the adapter itself classifies the emitted result | an unclamped message exceeds the consumer's window, so the diagnostic silently becomes malformed and unactionable |
 | reply failure | the first write fails after correction evidence is already durable | rerunning correction or discarding the staged body changes evidence or response identity |
 | captain decision | the fake GitHub log must remain empty while the item reaches captain-decision-pending | treating reviewer wording as authority produces a write |
