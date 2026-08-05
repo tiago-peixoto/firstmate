@@ -31,15 +31,26 @@ const OPTOUT_SCHEMA = "fm-pr-review-opt-out.v1";
 const EVENT_SCHEMA = "fm-pr-review-event.v1";
 const PRIVATE_ROUTE_SCHEMA = "fm-pr-review-private-route.v1";
 const PUBLICATION_GUARD_SCHEMA = "fm-pr-review-publication-guard.v1";
+const PULL_CLOSED_SCHEMA = "fm-pr-review-pull-closed.v1";
 const SELF_REVIEW_PUBLICATION_METHODS = new Set(["comment-only-review", "fallback-comment"]);
+const ISOLATED_PULL_READ_FAILURES = new Set(["github-read", "github-schema", "pagination-bound", "response-bound"]);
+const MAX_DIAGNOSTIC_PULLS = 5;
+const MAX_EVENT_MESSAGE_CHARS = 1000;
+const PULL_CLOSED_OUTCOME = "pull-closed-without-response";
 const TERMINAL_FEEDBACK = new Set([
   "fixed-and-replied",
   "dismissed-and-replied",
   "duplicate-and-replied",
   "superseded-and-replied",
   "captain-decision-pending",
+  PULL_CLOSED_OUTCOME,
 ]);
-const TERMINAL_REVIEW = new Set(["reviewed-clean", "reviewed-findings-corrected", "foreign-reviewed-and-commented"]);
+const TERMINAL_REVIEW = new Set([
+  "reviewed-clean",
+  "reviewed-findings-corrected",
+  "foreign-reviewed-and-commented",
+  PULL_CLOSED_OUTCOME,
+]);
 const SHA_RE = /^[0-9a-f]{40}$/;
 const LOGIN_RE = /^[A-Za-z0-9][A-Za-z0-9_.\-[\]]{0,99}$/;
 const REPO_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}\/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/;
@@ -245,8 +256,9 @@ function allItems() {
 
 function readControl() {
   const value = readJson(CONTROL, null, 65536);
-  if (!value) return { schema: CONTROL_SCHEMA, next_poll: 0, failure: null, event_counter: 0, pending_event: null };
-  if (value.schema !== CONTROL_SCHEMA || !Number.isSafeInteger(value.next_poll) || !Number.isSafeInteger(value.event_counter)) {
+  if (!value) return { schema: CONTROL_SCHEMA, next_poll: 0, failure: null, event_counter: 0, pending_event: null, degraded_fingerprint: "" };
+  if (value.schema !== CONTROL_SCHEMA || !Number.isSafeInteger(value.next_poll) || !Number.isSafeInteger(value.event_counter)
+    || typeof (value.degraded_fingerprint ?? "") !== "string") {
     die("poll control is invalid");
   }
   return value;
@@ -303,7 +315,9 @@ function actionableBody(body) {
 function feedbackFor(pull, viewer) {
   const result = [];
   const push = (kind, raw, reviewHead = "") => {
-    const body = normalizedBody(raw.body);
+    const rawPrefix = String(raw.body ?? "");
+    const prefixLength = [...rawPrefix].length;
+    const body = normalizedBody(rawPrefix);
     const author = String(raw.user?.login ?? raw.author?.login ?? "").toLowerCase();
     const actorType = String(raw.user?.type ?? raw.author?.type ?? "User");
     if (!LOGIN_RE.test(author) || author === viewer || !actionableBody(body) || transportOnly(author, actorType, body)) return;
@@ -324,7 +338,7 @@ function feedbackFor(pull, viewer) {
       review_head: reviewHead && SHA_RE.test(String(reviewHead).toLowerCase()) ? String(reviewHead).toLowerCase() : null,
       url: String(raw.html_url ?? pull.url),
       body: [...body].slice(0, MAX_BODY_CHARS).join(""),
-      body_truncated: Number(raw.body_length ?? [...body].length) > [...body].length,
+      body_truncated: Number(raw.body_length ?? prefixLength) > prefixLength,
     });
   };
   for (const review of pull.reviews ?? []) push("review-body", review, review.commit_id);
@@ -343,8 +357,20 @@ function validateObservation(value) {
     throw new PollError("github-schema", "GitHub returned an unsupported pull-request review inventory shape.", true);
   }
   const viewer = value.viewer.toLowerCase();
-  if (value.pulls.length > MAX_PULLS) throw new PollError("inventory-bound", "Relevant open pull requests exceed the configured bounded inventory.", true);
+  const rawDegraded = value.degraded ?? [];
+  if (!Array.isArray(rawDegraded)) throw new PollError("github-schema", "GitHub returned an unsupported isolated-read diagnostic shape.", true);
+  if (value.pulls.length + rawDegraded.length > MAX_PULLS) throw new PollError("inventory-bound", "Relevant open pull requests exceed the configured bounded inventory.", true);
   const repositories = new Set();
+  const degraded = rawDegraded.map((entry) => {
+    if (!entry || !REPO_RE.test(String(entry.repository ?? "")) || !Number.isSafeInteger(entry.number) || entry.number < 1
+      || !ISOLATED_PULL_READ_FAILURES.has(String(entry.category ?? ""))
+      || typeof entry.message !== "string" || entry.message.length === 0 || entry.message.length > 500) {
+      throw new PollError("github-schema", "GitHub returned an invalid isolated pull-request read diagnostic.", true);
+    }
+    repositories.add(entry.repository);
+    if (repositories.size > MAX_REPOSITORIES) throw new PollError("inventory-bound", "Relevant open pull requests span more repositories than the configured bound.", true);
+    return { repository: entry.repository, number: entry.number, url: canonicalUrl(entry.repository, entry.number), category: entry.category, message: entry.message };
+  }).sort((a, b) => a.url.localeCompare(b.url));
   const pulls = value.pulls.map((pull) => {
     if (!pull || !REPO_RE.test(String(pull.repository ?? "")) || !Number.isSafeInteger(pull.number) || pull.number < 1) {
       throw new PollError("github-schema", "GitHub returned an invalid pull-request identity.", true);
@@ -368,7 +394,7 @@ function validateObservation(value) {
       conversation_comments: Array.isArray(pull.conversation_comments) ? pull.conversation_comments : [],
     };
   });
-  return { viewer, observed_at: Number(value.observed_at ?? NOW()), pulls: pulls.sort((a, b) => a.url.localeCompare(b.url)) };
+  return { viewer, observed_at: Number(value.observed_at ?? NOW()), pulls: pulls.sort((a, b) => a.url.localeCompare(b.url)), degraded };
 }
 
 function findOwningTask(url) {
@@ -439,6 +465,48 @@ function newFeedbackItem(pull, feedback, now) {
   };
 }
 
+// An observed pull request is live proof that it is open again, so an item this
+// owner ended only because the pull request had closed resumes as a new durable
+// generation. Every other terminal disposition stays terminal.
+function reopenClosedItem(item, head, observedAt) {
+  item.reopened_from = { closure: item.closure ?? null, generation: item.generation, reopened_at: observedAt };
+  delete item.closure;
+  item.head = head;
+  item.generation += 1;
+  item.state = "pending";
+  item.outcome = null;
+  item.response = null;
+  item.evidence = null;
+  if (item.type === "initial-review") {
+    item.review_outcome = null;
+    item.independent_review = false;
+    item.private_route = null;
+    item.publication_guard = null;
+  }
+  delete item.validation;
+  item.updated_at = observedAt;
+  writeItem(item);
+}
+
+function closedByPullClosure(item) {
+  return Boolean(item) && item.outcome === PULL_CLOSED_OUTCOME && item.state !== "opted-out";
+}
+
+function owningReviews(currentItems, url) {
+  return [...currentItems.values()].filter((item) =>
+    item.type === "initial-review" && item.url === url && !isTerminal(item) && item.state !== "opted-out",
+  );
+}
+
+// An item id keeps the head it was created at, while a requeue moves the item's
+// head in place, so a reopened pull request is matched against the head the item
+// currently records rather than against a recomputed creation identity.
+function closedReviewsAtHead(currentItems, url, head) {
+  return [...currentItems.values()].filter((item) =>
+    item.type === "initial-review" && item.url === url && item.head === head && closedByPullClosure(item),
+  );
+}
+
 function reconcileObservation(observation) {
   ensureState();
   const previous = readSnapshot();
@@ -454,10 +522,16 @@ function reconcileObservation(observation) {
     let coveredHead = prior.covered_head ?? null;
     let coveredFeedback = Array.isArray(prior.covered_feedback) ? prior.covered_feedback : [];
     if (!optedOut) {
+      const closedReviews = closedReviewsAtHead(currentItems, pull.url, pull.head);
+      if (closedReviews.length > 1) {
+        throw new PollError("private-state", `More than one closed review owns ${pull.url} at its observed head.`, true);
+      }
+      if (closedReviews.length === 1 && owningReviews(currentItems, pull.url).length === 0) {
+        reopenClosedItem(closedReviews[0], pull.head, observation.observed_at);
+        changed += 1;
+      }
       if (coveredHead !== pull.head) {
-        const inProgress = [...currentItems.values()].filter((item) =>
-          item.type === "initial-review" && item.url === pull.url && !isTerminal(item) && item.state !== "opted-out",
-        );
+        const inProgress = owningReviews(currentItems, pull.url);
         if (inProgress.length > 1) throw new PollError("private-state", `More than one nonterminal review owns ${pull.url}.`, true);
         if (inProgress.length === 1) {
           const item = inProgress[0];
@@ -496,6 +570,9 @@ function reconcileObservation(observation) {
           writeItem(item);
           currentItems.set(item.id, item);
           changed += 1;
+        } else if (closedByPullClosure(existing)) {
+          reopenClosedItem(existing, pull.head, observation.observed_at);
+          changed += 1;
         } else if (existing && !isTerminal(existing) && existing.head !== pull.head && existing.state !== "opted-out") {
           existing.head = pull.head;
           existing.generation += 1;
@@ -524,6 +601,12 @@ function reconcileObservation(observation) {
       covered_feedback: coveredFeedback,
       opted_out: optedOut,
     };
+  }
+  for (const entry of observation.degraded) {
+    if (next.pulls[entry.url]) throw new PollError("github-schema", `An isolated read diagnostic duplicated an observed pull request: ${entry.url}`, true);
+    const prior = previous.pulls[entry.url];
+    if (!prior) continue;
+    next.pulls[entry.url] = { ...prior, degraded: { category: entry.category, observed_at: observation.observed_at } };
   }
   if (process.env.FM_PR_REVIEW_TEST_CRASH_AT === "after-items") process.exit(99);
   atomicWrite(SNAPSHOT, next);
@@ -678,30 +761,41 @@ function liveObservation() {
   const repositories = new Set([...scopes.values()].map((entry) => entry.repository));
   if (repositories.size > MAX_REPOSITORIES) throw new PollError("inventory-bound", "Relevant open pull requests span more repositories than the configured bound.", true);
   const pulls = [];
+  const degraded = [];
   for (const candidate of [...scopes.values()].sort((a, b) => `${a.repository}#${a.number}`.localeCompare(`${b.repository}#${b.number}`))) {
-    const detail = apiJson("{number,html_url,state,draft,head:.head.sha,author:.user.login,requested_reviewers:[.requested_reviewers[].login],assignees:[.assignees[].login]}", [`/repos/${candidate.repository}/pulls/${candidate.number}`]);
-    const authored = String(detail.author ?? "").toLowerCase() === viewer;
-    if (authored) candidate.scopes.add("authored");
-    if ((detail.requested_reviewers ?? []).some((login) => String(login).toLowerCase() === viewer)) candidate.scopes.add("review-requested");
-    if ((detail.assignees ?? []).some((login) => String(login).toLowerCase() === viewer)) candidate.scopes.add("assigned");
-    const reviews = authored ? readPaged(`/repos/${candidate.repository}/pulls/${candidate.number}/reviews`, `[.[]|${selectedBodyFilter()}]`) : [];
-    const reviewComments = authored ? readPaged(`/repos/${candidate.repository}/pulls/${candidate.number}/comments`, `[.[]|${selectedBodyFilter()}]`) : [];
-    const conversationComments = authored ? readPaged(`/repos/${candidate.repository}/issues/${candidate.number}/comments`, `[.[]|${selectedBodyFilter()}]`) : [];
-    pulls.push({
-      repository: candidate.repository,
-      number: candidate.number,
-      url: detail.html_url,
-      state: String(detail.state ?? "").toLowerCase(),
-      draft: Boolean(detail.draft),
-      head: detail.head,
-      author: detail.author,
-      scopes: [...candidate.scopes],
-      reviews,
-      review_comments: reviewComments,
-      conversation_comments: conversationComments,
-    });
+    try {
+      const detail = apiJson("{number,html_url,state,draft,head:.head.sha,author:.user.login,requested_reviewers:[.requested_reviewers[].login],assignees:[.assignees[].login]}", [`/repos/${candidate.repository}/pulls/${candidate.number}`]);
+      const liveState = String(detail.state ?? "").toLowerCase();
+      if (liveState !== "open" && liveState !== "closed") throw new PollError("github-schema", "GitHub returned an unsupported live pull-request lifecycle state.", true);
+      // The search index lags merges and closes. Omitting a candidate is only safe
+      // because this detail read is the live lifecycle answer, not the stale index.
+      if (liveState !== "open") continue;
+      const authored = String(detail.author ?? "").toLowerCase() === viewer;
+      if (authored) candidate.scopes.add("authored");
+      if ((detail.requested_reviewers ?? []).some((login) => String(login).toLowerCase() === viewer)) candidate.scopes.add("review-requested");
+      if ((detail.assignees ?? []).some((login) => String(login).toLowerCase() === viewer)) candidate.scopes.add("assigned");
+      const reviews = authored ? readPaged(`/repos/${candidate.repository}/pulls/${candidate.number}/reviews`, `[.[]|${selectedBodyFilter()}]`) : [];
+      const reviewComments = authored ? readPaged(`/repos/${candidate.repository}/pulls/${candidate.number}/comments`, `[.[]|${selectedBodyFilter()}]`) : [];
+      const conversationComments = authored ? readPaged(`/repos/${candidate.repository}/issues/${candidate.number}/comments`, `[.[]|${selectedBodyFilter()}]`) : [];
+      pulls.push({
+        repository: candidate.repository,
+        number: candidate.number,
+        url: detail.html_url,
+        state: liveState,
+        draft: Boolean(detail.draft),
+        head: detail.head,
+        author: detail.author,
+        scopes: [...candidate.scopes],
+        reviews,
+        review_comments: reviewComments,
+        conversation_comments: conversationComments,
+      });
+    } catch (error) {
+      if (!(error instanceof PollError) || !ISOLATED_PULL_READ_FAILURES.has(error.category)) throw error;
+      degraded.push({ repository: candidate.repository, number: candidate.number, category: error.category, message: error.message.slice(0, 500) });
+    }
   }
-  return { schema: "fm-pr-review-observation.v1", viewer, observed_at: NOW(), pulls };
+  return { schema: "fm-pr-review-observation.v1", viewer, observed_at: NOW(), pulls, degraded };
 }
 
 function fixtureObservation(path) {
@@ -712,18 +806,43 @@ function fixtureObservation(path) {
 
 function actionableCounts() {
   const items = allItems();
-  const lane = readJson(LANE, null, 65536);
+  const lane = laneRead();
   const pending = items.filter((item) => item.state === "pending").length;
   const responses = items.filter((item) => item.state === "response-pending").length;
   return { pending, responses, lane: lane?.item_id ?? null };
 }
 
-function makeEvent(control, changed, category = "inventory", message = "") {
+function makeEvent(control, changed, category = "inventory", message = "", degraded = 0, force = false) {
   const counts = actionableCounts();
-  if (changed === 0 && counts.responses === 0 && !(counts.pending > 0 && !counts.lane)) return null;
+  if (!force && changed === 0 && counts.responses === 0 && !(counts.pending > 0 && !counts.lane)) return null;
   const counter = control.event_counter + 1;
   const id = `${NOW()}-${sha256(`${counter}:${changed}:${counts.pending}:${counts.responses}:${category}`).slice(0, 16)}`;
-  return { schema: EVENT_SCHEMA, event_id: id, category, changed, pending: counts.pending, response_pending: counts.responses, message };
+  return {
+    schema: EVENT_SCHEMA,
+    event_id: id,
+    category,
+    changed,
+    pending: counts.pending,
+    response_pending: counts.responses,
+    degraded,
+    message: String(message ?? "").slice(0, MAX_EVENT_MESSAGE_CHARS),
+  };
+}
+
+// An isolated per-pull read failure never suppresses the rest of the inventory,
+// but it must not be silent either. The notice is deduplicated by the exact set
+// of affected pull requests so a persistent failure announces once and a new or
+// recovered one announces again.
+function degradedNotice(control, degraded) {
+  const signature = degraded.map((entry) => `${entry.url}\u0000${entry.category}`).sort().join("\n");
+  const fingerprint = signature ? sha256(signature) : "";
+  if (!fingerprint || fingerprint === (control.degraded_fingerprint ?? "")) return { fingerprint, message: null };
+  const listed = degraded.slice(0, MAX_DIAGNOSTIC_PULLS).map((entry) => `${entry.url} (${entry.category})`).join(", ");
+  const overflow = degraded.length > MAX_DIAGNOSTIC_PULLS ? ` and ${degraded.length - MAX_DIAGNOSTIC_PULLS} more` : "";
+  return {
+    fingerprint,
+    message: `Isolated pull-request read failure kept the previous covered head and feedback cursor for ${listed}${overflow}; the rest of the inventory reconciled normally.`,
+  };
 }
 
 function emitEvent(event) {
@@ -744,13 +863,17 @@ function poll() {
     const raw = process.env.FM_PR_REVIEW_OBSERVATION_FILE ? fixtureObservation(process.env.FM_PR_REVIEW_OBSERVATION_FILE) : liveObservation();
     const observation = validateObservation(raw);
     const changed = reconcileObservation(observation);
-    const event = makeEvent(control, changed);
+    const notice = degradedNotice(control, observation.degraded);
+    const degradedCount = observation.degraded.length;
+    let event = makeEvent(control, changed, "inventory", notice.message ?? "", degradedCount);
+    if (!event && notice.message) event = makeEvent(control, 0, "pull-read-isolated", notice.message, degradedCount, true);
     const next = {
       schema: CONTROL_SCHEMA,
       next_poll: now + INTERVAL,
       failure: null,
       event_counter: event ? control.event_counter + 1 : control.event_counter,
       pending_event: event,
+      degraded_fingerprint: notice.fingerprint,
     };
     writeControl(next);
     if (!event) process.exit(3);
@@ -770,6 +893,7 @@ function poll() {
         failure: { category: failure.category, message: failure.message, fingerprint, count, notified: true },
         event_counter: control.event_counter,
         pending_event: null,
+        degraded_fingerprint: control.degraded_fingerprint ?? "",
       });
       process.exit(3);
     }
@@ -780,24 +904,77 @@ function poll() {
       failure: { category: failure.category, message: failure.message, fingerprint, count, notified: true },
       event_counter: control.event_counter + 1,
       pending_event: event,
+      degraded_fingerprint: control.degraded_fingerprint ?? "",
     };
     writeControl(next);
     emitEvent(event);
   }
 }
 
-function currentHead(item) {
-  if (process.env.FM_PR_REVIEW_CURRENT_HEAD) return validateSha(process.env.FM_PR_REVIEW_CURRENT_HEAD, "current head override");
+function liveLifecycle(item) {
+  if (process.env.FM_PR_REVIEW_CURRENT_HEAD) {
+    return { head: validateSha(process.env.FM_PR_REVIEW_CURRENT_HEAD, "current head override"), state: "open" };
+  }
   deadline = Date.now() + API_TIMEOUT_MS * (API_RETRIES + 1);
   const detail = apiJson("{head:.head.sha,state:.state}", [`/repos/${item.repository}/pulls/${item.number}`]);
-  if (String(detail.state).toLowerCase() !== "open") die("pull request is no longer open");
-  return validateSha(detail.head, "current GitHub head");
+  const state = String(detail.state ?? "").toLowerCase();
+  if (state !== "open" && state !== "closed") die("GitHub returned an unsupported live pull-request lifecycle state");
+  return { head: validateSha(detail.head, "current GitHub head"), state };
 }
 
+// A pull request that closes or merges under a nonterminal item ends that item
+// durably instead of stranding it: no outward response survives closure, and the
+// one-at-a-time lane is released so the rest of the queue keeps moving.
+function closePullWithoutResponse(item, live) {
+  item.closure = {
+    schema: PULL_CLOSED_SCHEMA,
+    live_state: live.state,
+    live_head: live.head,
+    covered_head: item.head,
+    generation: item.generation,
+    prior_state: item.state,
+    closed_at: NOW(),
+  };
+  item.response = null;
+  item.outcome = PULL_CLOSED_OUTCOME;
+  item.state = "terminal";
+  item.updated_at = NOW();
+  writeItem(item);
+  if (process.env.FM_PR_REVIEW_TEST_CRASH_AT === "after-pull-closed") process.exit(99);
+  laneRelease(item.id);
+  process.stdout.write(`${JSON.stringify({
+    item_id: item.id,
+    outcome: item.outcome,
+    head: item.head,
+    live_state: live.state,
+    response: "withheld",
+  })}\n`);
+  process.exit(7);
+}
+
+function currentHead(item) {
+  const live = liveLifecycle(item);
+  if (live.state !== "open") closePullWithoutResponse(item, live);
+  return live.head;
+}
+
+// The lane record is a pointer, not an owner. A crash between a terminal item
+// write and its release would otherwise strand the single lane forever, so a
+// lane naming a missing, terminal, or parked item is stale and self-heals here.
 function laneRead() {
   const lane = readJson(LANE, null, 65536);
   if (!lane) return null;
   if (lane.schema !== "fm-pr-review-lane.v1" || !ID_RE.test(lane.item_id) || !ID_RE.test(lane.owner_task)) die("review lane record is invalid");
+  const path = itemPath(lane.item_id);
+  if (!existsSync(path)) {
+    rmSync(LANE, { force: true });
+    return null;
+  }
+  const owner = validateItem(readJson(path, null, 262144), lane.item_id);
+  if (isTerminal(owner) || owner.state === "opted-out") {
+    rmSync(LANE, { force: true });
+    return null;
+  }
   return lane;
 }
 
@@ -922,8 +1099,9 @@ function fetchFeedback(args) {
     chunks.push(chunk);
     start += consumed;
   }
-  const body = normalizedBody(chunks.join(""));
-  if (normalizedBody([...body].slice(0, MAX_BODY_CHARS).join("")) !== item.feedback.body) {
+  const raw = chunks.join("");
+  const body = normalizedBody(raw);
+  if (normalizedBody([...raw].slice(0, MAX_BODY_CHARS).join("")) !== item.feedback.body) {
     die("feedback prefix changed while its complete body was being fetched; poll before adjudication", 5);
   }
   const recordPath = join(BODIES, `${item.id}.json`);
@@ -1174,8 +1352,10 @@ function deliver(args) {
   if (item.state !== "response-pending" || !item.response || item.response.state !== "pending") die("item has no pending response", 4);
   deadline = Date.now() + POLL_BUDGET_MS;
   requireCoreHeadroom(MAX_PAGES + 8);
-  const current = currentHead(item);
-  if (current !== item.response.head || current !== item.head) {
+  const live = liveLifecycle(item);
+  const current = live.head;
+  const closed = live.state !== "open";
+  if (!closed && (current !== item.response.head || current !== item.head)) {
     item.head = current;
     item.generation += 1;
     item.state = "pending";
@@ -1198,7 +1378,9 @@ function deliver(args) {
   const viewer = snapshot.viewer || String(process.env.FM_PR_REVIEW_VIEWER ?? "").toLowerCase();
   if (!LOGIN_RE.test(viewer)) die("authenticated reply identity is unavailable");
   let found = existingResponse(item, viewer);
-  if (SELF_REVIEW_PUBLICATION_METHODS.has(item.response.method)) {
+  if (closed) {
+    if (!found) closePullWithoutResponse(item, live);
+  } else if (SELF_REVIEW_PUBLICATION_METHODS.has(item.response.method)) {
     const identity = livePublicationIdentity(item);
     if (identity.head !== item.response.head || identity.head !== item.head) {
       item.head = identity.head;

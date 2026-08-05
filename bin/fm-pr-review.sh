@@ -19,14 +19,22 @@
 #   fm-pr-review.sh opt-in <canonical-pr-url>
 #   fm-pr-review.sh source-id
 #
-# `arm` installs one ongoing source in this home's existing process-event runner.
-# Locked session-start bootstrap calls it automatically for the main Firstmate
-# home, so no cron job, LaunchAgent, daemon, custom watcher check, token, or
-# separate credential is needed. The source uses gh-axi and its authenticated
-# GitHub identity, sleeps until its durable slow-poll deadline, and remains
-# silent when the relevant PR set, exact heads, feedback identities, and queue
-# actionability are unchanged. An unchanged poll makes no model call and starts
-# no worker.
+# `arm` installs one source in this home's existing process-event runner. Every
+# captured result classifies terminal, so the runner retires that registration
+# and coverage resumes only when the adjudication owner re-arms after handling
+# the result or the next locked session-start bootstrap re-arms it. Bootstrap
+# calls `arm` automatically for the main Firstmate home, so no cron job,
+# LaunchAgent, daemon, custom watcher check, token, or separate credential is
+# needed. The source uses gh-axi and its authenticated GitHub identity, sleeps
+# until its durable slow-poll deadline, and remains silent when the relevant PR
+# set, exact heads, feedback identities, and queue actionability are unchanged.
+# An unchanged poll makes no model call and starts no worker. A pull request
+# whose live detail read answers closed is omitted; a read, pagination, or
+# schema failure for one open pull request keeps that pull request's last
+# covered head and feedback cursor, records the failure in the snapshot,
+# announces one deduplicated diagnostic, and lets the rest of the inventory
+# reconcile. Authentication, rate, and total-deadline failures still fail the
+# whole poll without publishing a partial inventory.
 #
 # `opt-out` is the explicit durable captain-takeover control for one canonical
 # pull request. It parks nonterminal work while preserving the last covered head
@@ -42,7 +50,15 @@
 # feedback prefix is completed by `fetch-feedback` through bounded authenticated
 # chunks and stored privately before adjudication. Completion and response
 # delivery re-read the exact GitHub head. A moved head requeues the same
-# item at a new generation, and a failed reply keeps one already-bound response
+# item at a new generation. A live read that finds the pull request closed or
+# merged ends the item with the terminal outcome pull-closed-without-response and
+# exit 7 at every completion boundary, discards any pending public response,
+# releases the lane, and never posts after closure; a response GitHub already
+# accepted is still reconciled instead. Observing that pull request open again
+# resumes exactly those closed items at a new generation, whether or not the
+# covered head moved and whether or not the item's head was requeued away from
+# the head it was created at, and leaves every other terminal outcome and the
+# live review owner alone. A failed reply keeps one already-bound response
 # for retry instead of rerunning a correction. Delivery first searches the
 # original thread for the response's self-authored exact-body binding marker, so
 # a crash after GitHub accepted the response is reconciled without knowingly
@@ -55,8 +71,9 @@
 # fm-pr-review-validation.v1, owner_task matching the claim, the exact head,
 # result checks-green or selected-lifecycle-passed, and a focused proof string.
 # The only terminal feedback outcomes are fixed-and-replied,
-# dismissed-and-replied, duplicate-and-replied, superseded-and-replied, and
-# captain-decision-pending. A captain decision stages no outward response.
+# dismissed-and-replied, duplicate-and-replied, superseded-and-replied,
+# captain-decision-pending, and pull-closed-without-response. A captain decision
+# stages no outward response.
 # An authored initial review records clean privately or stages supported findings
 # with `complete-review --outcome findings` for its owning implementation task;
 # after correction, `findings-corrected` completes that same private review. It

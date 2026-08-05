@@ -224,6 +224,10 @@ case "$endpoint" in
     repo_number=${clean#/repos/}; repo=${repo_number%%/pulls/*};
     if [ "$repo" = "$repo_number" ]; then repo=${repo_number%%/issues/*}; fi
     number=$(printf '%s' "$clean" | sed -E 's#^.*/(pulls|issues)/([0-9]+).*$#\2#')
+    if [ "$method" = GET ] && [ "${FM_FAKE_READ_FAIL_PR:-}" = "$number" ]; then
+      printf 'server error\n' >&2
+      exit 1
+    fi
     if [ "$method" = POST ]; then
       [ "${FM_FAKE_POST_FAIL:-0}" = 0 ] || exit 1
       body=
@@ -266,6 +270,7 @@ SH
 chmod +x "$FAKEBIN/gh-axi"
 cat > "$FAKEBIN/gh" <<'SH'
 #!/usr/bin/env bash
+[ -z "${FM_FAKE_GH_AUTH_LOG:-}" ] || printf '%s\n' "$*" >> "$FM_FAKE_GH_AUTH_LOG"
 case "${1-} ${2-}" in
   'auth status') exit 0 ;;
 esac
@@ -334,6 +339,131 @@ FM_PR_REVIEW_CURRENT_HEAD="$sha_a" run_review "$H_PAGE" resolve-feedback "$LONG_
   --reply-file "$TMP/long-reply.md" >/dev/null || fail "complete exact-node feedback could not be adjudicated"
 pass "bounded pagination covers multiple PR, review, inline-thread, and conversation pages"
 
+# A truncated body whose bounded prefix carries CRLF line endings or leading
+# whitespace must still reconstruct. The independent oracle is the exact GitHub
+# body text; normalizing before slicing would shift the 100-character window and
+# make the reconstructed prefix disagree with the stored one forever.
+printf 'Exact-head %s evidence disproves this claim across the complete production path.\n' "$sha_a" > "$TMP/crlf-evidence.md"
+printf 'Dismissed at exact head %s after the complete exact-node body was verified.\n' "$sha_a" > "$TMP/crlf-reply.md"
+crlf_case() { # <name> <node> <jq-body-expression> <expected-start> <expected-end>
+  local name=$1 node=$2 expression=$3 start=$4 tail=$5 home inline id record
+  home="$TMP/$name"; new_home "$home"
+  inline=$(jq -cn --arg head "$sha_a" --arg node "$node" \
+    "[{id:401,node_id:\$node,body:($expression),commit_id:\$head,updated_at:\"2026-01-01T04:00:00Z\",user:{login:\"human\",type:\"User\"}}]")
+  make_dataset "[$(pull_json 1 captain "$sha_a" '["authored"]' '[]' "$inline" '[]')]"
+  : > "$GITHUB_LOG"
+  run_fake_poll "$home" 1210 >/dev/null || fail "$node feedback discovery failed"
+  id=$(item_id_for "$home" feedback)
+  run_review "$home" show "$id" | jq -e '.feedback.body_truncated==true' >/dev/null \
+    || fail "$node was not disclosed as truncated beyond the bounded prefix"
+  run_review "$home" claim "$id" --owner-task "$name-owner" >/dev/null || fail "$node could not be claimed"
+  record=$(PATH="$FAKEBIN:$PATH" FM_FAKE_DATASET="$DATASET" FM_FAKE_GH_LOG="$GITHUB_LOG" \
+    run_review "$home" fetch-feedback "$id") \
+    || fail "$node exact body could not be reconstructed through the bounded prefix comparison"
+  jq -e --arg start "$start" --arg tail "$tail" '
+    .schema=="fm-pr-review-feedback-body.v1" and (.body|test("\r")|not)
+    and (.body|startswith($start)) and (.body|endswith($tail)) and (.body|length)>600' \
+    "$(printf '%s' "$record" | jq -r '.path')" >/dev/null \
+    || fail "$node exact body record did not preserve the complete normalized claim"
+  FM_PR_REVIEW_CURRENT_HEAD="$sha_a" run_review "$home" resolve-feedback "$id" \
+    --head "$sha_a" --generation 1 --verdict dismissed --evidence-file "$TMP/crlf-evidence.md" \
+    --reply-file "$TMP/crlf-reply.md" >/dev/null || fail "$node could not be adjudicated after reconstruction"
+}
+crlf_case crlf-home IC_crlf \
+  '"  \r\nThe retry path drops the final write when the peer closes early.\r\nIt reproduces at this exact head under a slow reader.\r\n" + ([range(0;12)|"Additional exact-head evidence for the same claim.\r\n"]|join(""))' \
+  'The retry path' 'same claim.'
+crlf_case leading-space-home IC_lead \
+  '"    The assignment order still races the cache invalidation on this path.\n" + ([range(0;12)|"Additional exact-head evidence for the same lead.\n"]|join(""))' \
+  'The assignment order' 'same lead.'
+pass "CRLF and leading-whitespace truncated bodies reconstruct and adjudicate at the exact node"
+
+# A candidate merged or closed between the lagging search index and the detail
+# read is omitted only because the live detail read answered closed; the rest of
+# the account inventory still reconciles.
+H_CLOSED="$TMP/closed-home"; new_home "$H_CLOSED"
+CLOSED_PULL=$(pull_json 20 captain "$sha_a" '["authored"]' | jq -c '.state="closed"')
+OPEN_PULL=$(pull_json 21 captain "$sha_a" '["authored"]')
+make_dataset "[$CLOSED_PULL,$OPEN_PULL]"
+: > "$GITHUB_LOG"
+run_fake_poll "$H_CLOSED" 1220 >/dev/null || fail "a stale closed search hit aborted the whole account inventory"
+item_json "$H_CLOSED" initial-review | jq -e 'length==1 and .[0].number==21' >/dev/null \
+  || fail "close-during-search did not isolate to the closed pull request"
+jq -e '(.pulls|keys)==["https://github.com/acme/widgets/pull/21"]' "$H_CLOSED/state/pr-review/snapshot.json" >/dev/null \
+  || fail "a live-closed pull request stayed in the covered inventory"
+pass "a pull request closed between search and detail is omitted after its live closed-state read"
+
+# One pull request's read failure never ends account-wide coverage. Its previous
+# durable cursor and queued work survive, the failure is announced once and stays
+# durably visible, and unaffected pull requests keep reconciling.
+H_ISOLATE="$TMP/isolate-home"; new_home "$H_ISOLATE"
+isolate_inline() { # <id> <node> <body>
+  jq -cn --arg head "$sha_a" --argjson id "$1" --arg node "$2" --arg body "$3" \
+    '[{id:$id,node_id:$node,body:$body,commit_id:$head,updated_at:"2026-01-01T05:00:00Z",user:{login:"human",type:"User"}}]'
+}
+isolate_dataset() { # <second-pr-inline>
+  make_dataset "[$(pull_json 1 captain "$sha_a" '["authored"]' '[]' "$(isolate_inline 601 IC_isolated 'The retained claim must survive an isolated read failure.')" '[]'),$(pull_json 2 captain "$sha_a" '["authored"]' '[]' "$1" '[]')]"
+}
+isolate_dataset "$(isolate_inline 701 IC_healthy 'The unaffected pull request must keep reconciling.')"
+: > "$GITHUB_LOG"
+isolate_event=$(run_fake_poll "$H_ISOLATE" 1230) || fail "isolation baseline poll failed"
+run_review "$H_ISOLATE" acknowledge-event "$(printf '%s' "$isolate_event" | jq -r '.event_id')" >/dev/null
+[ "$(item_json "$H_ISOLATE" feedback | jq 'length')" -eq 2 ] || fail "isolation baseline did not cover both pull requests"
+ISOLATE_BASE=$(jq -c '.pulls["https://github.com/acme/widgets/pull/1"]|{covered_head,covered_feedback}' "$H_ISOLATE/state/pr-review/snapshot.json")
+
+isolate_inline_new=$(jq -cn --arg head "$sha_a" \
+  '[{id:701,node_id:"IC_healthy",body:"The unaffected pull request must keep reconciling.",commit_id:$head,updated_at:"2026-01-01T05:00:00Z",user:{login:"human",type:"User"}},
+    {id:702,node_id:"IC_healthy_new",body:"A later claim on the unaffected pull request.",commit_id:$head,updated_at:"2026-01-01T05:10:00Z",user:{login:"human",type:"User"}}]')
+isolate_dataset "$isolate_inline_new"
+: > "$GITHUB_LOG"
+degraded_event=$(FM_FAKE_READ_FAIL_PR=1 run_fake_poll "$H_ISOLATE" 1231) \
+  || fail "one pull request's read failure aborted the whole account inventory"
+printf '%s' "$degraded_event" | jq -e '.degraded==1 and (.message|contains("acme/widgets/pull/1"))' >/dev/null \
+  || fail "the isolated read failure was hidden instead of announced: $degraded_event"
+item_json "$H_ISOLATE" feedback | jq -e 'any(.[]; .feedback.node_id=="IC_healthy_new")' >/dev/null \
+  || fail "an isolated read failure blocked coverage of an unaffected pull request"
+item_json "$H_ISOLATE" feedback | jq -e 'any(.[]; .feedback.node_id=="IC_isolated")' >/dev/null \
+  || fail "an isolated read failure erased previously queued coverage"
+jq -c '.pulls["https://github.com/acme/widgets/pull/1"]|{covered_head,covered_feedback}' "$H_ISOLATE/state/pr-review/snapshot.json" \
+  | grep -Fqx "$ISOLATE_BASE" || fail "an isolated read failure discarded the previous durable cursor"
+jq -e '.pulls["https://github.com/acme/widgets/pull/1"].degraded.category=="github-read"' \
+  "$H_ISOLATE/state/pr-review/snapshot.json" >/dev/null \
+  || fail "the isolated read failure was silently treated as a complete inventory"
+run_review "$H_ISOLATE" acknowledge-event "$(printf '%s' "$degraded_event" | jq -r '.event_id')" >/dev/null
+ISOLATE_CLAIM=$(item_id_for "$H_ISOLATE" initial-review 2)
+run_review "$H_ISOLATE" claim "$ISOLATE_CLAIM" --owner-task isolation-owner >/dev/null
+set +e
+repeat_degraded=$(FM_FAKE_READ_FAIL_PR=1 run_fake_poll "$H_ISOLATE" 1232 2>/dev/null)
+repeat_degraded_rc=$?
+set -e
+[ "$repeat_degraded_rc" -eq 3 ] && [ -z "$repeat_degraded" ] \
+  || fail "an unchanged isolated read failure re-announced instead of deduplicating"
+jq -e '.pulls["https://github.com/acme/widgets/pull/1"].degraded.category=="github-read"' \
+  "$H_ISOLATE/state/pr-review/snapshot.json" >/dev/null \
+  || fail "a deduplicated isolated read failure stopped being durably visible"
+run_fake_poll "$H_ISOLATE" 1233 >/dev/null 2>&1 || true
+jq -e '.pulls["https://github.com/acme/widgets/pull/1"]|has("degraded")|not' \
+  "$H_ISOLATE/state/pr-review/snapshot.json" >/dev/null \
+  || fail "a recovered pull request stayed marked degraded"
+pass "one pull request's read failure stays isolated, announced once, durable, and non-destructive"
+
+# The isolated-read notice must stay inside the window its own consumer enforces.
+# The independent oracle is the adapter's verdict on the emitted result, not a
+# copy of the message-building code.
+H_CLAMP="$TMP/clamp-home"; new_home "$H_CLAMP"
+CLAMP_REPO="$(jq -rn '[range(0;100)|"a"]|join("")')/$(jq -rn '[range(0;100)|"b"]|join("")')"
+CLAMP_DEGRADED=$(jq -cn --arg repo "$CLAMP_REPO" \
+  '[range(1;6)|{repository:$repo,number:.,category:"pagination-bound",message:"GitHub pagination exceeded the configured page bound."}]')
+CLAMP_OBS="$TMP/clamp.json"
+jq -n --argjson pulls "[$(pull_json 1 captain "$sha_a" '["authored"]')]" --argjson degraded "$CLAMP_DEGRADED" \
+  '{schema:"fm-pr-review-observation.v1",viewer:"captain",observed_at:1900,pulls:$pulls,degraded:$degraded}' > "$CLAMP_OBS"
+clamp_event=$(poll_fixture "$H_CLAMP" "$CLAMP_OBS" 1900) || fail "a wide isolated-read diagnostic failed the poll"
+printf '%s' "$clamp_event" | jq -e '.degraded==5 and (.message|length)>0 and (.message|length)<=1000' >/dev/null \
+  || fail "the isolated-read diagnostic left its bounded message window: $(printf '%s' "$clamp_event" | jq -r '.message|length')"
+printf '%s\n' "$clamp_event" > "$TMP/clamp-result.json"
+[ "$("$ADAPTER" classify "$TMP/clamp-result.json")" = work ] \
+  || fail "the bounded diagnostic became unactionable at its own consumer"
+pass "a wide isolated-read diagnostic stays inside the adapter's bounded message window"
+
 # --- Resolution helper driven through the fake GitHub write boundary --------
 write_proof_files() {
   local dir=$1 head=$2
@@ -358,6 +488,15 @@ fake_deliver() {
     FM_PR_REVIEW_CURRENT_HEAD="$sha_a" FM_PR_REVIEW_VIEWER=captain \
     FM_PR_REVIEW_PAGE_SIZE=2 FM_PR_REVIEW_FEEDBACK_PAGE_SIZE=2 FM_PR_REVIEW_MAX_PAGES=4 \
     FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" "$PR_REVIEW" deliver "$id" "$@"
+}
+
+# A pending notification is re-announced instead of reconciled, so a fixture that
+# needs the next poll to actually reconcile drains the outstanding one first.
+drain_pending_event() { # <home> <fixture> <now>
+  local out id
+  out=$(poll_fixture "$1" "$2" "$3" 2>/dev/null) || true
+  id=$(printf '%s' "$out" | jq -r '.event_id // empty' 2>/dev/null || true)
+  [ -z "$id" ] || run_review "$1" acknowledge-event "$id" >/dev/null
 }
 
 make_inline_home() { # <name> <node-id> <body>
@@ -594,6 +733,395 @@ run_review "$H_MOVE" show "$MOVE_ID" | jq -e --arg head "$sha_b" '.state=="pendi
   || fail "head movement retained stale evidence or response state"
 pass "head movement during verification invalidates evidence and requeues the same finding generation"
 
+# --- Closure or merge ends the item at every completion boundary ------------
+# The independent oracle is the live lifecycle answer plus three separately
+# checked effects: the durable outcome, the freed one-at-a-time lane, and the
+# GitHub operation log. Treating closure as an unrecoverable error would leave
+# the item claimed and the single lane occupied forever.
+closed_lane_free() { # <home> <label>
+  [ ! -e "$1/state/pr-review/lane.json" ] || fail "$2 kept the one-at-a-time lane after closure"
+}
+# Every closure boundary answers through the real gh-axi read against a dataset
+# whose pull request is closed, never through a head override.
+close_dataset_at() { # <head>
+  make_dataset "[$(pull_json 1 captain "$1" '["authored"]' '[]' '[]' '[]' | jq -c '.state="closed"')]"
+  : > "$GITHUB_LOG"
+}
+close_dataset() { close_dataset_at "$sha_a"; }
+fake_review() { # <home> <args...>
+  local home=$1
+  shift
+  PATH="$FAKEBIN:$PATH" FM_FAKE_DATASET="$DATASET" FM_FAKE_GH_LOG="$GITHUB_LOG" \
+    FM_PR_REVIEW_VIEWER=captain \
+    FM_PR_REVIEW_PAGE_SIZE=2 FM_PR_REVIEW_FEEDBACK_PAGE_SIZE=2 FM_PR_REVIEW_MAX_PAGES=4 \
+    FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" "$PR_REVIEW" "$@"
+}
+assert_closed_item() { # <home> <item-id> <label>
+  run_review "$1" show "$2" | jq -e --arg head "$sha_a" '
+    .state=="terminal" and .outcome=="pull-closed-without-response" and .response==null
+    and .closure.live_state=="closed" and .closure.covered_head==$head and .head==$head' >/dev/null \
+    || fail "$3 did not reach a durable pull-closed-without-response outcome"
+}
+
+H_CLOSE=$(make_inline_home closed-boundary-home IC_closed 'This claim outlives its own pull request.')
+CLOSE_FEEDBACK_ID=$(item_id_for "$H_CLOSE" feedback)
+claim_item "$H_CLOSE" "$CLOSE_FEEDBACK_ID" closed-feedback-owner >/dev/null
+close_dataset
+set +e
+close_resolve_out=$(fake_review "$H_CLOSE" resolve-feedback "$CLOSE_FEEDBACK_ID" --head "$sha_a" --generation 1 \
+  --verdict dismissed --evidence-file "$TMP/evidence.md" --reply-file "$TMP/dismissed-reply.md" 2>/dev/null)
+close_resolve_rc=$?
+set -e
+[ "$close_resolve_rc" -eq 7 ] || fail "resolve-feedback on a closed pull request did not end the item, got $close_resolve_rc"
+assert_contains "$close_resolve_out" '"response":"withheld"' "closed-pull resolution did not report a withheld response"
+assert_closed_item "$H_CLOSE" "$CLOSE_FEEDBACK_ID" "closed-pull feedback resolution"
+closed_lane_free "$H_CLOSE" "closed-pull feedback resolution"
+assert_no_grep 'POST ' "$GITHUB_LOG" "closed-pull feedback resolution wrote to GitHub"
+
+CLOSE_REVIEW_ID=$(item_id_for "$H_CLOSE" initial-review)
+claim_item "$H_CLOSE" "$CLOSE_REVIEW_ID" closed-review-owner >/dev/null \
+  || fail "a closed pull request wedged the lane against the next queued item"
+close_dataset
+set +e
+fake_review "$H_CLOSE" complete-review "$CLOSE_REVIEW_ID" --head "$sha_a" --generation 1 \
+  --outcome clean --evidence-file "$TMP/evidence.md" >/dev/null 2>&1
+close_review_rc=$?
+set -e
+[ "$close_review_rc" -eq 7 ] || fail "complete-review on a closed pull request did not end the item, got $close_review_rc"
+assert_closed_item "$H_CLOSE" "$CLOSE_REVIEW_ID" "closed-pull initial review"
+closed_lane_free "$H_CLOSE" "closed-pull initial review"
+set +e
+run_review "$H_CLOSE" claim "$CLOSE_REVIEW_ID" --owner-task closed-review-owner >/dev/null 2>&1
+close_reclaim_rc=$?
+set -e
+[ "$close_reclaim_rc" -ne 0 ] || fail "a closed pull request's terminal item was handed out again"
+
+# Delivery never posts after closure, and the crash seam proves a stale lane
+# pointing at a terminal item self-heals instead of wedging the queue.
+H_CLOSE_DELIVER=$(make_inline_home closed-deliver-home IC_closed_deliver 'A staged reply must not survive closure.')
+drain_pending_event "$H_CLOSE_DELIVER" "$TMP/closed-deliver-home.json" 1301
+CLOSE_DELIVER_ID=$(item_id_for "$H_CLOSE_DELIVER" feedback)
+claim_item "$H_CLOSE_DELIVER" "$CLOSE_DELIVER_ID" closed-deliver-owner >/dev/null
+FM_PR_REVIEW_CURRENT_HEAD="$sha_a" run_review "$H_CLOSE_DELIVER" resolve-feedback "$CLOSE_DELIVER_ID" \
+  --head "$sha_a" --generation 1 --verdict dismissed --evidence-file "$TMP/evidence.md" \
+  --reply-file "$TMP/dismissed-reply.md" >/dev/null || fail "closed-delivery fixture could not stage its reply"
+close_dataset
+set +e
+FM_PR_REVIEW_TEST_CRASH_AT=after-pull-closed fake_review "$H_CLOSE_DELIVER" deliver "$CLOSE_DELIVER_ID" >/dev/null 2>&1
+close_deliver_crash_rc=$?
+set -e
+[ "$close_deliver_crash_rc" -eq 99 ] || fail "closed-pull delivery crash seam did not cut after the durable outcome"
+assert_closed_item "$H_CLOSE_DELIVER" "$CLOSE_DELIVER_ID" "closed-pull delivery"
+assert_no_grep 'POST ' "$GITHUB_LOG" "closed-pull delivery posted a response after closure"
+assert_present "$H_CLOSE_DELIVER/state/pr-review/lane.json" "closed-pull delivery crash seam cut too late to prove lane recovery"
+# The poll's actionability must read the lane the same way every other command
+# does. A stale lane naming a terminal item would otherwise hide the still-queued
+# review behind an occupancy that no longer exists, and the commands that would
+# have repaired it are exactly the ones the suppressed wake never prompts.
+STALE_LANE_OBS="$TMP/stale-lane-inventory.json"; write_observation "$STALE_LANE_OBS" 1310 '[]'
+stale_lane_event=$(poll_fixture "$H_CLOSE_DELIVER" "$STALE_LANE_OBS" 1310) \
+  || fail "a stale lane naming a terminal item silenced still-pending queue work"
+printf '%s' "$stale_lane_event" | jq -e '.pending>=1' >/dev/null \
+  || fail "the pending-work wake did not report the queued item behind the stale lane"
+run_review "$H_CLOSE_DELIVER" acknowledge-event "$(printf '%s' "$stale_lane_event" | jq -r '.event_id')" >/dev/null
+closed_lane_free "$H_CLOSE_DELIVER" "a crash between the terminal write and the lane release"
+set +e
+fake_review "$H_CLOSE_DELIVER" deliver "$CLOSE_DELIVER_ID" >/dev/null 2>&1
+close_deliver_replay_rc=$?
+set -e
+[ "$close_deliver_replay_rc" -ne 0 ] || fail "a closed pull request's discarded response became deliverable again"
+assert_no_grep 'POST ' "$GITHUB_LOG" "closed-pull delivery replay posted after closure"
+
+# A response GitHub already accepted before closure is still reconciled, not
+# reported as withheld, and is never posted a second time.
+H_CLOSE_ACCEPT=$(make_inline_home closed-accepted-home IC_closed_accepted 'An accepted reply must survive later closure.')
+CLOSE_ACCEPT_ID=$(item_id_for "$H_CLOSE_ACCEPT" feedback)
+claim_item "$H_CLOSE_ACCEPT" "$CLOSE_ACCEPT_ID" closed-accept-owner >/dev/null
+FM_PR_REVIEW_CURRENT_HEAD="$sha_a" run_review "$H_CLOSE_ACCEPT" resolve-feedback "$CLOSE_ACCEPT_ID" \
+  --head "$sha_a" --generation 1 --verdict dismissed --evidence-file "$TMP/evidence.md" \
+  --reply-file "$TMP/dismissed-reply.md" >/dev/null || fail "closed-acceptance fixture could not stage its reply"
+make_dataset "[$(pull_json 1 captain "$sha_a" '["authored"]' '[]' '[]' '[]')]"; : > "$GITHUB_LOG"
+set +e
+FM_PR_REVIEW_TEST_CRASH_AT=after-post fake_deliver "$H_CLOSE_ACCEPT" "$CLOSE_ACCEPT_ID" >/dev/null 2>&1
+close_accept_rc=$?
+set -e
+[ "$close_accept_rc" -eq 99 ] || fail "closed-acceptance fixture did not cut after GitHub acceptance"
+CLOSE_ACCEPT_DATASET=$(jq -c '.pulls |= map(.state="closed")' "$DATASET")
+printf '%s\n' "$CLOSE_ACCEPT_DATASET" > "$DATASET"
+fake_review "$H_CLOSE_ACCEPT" deliver "$CLOSE_ACCEPT_ID" >/dev/null \
+  || fail "closure discarded a response GitHub had already accepted"
+run_review "$H_CLOSE_ACCEPT" show "$CLOSE_ACCEPT_ID" | jq -e '
+  .state=="terminal" and .outcome=="dismissed-and-replied" and .response.state=="delivered"' >/dev/null \
+  || fail "an accepted response was reported as withheld after closure"
+[ "$(grep -c 'POST .*replies' "$GITHUB_LOG" || true)" -eq 1 ] \
+  || fail "post-acceptance closure reconciliation posted a second reply"
+closed_lane_free "$H_CLOSE_ACCEPT" "post-acceptance closure reconciliation"
+pass "a closed or merged pull request ends its item without a response and frees the lane at every boundary"
+
+# --- Reopening restores coverage for exactly the closed items ---------------
+# The independent oracle is the fixture's own relevant identity set: an open PR
+# at a relevant exact head owes one queued review and one response per still
+# unanswered external claim. Recreating by id alone, or reactivating on any
+# terminal outcome, would each make one of these assertions fail.
+drop_from_inventory() { # <home> <now>
+  local empty="$TMP/empty-inventory.json"
+  write_observation "$empty" "$2" '[]'
+  drain_pending_event "$1" "$empty" "$2"
+  drain_pending_event "$1" "$empty" "$(($2 + 1))"
+}
+
+# H_CLOSE ended both its review and its feedback item through the live closed
+# read above, so it is the realistic close-then-reopen subject.
+drop_from_inventory "$H_CLOSE" 1320
+jq -e '(.pulls|length)==0' "$H_CLOSE/state/pr-review/snapshot.json" >/dev/null \
+  || fail "a closed pull request stayed in the covered inventory"
+reopen_event=$(poll_fixture "$H_CLOSE" "$TMP/closed-boundary-home.json" 1321) \
+  || fail "a reopened pull request produced no coverage"
+assert_contains "$reopen_event" '"changed":2' "reopening did not restore both the review and the unanswered claim"
+for id in "$CLOSE_REVIEW_ID" "$CLOSE_FEEDBACK_ID"; do
+  run_review "$H_CLOSE" show "$id" | jq -e --arg head "$sha_a" '
+    .state=="pending" and .outcome==null and .head==$head and .generation==2
+    and (has("closure")|not) and .reopened_from.closure.live_state=="closed"' >/dev/null \
+    || fail "reopened item $id did not resume as a new durable generation at the same head"
+done
+[ "$(item_json "$H_CLOSE" initial-review | jq 'length')" -eq 1 ] || fail "reopening duplicated the review item"
+[ "$(item_json "$H_CLOSE" feedback | jq 'length')" -eq 1 ] || fail "reopening duplicated the feedback item"
+closed_lane_free "$H_CLOSE" "reopening"
+
+# A repeated poll of the same reopened pull request must not bump the generation
+# again, and a crash between item publication and the covered cursor must replay
+# into exactly one reactivation.
+run_review "$H_CLOSE" acknowledge-event "$(printf '%s' "$reopen_event" | jq -r '.event_id')" >/dev/null
+poll_fixture "$H_CLOSE" "$TMP/closed-boundary-home.json" 1322 >/dev/null 2>&1 || true
+run_review "$H_CLOSE" show "$CLOSE_REVIEW_ID" | jq -e '.generation==2 and .state=="pending"' >/dev/null \
+  || fail "an unchanged reopened pull request reactivated twice"
+
+H_REOPEN_CRASH=$(make_inline_home reopen-crash-home IC_reopen_crash 'A reopened claim must replay exactly once.')
+REOPEN_CRASH_ID=$(item_id_for "$H_REOPEN_CRASH" feedback)
+claim_item "$H_REOPEN_CRASH" "$REOPEN_CRASH_ID" reopen-crash-owner >/dev/null
+close_dataset
+set +e
+fake_review "$H_REOPEN_CRASH" resolve-feedback "$REOPEN_CRASH_ID" --head "$sha_a" --generation 1 \
+  --verdict dismissed --evidence-file "$TMP/evidence.md" --reply-file "$TMP/dismissed-reply.md" >/dev/null 2>&1
+reopen_crash_close_rc=$?
+set -e
+[ "$reopen_crash_close_rc" -eq 7 ] || fail "reopen crash fixture could not reach a closed outcome"
+drop_from_inventory "$H_REOPEN_CRASH" 1330
+set +e
+FM_PR_REVIEW_TEST_CRASH_AT=after-items poll_fixture "$H_REOPEN_CRASH" "$TMP/reopen-crash-home.json" 1331 >/dev/null 2>&1
+reopen_crash_rc=$?
+set -e
+[ "$reopen_crash_rc" -eq 99 ] || fail "reopen crash seam did not cut before the covered cursor"
+run_review "$H_REOPEN_CRASH" show "$REOPEN_CRASH_ID" | jq -e '.state=="pending" and .generation==2' >/dev/null \
+  || fail "the reopen crash seam cut before the item was durable"
+poll_fixture "$H_REOPEN_CRASH" "$TMP/reopen-crash-home.json" 1332 >/dev/null 2>&1 || true
+run_review "$H_REOPEN_CRASH" show "$REOPEN_CRASH_ID" | jq -e '.state=="pending" and .generation==2' >/dev/null \
+  || fail "reopen replay reactivated the same item twice"
+
+# Every other terminal disposition survives a reopen untouched: an answered claim
+# is never reopened and never re-created as a fresh duplicate.
+H_ANSWERED=$(make_inline_home answered-reopen-home IC_answered 'An answered claim must stay answered across a reopen.')
+ANSWERED_ID=$(item_id_for "$H_ANSWERED" feedback)
+claim_item "$H_ANSWERED" "$ANSWERED_ID" answered-reopen-owner >/dev/null
+FM_PR_REVIEW_CURRENT_HEAD="$sha_a" run_review "$H_ANSWERED" resolve-feedback "$ANSWERED_ID" \
+  --head "$sha_a" --generation 1 --verdict dismissed --evidence-file "$TMP/evidence.md" \
+  --reply-file "$TMP/dismissed-reply.md" >/dev/null || fail "answered-reopen fixture could not stage its reply"
+make_dataset "[$(pull_json 1 captain "$sha_a" '["authored"]' '[]' '[]' '[]')]"; : > "$GITHUB_LOG"
+fake_deliver "$H_ANSWERED" "$ANSWERED_ID" >/dev/null || fail "answered-reopen fixture could not deliver"
+drop_from_inventory "$H_ANSWERED" 1340
+poll_fixture "$H_ANSWERED" "$TMP/answered-reopen-home.json" 1341 >/dev/null 2>&1 || true
+run_review "$H_ANSWERED" show "$ANSWERED_ID" | jq -e '
+  .state=="terminal" and .outcome=="dismissed-and-replied" and .generation==1
+  and (has("reopened_from")|not)' >/dev/null \
+  || fail "a reopen reactivated an already-answered claim"
+[ "$(item_json "$H_ANSWERED" feedback | jq 'length')" -eq 1 ] \
+  || fail "a reopen re-created an already-answered claim as a duplicate"
+[ "$(grep -c 'POST .*replies' "$GITHUB_LOG" || true)" -eq 1 ] \
+  || fail "a reopen produced a second response for an already-answered claim"
+
+# A close and reopen that both happen between two polls never reaches the covered
+# cursor, so the exact-head review must be restored without relying on the pull
+# request having left the inventory first. The independent oracle is the intent's
+# own rule: an observed open PR at a relevant exact head owes one queued private
+# review. Gating reactivation on a changed covered head makes this fail while the
+# feedback item beside it is still restored.
+H_REOPEN_INPLACE=$(make_inline_home reopen-inplace-home IC_reopen_inplace 'A claim beside an unobserved close and reopen.')
+drain_pending_event "$H_REOPEN_INPLACE" "$TMP/reopen-inplace-home.json" 1350
+REOPEN_INPLACE_REVIEW=$(item_id_for "$H_REOPEN_INPLACE" initial-review)
+REOPEN_INPLACE_FEEDBACK=$(item_id_for "$H_REOPEN_INPLACE" feedback)
+jq -e --arg head "$sha_a" '.pulls["https://github.com/acme/widgets/pull/1"].covered_head==$head' \
+  "$H_REOPEN_INPLACE/state/pr-review/snapshot.json" >/dev/null \
+  || fail "the in-place reopen fixture did not establish a covered exact head"
+claim_item "$H_REOPEN_INPLACE" "$REOPEN_INPLACE_REVIEW" reopen-inplace-owner >/dev/null
+close_dataset
+set +e
+fake_review "$H_REOPEN_INPLACE" complete-review "$REOPEN_INPLACE_REVIEW" --head "$sha_a" --generation 1 \
+  --outcome clean --evidence-file "$TMP/evidence.md" >/dev/null 2>&1
+reopen_inplace_close_rc=$?
+set -e
+[ "$reopen_inplace_close_rc" -eq 7 ] || fail "the in-place reopen fixture could not close at a completion boundary"
+jq -e --arg head "$sha_a" '.pulls["https://github.com/acme/widgets/pull/1"].covered_head==$head' \
+  "$H_REOPEN_INPLACE/state/pr-review/snapshot.json" >/dev/null \
+  || fail "closing at a completion boundary unexpectedly moved the covered cursor"
+reopen_inplace_event=$(poll_fixture "$H_REOPEN_INPLACE" "$TMP/reopen-inplace-home.json" 1351) \
+  || fail "a pull request closed and reopened between polls regained no exact-head review"
+assert_contains "$reopen_inplace_event" '"changed":1' "the unobserved close and reopen restored more or less than the closed review"
+run_review "$H_REOPEN_INPLACE" show "$REOPEN_INPLACE_REVIEW" | jq -e --arg head "$sha_a" '
+  .state=="pending" and .outcome==null and .head==$head and .generation==2
+  and (has("closure")|not) and .reopened_from.closure.live_state=="closed"' >/dev/null \
+  || fail "the reopened exact-head review did not resume as a new durable generation"
+run_review "$H_REOPEN_INPLACE" show "$REOPEN_INPLACE_FEEDBACK" | jq -e '
+  .state=="pending" and .generation==1 and (has("reopened_from")|not)' >/dev/null \
+  || fail "the untouched claim beside the reopened review was disturbed"
+[ "$(item_json "$H_REOPEN_INPLACE" initial-review | jq 'length')" -eq 1 ] \
+  || fail "the in-place reopen duplicated the exact-head review"
+run_review "$H_REOPEN_INPLACE" acknowledge-event "$(printf '%s' "$reopen_inplace_event" | jq -r '.event_id')" >/dev/null
+poll_fixture "$H_REOPEN_INPLACE" "$TMP/reopen-inplace-home.json" 1352 >/dev/null 2>&1 || true
+run_review "$H_REOPEN_INPLACE" show "$REOPEN_INPLACE_REVIEW" | jq -e '.generation==2 and .state=="pending"' >/dev/null \
+  || fail "an unchanged in-place reopen reactivated twice"
+
+# Reactivation must never break the one-nonterminal-review-per-pull invariant.
+# A head that moves away and is later force-pushed back onto a previously closed
+# head has both a closed item and a live review owner at that exact head.
+H_REVERT="$TMP/revert-head-home"; new_home "$H_REVERT"
+REVERT_A="$TMP/revert-head-a.json"; write_observation "$REVERT_A" 1360 "[$(pull_json 1 captain "$sha_a" '["authored"]')]"
+REVERT_B="$TMP/revert-head-b.json"; write_observation "$REVERT_B" 1361 "[$(pull_json 1 captain "$sha_b" '["authored"]')]"
+drain_pending_event "$H_REVERT" "$REVERT_A" 1360
+REVERT_CLOSED_ID=$(item_id_for "$H_REVERT" initial-review)
+claim_item "$H_REVERT" "$REVERT_CLOSED_ID" revert-head-owner >/dev/null
+close_dataset
+set +e
+fake_review "$H_REVERT" complete-review "$REVERT_CLOSED_ID" --head "$sha_a" --generation 1 \
+  --outcome clean --evidence-file "$TMP/evidence.md" >/dev/null 2>&1
+revert_close_rc=$?
+set -e
+[ "$revert_close_rc" -eq 7 ] || fail "the force-push fixture could not close at a completion boundary"
+drain_pending_event "$H_REVERT" "$REVERT_B" 1361
+[ "$(item_json "$H_REVERT" initial-review | jq 'length')" -eq 2 ] \
+  || fail "the moved head did not create a second review owner beside the closed one"
+revert_event=$(poll_fixture "$H_REVERT" "$REVERT_A" 1362) \
+  || fail "a head force-pushed back onto a previously closed head failed the whole poll"
+printf '%s' "$revert_event" | jq -e '.category=="inventory"' >/dev/null \
+  || fail "reactivating behind a live review owner broke the private-state invariant: $revert_event"
+[ "$(run_review "$H_REVERT" list --json | jq '[.[]|select(.type=="initial-review" and .state!="terminal")]|length')" -eq 1 ] \
+  || fail "a force-pushed revert left more than one nonterminal review owning the pull request"
+run_review "$H_REVERT" show "$REVERT_CLOSED_ID" | jq -e '
+  .state=="terminal" and .outcome=="pull-closed-without-response"' >/dev/null \
+  || fail "a superseded closed review was reactivated behind the live review owner"
+
+# An item id keeps the head it was created at, while a requeue moves the item's
+# head in place. Reactivation must therefore match the head the item currently
+# records. Both supported head-movement paths are exercised: the reconcile
+# requeue and the completion-boundary requeue.
+assert_review_reactivated() { # <home> <item-id> <head> <generation> <label>
+  run_review "$1" show "$2" | jq -e --arg head "$3" --argjson generation "$4" '
+    .state=="pending" and .outcome==null and .head==$head and .generation==$generation
+    and (has("closure")|not) and .reopened_from.closure.live_state=="closed"' >/dev/null \
+    || fail "$5 did not resume the moved-head review as a new durable generation"
+  [ "$(item_json "$1" initial-review | jq 'length')" -eq 1 ] \
+    || fail "$5 left more than one exact-head review for the pull request"
+}
+
+H_MOVED_CLOSE="$TMP/moved-close-home"; new_home "$H_MOVED_CLOSE"
+MOVED_INLINE=$(jq -cn --arg head "$sha_b" \
+  '[{id:801,node_id:"IC_moved_close",body:"A claim that outlives a head move and a closure.",commit_id:$head,updated_at:"2026-01-01T06:00:00Z",user:{login:"human",type:"User"}}]')
+MOVED_A="$TMP/moved-close-a.json"; write_observation "$MOVED_A" 1370 "[$(pull_json 1 captain "$sha_a" '["authored"]')]"
+MOVED_B="$TMP/moved-close-b.json"; write_observation "$MOVED_B" 1371 "[$(pull_json 1 captain "$sha_b" '["authored"]' '[]' "$MOVED_INLINE" '[]')]"
+drain_pending_event "$H_MOVED_CLOSE" "$MOVED_A" 1370
+MOVED_REVIEW_ID=$(item_id_for "$H_MOVED_CLOSE" initial-review)
+drain_pending_event "$H_MOVED_CLOSE" "$MOVED_B" 1371
+[ "$(item_id_for "$H_MOVED_CLOSE" initial-review)" = "$MOVED_REVIEW_ID" ] \
+  || fail "the requeued review changed its durable identity, so this fixture cannot exercise creation-head divergence"
+run_review "$H_MOVED_CLOSE" show "$MOVED_REVIEW_ID" | jq -e --arg head "$sha_b" \
+  '.head==$head and .generation==2' >/dev/null \
+  || fail "the reconcile requeue did not move the review's head in place"
+MOVED_FEEDBACK_ID=$(item_id_for "$H_MOVED_CLOSE" feedback)
+claim_item "$H_MOVED_CLOSE" "$MOVED_REVIEW_ID" moved-close-owner >/dev/null
+close_dataset_at "$sha_b"
+set +e
+fake_review "$H_MOVED_CLOSE" complete-review "$MOVED_REVIEW_ID" --head "$sha_b" --generation 2 \
+  --outcome clean --evidence-file "$TMP/evidence.md" >/dev/null 2>&1
+moved_close_rc=$?
+set -e
+[ "$moved_close_rc" -eq 7 ] || fail "the moved-head fixture could not close at a completion boundary"
+jq -e --arg head "$sha_b" '.pulls["https://github.com/acme/widgets/pull/1"].covered_head==$head' \
+  "$H_MOVED_CLOSE/state/pr-review/snapshot.json" >/dev/null \
+  || fail "the moved-head fixture did not leave the covered cursor on the moved head"
+moved_reopen_event=$(poll_fixture "$H_MOVED_CLOSE" "$MOVED_B" 1372) \
+  || fail "a pull request whose head moved before closure regained no exact-head review"
+assert_contains "$moved_reopen_event" '"changed":1' "the moved-head reopen restored more or less than the closed review"
+assert_review_reactivated "$H_MOVED_CLOSE" "$MOVED_REVIEW_ID" "$sha_b" 3 "the reconcile-requeued review"
+run_review "$H_MOVED_CLOSE" show "$MOVED_FEEDBACK_ID" | jq -e '.state=="pending" and (has("reopened_from")|not)' >/dev/null \
+  || fail "the claim beside the moved-head review was disturbed"
+run_review "$H_MOVED_CLOSE" acknowledge-event "$(printf '%s' "$moved_reopen_event" | jq -r '.event_id')" >/dev/null
+poll_fixture "$H_MOVED_CLOSE" "$MOVED_B" 1373 >/dev/null 2>&1 || true
+run_review "$H_MOVED_CLOSE" show "$MOVED_REVIEW_ID" | jq -e '.generation==3 and .state=="pending"' >/dev/null \
+  || fail "an unchanged moved-head reopen reactivated twice"
+
+H_MOVED_BOUNDARY="$TMP/moved-boundary-home"; new_home "$H_MOVED_BOUNDARY"
+MB_A="$TMP/moved-boundary-a.json"; write_observation "$MB_A" 1380 "[$(pull_json 1 captain "$sha_a" '["authored"]')]"
+MB_B="$TMP/moved-boundary-b.json"; write_observation "$MB_B" 1381 "[$(pull_json 1 captain "$sha_b" '["authored"]')]"
+drain_pending_event "$H_MOVED_BOUNDARY" "$MB_A" 1380
+MB_ID=$(item_id_for "$H_MOVED_BOUNDARY" initial-review)
+claim_item "$H_MOVED_BOUNDARY" "$MB_ID" moved-boundary-owner >/dev/null
+set +e
+FM_PR_REVIEW_CURRENT_HEAD="$sha_b" run_review "$H_MOVED_BOUNDARY" complete-review "$MB_ID" \
+  --head "$sha_a" --generation 1 --outcome clean --evidence-file "$TMP/evidence.md" >/dev/null 2>&1
+mb_move_rc=$?
+set -e
+[ "$mb_move_rc" -eq 5 ] || fail "the completion-boundary head move did not requeue the review"
+run_review "$H_MOVED_BOUNDARY" show "$MB_ID" | jq -e --arg head "$sha_b" '.head==$head and .generation==2' >/dev/null \
+  || fail "the completion-boundary requeue did not move the review's head in place"
+claim_item "$H_MOVED_BOUNDARY" "$MB_ID" moved-boundary-owner >/dev/null
+close_dataset_at "$sha_b"
+set +e
+fake_review "$H_MOVED_BOUNDARY" complete-review "$MB_ID" --head "$sha_b" --generation 2 \
+  --outcome clean --evidence-file "$TMP/evidence.md" >/dev/null 2>&1
+mb_close_rc=$?
+set -e
+[ "$mb_close_rc" -eq 7 ] || fail "the boundary-requeued review could not close at a completion boundary"
+poll_fixture "$H_MOVED_BOUNDARY" "$MB_B" 1382 >/dev/null \
+  || fail "a boundary-requeued review regained no coverage after its pull request reopened"
+assert_review_reactivated "$H_MOVED_BOUNDARY" "$MB_ID" "$sha_b" 3 "the boundary-requeued review"
+
+# Two closed reviews can end up recording the same head once a head moves away,
+# a replacement is created, and the head is force-pushed back. No reactivation is
+# provably the right one, so the poll refuses deterministically instead of
+# guessing which closed item covers the reopened head.
+H_AMBIGUOUS="$TMP/ambiguous-reopen-home"; new_home "$H_AMBIGUOUS"
+AMB_A="$TMP/ambiguous-a.json"; write_observation "$AMB_A" 1390 "[$(pull_json 1 captain "$sha_a" '["authored"]')]"
+AMB_B="$TMP/ambiguous-b.json"; write_observation "$AMB_B" 1391 "[$(pull_json 1 captain "$sha_b" '["authored"]')]"
+close_at_boundary() { # <home> <item-id> <head> <generation> <owner> <label>
+  claim_item "$1" "$2" "$5" >/dev/null
+  close_dataset_at "$3"
+  set +e
+  fake_review "$1" complete-review "$2" --head "$3" --generation "$4" \
+    --outcome clean --evidence-file "$TMP/evidence.md" >/dev/null 2>&1
+  local rc=$?
+  set -e
+  [ "$rc" -eq 7 ] || fail "$6 could not close at a completion boundary"
+}
+drain_pending_event "$H_AMBIGUOUS" "$AMB_A" 1390
+AMB_FIRST=$(item_id_for "$H_AMBIGUOUS" initial-review)
+close_at_boundary "$H_AMBIGUOUS" "$AMB_FIRST" "$sha_a" 1 ambiguous-first-owner "the first ambiguous review"
+drain_pending_event "$H_AMBIGUOUS" "$AMB_B" 1391
+AMB_SECOND=$(run_review "$H_AMBIGUOUS" list --json \
+  | jq -r --arg first "$AMB_FIRST" '.[]|select(.type=="initial-review" and .id!=$first)|.id')
+[ -n "$AMB_SECOND" ] || fail "the moved head did not create a replacement review beside the closed one"
+drain_pending_event "$H_AMBIGUOUS" "$AMB_A" 1392
+run_review "$H_AMBIGUOUS" show "$AMB_SECOND" | jq -e --arg head "$sha_a" '.head==$head and .state=="pending"' >/dev/null \
+  || fail "the force-pushed revert did not move the replacement review onto the previously closed head"
+close_at_boundary "$H_AMBIGUOUS" "$AMB_SECOND" "$sha_a" 2 ambiguous-second-owner "the second ambiguous review"
+ambiguous_event=$(poll_fixture "$H_AMBIGUOUS" "$AMB_A" 1393) \
+  || fail "the ambiguous reopen produced no bounded diagnostic"
+printf '%s' "$ambiguous_event" | jq -e '.category=="private-state"' >/dev/null \
+  || fail "two closed reviews at one head were resolved by guessing instead of refusing: $ambiguous_event"
+for id in "$AMB_FIRST" "$AMB_SECOND"; do
+  run_review "$H_AMBIGUOUS" show "$id" | jq -e '.state=="terminal" and .outcome=="pull-closed-without-response"' >/dev/null \
+    || fail "an ambiguous closed review was reactivated despite the refusal"
+done
+pass "reopening restores coverage for closed items only and leaves every other terminal disposition intact"
+
 # Queue-before-snapshot crash replay creates one item, not zero or two.
 for cut in after-items after-snapshot; do
   home="$TMP/crash-$cut"; new_home "$home"
@@ -692,8 +1220,8 @@ pass "captain takeover opt-out is durable and later restoration covers interveni
 
 # --- Process-event registration, restart, supervision, and home isolation ----
 H_ARM1="$TMP/arm-home-1"; H_ARM2="$TMP/arm-home-2"; new_home "$H_ARM1"; new_home "$H_ARM2"
-FM_HOME="$H_ARM1" "$ADAPTER" arm >/dev/null || fail "first home could not arm review source"
-FM_HOME="$H_ARM2" "$ADAPTER" arm >/dev/null || fail "second home could not arm review source"
+PATH="$FAKEBIN:$PATH" FM_HOME="$H_ARM1" "$ADAPTER" arm >/dev/null || fail "first home could not arm review source"
+PATH="$FAKEBIN:$PATH" FM_HOME="$H_ARM2" "$ADAPTER" arm >/dev/null || fail "second home could not arm review source"
 SID1=$(FM_HOME="$H_ARM1" "$ADAPTER" source-id)
 SID2=$(FM_HOME="$H_ARM2" "$ADAPTER" source-id)
 [ "$SID1" != "$SID2" ] || fail "two homes shared one review source identity"
@@ -707,7 +1235,7 @@ printf '%s\n' '{"schema":"fm-pr-review-event.v1","event_id":"1900-0123456789abcd
 "$ADAPTER" terminal "$TMP/pr-review-result.json" || fail "review result did not retire its exact source generation"
 printf 'not-json\n' > "$TMP/pr-review-malformed"
 "$ADAPTER" terminal "$TMP/pr-review-malformed" >/dev/null 2>&1 && fail "malformed review result retired its source"
-FM_HOME="$H_ARM1" "$ADAPTER" arm >/dev/null || fail "restart re-arm failed"
+PATH="$FAKEBIN:$PATH" FM_HOME="$H_ARM1" "$ADAPTER" arm >/dev/null || fail "restart re-arm failed"
 [ "$(find "$H_ARM1/state/procevent" -name '*.source' | wc -l | tr -d ' ')" -eq 1 ] || fail "restart created a second source"
 sup=$(bash -c '. "$1/bin/fm-supervision-lib.sh"; fm_supervision_needed "$2" && echo yes || echo no' _ "$ROOT" "$H_ARM1/state")
 [ "$sup" = yes ] || fail "review source alone did not retain supervision"
@@ -717,21 +1245,33 @@ pass "process-event registration is restart-idempotent and isolated per Firstmat
 # skips the account-global poller.
 H_BOOT="$TMP/bootstrap-arm"; new_home "$H_BOOT"; mkdir -p "$H_BOOT/config"
 printf 'tmux\n' > "$H_BOOT/config/backend"
+GH_AUTH_LOG="$TMP/gh-auth.log"; : > "$GH_AUTH_LOG"
 PATH="$FAKEBIN:$PATH" FM_HOME="$H_BOOT" FM_ROOT_OVERRIDE="$ROOT" FM_BACKEND=tmux \
+  FM_FAKE_GH_AUTH_LOG="$GH_AUTH_LOG" \
   FM_FLEET_SYNC_BOOTSTRAP_TIMEOUT=1 "$ROOT/bin/fm-bootstrap.sh" > "$TMP/bootstrap-arm.out" \
   || fail "main-home bootstrap could not register automatic review"
 BOOT_SID=$(FM_HOME="$H_BOOT" "$ADAPTER" source-id)
 assert_present "$H_BOOT/state/procevent/$BOOT_SID.source" "locked bootstrap omitted automatic review registration"
-H_BOOT_SECOND="$TMP/bootstrap-secondmate"; new_home "$H_BOOT_SECOND"; mkdir -p "$H_BOOT_SECOND/config"
-printf 'tmux\n' > "$H_BOOT_SECOND/config/backend"
-printf 'review-mate\n' > "$H_BOOT_SECOND/.fm-secondmate-home"
-PATH="$FAKEBIN:$PATH" FM_HOME="$H_BOOT_SECOND" FM_ROOT_OVERRIDE="$ROOT" FM_BACKEND=tmux \
-  FM_FLEET_SYNC_BOOTSTRAP_TIMEOUT=1 "$ROOT/bin/fm-bootstrap.sh" > "$TMP/bootstrap-secondmate.out" \
-  || fail "secondmate bootstrap failed"
-[ ! -d "$H_BOOT_SECOND/state/procevent" ] \
-  || [ -z "$(find "$H_BOOT_SECOND/state/procevent" -name 'pr-review-*.source' -print)" ] \
-  || fail "secondmate bootstrap started a duplicate account-global review source"
-pass "locked main-home bootstrap automatically arms one account review source and secondmates do not duplicate it"
+[ "$(grep -c '^auth status' "$GH_AUTH_LOG" || true)" -eq 1 ] \
+  || fail "locked bootstrap probed GitHub authentication more than once per session start"
+for marker in plain symlink dangling; do
+  home="$TMP/bootstrap-secondmate-$marker"; new_home "$home"; mkdir -p "$home/config"
+  printf 'tmux\n' > "$home/config/backend"
+  case "$marker" in
+    plain) printf 'review-mate\n' > "$home/.fm-secondmate-home" ;;
+    symlink)
+      printf 'review-mate\n' > "$TMP/secondmate-identity"
+      ln -s "$TMP/secondmate-identity" "$home/.fm-secondmate-home" ;;
+    dangling) ln -s "$TMP/secondmate-identity-absent" "$home/.fm-secondmate-home" ;;
+  esac
+  PATH="$FAKEBIN:$PATH" FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" FM_BACKEND=tmux \
+    FM_FLEET_SYNC_BOOTSTRAP_TIMEOUT=1 "$ROOT/bin/fm-bootstrap.sh" > "$TMP/bootstrap-secondmate-$marker.out" \
+    || fail "secondmate bootstrap failed for a $marker marker"
+  [ ! -d "$home/state/procevent" ] \
+    || [ -z "$(find "$home/state/procevent" -name 'pr-review-*.source' -print)" ] \
+    || fail "a $marker secondmate marker still started a duplicate account-global review source"
+done
+pass "locked main-home bootstrap arms one account review source with one auth probe and no secondmate duplicates it"
 
 # --- Authentication and rate limits fail boundedly without corrupting state --
 H_AUTHFAIL="$TMP/auth-fail"; new_home "$H_AUTHFAIL"; make_dataset '[]'; : > "$GITHUB_LOG"

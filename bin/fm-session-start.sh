@@ -29,12 +29,11 @@
 #                       mutating step runs.
 #   2. bootstrap      - home-local stale Herdr projection cleanup runs only
 #                       when this session actually holds the lock. Detect-only
-#                       diagnostics always run. Bootstrap's seven MUTATING sweeps
-#                       (legacy PR-check migration, automatic PR-review source
-#                       registration, secondmate convergence, secondmate liveness,
-#                       pending remote handoff retry, X-mode artifact writes, fleet
-#                       sync) also run only when
-#                       locked.
+#                       diagnostics always run. Bootstrap's seven MUTATING
+#                       sweeps (legacy PR-check migration, automatic PR-review
+#                       source registration, secondmate convergence, secondmate
+#                       liveness, pending remote handoff retry, X-mode artifact
+#                       writes, fleet sync) also run only when locked.
 #   3. wake-drain     - mutates the durable wake queue, so it also only runs
 #                       when locked.
 #   4. context digest - data/projects.md, data/secondmates.md, data/captain.md,
@@ -293,8 +292,10 @@ else
 fi
 
 # --- 3. wake-drain -------------------------------------------------------
-# Drained records are this turn's first work queue (AGENTS.md section 8); the
-# drain also runs fm-guard.sh internally on the locked path, so the
+# Drained records are this turn's first work queue, and the drain's separate
+# OPEN DECISIONS section remains actionable even when that queue is empty
+# (AGENTS.md sections 3 and 8).
+# The drain also runs fm-guard.sh internally on the locked path, so the
 # tangle/watcher-liveness alarms land right here too, ahead of the bulk digest
 # below. The read-only path never touches the queue because it lacks mutation
 # authority, and another session may be actively draining it. It still runs

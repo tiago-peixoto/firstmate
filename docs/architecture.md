@@ -29,6 +29,7 @@ After each drain, `fm-wake-drain.sh` runs the same liveness guard as the supervi
 Routine watcher polling, supervision no-ops, elapsed waiting time, and absorbed benign wakes stay silent.
 A declared external wait trades that silence for one bounded recheck per pause window, so a forgotten pause cannot remain invisible indefinitely.
 Crew status files are append-only wake-event logs, not current-state fields.
+Because of that, a per-wake read of only the latest line can bury an earlier still-open `needs-decision`/`blocked` under later unrelated appends; `fm-wake-drain.sh` prints a separate, fleet-wide OPEN DECISIONS section on every drain (including the empty-queue path session-start relies on), built from `fm-classify-lib.sh`'s `status_open_decisions` fold so the buried decision keeps surfacing until it is explicitly resolved.
 `bin/fm-crew-state.sh <id>` is the cheap current-state read for an actionable heartbeat review: it attributes a no-mistakes run, active or terminal, only when it matches the crew's branch and current code identity, then keeps that run-step authoritative even if the pane has closed.
 The script header owns the exact run-head ancestry rules.
 During no-mistakes' `ci` monitor phase, it also reads the ci step log tail because `axi status` reports both "still waiting on checks" and "checks green, waiting on merge" as `ci,running`.
@@ -65,9 +66,9 @@ It suppresses failed-looking closes when the same identity-matched watcher is he
 [`watcher-continuity.md`](watcher-continuity.md) owns Claude's residual active-turn coverage and watcher-status command-gating boundary.
 The existing turn-end guard remains the final backstop for all five harness-engine protocols, with pi-signed sharing Pi's protocol and the `--claude` mode cooperating with the auto-arm claim.
 Its `--restart` mode signals only the watcher recorded in the current home's `state/.watch.lock`, so restarting one home cannot kill sibling secondmate watchers.
-A pull-based guard (`bin/fm-guard.sh`) warns through supervision tool output if the primary checkout is tangled, if work, process-event sources, or X-mode relay polling needs supervision without a healthy identity-matched watcher, or if queued wakes are waiting to be drained.
-The drain script calls that guard after emptying the queue, which avoids repeating the queued-wakes warning for records it just consumed while still warning on stale watcher liveness.
-It leads with a prominent bordered tangle banner, while `bin/fm-guard.sh` owns the stale-watcher banner/reminder policy so repeated guarded commands stay noisy without reprinting the full watcher-down banner in the same episode.
+A pull-based guard (`bin/fm-guard.sh`) warns through supervision tool output if the primary checkout is tangled, if work, process-event sources, or X-mode relay polling has an unhealthy model-aware supervision verdict, or if queued wakes are waiting to be drained.
+The drain script calls that guard after emptying the queue, which avoids repeating the queued-wakes warning for records it just consumed while still warning on unhealthy supervision.
+It leads with a prominent bordered tangle banner, while `bin/fm-guard.sh` owns the watcher-down banner and reminder policy so repeated guarded commands stay noisy without reprinting the full banner in the same episode.
 On every verified primary harness, tracked hook integration gives the primary session a push-based backstop: when work, a process-event source, or X-mode relay polling needs supervision and no identity-matched watcher lock with a fresh beacon is live, direct Stop hooks block and passive turn-end hooks force one bounded follow-up.
 The guard covers the main primary and genuinely marked secondmate homes, exempts child crewmate/scout worktrees, is loop-safe per harness, and is documented in [turnend-guard.md](turnend-guard.md).
 
@@ -101,13 +102,23 @@ The inventory stores a bounded feedback prefix and length marker; the owner reco
 Queue item publication precedes the covered inventory cursor, exact-head completion revalidates GitHub, and one home-scoped lane prevents duplicate review workers.
 A moved head invalidates incomplete evidence and requeues the same feedback generation before any fix claim or outward response.
 
+Inventory failure is per pull request, never account-wide.
+The search index lags merges and closes, so a candidate is omitted only after its own live detail read answers closed.
+A detail, pagination, or schema failure for one eligible open pull request keeps that pull request's previous covered head and feedback cursor, leaves its queued work untouched, records the failure durably in the snapshot, and announces one deduplicated diagnostic, while every unaffected pull request still reconciles.
+Account-wide conditions - authentication, rate headroom, and the total execution bound - remain whole-poll failures that publish no partial inventory.
+
 A response is bound durably before GitHub delivery.
 Delivery prepends a hidden exact-body binding marker and searches the original thread for that self-authored marker, exact head, and parent identity before posting, so a reply failure retries the same response and a crash after GitHub acceptance can reconcile the accepted post without knowingly repeating it.
 Immediately before a formal COMMENT review or any stale fallback-comment artifact could write, the state owner re-reads the live pull-request author and authenticated actor.
 Identity equality deletes the outward response and records a private route to the implementation owner; it never marks the pass as independent review evidence.
 Fallback comments are not a supported publication path.
 Original-thread responses to external feedback remain separate and permitted after verification.
-The only terminal feedback outcomes are fixed-and-replied, dismissed-and-replied, duplicate-and-replied, superseded-and-replied, and captain-decision-pending.
+The only terminal feedback outcomes are fixed-and-replied, dismissed-and-replied, duplicate-and-replied, superseded-and-replied, captain-decision-pending, and pull-closed-without-response.
+A fresh live read that finds the pull request closed or merged ends the item durably at whichever completion boundary reached it, discards the pending public response, and releases the one-at-a-time lane, so a merged pull request can never strand queued work or wedge the single lane.
+Observing that pull request open again is live proof that it reopened, so exactly the items ended by that closure resume as a new durable generation at the observed head while every other terminal disposition and the normal deduplication rules stay untouched.
+Reactivation does not depend on the covered cursor having moved, because a close and a reopen can both land between two polls, and it never runs while another nonterminal review already owns that pull request.
+An item id keeps the head it was created at while a requeue moves that item's head in place, so a reopened pull request is matched against the head each item currently records rather than against a recomputed creation identity, and two closed reviews recording one head are refused deterministically instead of guessed between.
+The lane record is a pointer rather than an owner: a lane naming a missing, terminal, or parked item is stale and is released on the next read, so a crash between a terminal write and its release cannot hold the lane or silence the poll's pending-work signal.
 An explicit per-PR opt-out preserves the last covered head and feedback cursor, so restoring coverage compares every intervening identity instead of accepting a fresh baseline.
 
 The agent-only [`pr-review-owner`](../.agents/skills/pr-review-owner/SKILL.md) is the single owner of adversarial adjudication and routing.
@@ -115,8 +126,8 @@ It sends supported corrections back through the existing PR branch and selected 
 Fleet-authored exact-head findings remain private and route directly to the implementation owner; unsupported internal leads remain private.
 Fleet-authored PRs are never self-reviewed or approved on GitHub, their private passes never count as independent review evidence, foreign PRs are comment-only after a live distinct-identity check, and this path has no merge authority.
 
-The source returns a bounded process-event result only when model attention is needed, then classifies that result terminal so the generic runner retains and re-announces it without starting another account poll.
-After the result is durably handled, the adjudication owner acknowledges the review event and re-registers the ongoing source.
+The source returns a bounded process-event result only when model attention is needed, then classifies that result terminal, so the generic runner retires this registration instead of starting another account poll while the result waits, and the captured result stays re-announced until it is acknowledged.
+Coverage therefore resumes only on a deliberate re-arm: the adjudication owner acknowledges the review event and re-registers the source after durably handling it, and the next locked main-home bootstrap re-arms it otherwise.
 This composes with every supported primary harness through the same `check` notification path and never consults a runtime backend, so harness and backend differences are not part of its semantics.
 [`configuration.md`](configuration.md#automatic-pull-request-review-statepr-review) owns setup and limits, and [`verification/pr-review.md`](verification/pr-review.md) holds the current behavior evidence.
 
@@ -155,7 +166,7 @@ For capable Herdr sessions, the same watcher replaces its terminal sleep with a 
 The deeper session-start agent-process liveness probe is separate from that busy-state poll: tmux and Herdr have verified classifiers for secondmate recovery, Zellij remains unverified, and Orca and cmux do not support secondmate spawns.
 Herdr is experimental and can be selected explicitly or by runtime auto-detection: Treehouse remains its worktree provider, [`herdr-backend.md`](herdr-backend.md) owns current setup and safety limits, and [`verification/runtime-backends.md`](verification/runtime-backends.md#herdr) owns active empirical evidence.
 Herdr uses one tab per task; [Watching and task containers](herdr-backend.md#watching-and-task-containers) owns launcher-bound workspace placement, the label-only fallback, and recovery scope.
-Its optional default-off presentation projection may place one clean new task in a disposable workspace without changing endpoint authority or lifecycle ownership; [Optional presentation spaces](herdr-backend.md#optional-presentation-spaces) owns that conditional design and its narrow home-local restored-shell cleanup at locked session start.
+Its default-on presentation projection may place one clean new task in a disposable workspace without changing endpoint authority or lifecycle ownership; [Presentation spaces](herdr-backend.md#presentation-spaces) owns that conditional design and its narrow home-local restored-shell cleanup at locked session start.
 Zellij is experimental and selected only explicitly: Treehouse remains its worktree provider, [`zellij-backend.md`](zellij-backend.md) owns current setup and limits, and [`verification/runtime-backends.md`](verification/runtime-backends.md#zellij) owns active empirical evidence.
 Zellij's container shape is simpler than herdr's: one shared `firstmate` session, one tab per task, with no per-home workspace split; visible tab titles are scoped by the active home label plus a short hash of the resolved `FM_ROOT` path.
 Orca is experimental and selected only explicitly: Orca owns both worktree and terminal lifecycle, records `orca_worktree_id=` and `terminal=`, and removes worktrees through `orca worktree rm` only after the usual firstmate teardown checks pass.
