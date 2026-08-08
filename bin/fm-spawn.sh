@@ -102,12 +102,14 @@
 #   even when they select different backends. A fresh spawn first takes the
 #   per-home task-set lock and refuses rather than waits when forced teardown owns
 #   it; relaunch is exempt because the existing task's control lock covers it.
-#   Metadata publication is staged into <id>.meta.tmp.<pid>, verified, and then
-#   renamed into place, so state/<id>.meta is only ever a complete task record:
-#   a compose, write, verification, or rename failure - and a record path that
-#   already exists as a directory, which would silently absorb the rename -
-#   publishes nothing, removes the staging file, and discards the endpoint this
-#   spawn created rather than stranding a window no task record names.
+#   Every local and remote task record is staged beside its final path, read back,
+#   compared with the complete intended body, and renamed into place once.
+#   Compose, write, verification, rename, and destination-directory failures
+#   publish no normal record and remove the staging file. A local endpoint is
+#   discarded when disappearance can be verified. A remote endpoint remains
+#   bound by its complete remote-host record for reconciliation. If failed Orca
+#   cleanup leaves a worktree, the same publisher writes one complete record
+#   marked spawn_state=failed and cleanup_required=orca-worktree.
 #   With no harness arg, a crewmate/scout spawn resolves the CREW harness only when
 #   config/crew-dispatch.json is absent. When that file exists, crewmate/scout
 #   spawns require an explicit harness so firstmate cannot silently skip dispatch
@@ -383,10 +385,55 @@ else
   fi
 fi
 
+# Publish every task record through one same-directory staging path. The
+# installed mv(1) uses rename(2) when source and destination share a filesystem,
+# and rename(2) guarantees the destination always names either the old complete
+# file or the new complete file. Every failure is checked explicitly because a
+# caller used as an `if` condition does not inherit useful `set -e` behavior.
+META_PUBLISH_ACTIVE_TMP=
+FM_META_PUBLISH_ERROR=
+meta_publish_cleanup() {
+  [ -z "${META_PUBLISH_ACTIVE_TMP:-}" ] || rm -f -- "$META_PUBLISH_ACTIVE_TMP" 2>/dev/null || true
+  META_PUBLISH_ACTIVE_TMP=
+}
+publish_task_meta_atomic() {  # <final-path> <complete-body>
+  local final=$1 body=$2 staged
+  FM_META_PUBLISH_ERROR=
+  META_PUBLISH_ACTIVE_TMP="$final.tmp.$$"
+  if ! printf '%s\n' "$body" > "$META_PUBLISH_ACTIVE_TMP"; then
+    FM_META_PUBLISH_ERROR="the staged record could not be written"
+    meta_publish_cleanup
+    return 1
+  fi
+  if ! staged=$(cat "$META_PUBLISH_ACTIVE_TMP" 2>/dev/null); then
+    FM_META_PUBLISH_ERROR="the staged record could not be read back"
+    meta_publish_cleanup
+    return 1
+  fi
+  if [ "$staged" != "$body" ]; then
+    FM_META_PUBLISH_ERROR="the staged record was written incompletely"
+    meta_publish_cleanup
+    return 1
+  fi
+  if [ -d "$final" ]; then
+    FM_META_PUBLISH_ERROR="the record path exists as a directory"
+    meta_publish_cleanup
+    return 1
+  fi
+  if ! mv -f -- "$META_PUBLISH_ACTIVE_TMP" "$final"; then
+    FM_META_PUBLISH_ERROR="the staged record could not be renamed into place"
+    meta_publish_cleanup
+    return 1
+  fi
+  META_PUBLISH_ACTIVE_TMP=
+  return 0
+}
+trap meta_publish_cleanup EXIT
+
 spawn_remote_secondmate() {
-  local id=$1 remote host root home harness positional model effort backend out rc meta tmp
+  local id=$1 remote host root home harness positional model effort backend out rc meta
   local remote_backend remote_target remote_harness remote_herdr_session registry_lock remote_lock remote_generation
-  local remote_traceparent remote_recorded_traceparent
+  local remote_traceparent remote_recorded_traceparent remote_projects remote_meta_body publish_error
   local -a launch_args
   id=${POS[0]:-}
   fm_task_id_creation_valid "$id" || { echo "error: invalid task id" >&2; return 2; }
@@ -593,8 +640,14 @@ spawn_remote_secondmate() {
   # reports it here so the parent does not deny the agent's actual identity.
   remote_recorded_traceparent=$(printf '%s\n' "$out" | sed -n 's/^traceparent=//p' | tail -1)
   fm_trace_context_valid "$remote_recorded_traceparent" || remote_recorded_traceparent=
-  tmp="$meta.tmp.$$"
-  {
+  if ! remote_projects=$(secondmate_registry_field "$DATA/secondmates.md" "$id" projects); then
+    fm_lock_release "$remote_lock" || true
+    fm_lock_release "$registry_lock" || true
+    fm_lock_release "$SPAWN_TASK_LOCK" || true
+    echo "error: remote secondmate $id launched at $remote_target, but its parent route could not be composed; the exact endpoint remains recorded on remote host $host for reconciliation" >&2
+    return 1
+  fi
+  if ! remote_meta_body=$(
     echo "window=remote:$id"
     echo "endpoint_task_id=$id"
     echo "worktree=$home"
@@ -607,15 +660,28 @@ spawn_remote_secondmate() {
     echo "model=${model#-}"
     echo "effort=${effort#-}"
     echo "home=$home"
-    echo "projects=$(secondmate_registry_field "$DATA/secondmates.md" "$id" projects)"
+    echo "projects=$remote_projects"
     echo "remote_host=$host"
     echo "remote_root=$root"
     echo "remote_backend=$remote_backend"
     echo "remote_herdr_session=$remote_herdr_session"
     echo "remote_target=$remote_target"
     [ -z "$remote_recorded_traceparent" ] || echo "traceparent=$remote_recorded_traceparent"
-  } > "$tmp"
-  mv -f -- "$tmp" "$meta"
+  ); then
+    fm_lock_release "$remote_lock" || true
+    fm_lock_release "$registry_lock" || true
+    fm_lock_release "$SPAWN_TASK_LOCK" || true
+    echo "error: remote secondmate $id launched at $remote_target, but its parent route could not be composed; the exact endpoint remains recorded on remote host $host for reconciliation" >&2
+    return 1
+  fi
+  if ! publish_task_meta_atomic "$meta" "$remote_meta_body"; then
+    publish_error=$FM_META_PUBLISH_ERROR
+    fm_lock_release "$remote_lock" || true
+    fm_lock_release "$registry_lock" || true
+    fm_lock_release "$SPAWN_TASK_LOCK" || true
+    echo "error: remote secondmate $id launched, but parent metadata could not be published ($publish_error); the exact endpoint remains recorded on remote host $host at $remote_target for reconciliation" >&2
+    return 1
+  fi
   if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
     SPAWN_TASK_SET_LOCK_HELD=0
     fm_lock_release "$SPAWN_TASK_SET_LOCK"
@@ -635,6 +701,8 @@ BACKEND=
 ORCA_ABORT_CLEANUP=0
 ORCA_WORKTREE_ID=
 ORCA_TERMINAL=
+ORCA_RECOVERY_META_PUBLISHED=0
+META_PUBLICATION_FAILURE_DETAIL=
 HERDR_PROJECTION_ABORT_CLEANUP=0
 HERDR_PROJECTION_ABORT_SESSION=
 HERDR_PROJECTION_ABORT_TASK_PANE=
@@ -678,14 +746,8 @@ parse_orca_worktree_result() {
 }
 
 spawn_abort_cleanup() {
-  local status=$?
-  if [ "$RELAUNCH_REPLACEMENT_PENDING" = 1 ] \
-     && [ "$SPAWN_META_PUBLISH_STARTED" = 1 ] \
-     && [ -n "$SPAWN_META_TMP" ] \
-     && [ ! -e "$SPAWN_META_TMP" ] \
-     && [ ! -L "$SPAWN_META_TMP" ]; then
-    RELAUNCH_REPLACEMENT_PENDING=0
-  fi
+  local status=$? recovery_body recovery_error
+  meta_publish_cleanup
   if [ "$RELAUNCH_REPLACEMENT_PENDING" = 1 ]; then
     RELAUNCH_REPLACEMENT_PENDING=0
     if ! clear_relaunch_harness_wiring \
@@ -729,24 +791,39 @@ spawn_abort_cleanup() {
     if [ -n "${ORCA_WORKTREE_ID:-}" ]; then
       if ! fm_backend_remove_worktree orca "$ORCA_WORKTREE_ID" 2>/dev/null; then
         mkdir -p "$STATE" 2>/dev/null || true
-        if [ -d "$STATE" ]; then
-          {
-            echo "window=$W"
-            echo "worktree=${WT:-}"
-            echo "project=$PROJ_ABS"
-            echo "harness=$HARNESS"
-            echo "kind=$KIND"
-            [ -z "${MODE:-}" ] || echo "mode=$MODE"
-            [ -z "${YOLO:-}" ] || echo "yolo=$YOLO"
-            echo "tasktmp=${TASK_TMP:-}"
-            echo "model=${MODEL:-default}"
-            echo "effort=${EFFORT:-default}"
-            echo "backend=orca"
-            echo "orca_worktree_id=$ORCA_WORKTREE_ID"
-            [ -z "${ORCA_TERMINAL:-}" ] || echo "terminal=$ORCA_TERMINAL"
-          } > "$STATE/$ID.meta" 2>/dev/null || true
+        if [ -d "$STATE" ] && recovery_body=$(
+          echo "window=$W"
+          echo "endpoint_task_id=$ID"
+          echo "worktree=${WT:-}"
+          echo "project=$PROJ_ABS"
+          echo "harness=$HARNESS"
+          echo "kind=$KIND"
+          [ -z "${MODE:-}" ] || echo "mode=$MODE"
+          [ -z "${YOLO:-}" ] || echo "yolo=$YOLO"
+          echo "tasktmp=${TASK_TMP:-}"
+          echo "model=${MODEL:-default}"
+          echo "effort=${EFFORT:-default}"
+          echo "backend=orca"
+          echo "orca_worktree_id=$ORCA_WORKTREE_ID"
+          [ -z "${ORCA_TERMINAL:-}" ] || echo "terminal=$ORCA_TERMINAL"
+          echo "spawn_state=failed"
+          echo "cleanup_required=orca-worktree"
+        ); then
+          if publish_task_meta_atomic "$STATE/$ID.meta" "$recovery_body"; then
+            ORCA_RECOVERY_META_PUBLISHED=1
+          else
+            recovery_error=$FM_META_PUBLISH_ERROR
+            echo "warning: the failed Orca spawn left worktree $ORCA_WORKTREE_ID without a recovery record ($recovery_error); remove it by hand" >&2
+          fi
         fi
       fi
+    fi
+  fi
+  if [ -n "${META_PUBLICATION_FAILURE_DETAIL:-}" ]; then
+    if [ "$ORCA_RECOVERY_META_PUBLISHED" = 1 ]; then
+      echo "error: task metadata could not be published at $STATE/$ID.meta ($META_PUBLICATION_FAILURE_DETAIL); a complete recovery record was preserved for the surviving Orca worktree" >&2
+    else
+      echo "error: task metadata could not be published at $STATE/$ID.meta ($META_PUBLICATION_FAILURE_DETAIL); no task record was written for $ID" >&2
     fi
   fi
   if [ "$SPAWN_TASK_LOCK_HELD" = 1 ]; then
@@ -770,6 +847,7 @@ spawn_abort_cleanup() {
     CONFIG_INHERIT_LOCK_HELD=0
     fm_lock_release "$CONFIG_INHERIT_LOCK" || true
   fi
+  meta_publish_cleanup
   return "$status"
 }
 trap spawn_abort_cleanup EXIT
@@ -2476,9 +2554,27 @@ else
   fi
 fi
 
+# Deliver the pane's stable temporary-directory environment before tracing, at
+# the same pre-launch site and in the same order every harness already receives.
+spawn_send_text_line "$T" "export GOTMPDIR=$TASK_TMP/gotmp"
+# Resolve trace delivery before publishing the task record. A reader must never
+# observe a final record without the carrier that the child is about to inherit,
+# and the final path must never be mutated after publication.
+SPAWN_RECORDED_TRACEPARENT=
+if [ -n "$SPAWN_TRACEPARENT" ]; then
+  if spawn_send_text_line "$T" "export TRACEPARENT=$SPAWN_TRACEPARENT"; then
+    SPAWN_RECORDED_TRACEPARENT=$SPAWN_TRACEPARENT
+  else
+    TRACE_SEND_STATUS=$?
+    if [ "$TRACE_SEND_STATUS" -eq 2 ]; then
+      echo "error: trace-context input could not be cleared for $W; refusing to append the launch command" >&2
+      exit 1
+    fi
+  fi
+fi
+
 META_WINDOW=$T
 [ "$BACKEND" = orca ] && META_WINDOW=$W
-SPAWN_META_TMP="$STATE/$ID.meta.tmp.$$"
 if [ "$RELAUNCH" -eq 1 ]; then
   SPAWN_META_LOCK=$(fm_meta_lock_path "$STATE/$ID.meta") || exit 1
   fm_lock_acquire_wait "$SPAWN_META_LOCK"
@@ -2543,15 +2639,18 @@ discard_unpublished_endpoint() {
 # unwind and prints its own diagnostics, so nothing here claims a complete
 # cleanup it cannot verify.
 abort_unpublished_meta() {  # <detail>
-  if [ "$RELAUNCH" -eq 1 ]; then
-    SPAWN_META_PUBLISH_STARTED=0
-  fi
-  rm -f "$SPAWN_META_TMP" 2>/dev/null || true
+  META_PUBLICATION_FAILURE_DETAIL=$1
+  meta_publish_cleanup
   if [ "$RELAUNCH" -eq 1 ]; then
     echo "error: replacement metadata could not be published at $STATE/$ID.meta ($1); the previous complete task record remains" >&2
-  else
-    echo "error: task metadata could not be published at $STATE/$ID.meta ($1); no task record was written for $ID" >&2
+    META_PUBLICATION_FAILURE_DETAIL=
+    exit 1
   fi
+  if [ "$BACKEND" = orca ]; then
+    exit 1
+  fi
+  echo "error: task metadata could not be published at $STATE/$ID.meta ($1); no task record was written for $ID" >&2
+  META_PUBLICATION_FAILURE_DETAIL=
   discard_unpublished_endpoint || true
   exit 1
 }
@@ -2608,30 +2707,18 @@ if ! META_BODY=$(
   if [ "$SPAWN_CONTROL_PARENT" = 1 ] && [ -n "${FM_CONTROL_RELAUNCH_TX:-}" ]; then
     echo "control_relaunch_tx=$FM_CONTROL_RELAUNCH_TX"
   fi
+  [ -z "$SPAWN_RECORDED_TRACEPARENT" ] || echo "traceparent=$SPAWN_RECORDED_TRACEPARENT"
 ); then
   abort_unpublished_meta "the record could not be composed"
 fi
-printf '%s\n' "$META_BODY" > "$SPAWN_META_TMP" \
-  || abort_unpublished_meta "the staged record could not be written"
-[ "$(cat "$SPAWN_META_TMP" 2>/dev/null)" = "$META_BODY" ] \
-  || abort_unpublished_meta "the staged record was written incompletely"
-if [ "$RELAUNCH" -eq 1 ]; then
-  SPAWN_META_PUBLISH_STARTED=1
+if ! publish_task_meta_atomic "$STATE/$ID.meta" "$META_BODY"; then
+  abort_unpublished_meta "$FM_META_PUBLISH_ERROR"
 fi
-# A directory (or a symlink to one) at the record path would absorb the rename:
-# mv moves the staged file INSIDE it and reports success, leaving no readable
-# task record while this spawn claims to have published one. Refuse instead.
-[ ! -d "$STATE/$ID.meta" ] \
-  || abort_unpublished_meta "the record path exists as a directory"
-mv -f -- "$SPAWN_META_TMP" "$STATE/$ID.meta" \
-  || abort_unpublished_meta "the staged record could not be renamed into place"
 if [ "$RELAUNCH" -eq 1 ]; then
   RELAUNCH_REPLACEMENT_PENDING=0
-  SPAWN_META_PUBLISH_STARTED=0
   fm_lock_release "$SPAWN_META_LOCK"
   SPAWN_META_LOCK_HELD=0
 fi
-SPAWN_META_TMP=
 if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
   # The record is published, so this task is now part of the set a teardown
   # enumerates and locks per task. The set lock is only needed across that
@@ -2685,47 +2772,6 @@ if [ "$KIND" = secondmate ]; then
 fi
 if [ -z "$SPAWN_TRACEPARENT" ] && [ "$RELAUNCH" -eq 1 ]; then
   LAUNCH="unset TRACEPARENT; $LAUNCH"
-fi
-
-spawn_record_traceparent() {
-  local meta="$STATE/$ID.meta" tmp status=0
-  SPAWN_META_LOCK=$(fm_meta_lock_path "$meta") || return 1
-  fm_lock_acquire_wait "$SPAWN_META_LOCK"
-  SPAWN_META_LOCK_HELD=1
-  SPAWN_META_TMP="$STATE/.$ID.meta.trace.${BASHPID:-$$}"
-  if [ ! -f "$meta" ] || [ ! -w "$meta" ] \
-     || ! awk -F= '$1 != "traceparent"' "$meta" > "$SPAWN_META_TMP" \
-     || ! printf 'traceparent=%s\n' "$SPAWN_TRACEPARENT" >> "$SPAWN_META_TMP" \
-     || ! mv -f "$SPAWN_META_TMP" "$meta"; then
-    status=1
-    rm -f "$SPAWN_META_TMP" 2>/dev/null || true
-  fi
-  SPAWN_META_TMP=
-  fm_lock_release "$SPAWN_META_LOCK" || status=1
-  SPAWN_META_LOCK_HELD=0
-  return "$status"
-}
-
-# Export GOTMPDIR into the crewmate's pane shell so the agent and every child
-# process (go build, go test, ...) inherit it. Sent before the launch command so
-# the env is set when the agent starts; the brief sleep lets the export land.
-spawn_send_text_line "$T" "export GOTMPDIR=$TASK_TMP/gotmp"
-# Send through the exact channel that already ships GOTMPDIR, so every backend
-# and harness - ship, scout, and secondmate - gets it before launch. Skipped
-# entirely when trace context is off.
-if [ -n "$SPAWN_TRACEPARENT" ]; then
-  if spawn_send_text_line "$T" "export TRACEPARENT=$SPAWN_TRACEPARENT"; then
-    if ! spawn_record_traceparent; then
-      LAUNCH="unset TRACEPARENT; $LAUNCH"
-    fi
-  else
-    TRACE_SEND_STATUS=$?
-    if [ "$TRACE_SEND_STATUS" -eq 2 ]; then
-      echo "error: trace-context input could not be cleared for $W; refusing to append the launch command" >&2
-      exit 1
-    fi
-    LAUNCH="unset TRACEPARENT; $LAUNCH"
-  fi
 fi
 sleep 0.3
 spawn_send_literal "$T" "$LAUNCH"
