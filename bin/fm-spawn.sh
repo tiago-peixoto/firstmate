@@ -820,7 +820,9 @@ spawn_abort_cleanup() {
     fi
   fi
   if [ -n "${META_PUBLICATION_FAILURE_DETAIL:-}" ]; then
-    if [ "$ORCA_RECOVERY_META_PUBLISHED" = 1 ]; then
+    if [ "$RELAUNCH" -eq 1 ]; then
+      echo "error: replacement metadata could not be published at $STATE/$ID.meta ($META_PUBLICATION_FAILURE_DETAIL); the previous complete task record remains" >&2
+    elif [ "$ORCA_RECOVERY_META_PUBLISHED" = 1 ]; then
       echo "error: task metadata could not be published at $STATE/$ID.meta ($META_PUBLICATION_FAILURE_DETAIL); a complete recovery record was preserved for the surviving Orca worktree" >&2
     else
       echo "error: task metadata could not be published at $STATE/$ID.meta ($META_PUBLICATION_FAILURE_DETAIL); no task record was written for $ID" >&2
@@ -2600,21 +2602,23 @@ preserve_relaunch_meta() {
 # the tmux one ends in `kill-window ... || true`, the herdr one returns 0 after
 # refusing an unlocked pane close, and the zellij and cmux ones return 0 when
 # the session or target is already unreadable. So the endpoint is re-read
-# instead. Herdr answers through its own confirmation primitive, which treats
-# only a structured pane-not-found as proof and refuses on unknown presence -
-# the same rule fm-teardown.sh gates durable-record removal on. Every other
-# backend answers through the shared read-only presence check.
+# instead, through the shared confirmed-absence contract
+# (fm_backend_endpoint_confirmed_gone), which every backend answers from a
+# structured runtime reply and refuses to answer from a read it could not
+# make. A plain presence probe would not do: it fails when the runtime is
+# unreachable exactly as it fails when the endpoint is gone, so a momentarily
+# unresponsive backend would be reported as a successful cleanup while a live
+# pane no record names keeps running.
 unpublished_endpoint_gone() {
-  if [ "$BACKEND" = herdr ] \
-     && declare -F fm_backend_herdr_endpoint_confirmed_gone >/dev/null 2>&1; then
-    fm_backend_herdr_endpoint_confirmed_gone "$T" 2>/dev/null
-    return
-  fi
-  ! fm_backend_target_exists "$BACKEND" "$T" "$W" >/dev/null 2>&1
+  fm_backend_endpoint_confirmed_gone "$BACKEND" "$T" 2>/dev/null
 }
 
 # A close is not always observable the instant the adapter returns, so give a
 # closing endpoint a bounded moment to disappear before declaring it stranded.
+# The warning says only what was established - the endpoint was not confirmed
+# gone - because that covers both a close that demonstrably did not take and a
+# runtime that could not be read at all, and the operator's next step is the
+# same either way.
 discard_unpublished_endpoint() {
   local attempt=0
   [ "$RELAUNCH" -ne 1 ] || return 0
@@ -2631,26 +2635,19 @@ discard_unpublished_endpoint() {
     sleep 0.1
     attempt=$((attempt + 1))
   done
-  echo "warning: the $BACKEND endpoint $T for $ID outlived the failed spawn and no task record names it; remove it by hand" >&2
+  echo "warning: the $BACKEND endpoint $T for $ID was not confirmed gone after the failed spawn and no task record names it; check for a surviving endpoint and remove it by hand" >&2
   return 1
 }
 
 # Report only what this path actually did: the EXIT trap owns the rest of the
 # unwind and prints its own diagnostics, so nothing here claims a complete
-# cleanup it cannot verify.
+# cleanup it cannot verify. The publication failure itself is reported once,
+# by the trap, on every backend: it is the only place that knows whether an
+# Orca recovery record survived, and it always runs. Printing here as well
+# would emit the same line twice on every non-Orca failure.
 abort_unpublished_meta() {  # <detail>
   META_PUBLICATION_FAILURE_DETAIL=$1
   meta_publish_cleanup
-  if [ "$RELAUNCH" -eq 1 ]; then
-    echo "error: replacement metadata could not be published at $STATE/$ID.meta ($1); the previous complete task record remains" >&2
-    META_PUBLICATION_FAILURE_DETAIL=
-    exit 1
-  fi
-  if [ "$BACKEND" = orca ]; then
-    exit 1
-  fi
-  echo "error: task metadata could not be published at $STATE/$ID.meta ($1); no task record was written for $ID" >&2
-  META_PUBLICATION_FAILURE_DETAIL=
   discard_unpublished_endpoint || true
   exit 1
 }
