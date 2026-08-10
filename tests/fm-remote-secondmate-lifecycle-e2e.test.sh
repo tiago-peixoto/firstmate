@@ -357,7 +357,8 @@ FM_SECONDMATE_CHARTER='Failing seed charter.' FM_SECONDMATE_SCOPE='failed seed' 
 seed_fail_pid=$!
 seed_wait=0
 while [ ! -f "$TMP_ROOT/seed.entered" ]; do
-  kill -0 "$seed_fail_pid" 2>/dev/null || fail "failing seed exited before remote provisioning"
+  kill -0 "$seed_fail_pid" 2>/dev/null \
+    || fail "failing seed exited before remote provisioning: $(tr '\n' ' ' < "$TMP_ROOT/seed-fail.out")"
   seed_wait=$((seed_wait + 1))
   [ "$seed_wait" -le 250 ] || fail "failing seed never reached remote provisioning"
   sleep 0.02
@@ -501,7 +502,7 @@ if FM_SECONDMATE_CHARTER='Unregistered charter.' FM_SECONDMATE_SCOPE='unregister
   > "$TMP_ROOT/seed-unregistered.out" 2>&1; then
   fail "a supplied origin bypassed the project registry requirement"
 fi
-assert_grep 'has no registry record' "$TMP_ROOT/seed-unregistered.out" \
+assert_grep 'not in registry; register it explicitly' "$TMP_ROOT/seed-unregistered.out" \
   "the unregistered-project refusal did not name the missing record"
 
 out=$(FM_SECONDMATE_CHARTER='Own beta delivery on the build Mac.' \

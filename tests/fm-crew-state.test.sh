@@ -62,6 +62,7 @@ make_fakebin() {  # <dir> -> echoes fakebin path
   cat > "$fb/no-mistakes" <<'SH'
 #!/usr/bin/env bash
 set -u
+[ -z "${FM_FAKE_NM_CALLS:-}" ] || printf '%s\n' "$*" >> "$FM_FAKE_NM_CALLS"
 case "${1:-}" in
   axi)
     shift
@@ -1136,6 +1137,34 @@ test_scout_skips_run_lookup() {
   pass "scout skips the run lookup"
 }
 
+# Supported ship modes never start the retired delivery pipeline, so their
+# current-state read must go straight to the pane/log sources without invoking
+# a locally installed compatibility binary.
+test_direct_pr_skips_legacy_run_lookup() {
+  reset_fakes
+  local d calls out gen
+  d=$(new_case direct-pr)
+  make_repo_on_branch "$d/wt" fm/direct-pr
+  make_fakebin "$d" >/dev/null
+  calls="$d/no-mistakes.calls"
+  : > "$calls"
+  fm_write_meta "$d/state/direct-pr.meta" "window=fm:fm-direct-pr" "worktree=$d/wt" \
+    "kind=ship" "mode=direct-PR" "harness=claude"
+  FM_FAKE_NM_CALLS=$calls
+  export FM_FAKE_NM_CALLS
+  FM_FAKE_AXI_STATUS="$(run_running fm/direct-pr)"
+  FM_FAKE_BUSY=1
+  gen=$("$ROOT/bin/fm-busy-event.sh" arm "$d/state" direct-pr)
+  "$ROOT/bin/fm-busy-event.sh" apply "$d/state" direct-pr busy --gen "$gen" \
+    --source claude-hook --event user-prompt-submit
+  out=$(run_crew_state "$d" direct-pr)
+  assert_contains "$out" "source: pane" "direct-PR state did not use the worker pane"
+  [ ! -s "$calls" ] || fail "direct-PR state invoked the retired pipeline compatibility lookup"
+  FM_FAKE_NM_CALLS=
+  export FM_FAKE_NM_CALLS
+  pass "direct-PR current-state reads skip the legacy pipeline lookup"
+}
+
 # (j) torn-down worktree and missing meta are graceful (unknown/none, exit 0)
 test_torn_down_worktree() {
   reset_fakes
@@ -1349,6 +1378,7 @@ test_dead_window_still_reports_terminal_run_step
 test_dead_window_still_reports_active_run_step
 test_no_timeout_uses_perl_bound
 test_scout_skips_run_lookup
+test_direct_pr_skips_legacy_run_lookup
 test_torn_down_worktree
 test_missing_meta
 test_provably_working_via_runs_list_fallback

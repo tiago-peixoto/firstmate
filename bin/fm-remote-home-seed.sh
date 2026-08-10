@@ -82,6 +82,7 @@ case "$REMOTE_ROOT/" in "$REMOTE_HOME/"*) die "remote code root must not be insi
 NO_PROJECTS=0
 PROJECT_NAMES=()
 PROJECT_ORIGINS=()
+PROJECT_COUNT=0
 for arg in "$@"; do
   if [ "$arg" = --no-projects ]; then
     NO_PROJECTS=1
@@ -96,12 +97,13 @@ for arg in "$@"; do
     esac
     PROJECT_NAMES+=("$name")
     PROJECT_ORIGINS+=("$origin")
+    PROJECT_COUNT=$((PROJECT_COUNT + 1))
   fi
 done
 if [ "$NO_PROJECTS" -eq 1 ]; then
-  [ "${#PROJECT_NAMES[@]}" -eq 0 ] || die "--no-projects cannot be combined with project names"
+  [ "$PROJECT_COUNT" -eq 0 ] || die "--no-projects cannot be combined with project names"
 else
-  [ "${#PROJECT_NAMES[@]}" -gt 0 ] || die "at least one project or --no-projects is required"
+  [ "$PROJECT_COUNT" -gt 0 ] || die "at least one project or --no-projects is required"
 fi
 
 mkdir -p "$STATE" || die "cannot create parent state directory"
@@ -130,7 +132,8 @@ if [ ! -f "$BRIEF" ]; then
   if [ "$NO_PROJECTS" -eq 1 ]; then
     "$SCRIPT_DIR/fm-brief.sh" "$ID" --secondmate --no-projects >/dev/null
   else
-    "$SCRIPT_DIR/fm-brief.sh" "$ID" --secondmate "${PROJECT_NAMES[@]}" >/dev/null
+    "$SCRIPT_DIR/fm-brief.sh" "$ID" --secondmate \
+      "${PROJECT_NAMES[@]+"${PROJECT_NAMES[@]}"}" >/dev/null
   fi
   BRIEF_CREATED=1
 fi
@@ -157,7 +160,7 @@ done < "$BRIEF" > "$TMP/charter.remote"
 PROJECTS_CSV=
 : > "$TMP/project.records"
 PROJECT_INDEX=0
-for project in "${PROJECT_NAMES[@]}"; do
+for project in ${PROJECT_NAMES[@]+"${PROJECT_NAMES[@]}"}; do
   ORIGIN=${PROJECT_ORIGINS[$PROJECT_INDEX]}
   PROJECT_INDEX=$((PROJECT_INDEX + 1))
   MODE_LINE=$(FM_HOME="$FM_HOME" FM_DATA_OVERRIDE="$DATA" "$SCRIPT_DIR/fm-project-mode.sh" "$project")
@@ -165,7 +168,7 @@ for project in "${PROJECT_NAMES[@]}"; do
 $MODE_LINE
 EOF
   case "$MODE" in
-    no-mistakes|direct-PR) ;;
+    direct-PR) ;;
     local-only) die "project $project is local-only and cannot be provisioned remotely" ;;
     *) die "project $project has unsupported delivery mode: $MODE" ;;
   esac
@@ -200,7 +203,7 @@ done
   # back; the parent's real filesystem path is never sent, since it names
   # nothing on the remote filesystem.
   printf 'parent_host_b64=%s\n' "$(printf '%s' "$HOST" | encode)"
-  printf 'project_count=%s\n' "${#PROJECT_NAMES[@]}"
+  printf 'project_count=%s\n' "$PROJECT_COUNT"
   cat "$TMP/project.records"
 } > "$TMP/manifest"
 MANIFEST_BYTES=$(LC_ALL=C wc -c < "$TMP/manifest" | tr -d ' ')

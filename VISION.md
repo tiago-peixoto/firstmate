@@ -56,7 +56,7 @@ Quota, model, and effort choices stay inspectable and captain-owned; the first m
 
 ## Scope
 
-firstmate is the command layer, not the workshop: validation belongs to no-mistakes, CI belongs to the forge, and merge policy belongs to the configured authority.
+firstmate is the command layer, not the workshop: implementation belongs to the worker, CI belongs to the forge, and merge policy belongs to the configured authority.
 It is not a general agent framework, not a hosted service, and not a prepackaged product; it is a template one person clones, owns, deeply customizes, and operates under their own identity.
 The shared surface is generic and captain-agnostic; everything personal - preferences, projects, records, credentials - stays private to the home that owns it.
 This repository ships through its own discipline: firstmate work is validated like any other project's, and field incidents become regression coverage.
