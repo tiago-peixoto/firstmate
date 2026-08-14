@@ -81,6 +81,8 @@ esac
 . "$SCRIPT_DIR/fm-wake-lib.sh"
 # shellcheck source=bin/fm-session-lock-lib.sh
 . "$SCRIPT_DIR/fm-session-lock-lib.sh"
+# shellcheck source=bin/fm-hook-host-lib.sh
+. "$SCRIPT_DIR/fm-hook-host-lib.sh"
 
 # The bounded volatile entry trace distinguishes a hook that never ran from one
 # that took a pre-claim gate. Trace I/O is strictly best-effort and never waits,
@@ -107,10 +109,20 @@ trace_entry_event() {  # <entry|gate-name>
   return 0
 }
 
-# Consume the Stop payload once. The decisions below are state-based; the
-# payload is read so a slow writer can never wedge on a full pipe.
-cat >/dev/null 2>&1 || true
+# Consume the Stop payload once so a slow writer cannot wedge on a full pipe and
+# so host classification and bounded entry diagnostics use one invocation.
+PAYLOAD=$(cat 2>/dev/null || true)
 trace_entry_event entry
+
+# Cursor loads the tracked Claude settings too. Cursor has no asyncRewake, so if
+# a future Cursor build starts firing the Claude-shaped Stop entry, this arm
+# would run synchronously inside Cursor's stop step and hold that turn open for
+# the declared multi-hour timeout. Cursor's own park adapter owns its turn
+# boundary, so stand down on a Cursor-delivered payload.
+if fm_hook_payload_is_foreign_host "$PAYLOAD"; then
+  trace_entry_event gate-foreign-host
+  exit 0
+fi
 
 # --- scope: genuine primary checkout only -----------------------------------
 if ! fm_primary_scope_matches "$FM_ROOT" "$STATE"; then
