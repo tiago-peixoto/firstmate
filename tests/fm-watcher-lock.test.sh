@@ -22,20 +22,6 @@ mark_pr_check_migration_complete() {
   chmod 0600 "$state/.pr-check-migration-scan-v1" "$state/.pr-check-migration-v1"
 }
 
-stop_child_bounded() {  # <pid> [<tenths>]
-  local pid=$1 limit=${2:-50} i=0
-  kill -TERM "$pid" 2>/dev/null || true
-  while is_live_non_zombie "$pid" && [ "$i" -lt "$limit" ]; do
-    sleep 0.1
-    i=$((i + 1))
-  done
-  if is_live_non_zombie "$pid"; then
-    kill -KILL "$pid" 2>/dev/null || true
-  fi
-  wait "$pid" 2>/dev/null || true
-  ! is_live_non_zombie "$pid"
-}
-
 drain_and_ack() {  # <state>
   local state=$1 err sequence generation
   err="$state/.test-drain.err"

@@ -121,7 +121,7 @@ record_pi_busy() {  # <state-dir> <id>
     --source pi-ext --event agent-start
 }
 
-reap() { kill "$1" 2>/dev/null || true; wait "$1" 2>/dev/null || true; }
+reap() { stop_child_bounded "$1" || true; }
 
 # --- pure classifier predicates (fm-classify-lib.sh) ------------------------
 
@@ -1718,7 +1718,7 @@ test_procevent_marker_failure_exits_and_replays() {
 # --- heartbeat: no-change absorbed, backstop surfaces a missed status --------
 
 test_heartbeat_no_change_absorbed() {
-  local dir state fakebin out pid
+  local dir state fakebin out pid i=0 streak=0
   dir=$(make_case heartbeat-absorb); state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"
   # A truly quiet fleet (no windows, no statuses) with a fast heartbeat cadence.
   PATH="$fakebin:$PATH" FM_STATE_OVERRIDE="$state" FM_POLL=1 FM_SIGNAL_GRACE=1 \
@@ -1729,7 +1729,13 @@ test_heartbeat_no_change_absorbed() {
   fi
   [ ! -s "$out" ] || fail "no-change heartbeat printed a wake reason: $(cat "$out")"
   [ ! -s "$state/.wake-queue" ] || fail "no-change heartbeat enqueued a durable wake record"
-  [ "$(cat "$state/.heartbeat-streak" 2>/dev/null || echo 0)" -ge 1 ] || fail "heartbeat backoff streak did not advance while absorbing"
+  while [ "$i" -lt 100 ]; do
+    streak=$(cat "$state/.heartbeat-streak" 2>/dev/null || echo 0)
+    [ "$streak" -ge 1 ] && break
+    sleep 0.1
+    i=$((i + 1))
+  done
+  [ "$streak" -ge 1 ] || fail "heartbeat backoff streak did not advance while absorbing"
   reap "$pid"
   pass "a heartbeat with no captain-relevant change is absorbed and backs off the cadence"
 }
