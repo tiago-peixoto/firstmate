@@ -976,7 +976,7 @@ fm_wake_latest_event() {  # <validated-status-path> <tail-byte-cap>
 }
 
 # Print supplemental drain-time context only after the caller has committed the
-# raw queue consumption and released the append lock. The limits are constants,
+# raw queue presentation and released the append lock. The limits are constants,
 # so status-file volume cannot turn a drain into an unbounded context read.
 fm_wake_print_annotations() {  # <deduped-raw-rows>
   local rows=$1 manifest status_key mode path prefix line suffix keep bytes
