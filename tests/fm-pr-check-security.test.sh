@@ -73,6 +73,15 @@ make_case() {
 printf 'guard\n' >> "$FM_TEST_GUARD_LOG"
 SH
   chmod +x "$fake_root/bin/fm-guard.sh"
+  cat > "$fake_root/bin/fm-gh-pr-state.sh" <<'SH'
+#!/usr/bin/env bash
+exec gh pr view "$3" --repo "$1/$2" --json state --jq .state
+SH
+  cat > "$fake_root/bin/fm-gh-pr-head.sh" <<'SH'
+#!/usr/bin/env bash
+exec gh pr view "$3" --repo "$1/$2" --json headRefOid --jq .headRefOid
+SH
+  chmod +x "$fake_root/bin/fm-gh-pr-state.sh" "$fake_root/bin/fm-gh-pr-head.sh"
   cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
@@ -657,8 +666,9 @@ run_watcher_bounded() {
   local home=$1 fakebin=$2 check_interval=${FM_TEST_CHECK_INTERVAL:-0} watch_root=${FM_TEST_WATCH_ROOT:-$ROOT}
   shift 2
   perl -e 'my $pid=fork; die unless defined $pid; if (!$pid) { exec @ARGV } local $SIG{ALRM}=sub { kill "TERM", $pid; waitpid $pid, 0; exit 124 }; alarm 10; waitpid $pid, 0; alarm 0; exit($? >> 8)' \
-    env FM_HOME="$home" FM_ROOT_OVERRIDE="$watch_root" FM_CHECK_INTERVAL="$check_interval" FM_CHECK_TIMEOUT=1 \
-      FM_POLL=0.02 FM_HEARTBEAT=999999 FM_SIGNAL_GRACE=0 PATH="$fakebin:$BASE_PATH" "$WATCH" "$@"
+    env FM_HOME="$home" FM_ROOT_OVERRIDE="$watch_root" FM_GH_WRAPPERS_DIR="$(dirname "$home")/root/bin" \
+      FM_CHECK_INTERVAL="$check_interval" FM_CHECK_TIMEOUT=1 FM_POLL=0.02 FM_HEARTBEAT=999999 \
+      FM_SIGNAL_GRACE=0 PATH="$fakebin:$BASE_PATH" "$WATCH" "$@"
 }
 
 test_rejected_metacharacter_bytes_are_inert() {
@@ -717,7 +727,7 @@ make_poll_fixture() {
 run_poll() {
   local dir=$1
   FM_TEST_GH_LOG="$dir/gh.log" FM_TEST_GLAB_LOG="$dir/glab.log" \
-    PATH="$dir/fakebin:$BASE_PATH" \
+    FM_GH_WRAPPERS_DIR="$dir/root/bin" PATH="$dir/fakebin:$BASE_PATH" \
     bash "$dir/home/state/task-a.check.sh"
 }
 
@@ -754,7 +764,7 @@ test_static_poll_contract() {
   make_poll_fixture "$dir"
   set +e
   out=$(FM_STATE_OVERRIDE="$dir/home/state" FM_CHECK_TIMEOUT=1 FM_TEST_GH_LOG="$dir/gh.log" \
-    FM_TEST_GH_SLEEP=3 PATH="$dir/fakebin:$BASE_PATH" \
+    FM_TEST_GH_SLEEP=3 FM_GH_WRAPPERS_DIR="$dir/root/bin" PATH="$dir/fakebin:$BASE_PATH" \
     bash -c '. "$1"; run_check "$2"' bash "$WATCH" "$dir/home/state/task-a.check.sh")
   rc=$?
   set -e

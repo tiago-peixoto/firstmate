@@ -101,6 +101,10 @@ The shared no-mistakes gate refusal for fleet lifecycle entrypoints is summarize
 | `fm-check-lib.sh`        | Validate custom-check registrations and prepare private execution snapshots          |
 | `fm-pr-lib.sh`           | Own canonical task and PR validation plus private atomic PR-poll publication and identity-bound retirement |
 | `fm-pr-poll.sh`          | Provide the byte-static watcher program for validated PR/MR-poll sidecars           |
+| `fm-gh-auth-status.sh`   | Run the fixed blessed GitHub authentication-health probe                            |
+| `fm-gh-pr-state.sh`      | Read one strictly identified pull request's state through the blessed GitHub boundary |
+| `fm-gh-pr-head.sh`       | Read one strictly identified pull request's head commit through the blessed GitHub boundary |
+| `fm-gh-wrapper-bless.sh` | Re-bless the exact recurring GitHub wrapper bytes at their installed paths           |
 | `fm-pr-check-migrate.sh` | Quarantine older task polls without execution and rebuild only canonical polls       |
 | `fm-pr-check.sh`         | Record validated `pr=` and `pr_head=` values, then atomically arm a static merge poll |
 | `fm-pr-merge.sh`         | Record PR metadata, then merge a task's canonical full GitHub URL                    |

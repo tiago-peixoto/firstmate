@@ -64,8 +64,8 @@ fi
 "$SCRIPT_DIR/fm-pr-check-migrate.sh" --checks-safe || exit 1
 "$FM_ROOT/bin/fm-guard.sh" || true
 
-# pr_head is recorded only when the forge's CLI can supply it. gh exposes the
-# head commit as a selectable field; plain glab exposes it only inside its JSON
+# pr_head is recorded only when the forge's CLI can supply it. The narrow
+# blessed gh wrapper exposes the head commit; plain glab exposes it only inside its JSON
 # output, which would need a JSON processor firstmate does not require, so a
 # GitLab task records no pr_head. Both consumers already treat it as optional:
 # bin/fm-teardown.sh reads the head from the forge at teardown rather than from
@@ -73,8 +73,8 @@ fi
 # bin/fm-review-diff.sh resolves the head from the remote when none is recorded.
 WT=$(grep '^worktree=' "$META" | tail -1 | cut -d= -f2- || true)
 PR_HEAD=
-if [ "$PROVIDER" = github ] && [ -n "$WT" ] && [ -d "$WT" ] && command -v gh >/dev/null 2>&1; then
-  if REMOTE_HEAD=$(cd "$WT" && gh pr view "$URL" --json headRefOid -q .headRefOid 2>/dev/null) \
+if [ "$PROVIDER" = github ] && [ -n "$WT" ] && [ -d "$WT" ]; then
+  if REMOTE_HEAD=$("$FM_ROOT/bin/fm-gh-pr-head.sh" "$FM_PR_OWNER" "$FM_PR_REPO" "$NUMBER" 2>/dev/null) \
     && fm_pr_head_valid "$REMOTE_HEAD"; then
     PR_HEAD=$REMOTE_HEAD
   fi
