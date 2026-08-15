@@ -1094,7 +1094,7 @@ fm_wake_status_append_self_announced() {  # <state> <status-file> <line>
 # Map one structurally valid signal key to its home-local status filename.
 # Queue payload text is intentionally ignored: it is display data, not a path
 # authority. The caller still verifies the resulting regular file immediately
-# before its bounded read.
+# before reading every still-unread byte.
 FM_WAKE_STATUS_KEY=
 FM_WAKE_STATUS_HISTORICAL=false
 fm_wake_status_key_map() {  # <queue-key>
@@ -1194,7 +1194,7 @@ fm_wake_unread_events() {  # <validated-status-path> <unused-tail-byte-cap> <min
   FM_WAKE_EVENT_LINE=$(printf '%s' "$FM_WAKE_EVENT_LINE" | LC_ALL=C tr '\t\r' '  ')
 }
 
-fm_wake_latest_event() {  # <validated-status-path> <tail-byte-cap>
+fm_wake_latest_event() {  # <validated-status-path> <unused-tail-byte-cap>
   fm_wake_unread_events "$1" "$2" 0
 }
 
