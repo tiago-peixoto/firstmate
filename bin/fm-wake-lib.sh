@@ -1176,10 +1176,8 @@ fm_wake_unread_events() {  # <validated-status-path> <unused-tail-byte-cap> <min
     }
   ' "$path" "$min_offset" "$end_offset" 2>/dev/null) || return 1
   size=${result%%$'\t'*}
-  rest=${result#*$'\t'}
-  chunk_start=${rest%%$'\t'*}
-  chunk=${rest#*$'\t'}
-  case "$size$chunk_start" in ''|*[!0-9]*) return 1 ;; esac
+  chunk=${result#*$'\t'}
+  case "$size" in ''|*[!0-9]*) return 1 ;; esac
   [ -n "$chunk" ] || return 1
   [ "$min_offset" -lt "$size" ] || return 1
   chunk_start=$min_offset
