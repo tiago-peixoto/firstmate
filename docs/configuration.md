@@ -1,6 +1,6 @@
 # Configuration
 
-The files and environment variables you set to operate firstmate.
+The operational-home layout, files, and environment variables used to operate firstmate.
 
 ## Orchestrator behavior (AGENTS.md)
 
