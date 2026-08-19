@@ -198,6 +198,24 @@
         "bin/fm-session-start.sh",
         "docs/configuration.md"
       ]
+    },
+    {
+      "id": "firstmate-declared-pause-not-absorbed",
+      "summary": "Watcher pause classification: liveness decides whether a declared external wait is still trustworthy instead of replacing its class, so a live or unmeasurable parked worker is absorbed on the bounded cadence while only a confidently dead agent surfaces, exactly once, with the unknown verdict cached at the bounded-recheck boundary.",
+      "class": "pending",
+      "topic": "fm/divergence/firstmate-declared-pause-not-absorbed",
+      "introduced": "2026-08-19",
+      "upstream_pr": {
+        "url": "https://github.com/kunchenguid/firstmate/pull/2598",
+        "disposition": "open"
+      },
+      "retire_when": "Upstream pull request 2598 is merged into official upstream main, so official upstream ships liveness-trusted declared-pause classification itself.",
+      "paths": [
+        "bin/fm-classify-lib.sh",
+        "bin/fm-watch.sh",
+        "docs/architecture.md",
+        "tests/fm-watch-triage.test.sh"
+      ]
     }
   ],
   "retired_upstream": []

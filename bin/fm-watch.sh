@@ -162,10 +162,13 @@ STALE_ESCALATE_SECS=${FM_STALE_ESCALATE_SECS:-240}  # idle secs before a provabl
 BUSY_TURN_MAX_SECS=${FM_BUSY_TURN_MAX_SECS:-3600}
 # A crew that declared a pause is idling on a known external wait, so its stale
 # pane is absorbed rather than wedge-escalated.
-# A captain-held or paused crew whose agent has confidently exited uses the same
-# bounded cadence, while a live or ambiguously read agent still surfaces once.
-# These cases re-surface once for a recheck every PAUSE_RESURFACE_SECS - far
-# longer than the wedge threshold, but finite so a forgotten hold cannot rot invisibly.
+# A captain-held crew uses the same bounded cadence, because the hold is tracked
+# elsewhere rather than ended by this pane. Both re-surface once for a recheck every
+# PAUSE_RESURFACE_SECS - far longer than the wedge threshold, but finite so a
+# forgotten hold cannot rot invisibly.
+# A confidently dead agent is the one case that breaks the declaration (nothing is
+# left to end that wait), so it surfaces for reconciliation instead; an unreadable
+# or ambiguous liveness read is a measurement gap and keeps the bounded cadence.
 PAUSE_RESURFACE_SECS=${FM_PAUSE_RESURFACE_SECS:-$FM_PAUSE_RESURFACE_SECS_DEFAULT}
 # Consecutive event-path failures (fm_backend_wait_transition returning 2 -
 # connect/subscribe failure) before the push fast-path is disabled for the rest
@@ -324,7 +327,7 @@ busy_turn_over_age() {  # <task>
 }
 
 # Absorb a stale pane under a declared external-wait pause (paused:) or a
-# dead-agent captain-held transfer, and re-surface it once every
+# captain-held transfer, and re-surface it once every
 # PAUSE_RESURFACE_SECS for a recheck so it cannot rot invisibly. Called on any
 # stale poll once pause_state_class permits the bounded cadence, so it must be
 # cheap: it NEVER re-reads crew state. The re-surface age is anchored on the
@@ -371,11 +374,32 @@ clear_pause_tracking() {  # <window>
   rm -f "$STATE/.stale-$key" "$STATE/.stale-since-$key" "$STATE/.wedge-escalations-$key"
 }
 
+# Print alive, dead, or unknown for the agent behind a DECLARED pause or captain
+# hold on <window>. Liveness decides whether the declaration still HOLDS; it never
+# replaces the class. A live agent is present to end its own declared wait, so its
+# idle pane is the normal case. Only a CONFIDENTLY dead agent invalidates the
+# declaration, because nothing is left to end that wait.
+# `unknown` (fm_backend_agent_alive folds an unreadable read, an ambiguous
+# foreground process, and an unverified backend into it - bin/fm-backend.sh) is a
+# measurement gap, not evidence the worker is gone, so the declaration stays
+# trusted; fm_backend_agent_state reserves confident verdicts for alive and
+# dead/missing for exactly that reason, and the bounded PAUSE_RESURFACE_SECS
+# recheck below remains the backstop when a trusted wait has quietly rotted.
+# A secondmate's idle endpoint is healthy by charter, so it is never probed.
+pause_declaration_liveness() {  # <window>
+  local win=$1 agent_alive
+  [ "$(window_kind "$win")" != secondmate ] || { printf 'alive'; return; }
+  agent_alive=$(fm_backend_agent_alive "$(window_backend "$win")" "$win" 2>/dev/null) || agent_alive=unknown
+  case "$agent_alive" in alive|dead) ;; *) agent_alive=unknown ;; esac
+  printf '%s' "$agent_alive"
+}
+
 # Reconcile a declared pause or captain-held status with authoritative crew state.
-# Only a confidently dead ordinary crew may recover paused classification after
-# fm-crew-state has fallen back to stopped or unknown.
+# The declaration itself classifies the pane; pause_declaration_liveness only
+# decides whether it still holds, so a confidently dead agent surfaces for
+# reconciliation while every other liveness read keeps the bounded cadence.
 pause_state_class() {  # <window> <task>
-  local win=$1 task=$2 key last recheck_file class agent_alive
+  local win=$1 task=$2 key last recheck_file recheck_state class agent_alive
   key=${win//:/_}
   key=${key//\//_}
   key=${key//./_}
@@ -387,13 +411,19 @@ pause_state_class() {  # <window> <task>
     return
   fi
   if [ -e "$STATE/.paused-$key" ] && [ "$(age_of "$recheck_file")" -lt "$STALE_ESCALATE_SECS" ]; then
-    if [ "$(window_kind "$win")" != secondmate ]; then
-      agent_alive=$(fm_backend_agent_alive "$(window_backend "$win")" "$win" 2>/dev/null) || agent_alive=unknown
-      if [ "$agent_alive" != dead ]; then
+    recheck_state=$(cat "$recheck_file" 2>/dev/null || true)
+    agent_alive=$(pause_declaration_liveness "$win")
+    if [ "$agent_alive" = dead ]; then
+      if [ "$recheck_state" = surfaced ]; then
+        printf 'paused'
+      else
         rm -f "$recheck_file"
         printf 'none'
-        return
       fi
+      return
+    fi
+    if [ "$agent_alive" = alive ] && [ "$recheck_state" != trusted ]; then
+      printf 'trusted' > "$recheck_file"
     fi
     printf 'paused'
     return
@@ -404,20 +434,32 @@ pause_state_class() {  # <window> <task>
     printf 'working'
     return
   fi
-  if [ "$(window_kind "$win")" != secondmate ]; then
-    agent_alive=$(fm_backend_agent_alive "$(window_backend "$win")" "$win" 2>/dev/null) || agent_alive=unknown
-    if [ "$agent_alive" != dead ]; then
+  recheck_state=$(cat "$recheck_file" 2>/dev/null || true)
+  agent_alive=$(pause_declaration_liveness "$win")
+  if [ "$agent_alive" = dead ]; then
+    if [ "$recheck_state" = surfaced ]; then
+      printf 'surfaced' > "$recheck_file"
+      printf 'paused'
+    else
       rm -f "$recheck_file"
       printf 'none'
-      return
     fi
+    return
   fi
-  [ "$class" = none ] && [ "${agent_alive:-unknown}" = dead ] && class=paused
-  case "$class" in
-    paused) date +%s > "$recheck_file" ;;
-    *) rm -f "$recheck_file" ;;
-  esac
-  printf '%s' "$class"
+  # Only paused and none can reach here (working returned above). A `none` means
+  # fm-crew-state found no active run and could not confirm the pause itself - a
+  # stopped, finished, or unknown read - and the worker's own still-trustworthy
+  # declaration is the better evidence, so both remaining classes take the bounded
+  # pause cadence.
+  if [ "$agent_alive" = alive ]; then
+    printf 'trusted' > "$recheck_file"
+  elif [ "$agent_alive" = unknown ]; then
+    case "$recheck_state" in
+      surfaced|trusted) printf '%s' "$recheck_state" > "$recheck_file" ;;
+      *) printf 'unknown' > "$recheck_file" ;;
+    esac
+  fi
+  printf 'paused'
 }
 
 surface_nonterminal_stale() {  # <window> <hash>
@@ -430,7 +472,7 @@ surface_nonterminal_stale() {  # <window> <hash>
   last=$(last_status_line "$STATE/$task.status")
   if status_is_paused_or_captain_held "$last"; then
     : > "$STATE/.paused-$key"
-    date +%s > "$STATE/.paused-rechecked-$key"
+    printf 'surfaced' > "$STATE/.paused-rechecked-$key"
     date +%s > "$STATE/.paused-resurfaced-$key"
   else
     rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" "$STATE/.paused-resurfaced-$key"
@@ -1095,10 +1137,11 @@ EOF
           #   - working: an actively-running pipeline legitimately sits on a static
           #     pane (e.g. waiting on CI), so absorb and start the wedge timer so a
           #     genuinely frozen run still escalates past STALE_ESCALATE_SECS;
-          #   - paused: the crew declared an external wait, or a declared pause or
-          #     captain hold is paired with a confidently dead agent, so absorb on
-          #     the long PAUSE_RESURFACE_SECS cadence instead of wedge-escalating;
-          #   - none: no running pipeline, no exact busy verdict, no declared pause.
+          #   - paused: the crew declared an external wait or a captain hold that
+          #     its liveness read does not contradict, so absorb on the long
+          #     PAUSE_RESURFACE_SECS cadence instead of wedge-escalating;
+          #   - none: no running pipeline, no exact busy verdict, and either no
+          #     declared pause or a declared pause whose agent is confidently dead.
           #     Surface immediately so firstmate inspects the inconclusive state
           #     (it may be done via an interactive menu that wrote no done: status,
           #     waiting on a decision, or wedged) instead of leaving the finish to
@@ -1128,7 +1171,7 @@ EOF
                          printf '%s' "$h" > "$sf"
                          wedge_timer_check "$w" "$ssf" "non-terminal stale (provably working after a declared pause)" "$ewf"
                          triage_log "absorbed non-terminal stale (provably working): $w" ;;
-                *)       handle_paused_stale "$w" "$task" "$h" ;;
+                *)       surface_nonterminal_stale "$w" "$h" ;;
               esac
             else
               wedge_timer_check "$w" "$ssf" "non-terminal stale" "$ewf"
