@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 # Behavior tests for Next.js build-cache reporting.
 #
-# The leak this pins: a pooled task copy returns to the pool still holding its
-# Next.js build output. `treehouse return` resets tracked content and leaves
-# gitignored output alone, so nothing ever removes it and it accumulates copy by
-# copy until the volume fills. Measured 2026-08-18: 15 GB in one idle Artemis
-# copy on a volume with 11 GB free.
+# The accumulation this pins: a pooled task copy returns to the pool still
+# holding its Next.js build output. `treehouse return` resets tracked content
+# and leaves gitignored output alone, while Firstmate does not remove that output
+# on return, so it can accumulate across pooled copies.
 #
-# bin/fm-next-cache-sweep.sh reports copies already sitting idle in the pool
-# using bin/fm-next-cache-lib.sh's discovery rule. Teardown and the sweep both
-# preserve build output because neither has a durable ownership fence.
+# bin/fm-next-cache-sweep.sh reports every copy announced by the pool using
+# bin/fm-next-cache-lib.sh's discovery rule. Teardown and the sweep both preserve
+# build output because neither has a durable ownership fence.
 #
-# The cases that matter most are the refusals. A live dev server rewrites the
-# output the moment it is deleted, and deleting mid-build is worse than leaving
-# it alone, so every ownership proof gets its own case asserting the directory
-# SURVIVES.
+# Ownership classification never grants deletion authority. A live dev server
+# can rewrite the output during a report, so every ownership state gets its own
+# case asserting the directory survives.
 set -u
 
 # shellcheck source=tests/lib.sh disable=SC1091
@@ -220,7 +218,7 @@ test_sweep_dry_run_removes_nothing() {
   pass "--dry-run reports the reclaim without performing it"
 }
 
-# --- sweep: every ownership proof refuses ------------------------------------
+# --- sweep: every ownership state is reported --------------------------------
 
 test_sweep_skips_in_use_copy() {
   local case_dir wt out

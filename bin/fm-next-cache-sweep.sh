@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Report Next.js build output in pooled worktrees that appear unused.
+# Report Next.js build output and ownership state in pooled worktrees.
 #
 # This feature is report-only. Teardown-side reclamation was removed as
 # unprovable, not postponed: under Treehouse's process-bound hold, ownership
@@ -13,10 +13,11 @@
 # task-lifetime durable lease makes ownership independent of worktree processes,
 # which is the required boundary for ownership and quietness to hold together.
 #
-# This report-only boundary is provisional, not a verdict about Treehouse.
-# Whether acquisition mutates a copy is filed as the separate scouted experiment
+# This report-only boundary is not a verdict about Treehouse. Whether acquisition
+# mutates a copy is filed as the separate scouted experiment
 # `firstmate-treehouse-lease-mutation-probe`, which can safely lease a copy first
-# proven empty and clean. This command does not run or pre-empt that experiment.
+# proven empty and clean. Regardless of that experiment's result, this command
+# remains report-only and does not run or pre-empt it.
 # It is a command a human or firstmate runs; there is deliberately no daemon,
 # watcher, schedule, or disk-pressure trigger behind it.
 #
@@ -30,7 +31,7 @@
 # clones and only crewmates change them, and a clone is where nothing builds
 # anyway.
 #
-# A COPY MUST PASS ALL FOUR CHECKS before it is reported as eligible:
+# OWNERSHIP CLASSIFICATION USES FOUR CHECKS:
 #   1. treehouse reports its state. The documented `available`, `in-use`,
 #      `dirty`, and `leased` states are printed by name. An unrecognized state
 #      produces an undetermined verdict instead of an eligibility claim.
@@ -40,15 +41,18 @@
 #   3. The tree is clean. Uncommitted work is unlanded work.
 #   4. There are no stashes. A stash is unlanded work that a clean tree does not
 #      show, and nobody is watching an idle copy to notice it disappear.
-# Checks 3 and 4 read git and change nothing. A copy with a proven owner keeps
-# its build output and is reported. An absent secondmate registry means no
-# registered secondmates. An unreadable or malformed present registry refuses
-# the sweep, and an unreadable pool refuses its project. Candidate uncertainty
-# produces one undetermined line without suppressing the other candidates.
+# Checks 3 and 4 read git and change nothing. A proven owner is measured and
+# listed as `skipped-as-owned` during default discovery; for an explicitly named
+# project, its directories are reported with the ownership reason. An absent
+# secondmate registry means no registered secondmates. An unreadable or malformed
+# present registry refuses the sweep, and an unreadable pool refuses its project.
+# Candidate uncertainty produces one undetermined line without suppressing the
+# other candidates.
 #
-# It reports every qualifying directory and its size, and says plainly when it
-# found nothing. There is no flag, environment variable, or target origin that
-# grants this command deletion authority.
+# It reports a verdict for every announced pool record, including the measured
+# total when inspection succeeds, and says plainly when it found nothing. There
+# is no flag, environment variable, or target origin that grants this command
+# deletion authority.
 #
 # Exit status is 0 when the inspection completed, 1 when reporting is partial or
 # a project's pool lookup failed (already reported), 2 on a usage or environment
@@ -64,16 +68,9 @@
 # to apply is not "what does this check reject?" but "what would SATISFY this
 # check and still violate the property the verdict claims to establish?"
 #
-# This was learned the expensive way. The verdict governing the project
-# argument carried the falsifier "any non-root argument". A linked worktree IS
-# a root, so it satisfied the falsifier and defeated the check anyway: the
-# check established "is a worktree root" while the property needed was "is the
-# primary clone". The entry passed its own test while the verdict stayed wrong.
-# "A linked worktree, which is a root but is not the primary clone" would have
-# caught it.
-#
-# The same shape defeated the clone exclusion three times, each time because
-# the property established was narrower than the property needed:
+# For example, a linked worktree is a root but is not the primary clone, so a
+# falsifier for the primary-clone check must name that case rather than merely
+# naming a non-root argument. Keep these distinctions explicit:
 #   `git rev-parse --git-dir` answering        proves a repo is REACHABLE, not that the path is its root
 #   `--show-toplevel` equalling the path       proves the path is A worktree root, not the PRIMARY one
 #   `--absolute-git-dir` = `--git-common-dir`  proves the primary worktree, which is the property needed
@@ -153,10 +150,9 @@
 # - `bin/fm-next-cache-sweep.sh: sweep_load_task_worktrees ->
 #   sweep_read_text_file "$meta" and metadata field loop`. Checked: the same
 #   complete reader rejects NUL, and one shell pass rejects duplicate, missing,
-#   non-absolute, or invalid-placement fields before appending a worktree. This
-#   replaced unchecked `sed` substitutions. Falsifier: metadata contains two
-#   `worktree=` fields, the second naming the candidate, and last-value parsing
-#   silently omits or replaces that owner.
+#   non-absolute, or invalid-placement fields before appending a worktree.
+#   Falsifier: metadata contains two `worktree=` fields, the second naming the
+#   candidate, and last-value parsing silently omits or replaces that owner.
 # - `bin/fm-next-cache-sweep.sh: sweep_path_identity -> cd, uname, and stat -L`.
 #   Checked: `cd && pwd -P` resolves the referent, `stat -L` follows a final
 #   symlink on both probed platforms, and empty or non-numeric device/inode output
@@ -181,10 +177,10 @@
 #   project queries`. Checked: physical entry and `git rev-parse --show-toplevel`
 #   must succeed and the physical top level must equal the argument; resolved
 #   `--absolute-git-dir` and absolute `--git-common-dir` must also be identical.
-#   Converted wrong verdict: root equality had proven a worktree root, not the
-#   primary clone. Falsifier: an explicit linked-worktree root passes top-level
-#   equality, then a pool row naming the primary clone passes the distinct-project
-#   comparison and is reported as a pool candidate.
+#   Root equality alone proves a worktree root, not the primary clone.
+#   Falsifier: an explicit linked-worktree root passes top-level equality, then a
+#   pool row naming the primary clone passes the distinct-project comparison and
+#   is reported as a pool candidate.
 # - `bin/fm-next-cache-sweep.sh: sweep_pool_entries -> mktemp, treehouse status
 #   --json, staged-file read, JSON decode, and temp removal`. Checked: treehouse's
 #   status is captured before parsing, the file is decoded strictly as UTF-8 JSON,
@@ -193,10 +189,10 @@
 #   before its second row, but the first row is planned as a complete pool.
 # - `bin/fm-next-cache-sweep.sh: sweep_pool_entries -> JSON object decoding`.
 #   Checked: an object-pairs hook rejects every repeated key and the constant
-#   parser rejects NaN and infinities before a candidate row exists. Converted
-#   wrong verdict: syntactically decoded JSON had not guaranteed unambiguous
-#   lease evidence. Falsifier: one entry contains `"status":"in-use"` followed
-#   by `"status":"available"`, and last-value decoding produces a false unowned
+#   parser rejects NaN and infinities before a candidate row exists. Syntactic
+#   JSON validity alone does not guarantee unambiguous lease evidence.
+#   Falsifier: one entry contains `"status":"in-use"` followed by
+#   `"status":"available"`, and last-value decoding produces a false unowned
 #   verdict.
 # - `bin/fm-next-cache-sweep.sh: sweep_pool_entries -> status and path fields`.
 #   Checked: Python requires a nonempty string status and an absolute path, and
@@ -217,12 +213,11 @@
 #   project worktree registry, and project-clone exclusion`. Checked: candidate
 #   `--show-toplevel` must physically equal the candidate, the candidate identity
 #   must appear exactly once in `git worktree list --porcelain -z`, and it must
-#   differ from the supplied project identity. Wrong evidence chain: the supplied
-#   identity was previously proven only to be a root; it now passes the independent
-#   primary-clone proof above first. Falsifier: the pool names a child of a live
-#   registered worktree and Git reachability is mistaken for root identity, or a
-#   linked project argument makes the actual primary clone look like a distinct
-#   registered candidate.
+#   differ from the supplied project identity. The supplied identity passes the
+#   independent primary-clone proof above before this comparison.
+#   Falsifier: the pool names a child of a live registered worktree and Git
+#   reachability is mistaken for root identity, or a linked project argument
+#   makes the actual primary clone look like a distinct registered candidate.
 # - `bin/fm-next-cache-sweep.sh: sweep_unowned_reason -> pool status`. Checked:
 #   byte-exact `available`, `in-use`, `dirty`, and `leased` are named,
 #   non-available documented states record ownership, and every other value
@@ -266,10 +261,9 @@
 # - `bin/fm-next-cache-lib.sh: fm_next_cache_inspect -> worktree cd and git
 #   rev-parse --git-dir`. Checked: entry and Git failure set a named inspection
 #   error and return nonzero; `--git-dir` is needed here only to prove a repository
-#   is reachable because the sweep separately proves candidate-root provenance
-#   and teardown supplies its task worktree. Falsifier: a caller passes a repository
-#   child directory, `--git-dir` succeeds there, and that answer alone qualifies
-#   the child's build output.
+#   is reachable because the sweep separately proves candidate-root provenance.
+#   Falsifier: a caller passes a repository child directory, `--git-dir` succeeds
+#   there, and that answer alone qualifies the child's build output.
 # - `bin/fm-next-cache-lib.sh: fm_next_cache_inspect -> mktemp, find -print0,
 #   NUL-delimited read, and temp removal`. Checked: the complete `find` status is
 #   captured before parsing, documented `-print0` records are path-validated, and
@@ -339,16 +333,18 @@ sweep_usage() {
   cat <<'TXT'
 Usage: fm-next-cache-sweep.sh [--dry-run] [<project-dir>...]
 
-Report Next.js build output in pooled task copies that appear unused.
+Report Next.js build output and ownership state in pooled task copies.
 With no project directory, inspect every project clone under $FM_HOME/projects.
 No invocation of this command deletes build output.
 
   --dry-run   accepted as a report-only compatibility spelling.
 
-A copy is positively classified only when the pool reports it available, no task record in this
-home or a registered secondmate home names it, its tree is clean, and it holds
-no stashes. Proven owners are skipped and reported. Incomplete copy ownership
-input receives an undetermined verdict without suppressing other copies.
+A copy is classified free only when the pool reports it available, no task
+record in this home or a registered secondmate home names it, its tree is clean,
+and it holds no stashes. Default discovery lists proven owners as skipped with
+their measured output; explicitly named projects report their directories with
+the ownership reason. Incomplete copy ownership input receives an undetermined
+verdict without suppressing other copies.
 Read this script's header for the full rule, and
 bin/fm-next-cache-lib.sh's for what counts as build output.
 TXT

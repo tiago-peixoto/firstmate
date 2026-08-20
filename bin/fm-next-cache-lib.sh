@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 # Shared discovery and reporting of Next.js build output inside a task worktree.
 #
-# Why this exists: a pooled worktree returns to the pool carrying its Next.js
-# build output, and nothing ever removes it. Measured 2026-08-18: one idle
-# Artemis copy held a 15 GB packages/frontend/.next on a volume with 11 GB free;
-# removing that one directory took free space to 27 GB. An earlier sweep on
-# 2026-08-07 found ~25.6 GB of it spread across eight copies. The output
-# regenerates from source on the next build, so it is the largest reportable
-# disk consumer in the pool.
+# Why this exists: a pooled worktree can return to the pool carrying Next.js
+# build output, and Firstmate does not remove it on return. The output
+# regenerates from source on the next build, so identifying and measuring it
+# gives operators a useful view of accumulated, regenerable disk usage.
 #
-# Sourced by bin/fm-next-cache-sweep.sh, which reports build output in copies
-# already sitting idle in the pool. The discovery rule is stated here once.
+# Sourced by bin/fm-next-cache-sweep.sh, which reports build output and ownership
+# state for every copy announced by a project's pool. The discovery rule is
+# stated here once.
 #
 # WHAT IS REPORTED. Exactly directories named .next that pass BOTH proofs:
 #   1. git ignores the directory in the repo that contains it
@@ -25,15 +23,11 @@
 # scope by construction, not by exclusion list: the walk prunes node_modules
 # and .git outright, and neither could pass proof 2 anyway.
 #
-# OTHER CACHES WERE MEASURED AND DELIBERATELY LEFT OUT. Surveying the whole pool
-# on 2026-08-18 turned up one other large gitignored directory: a project's .tmp
-# scratch root, ~8.7 GB across the copies, holding audit output, coverage JSON,
-# browser recordings, and review artifacts. That is agent work product, not build
-# output - nothing regenerates it - so it is not this rule's business, and the
-# same goes for a `dist` (~102 MB pooled, and tracked in some projects). Every
-# other candidate measured zero: .turbo, .cache, .parcel-cache, .vite, .output.
-# Widening this rule by pattern would trade a large, provable report for a small,
-# unprovable one; add a directory only by naming it and its measured size.
+# OTHER CACHES ARE DELIBERATELY OUT OF SCOPE. A project's gitignored `.tmp`
+# scratch root can hold audit output, coverage JSON, browser recordings, and
+# review artifacts that do not regenerate from source, while `dist` can be
+# tracked content. A generic cache-like name does not prove regenerability;
+# extend this rule only when a specific directory has that proof.
 #
 # Next.js documents .next as the build output directory (`distDir` defaults to
 # '.next') and clears it itself on every production build (`cleanDistDir`
@@ -46,12 +40,11 @@
 #
 # The walk prunes node_modules and .git, and stops descending at each .next it
 # finds, so a nested .next under .next/standalone is reported with its parent
-# rather than counted twice. Measured cost on the largest live Artemis copy
-# (5.1 GB of loose scratch, full node_modules): 214 ms.
+# rather than counted twice.
 #
-# This library only inspects and reports. The sweep uses pool state, task records,
-# and a clean tree to qualify that report. Sourcing this file grants no authority
-# to remove anything.
+# This library only inspects and reports. The sweep combines its measurements
+# with pool state, task records, and tree state to classify each copy. Sourcing
+# this file grants no authority to remove anything.
 
 # Bytes-to-human, matching the units du -h prints, so a report line reads the
 # same as what an operator would have measured by hand.
@@ -145,8 +138,8 @@ fm_next_cache_is_build_output() {  # <repo-root> <dir>
   local root=$1 dir=$2 real parent ignore_status app_status
   if [ ! -e "$dir" ] && [ ! -L "$dir" ]; then return 2; fi
   [ -d "$dir" ] || return 1
-  # A symlink is never removed: the target may live outside the worktree
-  # entirely, and rm -rf on it would follow the operator's intent nowhere good.
+  # A symlink is never reported because its target may live outside the
+  # worktree entirely.
   if [ -L "$dir" ]; then return 1; fi
   real=$(CDPATH='' cd -- "$dir" 2>/dev/null && pwd -P) || return 2
   # Containment: only ever a path physically under the worktree we were given.
