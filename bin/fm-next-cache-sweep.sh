@@ -20,6 +20,9 @@
 # remains report-only and does not run or pre-empt it.
 # It is a command a human or firstmate runs; there is deliberately no daemon,
 # watcher, schedule, or disk-pressure trigger behind it.
+# This fork-carried tool is deliberately absent from docs/scripts.md because an
+# entry in that frequently changed upstream index would create a standing merge
+# conflict. Its own header and AGENTS.md keep it discoverable.
 #
 # Usage: fm-next-cache-sweep.sh [--dry-run] [<project-dir>...]
 #   --dry-run   retained as a report-only compatibility spelling.
