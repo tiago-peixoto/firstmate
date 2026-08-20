@@ -234,8 +234,34 @@ test_sweep_skips_in_use_copy() {
 
   assert_present "$wt/packages/frontend/.next" \
     "in-use: a leased copy may be mid-build; its output must survive"
-  assert_contains "$out" "in use by the pool" "in-use: the skip reason must be reported"
+  assert_contains "$out" "pool state: in-use" "in-use: the pool state must be reported"
   pass "sweep never touches a copy the pool still reports in use"
+}
+
+test_sweep_reports_dirty_and_leased_pool_states() {
+  local case_dir dirty_wt leased_wt out rc
+  case_dir=$(make_case documented-pool-states)
+  install_treehouse_stub "$case_dir"
+  dirty_wt=$(add_pool_worktree "$case_dir" 1)
+  leased_wt=$(add_pool_worktree "$case_dir" 2)
+  add_next_app "$dirty_wt" packages/dirty
+  add_next_app "$leased_wt" packages/leased
+  printf '1 dirty\n2 leased\n' > "$case_dir/pool-status"
+
+  set +e
+  out=$(run_sweep "$case_dir" 2>&1); rc=$?
+  set -e
+
+  expect_code 0 "$rc" "documented-pool-states: report should succeed"
+  assert_contains "$out" "skipped-as-owned $dirty_wt (pool state: dirty), holding" \
+    "documented-pool-states: dirty copy must be named, classified, and sized"
+  assert_contains "$out" "skipped-as-owned $leased_wt (pool state: leased), holding" \
+    "documented-pool-states: leased copy must be named, classified, and sized"
+  assert_present "$dirty_wt/packages/dirty/.next" \
+    "documented-pool-states: dirty copy must remain intact"
+  assert_present "$leased_wt/packages/leased/.next" \
+    "documented-pool-states: leased copy must remain intact"
+  pass "documented dirty and leased pool states are reported with sizes"
 }
 
 test_sweep_counts_owned_copy_without_build_output() {
@@ -254,7 +280,7 @@ test_sweep_counts_owned_copy_without_build_output() {
     "owned-empty: every skipped candidate must contribute to the summary"
   assert_contains "$out" "skipped as owned" \
     "owned-empty: the zero-output copy must keep its ownership verdict"
-  assert_contains "$out" "skipped-as-owned $wt (in use by the pool), no reclaimable build output" \
+  assert_contains "$out" "skipped-as-owned $wt (pool state: in-use), no reclaimable build output" \
     "owned-empty: the named ownership verdict must be listed"
   assert_not_contains "$out" "contained no copies" \
     "owned-empty: an inspected pool candidate is not an empty pool"
@@ -341,33 +367,44 @@ test_sweep_skips_stashed_copy() {
   pass "sweep never touches a copy holding stashed work"
 }
 
-# --- sweep: incomplete ownership refuses its whole scope ---------------------
+# --- sweep: incomplete copy evidence stays local to that copy ----------------
 #
 # The sweep cannot report a positive eligibility verdict when an ownership proof
 # cannot be made. Each case below breaks one input and asserts the build output
-# survives while the incomplete scope is refused.
+# survives while independently measurable copies retain their report verdicts.
 
-test_sweep_refuses_project_with_unknown_pool_status() {
-  local case_dir wt out rc
+test_sweep_reports_unknown_status_without_suppressing_project() {
+  local case_dir unknown_wt available_wt out rc
   case_dir=$(make_case unknown-status)
   install_treehouse_stub "$case_dir"
-  wt=$(add_pool_worktree "$case_dir" 1)
-  add_next_app "$wt" packages/frontend
-  # A status this version of the sweep does not know: not `available`, so not
-  # proven free, even though it is not the familiar `in-use` either.
-  printf '1 reserved-by-something-new\n' > "$case_dir/pool-status"
+  unknown_wt=$(add_pool_worktree "$case_dir" 1)
+  available_wt=$(add_pool_worktree "$case_dir" 2)
+  add_next_app "$unknown_wt" packages/unknown
+  add_next_app "$available_wt" packages/available
+  printf '1 reserved-by-something-new\n2 available\n' > "$case_dir/pool-status"
 
   set +e
   out=$(run_sweep "$case_dir" 2>&1); rc=$?
   set -e
 
-  assert_present "$wt/packages/frontend/.next" \
-    "unknown-status: an unrecognized pool status is not proof the copy is free"
   expect_code 1 "$rc" \
-    "unknown-status: incomplete pool ownership must refuse the project"
-  assert_contains "$out" "the pool did not report it available" \
-    "unknown-status: the skip reason must name what was not established"
-  pass "an unrecognized pool status refuses the whole project"
+    "unknown-status: an unrecognized state must keep the report visibly partial"
+  assert_contains "$out" \
+    "sweep: undetermined $unknown_wt (unrecognized pool state: reserved-by-something-new), holding" \
+    "unknown-status: the unknown copy must be named, explained, and sized"
+  assert_contains "$out" "sweep: report-only $available_wt (" \
+    "unknown-status: the known copy must still receive its report verdict"
+  assert_contains "$out" "pool state: available" \
+    "unknown-status: the known copy must name its documented state"
+  assert_not_contains "$out" "sweep: refused" \
+    "unknown-status: candidate uncertainty must never become refusal"
+  assert_not_contains "$out" "another pool candidate" \
+    "unknown-status: one unknown copy must not suppress another copy"
+  assert_present "$unknown_wt/packages/unknown/.next" \
+    "unknown-status: unknown copy must remain intact"
+  assert_present "$available_wt/packages/available/.next" \
+    "unknown-status: available copy must remain intact"
+  pass "an unknown pool state does not suppress known copy reporting"
 }
 
 test_sweep_skips_whole_project_when_pool_is_unreadable() {
@@ -565,10 +602,12 @@ test_sweep_refuses_unreadable_secondmate_registry() {
     "unreadable-secondmate-registry: unreadable ownership must prevent deletion"
   assert_contains "$out" "$registry" \
     "unreadable-secondmate-registry: the refusal must name the registry"
+  assert_contains "$out" "cannot read present secondmate registry" \
+    "unreadable-secondmate-registry: the diagnostic must distinguish a present registry"
   pass "an unreadable secondmate registry refuses the whole sweep"
 }
 
-test_sweep_refuses_absent_secondmate_registry() {
+test_sweep_accepts_absent_secondmate_registry() {
   local case_dir wt out rc registry
   case_dir=$(make_case absent-secondmate-registry)
   install_treehouse_stub "$case_dir"
@@ -582,13 +621,15 @@ test_sweep_refuses_absent_secondmate_registry() {
   out=$(run_sweep "$case_dir" 2>&1); rc=$?
   set -e
 
-  expect_code 2 "$rc" \
-    "absent-secondmate-registry: absent global ownership must refuse the sweep"
+  expect_code 0 "$rc" \
+    "absent-secondmate-registry: absence means no registered secondmates"
   assert_present "$wt/packages/frontend/.next" \
-    "absent-secondmate-registry: absent ownership input must prevent deletion"
-  assert_contains "$out" "$registry" \
-    "absent-secondmate-registry: the refusal must name the missing registry"
-  pass "an absent secondmate registry refuses the whole sweep"
+    "absent-secondmate-registry: report-only inspection must preserve build output"
+  assert_contains "$out" "sweep: report-only $wt" \
+    "absent-secondmate-registry: inspection must proceed"
+  assert_not_contains "$out" "secondmate registry" \
+    "absent-secondmate-registry: absence must not be diagnosed as unreadable"
+  pass "an absent secondmate registry is treated as empty"
 }
 
 test_sweep_skips_symlink_aliased_task_worktree() {
@@ -888,7 +929,7 @@ SH
   pass "duplicate pool fields cannot forge availability"
 }
 
-test_sweep_refuses_conflicting_alias_pool_entries() {
+test_sweep_reports_conflicting_alias_pool_entries_independently() {
   local case_dir wt alias out rc
   case_dir=$(make_case conflicting-alias-pool-entries)
   wt=$(add_pool_worktree "$case_dir" 1)
@@ -911,7 +952,11 @@ SH
     "conflicting-alias-pool-entries: available alias must not override an in-use copy"
   assert_contains "$out" "duplicate filesystem copy" \
     "conflicting-alias-pool-entries: the pool collision must be named"
-  pass "conflicting pool aliases refuse the project atomically"
+  assert_contains "$out" "skipped-as-owned $wt (pool state: in-use), holding" \
+    "conflicting-alias-pool-entries: the first announced row must retain its report"
+  assert_not_contains "$out" "sweep: refused" \
+    "conflicting-alias-pool-entries: the duplicate row must not suppress the first"
+  pass "conflicting pool aliases receive independent verdicts"
 }
 
 test_sweep_refuses_pathless_pool_entry_atomically() {
@@ -938,7 +983,7 @@ SH
   pass "a pathless pool entry refuses its project before any deletion"
 }
 
-test_sweep_refuses_nondirectory_pool_entry_atomically() {
+test_sweep_reports_other_copy_when_pool_entry_is_nondirectory() {
   local case_dir wt out rc
   case_dir=$(make_case nondirectory-pool-entry)
   wt=$(add_pool_worktree "$case_dir" 1)
@@ -958,12 +1003,16 @@ SH
   expect_code 1 "$rc" \
     "nondirectory-pool-entry: an uninspectable pool path must return nonzero"
   assert_present "$wt/packages/frontend/.next" \
-    "nondirectory-pool-entry: project preflight must precede every deletion"
+    "nondirectory-pool-entry: report-only inspection must preserve build output"
   assert_contains "$out" "$case_dir/pool/not-a-directory" \
-    "nondirectory-pool-entry: the refusal must name the invalid path"
+    "nondirectory-pool-entry: the undetermined verdict must name the invalid path"
+  assert_contains "$out" "sweep: report-only $wt" \
+    "nondirectory-pool-entry: the inspectable copy must still be reported"
+  assert_not_contains "$out" "sweep: refused" \
+    "nondirectory-pool-entry: the invalid path must not suppress another copy"
   assert_not_contains "$out" "nothing to reclaim" \
-    "nondirectory-pool-entry: a discarded plan is not a completed empty inspection"
-  pass "a nondirectory pool entry refuses its project before any deletion"
+    "nondirectory-pool-entry: a partial report is not a completed empty inspection"
+  pass "a nondirectory pool entry does not suppress an inspectable copy"
 }
 
 test_sweep_refuses_pool_entry_for_live_copy_child() {
@@ -1073,7 +1122,7 @@ SH
   pass "an explicit project subdirectory cannot anchor clone provenance"
 }
 
-test_sweep_refusal_records_later_candidate_verdicts() {
+test_sweep_candidate_uncertainty_preserves_later_verdicts() {
   local case_dir wt1 wt2 invalid out rc
   case_dir=$(make_case later-candidate-verdicts)
   wt1=$(add_pool_worktree "$case_dir" 1)
@@ -1095,18 +1144,20 @@ SH
   set -e
 
   expect_code 1 "$rc" \
-    "later-candidate-verdicts: one uninspectable candidate must refuse the project"
+    "later-candidate-verdicts: one uninspectable candidate must keep the report partial"
   assert_present "$wt1/packages/one/.next" \
-    "later-candidate-verdicts: atomic refusal must preserve the first later copy"
+    "later-candidate-verdicts: reporting must preserve the first later copy"
   assert_present "$wt2/packages/two/.next" \
-    "later-candidate-verdicts: atomic refusal must preserve the second later copy"
+    "later-candidate-verdicts: reporting must preserve the second later copy"
   assert_contains "$out" "sweep: undetermined $invalid" \
     "later-candidate-verdicts: the failing candidate needs a terminal verdict"
-  assert_contains "$out" "sweep: refused $wt1" \
-    "later-candidate-verdicts: the first later candidate needs a terminal verdict"
-  assert_contains "$out" "sweep: refused $wt2" \
-    "later-candidate-verdicts: the second later candidate needs a terminal verdict"
-  pass "project refusal records a verdict for every later candidate"
+  assert_contains "$out" "sweep: report-only $wt1" \
+    "later-candidate-verdicts: the first later candidate must still be reported"
+  assert_contains "$out" "sweep: report-only $wt2" \
+    "later-candidate-verdicts: the second later candidate must still be reported"
+  assert_not_contains "$out" "sweep: refused" \
+    "later-candidate-verdicts: candidate uncertainty must never become refusal"
+  pass "candidate uncertainty preserves every later report verdict"
 }
 
 test_sweep_reconciles_every_announced_candidate() {
@@ -1131,17 +1182,17 @@ SH
   set -e
 
   expect_code 1 "$rc" \
-    "candidate-ledger-reconciliation: an incomplete candidate must refuse the project"
+    "candidate-ledger-reconciliation: an incomplete candidate must keep the report partial"
   verdict_count=$(printf '%s\n' "$out" \
-    | grep -Ec '^sweep: (report-only|skipped-as-owned|undetermined|refused|failed) ' || true)
+    | grep -Ec '^sweep: (report-only|skipped-as-owned|undetermined|failed) ' || true)
   [ "$verdict_count" -eq 3 ] \
     || fail "candidate-ledger-reconciliation: expected 3 terminal verdicts, got $verdict_count"$'\n'"$out"
-  assert_contains "$out" "sweep: refused $wt1" \
-    "candidate-ledger-reconciliation: a discarded earlier plan row needs a verdict"
+  assert_contains "$out" "sweep: report-only $wt1" \
+    "candidate-ledger-reconciliation: the earlier valid row needs a report verdict"
   assert_contains "$out" "sweep: undetermined $invalid" \
     "candidate-ledger-reconciliation: the incomplete candidate needs a verdict"
-  assert_contains "$out" "sweep: refused $wt2" \
-    "candidate-ledger-reconciliation: an unprocessed later candidate needs a verdict"
+  assert_contains "$out" "sweep: report-only $wt2" \
+    "candidate-ledger-reconciliation: the later valid row needs a report verdict"
   assert_not_contains "$out" "nothing to reclaim" \
     "candidate-ledger-reconciliation: an unreconciled run cannot claim completeness"
   pass "the candidate ledger reconciles every announced pool path"
@@ -1168,7 +1219,7 @@ SH
     "incomplete-summary: unreadable projects make the absolute empty claim false"
   assert_contains "$out" "1 project" \
     "incomplete-summary: the summary must count projects that could not be inspected"
-  assert_contains "$out" "could not be inspected" \
+  assert_contains "$out" "could not be fully inspected" \
     "incomplete-summary: the summary must state that the result is incomplete"
   pass "an incomplete sweep qualifies its summary with the unreadable project count"
 }
@@ -1320,7 +1371,7 @@ SH
     "build-output-walk-failure: partial discovery must precede no deletion"
   assert_contains "$out" "$wt" \
     "build-output-walk-failure: the incompletely walked copy must be named"
-  pass "a partial build-output walk refuses the project atomically"
+  pass "a partial build-output walk produces an undetermined verdict"
 }
 
 test_sweep_refuses_when_build_output_size_fails() {
@@ -1350,7 +1401,9 @@ SH
     "build-output-size-failure: failed measurement must not normalize to empty"
   assert_contains "$out" "$wt" \
     "build-output-size-failure: the unmeasurable copy must be named"
-  pass "an unmeasurable build-output directory refuses the project"
+  assert_contains "$out" "size could not be measured" \
+    "build-output-size-failure: an unmeasurable cache must not look empty"
+  pass "an unmeasurable build-output directory is reported plainly"
 }
 
 test_sweep_refuses_undecodable_package_json() {
@@ -1971,12 +2024,13 @@ run_next_cache_test test_sweep_reports_explicit_project_without_deleting
 run_next_cache_test test_sweep_reports_nothing_found
 run_next_cache_test test_sweep_dry_run_removes_nothing
 run_next_cache_test test_sweep_skips_in_use_copy
+run_next_cache_test test_sweep_reports_dirty_and_leased_pool_states
 run_next_cache_test test_sweep_counts_owned_copy_without_build_output
 run_next_cache_test test_sweep_skips_copy_claimed_by_task_record
 run_next_cache_test test_sweep_skips_copy_claimed_by_secondmate_task_record
 run_next_cache_test test_sweep_skips_dirty_copy
 run_next_cache_test test_sweep_skips_stashed_copy
-run_next_cache_test test_sweep_refuses_project_with_unknown_pool_status
+run_next_cache_test test_sweep_reports_unknown_status_without_suppressing_project
 run_next_cache_test test_sweep_skips_whole_project_when_pool_is_unreadable
 run_next_cache_test test_sweep_skips_project_when_pool_lookup_fails
 run_next_cache_test test_sweep_skips_project_when_pool_prints_json_then_fails
@@ -1985,7 +2039,7 @@ run_next_cache_test test_sweep_refuses_malformed_secondmate_registry
 run_next_cache_test test_sweep_refuses_absent_secondmate_home
 run_next_cache_test test_sweep_refuses_relative_secondmate_home
 run_next_cache_test test_sweep_refuses_unreadable_secondmate_registry
-run_next_cache_test test_sweep_refuses_absent_secondmate_registry
+run_next_cache_test test_sweep_accepts_absent_secondmate_registry
 run_next_cache_test test_sweep_skips_symlink_aliased_task_worktree
 run_next_cache_test test_sweep_skips_final_symlink_aliased_task_worktree
 run_next_cache_test test_sweep_refuses_broken_task_worktree_symlink
@@ -1998,14 +2052,14 @@ run_next_cache_test test_sweep_refuses_nul_task_metadata
 run_next_cache_test test_sweep_refuses_nul_secondmate_registry
 run_next_cache_test test_sweep_refuses_nul_pool_status
 run_next_cache_test test_sweep_refuses_duplicate_pool_fields
-run_next_cache_test test_sweep_refuses_conflicting_alias_pool_entries
+run_next_cache_test test_sweep_reports_conflicting_alias_pool_entries_independently
 run_next_cache_test test_sweep_refuses_pathless_pool_entry_atomically
-run_next_cache_test test_sweep_refuses_nondirectory_pool_entry_atomically
+run_next_cache_test test_sweep_reports_other_copy_when_pool_entry_is_nondirectory
 run_next_cache_test test_sweep_refuses_pool_entry_for_live_copy_child
 run_next_cache_test test_sweep_refuses_pool_entry_for_project_clone
 run_next_cache_test test_sweep_refuses_discovered_linked_worktree_as_project_clone
 run_next_cache_test test_sweep_refuses_explicit_project_subdirectory
-run_next_cache_test test_sweep_refusal_records_later_candidate_verdicts
+run_next_cache_test test_sweep_candidate_uncertainty_preserves_later_verdicts
 run_next_cache_test test_sweep_reconciles_every_announced_candidate
 run_next_cache_test test_sweep_reports_incomplete_project_count
 run_next_cache_test test_sweep_refuses_without_treehouse

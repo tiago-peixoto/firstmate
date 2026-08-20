@@ -31,12 +31,9 @@
 # anyway.
 #
 # A COPY MUST PASS ALL FOUR CHECKS before it is reported as eligible:
-#   1. treehouse reports it `available`. A live dev server rewrites the build
-#      output the moment you delete it, and deleting mid-build is worse than
-#      leaving it alone, so a leased copy is out of scope no matter how idle it
-#      looks. The pool is shared across firstmate homes and treehouse's lease is
-#      the only ownership signal that spans all of them, which is why it comes
-#      first rather than last.
+#   1. treehouse reports its state. The documented `available`, `in-use`,
+#      `dirty`, and `leased` states are printed by name. An unrecognized state
+#      produces an undetermined verdict instead of an eligibility claim.
 #   2. No task record names it. This home's state/*.meta plus every registered
 #      secondmate home's, so a copy owned by a task in another home is skipped
 #      even if its lease was somehow released.
@@ -44,17 +41,18 @@
 #   4. There are no stashes. A stash is unlanded work that a clean tree does not
 #      show, and nobody is watching an idle copy to notice it disappear.
 # Checks 3 and 4 read git and change nothing. A copy with a proven owner keeps
-# its build output and is reported. An ownership input that is absent,
-# unreadable, malformed, or incomplete refuses reporting at that input's scope:
-# task-record enumeration refuses the whole sweep, and pool or worktree
-# inspection refuses that project before any of its copies are reported.
+# its build output and is reported. An absent secondmate registry means no
+# registered secondmates. An unreadable or malformed present registry refuses
+# the sweep, and an unreadable pool refuses its project. Candidate uncertainty
+# produces one undetermined line without suppressing the other candidates.
 #
 # It reports every qualifying directory and its size, and says plainly when it
 # found nothing. There is no flag, environment variable, or target origin that
 # grants this command deletion authority.
 #
-# Exit status is 0 when the inspection completed, 1 when reporting or a project's
-# pool lookup failed (already reported), 2 on a usage or environment error.
+# Exit status is 0 when the inspection completed, 1 when reporting is partial or
+# a project's pool lookup failed (already reported), 2 on a usage or environment
+# error.
 #
 # FALSIFIER RULE - read this before adding or editing any verdict below.
 #
@@ -87,11 +85,11 @@
 #
 # INPUT COMPLETENESS INVENTORY
 #
-# The contract for every item below is that an absent, unreadable, malformed,
-# ambiguous, or incomplete ownership input cannot produce a determinate answer.
-# A global input refuses the sweep, a project input refuses that project before
-# its plan is applied, and a copy input prevents a positive eligibility verdict
-# while also making its project incomplete.
+# The contract for every item below is that an unreadable, malformed, ambiguous,
+# or incomplete ownership input cannot produce a false determinate answer.
+# A global input refuses the sweep, a project input may refuse that project
+# before candidates are known, and a copy input receives an undetermined verdict
+# while every other announced copy is still reported.
 #
 # Each source site is identified by file, function, and the exact statement or
 # command that reads it rather than by a numeric line that this inventory itself
@@ -135,9 +133,10 @@
 # - `bin/fm-next-cache-sweep.sh: sweep_task_record_state_dirs ->
 #   sweep_read_text_file "$DATA/secondmates.md"`. Checked: the reader requires a
 #   regular non-symlink, stages a complete byte-for-byte read, rejects NUL, and
-#   propagates failure globally; the absent, unreadable, and NUL tests exercise
-#   those branches. Falsifier: the registry yields one complete local record and
-#   then an I/O error, but that partial prefix is accepted as the full registry.
+#   propagates failure for a present registry; an absent path is the documented
+#   empty-registry default. Falsifier: a present registry yields one complete
+#   local record and then an I/O error, but that partial prefix is accepted as
+#   the full registry.
 # - `bin/fm-next-cache-sweep.sh: sweep_task_record_state_dirs -> registry line
 #   loop and secondmate_registry_parse_line`. Checked: every registry record is
 #   defined by the shared parser's `- ` prefix; such a line must parse, local
@@ -222,9 +221,10 @@
 #   linked project argument makes the actual primary clone look like a distinct
 #   registered candidate.
 # - `bin/fm-next-cache-sweep.sh: sweep_unowned_reason -> pool status`. Checked:
-#   only byte-exact `available` proceeds, `in-use` records ownership, and every
-#   other value records undetermined. Falsifier: `available ` or `AVAILABLE`
-#   reaches clean-tree inspection as if it were byte-exact `available`.
+#   byte-exact `available`, `in-use`, `dirty`, and `leased` are named,
+#   non-available documented states record ownership, and every other value
+#   records undetermined. Falsifier: `available ` or `AVAILABLE` reaches
+#   clean-tree inspection as if it were byte-exact `available`.
 # - `bin/fm-next-cache-sweep.sh: sweep_unowned_reason -> git status --porcelain
 #   and git stash list`. Checked: each command substitution is status-checked,
 #   nonempty status or stash output records ownership, and failure records
@@ -235,9 +235,9 @@
 #   FM_NEXT_CACHE_* outputs`. Checked: the inspection status is checked before
 #   size and plan values are consumed, so failed discovery, eligibility, or
 #   measurement produces an undetermined assessment. Every candidate is assessed
-#   before project refusal is applied. Falsifier: `find` reports one `.next` then
-#   exits 1 and that partial measurement becomes a free row, or the failure stops
-#   a later announced pool path from being assessed.
+#   and applied independently. Falsifier: `find` reports one `.next` then exits 1
+#   and that partial measurement becomes a free row, or the failure stops a later
+#   announced pool path from being reported.
 #
 # Shared build-output discovery and reporting inputs:
 # - `bin/fm-next-cache-lib.sh: fm_next_cache_size_kb -> du -sk`. Checked: only a
@@ -288,12 +288,12 @@
 #   summarized as reclaimed.
 # - `bin/fm-next-cache-sweep.sh: sweep_project_plan, sweep_project, project loop,
 #   and final summary -> announced candidates and final verdicts`. Checked: project
-#   plans remain atomic, the complete pool list announces indexed candidates
-#   before assessment, and one ledger records each terminal outcome. Per-project
-#   reconciliation proves each index occurs once; run reconciliation gates every
-#   clean summary. Falsifier: a three-row pool has an invalid first row and valid
-#   later rows, but either later index has no verdict, or a discarded row still
-#   increments the clean inspected count outside the ledger.
+#   plans preserve every independently reportable row, the complete pool list
+#   announces indexed candidates before assessment, and one ledger records each
+#   terminal outcome. Per-project reconciliation proves each index occurs once;
+#   run reconciliation gates every clean summary. Falsifier: a three-row pool has
+#   an invalid first row and valid later rows, but either later index has no
+#   report verdict, or a discarded row increments the clean inspected count.
 set -u
 
 case "${BASH_SOURCE[0]}" in
@@ -344,8 +344,9 @@ No invocation of this command deletes build output.
 
 A copy is positively classified only when the pool reports it available, no task record in this
 home or a registered secondmate home names it, its tree is clean, and it holds
-no stashes. Proven owners are skipped and reported; incomplete ownership input
-refuses its whole scope. Read this script's header for the full rule, and
+no stashes. Proven owners are skipped and reported. Incomplete copy ownership
+input receives an undetermined verdict without suppressing other copies.
+Read this script's header for the full rule, and
 bin/fm-next-cache-lib.sh's for what counts as build output.
 TXT
 }
@@ -491,8 +492,10 @@ sweep_task_record_state_dirs() {
     ;;
   esac
   TASK_STATE_DIRS=$resolved_state
-  if ! registry_contents=$(sweep_read_text_file "$registry"); then
-    sweep_incomplete "cannot read secondmate registry: $registry"
+  if [ ! -e "$registry" ] && [ ! -L "$registry" ]; then
+    registry_contents=
+  elif ! registry_contents=$(sweep_read_text_file "$registry"); then
+    sweep_incomplete "cannot read present secondmate registry: $registry"
     return
   fi
   while IFS= read -r line || [ -n "$line" ]; do
@@ -799,65 +802,62 @@ PY
   return 0
 }
 
-# Classify why <worktree> may not be swept in SWEEP_OWNER_CLASS and
-# SWEEP_OWNER_REASON. `owned` is a complete answer; `undetermined` makes the
-# project's preflight incomplete.
+# Classify the pool and ownership state of <worktree> in SWEEP_OWNER_CLASS and
+# SWEEP_OWNER_REASON.
 sweep_unowned_reason() {  # <status> <worktree>
   local status=$1 wt=$2 task_ownership
   SWEEP_OWNER_CLASS=free
-  SWEEP_OWNER_REASON=
-  # Only the pool's own word for "available" clears this check. Any other
-  # value - in-use, a status this version of treehouse does not print, or none
-  # at all - means ownership was not established, which is not the same as
-  # establishing that there is no owner.
-  if [ "$status" = in-use ]; then
-    SWEEP_OWNER_CLASS=owned
-    SWEEP_OWNER_REASON="in use by the pool"
-    return 0
-  fi
-  if [ "$status" != available ]; then
-    SWEEP_OWNER_CLASS=undetermined
-    SWEEP_OWNER_REASON="the pool did not report it available"
-    return 0
-  fi
+  SWEEP_OWNER_REASON="pool state: $status"
+  case "$status" in
+    available) ;;
+    in-use|dirty|leased)
+      SWEEP_OWNER_CLASS=owned
+      return 0
+      ;;
+    *)
+      SWEEP_OWNER_CLASS=undetermined
+      SWEEP_OWNER_REASON="unrecognized pool state: $status"
+      return 0
+      ;;
+  esac
   sweep_task_owns "$wt"
   task_ownership=$?
   case "$task_ownership" in
     0)
       SWEEP_OWNER_CLASS=owned
-      SWEEP_OWNER_REASON="still claimed by a task record"
+      SWEEP_OWNER_REASON="$SWEEP_OWNER_REASON; still claimed by a task record"
       return 0
       ;;
     2)
       SWEEP_OWNER_CLASS=undetermined
-      SWEEP_OWNER_REASON="cannot compare it with task-record worktrees"
+      SWEEP_OWNER_REASON="$SWEEP_OWNER_REASON; cannot compare it with task-record worktrees"
       return 0
       ;;
   esac
   if ! git -C "$wt" rev-parse --git-dir >/dev/null 2>&1; then
     SWEEP_OWNER_CLASS=undetermined
-    SWEEP_OWNER_REASON="not an inspectable git worktree"
+    SWEEP_OWNER_REASON="$SWEEP_OWNER_REASON; not an inspectable git worktree"
     return 0
   fi
   local dirty stashes
   if ! dirty=$(git -C "$wt" status --porcelain 2>/dev/null); then
     SWEEP_OWNER_CLASS=undetermined
-    SWEEP_OWNER_REASON="cannot inspect it for uncommitted changes"
+    SWEEP_OWNER_REASON="$SWEEP_OWNER_REASON; cannot inspect it for uncommitted changes"
     return 0
   fi
   if [ -n "$dirty" ]; then
     SWEEP_OWNER_CLASS=owned
-    SWEEP_OWNER_REASON="has uncommitted changes"
+    SWEEP_OWNER_REASON="$SWEEP_OWNER_REASON; has uncommitted changes"
     return 0
   fi
   if ! stashes=$(git -C "$wt" stash list 2>/dev/null); then
     SWEEP_OWNER_CLASS=undetermined
-    SWEEP_OWNER_REASON="cannot inspect it for stashes"
+    SWEEP_OWNER_REASON="$SWEEP_OWNER_REASON; cannot inspect it for stashes"
     return 0
   fi
   if [ -n "$stashes" ]; then
     SWEEP_OWNER_CLASS=owned
-    SWEEP_OWNER_REASON="has stashed work"
+    SWEEP_OWNER_REASON="$SWEEP_OWNER_REASON; has stashed work"
     return 0
   fi
   return 0
@@ -868,6 +868,7 @@ SWEEP_PROJECT_ANNOUNCED=0
 SWEEP_PROJECT_ASSESSED=0
 SWEEP_PROJECT_VERDICTS=0
 SWEEP_PROJECT_VERDICT_IDS=
+SWEEP_PROJECT_UNDETERMINED=0
 
 sweep_add_project_assessment() {  # <candidate-id> <action> <reason> <kb> <worktree>
   local candidate_id=$1 action=$2 reason=$3 kb=$4 wt=$5 record
@@ -889,14 +890,14 @@ sweep_record_candidate_verdict() {  # <project> <candidate-id> <verdict> <reason
   local recorded_id record human
   case "$candidate_id" in ''|*[!0-9]*) return 1 ;; esac
   case "$verdict" in
-    reported|skipped-as-owned|undetermined|refused|failed) ;;
+    reported|skipped-as-owned|undetermined|failed) ;;
     *) return 1 ;;
   esac
   case "$kb" in -) ;; ''|*[!0-9]*) return 1 ;; esac
   case "$project$reason$wt" in *$'\t'*|*$'\r'*|*$'\n'*) return 1 ;; esac
   case "$verdict" in
-    reported|skipped-as-owned)
-      if [ "$kb" -gt 0 ]; then
+    reported|skipped-as-owned|undetermined)
+      if [ "$kb" != - ] && [ "$kb" -gt 0 ]; then
         human=$(fm_next_cache_human_kb "$kb") || return 1
       fi
       ;;
@@ -939,10 +940,16 @@ EOT
       fi
       ;;
     undetermined)
-      printf 'sweep: undetermined %s (%s)\n' "$wt" "$reason" >&2
-      ;;
-    refused)
-      printf 'sweep: refused %s (%s)\n' "$wt" "$reason" >&2
+      if [ "$kb" = - ]; then
+        printf 'sweep: undetermined %s (%s), size could not be measured\n' \
+          "$wt" "$reason" >&2
+      elif [ "$kb" -gt 0 ]; then
+        printf 'sweep: undetermined %s (%s), holding %s\n' \
+          "$wt" "$reason" "$human" >&2
+      else
+        printf 'sweep: undetermined %s (%s), no Next.js build output\n' \
+          "$wt" "$reason" >&2
+      fi
       ;;
     failed)
       printf 'sweep: failed %s (%s)\n' "$wt" "$reason" >&2
@@ -956,6 +963,7 @@ sweep_summarize_candidate_ledger() {
   REPORTED_KB=0
   REPORT_ONLY_INSPECTED=0
   SKIPPED=0
+  UNDETERMINED=0
   FAILED=0
   if [ -n "$CANDIDATE_LEDGER" ]; then
     while IFS=$'\t' read -r project candidate_id verdict reason kb wt; do
@@ -976,7 +984,8 @@ sweep_summarize_candidate_ledger() {
           [ "$kb" = - ] && return 1
           SKIPPED=$(( SKIPPED + 1 ))
           ;;
-        undetermined|refused)
+        undetermined)
+          UNDETERMINED=$(( UNDETERMINED + 1 ))
           ;;
         failed)
           [ "$kb" = - ] && return 1
@@ -1017,13 +1026,14 @@ EOT
 
 sweep_project_plan() {  # <project> <entries>
   local project=$1 entries=$2 status wt pool_identity recorded_identity
-  local candidate_id=0 action reason kb duplicate record_error=0 project_refused=0
+  local candidate_id=0 action reason kb duplicate record_error=0
   local pool_identities=
   SWEEP_PROJECT_PLAN=
   SWEEP_PROJECT_ANNOUNCED=0
   SWEEP_PROJECT_ASSESSED=0
   SWEEP_PROJECT_VERDICTS=0
   SWEEP_PROJECT_VERDICT_IDS=
+  SWEEP_PROJECT_UNDETERMINED=0
   while IFS=$'\t' read -r status wt; do
     if [ -n "$status$wt" ]; then
       SWEEP_PROJECT_ANNOUNCED=$(( SWEEP_PROJECT_ANNOUNCED + 1 ))
@@ -1064,19 +1074,13 @@ EOT
             pool_identities=$pool_identity
           fi
           sweep_unowned_reason "$status" "$wt"
-          if [ "$SWEEP_OWNER_CLASS" = undetermined ]; then
-            reason=$SWEEP_OWNER_REASON
-          elif ! fm_next_cache_inspect "$wt"; then
-            reason="build output could not be inspected: $FM_NEXT_CACHE_INSPECTION_ERROR"
+          action=$SWEEP_OWNER_CLASS
+          reason=$SWEEP_OWNER_REASON
+          if ! fm_next_cache_inspect "$wt"; then
+            action=undetermined
+            reason="$reason; build output could not be inspected: $FM_NEXT_CACHE_INSPECTION_ERROR"
           else
             kb=$FM_NEXT_CACHE_TOTAL_KB
-            if [ "$SWEEP_OWNER_CLASS" = owned ]; then
-              action=owned
-              reason=$SWEEP_OWNER_REASON
-            else
-              action=free
-              reason=-
-            fi
           fi
         fi
       fi
@@ -1084,7 +1088,9 @@ EOT
         "$candidate_id" "$action" "$reason" "$kb" "$wt"; then
         record_error=1
       fi
-      [ "$action" = undetermined ] && project_refused=1
+      if [ "$action" = undetermined ]; then
+        SWEEP_PROJECT_UNDETERMINED=$(( SWEEP_PROJECT_UNDETERMINED + 1 ))
+      fi
     fi
   done <<EOT
 $entries
@@ -1094,31 +1100,7 @@ EOT
     sweep_incomplete "candidate assessment reconciliation failed for $project ($SWEEP_PROJECT_ANNOUNCED announced, $SWEEP_PROJECT_ASSESSED assessed)"
     return
   fi
-  if [ "$project_refused" -eq 1 ]; then
-    while IFS=$'\t' read -r candidate_id action reason kb wt; do
-      if [ -n "$candidate_id" ]; then
-        if [ "$action" = undetermined ]; then
-          sweep_record_candidate_verdict \
-            "$project" "$candidate_id" undetermined "$reason" "$kb" "$wt" \
-            || record_error=1
-        else
-          sweep_record_candidate_verdict \
-            "$project" "$candidate_id" refused \
-            "another pool candidate made project preflight incomplete" "$kb" "$wt" \
-            || record_error=1
-        fi
-      fi
-    done <<EOT
-$SWEEP_PROJECT_PLAN
-EOT
-    if [ "$record_error" -ne 0 ]; then
-      sweep_incomplete "candidate verdict could not be recorded for $project"
-      return
-    fi
-    sweep_reconcile_project_verdicts "$project" || return 1
-    sweep_incomplete "one or more announced pool candidates could not be fully assessed for $project"
-    return
-  fi
+  return 0
 }
 
 sweep_apply_project_plan() {  # <project> <plan> <mode>
@@ -1126,7 +1108,11 @@ sweep_apply_project_plan() {  # <project> <plan> <mode>
   local apply_status report_reason record_error=0
   while IFS=$'\t' read -r candidate_id action reason planned_kb wt; do
     if [ -n "$candidate_id" ]; then
-      if [ "$mode" = pool-report ] && [ "$action" = owned ]; then
+      if [ "$action" = undetermined ]; then
+        sweep_record_candidate_verdict \
+          "$project" "$candidate_id" undetermined "$reason" "$planned_kb" "$wt" \
+          || record_error=1
+      elif [ "$mode" = pool-report ] && [ "$action" = owned ]; then
         sweep_record_candidate_verdict \
           "$project" "$candidate_id" skipped-as-owned "$reason" "$planned_kb" "$wt" \
           || record_error=1
@@ -1140,7 +1126,7 @@ sweep_apply_project_plan() {  # <project> <plan> <mode>
         else
           report_reason="target has no deletion authority"
         fi
-        if [ "$action" = owned ]; then
+        if [ "$reason" != - ]; then
           report_reason="$report_reason; $reason"
         fi
         if [ "$apply_status" -ne 0 ]; then
@@ -1168,6 +1154,7 @@ sweep_project() {  # <project> <mode>
   SWEEP_PROJECT_ASSESSED=0
   SWEEP_PROJECT_VERDICTS=0
   SWEEP_PROJECT_VERDICT_IDS=
+  SWEEP_PROJECT_UNDETERMINED=0
   SWEEP_PROJECT_COMPLETE=0
   if ! project_real=$(sweep_resolve_directory "$project"); then
     sweep_incomplete "cannot enter project: $project"
@@ -1209,6 +1196,11 @@ sweep_project() {  # <project> <mode>
     return
   fi
   sweep_reconcile_project_verdicts "$project_real" || return 1
+  if [ "$SWEEP_PROJECT_UNDETERMINED" -gt 0 ]; then
+    printf 'sweep: partial report: %d announced pool candidate(s) were undetermined for %s\n' \
+      "$SWEEP_PROJECT_UNDETERMINED" "$project_real" >&2
+    return 1
+  fi
   SWEEP_PROJECT_COMPLETE=1
 }
 
@@ -1300,7 +1292,7 @@ sweep_projects() {  # <count>
 
 INCOMPLETE_NOTE=
 if [ "$INCOMPLETE" -gt 0 ]; then
-  INCOMPLETE_NOTE="; $(sweep_projects "$INCOMPLETE") could not be inspected"
+  INCOMPLETE_NOTE="; $(sweep_projects "$INCOMPLETE") could not be fully inspected"
 fi
 if [ "$LEDGER_INCOMPLETE" -ne 0 ]; then
   INCOMPLETE_NOTE="$INCOMPLETE_NOTE; candidate verdicts were incomplete ($CANDIDATE_ANNOUNCED announced, $CANDIDATE_VERDICTS recorded)"
@@ -1309,6 +1301,11 @@ fi
 FAILED_NOTE=
 if [ "$FAILED" -gt 0 ]; then
   FAILED_NOTE="; $(sweep_copies "$FAILED") could not be processed"
+fi
+
+UNDETERMINED_NOTE=
+if [ "$UNDETERMINED" -gt 0 ]; then
+  UNDETERMINED_NOTE="; $(sweep_copies "$UNDETERMINED") had an undetermined verdict"
 fi
 
 REPORT_ONLY_NOTE=
@@ -1328,8 +1325,8 @@ if [ "$INCOMPLETE" -eq 0 ] && [ "$FAILED" -eq 0 ] \
 fi
 
 if [ "$RUN_COMPLETE" -eq 0 ]; then
-  printf 'sweep: inspection incomplete (report-only)%s%s%s\n' \
-    "$FAILED_NOTE" "$INCOMPLETE_NOTE" "$REPORT_ONLY_NOTE"
+  printf 'sweep: inspection incomplete (report-only)%s%s%s%s\n' \
+    "$FAILED_NOTE" "$INCOMPLETE_NOTE" "$UNDETERMINED_NOTE" "$REPORT_ONLY_NOTE"
 elif [ "$REPORTED" -gt 0 ]; then
   printf 'sweep: report-only inspection found %s in %s; nothing was reclaimed\n' \
     "$(fm_next_cache_human_kb "$REPORTED_KB")" "$(sweep_copies "$REPORTED")"
