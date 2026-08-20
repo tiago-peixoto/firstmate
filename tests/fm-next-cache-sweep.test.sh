@@ -905,6 +905,33 @@ SH
   pass "a NUL-bearing pool field cannot forge availability"
 }
 
+test_sweep_refuses_nonstandard_pool_json_constant() {
+  local case_dir wt out rc
+  case_dir=$(make_case nonstandard-pool-json-constant)
+  wt=$(add_pool_worktree "$case_dir" 1)
+  add_next_app "$wt" packages/frontend
+  cat > "$case_dir/fakebin/treehouse" <<'SH'
+#!/usr/bin/env bash
+printf '[{"status":"available","path":"%s/1","metadata":NaN}]\n' \
+  "$FM_FAKE_POOL_DIR"
+SH
+  chmod +x "$case_dir/fakebin/treehouse"
+
+  set +e
+  out=$(run_sweep "$case_dir" 2>&1); rc=$?
+  set -e
+
+  expect_code 1 "$rc" \
+    "nonstandard-pool-json-constant: invalid JSON must make the document unreadable"
+  assert_contains "$out" "cannot read the worktree pool" \
+    "nonstandard-pool-json-constant: document failure must name the unreadable pool"
+  assert_not_contains "$out" "sweep: report-only $wt" \
+    "nonstandard-pool-json-constant: no row from an invalid document is trustworthy"
+  assert_present "$wt/packages/frontend/.next" \
+    "nonstandard-pool-json-constant: document failure must preserve build output"
+  pass "a non-standard JSON constant invalidates the whole pool document"
+}
+
 test_sweep_refuses_duplicate_pool_fields() {
   local case_dir wt out rc
   case_dir=$(make_case duplicate-pool-fields)
@@ -959,15 +986,16 @@ SH
   pass "conflicting pool aliases receive independent verdicts"
 }
 
-test_sweep_refuses_pathless_pool_entry_atomically() {
+test_sweep_reports_invalid_path_entries_independently() {
   local case_dir wt out rc
   case_dir=$(make_case pathless-pool-entry)
   wt=$(add_pool_worktree "$case_dir" 1)
   add_next_app "$wt" packages/frontend
   cat > "$case_dir/fakebin/treehouse" <<'SH'
 #!/usr/bin/env bash
-printf '[{"status":"available","path":"%s/1"},{"status":"available"}]\n' \
+printf '[{"status":"available","path":"%s/1"},{"status":"available"},' \
   "$FM_FAKE_POOL_DIR"
+printf '{"status":"available","path":null},{"status":"available","path":""}]\n'
 SH
   chmod +x "$case_dir/fakebin/treehouse"
 
@@ -977,10 +1005,23 @@ SH
 
   expect_code 1 "$rc" "pathless-pool-entry: incomplete pool input must return nonzero"
   assert_present "$wt/packages/frontend/.next" \
-    "pathless-pool-entry: no earlier entry may be reclaimed from an incomplete pool"
-  assert_contains "$out" "worktree pool" \
-    "pathless-pool-entry: the incomplete pool must be reported"
-  pass "a pathless pool entry refuses its project before any deletion"
+    "pathless-pool-entry: report-only inspection must preserve the valid copy"
+  assert_contains "$out" "sweep: report-only $wt" \
+    "pathless-pool-entry: the valid copy must retain its report verdict"
+  assert_contains "$out" \
+    "sweep: undetermined <pool entry 2> (incomplete pool entry: path is missing), size could not be measured" \
+    "pathless-pool-entry: the missing path must receive a concrete verdict"
+  assert_contains "$out" \
+    "sweep: undetermined <pool entry 3> (incomplete pool entry: path is not a string), size could not be measured" \
+    "pathless-pool-entry: the non-string path must receive a concrete verdict"
+  assert_contains "$out" \
+    "sweep: undetermined <pool entry 4> (incomplete pool entry: path is empty), size could not be measured" \
+    "pathless-pool-entry: the empty path must receive a concrete verdict"
+  assert_not_contains "$out" "cannot read the worktree pool" \
+    "pathless-pool-entry: one entry fault must not invalidate the document"
+  assert_not_contains "$out" "sweep: refused" \
+    "pathless-pool-entry: entry uncertainty must never become refusal"
+  pass "a pathless pool entry does not suppress a valid sibling"
 }
 
 test_sweep_reports_other_copy_when_pool_entry_is_nondirectory() {
@@ -2051,9 +2092,10 @@ run_next_cache_test test_sweep_refuses_empty_candidate_identity
 run_next_cache_test test_sweep_refuses_nul_task_metadata
 run_next_cache_test test_sweep_refuses_nul_secondmate_registry
 run_next_cache_test test_sweep_refuses_nul_pool_status
+run_next_cache_test test_sweep_refuses_nonstandard_pool_json_constant
 run_next_cache_test test_sweep_refuses_duplicate_pool_fields
 run_next_cache_test test_sweep_reports_conflicting_alias_pool_entries_independently
-run_next_cache_test test_sweep_refuses_pathless_pool_entry_atomically
+run_next_cache_test test_sweep_reports_invalid_path_entries_independently
 run_next_cache_test test_sweep_reports_other_copy_when_pool_entry_is_nondirectory
 run_next_cache_test test_sweep_refuses_pool_entry_for_live_copy_child
 run_next_cache_test test_sweep_refuses_pool_entry_for_project_clone

@@ -192,24 +192,27 @@
 #   a plan exists. Falsifier: treehouse writes a complete first row and exits 1
 #   before its second row, but the first row is planned as a complete pool.
 # - `bin/fm-next-cache-sweep.sh: sweep_pool_entries -> JSON object decoding`.
-#   Checked: an object-pairs hook now rejects every repeated key before a decoded
-#   object or candidate row exists. Converted wrong verdict: syntactically decoded
-#   JSON had not guaranteed unambiguous lease evidence. Falsifier: one entry
-#   contains `"status":"in-use"` followed by `"status":"available"`, and
-#   last-value decoding produces a false unowned verdict.
+#   Checked: an object-pairs hook rejects every repeated key and the constant
+#   parser rejects NaN and infinities before a candidate row exists. Converted
+#   wrong verdict: syntactically decoded JSON had not guaranteed unambiguous
+#   lease evidence. Falsifier: one entry contains `"status":"in-use"` followed
+#   by `"status":"available"`, and last-value decoding produces a false unowned
+#   verdict.
 # - `bin/fm-next-cache-sweep.sh: sweep_pool_entries -> status and path fields`.
-#   Checked: Python requires both fields to be nonempty strings, the path to be
-#   absolute, and rejects NUL, tab, CR, and LF before emitting tab-delimited rows;
-#   malformed-field and NUL tests exercise the boundary. Falsifier: JSON status
-#   `avail\u0000able` crosses command substitution as `available` and reaches the
-#   exact-status check.
+#   Checked: Python requires a nonempty string status and an absolute path, and
+#   rejects NUL, tab, CR, and LF before emitting any staged rows. A missing,
+#   non-string, or empty path becomes a fault row naming its pool entry while
+#   valid siblings remain assessable. Falsifier: JSON status `avail\u0000able`
+#   crosses command substitution as `available`, or a later pathless record
+#   suppresses an earlier valid copy's report verdict.
 # - `bin/fm-next-cache-sweep.sh: sweep_project_plan -> pool directory predicate,
-#   sweep_path_identity, and duplicate identity scan`. Checked: `-d` is required,
-#   physical device/inode identity is mandatory, and repeated identity produces
-#   an undetermined assessment. The complete pool listing is counted before any
-#   assessment begins. Falsifier: two different pool strings resolve to the same
-#   inode and are each applied, or a nonexistent first path prevents a valid later
-#   path from receiving a terminal verdict.
+#   row kind, sweep_path_identity, and duplicate identity scan`. Checked: fault
+#   rows become undetermined assessments, usable rows require `-d` and a physical
+#   device/inode identity, and repeated identity produces an undetermined
+#   assessment. The complete pool listing is counted before any assessment
+#   begins. Falsifier: two different pool strings resolve to the same inode and
+#   are each applied, or one fault row prevents a valid sibling from receiving a
+#   terminal verdict.
 # - `bin/fm-next-cache-sweep.sh: sweep_pool_worktree_provenance -> candidate root,
 #   project worktree registry, and project-clone exclusion`. Checked: candidate
 #   `--show-toplevel` must physically equal the candidate, the candidate identity
@@ -665,7 +668,8 @@ EOT
   return 1
 }
 
-# Print "<status>\t<path>" for every worktree in <project-dir>'s pool.
+# Print "entry\t<status>\t<path>\t-" for every usable pool record and
+# "fault\t-\t<entry-label>\t<reason>" for every record with an unusable path.
 # treehouse resolves the pool from the working directory, and reading pool
 # status changes nothing in the clone.
 sweep_pool_entries() {  # <project-dir>
@@ -687,34 +691,48 @@ def unique_object(pairs):
         value[key] = item
     return value
 
-# Anything this cannot read as a list of pool entries exits non-zero, so the
-# caller reports the project as unreadable and sweeps none of its copies. An
-# unparseable pool is not an empty pool, and it is certainly not a pool of
-# unowned copies.
+def reject_constant(_):
+    raise ValueError()
+
 try:
     raw = open(sys.argv[1], "rb").read()
     if b"\0" in raw:
         raise ValueError()
-    pool = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_object)
+    pool = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_object,
+                      parse_constant=reject_constant)
 except (OSError, UnicodeError, ValueError):
     sys.exit(1)
 if not isinstance(pool, list):
     sys.exit(1)
 rows = []
-for entry in pool:
+for index, entry in enumerate(pool, 1):
     if not isinstance(entry, dict):
         sys.exit(1)
     status = entry.get("status")
-    path = entry.get("path")
     if not isinstance(status, str) or not status:
         sys.exit(1)
-    if not isinstance(path, str) or not path or not path.startswith("/"):
+    if any(c in status for c in "\0\t\r\n"):
         sys.exit(1)
-    if any(c in status or c in path for c in "\0\t\r\n"):
+    path_present = "path" in entry
+    path = entry.get("path")
+    if isinstance(path, str) and any(c in path for c in "\0\t\r\n"):
         sys.exit(1)
-    rows.append((status, path))
-for status, path in rows:
-    print("%s\t%s" % (status, path))
+    label = "<pool entry %d>" % index
+    if not path_present:
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: path is missing"))
+    elif not isinstance(path, str):
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: path is not a string"))
+    elif not path:
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: path is empty"))
+    elif not path.startswith("/"):
+        sys.exit(1)
+    else:
+        rows.append(("entry", status, path, "-"))
+for kind, status, path, reason in rows:
+    print("%s\t%s\t%s\t%s" % (kind, status, path, reason))
 PY
   if ! rm -f -- "$tmp"; then return 1; fi
   return "$parse_status"
@@ -1025,7 +1043,8 @@ EOT
 }
 
 sweep_project_plan() {  # <project> <entries>
-  local project=$1 entries=$2 status wt pool_identity recorded_identity
+  local project=$1 entries=$2 entry_kind status wt entry_reason
+  local pool_identity recorded_identity
   local candidate_id=0 action reason kb duplicate record_error=0
   local pool_identities=
   SWEEP_PROJECT_PLAN=
@@ -1034,21 +1053,25 @@ sweep_project_plan() {  # <project> <entries>
   SWEEP_PROJECT_VERDICTS=0
   SWEEP_PROJECT_VERDICT_IDS=
   SWEEP_PROJECT_UNDETERMINED=0
-  while IFS=$'\t' read -r status wt; do
-    if [ -n "$status$wt" ]; then
+  while IFS=$'\t' read -r entry_kind status wt entry_reason; do
+    if [ -n "$entry_kind$status$wt$entry_reason" ]; then
       SWEEP_PROJECT_ANNOUNCED=$(( SWEEP_PROJECT_ANNOUNCED + 1 ))
       CANDIDATE_ANNOUNCED=$(( CANDIDATE_ANNOUNCED + 1 ))
     fi
   done <<EOT
 $entries
 EOT
-  while IFS=$'\t' read -r status wt; do
-    if [ -n "$status$wt" ]; then
+  while IFS=$'\t' read -r entry_kind status wt entry_reason; do
+    if [ -n "$entry_kind$status$wt$entry_reason" ]; then
       candidate_id=$(( candidate_id + 1 ))
       action=undetermined
       reason=
       kb=-
-      if [ -z "$status" ] || [ -z "$wt" ]; then
+      if [ "$entry_kind" = fault ]; then
+        reason=$entry_reason
+      elif [ "$entry_kind" != entry ]; then
+        reason="pool entry did not yield a recognized row type"
+      elif [ -z "$status" ] || [ -z "$wt" ]; then
         reason="pool entry did not yield a complete status and path"
       elif [ ! -d "$wt" ]; then
         reason="pool worktree is not an inspectable directory"
