@@ -9,15 +9,13 @@
 # Every returned copy, including forced-cleanup descendants, therefore retains
 # its build output. This sweep inventories that output and removes nothing.
 #
-# Reclamation depends on `firstmate-durable-worktree-lease` landing. A
-# task-lifetime durable lease makes ownership independent of worktree processes,
-# which is the required boundary for ownership and quietness to hold together.
+# Sweep-side deletion is also absent because no lease has been shown to cover the
+# whole validation-through-deletion window. A sufficient lease would have to make
+# ownership independent of worktree processes and remain valid through removal;
+# this command claims no such lease and has no deletion capability.
 #
-# This report-only boundary is not a verdict about Treehouse. Whether acquisition
-# mutates a copy is filed as the separate scouted experiment
-# `firstmate-treehouse-lease-mutation-probe`, which can safely lease a copy first
-# proven empty and clean. Regardless of that experiment's result, this command
-# remains report-only and does not run or pre-empt it.
+# This report-only boundary is not a verdict about Treehouse acquisition
+# behavior; this command never acquires a copy.
 # It is a command a human or firstmate runs; there is deliberately no daemon,
 # watcher, schedule, or disk-pressure trigger behind it.
 # This fork-carried tool is deliberately absent from docs/scripts.md because an
@@ -30,9 +28,8 @@
 #
 # WHAT IT INSPECTS. Only pooled task copies, and only the Next.js build output
 # inside them - bin/fm-next-cache-lib.sh's header owns that discovery rule. The
-# project clone itself is never inspected as a pool copy: firstmate reads its
-# clones and only crewmates change them, and a clone is where nothing builds
-# anyway.
+# project clone itself is never inspected as a pool copy; only records announced
+# by its pool are candidates.
 #
 # OWNERSHIP CLASSIFICATION USES FOUR CHECKS:
 #   1. treehouse reports its state. The documented `available`, `in-use`,
@@ -112,9 +109,10 @@
 #   override whose parent cannot be searched, or a readable library whose source
 #   command returns nonzero, reaches target construction as a complete report.
 # - `bin/fm-next-cache-sweep.sh: argument loops -> "$@"`. Checked: the option
-#   case accepts only `--dry-run`, rejects every other dash-prefixed value with
-#   exit 2, and retains non-options verbatim. Falsifier: `--unknown` is retained
-#   as a project, or `-- /path` loses the literal project path before validation.
+#   case accepts `--dry-run`, `-h`, and `--help`, honors `--`, rejects every other
+#   dash-prefixed value with exit 2, and retains non-options verbatim. Falsifier:
+#   `--unknown` is retained as a project, or `-- /path` loses the literal project
+#   path before validation.
 # - `bin/fm-next-cache-sweep.sh: target construction -> PROJECT_ARGS,
 #   sweep_project_directories, and TARGETS`. Checked: each target record carries
 #   `explicit-report` or `pool-report`, and any missing or unknown mode also
