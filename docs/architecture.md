@@ -48,7 +48,10 @@ Any direct or remaining historical annotation prints every status line unread at
 `bin/fm-crew-state.sh <id>` is the cheap current-state read for an actionable heartbeat review: it attributes a no-mistakes run, active or terminal, only when it matches the crew's branch and current code identity, then keeps that run-step authoritative even if the pane has closed.
 The script header owns the exact run-head ancestry rules.
 During no-mistakes' `ci` monitor phase, it also reads the ci step log tail because `axi status` reports both "still waiting on checks" and "checks green, waiting on merge" as `ci,running`.
-The most recent recognized ci log marker wins, so checks-green monitoring reports done while a later re-arm, failed-check, or issue marker returns the crew to working.
+The most recent recognized ci log marker wins, and a marker is read as the fact it states rather than straight as a verdict: a marker that would end the wait is settled against the forge's own check suites for that head before it is believed.
+That is what separates a pull request whose checks passed from one whose CI has not been permitted to start and one that has no CI configured at all; a reading of "no checks at all" never becomes checks-green, and a PR with no CI is reported as unverified rather than green.
+A terminal run verdict must also prove it describes the current incarnation of the task, and a `done` this reader inferred from CI loses to the worker's own declared external wait.
+The script header owns all four rules.
 Only when no matching run exists does it consult semantic busy state; exact busy reports working, exact idle permits fallback to a status-log event whose verb maps to a recognized run-state, and unknown or a dead pane stays unknown instead of trusting a stale log.
 Decision-only events such as `resolved` never become current state or leak their prose into the current-state detail.
 In that status-log fallback, a declared external wait reports the distinct `paused` state with its reason.

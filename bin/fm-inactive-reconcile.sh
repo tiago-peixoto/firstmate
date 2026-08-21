@@ -46,7 +46,14 @@
 # and its cursor records the last child visited within the aggregate budget.
 #
 # The scan reads only durable local state and fm-crew-state.sh; it never invokes
-# gh, gh-axi, curl, fm-pr-check.sh, fm-pr-poll.sh, or a state *.check.sh.
+# gh-axi, curl, fm-pr-check.sh, fm-pr-poll.sh, or a state *.check.sh of its own.
+# It inherits one exception transitively: when a task's CI log claims a state
+# that would end its wait, fm-crew-state.sh settles that claim with a single
+# bounded `gh api` read of the head's check suites, because believing the log
+# alone is what let unverified work reach this presentation stage as done. That
+# read is bounded twice over - by fm-crew-state.sh's own forge timeout and by
+# this scan's per-child bound - and a scan that hits its bound defers rather
+# than deciding.
 set -u
 export LC_ALL=C
 

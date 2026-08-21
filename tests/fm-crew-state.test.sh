@@ -79,6 +79,26 @@ case "${1:-}" in
 esac
 exit 0
 SH
+  # Fake `gh`, serving only the two read-only calls fm-crew-state may make when
+  # a ci-step marker claims a state that would end the wait: the PR's head sha,
+  # and that head's check suites. FM_FAKE_CHECK_SUITES is the --jq projection
+  # the helper asks for - total_count on the first line, then one
+  # "status|conclusion|latest_check_runs_count" row per suite - so a case can
+  # reproduce a real forge answer verbatim. FM_FAKE_GH_MISSING=1 removes gh
+  # FM_FAKE_GH_FAILS=1 keeps gh present but failing; run_crew_state_without_gh
+  # covers the other half, a host with no gh installed at all.
+  cat > "$fb/gh" <<'SH'
+#!/usr/bin/env bash
+set -u
+[ "${FM_FAKE_GH_FAILS:-0}" = 1 ] && exit 1
+[ "${1:-}" = api ] || exit 1
+case "$2" in
+  */check-suites) printf '%s\n' "${FM_FAKE_CHECK_SUITES:-}" ;;
+  */pulls/*)      printf '%s\n' "${FM_FAKE_PR_HEAD:-deadbee0deadbee0deadbee0deadbee0deadbee0}" ;;
+  *)              exit 1 ;;
+esac
+exit 0
+SH
   cat > "$fb/tmux" <<'SH'
 #!/usr/bin/env bash
 set -u
@@ -122,14 +142,14 @@ case "${1:-}" in
 esac
 exit 0
 SH
-  chmod +x "$fb/no-mistakes" "$fb/tmux" "$fb/herdr"
+  chmod +x "$fb/no-mistakes" "$fb/tmux" "$fb/herdr" "$fb/gh"
   printf '%s\n' "$fb"
 }
 
 make_no_timeout_toolbin() {  # <dir> -> echoes toolbin path
   local dir=$1 tb="$1/notimeoutbin" tool real
   mkdir -p "$tb"
-  for tool in bash git grep sed head cut tail dirname perl; do
+  for tool in bash git grep sed head cut tail dirname perl date; do
     real=$(command -v "$tool" || true)
     [ -n "$real" ] || fail "missing tool for no-timeout path: $tool"
     ln -s "$real" "$tb/$tool"
@@ -141,6 +161,16 @@ make_no_timeout_toolbin() {  # <dir> -> echoes toolbin path
 # from the caller's environment by the fakes above.
 run_crew_state() {  # <case-dir> <id>
   PATH="$1/fakebin:$PATH" FM_STATE_OVERRIDE="$1/state" "$CREW_STATE" "$2"
+}
+
+# Same, on a host with no gh at all. The PATH is the fakebin plus a minimal
+# toolbin, so `command -v gh` genuinely fails instead of falling through to a
+# real gh - which would make the case both non-hermetic and a live network call.
+run_crew_state_without_gh() {  # <case-dir> <id>
+  local toolbin
+  toolbin=$(make_no_timeout_toolbin "$1")
+  rm -f "$1/fakebin/gh"
+  PATH="$1/fakebin:$toolbin" FM_STATE_OVERRIDE="$1/state" "$CREW_STATE" "$2"
 }
 
 new_case() {  # <name> -> echoes case dir with an empty state/
@@ -170,9 +200,19 @@ reset_fakes() {
   FM_FAKE_HERDR_MISSING=0
   FM_FAKE_HERDR_AGENT_STATUS=""
   FM_FAKE_CI_LOGS=""
+  FM_FAKE_CHECK_SUITES=""
+  FM_FAKE_PR_HEAD=""
+  FM_FAKE_GH_FAILS=0
   export FM_FAKE_AXI_STATUS FM_FAKE_AXI_STATUS_RUN FM_FAKE_RUNS_LIST FM_FAKE_BUSY FM_FAKE_BUSY_TEXT FM_FAKE_TMUX_MISSING
   export FM_FAKE_HERDR_BUSY FM_FAKE_HERDR_MISSING FM_FAKE_HERDR_AGENT_STATUS FM_FAKE_CI_LOGS
+  export FM_FAKE_CHECK_SUITES FM_FAKE_PR_HEAD FM_FAKE_GH_FAILS
 }
+
+# The three forge answers this reader has to tell apart, each recorded from a
+# real head (see the check-suite comments in bin/fm-crew-state.sh).
+suites_none()  { printf '0\n'; }
+suites_gated() { printf '2\ncompleted|action_required|0\ncompleted|action_required|0\n'; }
+suites_green() { printf '2\ncompleted|success|12\ncompleted|success|1\n'; }
 
 # --- run-object fixtures (TOON, as `no-mistakes axi status` emits) -----------
 
@@ -274,6 +314,32 @@ run:
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
   pr: "https://github.com/o/r/pull/1"
   findings: none
+outcome: passed
+EOF
+}
+
+# A run that finished with its publishing steps deliberately skipped: no push,
+# no pr, no ci, and no pr field at all. Real shape, from run
+# 01M0G0G71F75XY782REH7Y3KRZ, which the reader once described as "PR
+# merged/closed" though no pull request had ever been opened for that branch.
+run_passed_publish_skipped() {  # <branch>
+  cat <<EOF
+run:
+  id: "01RUN"
+  branch: $1
+  status: completed
+  head: "${FM_FAKE_RUN_HEAD:-abc1234}"
+  findings: none
+  steps[9]{step,status,findings,duration_ms}:
+    intent,completed,0,0
+    rebase,completed,0,4133
+    review,completed,0,692929
+    test,completed,0,784322
+    document,completed,0,250475
+    lint,completed,0,11440
+    push,skipped,0,0
+    pr,skipped,0,0
+    ci,skipped,0,0
 outcome: passed
 EOF
 }
@@ -499,18 +565,175 @@ test_top_level_ci_checks_green_surfaces_done() {
   pass "top-level ci status uses ci log green marker"
 }
 
-test_ci_monitoring_no_checks_terminal_surfaces_done() {
+# The 2026-08 false-green regression. "no CI checks reported - still monitoring
+# until merged or closed" used to map to green alongside the genuine "all CI
+# checks passed", while the near-identical "...reported yet" mapped to
+# not-ready. Real ci logs show the two spellings interleave inside one run and
+# state the same fact - this poll saw zero checks - so they must never give
+# opposite verdicts again. Each case below drives the SAME marker and varies
+# only what the forge says about the head, which is where the answer lives.
+#
+# Reproduced live on 2026-08-21 against kunchenguid/firstmate PR 2747 (head
+# 681a637c: 0 check runs, two suites at action_required): before the fix the
+# reader said "done - checks green: PR ready for review".
+test_no_checks_marker_awaiting_approval_is_not_green() {
   reset_fakes
-  local d; d=$(new_case ci-nochecks)
-  make_repo_on_branch "$d/wt" fm/feat-cinochecks
+  local d; d=$(new_case ci-nochecks-gated)
+  make_repo_on_branch "$d/wt" fm/feat-cigated
   make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/feat-cinochecks.meta" "window=fm:fm-feat-cinochecks" "worktree=$d/wt" "kind=ship"
-  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cinochecks)"
+  fm_write_meta "$d/state/feat-cigated.meta" "window=fm:fm-feat-cigated" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cigated)"
   FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
-  local out; out=$(run_crew_state "$d" feat-cinochecks)
-  assert_contains "$out" "state: done" "terminal no-checks ci-monitor run -> done"
-  assert_contains "$out" "checks green" "terminal no-checks ci-monitor detail mentions checks green"
-  pass "terminal no-checks ci-monitor marker surfaces done"
+  FM_FAKE_CHECK_SUITES=$(suites_gated)
+  local out; out=$(run_crew_state "$d" feat-cigated)
+  assert_contains "$out" "state: working" "approval-gated head -> still working"
+  assert_not_contains "$out" "state: done" "approval-gated head must never read done"
+  assert_not_contains "$out" "checks green" "approval-gated head must never read checks green"
+  assert_contains "$out" "awaiting maintainer approval" "detail names why nothing has run"
+  pass "no-checks marker with approval-gated workflows is not green"
+}
+
+# The heart of the defect: the two near-identical spellings gave OPPOSITE
+# verdicts. This drives both through the same forge state and asserts they
+# agree, so a future edit cannot split them again. It is deliberately an
+# equality assertion rather than two separate expectations - the old mapping
+# satisfied "the yet spelling is not green" perfectly well while still
+# contradicting its twin.
+test_both_no_checks_spellings_agree() {
+  reset_fakes
+  local d spelling out first="" suites
+  suites=$(suites_gated)
+  local i=0
+  for spelling in \
+    "no CI checks reported - still monitoring until merged or closed" \
+    "no CI checks reported yet, waiting for checks to register..."; do
+    i=$((i + 1))
+    reset_fakes
+    d=$(new_case "ci-nochecks-agree-$i")
+    make_repo_on_branch "$d/wt" "fm/feat-agree$i"
+    make_fakebin "$d" >/dev/null
+    fm_write_meta "$d/state/feat-agree$i.meta" "window=fm:fm-feat-agree$i" "worktree=$d/wt" "kind=ship"
+    FM_FAKE_AXI_STATUS="$(run_ci_monitoring "fm/feat-agree$i")"
+    FM_FAKE_CI_LOGS="$spelling"
+    FM_FAKE_CHECK_SUITES="$suites"
+    out=$(run_crew_state "$d" "feat-agree$i")
+    out=${out%% · source*}
+    if [ -z "$first" ]; then
+      first=$out
+    elif [ "$out" != "$first" ]; then
+      fail "the two no-checks spellings disagree: '$first' vs '$out'"
+    fi
+    assert_not_contains "$out" "done" "a zero-checks reading is never done here"
+  done
+  assert_contains "$first" "state: working" "and the verdict they agree on is not-ready"
+  pass "both no-checks spellings give the same verdict"
+}
+
+# A PR with no CI at all is a different fact from one whose CI is not permitted
+# to start: nothing can ever arrive, so the wait is over - but the change is
+# still unverified, and the detail has to say so instead of claiming green.
+# Recorded from PR 2674 head 3d398129, the head of the 2026-08-20 false-green.
+test_no_checks_marker_no_ci_configured_reports_unverified() {
+  reset_fakes
+  local d; d=$(new_case ci-nochecks-noci)
+  make_repo_on_branch "$d/wt" fm/feat-cinoci
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-cinoci.meta" "window=fm:fm-feat-cinoci" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cinoci)"
+  FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
+  FM_FAKE_CHECK_SUITES=$(suites_none)
+  local out; out=$(run_crew_state "$d" feat-cinoci)
+  assert_contains "$out" "state: done" "a PR nothing will ever check is not still validating"
+  assert_contains "$out" "nothing verified this change" "detail states the change is unverified"
+  assert_not_contains "$out" "checks green" "no CI configured must never read as checks green"
+  pass "no-checks marker with no CI configured reports the change unverified"
+}
+
+# The forge outranks the log marker in the other direction too: checks that
+# registered after the marker was written make this green.
+test_no_checks_marker_with_passing_checks_is_green() {
+  reset_fakes
+  local d; d=$(new_case ci-nochecks-passed)
+  make_repo_on_branch "$d/wt" fm/feat-cinowgreen
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-cinowgreen.meta" "window=fm:fm-feat-cinowgreen" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cinowgreen)"
+  FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
+  FM_FAKE_CHECK_SUITES=$(suites_green)
+  local out; out=$(run_crew_state "$d" feat-cinowgreen)
+  assert_contains "$out" "state: done" "checks that arrived after the marker -> done"
+  assert_contains "$out" "checks green" "and they are reported as green"
+  pass "no-checks marker is overruled by checks the forge reports as passed"
+}
+
+# The ambiguous middle: the marker says nothing ran and the forge cannot be
+# asked. "We saw nothing" is not evidence of a pass, so this stays not-ready.
+test_no_checks_marker_unreadable_forge_is_not_green() {
+  reset_fakes
+  local d; d=$(new_case ci-nochecks-noforge)
+  make_repo_on_branch "$d/wt" fm/feat-cinoforge
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-cinoforge.meta" "window=fm:fm-feat-cinoforge" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cinoforge)"
+  FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
+  local out; out=$(run_crew_state_without_gh "$d" feat-cinoforge)
+  assert_contains "$out" "state: working" "unreachable forge keeps a no-checks reading not-ready"
+  assert_not_contains "$out" "checks green" "unreachable forge never invents a green"
+  assert_contains "$out" "forge could not be reached" "detail says the forge could not be asked"
+  pass "no-checks marker with an unreadable forge is never green"
+}
+
+# A gh that exists but fails is the same ambiguity, reached a different way.
+test_no_checks_marker_failing_forge_call_is_not_green() {
+  reset_fakes
+  local d; d=$(new_case ci-nochecks-ghfail)
+  make_repo_on_branch "$d/wt" fm/feat-cighfail
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-cighfail.meta" "window=fm:fm-feat-cighfail" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cighfail)"
+  FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
+  FM_FAKE_GH_FAILS=1
+  local out; out=$(run_crew_state "$d" feat-cighfail)
+  assert_contains "$out" "state: working" "a failing forge call keeps the reading not-ready"
+  assert_not_contains "$out" "checks green" "a failing forge call never invents a green"
+  pass "no-checks marker with a failing forge call is never green"
+}
+
+# The passed marker is itself derived from the forge and has never misreported,
+# so it keeps its own verdict when the forge cannot be reached - the asymmetry
+# with the no-checks marker above is deliberate.
+test_passed_marker_survives_unreadable_forge() {
+  reset_fakes
+  local d; d=$(new_case ci-passed-noforge)
+  make_repo_on_branch "$d/wt" fm/feat-cipassnoforge
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-cipassnoforge.meta" "window=fm:fm-feat-cipassnoforge" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cipassnoforge)"
+  FM_FAKE_CI_LOGS="all CI checks passed - still monitoring until merged or closed"
+  local out; out=$(run_crew_state_without_gh "$d" feat-cipassnoforge)
+  assert_contains "$out" "state: done" "passed marker still reports done without a forge"
+  assert_contains "$out" "checks green" "passed marker still reports checks green"
+  pass "passed marker keeps its verdict when the forge is unreachable"
+}
+
+# A fix agent writes its own verification prose into the same ci log. Only
+# whole-line pipeline markers may be read as pipeline state.
+test_agent_prose_is_not_read_as_a_marker() {
+  reset_fakes
+  local d; d=$(new_case ci-prose)
+  make_repo_on_branch "$d/wt" fm/feat-ciprose
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-ciprose.meta" "window=fm:fm-feat-ciprose" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-ciprose)"
+  FM_FAKE_CI_LOGS=$(cat <<'EOF'
+  "CI checks running, waiting for results..."
+  "Verified locally: all CI checks passed after the rebase, so the remaining failure is unrelated."
+EOF
+)
+  local out; out=$(run_crew_state "$d" feat-ciprose)
+  assert_contains "$out" "state: working" "agent prose does not end the wait"
+  assert_not_contains "$out" "checks green" "agent prose is not a pipeline marker"
+  pass "agent prose in the ci log is not read as a pipeline marker"
 }
 
 test_ci_monitoring_green_then_rearm_stays_working() {
@@ -1408,6 +1631,206 @@ test_missing_run_head_falls_back_to_current_state() {
   pass "missing run head falls back instead of matching by branch"
 }
 
+# Skipped, succeeded, merged and closed-unmerged are four different facts.
+# `outcome: passed` alone tells them apart for none of them, so publication is
+# read from the pr step and the run's pr field.
+test_passed_run_with_skipped_publish_claims_no_pr() {
+  reset_fakes
+  local d; d=$(new_case passed-skipped-publish)
+  make_repo_on_branch "$d/wt" fm/feat-skippub
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-skippub.meta" "window=fm:fm-feat-skippub" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_passed_publish_skipped fm/feat-skippub)"
+  local out; out=$(run_crew_state "$d" feat-skippub)
+  assert_contains "$out" "state: done" "a passed run is still done"
+  assert_contains "$out" "nothing published" "a skipped pr step published nothing"
+  assert_not_contains "$out" "merged" "no pull request exists, so none can have merged"
+  pass "passed run with skipped publishing steps does not claim a PR"
+}
+
+test_passed_run_names_a_merge_when_the_log_records_one() {
+  reset_fakes
+  local d; d=$(new_case passed-merged)
+  make_repo_on_branch "$d/wt" fm/feat-merged
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-merged.meta" "window=fm:fm-feat-merged" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_passed fm/feat-merged)"
+  FM_FAKE_CI_LOGS="  \"PR has been merged!\""
+  FM_FAKE_RUNS_LIST="  completed    fm/feat-merged ${FM_FAKE_RUN_HEAD:0:8}  2026-08-20 13:36"
+  local out; out=$(run_crew_state "$d" feat-merged)
+  assert_contains "$out" "PR merged" "a recorded merge is reported as a merge"
+  assert_not_contains "$out" "closed unmerged" "a merge is not hedged as maybe-closed"
+
+  # The discriminating half: the same run whose log records a CLOSE must not
+  # produce the same sentence. Two outcomes that read alike are the defect.
+  reset_fakes
+  local e; e=$(new_case passed-merged-vs-closed)
+  make_repo_on_branch "$e/wt" fm/feat-merged
+  make_fakebin "$e" >/dev/null
+  fm_write_meta "$e/state/feat-merged.meta" "window=fm:fm-feat-merged" "worktree=$e/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_passed fm/feat-merged)"
+  FM_FAKE_CI_LOGS="  \"PR has been closed\""
+  local other; other=$(run_crew_state "$e" feat-merged)
+  [ "$other" != "$out" ] || fail "a merged PR and a closed one produced the same line: $out"
+  pass "passed run reports a merge the ci log actually recorded"
+}
+
+test_passed_run_names_a_close_when_the_log_records_one() {
+  reset_fakes
+  local d; d=$(new_case passed-closed)
+  make_repo_on_branch "$d/wt" fm/feat-closed
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-closed.meta" "window=fm:fm-feat-closed" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_passed fm/feat-closed)"
+  FM_FAKE_CI_LOGS="  \"PR has been closed\""
+  FM_FAKE_RUNS_LIST="  completed    fm/feat-closed ${FM_FAKE_RUN_HEAD:0:8}  2026-08-20 13:36"
+  local out; out=$(run_crew_state "$d" feat-closed)
+  assert_contains "$out" "closed unmerged" "a PR closed unmerged is not called a merge"
+  pass "passed run reports a close the ci log actually recorded"
+}
+
+# The ci step can skip CI entirely, e.g. when gh is not authenticated. That
+# leaves the change unchecked by the pipeline, so it is settled at the forge
+# exactly like any other zero-checks reading rather than left to a stale marker.
+test_skipping_ci_marker_is_settled_at_the_forge() {
+  reset_fakes
+  local d; d=$(new_case ci-skipped)
+  make_repo_on_branch "$d/wt" fm/feat-ciskip
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-ciskip.meta" "window=fm:fm-feat-ciskip" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-ciskip)"
+  FM_FAKE_CI_LOGS="skipping CI: gh CLI is not authenticated"
+  FM_FAKE_CHECK_SUITES=$(suites_gated)
+  local out; out=$(run_crew_state "$d" feat-ciskip)
+  assert_contains "$out" "state: working" "a skipped CI step has verified nothing"
+  assert_not_contains "$out" "checks green" "a skipped CI step is never checks green"
+
+  # Same marker, different forge answer, different verdict - which is the point:
+  # the marker states a fact about the pipeline, the forge decides what it means.
+  FM_FAKE_CHECK_SUITES=$(suites_none)
+  local out2; out2=$(run_crew_state "$d" feat-ciskip)
+  assert_contains "$out2" "nothing verified this change" "no CI at all is named as unverified"
+  [ "$out2" != "$out" ] || fail "the forge answer made no difference to a skipped-CI reading"
+  pass "skipping-CI marker is settled at the forge, not assumed green"
+}
+
+test_passed_run_with_published_pr_names_it() {
+  reset_fakes
+  local d; d=$(new_case passed-published)
+  make_repo_on_branch "$d/wt" fm/feat-pubpr
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-pubpr.meta" "window=fm:fm-feat-pubpr" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_passed fm/feat-pubpr)"
+  local out; out=$(run_crew_state "$d" feat-pubpr)
+  assert_contains "$out" "state: done" "a published passed run is done"
+  assert_contains "$out" "https://github.com/o/r/pull/1" "the PR it published is named"
+  pass "passed run with a published PR names the PR"
+}
+
+# The 2026-08-20 captain-presentation incident: the worker had declared a pause
+# saying it was NOT done, and the reader's own CI inference overruled it.
+test_declared_pause_beats_inferred_done() {
+  reset_fakes
+  local d; d=$(new_case pause-vs-inferred-done)
+  make_repo_on_branch "$d/wt" fm/feat-pausedone
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-pausedone.meta" "window=fm:fm-feat-pausedone" "worktree=$d/wt" "kind=ship"
+  printf 'paused [key=pr-awaiting-ci]: waiting on CI at head abc1234; NOT done\n' \
+    > "$d/state/feat-pausedone.status"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-pausedone)"
+  FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
+  FM_FAKE_CHECK_SUITES=$(suites_none)
+  local out; out=$(run_crew_state "$d" feat-pausedone)
+  assert_contains "$out" "state: paused" "the worker's declared pause wins"
+  assert_not_contains "$out" "state: done" "an inferred done must not overrule a declared pause"
+  assert_contains "$out" "worker declares it is not done" "the contradiction is stated"
+  pass "declared pause beats a done this reader only inferred"
+}
+
+# But a terminal outcome recorded by no-mistakes itself is not an inference, so
+# a stale pause does not suppress it.
+test_declared_pause_does_not_beat_recorded_outcome() {
+  reset_fakes
+  local d; d=$(new_case pause-vs-outcome)
+  make_repo_on_branch "$d/wt" fm/feat-pauseoutcome
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-pauseoutcome.meta" "window=fm:fm-feat-pauseoutcome" "worktree=$d/wt" "kind=ship"
+  printf 'paused: waiting on CI\n' > "$d/state/feat-pauseoutcome.status"
+  FM_FAKE_AXI_STATUS="$(run_passed fm/feat-pauseoutcome)"
+  FM_FAKE_RUNS_LIST="  completed    fm/feat-pauseoutcome ${FM_FAKE_RUN_HEAD:0:8}  2026-08-20 13:36"
+  local out; out=$(run_crew_state "$d" feat-pauseoutcome)
+  assert_contains "$out" "state: done" "a recorded outcome still wins over a stale pause"
+  pass "declared pause does not suppress a recorded terminal outcome"
+}
+
+# Currency, direction one: `axi status` handed back a run that a newer run for
+# the same branch has already superseded, and the superseded one had failed.
+# Reporting that failure upward is the 2026-08-20 false-red.
+test_superseded_failed_run_does_not_report_failure() {
+  reset_fakes
+  local d; d=$(new_case superseded-failed)
+  make_repo_on_branch "$d/wt" fm/feat-superseded
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-superseded.meta" "window=fm:fm-feat-superseded" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-superseded)"
+  # Newest row for this branch is a DIFFERENT, running run.
+  FM_FAKE_RUNS_LIST=$(cat <<EOF
+  running      fm/feat-superseded 9f9f9f9f  2026-08-20 13:36
+  failed       fm/feat-superseded ${FM_FAKE_RUN_HEAD:0:8}  2026-08-20 12:53
+EOF
+)
+  local out; out=$(run_crew_state "$d" feat-superseded)
+  assert_contains "$out" "state: working" "a live newer run answers instead"
+  assert_not_contains "$out" "state: failed" "a superseded run must not report a failure"
+  assert_contains "$out" "superseded reading" "the superseded verdict is named as evidence"
+  pass "a failed run superseded by a newer run does not report failure"
+}
+
+# Currency, direction two: the attributed run is the newest for this branch but
+# started before this worker was spawned, so it describes an earlier
+# incarnation of the same task id. The worker's own signals answer instead.
+test_run_predating_this_incarnation_is_not_terminal_authority() {
+  reset_fakes
+  local d; d=$(new_case earlier-incarnation)
+  make_repo_on_branch "$d/wt" fm/feat-earlier
+  make_fakebin "$d" >/dev/null
+  local spawn_epoch stamp
+  spawn_epoch=$(awk 'BEGIN { print 1787000000 }')
+  fm_write_meta "$d/state/feat-earlier.meta" "window=fm:fm-feat-earlier" "worktree=$d/wt" "kind=ship" \
+    "spawn_gen=s$spawn_epoch.123.456"
+  printf 'working: rebuilding from a clean base\n' > "$d/state/feat-earlier.status"
+  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-earlier)"
+  # The run is the newest for the branch, but it started a day before the spawn.
+  stamp=$(date -r $((spawn_epoch - 86400)) '+%Y-%m-%d %H:%M' 2>/dev/null \
+    || date -d "@$((spawn_epoch - 86400))" '+%Y-%m-%d %H:%M')
+  FM_FAKE_RUNS_LIST="  failed       fm/feat-earlier ${FM_FAKE_RUN_HEAD:0:8}  $stamp"
+  local out; out=$(run_crew_state "$d" feat-earlier)
+  assert_not_contains "$out" "state: failed" "a run from an earlier incarnation is not this task's failure"
+  assert_contains "$out" "source: pane" "the worker's own signals answer instead"
+  pass "a run predating this incarnation cannot report a terminal verdict"
+}
+
+# The same run, started after the spawn, keeps its authority - the guard must
+# discriminate rather than blanket-suppressing terminal verdicts.
+test_run_within_this_incarnation_keeps_terminal_authority() {
+  reset_fakes
+  local d; d=$(new_case current-incarnation)
+  make_repo_on_branch "$d/wt" fm/feat-current
+  make_fakebin "$d" >/dev/null
+  local spawn_epoch stamp
+  spawn_epoch=$(awk 'BEGIN { print 1787000000 }')
+  fm_write_meta "$d/state/feat-current.meta" "window=fm:fm-feat-current" "worktree=$d/wt" "kind=ship" \
+    "spawn_gen=s$spawn_epoch.123.456"
+  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-current)"
+  stamp=$(date -r $((spawn_epoch + 600)) '+%Y-%m-%d %H:%M' 2>/dev/null \
+    || date -d "@$((spawn_epoch + 600))" '+%Y-%m-%d %H:%M')
+  FM_FAKE_RUNS_LIST="  failed       fm/feat-current ${FM_FAKE_RUN_HEAD:0:8}  $stamp"
+  local out; out=$(run_crew_state "$d" feat-current)
+  assert_contains "$out" "state: failed" "a run from this incarnation still reports its failure"
+  assert_contains "$out" "source: run-step" "and it stays the run-step verdict"
+  pass "a run started within this incarnation keeps terminal authority"
+}
+
 test_active_run_is_authoritative
 test_stale_needs_decision_superseded
 test_stale_blocked_superseded
@@ -1417,7 +1840,14 @@ test_gate_block_parked_not_superseded
 test_ci_ready_done_log_beats_monitoring_run
 test_ci_monitoring_checks_green_surfaces_done
 test_top_level_ci_checks_green_surfaces_done
-test_ci_monitoring_no_checks_terminal_surfaces_done
+test_no_checks_marker_awaiting_approval_is_not_green
+test_both_no_checks_spellings_agree
+test_no_checks_marker_no_ci_configured_reports_unverified
+test_no_checks_marker_with_passing_checks_is_green
+test_no_checks_marker_unreadable_forge_is_not_green
+test_no_checks_marker_failing_forge_call_is_not_green
+test_passed_marker_survives_unreadable_forge
+test_agent_prose_is_not_read_as_a_marker
 test_ci_monitoring_green_then_rearm_stays_working
 test_ci_monitoring_no_checks_yet_stays_working
 test_ci_monitoring_still_waiting_stays_working
@@ -1461,5 +1891,15 @@ test_historical_same_branch_rewritten_head_not_current
 test_active_run_descendant_fix_head_remains_current
 test_local_advanced_past_run_head_invalidates
 test_missing_run_head_falls_back_to_current_state
+test_passed_run_with_skipped_publish_claims_no_pr
+test_passed_run_with_published_pr_names_it
+test_passed_run_names_a_merge_when_the_log_records_one
+test_passed_run_names_a_close_when_the_log_records_one
+test_skipping_ci_marker_is_settled_at_the_forge
+test_declared_pause_beats_inferred_done
+test_declared_pause_does_not_beat_recorded_outcome
+test_superseded_failed_run_does_not_report_failure
+test_run_predating_this_incarnation_is_not_terminal_authority
+test_run_within_this_incarnation_keeps_terminal_authority
 
 echo "all fm-crew-state tests passed"
