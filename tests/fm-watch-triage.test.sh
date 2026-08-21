@@ -783,7 +783,7 @@ declared_pause_absorbs_case() {  # <case-name> <pane-command>
     FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
   pid=$!
-  if ! wait_live "$pid" 30; then
+  if ! wait_poll_cycle "$state" "$pid"; then
     reap "$pid"
     fail "declared pause with a $name agent surfaced instead of absorbing: $(cat "$out")"
   fi
@@ -973,7 +973,7 @@ test_exited_declared_pause_is_bounded_and_live_gate_absorbs() {
     FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" >> "$out" &
   pid=$!
-  if ! wait_live "$pid" 30; then
+  if ! wait_poll_cycle "$state" "$pid"; then
     reap "$pid"
     fail "live declared pause surfaced instead of absorbing on the bounded cadence: $(cat "$out")"
   fi
