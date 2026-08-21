@@ -210,6 +210,24 @@
         "bin/fm-session-start.sh",
         "docs/configuration.md"
       ]
+    },
+    {
+      "id": "firstmate-declared-pause-not-absorbed-v3",
+      "summary": "Watcher declared-pause triage: agent liveness may no longer suppress a worker's declared external wait, so a live or unmeasurable parked worker is absorbed on the bounded cadence instead of being surfaced on sight, while a confidently dead verdict still recovers paused classification so an exited crew keeps its bounded recheck.",
+      "class": "pending",
+      "topic": "fm/divergence/firstmate-declared-pause-not-absorbed-v3",
+      "introduced": "2026-08-20",
+      "upstream_pr": {
+        "url": "https://github.com/kunchenguid/firstmate/issues/2713",
+        "disposition": "open"
+      },
+      "retire_when": "Official upstream main no longer suppresses a declared pause on a non-dead liveness verdict, verifiable by pause_state_class in bin/fm-watch.sh containing no early return that discards the declaration when fm_backend_agent_alive reports anything other than dead.",
+      "paths": [
+        "bin/fm-classify-lib.sh",
+        "bin/fm-watch.sh",
+        "docs/architecture.md",
+        "tests/fm-watch-triage.test.sh"
+      ]
     }
   ],
   "retired_upstream": []
