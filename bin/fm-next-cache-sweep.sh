@@ -131,12 +131,13 @@
 #   `sweep_die`. Falsifier: `$STATE` is a dangling symlink and the sweep proceeds
 #   with an empty primary task-record set.
 # - `bin/fm-next-cache-sweep.sh: sweep_task_record_state_dirs ->
-#   sweep_read_text_file "$DATA/secondmates.md"`. Checked: the reader requires a
-#   regular non-symlink, stages a complete byte-for-byte read, rejects NUL, and
-#   propagates failure for a present registry; an absent path is the documented
-#   empty-registry default. Falsifier: a present registry yields one complete
-#   local record and then an I/O error, but that partial prefix is accepted as
-#   the full registry.
+#   sweep_read_text_file "$DATA/secondmates.md"`. Checked: an lstat result
+#   distinguishes confirmed absence from lookup failure, then the reader requires
+#   a regular non-symlink, stages a complete byte-for-byte read, rejects NUL, and
+#   propagates read failure for a present registry; confirmed absence is the
+#   documented empty-registry default. Falsifier: a present registry yields one
+#   complete local record and then an I/O error, but that partial prefix is
+#   accepted as the full registry.
 # - `bin/fm-next-cache-sweep.sh: sweep_task_record_state_dirs -> registry line
 #   loop and secondmate_registry_parse_line`. Checked: every registry record is
 #   defined by the shared parser's `- ` prefix; such a line must parse, local
@@ -198,12 +199,11 @@
 #   `"status":"available"`, and last-value decoding produces a false unowned
 #   verdict.
 # - `bin/fm-next-cache-sweep.sh: sweep_pool_entries -> status and path fields`.
-#   Checked: Python requires a nonempty string status and an absolute path, and
-#   rejects NUL, tab, CR, and LF before emitting any staged rows. A missing,
-#   non-string, or empty path becomes a fault row naming its pool entry while
-#   valid siblings remain assessable. Falsifier: JSON status `avail\u0000able`
-#   crosses command substitution as `available`, or a later pathless record
-#   suppresses an earlier valid copy's report verdict.
+#   Checked: every non-object record, unusable status, unusable path, control
+#   character, or non-absolute path becomes a specific fault row naming its pool
+#   entry while valid siblings remain assessable. Falsifier: JSON status
+#   `avail\u0000able` crosses command substitution as `available`, or a later
+#   unusable record suppresses an earlier valid copy's report verdict.
 # - `bin/fm-next-cache-sweep.sh: sweep_project_plan -> pool directory predicate,
 #   row kind, sweep_path_identity, and duplicate identity scan`. Checked: fault
 #   rows become undetermined assessments, usable rows require `-d` and a physical
@@ -417,6 +417,12 @@ flags = os.O_RDONLY
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 try:
+    os.lstat(sys.argv[1])
+except FileNotFoundError:
+    sys.exit(3)
+except OSError:
+    sys.exit(2)
+try:
     fd = os.open(sys.argv[1], flags)
     try:
         if not stat.S_ISREG(os.fstat(fd).st_mode):
@@ -483,7 +489,8 @@ PY
 }
 
 sweep_task_record_state_dirs() {
-  local registry="$DATA/secondmates.md" registry_contents line home resolved_home resolved_state
+  local registry="$DATA/secondmates.md" registry_contents registry_status
+  local line home resolved_home resolved_state
   if ! resolved_state=$(sweep_resolve_directory "$STATE"); then
     sweep_incomplete "cannot resolve task state directory: $STATE"
     return
@@ -494,12 +501,24 @@ sweep_task_record_state_dirs() {
     ;;
   esac
   TASK_STATE_DIRS=$resolved_state
-  if [ ! -e "$registry" ] && [ ! -L "$registry" ]; then
-    registry_contents=
-  elif ! registry_contents=$(sweep_read_text_file "$registry"); then
-    sweep_incomplete "cannot read present secondmate registry: $registry"
-    return
-  fi
+  registry_contents=$(sweep_read_text_file "$registry")
+  registry_status=$?
+  case "$registry_status" in
+    0) ;;
+    1)
+      sweep_incomplete "cannot read present secondmate registry: $registry"
+      return
+      ;;
+    2)
+      sweep_incomplete "cannot look up secondmate registry: $registry"
+      return
+      ;;
+    3) registry_contents= ;;
+    *)
+      sweep_incomplete "cannot determine secondmate registry state: $registry"
+      return
+      ;;
+  esac
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
       '- '*)
@@ -668,7 +687,7 @@ EOT
 }
 
 # Print "entry\t<status>\t<path>\t-" for every usable pool record and
-# "fault\t-\t<entry-label>\t<reason>" for every record with an unusable path.
+# "fault\t-\t<entry-label>\t<reason>" for every unusable pool record.
 # treehouse resolves the pool from the working directory, and reading pool
 # status changes nothing in the clone.
 sweep_pool_entries() {  # <project-dir>
@@ -705,18 +724,31 @@ if not isinstance(pool, list):
     sys.exit(1)
 rows = []
 for index, entry in enumerate(pool, 1):
+    label = "<pool entry %d>" % index
     if not isinstance(entry, dict):
-        sys.exit(1)
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: entry is not an object"))
+        continue
+    status_present = "status" in entry
     status = entry.get("status")
-    if not isinstance(status, str) or not status:
-        sys.exit(1)
+    if not status_present:
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: status is missing"))
+        continue
+    if not isinstance(status, str):
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: status is not a string"))
+        continue
+    if not status:
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: status is empty"))
+        continue
     if any(c in status for c in "\0\t\r\n"):
-        sys.exit(1)
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: status contains a control character"))
+        continue
     path_present = "path" in entry
     path = entry.get("path")
-    if isinstance(path, str) and any(c in path for c in "\0\t\r\n"):
-        sys.exit(1)
-    label = "<pool entry %d>" % index
     if not path_present:
         rows.append(("fault", "-", label,
                      "incomplete pool entry: path is missing"))
@@ -726,8 +758,12 @@ for index, entry in enumerate(pool, 1):
     elif not path:
         rows.append(("fault", "-", label,
                      "incomplete pool entry: path is empty"))
+    elif any(c in path for c in "\0\t\r\n"):
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: path contains a control character"))
     elif not path.startswith("/"):
-        sys.exit(1)
+        rows.append(("fault", "-", label,
+                     "incomplete pool entry: path is not absolute"))
     else:
         rows.append(("entry", status, path, "-"))
 for kind, status, path, reason in rows:

@@ -13,6 +13,8 @@
 # Ownership classification never grants deletion authority. A live dev server
 # can rewrite the output during a report, so every ownership state gets its own
 # case asserting the directory survives.
+# The whole-tree manifest assertion's red state was confirmed by temporarily
+# appending one `x` byte to .next/static/chunk.js after the pre-sweep snapshot.
 set -u
 
 # shellcheck source=tests/lib.sh disable=SC1091
@@ -41,6 +43,43 @@ add_next_app() {
   printf '%s/.next\n' "$sub" >> "$wt/.gitignore"
   git -C "$wt" add -A >/dev/null 2>&1
   git -C "$wt" -c commit.gpgsign=false -c user.email=t@t -c user.name=t commit -qm "next app at $sub"
+}
+
+next_tree_manifest() {  # <directory>
+  python3 - "$1" <<'PY'
+import hashlib, json, os, stat, sys
+
+root = os.path.abspath(sys.argv[1])
+entries = []
+
+def visit(path, relative):
+    info = os.lstat(path)
+    if stat.S_ISLNK(info.st_mode):
+        entries.append(["symlink", relative, os.readlink(path)])
+        return
+    if stat.S_ISDIR(info.st_mode):
+        entries.append(["directory", relative])
+        with os.scandir(path) as scanned:
+            children = sorted(scanned, key=lambda entry: os.fsencode(entry.name))
+        for child in children:
+            child_relative = child.name if relative == "." else relative + "/" + child.name
+            visit(child.path, child_relative)
+        return
+    if stat.S_ISREG(info.st_mode):
+        digest = hashlib.sha256()
+        with open(path, "rb") as source:
+            while True:
+                chunk = source.read(65536)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        entries.append(["file", relative, digest.hexdigest()])
+        return
+    entries.append(["other", relative, stat.S_IFMT(info.st_mode)])
+
+visit(root, ".")
+print(json.dumps(entries, ensure_ascii=True, separators=(",", ":")))
+PY
 }
 
 # A firstmate home with a project clone, a fake treehouse pool, and a fakebin.
@@ -162,6 +201,40 @@ test_sweep_reports_available_copy_without_deleting() {
   assert_not_contains "$out" "sweep: reclaimed" \
     "report-only: reported bytes must never count as reclaimed"
   pass "sweep reports available build output without deleting it"
+}
+
+test_sweep_preserves_complete_build_output_tree() {
+  local case_dir wt app out rc before after difference
+  case_dir=$(make_case complete-build-output-integrity)
+  install_treehouse_stub "$case_dir"
+  wt=$(add_pool_worktree "$case_dir" 1)
+  add_next_app "$wt" packages/frontend
+  app="$wt/packages/frontend"
+  mkdir -p "$app/.next/empty-directory"
+  ln -s ../BUILD_ID "$app/.next/server/build-id-link"
+  printf '1 available\n' > "$case_dir/pool-status"
+  before="$case_dir/next-before.manifest"
+  after="$case_dir/next-after.manifest"
+  next_tree_manifest "$app/.next" > "$before" \
+    || fail "build-output-integrity: could not capture the pre-sweep manifest"
+
+  set +e
+  out=$(run_sweep "$case_dir" 2>&1); rc=$?
+  set -e
+
+  expect_code 0 "$rc" "build-output-integrity: inspection should succeed"
+  assert_present "$app/.next" \
+    "build-output-integrity: the inspected build-output directory must survive"
+  assert_present "$app/.next/static/chunk.js" \
+    "build-output-integrity: the inspected build-output files must survive"
+  next_tree_manifest "$app/.next" > "$after" \
+    || fail "build-output-integrity: could not capture the post-sweep manifest"
+  if ! difference=$(diff -u "$before" "$after"); then
+    fail "build-output-integrity: the complete .next tree changed"$'\n'"$difference"
+  fi
+  assert_contains "$out" "sweep: report-only $wt" \
+    "build-output-integrity: the inspected copy must receive its verdict"
+  pass "sweep leaves the complete build-output tree byte-identical"
 }
 
 test_sweep_reports_explicit_project_without_deleting() {
@@ -605,6 +678,62 @@ test_sweep_refuses_unreadable_secondmate_registry() {
   pass "an unreadable secondmate registry refuses the whole sweep"
 }
 
+test_sweep_refuses_unsearchable_secondmate_registry_parent() {
+  if ! (
+    local case_dir wt out rc registry data_dir lookup_status
+    case_dir=$(make_case unsearchable-secondmate-registry-parent)
+    install_treehouse_stub "$case_dir"
+    wt=$(add_pool_worktree "$case_dir" 1)
+    add_next_app "$wt" packages/frontend
+    printf '1 available\n' > "$case_dir/pool-status"
+    registry="$case_dir/data/secondmates.md"
+    data_dir="$case_dir/data"
+    trap 'chmod 700 "$data_dir" 2>/dev/null || true' EXIT
+    chmod 000 "$data_dir"
+
+    set +e
+    python3 - "$registry" >/dev/null 2>&1 <<'PY'
+import os, sys
+
+try:
+    os.lstat(sys.argv[1])
+except PermissionError:
+    sys.exit(0)
+except OSError:
+    sys.exit(2)
+sys.exit(1)
+PY
+    lookup_status=$?
+    set -e
+    case "$lookup_status" in
+      0) ;;
+      1)
+        pass "skip: directory permissions do not block registry lookup for this user"
+        exit 0
+        ;;
+      *) fail "unsearchable-secondmate-registry-parent: could not establish the permission fixture" ;;
+    esac
+
+    set +e
+    out=$(run_sweep "$case_dir" 2>&1); rc=$?
+    set -e
+
+    expect_code 2 "$rc" \
+      "unsearchable-secondmate-registry-parent: failed lookup must refuse the sweep"
+    assert_present "$wt/packages/frontend/.next" \
+      "unsearchable-secondmate-registry-parent: failed ownership lookup must preserve build output"
+    assert_contains "$out" "$registry" \
+      "unsearchable-secondmate-registry-parent: the refusal must name the registry"
+    assert_contains "$out" "cannot look up secondmate registry" \
+      "unsearchable-secondmate-registry-parent: lookup failure needs its own diagnostic"
+    assert_not_contains "$out" "cannot read present secondmate registry" \
+      "unsearchable-secondmate-registry-parent: lookup failure is not a read failure"
+    pass "an unsearchable registry parent refuses the whole sweep"
+  ); then
+    exit 1
+  fi
+}
+
 test_sweep_accepts_absent_secondmate_registry() {
   local case_dir wt out rc registry
   case_dir=$(make_case absent-secondmate-registry)
@@ -877,17 +1006,14 @@ test_sweep_refuses_nul_secondmate_registry() {
   pass "a NUL-bearing secondmate registry refuses the whole sweep"
 }
 
-test_sweep_refuses_nul_pool_status() {
+test_sweep_refuses_nul_pool_document() {
   local case_dir wt out rc
   case_dir=$(make_case nul-pool-status)
   wt=$(add_pool_worktree "$case_dir" 1)
   add_next_app "$wt" packages/frontend
   cat > "$case_dir/fakebin/treehouse" <<'SH'
 #!/usr/bin/env bash
-python3 - "$FM_FAKE_POOL_DIR" <<'PY'
-import json, sys
-print(json.dumps([{"status": "avail\x00able", "path": sys.argv[1] + "/1"}]))
-PY
+printf '[{"status":"avail\0able","path":"%s/1"}]\n' "$FM_FAKE_POOL_DIR"
 SH
   chmod +x "$case_dir/fakebin/treehouse"
 
@@ -895,12 +1021,14 @@ SH
   out=$(run_sweep "$case_dir" 2>&1); rc=$?
   set -e
 
-  expect_code 1 "$rc" "nul-pool-status: malformed pool input must return nonzero"
+  expect_code 1 "$rc" "nul-pool-document: malformed pool input must return nonzero"
   assert_present "$wt/packages/frontend/.next" \
-    "nul-pool-status: NUL normalization must not forge available status"
-  assert_contains "$out" "worktree pool" \
-    "nul-pool-status: the malformed pool must be reported"
-  pass "a NUL-bearing pool field cannot forge availability"
+    "nul-pool-document: NUL normalization must not forge available status"
+  assert_contains "$out" "cannot read the worktree pool" \
+    "nul-pool-document: the malformed document must refuse the project"
+  assert_not_contains "$out" "sweep: report-only $wt" \
+    "nul-pool-document: no row from a malformed document is trustworthy"
+  pass "a raw NUL invalidates the whole pool document"
 }
 
 test_sweep_refuses_nonstandard_pool_json_constant() {
@@ -1020,6 +1148,49 @@ SH
   assert_not_contains "$out" "sweep: refused" \
     "pathless-pool-entry: entry uncertainty must never become refusal"
   pass "a pathless pool entry does not suppress a valid sibling"
+}
+
+test_sweep_reports_other_invalid_pool_records_independently() {
+  local cases case_name expected_reason entry case_dir wt out rc
+  cases='non-object|entry is not an object|[]
+missing-status|status is missing|{"path":"/unusable"}
+non-string-status|status is not a string|{"status":null,"path":"/unusable"}
+empty-status|status is empty|{"status":"","path":"/unusable"}
+control-status|status contains a control character|{"status":"avail\u0009able","path":"/unusable"}
+control-path|path contains a control character|{"status":"available","path":"/unsafe\u000apath"}
+relative-path|path is not absolute|{"status":"available","path":"relative/pool-copy"}'
+  while IFS='|' read -r case_name expected_reason entry; do
+    case_dir=$(make_case "invalid-pool-record-$case_name")
+    wt=$(add_pool_worktree "$case_dir" 1)
+    add_next_app "$wt" packages/frontend
+    cat > "$case_dir/fakebin/treehouse" <<'SH'
+#!/usr/bin/env bash
+printf '[%s,{"status":"available","path":"%s/1"}]\n' \
+  "$FM_FAKE_POOL_ENTRY" "$FM_FAKE_POOL_DIR"
+SH
+    chmod +x "$case_dir/fakebin/treehouse"
+
+    set +e
+    out=$(FM_FAKE_POOL_ENTRY="$entry" run_sweep "$case_dir" 2>&1); rc=$?
+    set -e
+
+    expect_code 1 "$rc" \
+      "$case_name: an unusable pool record must make the report partial"
+    assert_present "$wt/packages/frontend/.next" \
+      "$case_name: report-only inspection must preserve the valid sibling"
+    assert_contains "$out" "sweep: report-only $wt" \
+      "$case_name: the valid sibling must retain its report verdict"
+    assert_contains "$out" \
+      "sweep: undetermined <pool entry 1> (incomplete pool entry: $expected_reason), size could not be measured" \
+      "$case_name: the unusable record must receive its specific verdict"
+    assert_not_contains "$out" "cannot read the worktree pool" \
+      "$case_name: a record fault must not invalidate the document"
+    assert_not_contains "$out" "sweep: refused" \
+      "$case_name: record uncertainty must never become project refusal"
+  done <<EOT
+$cases
+EOT
+  pass "unusable pool records do not suppress a valid sibling"
 }
 
 test_sweep_reports_other_copy_when_pool_entry_is_nondirectory() {
@@ -2059,6 +2230,7 @@ run_next_cache_test() {
 }
 
 run_next_cache_test test_sweep_reports_available_copy_without_deleting
+run_next_cache_test test_sweep_preserves_complete_build_output_tree
 run_next_cache_test test_sweep_reports_explicit_project_without_deleting
 run_next_cache_test test_sweep_reports_nothing_found
 run_next_cache_test test_sweep_dry_run_removes_nothing
@@ -2078,6 +2250,7 @@ run_next_cache_test test_sweep_refuses_malformed_secondmate_registry
 run_next_cache_test test_sweep_refuses_absent_secondmate_home
 run_next_cache_test test_sweep_refuses_relative_secondmate_home
 run_next_cache_test test_sweep_refuses_unreadable_secondmate_registry
+run_next_cache_test test_sweep_refuses_unsearchable_secondmate_registry_parent
 run_next_cache_test test_sweep_accepts_absent_secondmate_registry
 run_next_cache_test test_sweep_skips_symlink_aliased_task_worktree
 run_next_cache_test test_sweep_skips_final_symlink_aliased_task_worktree
@@ -2089,11 +2262,12 @@ run_next_cache_test test_sweep_preserves_task_owner_when_grep_fails
 run_next_cache_test test_sweep_refuses_empty_candidate_identity
 run_next_cache_test test_sweep_refuses_nul_task_metadata
 run_next_cache_test test_sweep_refuses_nul_secondmate_registry
-run_next_cache_test test_sweep_refuses_nul_pool_status
+run_next_cache_test test_sweep_refuses_nul_pool_document
 run_next_cache_test test_sweep_refuses_nonstandard_pool_json_constant
 run_next_cache_test test_sweep_refuses_duplicate_pool_fields
 run_next_cache_test test_sweep_reports_conflicting_alias_pool_entries_independently
 run_next_cache_test test_sweep_reports_invalid_path_entries_independently
+run_next_cache_test test_sweep_reports_other_invalid_pool_records_independently
 run_next_cache_test test_sweep_reports_other_copy_when_pool_entry_is_nondirectory
 run_next_cache_test test_sweep_refuses_pool_entry_for_live_copy_child
 run_next_cache_test test_sweep_refuses_pool_entry_for_project_clone
