@@ -169,25 +169,31 @@ cmd_stamp() {
 
 # Print a validated record, or nothing when the note is absent or unusable.
 read_record() {  # <repo> <commit>
-  local repo=$1 commit=$2 note line family='' lines=0 out=''
+  local repo=$1 commit=$2 note line key family='' seen=' ' out=''
   note=$(git -C "$repo" notes --ref="$NOTES_REF" show "$commit" 2>/dev/null) || return 1
   while IFS= read -r line; do
     [ -n "$line" ] || continue
-    lines=$((lines + 1))
-    [ "$lines" -le 8 ] || return 1
+    key=${line%%=*}
     case "$line" in
       family=*|model=*|effort=*) ;;
       *) return 1 ;;
     esac
-    value_valid "${line#*=}" || return 1
-    case "$line" in
-      family=*)
-        # A family only counts when it is one the fleet actually verifies.
-        family=$(fm_control_harness_family "${line#family=}") || return 1
-        [ "$family" = "${line#family=}" ] || return 1
-        ;;
+    # A repeated key is two answers to one question, which is a guess either way.
+    case "$seen" in
+      *" $key "*) return 1 ;;
     esac
-    out="${out:+$out$'\n'}$line"
+    seen="$seen$key "
+    value_valid "${line#*=}" || return 1
+    if [ "$key" = family ]; then
+      # A family only counts when it is one the fleet actually verifies.
+      family=$(fm_control_harness_family "${line#family=}") || return 1
+      [ "$family" = "${line#family=}" ] || return 1
+    fi
+    if [ -z "$out" ]; then
+      out=$line
+    else
+      out="$out"$'\n'"$line"
+    fi
   done <<EOF
 $note
 EOF

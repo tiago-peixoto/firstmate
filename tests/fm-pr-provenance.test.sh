@@ -318,6 +318,29 @@ test_malformed_record_refuses() {
   pass "fm-pr-provenance refuses a record whose builder family is not a verified one"
 }
 
+test_repeated_key_in_a_record_refuses() {
+  local case_dir head out rc
+  case_dir=$(make_case repeated-key)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  head=$(author_commit "$case_dir")
+
+  git -C "$case_dir/project" fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
+  git -C "$case_dir/project" notes --ref="$NOTES_REF" \
+    add -f -m "family=claude"$'\n'"family=codex" "$head" >/dev/null 2>&1
+  git -C "$case_dir/project" push -q origin "$NOTES_REF"
+  reviewer_fetch "$case_dir"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$head" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "repeated-key: a record naming two families must refuse"
+  assert_not_contains "$out" "family=claude" \
+    "repeated-key: no identity may be printed from a record that answers twice"
+  pass "fm-pr-provenance refuses a record that names the builder family twice"
+}
+
 test_commit_outside_the_pull_request_refuses() {
   local case_dir head base out rc
   case_dir=$(make_case outside-range)
@@ -350,4 +373,5 @@ test_unreachable_forge_refuses_the_publish
 test_unconfirmable_commit_names_the_failed_fetch
 test_conflicting_records_refuse
 test_malformed_record_refuses
+test_repeated_key_in_a_record_refuses
 test_commit_outside_the_pull_request_refuses
