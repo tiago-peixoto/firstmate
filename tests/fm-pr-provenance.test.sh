@@ -21,6 +21,9 @@
 #   (j) provider-qualified models survive the untrusted-record parser
 #   (k) concurrent linked-worktree stamps preserve both records
 #   (l) stale fetch and base state never establish an identity
+#   (m) a published commit cannot be reassigned after task relaunch
+#   (n) invalid records anywhere in the change refuse the whole identity
+#   (o) show accepts only an exact full head SHA and the forge's current base
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -113,7 +116,7 @@ test_help_renders_the_contract() {
   local out
   out=$("$PROVENANCE" --help) || fail "help: --help must exit 0"
   assert_contains "$out" "fm-pr-provenance.sh stamp <task-id>" "help: must document stamp"
-  assert_contains "$out" "fm-pr-provenance.sh show <repo-dir> <commit-ish>" "help: must document show"
+  assert_contains "$out" "fm-pr-provenance.sh show <repo-dir> <head-sha>" "help: must document show"
   assert_contains "$out" "refs/notes/build-provenance" "help: must name where the record lives"
   pass "fm-pr-provenance --help documents both verbs and where the record lives"
 }
@@ -156,6 +159,64 @@ test_reviewer_reads_stamped_identity_without_shared_state() {
   pass "fm-pr-provenance carries builder identity from author to reviewer through the forge"
 }
 
+test_identical_restamp_is_silent_and_idempotent() {
+  local case_dir before_ref after_ref out
+  case_dir=$(make_case identical-restamp)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  author_commit "$case_dir" >/dev/null
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "identical-restamp: first stamp failed"
+  before_ref=$(git -C "$case_dir/project" ls-remote origin "$NOTES_REF" | cut -f1)
+
+  out=$(run_stamp "$case_dir" task-b1 2>&1) \
+    || fail "identical-restamp: an identical restamp must succeed"
+  [ -z "$out" ] || fail "identical-restamp: an identical restamp must be silent"
+  after_ref=$(git -C "$case_dir/project" ls-remote origin "$NOTES_REF" | cut -f1)
+  [ "$after_ref" = "$before_ref" ] \
+    || fail "identical-restamp: an identical restamp rewrote the forge ref"
+  pass "fm-pr-provenance leaves an identical published record untouched"
+}
+
+test_relaunch_cannot_reassign_a_published_commit() {
+  local case_dir head unchanged before_ref after_ref before_note after_note out rc shown
+  case_dir=$(make_case immutable-record)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  head=$(author_commit "$case_dir")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "immutable-record: first stamp failed"
+  before_ref=$(git -C "$case_dir/project" ls-remote origin "$NOTES_REF" | cut -f1)
+  before_note=$(git --git-dir="$case_dir/origin.git" notes --ref="$NOTES_REF" show "$head")
+
+  write_task_meta "$case_dir" "harness=codex" "model=gpt-5" "effort=high"
+  unchanged=$(git -C "$case_dir/wt" rev-parse HEAD)
+  [ "$unchanged" = "$head" ] \
+    || fail "immutable-record: relaunch fixture unexpectedly changed the worktree head"
+
+  set +e
+  out=$(run_stamp "$case_dir" task-b1 2>&1)
+  rc=$?
+  set -e
+
+  [ "$rc" -ne 0 ] || fail "immutable-record: changed relaunch metadata must not replace a record"
+  assert_contains "$out" "family=claude" \
+    "immutable-record: refusal must name the published builder"
+  assert_contains "$out" "family=codex" \
+    "immutable-record: refusal must name the replacement builder"
+  after_ref=$(git -C "$case_dir/project" ls-remote origin "$NOTES_REF" | cut -f1)
+  after_note=$(git --git-dir="$case_dir/origin.git" notes --ref="$NOTES_REF" show "$head")
+  [ "$after_ref" = "$before_ref" ] \
+    || fail "immutable-record: refused replacement still changed the forge ref"
+  [ "$after_note" = "$before_note" ] \
+    || fail "immutable-record: refused replacement still changed the persisted record"
+
+  reviewer_fetch "$case_dir"
+  shown=$(run_show "$case_dir/reviewer" "$head" 2> "$case_dir/show.err") \
+    || fail "immutable-record: original identity no longer resolves"
+  assert_contains "$shown" "family=claude" \
+    "immutable-record: reviewer must retain the original builder"
+  assert_not_contains "$shown" "family=codex" \
+    "immutable-record: reviewer must never see the relaunch identity for the old commit"
+  pass "fm-pr-provenance never reassigns a published commit after task relaunch"
+}
+
 test_provider_qualified_models_round_trip() {
   local case_dir harness model effort family head out
   while IFS='|' read -r harness model effort family; do
@@ -191,12 +252,45 @@ test_reviewer_fetches_an_unseen_remote_head() {
 
   git -C "$case_dir/reviewer" cat-file -e "$head^{commit}" 2>/dev/null \
     && fail "unseen-head: fixture already contains the requested head"
-  out=$(run_show "$case_dir/reviewer" refs/heads/fm/task-b1 2> "$case_dir/show.err") \
+  out=$(run_show "$case_dir/reviewer" "$head" 2> "$case_dir/show.err") \
     || fail "unseen-head: show could not fetch the requested remote head"$'\n'"$(cat "$case_dir/show.err")"
 
   assert_contains "$out" "family=codex" \
     "unseen-head: reviewer must resolve the identity after fetching the requested head"
   pass "fm-pr-provenance resolves an unseen requested head from the forge"
+}
+
+test_mutable_head_name_refuses_stale_remote_tracking_state() {
+  local case_dir stamped replacement local_head remote_head out rc
+  case_dir=$(make_case mutable-head)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  stamped=$(author_commit "$case_dir")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "mutable-head: stamp failed"
+  reviewer_fetch "$case_dir"
+
+  replacement=$(printf '%s\n' "force-pushed replacement" \
+    | git -C "$case_dir/wt" commit-tree "main^{tree}" -p main)
+  git -C "$case_dir/wt" push -q --force origin "$replacement:refs/heads/fm/task-b1"
+  git -C "$case_dir/wt" merge-base --is-ancestor "$stamped" "$replacement" \
+    && fail "mutable-head: replacement did not diverge from the stamped commit"
+  local_head=$(git -C "$case_dir/reviewer" rev-parse origin/fm/task-b1)
+  remote_head=$(git -C "$case_dir/reviewer" ls-remote origin refs/heads/fm/task-b1 | cut -f1)
+  [ "$local_head" = "$stamped" ] \
+    || fail "mutable-head: reviewer did not retain the stale stamped name"
+  [ "$remote_head" = "$replacement" ] \
+    || fail "mutable-head: forge did not receive the force-pushed replacement"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" origin/fm/task-b1 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "mutable-head: a remote-tracking name must refuse"
+  assert_contains "$out" "exact full SHA" \
+    "mutable-head: refusal must name the immutable head requirement"
+  assert_not_contains "$out" "family=claude" \
+    "mutable-head: a stale name must not supply the old commit's identity"
+  pass "fm-pr-provenance refuses mutable head names after a force-push"
 }
 
 test_later_head_resolves_from_the_branch() {
@@ -482,7 +576,7 @@ test_failed_head_fetch_ignores_stale_fetch_head() {
   git -C "$case_dir/reviewer" fetch -q origin refs/heads/fm/task-b1
   stale=$(git -C "$case_dir/reviewer" rev-parse FETCH_HEAD)
   [ "$stale" = "$head" ] || fail "stale-fetch-head: fixture did not seed the stamped head"
-  requested=refs/heads/no-such-build
+  requested=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   git -C "$case_dir/reviewer" rev-parse --verify "$requested^{commit}" >/dev/null 2>&1 \
     && fail "stale-fetch-head: missing requested head unexpectedly resolves"
 
@@ -527,6 +621,41 @@ test_stale_base_is_refreshed_before_searching_records() {
   assert_not_contains "$out" "family=claude" \
     "stale-base: a merged record must not be attributed to later work"
   pass "fm-pr-provenance refreshes the base before selecting pull-request commits"
+}
+
+test_default_base_follows_the_forges_current_head() {
+  local case_dir stamped unstamped local_default remote_default out rc
+  case_dir=$(make_case changed-default)
+  git -C "$case_dir/project" push -q origin main:master
+  git --git-dir="$case_dir/origin.git" symbolic-ref HEAD refs/heads/master
+  git -C "$case_dir/reviewer" fetch -q origin \
+    refs/heads/master:refs/remotes/origin/master
+  git -C "$case_dir/reviewer" remote set-head origin master
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  stamped=$(author_commit "$case_dir" "build change before default switch")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "changed-default: stamp failed"
+  git -C "$case_dir/wt" push -q origin HEAD:main
+  git --git-dir="$case_dir/origin.git" symbolic-ref HEAD refs/heads/main
+  unstamped=$(author_commit "$case_dir" "build after default switch")
+
+  local_default=$(git -C "$case_dir/reviewer" symbolic-ref --short refs/remotes/origin/HEAD)
+  remote_default=$(git -C "$case_dir/reviewer" ls-remote --symref origin HEAD | sed -n 's/^ref: \([^[:space:]]*\)[[:space:]]*HEAD$/\1/p')
+  [ "$local_default" = origin/master ] \
+    || fail "changed-default: reviewer did not retain the stale default branch"
+  [ "$remote_default" = refs/heads/main ] \
+    || fail "changed-default: forge did not switch its default branch to main"
+  [ "$stamped" != "$unstamped" ] \
+    || fail "changed-default: fixture did not create an unstamped later head"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$unstamped" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "changed-default: an unstamped head on the new default must refuse"
+  assert_not_contains "$out" "family=claude" \
+    "changed-default: a stale default must not widen the search to a merged record"
+  pass "fm-pr-provenance follows the forge when its default branch changes"
 }
 
 test_unrefreshable_base_refuses_stale_local_state() {
@@ -600,6 +729,38 @@ test_conflicting_records_refuse() {
   pass "fm-pr-provenance refuses when one pull request carries disagreeing records"
 }
 
+test_invalid_descendant_record_refuses_a_valid_ancestor() {
+  local case_dir first second first_note second_note out rc
+  case_dir=$(make_case invalid-descendant)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  first=$(author_commit "$case_dir" "validly recorded commit")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "invalid-descendant: stamp failed"
+  second=$(author_commit "$case_dir" "descendant with invalid record")
+  git -C "$case_dir/project" fetch -q origin "+$NOTES_REF:$NOTES_REF"
+  git -C "$case_dir/project" notes --ref="$NOTES_REF" \
+    add -f -m "family=totally-made-up" "$second"
+  git -C "$case_dir/project" push -q origin "$NOTES_REF"
+  first_note=$(git --git-dir="$case_dir/origin.git" notes --ref="$NOTES_REF" show "$first")
+  second_note=$(git --git-dir="$case_dir/origin.git" notes --ref="$NOTES_REF" show "$second")
+  assert_contains "$first_note" "family=claude" \
+    "invalid-descendant: fixture lost the valid ancestor record"
+  assert_contains "$second_note" "family=totally-made-up" \
+    "invalid-descendant: fixture did not publish the invalid descendant record"
+  reviewer_fetch "$case_dir"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$second" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "invalid-descendant: a present invalid record must refuse the range"
+  assert_contains "$out" "$second" \
+    "invalid-descendant: refusal must name the exact reviewed head"
+  assert_not_contains "$out" "family=claude" \
+    "invalid-descendant: a valid ancestor must not mask an invalid descendant"
+  pass "fm-pr-provenance refuses a valid ancestor when a descendant record is invalid"
+}
+
 test_malformed_record_refuses() {
   local case_dir head out rc
   case_dir=$(make_case malformed)
@@ -631,7 +792,7 @@ test_record_value_with_whitespace_refuses() {
 
   git -C "$case_dir/project" fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
   git -C "$case_dir/project" notes --ref="$NOTES_REF" \
-    add -f -m "family=claude" -m "model=bad value" "$head"
+    add -f -m $'family=claude\nmodel=bad value' "$head"
   git -C "$case_dir/project" push -q origin "$NOTES_REF"
   reviewer_fetch "$case_dir"
 
@@ -644,6 +805,32 @@ test_record_value_with_whitespace_refuses() {
   assert_not_contains "$out" "family=claude" \
     "whitespace-value: no partial identity may print from an invalid record"
   pass "fm-pr-provenance keeps whitespace outside the record value allowlist"
+}
+
+test_embedded_blank_record_line_refuses() {
+  local case_dir head note out rc
+  case_dir=$(make_case blank-line)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  head=$(author_commit "$case_dir")
+
+  git -C "$case_dir/project" fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
+  git -C "$case_dir/project" notes --ref="$NOTES_REF" \
+    add -f -m $'family=claude\n\nmodel=opus' "$head"
+  git -C "$case_dir/project" push -q origin "$NOTES_REF"
+  note=$(git --git-dir="$case_dir/origin.git" notes --ref="$NOTES_REF" show "$head")
+  [ "$note" = $'family=claude\n\nmodel=opus' ] \
+    || fail "blank-line: fixture did not persist an embedded empty line"
+  reviewer_fetch "$case_dir"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$head" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "blank-line: an empty record line must refuse"
+  assert_not_contains "$out" "family=claude" \
+    "blank-line: a structurally invalid record must not print a partial identity"
+  pass "fm-pr-provenance refuses records containing embedded empty lines"
 }
 
 test_repeated_key_in_a_record_refuses() {
@@ -694,8 +881,11 @@ test_commit_outside_the_pull_request_refuses() {
 test_help_renders_the_contract
 test_reviewer_refuses_before_any_record
 test_reviewer_reads_stamped_identity_without_shared_state
+test_identical_restamp_is_silent_and_idempotent
+test_relaunch_cannot_reassign_a_published_commit
 test_provider_qualified_models_round_trip
 test_reviewer_fetches_an_unseen_remote_head
+test_mutable_head_name_refuses_stale_remote_tracking_state
 test_later_head_resolves_from_the_branch
 test_reader_surfaces_stay_free_of_fleet_vocabulary
 test_unrecognized_harness_refuses
@@ -706,10 +896,13 @@ test_concurrent_linked_worktree_stamps_preserve_both_records
 test_successful_push_without_a_forge_record_refuses
 test_failed_head_fetch_ignores_stale_fetch_head
 test_stale_base_is_refreshed_before_searching_records
+test_default_base_follows_the_forges_current_head
 test_unrefreshable_base_refuses_stale_local_state
 test_deleted_forge_record_refuses_stale_local_note
 test_conflicting_records_refuse
+test_invalid_descendant_record_refuses_a_valid_ancestor
 test_malformed_record_refuses
 test_record_value_with_whitespace_refuses
+test_embedded_blank_record_line_refuses
 test_repeated_key_in_a_record_refuses
 test_commit_outside_the_pull_request_refuses

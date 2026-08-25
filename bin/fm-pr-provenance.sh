@@ -9,15 +9,16 @@
 # closes that gap in the one place both sides already share.
 #
 # Usage: fm-pr-provenance.sh stamp <task-id>
-#        fm-pr-provenance.sh show <repo-dir> <commit-ish> [--base <ref>]
+#        fm-pr-provenance.sh show <repo-dir> <head-sha> [--base <ref>]
 #
 #   stamp  The worker runs this in its own task after the branch is pushed.
 #          It reads harness=, model=, and effort= from state/<task-id>.meta,
 #          resolves the harness to its verified family, and publishes the record
-#          for the task worktree's current HEAD.
-#   show   Any clone of the project resolves the record for one exact head.
-#          Prints family=, model=, and effort= on separate lines, and exits 3
-#          when the identity cannot be established.
+#          for the task worktree's current HEAD. An identical restamp is a silent
+#          no-op, while a restamp that would reassign the commit refuses.
+#   show   Any clone of the project resolves the record for one exact full head
+#          SHA. Prints family=, model=, and effort= on separate lines, and exits
+#          3 when the identity cannot be established.
 #
 # WHERE THE RECORD LIVES, and why. The record is a Git note under
 # refs/notes/build-provenance. That ref is pushed to and served by the forge, so
@@ -32,9 +33,10 @@
 # accident: `stamp` pushes the ref explicitly and `show` fetches it explicitly.
 # Every transient fetch and note edit uses a process-private local ref because
 # linked worktrees share refs inside one clone. `stamp` re-reads the forge before
-# every push attempt and confirms its exact record after a successful push.
-# `show` refreshes the requested head, authoritative base, and notes ref without
-# trusting FETCH_HEAD or a pooled clone's remote-tracking refs.
+# every push attempt, treats the first published record for a commit as
+# immutable, and confirms its exact record after a successful push. `show`
+# accepts only an immutable full head SHA and refreshes the authoritative base
+# and notes ref without trusting FETCH_HEAD or pooled remote-tracking refs.
 # That is also why a local fixture cannot prove this works - a note that never
 # left the machine reads back identically. docs/verification/build-provenance.md
 # holds the dated evidence against a real forge and the commands that refresh it.
@@ -47,11 +49,11 @@
 # base are never searched, so a merged branch's record can never be attributed
 # to unrelated work.
 #
-# WHAT REFUSAL MEANS. An unresolvable head, an unrefreshable base or notes ref,
-# no record, disagreeing records, an unverified family, or a malformed record all
-# exit 3 without printing an identity. A quiet assumption here would silently
-# destroy the independence the review depends on, so a missing fact is reported
-# rather than filled in.
+# WHAT REFUSAL MEANS. A head that is not an exact full SHA, an unresolvable head,
+# an unrefreshable base or notes ref, no record, disagreeing records, an
+# unverified family, or any malformed present record all exit 3 without printing
+# an identity. A quiet assumption here would silently destroy the independence
+# the review depends on, so a missing fact is reported rather than filled in.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -138,7 +140,7 @@ meta_field() {  # <meta-file> <key>
 
 cmd_stamp() {
   local id=$1 meta harness model effort worktree family record sha attempt fetched notes_err
-  local private_ref remote_notes published
+  local private_ref remote_notes published existing existing_rc existing_display record_display
 
   case "$id" in
     ''|*/*|.*|*[!A-Za-z0-9._-]*) die "invalid task id" ;;
@@ -198,9 +200,19 @@ cmd_stamp() {
       git -C "$worktree" update-ref -d "$private_ref" >/dev/null 2>&1 \
         || die "could not prepare the build record for $sha"
     fi
-    # -f makes re-stamping idempotent; its "Overwriting existing notes" chatter
-    # is held back so only a real failure reaches the caller.
-    if ! notes_err=$(git -C "$worktree" notes --ref="$private_ref" add -f -m "$record" "$sha" 2>&1 >/dev/null); then
+    if existing=$(git -C "$worktree" notes --ref="$private_ref" show "$sha" 2>/dev/null); then
+      if [ "$existing" = "$record" ]; then
+        return 0
+      fi
+      existing_display=$(printf '%q' "$existing")
+      record_display=$(printf '%q' "$record")
+      die "commit $sha already records $existing_display; refusing replacement with $record_display"
+    else
+      existing_rc=$?
+      [ "$existing_rc" -eq 1 ] \
+        || die "could not inspect the existing build record for $sha"
+    fi
+    if ! notes_err=$(git -C "$worktree" notes --ref="$private_ref" add -m "$record" "$sha" 2>&1 >/dev/null); then
       printf '%s\n' "$notes_err" >&2
       die "could not write the build record for $sha"
     fi
@@ -228,27 +240,33 @@ cmd_stamp() {
 
 # --- show -------------------------------------------------------------------
 
-# Print a validated record, or nothing when the note is absent or unusable.
+# Print a validated record, returning 1 when absent and 2 when invalid.
 read_record() {  # <repo> <commit> <notes-ref>
-  local repo=$1 commit=$2 notes_ref=$3 note line key family='' seen=' ' out=''
-  note=$(git -C "$repo" notes --ref="$notes_ref" show "$commit" 2>/dev/null) || return 1
+  local repo=$1 commit=$2 notes_ref=$3 note note_rc line key family='' seen=' ' out=''
+  if note=$(git -C "$repo" notes --ref="$notes_ref" show "$commit" 2>/dev/null); then
+    :
+  else
+    note_rc=$?
+    [ "$note_rc" -eq 1 ] && return 1
+    return 2
+  fi
   while IFS= read -r line; do
-    [ -n "$line" ] || continue
+    [ -n "$line" ] || return 2
     key=${line%%=*}
     case "$line" in
       family=*|model=*|effort=*) ;;
-      *) return 1 ;;
+      *) return 2 ;;
     esac
     # A repeated key is two answers to one question, which is a guess either way.
     case "$seen" in
-      *" $key "*) return 1 ;;
+      *" $key "*) return 2 ;;
     esac
     seen="$seen$key "
-    value_valid "${line#*=}" || return 1
+    value_valid "${line#*=}" || return 2
     if [ "$key" = family ]; then
       # A family only counts when it is one the fleet actually verifies.
-      family=$(fm_control_harness_family "${line#family=}") || return 1
-      [ "$family" = "${line#family=}" ] || return 1
+      family=$(fm_control_harness_family "${line#family=}") || return 2
+      [ "$family" = "${line#family=}" ] || return 2
     fi
     if [ -z "$out" ]; then
       out=$line
@@ -258,24 +276,15 @@ read_record() {  # <repo> <commit> <notes-ref>
   done <<EOF
 $note
 EOF
-  [ -n "$family" ] || return 1
+  [ -n "$family" ] || return 2
   printf '%s\n' "$out"
 }
 
-default_base() {  # <repo>
-  local repo=$1 ref branch
-  ref=$(git -C "$repo" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
-  if [ -n "$ref" ]; then
-    printf '%s\n' "$ref"
-    return 0
-  fi
-  for branch in origin/main origin/master main master; do
-    if git -C "$repo" rev-parse --verify --quiet "$branch^{commit}" >/dev/null 2>&1; then
-      printf '%s\n' "$branch"
-      return 0
-    fi
-  done
-  return 1
+full_sha_valid() {  # <sha>
+  case "$1" in
+    ''|*[!0-9A-Fa-f]*) return 1 ;;
+  esac
+  [ "${#1}" -eq 40 ]
 }
 
 refresh_base() {  # <repo> <base> <private-ref>
@@ -306,12 +315,15 @@ refresh_base() {  # <repo> <base> <private-ref>
 }
 
 cmd_show() {
-  local repo=$1 want=$2 base=${3-} sha commit commits found='' record count=0
-  local head_ref base_ref notes_ref base_sha remote_notes head_source
+  local repo=$1 want=$2 base=${3-} sha normalized_want commit commits found='' record count=0
+  local head_ref base_ref notes_ref base_sha remote_notes record_rc
 
   [ -d "$repo" ] || die "no such directory: $repo"
   git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
     || die "not a git work tree: $repo"
+  full_sha_valid "$want" \
+    || unestablished "$want" "the head must be an exact full SHA"
+  normalized_want=$(printf '%s' "$want" | tr 'A-F' 'a-f')
 
   head_ref="refs/fm-pr-provenance/show-head-$$"
   base_ref="refs/fm-pr-provenance/show-base-$$"
@@ -322,21 +334,17 @@ cmd_show() {
 
   sha=$(git -C "$repo" rev-parse --verify --quiet "$want^{commit}" 2>/dev/null || true)
   if [ -z "$sha" ]; then
-    case "$want" in
-      origin/*) head_source="refs/heads/${want#origin/}" ;;
-      refs/remotes/origin/*) head_source="refs/heads/${want#refs/remotes/origin/}" ;;
-      *) head_source=$want ;;
-    esac
-    git -C "$repo" fetch -q origin "+$head_source:$head_ref" 2>/dev/null \
+    git -C "$repo" fetch -q origin "+$want:$head_ref" 2>/dev/null \
       || unestablished "$want" "the requested head could not be fetched from origin"
     sha=$(git -C "$repo" rev-parse --verify --quiet "$head_ref^{commit}" 2>/dev/null || true)
   fi
   [ -n "$sha" ] \
     || unestablished "$want" "the requested head did not resolve to a commit"
+  [ "$sha" = "$normalized_want" ] \
+    || unestablished "$want" "the exact head SHA does not name a commit directly"
 
   if [ -z "$base" ]; then
-    base=$(default_base "$repo") \
-      || unestablished "$sha" "the authoritative base could not be determined; pass --base"
+    base=origin/HEAD
   fi
   base_sha=$(refresh_base "$repo" "$base" "$base_ref") \
     || unestablished "$sha" "the authoritative base $base could not be refreshed from origin"
@@ -359,11 +367,17 @@ cmd_show() {
     if [ "$count" -gt "$MAX_PR_COMMITS" ]; then
       unestablished "$sha" "the change carries more than $MAX_PR_COMMITS commits to search"
     fi
-    record=$(read_record "$repo" "$commit" "$notes_ref") || continue
-    if [ -z "$found" ]; then
-      found=$record
-    elif [ "$found" != "$record" ]; then
-      unestablished "$sha" "conflicting build records inside the same change"
+    if record=$(read_record "$repo" "$commit" "$notes_ref"); then
+      if [ -z "$found" ]; then
+        found=$record
+      elif [ "$found" != "$record" ]; then
+        unestablished "$sha" "conflicting build records inside the same change"
+      fi
+    else
+      record_rc=$?
+      if [ "$record_rc" -ne 1 ]; then
+        unestablished "$sha" "commit $commit carries a malformed or unverified build record"
+      fi
     fi
   done <<EOF
 $commits

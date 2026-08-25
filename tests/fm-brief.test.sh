@@ -423,8 +423,8 @@ test_pr_modes_record_builder_identity() {
     brief="$home/data/$id/brief.md"
     assert_grep "$ROOT/bin/fm-pr-provenance.sh stamp $id" "$brief" \
       "$shape brief must tell the worker to record who built the branch"
-    assert_grep "Run it again after any rebase or force-push, and once more before you report done." "$brief" \
-      "$shape brief must keep the record current with the head"
+    assert_grep "it leaves an identical record untouched and refuses to reassign a commit to a different builder." "$brief" \
+      "$shape brief must explain the immutable restamp contract"
   done
 
   for shape in local scout; do

@@ -2,7 +2,7 @@
 
 Audience: maintainer verification.
 
-This record supports one active guarantee: the model family that built an authored pull request reaches the forge and is readable by a home that holds nothing but a clone and a head SHA.
+This record supports one active guarantee: the model family that built an authored pull request reaches the forge and is readable by a home that holds nothing but a clone and an exact full head SHA.
 
 That guarantee rests on third-party behavior rather than on firstmate's own code.
 Git never pushes or fetches `refs/notes/*` under a default refspec, and a forge is free to reject, hide, or render whatever ref namespaces it likes, so the claim is only as good as evidence against a real forge.

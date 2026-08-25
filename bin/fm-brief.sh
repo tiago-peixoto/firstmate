@@ -384,7 +384,7 @@ The task is complete only when committed on your branch.
 When it is implemented and committed, push your branch and open a PR with \`gh-axi\`.
 Right after the push, record who built the branch: \`$FM_ROOT/bin/fm-pr-provenance.sh stamp $ID\`.
 An independent reviewer needs the builder's model family and cannot read this home's records, so that command publishes it beside the branch on a forge ref no reader ever sees.
-Run it again after any rebase or force-push, and once more before you report done.
+Run it again after any rebase or force-push, and once more before you report done; it leaves an identical record untouched and refuses to reassign a commit to a different builder.
 If it refuses, append \`blocked:\` with what it said instead of reporting done.
 Then append \`done: PR {url}\` to the status file and stop.
 Do NOT run /no-mistakes. The configured merge authority decides whether to merge the PR; firstmate relays the outcome.
@@ -427,7 +427,7 @@ Two firstmate-specific rules layer on top of that guidance:
 
 Once the pipeline has pushed your branch and opened the PR, record who built it: \`$FM_ROOT/bin/fm-pr-provenance.sh stamp $ID\`.
 An independent reviewer needs the builder's model family and cannot read this home's records, so that command publishes it beside the branch on a forge ref no reader ever sees.
-Run it again after any rebase or force-push, and once more before you report done.
+Run it again after any rebase or force-push, and once more before you report done; it leaves an identical record untouched and refuses to reassign a commit to a different builder.
 If it refuses, append \`blocked:\` with what it said instead of reporting done.
 
 After /no-mistakes reports CI green (the CI-ready return point - do not wait for it to keep monitoring in the background until merge), append \`done: PR {url} checks green\` and stop. You are finished.
