@@ -1,0 +1,52 @@
+Fork divergence health: retained=5 patches=5 not-upstream=34 integration-artifacts=29 retired-history-patches=0 accepted-upstream-patches=0 trend=unchanged superseded=0 signals=29 errors=0
+Refs: fork=HEAD@2b07803f upstream=upstream/main@038d0f7e
+Classes: pending=4 rejected-but-retained=0 private=1 superseded=0
+Oldest pending: fork-main-integration introduced=2026-08-17 age_days=8
+Last upstream merge touched: 5 (firstmate-brief-scaffold-trim-v2,firstmate-next-cache-reclaim,firstmate-progressive-disclosure-restructure,fork-main-integration,supervision-owner-aware-recovery)
+fork-main-integration [pending] topic=fm/divergence/fork-main-integration upstream=open https://github.com/kunchenguid/firstmate/pull/1944
+  does: Permanent fork-main integration workflow: guarded remote topology, isolated fork-target validation clone, divergence manifest and health report, topic integrate and discard helpers, upstream merge helper, and the startup upstream probe.
+  retire when: Upstream pull request 1944 is merged into official upstream main, so official upstream ships the fork-main integration workflow itself.
+supervision-owner-aware-recovery [pending] topic=fm/divergence/supervision-owner-aware-recovery upstream=open https://github.com/kunchenguid/firstmate/pull/2392
+  does: Claude primary-session supervision fix: session-ownership alignment for the Stop auto-arm and turn-end guard, a bounded volatile entry trace, one-shot repeated-block escalation, a single supervision snapshot behind queue warnings, queued delivery treated as a supervision need until post-handling acknowledgement, and the BASH_SUBSHELL lock-ownership check stock macOS Bash 3.2 requires.
+  retire when: Upstream pull request 2392 is merged into official upstream main, so official upstream ships owner-aware durable supervision recovery itself.
+firstmate-brief-scaffold-trim-v2 [pending] topic=fm/divergence/firstmate-brief-scaffold-trim-v2 upstream=open https://github.com/kunchenguid/firstmate/pull/2538
+  does: Trim generated brief scaffolds to retain only load-bearing worker instructions and current status protocol.
+  retire when: upstream main carries this scaffold trim or an equivalent
+firstmate-progressive-disclosure-restructure [pending] topic=fm/divergence/firstmate-progressive-disclosure-restructure upstream=open https://github.com/kunchenguid/firstmate/pull/2547
+  does: Restructure Firstmate's always-loaded instructions toward progressive disclosure while preserving every operational rule and safety boundary.
+  retire when: upstream main carries this restructure or an equivalent
+firstmate-next-cache-reclaim [private] topic=fm/divergence/firstmate-next-cache-reclaim upstream=private
+  does: Report which pooled worktrees hold regenerable Next.js build output and how much, deleting nothing: the sweep inspects and reports only, and teardown-side reclamation is absent because ownership cannot be proven under a process-bound worktree hold.
+  retire when: Upstream Firstmate reclaims regenerable build output from pooled worktrees itself - removing it when a copy is returned to the pool and offering a supported way to reclaim it from idle copies - so a stock installation no longer accumulates it.
+Accepted upstream and retired: 0
+Relevance review: git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fork-health-evidence.e09LRa range-diff --remerge-diff 3d125ad37378441b086d785bb24a555b1e46574a..510cdd54da67671b1210130497800f004526e8dd 038d0f7ec6ba7238a151722931434dcf06ff37c4..HEAD
+Manifest/Git signals (informational):
+  - non-upstream commit fe30ee2e2ccf678bba877659e47bae71318a5fab is not represented by a canonical manifest topic
+  - non-upstream commit 067881f8a67c9270edfb621784f7cf530fd38ccf is not represented by a canonical manifest topic
+  - non-upstream commit 2def68de4882b16f3c5160dc44616a650606b321 is not represented by a canonical manifest topic
+  - non-upstream commit d0a5f5a3f72a36e833b5ace9229d8bad8d1c407f is not represented by a canonical manifest topic
+  - non-upstream commit 00e17f65aa3173ab9d3a3824565609baba569db6 is an integration-path artifact after cb61bd3364cdc8e2d0ef04fcad8096664bc1df60, not a carried divergence
+  - non-upstream commit d51c7085780b106ec2b3b7d1847bf47e898889c6 is an integration-path artifact after 86df18c97a02421e3baf8003353476458293a208, not a carried divergence
+  - non-upstream commit aee6c2e1eb55b8fca88d2d5cf216bc3e7bb28030 is an integration-path artifact after 3c9a985ad8763d92d9806284514a20b6af1ce5a0, not a carried divergence
+  - non-upstream commit 5fd46854f7c3fc31027632d1fbd69bac06be6fea is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 1b15d8b7250eeb9b4ee37bc3c302e52231d1ec16 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit d852238871d41acef649fe85a8fc5fe08e0ead47 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit f8e43489de3967cd8d332eea12d1242709e7bdc9 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 3fe4b62d5457b0670034b96bc260f3a76ffa9b30 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 97f83881edda33fff9457a105f035a47b40bb9c1 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 85ed5a79320bff42486b1ecdb23eac8bfec28de1 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 6ff675942544be39a992a159f8a2736f2fdf5175 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit b8b049bb7edd436b738f3282cf8d424658ec4291 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 2392aff09f9ab141184af17b07ea5974dc24b9b3 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit fa8e18888cc878ed93f58ce224200c242dea8887 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 9609f26fcdc52e2d93df563e4b1615be2cae46d7 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 1a8e1fdf65fb3b127fbab7c139ebd756152063e5 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit ae712fd04dcf647dcb31ef8d436ccf1b875eeff8 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 36933b0e555a0be936cca2e42bb7f79b34e76208 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 9b9d1a107c6868af5137ef6771b4ced69508eae5 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 67483a45a7107d32b19b2137270db706a5243c47 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 4ac485d15f6da8d4d8828635ba8e3f4088f247a8 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 8c02504a4ed03caa4c8b532174c075358a9fe675 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 8892efe003c6e04b2cab62be4242adf5b59dfd36 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 2edb2102ccc0da7f87117291003b15b478cacf5c is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
+  - non-upstream commit 2b07803ffe0f7de43f7e7349d468be1f571ef672 is an integration-path artifact after 1c3ae04d35b75e3c8293fa717855c997bcf77bac, not a carried divergence
