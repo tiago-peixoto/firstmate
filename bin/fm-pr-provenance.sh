@@ -28,6 +28,12 @@
 # invisible to readers. Nothing fleet-internal - no task id, no branch prefix, no
 # role name - is written into the record for the same reason.
 #
+# Git carries `refs/notes/*` under no default refspec, so neither side happens by
+# accident: `stamp` pushes the ref explicitly and `show` fetches it explicitly.
+# That is also why a local fixture cannot prove this works - a note that never
+# left the machine reads back identically. docs/verification/build-provenance.md
+# holds the dated evidence against a real forge and the commands that refresh it.
+#
 # WHY A PULL REQUEST'S OWN COMMITS ARE SEARCHED. A validation round pushes fix
 # commits after the record is written, so the reviewed head is usually a
 # descendant of the stamped commit rather than the stamped commit itself. `show`
