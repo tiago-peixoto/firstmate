@@ -30,6 +30,11 @@
 #
 # Git carries `refs/notes/*` under no default refspec, so neither side happens by
 # accident: `stamp` pushes the ref explicitly and `show` fetches it explicitly.
+# Every transient fetch and note edit uses a process-private local ref because
+# linked worktrees share refs inside one clone. `stamp` re-reads the forge before
+# every push attempt and confirms its exact record after a successful push.
+# `show` refreshes the requested head, authoritative base, and notes ref without
+# trusting FETCH_HEAD or a pooled clone's remote-tracking refs.
 # That is also why a local fixture cannot prove this works - a note that never
 # left the machine reads back identically. docs/verification/build-provenance.md
 # holds the dated evidence against a real forge and the commands that refresh it.
@@ -42,10 +47,11 @@
 # base are never searched, so a merged branch's record can never be attributed
 # to unrelated work.
 #
-# WHAT REFUSAL MEANS. No record, disagreeing records, an unverified family, or a
-# malformed record all exit 3 without printing an identity. A quiet assumption
-# here would silently destroy the independence the review depends on, so a
-# missing fact is reported rather than filled in.
+# WHAT REFUSAL MEANS. An unresolvable head, an unrefreshable base or notes ref,
+# no record, disagreeing records, an unverified family, or a malformed record all
+# exit 3 without printing an identity. A quiet assumption here would silently
+# destroy the independence the review depends on, so a missing fact is reported
+# rather than filled in.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -61,6 +67,8 @@ NOTES_REF=refs/notes/build-provenance
 # the walk stops and the identity is reported as unestablished.
 MAX_PR_COMMITS=500
 PUSH_ATTEMPTS=3
+PRIVATE_REPO=
+PRIVATE_REFS=
 
 usage() {
   awk '
@@ -81,13 +89,42 @@ unestablished() {
   exit 3
 }
 
+cleanup_private_refs() {
+  local ref
+  [ -n "$PRIVATE_REPO" ] || return 0
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    git -C "$PRIVATE_REPO" update-ref -d "$ref" >/dev/null 2>&1 || true
+  done <<EOF
+$PRIVATE_REFS
+EOF
+  return 0
+}
+
+register_private_ref() {  # <repo> <ref>
+  local repo=$1 ref=$2
+  if [ -n "$PRIVATE_REPO" ] && [ "$PRIVATE_REPO" != "$repo" ]; then
+    die "cannot prepare private refs in more than one repository"
+  fi
+  PRIVATE_REPO=$repo
+  git -C "$repo" update-ref -d "$ref" >/dev/null 2>&1 \
+    || die "could not prepare private ref $ref"
+  if [ -z "$PRIVATE_REFS" ]; then
+    PRIVATE_REFS=$ref
+  else
+    PRIVATE_REFS="$PRIVATE_REFS"$'\n'"$ref"
+  fi
+}
+
+trap cleanup_private_refs EXIT
+
 # Record values stay to an unambiguous, shell-safe alphabet. A forge ref is
 # writable by anyone who can push, so a record is untrusted input until it
 # parses.
 value_valid() {  # <value>
   case "${1-}" in
     '') return 1 ;;
-    *[!A-Za-z0-9._-]*) return 1 ;;
+    *[!A-Za-z0-9._/-]*) return 1 ;;
     [!A-Za-z0-9]*) return 1 ;;
   esac
   return 0
@@ -101,6 +138,7 @@ meta_field() {  # <meta-file> <key>
 
 cmd_stamp() {
   local id=$1 meta harness model effort worktree family record sha attempt fetched notes_err
+  local private_ref remote_notes published
 
   case "$id" in
     ''|*/*|.*|*[!A-Za-z0-9._-]*) die "invalid task id" ;;
@@ -147,19 +185,36 @@ cmd_stamp() {
     die "commit $sha is not on the forge yet; push the branch before recording it"
   fi
 
-  # Every branch shares one notes ref, so a concurrent push can reject this one.
-  # Re-reading the forge's ref before re-applying keeps other branches' records
-  # intact instead of overwriting them.
+  private_ref="refs/notes/fm-pr-provenance-stamp-$$"
+  register_private_ref "$worktree" "$private_ref"
   attempt=0
   while :; do
-    git -C "$worktree" fetch -q origin "+$NOTES_REF:$NOTES_REF" 2>/dev/null || true
+    remote_notes=$(git -C "$worktree" ls-remote origin "$NOTES_REF" 2>/dev/null) \
+      || die "could not publish the build record for $sha: existing forge records could not be read"
+    if [ -n "$remote_notes" ]; then
+      git -C "$worktree" fetch -q origin "+$NOTES_REF:$private_ref" 2>/dev/null \
+        || die "could not publish the build record for $sha: existing forge records could not be fetched"
+    else
+      git -C "$worktree" update-ref -d "$private_ref" >/dev/null 2>&1 \
+        || die "could not prepare the build record for $sha"
+    fi
     # -f makes re-stamping idempotent; its "Overwriting existing notes" chatter
     # is held back so only a real failure reaches the caller.
-    if ! notes_err=$(git -C "$worktree" notes --ref="$NOTES_REF" add -f -m "$record" "$sha" 2>&1 >/dev/null); then
+    if ! notes_err=$(git -C "$worktree" notes --ref="$private_ref" add -f -m "$record" "$sha" 2>&1 >/dev/null); then
       printf '%s\n' "$notes_err" >&2
       die "could not write the build record for $sha"
     fi
-    if git -C "$worktree" push -q origin "$NOTES_REF" 2>/dev/null; then
+    if git -C "$worktree" push -q origin "$private_ref:$NOTES_REF" 2>/dev/null; then
+      remote_notes=$(git -C "$worktree" ls-remote origin "$NOTES_REF" 2>/dev/null) \
+        || die "could not verify the published build record for $sha on the forge"
+      [ -n "$remote_notes" ] \
+        || die "could not verify the published build record for $sha on the forge"
+      git -C "$worktree" fetch -q origin "+$NOTES_REF:$private_ref" 2>/dev/null \
+        || die "could not verify the published build record for $sha on the forge"
+      published=$(git -C "$worktree" notes --ref="$private_ref" show "$sha" 2>/dev/null) \
+        || die "could not verify the published build record for $sha on the forge"
+      [ "$published" = "$record" ] \
+        || die "could not verify the published build record for $sha on the forge"
       break
     fi
     attempt=$((attempt + 1))
@@ -174,9 +229,9 @@ cmd_stamp() {
 # --- show -------------------------------------------------------------------
 
 # Print a validated record, or nothing when the note is absent or unusable.
-read_record() {  # <repo> <commit>
-  local repo=$1 commit=$2 note line key family='' seen=' ' out=''
-  note=$(git -C "$repo" notes --ref="$NOTES_REF" show "$commit" 2>/dev/null) || return 1
+read_record() {  # <repo> <commit> <notes-ref>
+  local repo=$1 commit=$2 notes_ref=$3 note line key family='' seen=' ' out=''
+  note=$(git -C "$repo" notes --ref="$notes_ref" show "$commit" 2>/dev/null) || return 1
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     key=${line%%=*}
@@ -223,33 +278,80 @@ default_base() {  # <repo>
   return 1
 }
 
+refresh_base() {  # <repo> <base> <private-ref>
+  local repo=$1 base=$2 private_ref=$3 source resolved
+  case "$base" in
+    *[!0-9A-Fa-f]*) ;;
+    *)
+      if [ "${#base}" -eq 40 ]; then
+        resolved=$(git -C "$repo" rev-parse --verify --quiet "$base^{commit}" 2>/dev/null) \
+          || return 1
+        printf '%s\n' "$resolved"
+        return 0
+      fi
+      ;;
+  esac
+  case "$base" in
+    origin/HEAD|refs/remotes/origin/HEAD) source=HEAD ;;
+    origin/*) source="refs/heads/${base#origin/}" ;;
+    refs/remotes/origin/*) source="refs/heads/${base#refs/remotes/origin/}" ;;
+    refs/*) source=$base ;;
+    *) source="refs/heads/$base" ;;
+  esac
+  git -C "$repo" fetch -q origin "+$source:$private_ref" 2>/dev/null || return 1
+  resolved=$(git -C "$repo" rev-parse --verify --quiet "$private_ref^{commit}" 2>/dev/null) \
+    || return 1
+  [ -n "$resolved" ] || return 1
+  printf '%s\n' "$resolved"
+}
+
 cmd_show() {
   local repo=$1 want=$2 base=${3-} sha commit commits found='' record count=0
+  local head_ref base_ref notes_ref base_sha remote_notes head_source
 
   [ -d "$repo" ] || die "no such directory: $repo"
   git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
     || die "not a git work tree: $repo"
 
+  head_ref="refs/fm-pr-provenance/show-head-$$"
+  base_ref="refs/fm-pr-provenance/show-base-$$"
+  notes_ref="refs/notes/fm-pr-provenance-show-$$"
+  register_private_ref "$repo" "$head_ref"
+  register_private_ref "$repo" "$base_ref"
+  register_private_ref "$repo" "$notes_ref"
+
   sha=$(git -C "$repo" rev-parse --verify --quiet "$want^{commit}" 2>/dev/null || true)
   if [ -z "$sha" ]; then
-    git -C "$repo" fetch -q origin "$want" 2>/dev/null || true
-    sha=$(git -C "$repo" rev-parse --verify --quiet 'FETCH_HEAD^{commit}' 2>/dev/null || true)
+    case "$want" in
+      origin/*) head_source="refs/heads/${want#origin/}" ;;
+      refs/remotes/origin/*) head_source="refs/heads/${want#refs/remotes/origin/}" ;;
+      *) head_source=$want ;;
+    esac
+    git -C "$repo" fetch -q origin "+$head_source:$head_ref" 2>/dev/null \
+      || unestablished "$want" "the requested head could not be fetched from origin"
+    sha=$(git -C "$repo" rev-parse --verify --quiet "$head_ref^{commit}" 2>/dev/null || true)
   fi
-  [ -n "$sha" ] || die "cannot resolve $want in $repo"
+  [ -n "$sha" ] \
+    || unestablished "$want" "the requested head did not resolve to a commit"
 
   if [ -z "$base" ]; then
     base=$(default_base "$repo") \
-      || die "cannot determine the base branch for $repo; pass --base"
+      || unestablished "$sha" "the authoritative base could not be determined; pass --base"
   fi
-  git -C "$repo" rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1 \
-    || die "cannot resolve base $base in $repo"
+  base_sha=$(refresh_base "$repo" "$base" "$base_ref") \
+    || unestablished "$sha" "the authoritative base $base could not be refreshed from origin"
 
-  git -C "$repo" fetch -q origin "+$NOTES_REF:$NOTES_REF" 2>/dev/null || true
+  remote_notes=$(git -C "$repo" ls-remote origin "$NOTES_REF" 2>/dev/null) \
+    || unestablished "$sha" "the build records could not be read from origin"
+  [ -n "$remote_notes" ] \
+    || unestablished "$sha" "no build record was published for this change"
+  git -C "$repo" fetch -q origin "+$NOTES_REF:$notes_ref" 2>/dev/null \
+    || unestablished "$sha" "the build records could not be refreshed from origin"
 
-  # The pull request's own commits, newest first. An empty range means the head
-  # is already contained in the base, so only the head itself is considered.
-  commits=$(git -C "$repo" rev-list --max-count=$((MAX_PR_COMMITS + 1)) "$base..$sha" 2>/dev/null || true)
-  [ -n "$commits" ] || commits=$sha
+  # The pull request's own commits, newest first.
+  commits=$(git -C "$repo" rev-list --max-count=$((MAX_PR_COMMITS + 1)) "$base_sha..$sha" 2>/dev/null || true)
+  [ -n "$commits" ] \
+    || unestablished "$sha" "the requested head adds no commits to the authoritative base"
 
   while IFS= read -r commit; do
     [ -n "$commit" ] || continue
@@ -257,7 +359,7 @@ cmd_show() {
     if [ "$count" -gt "$MAX_PR_COMMITS" ]; then
       unestablished "$sha" "the change carries more than $MAX_PR_COMMITS commits to search"
     fi
-    record=$(read_record "$repo" "$commit") || continue
+    record=$(read_record "$repo" "$commit" "$notes_ref") || continue
     if [ -z "$found" ]; then
       found=$record
     elif [ "$found" != "$record" ]; then

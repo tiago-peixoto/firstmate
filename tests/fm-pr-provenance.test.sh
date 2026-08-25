@@ -18,6 +18,9 @@
 #   (g) two different records inside one pull request -> show refuses
 #   (h) malformed or unrecognized record -> show refuses
 #   (i) a commit that is not part of the pull request -> show refuses
+#   (j) provider-qualified models survive the untrusted-record parser
+#   (k) concurrent linked-worktree stamps preserve both records
+#   (l) stale fetch and base state never establish an identity
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -97,6 +100,15 @@ reviewer_fetch() {
   git -C "$1/reviewer" fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
 }
 
+wait_for_path() {
+  local path=$1 remaining=${2:-500}
+  while [ ! -e "$path" ] && [ "$remaining" -gt 0 ]; do
+    /bin/sleep 0.01
+    remaining=$((remaining - 1))
+  done
+  [ -e "$path" ]
+}
+
 test_help_renders_the_contract() {
   local out
   out=$("$PROVENANCE" --help) || fail "help: --help must exit 0"
@@ -142,6 +154,49 @@ test_reviewer_reads_stamped_identity_without_shared_state() {
   assert_contains "$out" "model=opus" "stamped: reviewer must read the builder model"
   assert_contains "$out" "effort=high" "stamped: reviewer must read the builder effort"
   pass "fm-pr-provenance carries builder identity from author to reviewer through the forge"
+}
+
+test_provider_qualified_models_round_trip() {
+  local case_dir harness model effort family head out
+  while IFS='|' read -r harness model effort family; do
+    case_dir=$(make_case "qualified-$harness")
+    write_task_meta "$case_dir" "harness=$harness" "model=$model" "effort=$effort"
+    head=$(author_commit "$case_dir")
+
+    run_stamp "$case_dir" task-b1 > "$case_dir/stamp.out" 2>&1 \
+      || fail "qualified-$harness: stamp rejected supported model $model"$'\n'"$(cat "$case_dir/stamp.out")"
+    reviewer_fetch "$case_dir"
+    out=$(run_show "$case_dir/reviewer" "$head" 2> "$case_dir/show.err") \
+      || fail "qualified-$harness: show failed"$'\n'"$(cat "$case_dir/show.err")"
+
+    assert_contains "$out" "family=$family" \
+      "qualified-$harness: reviewer must read the verified adapter family"
+    assert_contains "$out" "model=$model" \
+      "qualified-$harness: provider-qualified model must survive the record"
+    assert_contains "$out" "effort=$effort" \
+      "qualified-$harness: effort must survive the record"
+  done <<'EOF'
+opencode|anthropic/claude-sonnet-4-5|high|opencode
+pi|openai-codex/gpt-5.6-sol|max|pi
+EOF
+  pass "fm-pr-provenance carries supported provider-qualified model identifiers"
+}
+
+test_reviewer_fetches_an_unseen_remote_head() {
+  local case_dir head out
+  case_dir=$(make_case unseen-head)
+  write_task_meta "$case_dir" "harness=codex" "model=gpt-5" "effort=high"
+  head=$(author_commit "$case_dir")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "unseen-head: stamp failed"
+
+  git -C "$case_dir/reviewer" cat-file -e "$head^{commit}" 2>/dev/null \
+    && fail "unseen-head: fixture already contains the requested head"
+  out=$(run_show "$case_dir/reviewer" refs/heads/fm/task-b1 2> "$case_dir/show.err") \
+    || fail "unseen-head: show could not fetch the requested remote head"$'\n'"$(cat "$case_dir/show.err")"
+
+  assert_contains "$out" "family=codex" \
+    "unseen-head: reviewer must resolve the identity after fetching the requested head"
+  pass "fm-pr-provenance resolves an unseen requested head from the forge"
 }
 
 test_later_head_resolves_from_the_branch() {
@@ -272,6 +327,256 @@ test_unconfirmable_commit_names_the_failed_fetch() {
   pass "fm-pr-provenance names an unreachable forge instead of blaming the branch"
 }
 
+test_concurrent_linked_worktree_stamps_preserve_both_records() {
+  local case_dir base a_head b_head fakebin real_git a_pid b_pid a_rc=0 b_rc=0
+  local a_note b_note
+  case_dir=$(make_case concurrent-stamps)
+  base=$(git -C "$case_dir/project" rev-parse main)
+  git -C "$case_dir/project" notes --ref="$NOTES_REF" add -m "family=claude" "$base"
+  git -C "$case_dir/project" push -q origin "$NOTES_REF"
+
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  a_head=$(author_commit "$case_dir" "first concurrent build")
+
+  git -C "$case_dir/project" worktree add -q -b fm/task-b2 "$case_dir/wt-b2" main
+  printf '%s\n' "second concurrent build" > "$case_dir/wt-b2/feature.txt"
+  git -C "$case_dir/wt-b2" add feature.txt
+  git -C "$case_dir/wt-b2" commit -qm "second concurrent build"
+  git -C "$case_dir/wt-b2" push -q origin fm/task-b2
+  b_head=$(git -C "$case_dir/wt-b2" rev-parse HEAD)
+  [ "$a_head" != "$b_head" ] || fail "concurrent-stamps: fixture produced one shared head"
+  fm_write_meta "$case_dir/state/task-b2.meta" \
+    "window=fm-task-b2" \
+    "worktree=$case_dir/wt-b2" \
+    "project=$case_dir/project" \
+    "kind=ship" \
+    "mode=no-mistakes" \
+    "harness=codex" \
+    "model=gpt-5" \
+    "effort=high"
+
+  fakebin=$(fm_fakebin "$case_dir/race")
+  real_git=$(command -v git)
+  cat > "$fakebin/git" <<'SH'
+#!/usr/bin/env bash
+set -u
+
+wait_marker() {
+  local path=$1 remaining=1000
+  while [ ! -e "$path" ] && [ "$remaining" -gt 0 ]; do
+    /bin/sleep 0.01
+    remaining=$((remaining - 1))
+  done
+  [ -e "$path" ]
+}
+
+saw_fetch=0
+saw_notes=0
+saw_add=0
+saw_provenance_refspec=0
+for arg in "$@"; do
+  case "$arg" in
+    fetch) saw_fetch=1 ;;
+    notes) saw_notes=1 ;;
+    add) saw_add=1 ;;
+    +refs/notes/build-provenance:*) saw_provenance_refspec=1 ;;
+  esac
+done
+
+if [ "${FM_RACE_ROLE:-}" = B ] \
+  && [ "$saw_fetch" = 1 ] \
+  && [ "$saw_provenance_refspec" = 1 ]; then
+  wait_marker "$FM_RACE_DIR/a-added" || exit 96
+  "$REAL_GIT_FOR_TEST" "$@"
+  rc=$?
+  [ "$rc" -eq 0 ] || exit "$rc"
+  : > "$FM_RACE_DIR/b-fetched"
+  wait_marker "$FM_RACE_DIR/release-b" || exit 97
+  exit 0
+fi
+
+"$REAL_GIT_FOR_TEST" "$@"
+rc=$?
+if [ "${FM_RACE_ROLE:-}" = A ] \
+  && [ "$saw_notes" = 1 ] \
+  && [ "$saw_add" = 1 ] \
+  && [ "$rc" -eq 0 ]; then
+  : > "$FM_RACE_DIR/a-added"
+  wait_marker "$FM_RACE_DIR/b-fetched" || exit 98
+fi
+exit "$rc"
+SH
+  chmod +x "$fakebin/git"
+
+  env FM_RACE_ROLE=A \
+    FM_RACE_DIR="$case_dir/race" \
+    REAL_GIT_FOR_TEST="$real_git" \
+    PATH="$fakebin:$PATH" \
+    FM_ROOT_OVERRIDE="$ROOT" \
+    FM_STATE_OVERRIDE="$case_dir/state" \
+    "$PROVENANCE" stamp task-b1 > "$case_dir/a.out" 2>&1 &
+  a_pid=$!
+  wait_for_path "$case_dir/race/a-added" \
+    || fail "concurrent-stamps: first stamp never reached its recorded note"
+
+  env FM_RACE_ROLE=B \
+    FM_RACE_DIR="$case_dir/race" \
+    REAL_GIT_FOR_TEST="$real_git" \
+    PATH="$fakebin:$PATH" \
+    FM_ROOT_OVERRIDE="$ROOT" \
+    FM_STATE_OVERRIDE="$case_dir/state" \
+    "$PROVENANCE" stamp task-b2 > "$case_dir/b.out" 2>&1 &
+  b_pid=$!
+  wait_for_path "$case_dir/race/b-fetched" \
+    || fail "concurrent-stamps: second stamp never refreshed from the forge"
+
+  wait "$a_pid" || a_rc=$?
+  : > "$case_dir/race/release-b"
+  wait "$b_pid" || b_rc=$?
+
+  expect_code 0 "$a_rc" \
+    "concurrent-stamps: first stamp must complete after the forced overlap"
+  expect_code 0 "$b_rc" \
+    "concurrent-stamps: second stamp must retry and complete after the overlap"
+  a_note=$(git --git-dir="$case_dir/origin.git" notes --ref="$NOTES_REF" show "$a_head" 2>/dev/null || true)
+  b_note=$(git --git-dir="$case_dir/origin.git" notes --ref="$NOTES_REF" show "$b_head" 2>/dev/null || true)
+  assert_contains "$a_note" "family=claude" \
+    "concurrent-stamps: first successful stamp must remain present on the forge"
+  assert_contains "$b_note" "family=codex" \
+    "concurrent-stamps: second successful stamp must remain present on the forge"
+  pass "fm-pr-provenance preserves both records across concurrent linked-worktree stamps"
+}
+
+test_successful_push_without_a_forge_record_refuses() {
+  local case_dir out rc
+  case_dir=$(make_case missing-after-push)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  author_commit "$case_dir" >/dev/null
+  cat > "$case_dir/origin.git/hooks/post-receive" <<'SH'
+#!/bin/sh
+git update-ref -d refs/notes/build-provenance
+SH
+  chmod +x "$case_dir/origin.git/hooks/post-receive"
+
+  set +e
+  out=$(run_stamp "$case_dir" task-b1 2>&1)
+  rc=$?
+  set -e
+
+  [ "$rc" -ne 0 ] \
+    || fail "missing-after-push: stamp must not report success when the forge has no record"
+  assert_contains "$out" "could not verify" \
+    "missing-after-push: refusal must name the failed publication verification"
+  [ -z "$(git -C "$case_dir/project" ls-remote origin "$NOTES_REF")" ] \
+    || fail "missing-after-push: fixture did not remove the forge record"
+  pass "fm-pr-provenance verifies that a successful push left its record on the forge"
+}
+
+test_failed_head_fetch_ignores_stale_fetch_head() {
+  local case_dir head stale requested out rc
+  case_dir=$(make_case stale-fetch-head)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  head=$(author_commit "$case_dir")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "stale-fetch-head: stamp failed"
+
+  git -C "$case_dir/reviewer" fetch -q origin refs/heads/fm/task-b1
+  stale=$(git -C "$case_dir/reviewer" rev-parse FETCH_HEAD)
+  [ "$stale" = "$head" ] || fail "stale-fetch-head: fixture did not seed the stamped head"
+  requested=refs/heads/no-such-build
+  git -C "$case_dir/reviewer" rev-parse --verify "$requested^{commit}" >/dev/null 2>&1 \
+    && fail "stale-fetch-head: missing requested head unexpectedly resolves"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$requested" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "stale-fetch-head: an unresolvable requested head must refuse"
+  assert_contains "$out" "$requested" \
+    "stale-fetch-head: refusal must name the head that could not be fetched"
+  assert_not_contains "$out" "family=claude" \
+    "stale-fetch-head: a prior FETCH_HEAD must never supply another request's identity"
+  pass "fm-pr-provenance ignores stale FETCH_HEAD after a failed requested-head fetch"
+}
+
+test_stale_base_is_refreshed_before_searching_records() {
+  local case_dir stamped_head unstamped_head stale_base remote_base out rc
+  case_dir=$(make_case stale-base)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  stamped_head=$(author_commit "$case_dir" "build merged change")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "stale-base: stamp failed"
+  git -C "$case_dir/wt" push -q origin HEAD:main
+  unstamped_head=$(author_commit "$case_dir" "build unrelated later change")
+
+  git -C "$case_dir/reviewer" fetch -q origin refs/heads/fm/task-b1
+  git -C "$case_dir/reviewer" cat-file -e "$unstamped_head^{commit}" \
+    || fail "stale-base: reviewer did not receive the later head"
+  stale_base=$(git -C "$case_dir/reviewer" rev-parse origin/main)
+  remote_base=$(git -C "$case_dir/reviewer" ls-remote origin refs/heads/main | cut -f1)
+  [ "$remote_base" = "$stamped_head" ] \
+    || fail "stale-base: forge main did not advance to the stamped commit"
+  [ "$stale_base" != "$remote_base" ] \
+    || fail "stale-base: reviewer base was refreshed before the behavior under test"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$unstamped_head" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "stale-base: an unstamped later change must refuse"
+  assert_not_contains "$out" "family=claude" \
+    "stale-base: a merged record must not be attributed to later work"
+  pass "fm-pr-provenance refreshes the base before selecting pull-request commits"
+}
+
+test_unrefreshable_base_refuses_stale_local_state() {
+  local case_dir head out rc
+  case_dir=$(make_case unrefreshable-base)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  head=$(author_commit "$case_dir")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "unrefreshable-base: stamp failed"
+  reviewer_fetch "$case_dir"
+  git -C "$case_dir/reviewer" fetch -q origin "+$NOTES_REF:$NOTES_REF"
+  git -C "$case_dir/reviewer" notes --ref="$NOTES_REF" show "$head" >/dev/null \
+    || fail "unrefreshable-base: fixture did not seed a stale local record"
+  git -C "$case_dir/reviewer" remote set-url origin "$case_dir/gone.git"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$head" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "unrefreshable-base: an offline reviewer must refuse"
+  assert_contains "$out" "base" \
+    "unrefreshable-base: refusal must name the authoritative base refresh"
+  assert_not_contains "$out" "family=claude" \
+    "unrefreshable-base: stale local notes must not establish an identity"
+  pass "fm-pr-provenance refuses when the authoritative base cannot be refreshed"
+}
+
+test_deleted_forge_record_refuses_stale_local_note() {
+  local case_dir head out rc
+  case_dir=$(make_case deleted-forge-record)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  head=$(author_commit "$case_dir")
+  run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "deleted-forge-record: stamp failed"
+  reviewer_fetch "$case_dir"
+  git -C "$case_dir/reviewer" fetch -q origin "+$NOTES_REF:$NOTES_REF"
+  git --git-dir="$case_dir/origin.git" update-ref -d "$NOTES_REF"
+  [ -z "$(git -C "$case_dir/reviewer" ls-remote origin "$NOTES_REF")" ] \
+    || fail "deleted-forge-record: fixture did not delete the forge record"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$head" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "deleted-forge-record: an absent forge record must refuse"
+  assert_not_contains "$out" "family=claude" \
+    "deleted-forge-record: stale local notes must not replace forge state"
+  pass "fm-pr-provenance refuses a stale local note deleted from the forge"
+}
+
 test_conflicting_records_refuse() {
   local case_dir first second out rc
   case_dir=$(make_case conflicting)
@@ -318,6 +623,29 @@ test_malformed_record_refuses() {
   pass "fm-pr-provenance refuses a record whose builder family is not a verified one"
 }
 
+test_record_value_with_whitespace_refuses() {
+  local case_dir head out rc
+  case_dir=$(make_case whitespace-value)
+  write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
+  head=$(author_commit "$case_dir")
+
+  git -C "$case_dir/project" fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
+  git -C "$case_dir/project" notes --ref="$NOTES_REF" \
+    add -f -m "family=claude" -m "model=bad value" "$head"
+  git -C "$case_dir/project" push -q origin "$NOTES_REF"
+  reviewer_fetch "$case_dir"
+
+  set +e
+  out=$(run_show "$case_dir/reviewer" "$head" 2>&1)
+  rc=$?
+  set -e
+
+  expect_code 3 "$rc" "whitespace-value: a format-breaking value must refuse"
+  assert_not_contains "$out" "family=claude" \
+    "whitespace-value: no partial identity may print from an invalid record"
+  pass "fm-pr-provenance keeps whitespace outside the record value allowlist"
+}
+
 test_repeated_key_in_a_record_refuses() {
   local case_dir head out rc
   case_dir=$(make_case repeated-key)
@@ -342,36 +670,46 @@ test_repeated_key_in_a_record_refuses() {
 }
 
 test_commit_outside_the_pull_request_refuses() {
-  local case_dir head base out rc
+  local case_dir head out rc
   case_dir=$(make_case outside-range)
   write_task_meta "$case_dir" "harness=claude" "model=opus" "effort=high"
   head=$(author_commit "$case_dir")
   run_stamp "$case_dir" task-b1 >/dev/null 2>&1 || fail "outside-range: stamp failed"
+  git -C "$case_dir/wt" push -q origin HEAD:main
   reviewer_fetch "$case_dir"
-  base=$(git -C "$case_dir/reviewer" rev-parse origin/main)
+  [ "$(git -C "$case_dir/reviewer" rev-parse origin/main)" = "$head" ] \
+    || fail "outside-range: fixture did not move the stamped head into the base"
 
   set +e
-  out=$(run_show "$case_dir/reviewer" "$base" 2>&1)
+  out=$(run_show "$case_dir/reviewer" "$head" 2>&1)
   rc=$?
   set -e
 
   expect_code 3 "$rc" "outside-range: a base commit must not inherit a branch record"
   assert_not_contains "$out" "family=claude" \
     "outside-range: a commit outside the pull request must not resolve"
-  [ -n "$head" ] || fail "outside-range: fixture head missing"
   pass "fm-pr-provenance does not attribute a commit outside the pull request"
 }
 
 test_help_renders_the_contract
 test_reviewer_refuses_before_any_record
 test_reviewer_reads_stamped_identity_without_shared_state
+test_provider_qualified_models_round_trip
+test_reviewer_fetches_an_unseen_remote_head
 test_later_head_resolves_from_the_branch
 test_reader_surfaces_stay_free_of_fleet_vocabulary
 test_unrecognized_harness_refuses
 test_unpushed_commit_refuses
 test_unreachable_forge_refuses_the_publish
 test_unconfirmable_commit_names_the_failed_fetch
+test_concurrent_linked_worktree_stamps_preserve_both_records
+test_successful_push_without_a_forge_record_refuses
+test_failed_head_fetch_ignores_stale_fetch_head
+test_stale_base_is_refreshed_before_searching_records
+test_unrefreshable_base_refuses_stale_local_state
+test_deleted_forge_record_refuses_stale_local_note
 test_conflicting_records_refuse
 test_malformed_record_refuses
+test_record_value_with_whitespace_refuses
 test_repeated_key_in_a_record_refuses
 test_commit_outside_the_pull_request_refuses

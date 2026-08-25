@@ -60,7 +60,6 @@ With no `FM_HOME`, no state directory, and no path to the authoring home, the sa
 
 ```sh
 env -u FM_HOME -u FM_STATE_OVERRIDE bin/fm-pr-provenance.sh show other-home fb62b6637a771921a7366aae4dff89a787a19ae7
-git -C other-home for-each-ref --format='%(objectname) %(refname)' 'refs/notes/*'
 git ls-remote origin refs/notes/build-provenance
 ```
 
@@ -68,11 +67,10 @@ git ls-remote origin refs/notes/build-provenance
 family=claude
 model=opus
 effort=high
-49e3c957f5405897ca38c8f215e084a92f327970 refs/notes/build-provenance
 49e3c957f5405897ca38c8f215e084a92f327970	refs/notes/build-provenance
 ```
 
-The ref the other home ended up holding is the same object the forge serves, so the record travelled through GitHub rather than through any shared local state.
+The fresh clone had no local note or authoring state before the command, while the forge served the record that produced the identity, so the record travelled through GitHub rather than through shared local state.
 
 ## The refusal path fires in the same real setting
 
