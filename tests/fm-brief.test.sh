@@ -408,6 +408,38 @@ test_no_mistakes_daemon_rule_is_mode_scoped() {
   pass "fm-brief.sh: daemon rule appears only in no-mistakes mode"
 }
 
+# A PR-producing ship task must carry the builder identity with the pull
+# request, so no reviewing home has to ask the authoring home who built it. The
+# two modes that reach a forge get the step; local-only has no remote to publish
+# to and a scout produces no pull request, so neither may carry it.
+test_pr_modes_record_builder_identity() {
+  local home id brief shape
+  home="$TMP_ROOT/provenance-home"
+  mkdir -p "$home/data"
+
+  for shape in no-mistakes direct-PR; do
+    id="brief-provenance-${shape}"
+    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode "$shape" >/dev/null 2>&1
+    brief="$home/data/$id/brief.md"
+    assert_grep "$ROOT/bin/fm-pr-provenance.sh stamp $id" "$brief" \
+      "$shape brief must tell the worker to record who built the branch"
+    assert_grep "Run it again after any rebase or force-push, and once more before you report done." "$brief" \
+      "$shape brief must keep the record current with the head"
+  done
+
+  for shape in local scout; do
+    id="brief-provenance-$shape"
+    case "$shape" in
+      local) FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode local-only >/dev/null 2>&1 ;;
+      scout) FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --scout >/dev/null 2>&1 ;;
+    esac
+    brief="$home/data/$id/brief.md"
+    assert_no_grep "fm-pr-provenance.sh" "$brief" \
+      "$shape brief must not carry a forge-publishing step it cannot perform"
+  done
+  pass "fm-brief.sh: PR-producing modes record the builder identity on the forge"
+}
+
 test_ship_status_protocol_tracks_wait_and_pushed_head() {
   local home id brief
   home="$TMP_ROOT/status-protocol-home"
@@ -774,6 +806,7 @@ test_faster_paths_use_configured_authority_without_stacked_review
 test_no_mistakes_dod_wording
 test_ship_project_memory_wording_is_trimmed
 test_no_mistakes_daemon_rule_is_mode_scoped
+test_pr_modes_record_builder_identity
 test_ship_status_protocol_tracks_wait_and_pushed_head
 test_herdr_lab_contract_is_explicit_and_complete
 test_herdr_lab_contract_quotes_foreign_firstmate_path

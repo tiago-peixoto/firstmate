@@ -40,6 +40,10 @@
 # to launch a ship task whose explicit --mode disagrees, so an adjusted brief and the
 # recorded task metadata cannot drift apart.
 # Ship briefs begin with a worktree-isolation assertion before the branch step.
+# The two PR-producing modes also carry a bin/fm-pr-provenance.sh stamp step, so the
+# builder's model family travels with the pull request on the forge instead of being
+# relayed to whichever home reviews it. local-only has no remote to publish to and
+# scouts produce no pull request, so neither carries it.
 # --start-ref makes the new branch begin at one explicit local ref instead of the
 # detached worktree HEAD. Firstmate fork-divergence topics use upstream/main so
 # an upstream PR never inherits unrelated fork-main divergences. That exact
@@ -377,7 +381,12 @@ case "$MODE" in
 Delivery contract: mode=direct-PR
 This task ships **direct-PR**: you raise the PR yourself, without the no-mistakes pipeline.
 The task is complete only when committed on your branch.
-When it is implemented and committed, push your branch and open a PR with \`gh-axi\`, then append \`done: PR {url}\` to the status file and stop.
+When it is implemented and committed, push your branch and open a PR with \`gh-axi\`.
+Right after the push, record who built the branch: \`$FM_ROOT/bin/fm-pr-provenance.sh stamp $ID\`.
+An independent reviewer needs the builder's model family and cannot read this home's records, so that command publishes it beside the branch on a forge ref no reader ever sees.
+Run it again after any rebase or force-push, and once more before you report done.
+If it refuses, append \`blocked:\` with what it said instead of reporting done.
+Then append \`done: PR {url}\` to the status file and stop.
 Do NOT run /no-mistakes. The configured merge authority decides whether to merge the PR; firstmate relays the outcome.
 EOF
     ;;
@@ -415,6 +424,11 @@ Two firstmate-specific rules layer on top of that guidance:
   Firstmate applies the authority contract in its \`AGENTS.md\` and obtains any required captain decision.
   When the decision comes back, feed it to the gate with \`no-mistakes axi respond\` and let the pipeline apply it - do not route the question to "the user" or implement the fix yourself.
 - Avoid \`--yes\`: it would silently bypass firstmate's authority check and any required captain escalation.
+
+Once the pipeline has pushed your branch and opened the PR, record who built it: \`$FM_ROOT/bin/fm-pr-provenance.sh stamp $ID\`.
+An independent reviewer needs the builder's model family and cannot read this home's records, so that command publishes it beside the branch on a forge ref no reader ever sees.
+Run it again after any rebase or force-push, and once more before you report done.
+If it refuses, append \`blocked:\` with what it said instead of reporting done.
 
 After /no-mistakes reports CI green (the CI-ready return point - do not wait for it to keep monitoring in the background until merge), append \`done: PR {url} checks green\` and stop. You are finished.
 EOF
