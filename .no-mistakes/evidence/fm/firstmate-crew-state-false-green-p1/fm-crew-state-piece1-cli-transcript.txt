@@ -1,0 +1,51 @@
+Firstmate crew-state false-green piece 1 - reviewer-visible CLI evidence
+Date: 2026-08-28
+Target: fb256af6720d3e90b7fdee30b88bf579187919d7
+
+Live PR identity
+----------------
+$ git ls-remote origin refs/pull/2752/head
+13642d88ed391cd21a7d41cd19739cbc8cde1684	refs/pull/2752/head
+
+The authenticated SSH remote therefore still resolves kunchenguid/firstmate
+PR 2752 to the exact head required by the acceptance criteria. The isolated
+GitHub CLI credential store was unavailable, and anonymous REST reads were
+rate-limited, so this test phase did not claim or substitute a refreshed live
+check-suite verdict.
+
+Public fm-crew-state CLI behavior at the target
+------------------------------------------------
+The following cases execute bin/fm-crew-state.sh through its ordinary CLI with
+a real throwaway git worktree and controlled no-mistakes/GitHub responses.
+
+[approval-gated zero runs]
+state: working · source: run-step · validating (running) · awaiting maintainer approval, no checks have run
+
+[mixed suites with three reported runs]
+state: working · source: run-step · validating (running) · awaiting maintainer approval; 3 check runs have reported
+
+[complete zero-suite and zero-status observation]
+state: done · source: run-step · no CI configured for this PR: nothing verified this change - https://github.com/o/r/pull/2
+
+[complete successful exact-head evidence]
+state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close)
+
+[forge evidence from a different PR head]
+state: working · source: run-step · validating (running) · PR head changed from the attributed run
+
+[aggregate deadline exhausted]
+state: working · source: run-step · validating (running) · forge evidence deadline expired
+forge calls started: 3 of 4
+
+Red-first regression proof
+--------------------------
+The same aggregate-deadline behavioral assertion was run against the pre-fix
+c50a877 implementation while leaving the checked-out target unchanged:
+
+pre-fix calls=4
+pre-fix output=state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close)
+not ok - aggregate forge deadline allowed all 4 sequential reads
+
+At the target, the focused aggregate-deadline selector reports:
+
+ok - forge evidence uses one aggregate deadline
