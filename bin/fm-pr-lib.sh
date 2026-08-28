@@ -938,7 +938,7 @@ fm_pr_poll_retirement_recover_all() {
     [ -e "$receipt" ] || [ -L "$receipt" ] || continue
     id=$(basename "$receipt" .pr-poll-retirement)
     if ! fm_pr_task_id_valid "$id" \
-      || ! fm_pr_poll_retirement_recover_one "$state" "$id" "$template"; then
+      || ! fm_pr_monitor_transaction recover "$state" "$id" "$template"; then
       FM_PR_POLL_RETIREMENT_REJECTED="$FM_PR_POLL_RETIREMENT_REJECTED $receipt"
     fi
   done
@@ -953,7 +953,9 @@ fm_pr_poll_retirement_recover_all() {
 # Public actions:
 #   arm       <state> <id> <template> <provider> <url> <host> <path> <number> <head>
 #   publish   <state> <id> <template> <provider> <url> <host> <path> <number>
+#   capture   <state> <id> <template>
 #   observe   <state> <id> <template> <check> <output> <wake-reason>
+#   recover   <state> <id> <template>
 # Return 2 means a submitted observation is stale. Return 1 means the
 # transaction itself could not complete. A merged observation is durably queued
 # before exact retirement begins; a recoverable retirement failure is reported
@@ -1069,6 +1071,14 @@ fm_pr_monitor_transaction() {
         fi
       fi
       ;;
+    capture)
+      [ "$#" -eq 0 ] || { FM_PR_MONITOR_ERROR=invalid-action; result=1; }
+      if [ "$result" -eq 0 ] \
+        && ! fm_pr_poll_snapshot_capture "$state" "$id" "$template"; then
+        FM_PR_MONITOR_ERROR=snapshot-unavailable
+        result=1
+      fi
+      ;;
     observe)
       [ "$#" -eq 3 ] || { FM_PR_MONITOR_ERROR=invalid-action; result=1; }
       if [ "$result" -eq 0 ]; then
@@ -1086,6 +1096,14 @@ fm_pr_monitor_transaction() {
             fi
           fi
         fi
+      fi
+      ;;
+    recover)
+      [ "$#" -eq 0 ] || { FM_PR_MONITOR_ERROR=invalid-action; result=1; }
+      if [ "$result" -eq 0 ] \
+        && ! fm_pr_poll_retirement_recover_one "$state" "$id" "$template"; then
+        FM_PR_MONITOR_ERROR=pending-retirement
+        result=1
       fi
       ;;
     *)

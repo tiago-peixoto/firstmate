@@ -22,6 +22,7 @@ REGISTER="$ROOT/bin/fm-check-register.sh"
 TMP_ROOT=$(fm_test_tmproot fm-pr-check-security)
 BASE_PATH=${FM_TEST_BASE_PATH:-/usr/bin:/bin:/usr/sbin:/sbin}
 REAL_CP=$(command -v cp)
+REAL_CAT=$(command -v cat)
 REAL_MV=$(command -v mv)
 REAL_STAT=$(command -v stat)
 REAL_CHMOD=$(command -v chmod)
@@ -668,6 +669,19 @@ run_watcher_bounded() {
   perl -e 'my $limit=shift; my $pid=fork; die unless defined $pid; if (!$pid) { exec @ARGV } local $SIG{ALRM}=sub { kill "TERM", $pid; waitpid $pid, 0; exit 124 }; alarm $limit; waitpid $pid, 0; alarm 0; exit($? >> 8)' \
     "$watch_timeout" env FM_HOME="$home" FM_ROOT_OVERRIDE="$watch_root" FM_CHECK_INTERVAL="$check_interval" FM_CHECK_TIMEOUT="$check_timeout" \
       FM_POLL=0.02 FM_HEARTBEAT=999999 FM_SIGNAL_GRACE=0 PATH="$fakebin:$BASE_PATH" "$WATCH" "$@"
+}
+
+install_lock_contention_probe() {
+  local fakebin=$1
+  cat > "$fakebin/cat" <<'SH'
+#!/usr/bin/env bash
+if [ -n "${FM_TEST_LOCK_PATH:-}" ] && [ "$#" -eq 1 ] \
+  && [ "$1" = "$FM_TEST_LOCK_PATH/pid" ]; then
+  : > "${FM_TEST_LOCK_CONTENDED:?}"
+fi
+exec "${FM_TEST_REAL_CAT:-/bin/cat}" "$@"
+SH
+  chmod +x "$fakebin/cat"
 }
 
 test_rejected_metacharacter_bytes_are_inert() {
@@ -3586,12 +3600,247 @@ test_merge_observer_is_side_effect_free() {
   pass "merge observer is side-effect free"
 }
 
+test_snapshot_capture_waits_for_rearm_transaction() {
+  local dir state lock arm_ready arm_release contended lookup_ready lookup_release
+  local arm_pid watcher_pid replacement_pid i rc
+  dir=$(make_case snapshot-capture-rearm-transaction)
+  state="$dir/home/state"
+  lock=$(FM_STATE_OVERRIDE="$state" bash -c \
+    '. "$1"; fm_meta_lock_path "$2"' _ \
+    "$ROOT/bin/fm-wake-lib.sh" "$state/task-a.meta") \
+    || fail "could not derive snapshot contention lock"
+  arm_ready="$dir/rearm-meta-published"
+  arm_release="$dir/release-rearm"
+  contended="$dir/snapshot-contended"
+  lookup_ready="$dir/lookup-started"
+  lookup_release="$dir/release-lookup"
+  write_poll_meta "$state" task-a https://github.com/o/r/pull/81
+  seed_canonical_poll "$dir" task-a https://github.com/o/r/pull/81
+  add_stop_custom_check "$dir"
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$ROOT" PATH="$dir/fakebin:$BASE_PATH" \
+    "$MIGRATE" --checks-safe > "$dir/migrate.out" 2> "$dir/migrate.err" \
+    || fail "could not prime the snapshot contention fixture: $(cat "$dir/migrate.err")"
+  install_lock_contention_probe "$dir/fakebin"
+  cat > "$dir/fakebin/mv" <<'SH'
+#!/usr/bin/env bash
+destination=${!#}
+"${FM_TEST_REAL_MV:?}" "$@" || exit $?
+if [ "${FM_TEST_ARM_GATE:-0}" = 1 ] \
+  && [ "$destination" = "${FM_TEST_ARM_META:?}" ]; then
+  : > "${FM_TEST_ARM_READY:?}"
+  while [ ! -e "${FM_TEST_ARM_RELEASE:?}" ]; do sleep 0.01; done
+fi
+SH
+  chmod +x "$dir/fakebin/mv"
+
+  touch "$state/.last-check"
+  (
+    set +e
+    export FM_TEST_LOCK_PATH="$lock"
+    export FM_TEST_LOCK_CONTENDED="$contended"
+    export FM_TEST_REAL_CAT="$REAL_CAT"
+    export FM_TEST_REAL_MV="$REAL_MV"
+    export FM_TEST_GH_STATE=OPEN
+    export FM_TEST_GH_LOG="$dir/gh.log"
+    export FM_TEST_GH_GATE_READY="$lookup_ready"
+    export FM_TEST_GH_GATE_RELEASE="$lookup_release"
+    export FM_TEST_CHECK_INTERVAL=5
+    export FM_TEST_CHECK_TIMEOUT=10
+    export FM_TEST_WATCH_TIMEOUT=35
+    run_watcher_bounded "$dir/home" "$dir/fakebin" \
+      > "$dir/watch.out" 2> "$dir/watch.err"
+    printf '%s\n' "$?" > "$dir/watch.rc"
+    : > "$dir/watch.done"
+  ) &
+  watcher_pid=$!
+  i=0
+  while [ "$i" -lt 800 ] && [ ! -e "$state/.last-watcher-beat" ] \
+    && [ ! -e "$dir/watch.done" ]; do
+    sleep 0.01
+    i=$((i + 1))
+  done
+  [ -e "$state/.last-watcher-beat" ] && [ ! -e "$dir/watch.done" ] \
+    || fail "snapshot contention watcher did not enter its polling cycle: $(cat "$dir/watch.err")"
+  rm -f "$contended"
+
+  (
+    set +e
+    FM_TEST_ARM_GATE=1 FM_TEST_ARM_META="$state/task-a.meta" \
+      FM_TEST_ARM_READY="$arm_ready" FM_TEST_ARM_RELEASE="$arm_release" \
+      FM_TEST_REAL_MV="$REAL_MV" \
+      run_check_entry "$dir" task-a https://github.com/o/r/pull/82 \
+        > "$dir/rearm.out" 2> "$dir/rearm.err"
+    printf '%s\n' "$?" > "$dir/rearm.rc"
+  ) &
+  arm_pid=$!
+  i=0
+  while [ "$i" -lt 400 ] && [ ! -e "$arm_ready" ]; do
+    kill -0 "$arm_pid" 2>/dev/null || break
+    sleep 0.01
+    i=$((i + 1))
+  done
+  [ -e "$arm_ready" ] \
+    || fail "replacement arm did not pause after metadata publication: $(cat "$dir/rearm.err")"
+  grep -qxF 'pr=https://github.com/o/r/pull/82' "$state/task-a.meta" \
+    || fail "replacement arm did not publish replacement metadata before pausing"
+  sed -n '2p' "$state/task-a.pr-poll" | grep -qxF 'https://github.com/o/r/pull/81' \
+    || fail "snapshot interleave did not expose prior authenticated artifacts"
+
+  i=0
+  while [ "$i" -lt 800 ] && [ ! -e "$contended" ] && [ ! -e "$dir/watch.done" ]; do
+    sleep 0.01
+    i=$((i + 1))
+  done
+  if [ ! -e "$contended" ]; then
+    : > "$arm_release"
+    : > "$lookup_release"
+    wait "$arm_pid" 2>/dev/null || true
+    wait "$watcher_pid" 2>/dev/null || true
+    fail "snapshot capture did not contend on the replacement transaction: $(cat "$dir/watch.err")"
+  fi
+  [ ! -e "$dir/watch.done" ] \
+    || fail "snapshot capture finished while replacement state was torn"
+  [ ! -e "$lookup_ready" ] \
+    || fail "forge lookup began before the replacement transaction committed"
+
+  : > "$arm_release"
+  wait "$arm_pid"
+  [ "$(cat "$dir/rearm.rc")" -eq 0 ] \
+    || fail "replacement arm failed after snapshot contention: $(cat "$dir/rearm.err")"
+  i=0
+  while [ "$i" -lt 800 ] && [ ! -e "$lookup_ready" ] && [ ! -e "$dir/watch.done" ]; do
+    sleep 0.01
+    i=$((i + 1))
+  done
+  if [ ! -e "$lookup_ready" ]; then
+    wait "$watcher_pid" 2>/dev/null || true
+    fail "snapshot capture did not query the committed replacement: $(cat "$dir/watch.err")"
+  fi
+
+  (
+    set +e
+    FM_TEST_REAL_MV="$REAL_MV" \
+      run_check_entry "$dir" task-a https://github.com/o/r/pull/83 \
+      > "$dir/second-rearm.out" 2> "$dir/second-rearm.err"
+    printf '%s\n' "$?" > "$dir/second-rearm.rc"
+    : > "$dir/second-rearm.done"
+  ) &
+  replacement_pid=$!
+  i=0
+  while [ "$i" -lt 800 ] && [ ! -e "$dir/second-rearm.done" ]; do
+    sleep 0.01
+    i=$((i + 1))
+  done
+  if [ ! -e "$dir/second-rearm.done" ]; then
+    : > "$lookup_release"
+    wait "$replacement_pid" 2>/dev/null || true
+    wait "$watcher_pid" 2>/dev/null || true
+    fail "snapshot capture retained the transaction lock during forge lookup"
+  fi
+  [ "$(cat "$dir/second-rearm.rc")" -eq 0 ] \
+    || fail "second replacement arm failed during forge lookup: $(cat "$dir/second-rearm.err")"
+  wait "$replacement_pid"
+  : > "$lookup_release"
+  wait "$watcher_pid"
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 0 ] || fail "snapshot contention watcher failed: $(cat "$dir/watch.err")"
+  grep -F 'pr view https://github.com/o/r/pull/82 --json state -q .state' \
+    "$dir/gh.log" >/dev/null \
+    || fail "snapshot capture did not query the coherent replacement identity: $(cat "$dir/gh.log")"
+  ! grep -F 'unauthenticated-state-checks' "$state/.wake-queue" >/dev/null 2>&1 \
+    || fail "torn snapshot capture queued a false unauthenticated-check wake"
+  fm_pr_poll_artifacts_valid "$state" task-a "$POLL" \
+    || fail "snapshot contention damaged the later replacement monitor"
+  grep -qxF 'pr=https://github.com/o/r/pull/83' "$state/task-a.meta" \
+    || fail "later replacement did not remain authoritative"
+  pass "snapshot capture serializes with rearm and unlocks before lookup"
+}
+
+test_startup_retirement_recovery_waits_for_task_lock() {
+  local dir state lock holder_ready holder_release contended holder_pid watcher_pid i rc
+  dir=$(make_case retirement-recovery-task-lock)
+  state="$dir/home/state"
+  lock=$(FM_STATE_OVERRIDE="$state" bash -c \
+    '. "$1"; fm_meta_lock_path "$2"' _ \
+    "$ROOT/bin/fm-wake-lib.sh" "$state/task-a.meta") \
+    || fail "could not derive retirement contention lock"
+  holder_ready="$dir/holder-ready"
+  holder_release="$dir/release-holder"
+  contended="$dir/recovery-contended"
+  write_poll_meta "$state" task-a https://github.com/o/r/pull/84
+  seed_canonical_poll "$dir" task-a https://github.com/o/r/pull/84
+  fm_pr_poll_snapshot_capture "$state" task-a "$POLL" \
+    || fail "could not capture contended retirement fixture"
+  fm_pr_poll_retirement_publish "$state" task-a "$POLL" merged \
+    || fail "could not publish contended retirement receipt"
+  add_stop_custom_check "$dir"
+  install_lock_contention_probe "$dir/fakebin"
+
+  FM_STATE_OVERRIDE="$state" bash -c '
+    . "$1"
+    fm_lock_acquire_wait "$2" || exit 1
+    : > "$3"
+    while [ ! -e "$4" ]; do sleep 0.01; done
+    fm_lock_release "$2"
+  ' _ "$ROOT/bin/fm-wake-lib.sh" "$lock" "$holder_ready" "$holder_release" &
+  holder_pid=$!
+  i=0
+  while [ "$i" -lt 400 ] && [ ! -e "$holder_ready" ]; do
+    kill -0 "$holder_pid" 2>/dev/null || break
+    sleep 0.01
+    i=$((i + 1))
+  done
+  [ -e "$holder_ready" ] || fail "retirement contention holder did not acquire the task lock"
+
+  (
+    set +e
+    export FM_TEST_LOCK_PATH="$lock"
+    export FM_TEST_LOCK_CONTENDED="$contended"
+    export FM_TEST_REAL_CAT="$REAL_CAT"
+    export FM_TEST_WATCH_TIMEOUT=20
+    run_watcher_bounded "$dir/home" "$dir/fakebin" \
+      > "$dir/watch.out" 2> "$dir/watch.err"
+    printf '%s\n' "$?" > "$dir/watch.rc"
+    : > "$dir/watch.done"
+  ) &
+  watcher_pid=$!
+  i=0
+  while [ "$i" -lt 800 ] && [ ! -e "$contended" ] && [ ! -e "$dir/watch.done" ]; do
+    sleep 0.01
+    i=$((i + 1))
+  done
+  if [ ! -e "$contended" ]; then
+    : > "$holder_release"
+    wait "$holder_pid" 2>/dev/null || true
+    wait "$watcher_pid" 2>/dev/null || true
+    fail "startup retirement recovery did not contend on the task lock"
+  fi
+  [ ! -e "$dir/watch.done" ] \
+    || fail "startup retirement recovery completed while the task lock was held"
+  [ -f "$state/task-a.check.sh" ] && [ -f "$state/task-a.pr-poll" ] \
+    && [ -f "$state/task-a.pr-poll-registration" ] \
+    && [ -f "$state/task-a.pr-poll-retirement" ] \
+    || fail "startup retirement recovery mutated artifacts while the task lock was held"
+
+  : > "$holder_release"
+  wait "$holder_pid"
+  wait "$watcher_pid"
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 0 ] || fail "contended retirement recovery watcher failed: $(cat "$dir/watch.err")"
+  assert_poll_absent "$state" task-a
+  grep -F 'z-stop.check.sh: stop-cycle' "$dir/watch.out" >/dev/null \
+    || fail "contended retirement recovery did not continue after recovery"
+  pass "startup retirement recovery waits for the task transaction lock"
+}
+
 case "${FM_PR_TRANSACTION_TEST:-}" in
   concurrent-rearm) test_concurrent_rearm_keeps_last_successful_arm; exit ;;
   stale-observation) test_stale_merge_observation_is_silent; exit ;;
   all-due) test_all_due_checks_queue_before_wake; exit ;;
   local-failure) test_local_retirement_failure_does_not_starve_later_check; exit ;;
   observer-read-only) test_merge_observer_is_side_effect_free; exit ;;
+  snapshot-rearm) test_snapshot_capture_waits_for_rearm_transaction; exit ;;
+  retirement-contention) test_startup_retirement_recovery_waits_for_task_lock; exit ;;
   retirement-once) test_merged_poll_retires_once; exit ;;
   atomic-interruption) test_atomic_interruption_leaves_no_partial_artifact; exit ;;
   '') ;;
@@ -3605,6 +3854,8 @@ test_stale_merge_observation_is_silent
 test_all_due_checks_queue_before_wake
 test_local_retirement_failure_does_not_starve_later_check
 test_merge_observer_is_side_effect_free
+test_snapshot_capture_waits_for_rearm_transaction
+test_startup_retirement_recovery_waits_for_task_lock
 test_merged_poll_retires_once
 test_persistent_secondmate_retirement_is_poll_only
 test_retirement_crash_recovery
