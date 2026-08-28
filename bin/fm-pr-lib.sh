@@ -89,6 +89,10 @@ FM_PR_RETIRE_REG_IDENTITY=
 FM_PR_RETIRE_RECEIPT_HASH=
 FM_PR_RETIRE_RECEIPT_IDENTITY=
 FM_PR_POLL_RETIREMENT_REJECTED=
+FM_PR_MONITOR_ERROR=
+FM_PR_MONITOR_RETIREMENT_DEFERRED=0
+FM_PR_MONITOR_ACTIVE_LOCK=
+FM_PR_MONITOR_META_TMP=
 
 fm_task_id_path_safe() {
   local id=${1-}
@@ -939,4 +943,168 @@ fm_pr_poll_retirement_recover_all() {
     fi
   done
   [ -z "$FM_PR_POLL_RETIREMENT_REJECTED" ]
+}
+
+# The task metadata lock is the transaction boundary for every runtime PR
+# monitor mutation. Observers capture an authenticated snapshot before doing a
+# slow forge lookup, then submit the result here; a replacement arm that lands
+# during that lookup makes the snapshot stale and the result is discarded.
+#
+# Public actions:
+#   arm       <state> <id> <template> <provider> <url> <host> <path> <number> <head>
+#   publish   <state> <id> <template> <provider> <url> <host> <path> <number>
+#   observe   <state> <id> <template> <check> <output> <wake-reason>
+# Return 2 means a submitted observation is stale. Return 1 means the
+# transaction itself could not complete. A merged observation is durably queued
+# before exact retirement begins; a recoverable retirement failure is reported
+# through FM_PR_MONITOR_RETIREMENT_DEFERRED while the transaction still succeeds.
+fm_pr_monitor_metadata_publish_locked() {
+  local state=$1 id=$2 provider=$3 url=$4 host=$5 path=$6 number=$7 head=$8
+  local meta state_device meta_device line
+  meta="$state/$id.meta"
+  [ -f "$meta" ] && [ ! -L "$meta" ] \
+    && [ "$(fm_pr_file_link_count "$meta")" = 1 ] || return 1
+  state_device=$(fm_pr_file_device "$state") || return 1
+  meta_device=$(fm_pr_file_device "$meta") || return 1
+  [ "$state_device" = "$meta_device" ] || return 1
+  FM_PR_MONITOR_META_TMP=$(mktemp "$state/.fm-pr-meta.XXXXXX") || return 1
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      pr=*|pr_head=*) ;;
+      *) printf '%s\n' "$line" >> "$FM_PR_MONITOR_META_TMP" || return 1 ;;
+    esac
+  done < "$meta"
+  printf 'pr=%s\n' "$url" >> "$FM_PR_MONITOR_META_TMP" || return 1
+  if [ -n "$head" ]; then
+    printf 'pr_head=%s\n' "$head" >> "$FM_PR_MONITOR_META_TMP" || return 1
+  fi
+  if ! chmod 0600 "$FM_PR_MONITOR_META_TMP" \
+    || ! fm_pr_private_file_valid "$FM_PR_MONITOR_META_TMP" 600 "$state_device" \
+    || ! fm_pr_metadata_identity_parse "$FM_PR_MONITOR_META_TMP" \
+    || [ "$FM_PR_META_PROVIDER" != "$provider" ] \
+    || [ "$FM_PR_META_URL" != "$url" ] \
+    || [ "$FM_PR_META_HOST" != "$host" ] \
+    || [ "$FM_PR_META_PATH" != "$path" ] \
+    || [ "$FM_PR_META_NUMBER" != "$number" ] \
+    || ! fm_pr_regular_destination_on_device_or_absent "$meta" "$state_device" \
+    || ! mv -f -- "$FM_PR_MONITOR_META_TMP" "$meta"; then
+    return 1
+  fi
+  FM_PR_MONITOR_META_TMP=
+  fm_pr_private_file_valid "$meta" 600 "$state_device" \
+    && fm_pr_metadata_identity_parse "$meta" \
+    && [ "$FM_PR_META_PROVIDER" = "$provider" ] \
+    && [ "$FM_PR_META_URL" = "$url" ] \
+    && [ "$FM_PR_META_HOST" = "$host" ] \
+    && [ "$FM_PR_META_PATH" = "$path" ] \
+    && [ "$FM_PR_META_NUMBER" = "$number" ]
+}
+
+fm_pr_monitor_transaction_abort() {
+  local result=0
+  fm_pr_poll_cleanup
+  if [ -n "$FM_PR_MONITOR_META_TMP" ]; then
+    rm -f -- "$FM_PR_MONITOR_META_TMP" || result=1
+    FM_PR_MONITOR_META_TMP=
+  fi
+  if [ -n "$FM_PR_MONITOR_ACTIVE_LOCK" ]; then
+    fm_lock_release "$FM_PR_MONITOR_ACTIVE_LOCK" || result=1
+    FM_PR_MONITOR_ACTIVE_LOCK=
+  fi
+  return "$result"
+}
+
+fm_pr_monitor_transaction() {
+  local action=$1 state=$2 id=$3 template=$4
+  local lock result=0 provider url host path number head check output reason
+  shift 4
+  FM_PR_MONITOR_ERROR=
+  FM_PR_MONITOR_RETIREMENT_DEFERRED=0
+  fm_pr_task_id_valid "$id" || { FM_PR_MONITOR_ERROR=invalid-task; return 1; }
+  lock=$(fm_meta_lock_path "$state/$id.meta") \
+    || { FM_PR_MONITOR_ERROR='lock-unavailable'; return 1; }
+  fm_lock_acquire_wait "$lock" \
+    || { FM_PR_MONITOR_ERROR='lock-unavailable'; return 1; }
+  FM_PR_MONITOR_ACTIVE_LOCK=$lock
+
+  case "$action" in
+    arm)
+      [ "$#" -eq 6 ] || { FM_PR_MONITOR_ERROR=invalid-action; result=1; }
+      if [ "$result" -eq 0 ]; then
+        provider=$1 url=$2 host=$3 path=$4 number=$5 head=$6
+        if ! fm_pr_poll_retirement_recover_one "$state" "$id" "$template"; then
+          FM_PR_MONITOR_ERROR=pending-retirement
+          result=1
+        elif ! fm_pr_poll_prepare "$state" "$id" "$provider" "$url" "$host" "$path" "$number" "$template"; then
+          FM_PR_MONITOR_ERROR=prepare-failed
+          result=1
+        elif ! fm_pr_monitor_metadata_publish_locked "$state" "$id" \
+          "$provider" "$url" "$host" "$path" "$number" "$head"; then
+          FM_PR_MONITOR_ERROR=metadata-unavailable
+          result=1
+        elif ! fm_pr_poll_publish_prepared; then
+          FM_PR_MONITOR_ERROR=publish-failed
+          result=1
+        fi
+      fi
+      ;;
+    publish)
+      [ "$#" -eq 5 ] || { FM_PR_MONITOR_ERROR=invalid-action; result=1; }
+      if [ "$result" -eq 0 ]; then
+        provider=$1 url=$2 host=$3 path=$4 number=$5
+        if ! fm_pr_metadata_identity_parse "$state/$id.meta" \
+          || [ "$FM_PR_META_PROVIDER" != "$provider" ] \
+          || [ "$FM_PR_META_URL" != "$url" ] \
+          || [ "$FM_PR_META_HOST" != "$host" ] \
+          || [ "$FM_PR_META_PATH" != "$path" ] \
+          || [ "$FM_PR_META_NUMBER" != "$number" ]; then
+          FM_PR_MONITOR_ERROR=metadata-unavailable
+          result=1
+        elif ! fm_pr_poll_prepare "$state" "$id" "$provider" "$url" "$host" "$path" "$number" "$template"; then
+          FM_PR_MONITOR_ERROR=prepare-failed
+          result=1
+        elif ! fm_pr_poll_publish_prepared; then
+          FM_PR_MONITOR_ERROR=publish-failed
+          result=1
+        fi
+      fi
+      ;;
+    observe)
+      [ "$#" -eq 3 ] || { FM_PR_MONITOR_ERROR=invalid-action; result=1; }
+      if [ "$result" -eq 0 ]; then
+        check=$1 output=$2 reason=$3
+        if ! fm_pr_poll_snapshot_matches "$state" "$id" "$template"; then
+          result=2
+        else
+          if ! fm_wake_append check "$check" "$reason"; then
+            FM_PR_MONITOR_ERROR=wake-append-failed
+            result=1
+          elif [ "$output" = merged ]; then
+            if ! fm_pr_poll_retirement_publish "$state" "$id" "$template" merged \
+              || ! fm_pr_poll_retirement_recover_one "$state" "$id" "$template"; then
+              FM_PR_MONITOR_RETIREMENT_DEFERRED=1
+            fi
+          fi
+        fi
+      fi
+      ;;
+    *)
+      FM_PR_MONITOR_ERROR=invalid-action
+      result=1
+      ;;
+  esac
+
+  fm_pr_poll_cleanup
+  if [ -n "$FM_PR_MONITOR_META_TMP" ]; then
+    rm -f -- "$FM_PR_MONITOR_META_TMP" || result=1
+    FM_PR_MONITOR_META_TMP=
+  fi
+  if fm_lock_release "$lock"; then
+    FM_PR_MONITOR_ACTIVE_LOCK=
+  else
+    FM_PR_MONITOR_ERROR='lock-release-failed'
+    result=1
+  fi
+  : "$FM_PR_MONITOR_ERROR" "$FM_PR_MONITOR_RETIREMENT_DEFERRED"
+  return "$result"
 }

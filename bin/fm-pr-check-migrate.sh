@@ -320,6 +320,7 @@ MIGRATION_OBLIGATION_TMP=
 MIGRATION_QUARANTINE_TMP=
 MIGRATION_X_SHIM_TMP=
 migration_cleanup() {
+  fm_pr_monitor_transaction_abort || true
   fm_pr_poll_cleanup
   [ -z "$MIGRATION_X_SHIM_TMP" ] || rm -f -- "$MIGRATION_X_SHIM_TMP"
   [ -z "$MIGRATION_QUARANTINE_TMP" ] || rm -f -- "$MIGRATION_QUARANTINE_TMP"
@@ -810,8 +811,8 @@ canonical_repair_from_pending() {
   quarantine_artifact "$registration" "$id" registration || return 1
   [ ! -e "$data" ] && [ ! -L "$data" ] || return 1
   [ ! -e "$registration" ] && [ ! -L "$registration" ] || return 1
-  fm_pr_poll_prepare "$STATE" "$id" "$provider" "$url" "$host" "$path" "$number" "$TEMPLATE" || return 1
-  fm_pr_poll_publish_prepared || return 1
+  fm_pr_monitor_transaction publish "$STATE" "$id" "$TEMPLATE" \
+    "$provider" "$url" "$host" "$path" "$number" || return 1
   canonical_terminal_success "$id"
 }
 
@@ -1063,8 +1064,8 @@ if migration_needed; then
         if quarantine_artifact "$check" "$prefix" check \
           && quarantine_artifact "$data" "$prefix" data \
           && quarantine_artifact "$registration" "$prefix" registration \
-          && fm_pr_poll_prepare "$STATE" "$id" "$provider" "$url" "$host" "$path" "$number" "$TEMPLATE" \
-          && fm_pr_poll_publish_prepared \
+          && fm_pr_monitor_transaction publish "$STATE" "$id" "$TEMPLATE" \
+            "$provider" "$url" "$host" "$path" "$number" \
           && complete_canonical_outcome "$id"; then
           :
         else

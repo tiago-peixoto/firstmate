@@ -41,14 +41,6 @@ if [ ! -f "$META" ] || [ -L "$META" ] || [ "$(fm_pr_file_link_count "$META")" !=
   exit 1
 fi
 
-# A prior exact merged result may have queued its durable wake immediately
-# before interruption.
-# Finish only its identity-bound receipt before publishing a replacement poll.
-fm_pr_poll_retirement_recover_one "$STATE" "$ID" "$SCRIPT_DIR/fm-pr-poll.sh" || {
-  echo "error: pending PR poll retirement could not be validated" >&2
-  exit 1
-}
-
 # Refuse to arm a GitLab watch with no glab on PATH. The poll is silent on
 # every error by design, so a missing CLI would be indistinguishable from a
 # merge request that is never merged. Arming is the one point where that can be
@@ -82,58 +74,30 @@ if [ "$PROVIDER" = github ] && [ -n "$WT" ] && [ -d "$WT" ] && command -v gh >/d
   fi
 fi
 
-META_TMP=
-META_LOCK=
-META_LOCK_HELD=0
 pr_check_cleanup() {
-  fm_pr_poll_cleanup
-  [ -z "$META_TMP" ] || rm -f -- "$META_TMP"
-  if [ "$META_LOCK_HELD" = 1 ]; then
-    fm_lock_release "$META_LOCK" || true
-    META_LOCK_HELD=0
-  fi
+  fm_pr_monitor_transaction_abort || true
 }
 trap pr_check_cleanup EXIT
 trap 'exit 1' HUP INT TERM
-fm_pr_poll_prepare "$STATE" "$ID" "$PROVIDER" "$URL" "$HOST" "$PROJECT_PATH" "$NUMBER" "$SCRIPT_DIR/fm-pr-poll.sh" \
-  || { echo "error: could not prepare PR poll" >&2; exit 1; }
-
-META_LOCK=$(fm_meta_lock_path "$META") || exit 1
-fm_lock_acquire_wait "$META_LOCK"
-META_LOCK_HELD=1
-[ -f "$META" ] && [ ! -L "$META" ] && [ "$(fm_pr_file_link_count "$META")" = 1 ] \
-  || { echo "error: task metadata is unavailable" >&2; exit 1; }
-META_DEVICE=$(fm_pr_file_device "$META") || exit 1
-STATE_DEVICE=$(fm_pr_file_device "$STATE") || exit 1
-[ "$META_DEVICE" = "$STATE_DEVICE" ] || { echo "error: task metadata is unavailable" >&2; exit 1; }
-META_TMP=$(mktemp "$STATE/.fm-pr-meta.XXXXXX") || exit 1
-while IFS= read -r line || [ -n "$line" ]; do
-  case "$line" in
-    pr=*|pr_head=*) ;;
-    *) printf '%s\n' "$line" >> "$META_TMP" || exit 1 ;;
+if ! fm_pr_monitor_transaction arm "$STATE" "$ID" "$SCRIPT_DIR/fm-pr-poll.sh" \
+  "$PROVIDER" "$URL" "$HOST" "$PROJECT_PATH" "$NUMBER" "$PR_HEAD"; then
+  case "$FM_PR_MONITOR_ERROR" in
+    pending-retirement)
+      echo "error: pending PR poll retirement could not be validated" >&2
+      ;;
+    prepare-failed)
+      echo "error: could not prepare PR poll" >&2
+      ;;
+    publish-failed)
+      echo "error: could not publish PR poll" >&2
+      ;;
+    metadata-unavailable)
+      echo "error: task metadata is unavailable" >&2
+      ;;
+    *)
+      echo "error: PR monitor transaction failed" >&2
+      ;;
   esac
-done < "$META"
-printf 'pr=%s\n' "$URL" >> "$META_TMP" || exit 1
-[ -z "$PR_HEAD" ] || printf 'pr_head=%s\n' "$PR_HEAD" >> "$META_TMP" || exit 1
-chmod 0600 "$META_TMP" || exit 1
-fm_pr_private_file_valid "$META_TMP" 600 "$STATE_DEVICE" || exit 1
-fm_pr_metadata_identity_parse "$META_TMP" || exit 1
-[ "$FM_PR_META_PROVIDER" = "$PROVIDER" ] && [ "$FM_PR_META_URL" = "$URL" ] \
-  && [ "$FM_PR_META_HOST" = "$HOST" ] && [ "$FM_PR_META_PATH" = "$PROJECT_PATH" ] \
-  && [ "$FM_PR_META_NUMBER" = "$NUMBER" ] || exit 1
-fm_pr_regular_destination_on_device_or_absent "$META" "$STATE_DEVICE" || exit 1
-mv -f -- "$META_TMP" "$META" || exit 1
-META_TMP=
-fm_pr_private_file_valid "$META" 600 "$STATE_DEVICE" || exit 1
-fm_pr_metadata_identity_parse "$META" || exit 1
-[ "$FM_PR_META_PROVIDER" = "$PROVIDER" ] && [ "$FM_PR_META_URL" = "$URL" ] \
-  && [ "$FM_PR_META_HOST" = "$HOST" ] && [ "$FM_PR_META_PATH" = "$PROJECT_PATH" ] \
-  && [ "$FM_PR_META_NUMBER" = "$NUMBER" ] || exit 1
-fm_lock_release "$META_LOCK"
-META_LOCK_HELD=0
-
-fm_pr_poll_publish_prepared || {
-  echo "error: could not publish PR poll" >&2
   exit 1
-}
+fi
 printf 'armed: state/%s.check.sh\n' "$ID"

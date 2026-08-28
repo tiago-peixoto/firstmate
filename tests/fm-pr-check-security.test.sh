@@ -85,6 +85,10 @@ case " $* " in
   *" state "*)
     [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
     [ "${FM_TEST_GH_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_SLEEP"
+    if [ -n "${FM_TEST_GH_GATE_READY:-}" ]; then
+      : > "$FM_TEST_GH_GATE_READY"
+      while [ ! -e "${FM_TEST_GH_GATE_RELEASE:?}" ]; do sleep 0.01; done
+    fi
     printf '%s\n' "${FM_TEST_GH_STATE:-OPEN}"
     ;;
 esac
@@ -658,10 +662,11 @@ SH
 }
 
 run_watcher_bounded() {
-  local home=$1 fakebin=$2 check_interval=${FM_TEST_CHECK_INTERVAL:-0} watch_root=${FM_TEST_WATCH_ROOT:-$ROOT}
+  local home=$1 fakebin=$2 check_interval=${FM_TEST_CHECK_INTERVAL:-0} check_timeout=${FM_TEST_CHECK_TIMEOUT:-1}
+  local watch_root=${FM_TEST_WATCH_ROOT:-$ROOT} watch_timeout=${FM_TEST_WATCH_TIMEOUT:-60}
   shift 2
-  perl -e 'my $pid=fork; die unless defined $pid; if (!$pid) { exec @ARGV } local $SIG{ALRM}=sub { kill "TERM", $pid; waitpid $pid, 0; exit 124 }; alarm 10; waitpid $pid, 0; alarm 0; exit($? >> 8)' \
-    env FM_HOME="$home" FM_ROOT_OVERRIDE="$watch_root" FM_CHECK_INTERVAL="$check_interval" FM_CHECK_TIMEOUT=1 \
+  perl -e 'my $limit=shift; my $pid=fork; die unless defined $pid; if (!$pid) { exec @ARGV } local $SIG{ALRM}=sub { kill "TERM", $pid; waitpid $pid, 0; exit 124 }; alarm $limit; waitpid $pid, 0; alarm 0; exit($? >> 8)' \
+    "$watch_timeout" env FM_HOME="$home" FM_ROOT_OVERRIDE="$watch_root" FM_CHECK_INTERVAL="$check_interval" FM_CHECK_TIMEOUT="$check_timeout" \
       FM_POLL=0.02 FM_HEARTBEAT=999999 FM_SIGNAL_GRACE=0 PATH="$fakebin:$BASE_PATH" "$WATCH" "$@"
 }
 
@@ -3372,8 +3377,234 @@ test_gitlab_merged_poll_retires() {
   pass "GitHub and GitLab exact merged results share one retirement path"
 }
 
+test_concurrent_rearm_keeps_last_successful_arm() {
+  local dir state ready release a_pid b_pid i
+  dir=$(make_case concurrent-rearm-last-wins)
+  state="$dir/home/state"
+  ready="$dir/first-meta-published"
+  release="$dir/release-first-arm"
+  write_task_meta "$dir"
+  cat > "$dir/fakebin/mv" <<'SH'
+#!/usr/bin/env bash
+destination=${!#}
+"${FM_TEST_REAL_MV:?}" "$@" || exit $?
+if [ "${FM_TEST_ARM_LABEL:-}" = first ] \
+  && [ "$destination" = "${FM_TEST_ARM_META:?}" ] \
+  && [ ! -e "${FM_TEST_ARM_READY:?}" ]; then
+  : > "$FM_TEST_ARM_READY"
+  while [ ! -e "${FM_TEST_ARM_RELEASE:?}" ]; do sleep 0.01; done
+fi
+SH
+  chmod +x "$dir/fakebin/mv"
+
+  (
+    set +e
+    FM_TEST_ARM_LABEL=first FM_TEST_ARM_META="$state/task-a.meta" \
+      FM_TEST_ARM_READY="$ready" FM_TEST_ARM_RELEASE="$release" \
+      FM_TEST_REAL_MV="$REAL_MV" \
+      run_check_entry "$dir" task-a https://github.com/o/r/pull/31 \
+        > "$dir/first.out" 2> "$dir/first.err"
+    printf '%s\n' "$?" > "$dir/first.rc"
+  ) &
+  a_pid=$!
+  i=0
+  while [ "$i" -lt 200 ] && [ ! -e "$ready" ]; do
+    kill -0 "$a_pid" 2>/dev/null || break
+    sleep 0.01
+    i=$((i + 1))
+  done
+  [ -e "$ready" ] || fail "first arm did not reach metadata publication: $(cat "$dir/first.err"); metadata=$(ls -ld "$state/task-a.meta" 2>&1)"
+
+  (
+    set +e
+    FM_TEST_ARM_LABEL=second FM_TEST_ARM_META="$state/task-a.meta" \
+      FM_TEST_ARM_READY="$ready" FM_TEST_ARM_RELEASE="$release" \
+      FM_TEST_REAL_MV="$REAL_MV" \
+      run_check_entry "$dir" task-a https://github.com/o/r/pull/32 \
+        > "$dir/second.out" 2> "$dir/second.err"
+    printf '%s\n' "$?" > "$dir/second.rc"
+    : > "$dir/second.done"
+  ) &
+  b_pid=$!
+  i=0
+  while [ "$i" -lt 100 ] && [ ! -e "$dir/second.done" ]; do
+    sleep 0.01
+    i=$((i + 1))
+  done
+  : > "$release"
+  wait "$a_pid"
+  wait "$b_pid"
+
+  [ "$(cat "$dir/first.rc")" -eq 0 ] \
+    || fail "first concurrent arm failed: $(cat "$dir/first.err")"
+  [ "$(cat "$dir/second.rc")" -eq 0 ] \
+    || fail "second concurrent arm failed: $(cat "$dir/second.err")"
+  fm_pr_poll_artifacts_valid "$state" task-a "$POLL" \
+    || fail "last successful concurrent arm was not left authenticated"
+  grep -qxF 'pr=https://github.com/o/r/pull/32' "$state/task-a.meta" \
+    || fail "last successful concurrent arm did not own metadata"
+  sed -n '2p' "$state/task-a.pr-poll" | grep -qxF 'https://github.com/o/r/pull/32' \
+    || fail "last successful concurrent arm did not own the poll"
+  pass "concurrent rearm leaves the last successful arm fully covered"
+}
+
+test_stale_merge_observation_is_silent() {
+  local dir state ready release watcher_pid i rc
+  dir=$(make_case stale-merge-observation)
+  state="$dir/home/state"
+  ready="$dir/lookup-started"
+  release="$dir/release-lookup"
+  write_poll_meta "$state" task-a https://github.com/o/r/pull/41
+  seed_canonical_poll "$dir" task-a https://github.com/o/r/pull/41
+  add_stop_custom_check "$dir"
+
+  (
+    set +e
+    # shellcheck disable=SC2030 # This lookup gate belongs only to the watcher subprocess.
+    export FM_TEST_GH_STATE=MERGED
+    export FM_TEST_GH_GATE_READY="$ready"
+    export FM_TEST_GH_GATE_RELEASE="$release"
+    export FM_TEST_CHECK_TIMEOUT=10
+    run_watcher_bounded "$dir/home" "$dir/fakebin" \
+        > "$dir/watch.out" 2> "$dir/watch.err"
+    printf '%s\n' "$?" > "$dir/watch.rc"
+  ) &
+  watcher_pid=$!
+  i=0
+  while [ "$i" -lt 800 ] && [ ! -e "$ready" ]; do
+    kill -0 "$watcher_pid" 2>/dev/null || break
+    sleep 0.01
+    i=$((i + 1))
+  done
+  [ -e "$ready" ] || fail "stale-result fixture did not start its lookup: $(cat "$dir/watch.err")"
+  run_check_entry "$dir" task-a https://github.com/o/r/pull/42 \
+    > "$dir/rearm.out" 2> "$dir/rearm.err" \
+    || fail "stale-result replacement arm failed: $(cat "$dir/rearm.err")"
+  : > "$release"
+  wait "$watcher_pid"
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 0 ] || fail "stale-result watcher failed: $(cat "$dir/watch.err")"
+  ! grep -F 'task-a.check.sh: merged' "$dir/watch.out" >/dev/null \
+    || fail "stale merge observation woke against the replacement pull request"
+  ! grep -F 'task-a.check.sh: merged' "$state/.wake-queue" >/dev/null 2>&1 \
+    || fail "stale merge observation was durably queued against the replacement pull request"
+  grep -F 'z-stop.check.sh: stop-cycle' "$dir/watch.out" >/dev/null \
+    || fail "stale merge observation stopped the later due check"
+  fm_pr_poll_artifacts_valid "$state" task-a "$POLL" \
+    || fail "stale merge observation damaged the replacement monitor"
+  pass "stale merge observations are discarded silently after rearm"
+}
+
+test_all_due_checks_queue_before_wake() {
+  local dir state rc
+  dir=$(make_case all-due-checks)
+  state="$dir/home/state"
+  cat > "$state/a-first.check.sh" <<SH
+#!/usr/bin/env bash
+printf 'first-result\\n'
+SH
+  cat > "$state/b-second.check.sh" <<SH
+#!/usr/bin/env bash
+: > '$dir/second-ran'
+printf 'second-result\\n'
+SH
+  chmod 0700 "$state/a-first.check.sh" "$state/b-second.check.sh"
+  FM_HOME="$dir/home" "$REGISTER" a-first >/dev/null \
+    || fail "could not register first due-check fixture"
+  FM_HOME="$dir/home" "$REGISTER" b-second >/dev/null \
+    || fail "could not register second due-check fixture"
+
+  set +e
+  FM_TEST_WATCH_TIMEOUT=60 run_watcher_bounded "$dir/home" "$dir/fakebin" \
+    > "$dir/watch.out" 2> "$dir/watch.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "all-due watcher failed: $(cat "$dir/watch.err")"
+  [ -e "$dir/second-ran" ] || fail "first actionable check starved a later due check"
+  grep -F 'a-first.check.sh: first-result' "$state/.wake-queue" >/dev/null \
+    || fail "first due check was not durably queued"
+  grep -F 'b-second.check.sh: second-result' "$state/.wake-queue" >/dev/null \
+    || fail "later due check was not durably queued"
+  pass "every due check is queued before the watcher wakes"
+}
+
+test_local_retirement_failure_does_not_starve_later_check() {
+  local dir state rc
+  dir=$(make_case local-retirement-failure-fairness)
+  state="$dir/home/state"
+  write_poll_meta "$state" a-task https://github.com/o/r/pull/51
+  seed_canonical_poll "$dir" a-task https://github.com/o/r/pull/51
+  cat > "$state/z-later.check.sh" <<SH
+#!/usr/bin/env bash
+: > '$dir/later-ran'
+printf 'later-result\\n'
+SH
+  chmod 0700 "$state/z-later.check.sh"
+  FM_HOME="$dir/home" "$REGISTER" z-later >/dev/null \
+    || fail "could not register later task-local failure fixture"
+  cat > "$dir/fakebin/mv" <<'SH'
+#!/usr/bin/env bash
+destination=${!#}
+[ "$destination" != "${FM_TEST_RETIRE_DEST:?}" ] || exit 1
+exec "${FM_TEST_REAL_MV:?}" "$@"
+SH
+  chmod +x "$dir/fakebin/mv"
+
+  set +e
+  (
+    # shellcheck disable=SC2031 # The earlier gated watcher intentionally changed this only in its subshell.
+    export FM_TEST_GH_STATE=MERGED
+    export FM_TEST_RETIRE_DEST="$state/a-task.pr-poll-retirement"
+    export FM_TEST_REAL_MV="$REAL_MV"
+    run_watcher_bounded "$dir/home" "$dir/fakebin"
+  ) > "$dir/watch.out" 2> "$dir/watch.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "task-local failure watcher stopped: $(cat "$dir/watch.err")"
+  [ -e "$dir/later-ran" ] || fail "task-local retirement failure starved a later due check"
+  grep -F 'a-task.check.sh: merged' "$state/.wake-queue" >/dev/null \
+    || fail "merged result was not durable before local retirement failed"
+  grep -F 'z-later.check.sh: later-result' "$state/.wake-queue" >/dev/null \
+    || fail "later result was not queued after a task-local retirement failure"
+  [ -f "$state/a-task.check.sh" ] \
+    || fail "task-local retirement failure removed the still-recoverable monitor"
+  pass "task-local retirement failure does not starve later due checks"
+}
+
+test_merge_observer_is_side_effect_free() {
+  local dir state before after out
+  dir=$(make_case merge-observer-read-only)
+  state="$dir/home/state"
+  write_poll_meta "$state" task-a https://github.com/o/r/pull/61
+  seed_canonical_poll "$dir" task-a https://github.com/o/r/pull/61
+  before=$(state_snapshot "$state")
+  out=$(FM_TEST_GH_LOG="$dir/gh.log" FM_TEST_GH_STATE=MERGED \
+    PATH="$dir/fakebin:$BASE_PATH" bash "$state/task-a.check.sh")
+  after=$(state_snapshot "$state")
+  [ "$out" = merged ] || fail "merge observer did not return the terminal observation"
+  [ "$after" = "$before" ] || fail "merge observer mutated task state"
+  pass "merge observer is side-effect free"
+}
+
+case "${FM_PR_TRANSACTION_TEST:-}" in
+  concurrent-rearm) test_concurrent_rearm_keeps_last_successful_arm; exit ;;
+  stale-observation) test_stale_merge_observation_is_silent; exit ;;
+  all-due) test_all_due_checks_queue_before_wake; exit ;;
+  local-failure) test_local_retirement_failure_does_not_starve_later_check; exit ;;
+  observer-read-only) test_merge_observer_is_side_effect_free; exit ;;
+  retirement-once) test_merged_poll_retires_once; exit ;;
+  atomic-interruption) test_atomic_interruption_leaves_no_partial_artifact; exit ;;
+  '') ;;
+  *) fail "unknown PR transaction test selector: $FM_PR_TRANSACTION_TEST" ;;
+esac
+
 test_parser_matrix
 test_gitlab_merge_watch
+test_concurrent_rearm_keeps_last_successful_arm
+test_stale_merge_observation_is_silent
+test_all_due_checks_queue_before_wake
+test_local_retirement_failure_does_not_starve_later_check
+test_merge_observer_is_side_effect_free
 test_merged_poll_retires_once
 test_persistent_secondmate_retirement_is_poll_only
 test_retirement_crash_recovery

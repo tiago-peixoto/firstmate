@@ -1063,6 +1063,7 @@ watcher_cleanup() {
       transition=release-lock-existing
     fi
   fi
+  fm_pr_monitor_transaction_abort || cleanup_status=1
   fm_active_check_stop || cleanup_status=1
   fm_check_output_cleanup
   fm_custom_check_snapshot_cleanup
@@ -1181,6 +1182,7 @@ while :; do
   # CHECK_INTERVAL, so most cycles skip this block and fall straight through.
   if [ "$(age_of "$STATE/.last-check")" -ge "$CHECK_INTERVAL" ]; then
     rejected_checks=
+    check_wake_reason=
     for c in "$STATE"/*.check.sh; do
       [ -e "$c" ] || continue
       is_pr_poll=0
@@ -1218,26 +1220,37 @@ while :; do
       fi
       if [ -n "$out" ]; then
         reason="check: $c: $out"
-        fm_wake_append check "$c" "$reason" || exit 1
-        if [ "$is_pr_poll" -eq 1 ] && [ "$out" = merged ]; then
-          if fm_pr_poll_retirement_publish "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" "$out"; then
-            fm_pr_poll_retirement_recover_one "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" \
+        if [ "$is_pr_poll" -eq 1 ]; then
+          if fm_pr_monitor_transaction observe "$STATE" "$id" \
+            "$SCRIPT_DIR/fm-pr-poll.sh" "$c" "$out" "$reason"; then
+            [ "$FM_PR_MONITOR_RETIREMENT_DEFERRED" -eq 0 ] \
               || triage_log "merged PR poll retirement remains recoverable for $id"
           else
-            triage_log "merged PR poll retirement deferred because its canonical snapshot changed for $id"
+            action_status=$?
+            if [ "$action_status" -eq 2 ]; then
+              # The task was rearmed while the forge lookup was in flight. Its
+              # result belongs to the old registration and is intentionally
+              # silent.
+              continue
+            fi
+            exit 1
           fi
+        else
+          fm_wake_append check "$c" "$reason" || exit 1
         fi
-        touch "$STATE/.last-check"
-        wake "$reason"
+        [ -n "$check_wake_reason" ] || check_wake_reason=$reason
       fi
     done
     if [ -n "$rejected_checks" ]; then
       reason="check: rejected unauthenticated state checks:$rejected_checks"
       fm_wake_append check unauthenticated-state-checks "$reason" || exit 1
-      touch "$STATE/.last-check"
-      wake "$reason"
+      [ -n "$check_wake_reason" ] || check_wake_reason=$reason
     fi
     touch "$STATE/.last-check"
+    # Queue every due result before wake() exits this watcher. Otherwise one
+    # early actionable result postpones every later due check for another full
+    # interval and can starve it indefinitely.
+    [ -z "$check_wake_reason" ] || wake "$check_wake_reason"
   fi
 
   # On the first changed signal, linger one grace period and re-scan before
