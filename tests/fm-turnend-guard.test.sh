@@ -317,6 +317,33 @@ mark_source_owner_terminal() {
     ' _ "$dir" "$id" "$acquired"
 }
 
+hold_source_lock() {
+  local dir=$1 id=$2 ready=$3 release=$4
+  FM_ROOT_OVERRIDE="$dir" FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" \
+    FM_PROCEVENT_CLAIM_ROOT="$dir/procevent-claims" bash -c '
+      . "$1/bin/fm-pr-lib.sh"
+      . "$1/bin/fm-wake-lib.sh"
+      . "$1/bin/fm-procevent-lib.sh"
+      fm_procevent_source_lock_acquire "$2" || exit 1
+      : > "$3"
+      while [ ! -e "$4" ]; do sleep 0.01; done
+      fm_procevent_source_lock_release "$2"
+    ' _ "$dir" "$id" "$ready" "$release"
+}
+
+publish_source_capture() {
+  local dir=$1 id=$2 seq=$3 inbox adapter_tmp result_tmp
+  inbox="$dir/state/procevent-inbox"
+  mkdir -p "$inbox"
+  adapter_tmp=$(mktemp "$inbox/.adapter.XXXXXX") || return 1
+  result_tmp=$(mktemp "$inbox/.capture.XXXXXX") || { rm -f "$adapter_tmp"; return 1; }
+  printf 'fixture\n' > "$adapter_tmp" || return 1
+  printf 'captured result\n' > "$result_tmp" || return 1
+  chmod 0600 "$adapter_tmp" "$result_tmp" || return 1
+  mv -f -- "$adapter_tmp" "$inbox/$id.$seq.adapter" || return 1
+  mv -f -- "$result_tmp" "$inbox/$id.$seq.result"
+}
+
 test_hook_silent_when_no_work_in_flight() {
   local dir out status
   dir=$(make_primary_dir "$TMP_ROOT/hook-idle")
@@ -562,6 +589,133 @@ test_hook_serializes_required_source_proof_with_terminal_retirement() {
   expect_code 0 "$transition_status" "the terminal transition must complete after the guard releases its proof boundary"
   [ -z "$(cat "$guard_out")" ] || fail "serialized required-source proof produced output: $(cat "$guard_out")"
   pass "fm-turnend-guard: serializes required-source proof with terminal retirement"
+}
+
+test_hook_blocks_when_capture_commits_during_required_source_proof() {
+  local dir id seq owner_pid real_ps fakebin entered release guard_out guard_pid guard_status i
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-capture-race")
+  dir=$(cd "$dir" && pwd)
+  id=single-shot-capture-race
+  seq=559
+  mkdir -p "$dir/config"
+  printf '%s\n' "$id" > "$dir/config/turnend-required-procevent-source"
+  sleep 60 &
+  owner_pid=$!
+  FM_PROC_ROOT_OVERRIDE="$dir/no-proc" record_source_owner "$dir" "$id" "$owner_pid" \
+    || fail "could not record the capture-race fixture owner"
+  real_ps=$(command -v ps)
+  fakebin=$(fm_fakebin "$TMP_ROOT/required-source-capture-race-tools")
+  entered="$dir/identity-entered"
+  release="$dir/identity-release"
+  guard_out="$dir/guard-output"
+  printf '%s\n' '#!/usr/bin/env bash' ': > "$FM_TEST_PS_ENTERED"' \
+    'while [ ! -e "$FM_TEST_PS_RELEASE" ]; do sleep 0.01; done' \
+    'exec "$FM_TEST_REAL_PS" "$@"' > "$fakebin/ps"
+  chmod +x "$fakebin/ps"
+
+  PATH="$fakebin:$PATH" FM_PROC_ROOT_OVERRIDE="$dir/no-proc" \
+    FM_TEST_PS_ENTERED="$entered" FM_TEST_PS_RELEASE="$release" FM_TEST_REAL_PS="$real_ps" \
+    run_hook "$dir" true > "$guard_out" &
+  guard_pid=$!
+  for i in $(seq 1 200); do
+    [ -e "$entered" ] && break
+    sleep 0.01
+  done
+  if [ ! -e "$entered" ]; then
+    touch "$release"
+    kill "$guard_pid" "$owner_pid" 2>/dev/null || true
+    wait "$guard_pid" "$owner_pid" 2>/dev/null || true
+    fail "capture-race proof never reached owner identity observation"
+  fi
+  publish_source_capture "$dir" "$id" "$seq" \
+    || fail "could not commit the capture-race fixture result"
+  touch "$release"
+  wait "$guard_pid"; guard_status=$?
+  kill "$owner_pid" 2>/dev/null || true
+  wait "$owner_pid" 2>/dev/null || true
+  expect_code 2 "$guard_status" "a capture committed during proof must block turn end"
+  assert_contains "$(cat "$guard_out")" "$id" "the concurrent-capture block must name the exact source"
+  assert_contains "$(cat "$guard_out")" "unhandled capture $seq" "the concurrent-capture block must name the exact capture"
+  pass "fm-turnend-guard: blocks a capture committed during required-source proof"
+}
+
+test_hook_blocks_promptly_when_required_source_lock_is_busy() {
+  local dir id owner_pid ready release holder_pid out status i
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-busy-lock")
+  dir=$(cd "$dir" && pwd)
+  id=single-shot-busy-lock
+  mkdir -p "$dir/config"
+  printf '%s\n' "$id" > "$dir/config/turnend-required-procevent-source"
+  sleep 60 &
+  owner_pid=$!
+  record_source_owner "$dir" "$id" "$owner_pid" \
+    || fail "could not record the busy-lock fixture owner"
+  ready="$dir/source-lock-ready"
+  release="$dir/source-lock-release"
+  hold_source_lock "$dir" "$id" "$ready" "$release" &
+  holder_pid=$!
+  for i in $(seq 1 200); do
+    [ -e "$ready" ] && break
+    sleep 0.01
+  done
+  if [ ! -e "$ready" ]; then
+    touch "$release"
+    kill "$holder_pid" "$owner_pid" 2>/dev/null || true
+    wait "$holder_pid" "$owner_pid" 2>/dev/null || true
+    fail "busy-lock fixture never acquired the source lock"
+  fi
+
+  out=$(run_hook_bounded "$dir" true); status=$?
+  touch "$release"
+  wait "$holder_pid" 2>/dev/null || true
+  kill "$owner_pid" 2>/dev/null || true
+  wait "$owner_pid" 2>/dev/null || true
+  expect_code 2 "$status" "a busy required-source lock must block without waiting indefinitely"
+  assert_contains "$out" "$id" "the busy-lock block must name the exact source"
+  assert_contains "$out" "ownership boundary" "the busy-lock block must name the contested state"
+  pass "fm-turnend-guard: blocks promptly when the required-source lock is busy"
+}
+
+test_hook_rejects_unsearchable_required_source_inbox() {
+  local dir id seq owner_pid inbox out status
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-unsearchable-inbox")
+  dir=$(cd "$dir" && pwd)
+  id=single-shot-unsearchable-inbox
+  seq=559
+  mkdir -p "$dir/config"
+  printf '%s\n' "$id" > "$dir/config/turnend-required-procevent-source"
+  sleep 60 &
+  owner_pid=$!
+  record_source_owner "$dir" "$id" "$owner_pid" \
+    || fail "could not record the unsearchable-inbox fixture owner"
+  publish_source_capture "$dir" "$id" "$seq" \
+    || fail "could not commit the unsearchable-inbox fixture result"
+  inbox="$dir/state/procevent-inbox"
+  chmod 0400 "$inbox"
+
+  out=$(run_hook "$dir" true); status=$?
+  chmod 0700 "$inbox"
+  kill "$owner_pid" 2>/dev/null || true
+  wait "$owner_pid" 2>/dev/null || true
+  expect_code 2 "$status" "an unsearchable required-source inbox must block loudly"
+  assert_contains "$out" "$id" "the unsearchable-inbox block must name the exact source"
+  assert_contains "$out" "captured-result state" "the unsearchable-inbox block must name the unreadable state"
+  pass "fm-turnend-guard: rejects an unsearchable required-source inbox"
+}
+
+test_hook_rejects_unsearchable_required_source_config_parent() {
+  local dir config out status
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-unsearchable-config")
+  config="$dir/config"
+  mkdir -p "$config"
+  printf 'single-shot-unsearchable-config\n' > "$config/turnend-required-procevent-source"
+  chmod 0400 "$config"
+
+  out=$(run_hook "$dir" true); status=$?
+  chmod 0700 "$config"
+  expect_code 2 "$status" "an unsearchable required-source config parent must not look absent"
+  assert_contains "$out" "turnend-required-procevent-source" "the unsearchable-config block must name the config input"
+  pass "fm-turnend-guard: rejects an unsearchable required-source config parent"
 }
 
 test_hook_non_claude_health_ignores_claude_budget_contention() {
@@ -2099,6 +2253,10 @@ test_hook_rejects_nonregular_required_source_config_without_hanging
 test_hook_rejects_nonregular_required_source_handled_marker
 test_hook_rejects_truncated_required_source_registration
 test_hook_serializes_required_source_proof_with_terminal_retirement
+test_hook_blocks_when_capture_commits_during_required_source_proof
+test_hook_blocks_promptly_when_required_source_lock_is_busy
+test_hook_rejects_unsearchable_required_source_inbox
+test_hook_rejects_unsearchable_required_source_config_parent
 test_hook_non_claude_health_ignores_claude_budget_contention
 test_hook_blocks_with_live_lock_and_stale_beacon
 test_hook_blocks_when_unhealthy_in_primary

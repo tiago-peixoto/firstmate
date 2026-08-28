@@ -137,8 +137,14 @@ STOP_HOOK_ACTIVE=$(printf '%s' "$PAYLOAD" | jq -r '
 ' 2>/dev/null) || exit 0
 REQUIRED_SOURCE_CONFIG="$CONFIG/turnend-required-procevent-source"
 REQUIRED_SOURCE_CONFIG_PRESENT=0
-if [ -e "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ]; then
-  REQUIRED_SOURCE_CONFIG_PRESENT=1
+REQUIRED_SOURCE_CONFIG_PARENT_INVALID=0
+if [ -e "$CONFIG" ] || [ -L "$CONFIG" ]; then
+  if [ ! -d "$CONFIG" ] || [ ! -x "$CONFIG" ]; then
+    REQUIRED_SOURCE_CONFIG_PRESENT=1
+    REQUIRED_SOURCE_CONFIG_PARENT_INVALID=1
+  elif [ -e "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ]; then
+    REQUIRED_SOURCE_CONFIG_PRESENT=1
+  fi
 fi
 if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 0 ] \
   && [ "$CLAUDE_MODE" -eq 0 ] && [ "$STOP_HOOK_ACTIVE" = "true" ]; then
@@ -193,7 +199,7 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
     REQUIRED_SOURCE_REASON=
     inbox=$(fm_procevent_inbox_dir "$STATE")
     if [ -L "$inbox" ] || { [ -e "$inbox" ] && [ ! -d "$inbox" ]; } \
-      || { [ -d "$inbox" ] && [ ! -r "$inbox" ]; }; then
+      || { [ -d "$inbox" ] && { [ ! -r "$inbox" ] || [ ! -x "$inbox" ]; }; }; then
       REQUIRED_SOURCE_REASON='captured-result state cannot be read unambiguously'
       return 1
     fi
@@ -276,11 +282,17 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
         REQUIRED_SOURCE_REASON='source generation changed while it was observed'
         return 1
       }
+    required_source_captures_handled "$id"
   }
   required_source_ready() {
-    local id=$1 status
-    if ! fm_procevent_source_lock_acquire "$id"; then
-      REQUIRED_SOURCE_REASON='source ownership boundary cannot be locked'
+    local id=$1 status claim_root source_lock
+    required_source_captures_handled "$id" || return 1
+    claim_root=$(fm_procevent_claim_root)
+    source_lock=$(fm_procevent_source_lock_path "$id")
+    if [ ! -d "$claim_root" ] || [ -L "$claim_root" ] || [ ! -x "$claim_root" ] \
+      || [ -e "$source_lock" ] || [ -L "$source_lock" ] \
+      || ! fm_lock_try_acquire "$source_lock"; then
+      REQUIRED_SOURCE_REASON='source ownership boundary is busy or unreadable'
       return 1
     fi
     required_source_ready_locked "$id"
@@ -294,7 +306,8 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
   }
   REQUIRED_SOURCE_ID=
   REQUIRED_SOURCE_LINES=0
-  if [ ! -f "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ] \
+  if [ "$REQUIRED_SOURCE_CONFIG_PARENT_INVALID" -eq 1 ] \
+    || [ ! -f "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ] \
     || [ ! -r "$REQUIRED_SOURCE_CONFIG" ] \
     || ! REQUIRED_SOURCE_CONFIG_IDENTITY=$(fm_pr_file_identity "$REQUIRED_SOURCE_CONFIG" 2>/dev/null); then
     required_source_config_invalid
