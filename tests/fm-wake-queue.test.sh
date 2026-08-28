@@ -396,7 +396,7 @@ SH
 
 run_secondmate_stall_state_case() {  # <name> <busy|idle|unknown> <status-line-or-empty> <wake|quiet> [<live|dead|bare-shell>]
   local name=$1 liveness=$2 status_line=$3 expected=$4 endpoint=${5:-live}
-  local dir state sub fakebin out gen pane_alive pane_command
+  local dir state sub fakebin out gen pane_alive pane_command checkpoint_rc=0
   dir=$(make_supercase "secondmate-stall-state-$name")
   state="$dir/state"
   sub="$dir/secondmate"
@@ -442,13 +442,18 @@ run_secondmate_stall_state_case() {  # <name> <busy|idle|unknown> <status-line-o
     FM_FAKE_TMUX_CURRENT_COMMAND="$pane_command" \
     FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$out" 2> "$dir/watch.err" || true
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$out" 2> "$dir/watch.err" \
+    || checkpoint_rc=$?
   case "$expected" in
     wake)
+      [ "$checkpoint_rc" -eq 0 ] \
+        || fail "$name wake checkpoint exited $checkpoint_rc: out=$(cat "$out"); err=$(cat "$dir/watch.err")"
       grep -F 'check: secondmate wake-loop stalled: mate=mate row=7' "$out" >/dev/null \
         || fail "$name did not wake for an aged foreign row: out=$(cat "$out"); err=$(cat "$dir/watch.err")"
       ;;
     quiet)
+      [ "$checkpoint_rc" -eq 124 ] \
+        || fail "$name quiet checkpoint exited $checkpoint_rc: out=$(cat "$out"); err=$(cat "$dir/watch.err")"
       ! grep -F 'secondmate wake-loop stalled' "$out" >/dev/null \
         || fail "$name woke for an aged foreign row: $(cat "$out")"
       [ ! -s "$state/.wake-queue" ] \

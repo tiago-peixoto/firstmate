@@ -201,7 +201,7 @@ test_posix_class_captain_regex_surfaces_signal_and_heartbeat() {
   local signal_seen=0 heartbeat_seen=0
   dir=$(make_case classify-posix-captain-regex); state="$dir/state"; fakebin="$dir/fakebin"
   out="$dir/watch.out"; drain_out="$dir/drain.out"; status_file="$state/miss.status"
-  printf 'working: monitoring\nABC READY\n' > "$status_file"
+  printf 'working: monitoring\nabc ready\n' > "$status_file"
   FM_CAPTAIN_RE='[[:upper:]]+ READY' signal_reason_is_actionable "$status_file" \
     && signal_seen=1
 
@@ -212,7 +212,7 @@ test_posix_class_captain_regex_surfaces_signal_and_heartbeat() {
   pid=$!
   if wait_for_exit "$pid" 50 \
       && grep -Fx 'heartbeat' "$out" >/dev/null \
-      && [ "$(cat "$state/.hb-surfaced-miss" 2>/dev/null || true)" = 'ABC READY' ] \
+      && [ "$(cat "$state/.hb-surfaced-miss" 2>/dev/null || true)" = 'abc ready' ] \
       && FM_STATE_OVERRIDE="$state" "$DRAIN" > "$drain_out" 2>/dev/null \
       && grep "$(printf '\theartbeat\t')" "$drain_out" >/dev/null; then
     heartbeat_seen=1

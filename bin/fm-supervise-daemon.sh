@@ -391,19 +391,6 @@ classify_stale() {  # <window> <state>
   fi
   last=$(last_captain_relevant_status_line "$state/$task.status")
   if [ -n "$last" ]; then
-    # Independent of free-text captain-relevant matching: a nonterminal progress
-    # verb (working:) must never take the terminal stale path. Seen-status dedupe
-    # must not permanently suppress or clear possible-wedge aging merely because
-    # prose once looked captain-relevant. Real terminal verbs and legacy free-text
-    # captain lines without those verbs keep the terminal escalate/dedupe path.
-    if ! status_is_terminal_verb "$last"; then
-      case "$(status_line_verb "$last")" in
-        working|resolved|captain-held)
-          printf 'self|transient stale (%s): %s' "$win" "$last"
-          return
-          ;;
-      esac
-    fi
     # Dedupe against the signal path: if this status was already escalated
     # (seen marker matches), self-handle to avoid a duplicate in the digest.
     seen="$state/.subsuper-seen-status-$(_stale_key "$task")"

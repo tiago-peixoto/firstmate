@@ -205,6 +205,26 @@ test_stale_terminal_escalates() {
   pass "stale + terminal status escalates immediately"
 }
 
+test_classify_stale_uses_configured_relevance_vocabulary() {
+  local case_name dir state task status_line out
+  for case_name in resolved captain-held; do
+    dir=$(make_supercase "stale-configured-$case_name")
+    state="$dir/state"
+    task="configured-$case_name"
+    case "$case_name" in
+      resolved) status_line='resolved: PR ready' ;;
+      captain-held) status_line='captain-held: checks green' ;;
+    esac
+    printf '%s\n' "$status_line" > "$state/$task.status"
+    out=$(FM_CLASSIFY_RESOLVE_VERB=settled \
+      FM_CLASSIFY_CAPTAIN_HELD_VERB=transferred \
+      FM_STATE_OVERRIDE="$state" classify_stale "sess:fm-$task" "$state")
+    [ "$out" = "escalate|stale + terminal status: $status_line" ] \
+      || fail "configured relevance vocabulary was overridden for $case_name: $out"
+  done
+  pass "stale classification defers configurable relevance vocabulary to the shared selector"
+}
+
 # A DECLARED external-wait pause (paused:) is neither a wedge nor a terminal
 # escalation: classify_stale returns the `pause` action so handle_wake records a
 # pause marker (long re-surface cadence) rather than a wedge stale marker.
@@ -1933,6 +1953,7 @@ test_classify_check_and_unknown_escalate
 test_stale_transient_self_records_marker
 test_stale_diagnostic_wedge_survives_busy_housekeeping
 test_stale_terminal_escalates
+test_classify_stale_uses_configured_relevance_vocabulary
 test_stale_paused_classifies_pause
 test_stale_captain_held_classifies_pause
 test_handle_wake_paused_records_pause_marker

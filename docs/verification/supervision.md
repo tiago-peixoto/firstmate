@@ -211,8 +211,8 @@ tests/fm-crew-state.test.sh
 The six new behavioral cases were run individually on 2026-08-27 with GNU Bash 3.2.57 on macOS 26.5.1.
 The unfixed revision was `2e2907964a974cac6bbd884f9d98307faf023148`, and the fixed revision was `d6a6d5f7b634581426a67a844439160a51888952`.
 The same fixed-revision test definitions were copied into the unfixed tree so each pair exercised an identical assertion against the two production implementations.
-Two cases were RED before and GREEN after, so they demonstrate the fix.
-The other four were GREEN before and GREEN after, so they are regression guards and are not evidence that the fix changed behavior.
+The Codex-on-Herdr native-busy case and the aged busy secondmate no-wake case were RED before and GREEN after, so they demonstrate the fixes.
+The Codex-on-Herdr native-idle, aged latest-blocked, aged idle non-blocked, and aged unknown-liveness cases were GREEN before and GREEN after, so they are regression guards and are not evidence that either fix changed those accepted behaviors.
 
 The exact preparation and single-case runner were:
 
@@ -1012,6 +1012,52 @@ Full fixed output:
 CASE revision=review-fixed test=test_configured_resolve_and_held_tokens_stay_quiet
 ok - configured resolve and held token prose stays quiet in signal and heartbeat paths
 exit=0
+```
+
+#### Real-home configured-vocabulary compatibility measurement
+
+The daemon previously carried a second literal `resolved` and `captain-held` exception that self-handled old vocabulary after the shared relevance selector had selected it.
+The configurable selector now owns that decision: currently configured resolve and held verbs stay suppressed there, while an old literal becomes eligible for legacy free-text relevance when an override deliberately assigns a different verb.
+Eligible does not mean loud because only the selector's final selected event reaches stale classification.
+
+The compatibility measurement ran on 2026-08-28 against the three real append-only status logs in the active Firstmate home, not fixtures.
+Under the default resolve vocabulary, zero old `resolved` lines were eligible.
+With `FM_CLASSIFY_RESOLVE_VERB=settled`, 34 old `resolved` lines became eligible: 2 in `artemis-art8248-modifier-state-at-apply.status`, 28 in `artemis-review-coordinator.status`, and 4 in `open-sourcer.status`.
+None of those 34 old lines was the final selected event in its file, so the measured current impact was nil.
+
+Exact command:
+
+```sh
+ROOT_DIR=$PWD bash -c '
+  . "$ROOT_DIR/bin/fm-classify-lib.sh"
+  for f in \
+    "$HOME/Workspace/firstmate/state/artemis-art8248-modifier-state-at-apply.status" \
+    "$HOME/Workspace/firstmate/state/artemis-review-coordinator.status" \
+    "$HOME/Workspace/firstmate/state/open-sourcer.status"
+  do
+    default_count=0
+    settled_count=0
+    while IFS= read -r line || [ -n "$line" ]; do
+      [ "$(status_line_verb "$line")" = resolved ] || continue
+      status_is_captain_relevant "$line" && default_count=$((default_count + 1))
+      FM_CLASSIFY_RESOLVE_VERB=settled status_is_captain_relevant "$line" \
+        && settled_count=$((settled_count + 1))
+    done < "$f"
+    selected=$(FM_CLASSIFY_RESOLVE_VERB=settled last_captain_relevant_status_line "$f")
+    selected_old=0
+    [ "$(status_line_verb "$selected")" != resolved ] || selected_old=1
+    printf "%s default_old_resolved=%s settled_old_resolved=%s final_selected_old_resolved=%s\n" \
+      "$(basename "$f")" "$default_count" "$settled_count" "$selected_old"
+  done
+'
+```
+
+Exact output:
+
+```text
+artemis-art8248-modifier-state-at-apply.status default_old_resolved=0 settled_old_resolved=2 final_selected_old_resolved=0
+artemis-review-coordinator.status default_old_resolved=0 settled_old_resolved=28 final_selected_old_resolved=0
+open-sourcer.status default_old_resolved=0 settled_old_resolved=4 final_selected_old_resolved=0
 ```
 
 ### Notified secondmate stall probe-order red/green record
