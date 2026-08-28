@@ -32,7 +32,10 @@
 # primary checkout - the main home or a genuinely marked secondmate home - and
 # stay a silent, fast no-op inside child task worktrees.
 #
-# Loop-guard, codex/Grok (default) mode: never block twice in the same turn.
+# Loop-guard, codex/Grok (default) mode: never block twice in the same turn on
+# the ordinary path. An optional config/turnend-required-procevent-source is a
+# stronger home-local precondition checked before this allowance; the current
+# configuration and proof contract live in docs/configuration.md.
 # Codex uses stop_hook_active and Grok uses stopHookActive; typed camel-case
 # takes precedence when both spellings are present. A true value means the
 # current stop attempt already follows a block, so this guard always allows it.
@@ -132,7 +135,13 @@ STOP_HOOK_ACTIVE=$(printf '%s' "$PAYLOAD" | jq -r '
   else false
   end
 ' 2>/dev/null) || exit 0
-if [ "$CLAUDE_MODE" -eq 0 ] && [ "$STOP_HOOK_ACTIVE" = "true" ]; then
+REQUIRED_SOURCE_CONFIG="$CONFIG/turnend-required-procevent-source"
+REQUIRED_SOURCE_CONFIG_PRESENT=0
+if [ -e "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ]; then
+  REQUIRED_SOURCE_CONFIG_PRESENT=1
+fi
+if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 0 ] \
+  && [ "$CLAUDE_MODE" -eq 0 ] && [ "$STOP_HOOK_ACTIVE" = "true" ]; then
   exit 0
 fi
 
@@ -150,6 +159,88 @@ fi
 # so this exempts them while guarding every real secondmate home.
 fm_primary_scope_matches "$FM_ROOT" "$STATE" || exit 0
 
+if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
+  # A configured single-shot source is a stronger home-local obligation than
+  # the ordinary watcher backstop. Prove its exact durable generation before
+  # any repeated-stop, foreign-session, healthy-watcher, or auto-arm allowance.
+  # shellcheck source=bin/fm-pr-lib.sh
+  . "$SCRIPT_DIR/fm-pr-lib.sh"
+  # shellcheck source=bin/fm-wake-lib.sh
+  . "$SCRIPT_DIR/fm-wake-lib.sh"
+  # shellcheck source=bin/fm-procevent-lib.sh
+  . "$SCRIPT_DIR/fm-procevent-lib.sh"
+  required_source_ready() {
+    local id=$1 inbox result result_id seq reg_dir registration reg_identity token owner_state
+    REQUIRED_SOURCE_REASON=
+    inbox=$(fm_procevent_inbox_dir "$STATE")
+    if [ -L "$inbox" ] || { [ -e "$inbox" ] && [ ! -d "$inbox" ]; } \
+      || { [ -d "$inbox" ] && [ ! -r "$inbox" ]; }; then
+      REQUIRED_SOURCE_REASON='captured-result state cannot be read unambiguously'
+      return 1
+    fi
+    while IFS= read -r result; do
+      result_id=$(fm_procevent_result_source_id "$result")
+      [ "$result_id" = "$id" ] || continue
+      seq=$(fm_procevent_result_sequence "$result")
+      REQUIRED_SOURCE_REASON="unhandled capture $seq is waiting for its handled marker"
+      return 1
+    done < <(fm_procevent_pending "$STATE")
+    reg_dir=$(fm_procevent_registry_dir "$STATE")
+    registration="$reg_dir/$id.source"
+    if [ ! -f "$registration" ] || [ -L "$registration" ] || [ ! -r "$registration" ] \
+      || ! reg_identity=$(fm_pr_file_identity "$registration" 2>/dev/null); then
+      REQUIRED_SOURCE_REASON='registration is missing, malformed, or unreadable'
+      return 1
+    fi
+    fm_procevent_claim_load_locked "$id" 2>/dev/null || {
+      REQUIRED_SOURCE_REASON='owner claim is missing, malformed, or unreadable'
+      return 1
+    }
+    token=$FM_PROCEVENT_CLAIM_TOKEN
+    if [ "$FM_PROCEVENT_CLAIM_HOME" != "$FM_HOME" ] \
+      || [ "$FM_PROCEVENT_CLAIM_REG_DIR" != "$reg_dir" ] \
+      || [ "$FM_PROCEVENT_CLAIM_REG_IDENTITY" != "$reg_identity" ] \
+      || [ "$FM_PROCEVENT_CLAIM_TERMINAL" != active ]; then
+      REQUIRED_SOURCE_REASON='owner claim does not match the active registration generation'
+      return 1
+    fi
+    fm_procevent_pid_state "$FM_PROCEVENT_CLAIM_PID" "$FM_PROCEVENT_CLAIM_IDENTITY"
+    owner_state=$?
+    case "$owner_state" in
+      0) ;;
+      1) REQUIRED_SOURCE_REASON='owner is absent, dead, or identity-mismatched'; return 1 ;;
+      2) REQUIRED_SOURCE_REASON='owner identity cannot be observed'; return 1 ;;
+      *) REQUIRED_SOURCE_REASON='owner state is ambiguous'; return 1 ;;
+    esac
+    [ "$(fm_pr_file_identity "$registration" 2>/dev/null || true)" = "$reg_identity" ] \
+      && fm_procevent_claim_load_locked "$id" 2>/dev/null \
+      && [ "$FM_PROCEVENT_CLAIM_TOKEN" = "$token" ] || {
+        REQUIRED_SOURCE_REASON='source generation changed while it was observed'
+        return 1
+      }
+  }
+  REQUIRED_SOURCE_ID=
+  REQUIRED_SOURCE_LINES=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    REQUIRED_SOURCE_LINES=$((REQUIRED_SOURCE_LINES + 1))
+    [ "$REQUIRED_SOURCE_LINES" -ne 1 ] || REQUIRED_SOURCE_ID=$line
+  done < "$REQUIRED_SOURCE_CONFIG" 2>/dev/null || REQUIRED_SOURCE_LINES=0
+  if [ ! -f "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ] \
+    || [ ! -r "$REQUIRED_SOURCE_CONFIG" ] || [ "$REQUIRED_SOURCE_LINES" -ne 1 ] \
+    || ! fm_procevent_source_id_valid "$REQUIRED_SOURCE_ID"; then
+    printf 'TURN END BLOCKED: config/turnend-required-procevent-source must be a readable regular file containing exactly one canonical process-event source id.\n' >&2
+    exit 2
+  fi
+  if ! required_source_ready "$REQUIRED_SOURCE_ID"; then
+    printf 'TURN END BLOCKED: required process-event source %s is not safe: %s. Repair or handle that exact source before ending the turn.\n' \
+      "$REQUIRED_SOURCE_ID" "$REQUIRED_SOURCE_REASON" >&2
+    exit 2
+  fi
+fi
+if [ "$CLAUDE_MODE" -eq 0 ] && [ "$STOP_HOOK_ACTIVE" = "true" ]; then
+  exit 0
+fi
+
 # A lock-refused Claude session is read-only and its sibling auto-arm must defer
 # to the live owner. Applying the mutable owner's backstop here would create an
 # impossible recovery loop: this session cannot arm, while the guard blocks it
@@ -164,9 +255,10 @@ if [ "$CLAUDE_MODE" -eq 1 ] && ! fm_session_lock_owned_by_self "$STATE"; then
 fi
 
 # --- the actual predicate ----------------------------------------------------
-# shellcheck source=bin/fm-wake-lib.sh
-. "$SCRIPT_DIR/fm-wake-lib.sh"
-
+if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 0 ]; then
+  # shellcheck source=bin/fm-wake-lib.sh
+  . "$SCRIPT_DIR/fm-wake-lib.sh"
+fi
 BUDGET_FILE="$STATE/.turnend-claude-blocks"
 BUDGET_LOCK="$STATE/.turnend-claude-blocks.lock"
 OWNER_LOCK="$STATE/.claude-autoarm.lock"

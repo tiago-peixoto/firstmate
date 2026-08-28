@@ -149,6 +149,8 @@ install_guard_scripts() {
   cp "$ROOT/bin/fm-harness.sh" "$dir/bin/fm-harness.sh"
   cp "$ROOT/bin/fm-primary-scope-lib.sh" "$dir/bin/fm-primary-scope-lib.sh"
   cp "$ROOT/bin/fm-supervision-lib.sh" "$dir/bin/fm-supervision-lib.sh"
+  cp "$ROOT/bin/fm-pr-lib.sh" "$dir/bin/fm-pr-lib.sh"
+  cp "$ROOT/bin/fm-procevent-lib.sh" "$dir/bin/fm-procevent-lib.sh"
   cp "$ROOT/bin/fm-wake-lib.sh" "$dir/bin/fm-wake-lib.sh"
   cp "$ROOT/bin/fm-session-lock-lib.sh" "$dir/bin/fm-session-lock-lib.sh"
   cp "$ROOT/bin/fm-cursor-lib.sh" "$dir/bin/fm-cursor-lib.sh"
@@ -229,7 +231,9 @@ make_secondmate_linked_home_dir() {
 run_hook() {
   local dir=$1 stop_active=$2 home
   home=$(cd "$dir" && pwd)
-  printf '{"stop_hook_active":%s}' "$stop_active" | CLAUDECODE=1 FM_HOME="$home" bash "$dir/bin/fm-turnend-guard.sh" 2>&1
+  printf '{"stop_hook_active":%s}' "$stop_active" \
+    | CLAUDECODE=1 FM_HOME="$home" FM_PROCEVENT_CLAIM_ROOT="$dir/procevent-claims" \
+      bash "$dir/bin/fm-turnend-guard.sh" 2>&1
 }
 
 nonexistent_pid() {
@@ -254,6 +258,35 @@ record_watcher_lock() {
   printf '%s\n' "$root" > "$dir/state/.watch.lock/fm-home"
   printf '%s\n' "$bin_dir/fm-watch.sh" > "$dir/state/.watch.lock/watcher-path"
   printf '%s\n' "$identity" > "$dir/state/.watch.lock/pid-identity"
+}
+
+record_source_owner() {
+  local dir=$1 id=$2 pid=$3
+  FM_ROOT_OVERRIDE="$dir" FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" \
+    FM_PROCEVENT_CLAIM_ROOT="$dir/procevent-claims" bash -c '
+      . "$1/bin/fm-pr-lib.sh"
+      . "$1/bin/fm-wake-lib.sh"
+      . "$1/bin/fm-procevent-lib.sh"
+      fm_procevent_source_lock_acquire "$2" || exit 1
+      fm_procevent_registration_publish_locked "$1/state" fixture "$2" /bin/sleep 60
+      status=$?
+      [ "$status" -ne 0 ] \
+        || fm_procevent_claim_acquire_locked "$2" "$1" "$3" "$1/state/procevent/$2.source" \
+        || status=$?
+      fm_procevent_source_lock_release "$2"
+      exit "$status"
+    ' _ "$dir" "$id" "$pid"
+}
+
+mark_source_capture_handled() {
+  local dir=$1 id=$2 seq=$3
+  FM_ROOT_OVERRIDE="$dir" FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" \
+    FM_PROCEVENT_CLAIM_ROOT="$dir/procevent-claims" bash -c '
+      . "$1/bin/fm-pr-lib.sh"
+      . "$1/bin/fm-wake-lib.sh"
+      . "$1/bin/fm-procevent-lib.sh"
+      fm_procevent_mark_handled "$1/state" "$2" "$3"
+    ' _ "$dir" "$id" "$seq"
 }
 
 test_hook_silent_when_no_work_in_flight() {
@@ -331,6 +364,55 @@ test_hook_silent_with_live_lock_and_fresh_beacon() {
   expect_code 0 "$status" "hook must exit 0 with a live identity-matched watcher lock and fresh beacon"
   [ -z "$out" ] || fail "hook produced output despite a live fresh watcher lock: $out"
   pass "fm-turnend-guard: silent no-op with a live watcher lock and fresh beacon"
+}
+
+test_hook_requires_configured_source_capture_handled_and_live_owner() {
+  local dir id seq watcher_pid watcher_identity owner_pid fakebin out status
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-procevent-source")
+  dir=$(cd "$dir" && pwd)
+  id=single-shot-review
+  seq=559
+  mkdir -p "$dir/config" "$dir/state/procevent-inbox"
+  printf '%s\n' "$id" > "$dir/config/turnend-required-procevent-source"
+  printf 'captured result\n' > "$dir/state/procevent-inbox/$id.$seq.result"
+  printf 'fixture\n' > "$dir/state/procevent-inbox/$id.$seq.adapter"
+  chmod 0600 "$dir/state/procevent-inbox/$id.$seq.result" "$dir/state/procevent-inbox/$id.$seq.adapter"
+  : > "$dir/state/task1.meta"
+  sleep 60 &
+  watcher_pid=$!
+  watcher_identity=$(watcher_identity "$dir" "$watcher_pid") || {
+    kill "$watcher_pid" 2>/dev/null || true
+    wait "$watcher_pid" 2>/dev/null || true
+    fail "could not identify required-source fixture watcher"
+  }
+  record_watcher_lock "$dir" "$watcher_pid" "$watcher_identity"
+  touch "$dir/state/.last-watcher-beat"
+
+  out=$(run_hook "$dir" true); status=$?
+  expect_code 2 "$status" "an unhandled required-source capture must block before the repeated-stop allowance"
+  assert_contains "$out" "$id" "required-source block must name the exact source"
+  assert_contains "$out" "unhandled capture $seq" "required-source block must name the exact unhandled capture"
+
+  mark_source_capture_handled "$dir" "$id" "$seq" \
+    || fail "could not mark the required-source capture handled"
+  sleep 60 &
+  owner_pid=$!
+  record_source_owner "$dir" "$id" "$owner_pid" \
+    || fail "could not record the live required-source owner"
+  fakebin=$(fm_fakebin "$TMP_ROOT/required-source-observation-tools")
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$fakebin/ps"
+  chmod +x "$fakebin/ps"
+
+  out=$(PATH="$fakebin:$PATH" FM_PROC_ROOT_OVERRIDE="$dir/no-proc" run_hook "$dir" false); status=$?
+  expect_code 2 "$status" "a required source must remain blocking when owner identity cannot be observed"
+  assert_contains "$out" "$id" "unobservable required-source block must name the exact source"
+
+  out=$(run_hook "$dir" false); status=$?
+  kill "$owner_pid" "$watcher_pid" 2>/dev/null || true
+  wait "$owner_pid" "$watcher_pid" 2>/dev/null || true
+  expect_code 0 "$status" "the required source may pass only with its capture handled and identity-matched owner live"
+  [ -z "$out" ] || fail "healthy required-source guard produced output: $out"
+  pass "fm-turnend-guard: configured single-shot source requires handled capture and a live identity-matched owner"
 }
 
 test_hook_non_claude_health_ignores_claude_budget_contention() {
@@ -1142,7 +1224,9 @@ EOF
 run_hook_claude() {
   local dir=$1 stop_active=$2 home
   home=$(cd "$dir" && pwd)
-  printf '{"stop_hook_active":%s,"session_id":"sess-claude-mode"}' "$stop_active" | CLAUDECODE=1 FM_HOME="$home" bash "$dir/bin/fm-turnend-guard.sh" --claude 2>&1
+  printf '{"stop_hook_active":%s,"session_id":"sess-claude-mode"}' "$stop_active" \
+    | CLAUDECODE=1 FM_HOME="$home" FM_PROCEVENT_CLAIM_ROOT="$dir/procevent-claims" \
+      bash "$dir/bin/fm-turnend-guard.sh" --claude 2>&1
 }
 
 seed_claude_failure() {
@@ -1861,6 +1945,7 @@ test_hook_blocks_source_only_home
 test_hook_blocks_queue_only_home
 test_hook_blocks_when_dead_lock_has_fresh_beacon
 test_hook_silent_with_live_lock_and_fresh_beacon
+test_hook_requires_configured_source_capture_handled_and_live_owner
 test_hook_non_claude_health_ignores_claude_budget_contention
 test_hook_blocks_with_live_lock_and_stale_beacon
 test_hook_blocks_when_unhealthy_in_primary

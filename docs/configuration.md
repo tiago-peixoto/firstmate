@@ -305,6 +305,15 @@ This does not relax protection for any other untracked file.
 An existing linked-worktree home that predates this rule advances through its marker-only state during its next bootstrap or spawn local sync, after which Git ignores the marker normally.
 A standalone-clone home cannot receive a primary-local commit through that no-fetch sync, so it receives the rule through `/updatefirstmate`'s origin refresh instead.
 
+## Required turn-end process-event source (config/turnend-required-procevent-source)
+
+`config/turnend-required-procevent-source` is an optional private-home file whose complete content is one canonical process-event source id.
+When the file is absent, the turn-end guard keeps its ordinary behavior unchanged.
+When the file is present, `bin/fm-turnend-guard.sh` blocks before any repeated-stop, foreign-session, healthy-watcher, or automatic-recovery allowance unless it can positively verify the exact source.
+The source must have one readable local registration, an active claim bound to that registration generation and home, an observably live identity-matched owner, and no captured result without a regular handled marker.
+Malformed configuration, unreadable or ambiguous source state, a missing or replaced registration, an absent or dead owner, and an owner whose identity cannot be observed all block with the exact source and failed proof named when a canonical id is available.
+[`tests/fm-turnend-guard.test.sh`](../tests/fm-turnend-guard.test.sh) exercises the executable guard through the unhandled-capture, unobservable-owner, and healthy pass paths.
+
 ## FM_HOME
 
 `FM_HOME` selects the operational home for one firstmate instance.

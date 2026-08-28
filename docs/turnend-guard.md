@@ -25,6 +25,7 @@ The marker must be a regular non-symlink file whose whitespace-stripped first li
 An unmarked checkout or invalid marker falls through to the git-dir check.
 That check keeps crewmate and scout linked worktrees inert because their git dir differs from their git common dir.
 It also requires `AGENTS.md`, `bin/`, and the effective state directory.
+An in-scope home may configure one process-event source as a stronger precondition that is proved before every ordinary allow path; [`configuration.md`](configuration.md#required-turn-end-process-event-source-configturnend-required-procevent-source) owns that private input and its fail-safe state contract.
 
 For an in-scope primary, the guard counts in-flight work from `state/*.meta`.
 Registered `state/procevent/*.source` records also require supervision even though they have no task metadata.
