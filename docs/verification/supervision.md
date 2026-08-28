@@ -312,7 +312,8 @@ exit=0
 
 #### Fix demonstration: aged busy secondmate queue
 
-This proves that an aged foreign queue stays quiet when semantic liveness positively proves the secondmate busy.
+This proves the exact-busy half of the current suppression contract: an aged foreign queue can stay quiet when semantic classification positively proves the secondmate busy.
+The agent-liveness suppression record below proves the other half by showing that the same busy record wakes after the agent exits to a bare shell; current suppression requires both `fm_backend_agent_state=alive` and exact busy.
 
 Unfixed command:
 

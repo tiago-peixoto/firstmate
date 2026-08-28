@@ -78,10 +78,10 @@
 #   check: secondmate wake-loop stalled: mate=<id> row=<seq> age=<seconds>s
 #                          the oldest valid row in an endpoint-recorded local
 #                          secondmate home's durable wake queue exceeded
-#                          FM_SECONDMATE_WAKE_STALL_SECS while the mate was not
-#                          provably busy; blocked, idle, and unknown all wake,
-#                          observation is read-only, and one parent receipt
-#                          suppresses repeats for that row
+#                          FM_SECONDMATE_WAKE_STALL_SECS; latest blocked and every
+#                          combination except a positively alive agent with an
+#                          exact busy verdict wake, observation is read-only, and
+#                          one parent receipt suppresses repeats for that row
 # For normal supervision, resume the session-start primary-harness protocol
 # after each printed reason. Direct duplicate invocations of this script still
 # no-op through the watcher singleton lock.
@@ -407,7 +407,9 @@ secondmate_wake_stall_tick() {
   local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued age reason
   local status_line status_verb backend target harness agent_state busy_verdict
   case "$threshold" in ''|*[!0-9]*|0) threshold=60 ;; esac
-  # Endpoint metadata admits this queue-loop check; secondmate-liveness owns registered mates whose endpoint is missing or dead.
+  # Endpoint metadata admits this queue-loop check. Startup liveness owns mates
+  # with no recorded endpoint; a recorded endpoint whose agent is not positively
+  # alive remains here and wakes conservatively.
   for meta in "$STATE"/*.meta; do
     [ -e "$meta" ] || continue
     kind=$(fm_meta_get "$meta" kind)
