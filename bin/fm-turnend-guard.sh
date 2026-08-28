@@ -169,8 +169,27 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
   . "$SCRIPT_DIR/fm-wake-lib.sh"
   # shellcheck source=bin/fm-procevent-lib.sh
   . "$SCRIPT_DIR/fm-procevent-lib.sh"
-  required_source_ready() {
-    local id=$1 inbox result result_id seq reg_dir registration reg_identity token owner_state
+  required_source_registration_valid() {
+    local registration=$1 adapter_record argc_record argv_record adapter argc line count=0
+    [ -f "$registration" ] && [ ! -L "$registration" ] && [ -r "$registration" ] || return 1
+    {
+      IFS= read -r adapter_record || return 1
+      IFS= read -r argc_record || return 1
+      IFS= read -r argv_record || return 1
+      line=
+      while IFS= read -r line; do
+        count=$((count + 1))
+        line=
+      done
+      [ -z "$line" ] || return 1
+    } < "$registration"
+    case "$adapter_record" in adapter=*) adapter=${adapter_record#adapter=} ;; *) return 1 ;; esac
+    case "$argc_record" in argc=*) argc=${argc_record#argc=} ;; *) return 1 ;; esac
+    fm_procevent_adapter_valid "$adapter" || return 1
+    [ "$argv_record" = 'argv:' ] && [ "$count" -ge 1 ] && [ "$argc" = "$count" ]
+  }
+  required_source_captures_handled() {
+    local id=$1 inbox result result_id seq marker
     REQUIRED_SOURCE_REASON=
     inbox=$(fm_procevent_inbox_dir "$STATE")
     if [ -L "$inbox" ] || { [ -e "$inbox" ] && [ ! -d "$inbox" ]; } \
@@ -178,16 +197,40 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
       REQUIRED_SOURCE_REASON='captured-result state cannot be read unambiguously'
       return 1
     fi
-    while IFS= read -r result; do
+    [ -d "$inbox" ] || return 0
+    for result in "$inbox"/*.result; do
+      [ -e "$result" ] || [ -L "$result" ] || continue
       result_id=$(fm_procevent_result_source_id "$result")
       [ "$result_id" = "$id" ] || continue
       seq=$(fm_procevent_result_sequence "$result")
-      REQUIRED_SOURCE_REASON="unhandled capture $seq is waiting for its handled marker"
+      case "$seq" in
+        ''|*[!0-9]*) REQUIRED_SOURCE_REASON='captured-result state cannot be read unambiguously'; return 1 ;;
+      esac
+      if [ ! -f "$result" ] || [ -L "$result" ] || [ ! -r "$result" ] \
+        || ! fm_procevent_result_adapter "$result" >/dev/null 2>&1; then
+        REQUIRED_SOURCE_REASON="capture $seq state is malformed or unreadable"
+        return 1
+      fi
+      marker=$(fm_procevent_handled_marker "$STATE" "$id" "$seq")
+      if fm_procevent_is_handled "$STATE" "$id" "$seq"; then
+        continue
+      fi
+      if [ -e "$marker" ] || [ -L "$marker" ]; then
+        REQUIRED_SOURCE_REASON="capture $seq has a nonregular handled marker"
+      else
+        REQUIRED_SOURCE_REASON="unhandled capture $seq is waiting for its handled marker"
+      fi
       return 1
-    done < <(fm_procevent_pending "$STATE")
+    done
+  }
+  required_source_ready_locked() {
+    local id=$1 reg_dir registration reg_identity owner_state current_identity
+    local claim_home claim_pid claim_token claim_identity claim_reg_dir claim_reg_identity claim_terminal
+    required_source_captures_handled "$id" || return 1
     reg_dir=$(fm_procevent_registry_dir "$STATE")
     registration="$reg_dir/$id.source"
-    if [ ! -f "$registration" ] || [ -L "$registration" ] || [ ! -r "$registration" ] \
+    if [ ! -d "$reg_dir" ] || [ -L "$reg_dir" ] || [ ! -r "$reg_dir" ] \
+      || ! required_source_registration_valid "$registration" \
       || ! reg_identity=$(fm_pr_file_identity "$registration" 2>/dev/null); then
       REQUIRED_SOURCE_REASON='registration is missing, malformed, or unreadable'
       return 1
@@ -196,7 +239,13 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
       REQUIRED_SOURCE_REASON='owner claim is missing, malformed, or unreadable'
       return 1
     }
-    token=$FM_PROCEVENT_CLAIM_TOKEN
+    claim_home=$FM_PROCEVENT_CLAIM_HOME
+    claim_pid=$FM_PROCEVENT_CLAIM_PID
+    claim_token=$FM_PROCEVENT_CLAIM_TOKEN
+    claim_identity=$FM_PROCEVENT_CLAIM_IDENTITY
+    claim_reg_dir=$FM_PROCEVENT_CLAIM_REG_DIR
+    claim_reg_identity=$FM_PROCEVENT_CLAIM_REG_IDENTITY
+    claim_terminal=$FM_PROCEVENT_CLAIM_TERMINAL
     if [ "$FM_PROCEVENT_CLAIM_HOME" != "$FM_HOME" ] \
       || [ "$FM_PROCEVENT_CLAIM_REG_DIR" != "$reg_dir" ] \
       || [ "$FM_PROCEVENT_CLAIM_REG_IDENTITY" != "$reg_identity" ] \
@@ -204,7 +253,7 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
       REQUIRED_SOURCE_REASON='owner claim does not match the active registration generation'
       return 1
     fi
-    fm_procevent_pid_state "$FM_PROCEVENT_CLAIM_PID" "$FM_PROCEVENT_CLAIM_IDENTITY"
+    fm_procevent_pid_state "$claim_pid" "$claim_identity"
     owner_state=$?
     case "$owner_state" in
       0) ;;
@@ -212,24 +261,52 @@ if [ "$REQUIRED_SOURCE_CONFIG_PRESENT" -eq 1 ]; then
       2) REQUIRED_SOURCE_REASON='owner identity cannot be observed'; return 1 ;;
       *) REQUIRED_SOURCE_REASON='owner state is ambiguous'; return 1 ;;
     esac
-    [ "$(fm_pr_file_identity "$registration" 2>/dev/null || true)" = "$reg_identity" ] \
+    current_identity=$(fm_pr_file_identity "$registration" 2>/dev/null || true)
+    [ "$current_identity" = "$reg_identity" ] \
+      && required_source_registration_valid "$registration" \
       && fm_procevent_claim_load_locked "$id" 2>/dev/null \
-      && [ "$FM_PROCEVENT_CLAIM_TOKEN" = "$token" ] || {
+      && [ "$FM_PROCEVENT_CLAIM_HOME" = "$claim_home" ] \
+      && [ "$FM_PROCEVENT_CLAIM_PID" = "$claim_pid" ] \
+      && [ "$FM_PROCEVENT_CLAIM_TOKEN" = "$claim_token" ] \
+      && [ "$FM_PROCEVENT_CLAIM_IDENTITY" = "$claim_identity" ] \
+      && [ "$FM_PROCEVENT_CLAIM_REG_DIR" = "$claim_reg_dir" ] \
+      && [ "$FM_PROCEVENT_CLAIM_REG_IDENTITY" = "$claim_reg_identity" ] \
+      && [ "$FM_PROCEVENT_CLAIM_TERMINAL" = "$claim_terminal" ] \
+      && [ "$FM_PROCEVENT_CLAIM_TERMINAL" = active ] || {
         REQUIRED_SOURCE_REASON='source generation changed while it was observed'
         return 1
       }
   }
+  required_source_ready() {
+    local id=$1 status
+    if ! fm_procevent_source_lock_acquire "$id"; then
+      REQUIRED_SOURCE_REASON='source ownership boundary cannot be locked'
+      return 1
+    fi
+    required_source_ready_locked "$id"
+    status=$?
+    fm_procevent_source_lock_release "$id"
+    return "$status"
+  }
+  required_source_config_invalid() {
+    printf 'TURN END BLOCKED: config/turnend-required-procevent-source must be a readable regular file containing exactly one canonical process-event source id.\n' >&2
+    exit 2
+  }
   REQUIRED_SOURCE_ID=
   REQUIRED_SOURCE_LINES=0
+  if [ ! -f "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ] \
+    || [ ! -r "$REQUIRED_SOURCE_CONFIG" ] \
+    || ! REQUIRED_SOURCE_CONFIG_IDENTITY=$(fm_pr_file_identity "$REQUIRED_SOURCE_CONFIG" 2>/dev/null); then
+    required_source_config_invalid
+  fi
   while IFS= read -r line || [ -n "$line" ]; do
     REQUIRED_SOURCE_LINES=$((REQUIRED_SOURCE_LINES + 1))
     [ "$REQUIRED_SOURCE_LINES" -ne 1 ] || REQUIRED_SOURCE_ID=$line
   done < "$REQUIRED_SOURCE_CONFIG" 2>/dev/null || REQUIRED_SOURCE_LINES=0
-  if [ ! -f "$REQUIRED_SOURCE_CONFIG" ] || [ -L "$REQUIRED_SOURCE_CONFIG" ] \
-    || [ ! -r "$REQUIRED_SOURCE_CONFIG" ] || [ "$REQUIRED_SOURCE_LINES" -ne 1 ] \
-    || ! fm_procevent_source_id_valid "$REQUIRED_SOURCE_ID"; then
-    printf 'TURN END BLOCKED: config/turnend-required-procevent-source must be a readable regular file containing exactly one canonical process-event source id.\n' >&2
-    exit 2
+  if [ "$REQUIRED_SOURCE_LINES" -ne 1 ] \
+    || ! fm_procevent_source_id_valid "$REQUIRED_SOURCE_ID" \
+    || [ "$(fm_pr_file_identity "$REQUIRED_SOURCE_CONFIG" 2>/dev/null || true)" != "$REQUIRED_SOURCE_CONFIG_IDENTITY" ]; then
+    required_source_config_invalid
   fi
   if ! required_source_ready "$REQUIRED_SOURCE_ID"; then
     printf 'TURN END BLOCKED: required process-event source %s is not safe: %s. Repair or handle that exact source before ending the turn.\n' \

@@ -236,6 +236,14 @@ run_hook() {
       bash "$dir/bin/fm-turnend-guard.sh" 2>&1
 }
 
+run_hook_bounded() {
+  local dir=$1 stop_active=$2 home
+  home=$(cd "$dir" && pwd)
+  printf '{"stop_hook_active":%s}' "$stop_active" \
+    | CLAUDECODE=1 FM_HOME="$home" FM_PROCEVENT_CLAIM_ROOT="$dir/procevent-claims" \
+      perl -e 'alarm shift; exec @ARGV' 2 bash "$dir/bin/fm-turnend-guard.sh" 2>&1
+}
+
 nonexistent_pid() {
   local pid=999999
   while kill -0 "$pid" 2>/dev/null; do
@@ -287,6 +295,26 @@ mark_source_capture_handled() {
       . "$1/bin/fm-procevent-lib.sh"
       fm_procevent_mark_handled "$1/state" "$2" "$3"
     ' _ "$dir" "$id" "$seq"
+}
+
+mark_source_owner_terminal() {
+  local dir=$1 id=$2 acquired=$3
+  FM_ROOT_OVERRIDE="$dir" FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" \
+    FM_PROCEVENT_CLAIM_ROOT="$dir/procevent-claims" bash -c '
+      . "$1/bin/fm-pr-lib.sh"
+      . "$1/bin/fm-wake-lib.sh"
+      . "$1/bin/fm-procevent-lib.sh"
+      fm_procevent_source_lock_acquire "$2" || exit 1
+      : > "$3"
+      fm_procevent_claim_load_locked "$2" || status=1
+      status=${status:-0}
+      [ "$status" -ne 0 ] \
+        || fm_procevent_claim_mark_terminal_locked \
+          "$2" "$FM_PROCEVENT_CLAIM_HOME" "$FM_PROCEVENT_CLAIM_PID" "$FM_PROCEVENT_CLAIM_TOKEN" \
+        || status=$?
+      fm_procevent_source_lock_release "$2"
+      exit "$status"
+    ' _ "$dir" "$id" "$acquired"
 }
 
 test_hook_silent_when_no_work_in_flight() {
@@ -413,6 +441,127 @@ test_hook_requires_configured_source_capture_handled_and_live_owner() {
   expect_code 0 "$status" "the required source may pass only with its capture handled and identity-matched owner live"
   [ -z "$out" ] || fail "healthy required-source guard produced output: $out"
   pass "fm-turnend-guard: configured single-shot source requires handled capture and a live identity-matched owner"
+}
+
+test_hook_rejects_nonregular_required_source_config_without_hanging() {
+  local dir out status
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-config-fifo")
+  mkdir -p "$dir/config"
+  mkfifo "$dir/config/turnend-required-procevent-source"
+
+  out=$(run_hook_bounded "$dir" true); status=$?
+  expect_code 2 "$status" "a nonregular required-source config must block without waiting for a writer"
+  assert_contains "$out" "readable regular file" "the nonregular config block must explain the required file shape"
+  pass "fm-turnend-guard: rejects a nonregular required-source config without hanging"
+}
+
+test_hook_rejects_nonregular_required_source_handled_marker() {
+  local dir id seq owner_pid out status
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-handled-directory")
+  dir=$(cd "$dir" && pwd)
+  id=single-shot-marker
+  seq=559
+  mkdir -p "$dir/config" "$dir/state/procevent-inbox"
+  printf '%s\n' "$id" > "$dir/config/turnend-required-procevent-source"
+  printf 'captured result\n' > "$dir/state/procevent-inbox/$id.$seq.result"
+  printf 'fixture\n' > "$dir/state/procevent-inbox/$id.$seq.adapter"
+  chmod 0600 "$dir/state/procevent-inbox/$id.$seq.result" "$dir/state/procevent-inbox/$id.$seq.adapter"
+  mkdir "$dir/state/procevent-inbox/$id.$seq.handled"
+  sleep 60 &
+  owner_pid=$!
+  record_source_owner "$dir" "$id" "$owner_pid" \
+    || fail "could not record the nonregular-marker fixture owner"
+
+  out=$(run_hook "$dir" true); status=$?
+  kill "$owner_pid" 2>/dev/null || true
+  wait "$owner_pid" 2>/dev/null || true
+  expect_code 2 "$status" "a nonregular handled marker must not suppress its capture"
+  assert_contains "$out" "$id" "the nonregular handled-marker block must name the exact source"
+  assert_contains "$out" "capture $seq" "the nonregular handled-marker block must name the exact capture"
+  pass "fm-turnend-guard: rejects a nonregular handled marker"
+}
+
+test_hook_rejects_truncated_required_source_registration() {
+  local dir id owner_pid registration out status
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-truncated-registration")
+  dir=$(cd "$dir" && pwd)
+  id=single-shot-registration
+  mkdir -p "$dir/config"
+  printf '%s\n' "$id" > "$dir/config/turnend-required-procevent-source"
+  sleep 60 &
+  owner_pid=$!
+  record_source_owner "$dir" "$id" "$owner_pid" \
+    || fail "could not record the malformed-registration fixture owner"
+  registration="$dir/state/procevent/$id.source"
+  : > "$registration"
+
+  out=$(run_hook "$dir" true); status=$?
+  kill "$owner_pid" 2>/dev/null || true
+  wait "$owner_pid" 2>/dev/null || true
+  expect_code 2 "$status" "a truncated registration must not satisfy the required-source proof"
+  assert_contains "$out" "$id" "the malformed-registration block must name the exact source"
+  assert_contains "$out" "registration" "the malformed-registration block must name the failed state"
+  pass "fm-turnend-guard: rejects a truncated required-source registration"
+}
+
+test_hook_serializes_required_source_proof_with_terminal_retirement() {
+  local dir id owner_pid real_ps fakebin entered release acquired guard_out guard_pid guard_status transition_pid transition_status i interleaved
+  dir=$(make_primary_dir "$TMP_ROOT/hook-required-source-terminal-race")
+  dir=$(cd "$dir" && pwd)
+  id=single-shot-terminal-race
+  mkdir -p "$dir/config"
+  printf '%s\n' "$id" > "$dir/config/turnend-required-procevent-source"
+  sleep 60 &
+  owner_pid=$!
+  FM_PROC_ROOT_OVERRIDE="$dir/no-proc" record_source_owner "$dir" "$id" "$owner_pid" \
+    || fail "could not record the terminal-race fixture owner"
+  real_ps=$(command -v ps)
+  fakebin=$(fm_fakebin "$TMP_ROOT/required-source-terminal-race-tools")
+  entered="$dir/identity-entered"
+  release="$dir/identity-release"
+  acquired="$dir/terminal-acquired"
+  guard_out="$dir/guard-output"
+  printf '%s\n' '#!/usr/bin/env bash' ': > "$FM_TEST_PS_ENTERED"' \
+    'while [ ! -e "$FM_TEST_PS_RELEASE" ]; do sleep 0.01; done' \
+    'exec "$FM_TEST_REAL_PS" "$@"' > "$fakebin/ps"
+  chmod +x "$fakebin/ps"
+
+  PATH="$fakebin:$PATH" FM_PROC_ROOT_OVERRIDE="$dir/no-proc" \
+    FM_TEST_PS_ENTERED="$entered" FM_TEST_PS_RELEASE="$release" FM_TEST_REAL_PS="$real_ps" \
+    run_hook "$dir" true > "$guard_out" &
+  guard_pid=$!
+  for i in $(seq 1 200); do
+    [ -e "$entered" ] && break
+    sleep 0.01
+  done
+  if [ ! -e "$entered" ]; then
+    touch "$release"
+    kill "$guard_pid" "$owner_pid" 2>/dev/null || true
+    wait "$guard_pid" "$owner_pid" 2>/dev/null || true
+    fail "required-source proof never reached owner identity observation"
+  fi
+
+  mark_source_owner_terminal "$dir" "$id" "$acquired" &
+  transition_pid=$!
+  interleaved=0
+  for i in $(seq 1 100); do
+    if [ -e "$acquired" ]; then
+      interleaved=1
+      break
+    fi
+    sleep 0.01
+  done
+  touch "$release"
+  wait "$guard_pid"; guard_status=$?
+  wait "$transition_pid"; transition_status=$?
+  kill "$owner_pid" 2>/dev/null || true
+  wait "$owner_pid" 2>/dev/null || true
+  [ "$interleaved" -eq 0 ] \
+    || fail "terminal retirement completed inside the required-source proof boundary"
+  expect_code 0 "$guard_status" "an active source must pass before a serialized terminal retirement"
+  expect_code 0 "$transition_status" "the terminal transition must complete after the guard releases its proof boundary"
+  [ -z "$(cat "$guard_out")" ] || fail "serialized required-source proof produced output: $(cat "$guard_out")"
+  pass "fm-turnend-guard: serializes required-source proof with terminal retirement"
 }
 
 test_hook_non_claude_health_ignores_claude_budget_contention() {
@@ -1946,6 +2095,10 @@ test_hook_blocks_queue_only_home
 test_hook_blocks_when_dead_lock_has_fresh_beacon
 test_hook_silent_with_live_lock_and_fresh_beacon
 test_hook_requires_configured_source_capture_handled_and_live_owner
+test_hook_rejects_nonregular_required_source_config_without_hanging
+test_hook_rejects_nonregular_required_source_handled_marker
+test_hook_rejects_truncated_required_source_registration
+test_hook_serializes_required_source_proof_with_terminal_retirement
 test_hook_non_claude_health_ignores_claude_budget_contention
 test_hook_blocks_with_live_lock_and_stale_beacon
 test_hook_blocks_when_unhealthy_in_primary
