@@ -27,6 +27,32 @@ TMP_ROOT=$(fm_test_tmproot fm-public-followup)
 command -v jq >/dev/null 2>&1 || { echo "skip: jq not found"; exit 0; }
 command -v tasks-axi >/dev/null 2>&1 || { echo "skip: tasks-axi not found"; exit 0; }
 
+# --- instants -------------------------------------------------------------------
+#
+# Every expiry BOUNDARY in this suite is an offset from the moment the suite
+# runs. An absolute literal in a boundary is a time bomb: the day it goes past,
+# every case that needs the thread window still open flips from passing to
+# failing with no commit to blame, and moving the literal forward only re-arms
+# the same bomb on a later date. Offsets prove the behaviour instead - that the
+# window classifier and the refusals built on it work - and stay true on any
+# date. Dates that are only fixed INPUTS (when a mention arrived, when a record
+# was written) stay literal on purpose: nothing ever compares them to now.
+iso_utc() {  # <epoch-seconds> -> RFC3339 UTC. BSD date first, then GNU date.
+  date -u -r "$1" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+    || date -u -d "@$1" +%Y-%m-%dT%H:%M:%SZ
+}
+
+NOW_EPOCH=$(date -u +%s)
+# Both thread windows sit well beyond the 48-hour "closing" threshold, so a
+# freshly seeded loop is unambiguously open. They keep the two seeds distinct,
+# exactly as the two literals they replace were.
+SEED_WINDOW_EPOCH=$((NOW_EPOCH + 21 * 86400))
+SEED_WINDOW=$(iso_utc "$SEED_WINDOW_EPOCH")
+REPRO_WINDOW_EPOCH=$((NOW_EPOCH + 30 * 86400))
+REPRO_WINDOW=$(iso_utc "$REPRO_WINDOW_EPOCH")
+# The typed obligation outlives the thread window it belongs to, as before.
+OBLIGATION_EXPIRES=$(iso_utc $((NOW_EPOCH + 90 * 86400)))
+
 # A fakebin `curl` standing in for the relay. It logs every call so a test can
 # prove exactly how many public posts happened, and honours FAKE_FOLLOWUP_CODE so
 # a transport failure can be simulated.
@@ -112,13 +138,13 @@ tasks_in() {  # <home> <tasks-axi args...>
 # bound, and the private request context is retained.
 seed_commitment() {
   local home=$1 obligation=$2 request=$3 platform=$4 work_home=$5 work_id=$6
-  jq -n --arg r "$request" --arg p "$platform" \
+  jq -n --arg r "$request" --arg p "$platform" --arg w "$SEED_WINDOW" \
     '{request_id:$r, platform:$p,
       context_binding:{version:"ctx1", value:("ctx1_" + $r)},
       public_safe_summary:"fix worker placement when two spaces share a name",
       received_at:"2026-07-30T10:00:00Z",
-      followup_expires_at:"2026-08-06T10:00:00Z",
-      reservation_expires_at:"2026-08-06T10:00:00Z"}' > "$home/request.json"
+      followup_expires_at:$w,
+      reservation_expires_at:$w}' > "$home/request.json"
   jq -n '{type:"pr-merged", project:"firstmate",
           required_deliverables:["pr_url"], completion_policy:"all-required"}' \
     > "$home/expected.json"
@@ -128,7 +154,7 @@ seed_commitment() {
 
   tasks_in "$home" public-followup add "$obligation" \
     --request-context-file "$home/request.json" --purpose promised-final \
-    --expected-final-file "$home/expected.json" --expires-at 2026-10-01T00:00:00Z >/dev/null \
+    --expected-final-file "$home/expected.json" --expires-at "$OBLIGATION_EXPIRES" >/dev/null \
     || fail "could not create the public commitment"
   tasks_in "$home" public-followup bind-work "$obligation" \
     --relation-file "$home/relation.json" >/dev/null \
@@ -154,13 +180,13 @@ seed_commitment() {
 # The pi-rearm shape: a report-ready promised-final bound to a secondmate.
 seed_repro_commitment() {   # <home> <obligation> <request> <work-home> <work-id>
   local home=$1 obligation=$2 request=$3 work_home=$4 work_id=$5
-  jq -n --arg r "$request" \
+  jq -n --arg r "$request" --arg w "$REPRO_WINDOW" \
     '{request_id:$r, platform:"discord",
       context_binding:{version:"ctx1", value:("ctx1_" + $r)},
       public_safe_summary:"reproduce a Pi recovery notification loop",
       received_at:"2026-08-21T01:12:00Z",
-      followup_expires_at:"2026-08-28T01:12:00Z",
-      reservation_expires_at:"2026-08-28T01:12:00Z"}' > "$home/request.json"
+      followup_expires_at:$w,
+      reservation_expires_at:$w}' > "$home/request.json"
   jq -n '{type:"report-ready", project:"firstmate",
           required_deliverables:["report_path"], completion_policy:"all-required"}' \
     > "$home/expected.json"
@@ -169,7 +195,7 @@ seed_repro_commitment() {   # <home> <obligation> <request> <work-home> <work-id
       role:"fulfills", required:true, generation:1}' > "$home/relation.json"
   tasks_in "$home" public-followup add "$obligation" --request-context-file "$home/request.json" \
     --purpose promised-final --expected-final-file "$home/expected.json" \
-    --expires-at 2026-10-01T00:00:00Z >/dev/null || fail "add failed"
+    --expires-at "$OBLIGATION_EXPIRES" >/dev/null || fail "add failed"
   tasks_in "$home" public-followup bind-work "$obligation" --relation-file "$home/relation.json" >/dev/null \
     || fail "bind-work failed"
   FM_HOME="$home" bash -c \
@@ -224,7 +250,7 @@ expect_failure() {
 # non-ASCII characters, and control characters must never survive into the typed
 # event or the thread.
 test_outcome_text_is_bounded_without_corrupting_characters() {
-  local home event text long
+  local home event text long len
   home=$(make_home outcome-text)
   seed_commitment "$home" pf-text req-text discord main work-text
 
@@ -248,12 +274,18 @@ test_outcome_text_is_bounded_without_corrupting_characters() {
     --outcome-text "$long" >/dev/null \
     || fail "emit failed for an over-long outcome text"
   event=$(find "$home/state/public-followup/events" -name '*.json' | head -1)
-  text=$(jq -r '.public_safe_outcome' "$event") \
+  jq -e . "$event" >/dev/null \
     || fail "an over-long outcome must still produce valid JSON"
-  [ "${#text}" -le 600 ] || fail "the outcome text was not bounded, got ${#text} characters"
-  case "$text" in
-    *[!é]*) fail "codepoint bounding split a multi-byte character" ;;
-  esac
+  # Measure with jq, never with ${#text} or a shell glob: the shell counts and
+  # matches BYTES under a C or POSIX locale, so a byte-based assertion reports
+  # 1200 for a correctly bounded 600-codepoint string on any runner that does
+  # not export a UTF-8 locale. jq counts Unicode codepoints and matches with a
+  # UTF-8-aware regex regardless of the caller's locale.
+  len=$(jq -r '.public_safe_outcome | length' "$event") \
+    || fail "could not measure the bounded outcome text"
+  [ "$len" -le 600 ] || fail "the outcome text was not bounded, got $len codepoints"
+  jq -e '.public_safe_outcome | test("^é+$")' "$event" >/dev/null \
+    || fail "codepoint bounding split a multi-byte character"
   pass "outcome text is collapsed to one line, bounded by codepoint, and never corrupts characters"
 }
 
@@ -1566,11 +1598,11 @@ test_rechain_claims_delivered_source_once() {
   FAKE_CURL_LOG="$log" run_pf "$home" consume >/dev/null || fail "consume failed"
   FAKE_CURL_LOG="$log" run_pf "$home" deliver public-final-claim-a >/dev/null || fail "deliver failed"
 
-  FMX_NOW_OVERRIDE=1787539200 run_pf "$home" rechain public-final-claim-b \
+  FMX_NOW_OVERRIDE=$((REPRO_WINDOW_EPOCH - 4 * 86400)) run_pf "$home" rechain public-final-claim-b \
     --from public-final-claim-a --work-home main --work-id ship-claim-b \
     --expected pr-merged > "$home/rechain-b.out" 2>&1 &
   pid_b=$!
-  FMX_NOW_OVERRIDE=1787539200 run_pf "$home" rechain public-final-claim-c \
+  FMX_NOW_OVERRIDE=$((REPRO_WINDOW_EPOCH - 4 * 86400)) run_pf "$home" rechain public-final-claim-c \
     --from public-final-claim-a --work-home main --work-id ship-claim-c \
     --expected pr-merged > "$home/rechain-c.out" 2>&1 &
   pid_c=$!
@@ -1835,7 +1867,7 @@ test_rechain_refuses_unclaimed_existing_destination() {
   tasks_in "$home" public-followup add public-final-existing-b \
     --request-context-file "$home/request.json" --purpose promised-final \
     --expected-final-file "$home/collision-expected.json" \
-    --expires-at 2026-08-28T01:12:00Z >/dev/null || fail "could not seed destination collision"
+    --expires-at "$REPRO_WINDOW" >/dev/null || fail "could not seed destination collision"
 
   expect_failure "a first rechain must not adopt an unrelated existing obligation" \
     run_pf "$home" rechain public-final-existing-b --from public-final-existing-a \
@@ -2013,8 +2045,8 @@ test_expiry_escalation_uses_now_override() {
   local home out exp now_closing now_expired registry tmp
   home=$(make_home expiry-window)
   seed_repro_commitment "$home" pf-exp req-exp main work-exp
-  exp=$(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' '2026-08-28T01:12:00Z' +%s 2>/dev/null) \
-    || exp=$(date -u -d '2026-08-28T01:12:00Z' +%s)
+  # The boundary under test is whatever the seed wrote, never a literal moment.
+  exp=$REPRO_WINDOW_EPOCH
   now_closing=$((exp - 3600))
   now_expired=$((exp + 60))
   out=$(FMX_NOW_OVERRIDE="$now_expired" run_pf "$home" pending)
