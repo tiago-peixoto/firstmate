@@ -19,11 +19,16 @@
 # non-upstream count.
 #
 # --refresh fetches origin and upstream and verifies recorded GitHub upstream
-# review dispositions with gh-axi, asking whichever endpoint the recorded URL
-# names. Without it, the report is network-free and uses
-# local refs plus recorded dispositions. gh-axi's current API serializer is
-# parsed as one complete, untruncated scalar envelope rather than compared as
-# raw stdout.
+# review dispositions with the plain `gh` binary, asking whichever endpoint the
+# recorded URL names. Without it, the report is network-free and uses
+# local refs plus recorded dispositions. Startup runs this probe off the blocking
+# path with nobody present, so it stays inside the unattended read set: one REST
+# GET per recorded route through `gh api --jq`, never GraphQL and never a token
+# read. gh is a native binary and so is eligible for the captain's credential
+# vault, where a node-launched wrapper is not and would stall this probe on a
+# prompt no one is there to answer. Its selected scalar is accepted only as one
+# single-line value, so any other output refuses the refresh rather than being
+# compared as a disposition.
 # --check-upstream is the cheap self-update and startup probe: it reports whether upstream is already an ancestor of the fork
 # and never merges or changes a working-tree file; --refresh still updates the
 # remote-tracking refs it reads. --facts-only keeps rising divergence count
@@ -425,21 +430,27 @@ if [ "$REFRESH" -eq 1 ]; then
     case "$resource" in
       issues)
         # A GitHub issue has no merge state; it is open or closed.
-        live_output=$(gh-axi api "/repos/$owner/$repo_name/issues/$number" \
+        live_output=$(gh api "/repos/$owner/$repo_name/issues/$number" \
           --jq 'if .state == "open" then "open" elif .state_reason == "completed" then "merged" elif .state_reason == "not_planned" then "closed" elif .state_reason == "duplicate" then "duplicate" else "unknown" end' 2>/dev/null || true) ;;
       pull)
-        live_output=$(gh-axi api "/repos/$owner/$repo_name/pulls/$number" \
+        live_output=$(gh api "/repos/$owner/$repo_name/pulls/$number" \
           --jq 'if .merged_at != null then "merged" elif .state == "open" then "open" else "closed" end' 2>/dev/null || true) ;;
       *)
         add_error "manifest unit $id has unsupported upstream review resource $resource"
         continue ;;
     esac
-    live=$(printf '%s\n' "$live_output" | fm_fork_gh_axi_scalar || true)
+    # `gh api --jq` prints the selected scalar and nothing else, so anything
+    # multi-line is a serializer or transport surprise rather than a disposition.
+    # Blank it so the closed set below refuses it instead of comparing prose.
+    live=$live_output
+    case "$live" in
+      *$'\n'*) live= ;;
+    esac
     case "$live" in
       open|closed|merged) ;;
       duplicate) add_error "manifest unit $id upstream issue was closed as DUPLICATE; this is not a decline because review continues at the canonical issue, and its recorded route must be repointed at that canonical issue by a person"; continue ;;
       unknown) add_error "manifest unit $id upstream issue's closure REASON IS UNAVAILABLE, so the closure cannot be read as a decline"; continue ;;
-      *) add_error "manifest unit $id upstream review disposition could not be refreshed from gh-axi's scalar API envelope"; continue ;;
+      *) add_error "manifest unit $id upstream review disposition could not be refreshed as a single scalar from the GitHub API"; continue ;;
     esac
     if [ "$recorded" = rejected ]; then
       if [ "$live" = closed ]; then

@@ -15,7 +15,7 @@ The guarded topology uses two remotes and requires each remote's fetch and push 
 - Remote code roots consume fork main and never integrate official upstream independently.
 
 A fresh home initializes no-mistakes while the official repository is still `origin`, naming the personal fork with `--fork-url`.
-It then uses `gh-axi repo fork --remote` so GitHub CLI makes the fork `origin` and renames the official remote to `upstream`.
+It then uses `gh repo fork --remote` so GitHub CLI makes the fork `origin` and renames the official remote to `upstream`.
 Run the guarded `plan` and confirmed `apply` below afterwards; the already-renamed case validates the exact URLs, proves the no-mistakes registration, and establishes the branch and rerere policy without renaming again.
 This preserves the ordinary no-mistakes registration as the upstream-submission lane while giving the operating checkout the correct fork topology.
 
@@ -187,7 +187,7 @@ Run the local network-free report with:
 bin/fm-fork-status.sh
 ```
 
-Add `--refresh` to fetch both remotes and compare recorded GitHub upstream review dispositions through `gh-axi`.
+Add `--refresh` to fetch both remotes and compare recorded GitHub upstream review dispositions through the plain `gh` binary, one REST GET per recorded route.
 Refresh fails closed when live disposition evidence is incomplete or its response shape is unsupported.
 For issue routes, [Upstream review after local adoption](#upstream-review-after-local-adoption) owns the complete closure-reason mapping and required operator action.
 These live labels check manifest freshness only; `merged` does not retire a patch without the independent Git proof described below.
