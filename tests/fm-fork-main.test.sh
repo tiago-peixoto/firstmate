@@ -331,6 +331,35 @@ test_remote_topology_inheritance_refuses_unrelated_clones() {
   pass "fork remotes: standalone and linked homes converge without overwriting unrelated clones"
 }
 
+# A crewmate's source repo sits on its task branch, never on main, so a fresh
+# clone's origin/HEAD initially follows THAT branch. Inheritance must still
+# configure the real default branch: resolving the branch before adopting the
+# source's remote HEAD configured tracking for the task branch, then repointed
+# origin/HEAD at main, leaving main with no tracking remote. Every seed from a
+# task worktree then refused with "main tracks 'nothing', expected origin".
+test_remote_topology_inheritance_ignores_the_source_checkout_branch() {
+  local w source target
+  w=$(new_world inherit-branch)
+  source="$w/source"
+  target="$w/target"
+  git clone -q "$w/fork.git" "$source"
+  configure_fork_clone "$source" "$w"
+  git -C "$source" checkout -q -b fm/some-task
+  git clone -q "$source" "$target"
+  # Assert the divergence the case exists for, so it can never go vacuous.
+  [ "$(git -C "$target" symbolic-ref --short refs/remotes/origin/HEAD)" = origin/fm/some-task ] \
+    || fail "the fixture must start with the target following the source's task branch"
+  "$REMOTES" inherit "$source" "$target" >/dev/null \
+    || fail "inheritance must not depend on which branch the source has checked out"
+  [ "$(git -C "$target" symbolic-ref --short refs/remotes/origin/HEAD)" = origin/main ] \
+    || fail "inheritance must adopt the source's remote HEAD"
+  [ "$(git -C "$target" config --get branch.main.remote)" = origin ] \
+    || fail "the default branch must track origin after inheritance"
+  [ "$(git -C "$target" config --get branch.main.merge)" = refs/heads/main ] \
+    || fail "the default branch must merge from its own remote branch"
+  pass "fork remotes: inheritance configures the default branch whatever the source has checked out"
+}
+
 # Remote provisioning carries the primary-approved URLs to an official-origin
 # code root, prints its reversal, and makes both the root and persistent home
 # consume fork main without touching a real host.
@@ -1729,6 +1758,7 @@ test_upstream_route_accepts_an_issue_and_still_refuses_a_missing_one() {
 test_startup_upstream_probe_requires_validated_topology
 test_remote_topology_is_explicit_and_reversible
 test_remote_topology_inheritance_refuses_unrelated_clones
+test_remote_topology_inheritance_ignores_the_source_checkout_branch
 test_remote_provisioning_inherits_fork_topology
 test_brief_supports_explicit_upstream_start_ref
 test_self_update_stays_fast_forward_only

@@ -389,13 +389,19 @@ cmd_inherit() {
   set_single_remote_url "$target_real" upstream "$source_upstream"
   copy_remote_fetch "$source_real" "$target_real" origin
   copy_remote_fetch "$source_real" "$target_real" upstream
+  # Adopt the source's remote HEADs BEFORE resolving which branch to configure.
+  # A fresh clone's origin/HEAD follows whatever the source happened to have
+  # checked out, so resolving first configures tracking for that branch, and the
+  # copy below then repoints origin/HEAD at the real default - leaving the
+  # default branch with no tracking remote and failing validation. Cloning from
+  # a source on a task branch is the ordinary case, not an exotic one.
+  copy_remote_head "$source_real" "$target_real" origin
+  copy_remote_head "$source_real" "$target_real" upstream
   branch=$(default_branch "$target_real") || branch=$(default_branch "$source_real") || branch=main
   git -C "$target_real" config "branch.$branch.remote" origin
   git -C "$target_real" config "branch.$branch.merge" "refs/heads/$branch"
   git -C "$target_real" config rerere.enabled true
   git -C "$target_real" config rerere.autoupdate false
-  copy_remote_head "$source_real" "$target_real" origin
-  copy_remote_head "$source_real" "$target_real" upstream
   validate_topology "$target_real" "$(remote_url "$target_real" origin)" "$(remote_url "$target_real" upstream)"
   FM_FORK_INHERIT_COMMITTED=1
   rm -f "$backup_config"
