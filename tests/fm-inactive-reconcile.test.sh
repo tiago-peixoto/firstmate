@@ -143,7 +143,7 @@ test_main_direct_terminal_presentation_receipt() {
 test_local_secondmate_reports_terminal_child() {
   make_world local; bind_secondmate local; write_child "$MATE" child 'done: PR https://example.test/owner/repo/pull/1 checks green'
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
-  grep -Fq 'done [key=inactive-outcome-mate-child-done]:' "$MAIN/state/mate.status" \
+  grep -F '[key=inactive-outcome-mate-child-done]' "$MAIN/state/mate.status" | grep -q '^done ' \
     || fail "secondmate did not append its durable parent report"
   [ "$(outcome_count "$MATE" reported)" = 1 ] || fail "secondmate report receipt was not durable"
   pass "secondmate reports its own inactive terminal child"

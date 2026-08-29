@@ -66,6 +66,12 @@
 # declared-external-wait verb (FM_CLASSIFY_PAUSED_VERB, default "paused") from
 # "blocked:": pause for a known external wait expected to clear on its own,
 # blocked when firstmate must act.
+# Every scaffold's status append also carries the event's own UTC instant, as
+# the "[at=...]" tag bin/fm-classify-lib.sh's event-time section owns: the
+# appender is the only party that knows when its event happened, and a reader
+# stamping observation time instead would drop exactly the delay worth
+# measuring. A worker that omits or fumbles the tag still appends a readable
+# event, just one with no time.
 # Every scaffold also carries the steering-inbox receive-and-ack section:
 # process state/<id>.inbox/*.msg in order and acknowledge each by moving it to
 # handled/ (record, doorbell, and ladder owned by bin/fm-task-inbox-lib.sh).
@@ -292,7 +298,9 @@ $INBOX_SECTION
 # Escalation to main firstmate
 Handle routine work yourself.
 Report only true captain-relevant outcomes or a declared external wait by appending one line:
-   \`echo "{state}: {one short line}" >> $STATUS_FILE\`
+   \`echo "{state} [at=\$(date -u +%Y%m%dT%H%M%SZ)]: {one short line}" >> $STATUS_FILE\`
+   The \`[at=...]\` stamp is that event's own UTC time, and the only record of when it happened;
+   keep it before the colon, and let the shell fill it in at the moment you append.
 States: working, needs-decision, blocked, $PAUSED_VERB, done, failed.
 Use \`$PAUSED_VERB: {why}\` (distinct from \`blocked:\`) only when your domain is deliberately idling on a known external wait you expect to clear on its own; use \`blocked:\` when you are stuck and need firstmate to act.
 Use this only for material phase changes, a captain decision, a real blocker, a failure, or work ready for review.
@@ -300,7 +308,7 @@ This is also how you return the answer to a marked from-firstmate request above.
 A marked request requires one correlated answer after the work; it does not require a separate receipt or start acknowledgement.
 Never append \`working:\` merely to acknowledge receipt or announce that a marked request has started.
 When a routed-work phase has a supervisor-actionable material change worth reporting under the rule above, give that reported phase a stable key.
-If its first reportable event is \`working [key=<work-slug>]: {material phase}\`, use the same key on its later \`$PAUSED_VERB\`, \`done\`, \`failed\`, \`needs-decision\`, or \`blocked\` event so the earlier working phase is superseded.
+If its first reportable event is \`working [at=...] [key=<work-slug>]: {material phase}\` (both tags before the colon, in either order), use the same key on its later \`$PAUSED_VERB\`, \`done\`, \`failed\`, \`needs-decision\`, or \`blocked\` event so the earlier working phase is superseded.
 When a keyed phase ends without another reportable state, append \`resolved [key=<work-slug>]: {why it is no longer active}\`.
 \`resolved\` separately closes an escalated decision or blocker, and only a \`resolved\` line carrying that decision's exact key closes it: a later \`done\` or \`working\` event never does, even when the answer is what started that work.
 The main firstmate's answer normally writes that closing line at answer time; when a blocker or wait clears WITHOUT an answer from the main firstmate, append \`resolved: {how it cleared}\` yourself (keyed with \`[key=<slug>]\` if you opened it with one) as your domain resumes.
@@ -373,7 +381,9 @@ The report is the only thing that survives, so anything worth keeping must be in
    Select only the fields you need - \`gh pr view <url> --json state,headRefOid\`, \`gh api <path> --jq '<filter>'\` - rather than reading whole objects.
    Anything that runs unattended (a monitor, a poll, a background loop) is limited to recognized read commands and REST GETs: never \`gh api graphql\` and never \`gh auth token\` from such a path, because those prompt for approval with nobody present to answer.
 4. Report status by appending one line:
-   \`echo "{state}: {one short line}" >> $STATUS_FILE\`
+   \`echo "{state} [at=\$(date -u +%Y%m%dT%H%M%SZ)]: {one short line}" >> $STATUS_FILE\`
+   The \`[at=...]\` stamp is that event's own UTC time, and the only record of when it happened;
+   keep it before the colon, and let the shell fill it in at the moment you append.
    States: working, needs-decision, blocked, $PAUSED_VERB, done, failed.
    Each append wakes firstmate, so report sparingly: only phase changes a supervisor
    would act on and the needs-decision/blocked/paused/done/failed states. No step-by-step
@@ -515,7 +525,9 @@ $RULE1
    Select only the fields you need - \`gh pr view <url> --json state,headRefOid\`, \`gh api <path> --jq '<filter>'\` - rather than reading whole objects.
    Anything that runs unattended (a monitor, a poll, a background loop) is limited to recognized read commands and REST GETs: never \`gh api graphql\` and never \`gh auth token\` from such a path, because those prompt for approval with nobody present to answer.
 4. Report status by appending one line:
-   \`echo "{state}: {one short line}" >> $STATUS_FILE\`
+   \`echo "{state} [at=\$(date -u +%Y%m%dT%H%M%SZ)]: {one short line}" >> $STATUS_FILE\`
+   The \`[at=...]\` stamp is that event's own UTC time, and the only record of when it happened;
+   keep it before the colon, and let the shell fill it in at the moment you append.
    States: working, needs-decision, blocked, $PAUSED_VERB, done, failed.
    Each append wakes firstmate, so report sparingly: only phase changes a supervisor
    would act on (setup done, bug reproduced, fix implemented, validation passed) and the

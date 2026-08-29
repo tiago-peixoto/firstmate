@@ -562,7 +562,9 @@ fm_send_close_resolved_keys() {  # <answer-text>
   local note=$1 k line append_rc
   note=$(printf '%s' "$note" | tr '\n\r\t' '   ' | LC_ALL=C tr -d '\000-\037\177')
   for k in $RESOLVE_STATUS_KEYS; do
-    line="resolved [key=$k]: answered: $note"
+    # Stamped before the cap, so the display cut trims the note tail rather
+    # than the event time this close contributes to the answer latency.
+    line=$(status_stamp_line "resolved [key=$k]: answered: $note") || true
     fm_cap_line_var "$line"
     append_rc=0
     fm_wake_status_append_self_announced "$STATE" "$RESOLVE_STATUS_FILE" "$FM_LINE_CAP_LINE" || append_rc=$?

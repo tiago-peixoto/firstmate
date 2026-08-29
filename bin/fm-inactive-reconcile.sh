@@ -303,14 +303,28 @@ home_secondmate_id() {
   printf '%s\n' "$id"
 }
 
+# Append one routed report unless the same EVENT is already on the channel.
+# Deduped on the parsed verb, key and note (bin/fm-classify-lib.sh) rather than
+# on exact bytes, because the line carries the instant it was raised and two
+# reports of one outcome are never byte-identical. The report already on the
+# channel keeps the time it actually happened.
 append_once() { # <path> <line>
-  local path=$1 line=$2
+  local path=$1 line=$2 verb key note stamped r_verb r_key r_note
   [ ! -L "$path" ] || return 1
   mkdir -p "$(dirname "$path")" || return 1
-  if grep -Fqx -- "$line" "$path" 2>/dev/null; then
+  verb=$(status_line_verb "$line")
+  key=$(_fm_decision_key "$line") || key=$FM_CLASSIFY_EVENT_NONE
+  note=$(status_line_note "$line")
+  while IFS=$'\t' read -r _ _ r_verb r_key r_note; do
+    [ "$r_verb" = "$verb" ] || continue
+    [ "$r_key" = "$key" ] || continue
+    [ "$r_note" = "$note" ] || continue
     return 0
-  fi
-  printf '%s\n' "$line" >> "$path"
+  done <<EOF
+$(status_timed_events "$path")
+EOF
+  stamped=$(status_stamp_line "$line") || true
+  printf '%s\n' "$stamped" >> "$path"
 }
 
 report_to_parent() { # <self-id> <task> <state> <outcome-key> <fingerprint> <pr>

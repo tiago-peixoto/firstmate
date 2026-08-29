@@ -236,6 +236,8 @@ DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 PROJECTS="${FM_PROJECTS_OVERRIDE:-$FM_HOME/projects}"
 CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 SUB_HOME_MARKER=".fm-secondmate-home"
+# shellcheck source=bin/fm-classify-lib.sh
+. "$SCRIPT_DIR/fm-classify-lib.sh"
 # shellcheck source=bin/fm-ff-lib.sh
 . "$SCRIPT_DIR/fm-ff-lib.sh"
 # shellcheck source=bin/fm-wake-lib.sh
@@ -2205,7 +2207,9 @@ kimi_wait_for_delivery() {
 }
 
 kimi_spawn_fail() {  # <detail>
-  printf 'failed: %s\n' "$1" >> "$STATE/$ID.status"
+  local line
+  line=$(status_stamp_line "failed: $1") || true
+  printf '%s\n' "$line" >> "$STATE/$ID.status"
   echo "error: $1; inspect window $T" >&2
 }
 

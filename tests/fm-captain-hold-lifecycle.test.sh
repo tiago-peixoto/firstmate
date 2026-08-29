@@ -202,8 +202,24 @@ EOF
   open=$(bash -c '. "$1"; status_open_decisions "$2"' _ \
     "$ROOT/bin/fm-classify-lib.sh" "$home/state/$id.status")
   [ -z "$open" ] || fail "captain-held transfer did not close the live status decisions: $open"
-  grep -F 'captain-held [key=route]: tracked by sample-route-call' "$home/state/$id.status" >/dev/null \
-    || fail "the transfer line does not name the tracking inventory"
+  # Matched on the parsed event rather than fixed bytes: the transfer line also
+  # carries the "[at=...]" instant the handoff happened.
+  bash -c '
+    . "$1"
+    while IFS= read -r line || [ -n "$line" ]; do
+      [ "$(status_line_verb "$line")" = captain-held ] || continue
+      [ "$(_fm_decision_key "$line")" = route ] || continue
+      [ "$(status_line_note "$line")" = "tracked by sample-route-call" ] || continue
+      [ -n "$(status_line_at "$line")" ] || exit 2
+      exit 0
+    done < "$2"
+    exit 1
+  ' _ "$ROOT/bin/fm-classify-lib.sh" "$home/state/$id.status"
+  case $? in
+    0) : ;;
+    2) fail "the transfer line carries no event time: $(cat "$home/state/$id.status")" ;;
+    *) fail "the transfer line does not name the tracking inventory" ;;
+  esac
 
   before=$(shasum -a 256 "$home/data/backlog.md" | awk '{print $1}')
   json=$(run_bearings "$home") || fail "Bearings failed with a captain-held task"
@@ -946,7 +962,7 @@ test_chat_channel_feeds_the_same_keyed_answer_intake() {
     || fail "could not register the task-id chat call"
   run_captain "$home" complete "$id" "$id-decision-chat-choice" sample-chat-followup >/dev/null \
     || fail "completion failed for the chat calls"
-  grep -F 'captain-held [key=chat-choice]' "$home/state/$id.status" >/dev/null \
+  grep -F '[key=chat-choice]' "$home/state/$id.status" | grep -q '^captain-held ' \
     || fail "precondition: completion did not transfer the decision to its durable owner"
 
   fb="$home/fakebin"

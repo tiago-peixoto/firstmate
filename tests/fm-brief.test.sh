@@ -543,8 +543,8 @@ test_secondmate_no_projects_charter() {
     "project-less charter operating model lost the pooled-worktree note"
   assert_no_grep "The projects above are local clones" "$brief" \
     "project-less charter kept the with-projects operating-model line"
-  assert_grep 'working [key=<work-slug>]' "$brief" \
-    "secondmate charter did not key material routed-work phases"
+  assert_grep 'working [at=...] [key=<work-slug>]' "$brief" \
+    "secondmate charter did not key and time material routed-work phases"
   assert_grep 'resolved [key=<work-slug>]' "$brief" \
     "secondmate charter did not close a quietly ended routed-work phase"
   assert_grep 'use the same key on its later' "$brief" \
@@ -588,8 +588,8 @@ test_secondmate_marked_request_reporting_contract() {
     "secondmate charter retained the unconditional working opener"
   assert_grep 'When a routed-work phase has a supervisor-actionable material change worth reporting under the rule above' "$brief" \
     "secondmate charter did not limit keyed phases to reportable material changes"
-  assert_grep "If its first reportable event is \`working [key=<work-slug>]: {material phase}\`" "$brief" \
-    "secondmate charter lost keyed working syntax for a reportable material phase"
+  assert_grep "If its first reportable event is \`working [at=...] [key=<work-slug>]: {material phase}\`" "$brief" \
+    "secondmate charter lost keyed, timed working syntax for a reportable material phase"
   assert_grep "use the same key on its later \`paused\`, \`done\`, \`failed\`, \`needs-decision\`, or \`blocked\` event" "$brief" \
     "secondmate charter lost same-key closure for a reportable material phase"
   assert_grep 'resolved [key=<work-slug>]' "$brief" \
