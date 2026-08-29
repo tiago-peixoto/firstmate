@@ -370,6 +370,10 @@
       "audience": "maintainer-verification"
     },
     {
+      "path": "docs/verification/pr-target-guard.md",
+      "audience": "maintainer-verification"
+    },
+    {
       "path": "docs/verification/process-event-sources.md",
       "audience": "maintainer-verification"
     },

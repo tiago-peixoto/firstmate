@@ -2,7 +2,7 @@
 name: bootstrap-diagnostics
 description: >-
   Agent-only handling playbook for session-start bootstrap diagnostics.
-  Use whenever the session-start digest's bootstrap or network-checks section prints an actionable diagnostic line - MISSING, MISSING_MANUAL, BACKEND_INVALID, NEEDS_GH_AUTH, TANGLE, STARTUP_MEMORY_BUDGET, CREW_DISPATCH invalid, FLEET_SYNC, NETWORK_CHECKS, PR_CHECK_MIGRATION, SECONDMATE_SYNC, SECONDMATE_LIVENESS, SECONDMATE_HANDOFF, NUDGE_SECONDMATES, or FMX - or when a standalone bin/fm-bootstrap.sh or bin/fm-startup-network.sh run prints one of those lines.
+  Use whenever the session-start digest's bootstrap or network-checks section prints an actionable diagnostic line - MISSING, MISSING_MANUAL, BACKEND_INVALID, NEEDS_GH_AUTH, TANGLE, STARTUP_MEMORY_BUDGET, CREW_DISPATCH invalid, FLEET_SYNC, NETWORK_CHECKS, PR_CHECK_MIGRATION, PR_TARGET_GUARD, SECONDMATE_SYNC, SECONDMATE_LIVENESS, SECONDMATE_HANDOFF, NUDGE_SECONDMATES, or FMX - or when a standalone bin/fm-bootstrap.sh or bin/fm-startup-network.sh run prints one of those lines.
   A silent bootstrap section, or a BOOTSTRAP_INFO fact, means no skill load.
 user-invocable: false
 metadata:
@@ -50,6 +50,15 @@ When any diagnostic needs captain attention, report the plain consequence and re
   Resume the emitted supervision protocol after finishing the session-start wake handling.
 - Any other `PR_CHECK_MIGRATION:` refusal means migration did not complete safely, whether because watcher exclusion, a private path, a diagnostic, quarantine validation, or marker publication could not be proved.
   Keep each affected poll unavailable, inspect the named private state path, and do not bypass the migration or execute a quarantined artifact; a completed safe-scan marker allows unrelated authenticated polls to continue while private repair remains pending.
+- `PR_TARGET_GUARD: validation cannot run here - <reason>` - the guard is in place and is refusing, because the repository the pipeline would open a pull request against is not the repository this home pushes to (or one of the two could not be read at all).
+  This is a blocked pipeline, not a warning: no validation run can start in this code root until it is settled, which is exactly the point - a wrong-target pull request cannot be un-sent.
+  Do not reach for `--no-verify` or uninstall the guard.
+  Read the current verdict with `bin/fm-nm-pr-target.sh check`, then correct the registered pull-request base so it names the repository this home pushes to; `docs/fork-main.md` owns the fork topology this interacts with.
+- `PR_TARGET_GUARD: the pull-request target guard is not installed in <root>; validation runs are unguarded until it is` - the refusal is absent from that code root, so nothing would stop a run from opening a pull request against the wrong repository.
+  A locked session installs it automatically on the next session start; a detect-only or lock-refused session cannot, and reports it instead.
+  If it persists after a locked session start, run `bin/fm-nm-pr-target.sh install` and read the reason it gives.
+- `PR_TARGET_GUARD: cannot install the pull-request target guard: <reason>` - installation itself failed.
+  The common cause is a `pre-push` hook this guard did not write already occupying the slot, which it refuses to overwrite; reconcile that hook by hand so both concerns survive, rather than deleting either.
 - `SECONDMATE_SYNC: secondmate <id>: skipped: <reason>` - secondmate convergence left a live home on its existing checkout because the home was dirty, diverged, unsafe, on the wrong branch, missing its placement-specific target commit, unreachable, or otherwise not fast-forwardable, or because inherited local-material propagation failed; bootstrap continued, but inspect the reason because the secondmate's tracked instructions, inherited settings, or shared captain preferences may be stale after a primary update.
 - `SECONDMATE_LIVENESS: secondmate <id>: skipped: <reason>|respawn failed after <cause>: <reason>` - the session-start liveness sweep could not guarantee that the registered secondmate is running a real agent process.
   Investigate the reason because that secondmate is not guaranteed live.

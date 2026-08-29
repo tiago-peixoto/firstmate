@@ -52,6 +52,30 @@ Provisioning snapshots the ordinary registration's upstream and fork facts befor
 It refuses an existing mismatch rather than refreshing either registration.
 A no-mistakes error stops the operation and never restarts, updates, or reconfigures the shared service.
 
+### The pull-request target is enforced, not assumed
+
+Holding two targets is what makes this topology useful, and it is also what makes it dangerous.
+The ordinary registration's own remote is the pull-request base while `--fork-url` only supplies the branch push URL, so a registration whose base is official upstream will open its pull requests there no matter where the work was meant to go.
+On 2026-08-28 that put two large pull requests on official upstream from work that was never meant to leave the fork.
+
+The rule that closes it is that the pipeline may open a pull request only against the repository this home already pushes to.
+`bin/fm-nm-pr-target.sh` enforces it as a pre-push refusal, so a run whose registered base is not this home's push target cannot start at all - the review, push, and pull-request steps are never reached.
+The refusal is strict: an unreadable push target, an unreadable registration, or a URL it cannot parse all refuse rather than fall back to any default.
+Ordinary pushes are untouched; only a push entering the pipeline is checked.
+
+```sh
+bin/fm-nm-pr-target.sh check          # read-only verdict for this code root
+bin/fm-nm-pr-target.sh install        # install or repair the refusal
+```
+
+Session start installs and repairs it, and reports a `PR_TARGET_GUARD:` line when the guard is missing or the pipeline is currently blocked; the `bootstrap-diagnostics` skill owns handling those lines.
+One install covers a code root's primary checkout and every linked task worktree, because they share one hook directory.
+A separate clone needs its own install: the private integration clone above is guarded by its own, and passes by construction because its registration names the fork it pushes to.
+
+Two limits are worth knowing rather than discovering.
+`git push --no-verify` bypasses Git hooks by design, which makes bypassing this a deliberate operator act rather than something the pipeline can do on its own.
+And the refusal gates pipeline ENTRY, so a rerun of a head the gate already holds does not pass through it again - that head only reached the gate by satisfying the guard at the time, but a registration changed afterwards would not be re-checked.
+
 ## One canonical topic per divergence
 
 Each carried divergence has one canonical branch named `fm/divergence/<id>`.

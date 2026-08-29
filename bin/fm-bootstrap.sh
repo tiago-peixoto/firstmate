@@ -12,6 +12,7 @@
 #                 "CREW_DISPATCH: invalid config/crew-dispatch.json - <reason>",
 #                 "FLEET_SYNC: <repo>: skipped|recovered|STUCK: <detail>",
 #                 "PR_CHECK_MIGRATION: <private remediation>",
+#                 "PR_TARGET_GUARD: <remediation>",
 #                 "TANGLE: <remediation>",
 #                 "SECONDMATE_SYNC: secondmate <id>: skipped: <reason>",
 #                 "NUDGE_SECONDMATES: secondmate <id>: send failed: <reason>",
@@ -169,6 +170,8 @@ DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 . "$SCRIPT_DIR/fm-secondmate-nudge-lib.sh"
 # shellcheck source=bin/fm-startup-memory-budget-lib.sh disable=SC1091
 . "$SCRIPT_DIR/fm-startup-memory-budget-lib.sh"
+# shellcheck source=bin/fm-nm-pr-target-lib.sh disable=SC1091
+. "$SCRIPT_DIR/fm-nm-pr-target-lib.sh"
 # shellcheck source=bin/fm-x-lib.sh disable=SC1091
 . "$SCRIPT_DIR/fm-x-lib.sh"
 # shellcheck source=bin/fm-backend.sh disable=SC1091
@@ -1240,6 +1243,49 @@ startup_memory_budget_setup() {
   fi
 }
 
+# The pipeline may only open a pull request against the repository this home
+# pushes to. bin/fm-nm-pr-target-lib.sh owns that rule and why it is enforced as
+# a pre-push refusal; bootstrap's only job is to make sure the refusal is
+# actually installed in this code root, and to say so when it cannot be.
+pr_target_guard_setup() {
+  local out
+  # A code root that is not a Git worktree has no pipeline entry point to guard:
+  # there is no push that could start a run and therefore nothing to refuse.
+  git -C "$FM_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+  if out=$("$SCRIPT_DIR/fm-nm-pr-target.sh" install "$FM_ROOT" 2>&1); then
+    case "$out" in
+      *installed*|*repaired*)
+        [ "${FM_BOOTSTRAP_VERBOSE_FACTS:-0}" = 1 ] && echo "BOOTSTRAP_INFO: $out" ;;
+    esac
+    return 0
+  fi
+  echo "PR_TARGET_GUARD: cannot install the pull-request target guard: $out"
+}
+
+# Read-only companion, safe in a detect-only or lock-refused session. Reports the
+# two states an operator has to act on: the guard is not in place, or it is in
+# place and the pipeline is currently blocked because the registered
+# pull-request base is not this home's push target. A healthy home is silent.
+pr_target_guard_report() {
+  local out
+  git -C "$FM_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+  # Report only where a pipeline is actually registered. A code root with no gate
+  # remote runs no validation, so it has no target to be wrong and nothing an
+  # operator could act on. This scopes the REPORT only: the push-time refusal
+  # still applies to any gate push, wherever it comes from.
+  fm_nm_target_has_gate_remote "$FM_ROOT" || return 0
+  if ! "$SCRIPT_DIR/fm-nm-pr-target.sh" installed "$FM_ROOT" >/dev/null 2>&1; then
+    echo "PR_TARGET_GUARD: the pull-request target guard is not installed in $FM_ROOT; validation runs are unguarded until it is"
+  fi
+  # An absent no-mistakes is already reported by tool detection as MISSING, and
+  # the push-time refusal covers it regardless of what bootstrap prints, so do
+  # not report one cause on two lines.
+  command -v no-mistakes >/dev/null 2>&1 || return 0
+  if ! out=$("$SCRIPT_DIR/fm-nm-pr-target.sh" check "$FM_ROOT" 2>&1); then
+    echo "PR_TARGET_GUARD: validation cannot run here - ${out#pr-target: REFUSED }"
+  fi
+}
+
 if [ "${1:-}" = "install" ]; then
   shift
   [ $# -gt 0 ] || { echo "usage: fm-bootstrap.sh install <tool>..." >&2; exit 1; }
@@ -1264,6 +1310,7 @@ fi
 if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ] && local_phase; then
   "$SCRIPT_DIR/fm-pr-check-migrate.sh" || true
   startup_memory_budget_setup
+  pr_target_guard_setup
 fi
 
 # Local detection: presence, version floors, and configuration. Nothing here
@@ -1327,6 +1374,7 @@ detect_local_config() {
     echo "MISSING_MANUAL: cursor-agent (instructions: $(manual_install_url cursor-agent))"
   fi
   crew_dispatch_validate
+  pr_target_guard_report
   if [ "${FM_BOOTSTRAP_VERBOSE_FACTS:-0}" = 1 ] \
     && ! fm_backlog_backend_manual "$CONFIG" && fm_tasks_axi_compatible; then
     echo "BOOTSTRAP_INFO: tasks-axi available"
