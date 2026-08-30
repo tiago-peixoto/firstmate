@@ -35,6 +35,7 @@ STATUS="$ROOT/bin/fm-fork-status.sh"
 MERGE="$ROOT/bin/fm-fork-merge.sh"
 TOPIC="$ROOT/bin/fm-fork-topic.sh"
 INTEGRATION="$ROOT/bin/fm-fork-integration.sh"
+TARGET_GUARD="$ROOT/bin/fm-nm-pr-target.sh"
 UPDATE="$ROOT/bin/fm-update.sh"
 REMOTE_PROVISION="$ROOT/bin/fm-remote-home-provision.sh"
 
@@ -329,6 +330,35 @@ test_remote_topology_inheritance_refuses_unrelated_clones() {
   [ "$(git -C "$w/rollback-target" config --local --list | sort)" = "$before" ] \
     || fail "failed inheritance left partial target Git configuration"
   pass "fork remotes: standalone and linked homes converge without overwriting unrelated clones"
+}
+
+# A crewmate's source repo sits on its task branch, never on main, so a fresh
+# clone's origin/HEAD initially follows THAT branch. Inheritance must still
+# configure the real default branch: resolving the branch before adopting the
+# source's remote HEAD configured tracking for the task branch, then repointed
+# origin/HEAD at main, leaving main with no tracking remote. Every seed from a
+# task worktree then refused with "main tracks 'nothing', expected origin".
+test_remote_topology_inheritance_ignores_the_source_checkout_branch() {
+  local w source target
+  w=$(new_world inherit-branch)
+  source="$w/source"
+  target="$w/target"
+  git clone -q "$w/fork.git" "$source"
+  configure_fork_clone "$source" "$w"
+  git -C "$source" checkout -q -b fm/some-task
+  git clone -q "$source" "$target"
+  # Assert the divergence the case exists for, so it can never go vacuous.
+  [ "$(git -C "$target" symbolic-ref --short refs/remotes/origin/HEAD)" = origin/fm/some-task ] \
+    || fail "the fixture must start with the target following the source's task branch"
+  "$REMOTES" inherit "$source" "$target" >/dev/null \
+    || fail "inheritance must not depend on which branch the source has checked out"
+  [ "$(git -C "$target" symbolic-ref --short refs/remotes/origin/HEAD)" = origin/main ] \
+    || fail "inheritance must adopt the source's remote HEAD"
+  [ "$(git -C "$target" config --get branch.main.remote)" = origin ] \
+    || fail "the default branch must track origin after inheritance"
+  [ "$(git -C "$target" config --get branch.main.merge)" = refs/heads/main ] \
+    || fail "the default branch must merge from its own remote branch"
+  pass "fork remotes: inheritance configures the default branch whatever the source has checked out"
 }
 
 # Remote provisioning carries the primary-approved URLs to an official-origin
@@ -787,9 +817,11 @@ test_manifest_class_disposition_pairs_are_enforced() {
   pass "fork manifest: supported class/disposition pairs are enforced at production and health boundaries"
 }
 
-# gh-axi 0.1.29 wraps a selected scalar in an api_response TOON envelope.
-# Refresh parses that current real shape and rejects the old fake-scalar assumption.
-test_refresh_parses_current_gh_axi_scalar_envelope() {
+# Startup runs --refresh with nobody present, so it reads GitHub through the plain
+# `gh` binary, whose `--jq` prints the selected scalar and nothing else. Refresh
+# accepts only that single-line value, and any other shape must refuse rather than
+# be compared as an upstream review disposition.
+test_refresh_reads_a_single_scalar_from_plain_gh() {
   local w repo fakebin out log tmp rc
   w=$(new_world refresh-envelope)
   add_topic_and_merge "$w" repo-issues repo-issues.txt current
@@ -819,7 +851,12 @@ test_refresh_parses_current_gh_axi_scalar_envelope() {
   fakebin="$w/fakebin"
   log="$w/gh-api-paths"
   mkdir -p "$fakebin"
-  cat > "$fakebin/gh-axi" <<'SH'
+  # gh is the only GitHub tool this fakebin provides, mirroring the real machine,
+  # so a read that reached for any other launcher would die as command-not-found.
+  # Plain `gh api --jq` behaviour: the selected scalar on one line, nothing else.
+  # /repos/acme/repo/issues/7 additionally answers with a multi-line serializer
+  # envelope, the shape refresh must refuse instead of comparing as a disposition.
+  cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 : "${FAKE_GH_LOG:?}"
 printf '%s\n' "${2:-}" >> "$FAKE_GH_LOG"
@@ -833,15 +870,21 @@ case "${2:-}" in
   *) exit 1 ;;
 esac
 body=$(printf '%s\n' "$payload" | jq -r "${4:?}") || exit 1
-printf '%s\n' 'api_response:' "  body: $body" '  truncated: false'
+if [ "${2:-}" = /repos/acme/repo/issues/7 ]; then
+  printf '%s\n' 'api_response:' "  body: $body" '  truncated: false'
+  exit 0
+fi
+printf '%s\n' "$body"
 SH
-  chmod +x "$fakebin/gh-axi"
+  chmod +x "$fakebin/gh"
   set +e
   out=$(PATH="$fakebin:$PATH" FAKE_GH_LOG="$log" "$STATUS" --repo "$repo" --refresh 2>&1); rc=$?
   set -e
   [ "$rc" -ne 0 ] || fail "refresh accepted an issue closed as completed or with an unavailable closure reason"
   assert_not_contains "$out" 'records open but its live upstream review is api_response' \
-    "refresh compared the serializer envelope as the live disposition"
+    "refresh compared a multi-line serializer envelope as the live disposition"
+  assert_contains "$out" 'manifest unit genuine-issue upstream review disposition could not be refreshed as a single scalar from the GitHub API' \
+    "refresh accepted a multi-line response instead of refusing it"
   grep -Fxq -- '/repos/acme/issues/pulls/7' "$log" \
     || fail "a repository named issues routed a pull request through the issue endpoint"
   grep -Fxq -- '/repos/issues/repo/pulls/7' "$log" \
@@ -859,8 +902,8 @@ SH
   assert_contains "$out" 'manifest unit duplicate-pending-issue upstream issue was closed as DUPLICATE; this is not a decline because review continues at the canonical issue, and its recorded route must be repointed at that canonical issue by a person' \
     "an issue closed as duplicate left a pending route looking healthy"
   [ "$(wc -l < "$log" | tr -d ' ')" -eq 8 ] || fail "refresh queried an unexpected number of API paths"
-  assert_contains "$out" 'errors=4' "refresh did not isolate the four invalid issue closure outcomes"
-  pass "fork health refresh parses envelopes, routes structurally, and distinguishes issue closure reasons"
+  assert_contains "$out" 'errors=5' "refresh did not isolate the four invalid issue closure outcomes plus the refused non-scalar response"
+  pass "fork health refresh reads one plain-gh scalar, routes structurally, and distinguishes issue closure reasons"
 }
 
 # Two canonical topics integrate as separate merge units, and discarding one
@@ -1522,6 +1565,7 @@ test_upstream_revert_before_sync_keeps_divergence_visible() {
 # upstream/fork registration. A mismatch stops before clone creation.
 test_no_mistakes_registration_isolation_is_proven() {
   local w primary primary_real home fakebin log before after out bad_home fail_home rc
+  local source source_expected worker worker_status primary_status gate hook
   w=$(new_world registration)
   primary="$w/primary"
   home="$w/home"
@@ -1535,7 +1579,12 @@ test_no_mistakes_registration_isolation_is_proven() {
 #!/usr/bin/env bash
 case "${1:-}" in
   status)
-    here=$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PWD")
+    common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+    if [ "$(basename "$common")" = .git ]; then
+      here=$(dirname "$common")
+    else
+      here=$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PWD")
+    fi
     here=$(cd "$here" && pwd -P)
     if [ "$here" = "${FAKE_PRIMARY:?}" ]; then
       if [ -f "$FAKE_PRIMARY/.fake-registration-mutated" ]; then
@@ -1544,8 +1593,8 @@ case "${1:-}" in
         printf 'remote: %s\n' "${FAKE_UPSTREAM:?}"
       fi
       printf 'fork: %s\n' "${FAKE_FORK:?}"
-    elif [ -f .fake-nm-init ]; then
-      printf 'remote: %s\n' "$(git remote get-url origin)"
+    elif [ -f "$here/.fake-nm-init" ]; then
+      printf 'remote: %s\n' "$(git -C "$here" remote get-url origin)"
       printf 'fork: \n'
     else
       exit 1
@@ -1558,6 +1607,7 @@ case "${1:-}" in
       exit 9
     fi
     : > .fake-nm-init
+    git init -q --bare "$PWD/.fake-gate.git"
     git remote add no-mistakes "$PWD/.fake-gate.git"
     ;;
   *) exit 2 ;;
@@ -1574,6 +1624,50 @@ SH
   after=$(git -C "$primary" config --list | sort)
   [ "$before" = "$after" ] || fail "integration provisioning changed ordinary Git registration config"
   [ "$(wc -l < "$log" | tr -d ' ')" -eq 1 ] || fail "integration registration initialized more than once"
+  source=$(PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
+    FAKE_FORK="$w/fork.git" FAKE_LOG="$log" FM_ROOT_OVERRIDE="$primary" FM_HOME="$home" \
+    FM_FORK_INTEGRATION_DIR="$home/data/fork-integration" \
+    "$INTEGRATION" worker-source "$w/fork.git" "$w/upstream.git" 2>&1) \
+    || fail "fork worker source did not resolve: $source"
+  source_expected=$(cd "$home/data/fork-integration" && pwd -P)
+  [ "$source" = "$source_expected" ] \
+    || fail "fork worker source resolved '$source', expected '$source_expected'"
+  "$TARGET_GUARD" installed "$source" >/dev/null \
+    || fail "integration provisioning did not install the pull-request target guard"
+
+  worker="$w/fork-worker"
+  git -C "$source" worktree add --quiet --detach "$worker" HEAD
+  git -C "$worker" switch -qc fm/fork-worker
+  printf 'fork worker\n' > "$worker/fork-worker.txt"
+  git -C "$worker" add fork-worker.txt
+  git -C "$worker" commit -qm 'Fork worker change'
+
+  worker_status=$(cd "$worker" && PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" \
+    FAKE_UPSTREAM="$w/upstream.git" FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    no-mistakes status 2>&1) \
+    || fail "disposable fork worker could not resolve the fork registration: $worker_status"
+  assert_contains "$worker_status" "remote: $w/fork.git" \
+    "disposable fork worker resolved a registration other than the fork"
+  PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
+    FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    "$TARGET_GUARD" check "$worker" >/dev/null \
+    || fail "target guard refused a disposable worker resolved through the fork registration"
+  PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
+    FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    git -C "$worker" push --quiet no-mistakes HEAD:refs/heads/fm/fork-worker \
+    || fail "target guard refused gate entry from a disposable fork worker"
+  gate=$(git -C "$source" remote get-url no-mistakes)
+  git -C "$gate" rev-parse --verify --quiet refs/heads/fm/fork-worker >/dev/null \
+    || fail "fork registration gate did not receive the disposable worker branch"
+
+  primary_status=$(cd "$primary" && PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" \
+    FAKE_UPSTREAM="$w/upstream.git" FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    no-mistakes status 2>&1) \
+    || fail "ordinary registration became unreadable after fork worker entry: $primary_status"
+  assert_contains "$primary_status" "remote: $w/upstream.git" \
+    "fork worker entry changed the ordinary registration away from official upstream"
+  hook=$(git -C "$source" rev-parse --path-format=absolute --git-path hooks/pre-push)
+  [ -x "$hook" ] || fail "fork worker source lost its executable target guard"
   PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
     FAKE_FORK="$w/fork.git" FAKE_LOG="$log" FM_ROOT_OVERRIDE="$primary" FM_HOME="$home" \
     FM_FORK_INTEGRATION_DIR="$home/data/fork-integration" \
@@ -1610,7 +1704,7 @@ SH
   [ "$(grep -c '/fail-home/data/fork-integration$' "$log")" -eq 1 ] \
     || fail "failed integration init was retried"
   rm -f "$primary/.fake-registration-mutated"
-  pass "fork integration: isolated no-mistakes registration is proven without reconfiguring the live one"
+  pass "fork integration: disposable workers reach the isolated registration without changing the ordinary lane"
 }
 
 # Stating a problem upstream as an issue is a real upstream route, so a
@@ -1716,6 +1810,7 @@ test_upstream_route_accepts_an_issue_and_still_refuses_a_missing_one() {
 test_startup_upstream_probe_requires_validated_topology
 test_remote_topology_is_explicit_and_reversible
 test_remote_topology_inheritance_refuses_unrelated_clones
+test_remote_topology_inheritance_ignores_the_source_checkout_branch
 test_remote_provisioning_inherits_fork_topology
 test_brief_supports_explicit_upstream_start_ref
 test_self_update_stays_fast_forward_only
@@ -1725,7 +1820,7 @@ test_health_uses_git_cherry_equivalence_and_exposes_drift
 test_health_requires_declared_paths_to_cover_the_canonical_patch
 test_health_attributes_pipeline_fixes_and_supports_disposition_transition
 test_manifest_class_disposition_pairs_are_enforced
-test_refresh_parses_current_gh_axi_scalar_envelope
+test_refresh_reads_a_single_scalar_from_plain_gh
 test_upstream_route_accepts_an_issue_and_still_refuses_a_missing_one
 test_topics_are_independently_revertible_units
 test_topic_integration_conflict_has_receipt_bound_continuation

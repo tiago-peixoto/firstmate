@@ -273,8 +273,14 @@ test_send_refuses_and_admits() {
   expect_code 0 "$rc" "send: a normal session must still send"
   assert_not_contains "$out" "$ENV_MSG" "send: normal send must not print the gate refusal"
   assert_not_contains "$out" "$PATH_MSG" "send: normal send must not print the backstop refusal"
-  assert_contains "$(cat "$log")" "target=sess:fm-lane-ok literal=1 arg=hello captain" "send: normal send should type the text"
-  pass "fm-send: refuses on marker and gate-worktree backstop; a normal steer is unaffected"
+  [ "$(bash -c '. "$1"; fm_task_inbox_body "$2"' _ "$ROOT/bin/fm-task-inbox-lib.sh" \
+      "$home/state/lane-ok.inbox/001.msg")" = "hello captain" ] \
+    || fail "send: normal steer was not durably enqueued"
+  assert_not_contains "$(cat "$log")" "literal=1 arg=hello captain" \
+    "send: normal steer payload must not be typed"
+  assert_contains "$(cat "$log")" "target=sess:fm-lane-ok literal=1 arg=Firstmate instruction waiting" \
+    "send: normal steer should ring the durable inbox doorbell"
+  pass "fm-send: refuses on marker and gate-worktree backstop; a normal steer uses the inbox"
 }
 
 # --- fm-teardown ------------------------------------------------------------
@@ -290,22 +296,15 @@ make_teardown_case() {
     printf '#!/usr/bin/env bash\nexit 0\n' > "$fakebin/$t"
     chmod +x "$fakebin/$t"
   done
-  cat > "$fakebin/gh-axi" <<'SH'
-#!/usr/bin/env bash
-case "${1:-} ${2:-}" in
-  "pr list") printf '%s\n' "count: 0 (showing first 0)" "pull_requests[]: []"; exit 0 ;;
-  "pr view") echo "error: pull request not found" >&2; exit 1 ;;
-esac
-exit 0
-SH
   cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 case "${1:-} ${2:-}" in
+  "pr list") printf '%s\n' ""; exit 0 ;;
   "pr view") echo "error: pull request not found" >&2; exit 1 ;;
 esac
 exit 0
 SH
-  chmod +x "$fakebin/gh-axi" "$fakebin/gh"
+  chmod +x "$fakebin/gh"
   git init -q --bare "$case_dir/origin.git"
   git -C "$case_dir/origin.git" symbolic-ref HEAD refs/heads/main
   git clone -q "$case_dir/origin.git" "$case_dir/_seed" 2>/dev/null

@@ -74,15 +74,20 @@ if [ "$DOC_MODE" = 1 ]; then
   shift
   NOTE=$*
   if [ -n "$NOTE" ]; then
-    printf '%s [%s]: %s (%s via-helper)\n' "$VERB" "$token" "$NOTE" "$DOC_PATH" >> "$STATUS_FILE"
+    LINE=$(printf '%s [%s]: %s (%s via-helper)' "$VERB" "$token" "$NOTE" "$DOC_PATH")
   else
-    printf '%s [%s]: %s (via-helper)\n' "$VERB" "$token" "$DOC_PATH" >> "$STATUS_FILE"
+    LINE=$(printf '%s [%s]: %s (via-helper)' "$VERB" "$token" "$DOC_PATH")
   fi
 else
   NOTE=$*
   if [ -n "$NOTE" ]; then
-    printf '%s [%s]: %s (via-helper)\n' "$VERB" "$token" "$NOTE" >> "$STATUS_FILE"
+    LINE=$(printf '%s [%s]: %s (via-helper)' "$VERB" "$token" "$NOTE")
   else
-    printf '%s [%s]: (via-helper)\n' "$VERB" "$token" >> "$STATUS_FILE"
+    LINE=$(printf '%s [%s]: (via-helper)' "$VERB" "$token")
   fi
 fi
+# The reporting secondmate is the only one who knows when this event happened;
+# the parent home may not read the routed channel for some time, and that gap
+# is latency to measure rather than to lose (bin/fm-classify-lib.sh event time).
+LINE=$(status_stamp_line "$LINE") || true
+printf '%s\n' "$LINE" >> "$STATUS_FILE"

@@ -18,7 +18,7 @@
 #
 # Registered modes:
 #   no-mistakes            full pipeline -> PR -> configured merge authority (default)
-#   direct-PR              push + PR via gh-axi, no pipeline
+#   direct-PR              push + PR via the plain gh binary, no pipeline
 #   local-only             local branch, no remote/PR, guarded local merge
 #   no-mistakes-prod-only  a conditional policy, not a task mode: firstmate
 #                          classifies each task's surface at intake (the
@@ -26,9 +26,8 @@
 #                          Mechanical output maps it to its most rigorous leg,
 #                          no-mistakes, so sync, seeding, and init treat such a
 #                          project as the remote-backed pipeline project it is.
-# yolo (orthogonal) = when on, firstmate may make routine approval decisions itself.
-#   AGENTS.md section 7 is the single owner of authority exceptions, including
-#   ask-user contract expansion and stronger captain boundaries.
+# yolo (orthogonal) = merge authority only: when on, firstmate merges green,
+#   in-scope work itself (AGENTS.md section 7).
 #
 # --raw prints the registered annotation unmapped, so a caller that must tell a
 # conditional policy apart from a flat mode sees "no-mistakes-prod-only" itself.

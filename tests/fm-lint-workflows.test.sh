@@ -166,6 +166,10 @@ EOF
 YAML
 }
 
+# The `PR must be raised via no-mistakes` gate has no behavioral test here: its
+# logic lives in the pinned upstream composite action the workflow calls, which
+# carries its own tests. This repo's remaining stake in that file is that it
+# parses and its action reference is well-formed, which the lint below covers.
 test_current_workflows_pass() {
   local out rc
   rc=0
@@ -253,11 +257,13 @@ test_missing_actionlint_fails_closed() {
   done
   rc=0
   out=$(PATH="$fakebin" "$LINT_WF" --root "$tmp" 2>&1) || rc=$?
-  [ "$rc" -eq 127 ] || fail "missing actionlint expected exit 127, got $rc"$'\n'"$out"
+  [ "$rc" -eq 1 ] || fail "missing actionlint expected exit 1, got $rc"$'\n'"$out"
   assert_contains "$out" "actionlint not found" \
     "missing actionlint did not name the required linter"
   assert_contains "$out" "$REQUIRED" \
     "missing actionlint did not name the pinned version"
+  assert_contains "$out" "fm-install-actionlint.sh" \
+    "missing actionlint did not name the pinned installer"
   pass "missing actionlint fails closed"
 }
 

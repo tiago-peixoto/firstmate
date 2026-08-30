@@ -178,7 +178,7 @@ fm_pending_reply_get() {  # <record-path> <key>
 }
 
 fm_pending_reply_corr_reusable() {  # <state-dir> <corr_id> <task_id>
-  local state=$1 corr=$2 task_id=$3 rec phase
+  local state=$1 corr=$2 task_id=$3 rec phase delivered
   printf '%s' "$corr" | grep -Eq '^[A-Fa-f0-9]{16}$' || return 1
   rec=$(fm_pending_reply_path "$state" "$corr")
   [ -f "$rec" ] || return 1
@@ -186,6 +186,11 @@ fm_pending_reply_corr_reusable() {  # <state-dir> <corr_id> <task_id>
   phase=$(fm_pending_reply_get "$rec" phase)
   case "$phase" in
     awaiting_report|recovery_sending|recovery_sent) return 0 ;;
+    delivery_unknown)
+      delivered=$(fm_pending_reply_get "$rec" delivered_epoch)
+      [ -z "$delivered" ]
+      return $?
+      ;;
   esac
   return 1
 }
@@ -344,6 +349,18 @@ fm_pending_reply_prepare_delivery() {  # <state-dir> <corr_id>
 }
 
 fm_pending_reply_confirm_delivery() {  # <state-dir> <corr_id>
+  local state=$1 corr=$2 lock rc=0
+  local STATE FM_WAKE_QUEUE FM_WAKE_QUEUE_LOCK
+  STATE=$state
+  lock="$state/.pending-reply-$corr.lock"
+  . "$_FM_PENDING_REPLY_LIB_DIR/fm-wake-lib.sh"
+  fm_lock_acquire_wait "$lock" || return 1
+  _fm_pending_reply_confirm_delivery_locked "$@" || rc=$?
+  fm_lock_release "$lock"
+  return "$rc"
+}
+
+_fm_pending_reply_confirm_delivery_locked() {  # <state-dir> <corr_id>
   local state=$1 corr=$2 now marker
   marker=$(fm_pending_reply_delivery_confirmation_path "$state" "$corr")
   if ! fm_pending_reply_prepare_delivery "$state" "$corr"; then
@@ -372,7 +389,7 @@ fm_pending_reply_mark_delivery_unknown() {  # <state-dir> <corr_id>
   fm_pending_reply_set "$rec" phase delivery_unknown
 }
 
-fm_pending_reply_reconcile_delivery() {  # <state-dir> <corr_id>
+_fm_pending_reply_reconcile_delivery_locked() {  # <state-dir> <corr_id>
   local state=$1 corr=$2 rec delivered marker entry delivery_state value epoch
   local grace now age phase
   rec=$(fm_pending_reply_path "$state" "$corr")
@@ -410,6 +427,68 @@ fm_pending_reply_reconcile_delivery() {  # <state-dir> <corr_id>
       ;;
   esac
   return 1
+}
+
+fm_pending_reply_reconcile_delivery() {  # <state-dir> <corr_id>
+  local state=$1 corr=$2 lock rc=0
+  local STATE FM_WAKE_QUEUE FM_WAKE_QUEUE_LOCK
+  STATE=$state
+  lock="$state/.pending-reply-$corr.lock"
+  . "$_FM_PENDING_REPLY_LIB_DIR/fm-wake-lib.sh"
+  fm_lock_acquire_wait "$lock" || return 1
+  _fm_pending_reply_reconcile_delivery_locked "$@" || rc=$?
+  fm_lock_release "$lock"
+  return "$rc"
+}
+
+fm_pending_reply_delivery_attempt_unresolved() {  # <state-dir> <corr_id>
+  local state=$1 corr=$2 rec delivered marker entry
+  rec=$(fm_pending_reply_path "$state" "$corr")
+  [ -f "$rec" ] && [ ! -L "$rec" ] || return 1
+  delivered=$(fm_pending_reply_get "$rec" delivered_epoch)
+  [ -z "$delivered" ] || return 1
+  marker=$(fm_pending_reply_delivery_confirmation_path "$state" "$corr")
+  [ -f "$marker" ] && [ ! -L "$marker" ] || return 1
+  entry=$(cat "$marker" 2>/dev/null || true)
+  case "$entry" in attempted=*) return 0 ;; esac
+  return 1
+}
+
+# A definitive backend rejection makes the existing correlation retryable again.
+# Reconciliation may have aged the same attempted sidecar to delivery_unknown
+# while the backend call was in flight, so both undelivered phases converge here
+# under the per-correlation lock; a confirmed delivery can never be reset.
+fm_pending_reply_reset_known_undelivered() {  # <state-dir> <corr_id>
+  local state=$1 corr=$2 lock rc=0
+  local STATE FM_WAKE_QUEUE FM_WAKE_QUEUE_LOCK
+  STATE=$state
+  lock="$state/.pending-reply-$corr.lock"
+  . "$_FM_PENDING_REPLY_LIB_DIR/fm-wake-lib.sh"
+  fm_lock_acquire_wait "$lock" || return 1
+  _fm_pending_reply_reset_known_undelivered_locked "$@" || rc=$?
+  fm_lock_release "$lock"
+  return "$rc"
+}
+
+_fm_pending_reply_reset_known_undelivered_locked() {  # <state-dir> <corr_id>
+  local state=$1 corr=$2 rec delivered phase marker entry
+  rec=$(fm_pending_reply_path "$state" "$corr")
+  [ -f "$rec" ] && [ ! -L "$rec" ] || return 1
+  delivered=$(fm_pending_reply_get "$rec" delivered_epoch)
+  [ -z "$delivered" ] || return 1
+  phase=$(fm_pending_reply_get "$rec" phase)
+  case "$phase" in awaiting_report|delivery_unknown) ;; *) return 1 ;; esac
+  marker=$(fm_pending_reply_delivery_confirmation_path "$state" "$corr")
+  [ -e "$marker" ] || [ -L "$marker" ] || {
+    [ "$phase" = awaiting_report ]
+    return $?
+  }
+  [ -f "$marker" ] && [ ! -L "$marker" ] || return 1
+  entry=$(cat "$marker" 2>/dev/null || true)
+  case "$entry" in attempted=*) ;; *) return 1 ;; esac
+  [ "$phase" = awaiting_report ] \
+    || fm_pending_reply_set "$rec" phase awaiting_report || return 1
+  rm -f -- "$marker"
 }
 
 # Drop an undelivered expectation after a failed send so transport failure does
@@ -937,16 +1016,27 @@ fm_pending_reply_escalation_payload() {  # <record-path> <kind>
 # over that key, the close is withheld so the unrelated decision is not cleared.
 fm_pending_reply_escalation_line() {  # <status-file> <record-path> <corr_id>
   local status_file=$1 rec=$2 corr=$3 line found='' kind payload own_key
+  local line_key line_note
   [ -f "$status_file" ] || return 0
   [ "$(fm_pending_reply_get "$rec" corr_id)" = "$corr" ] || return 0
   own_key=$(fm_pending_reply_escalation_key "$corr")
+  # Matched on the line's PARSED key and note (bin/fm-classify-lib.sh), never on
+  # its raw bytes: an escalation carries an "[at=...]" event-time tag its own
+  # writer stamped, and a byte comparison against a rebuilt literal would stop
+  # recognizing the very line this library published.
   while IFS= read -r line || [ -n "$line" ]; do
     [ "$(status_line_verb "$line")" = blocked ] || continue
+    line_key=$(_fm_decision_key "$line") || continue
+    case "$line_key" in
+      "$own_key"|default) ;;
+      *) continue ;;
+    esac
+    line_note=$(status_line_note "$line")
     for kind in missed delivery-unknown recovery-delivery; do
       payload=$(fm_pending_reply_escalation_payload "$rec" "$kind") || continue
-      case "$line" in
-        "blocked [key=$own_key]: $payload"|"blocked: $payload") found=$line; break ;;
-      esac
+      [ "$line_note" = "$payload" ] || continue
+      found=$line
+      break
     done
   done < "$status_file"
   printf '%s' "$found"
@@ -1007,6 +1097,7 @@ _fm_pending_reply_close_escalation_locked() {  # <state-dir> <corr_id>
       close_line=$(printf 'resolved [key=%s]: pending-reply-resolved: task=%s pending-reply-id=%s via=%s' \
         "$key" "$(fm_pending_reply_get "$rec" task_id)" "$corr" \
         "$(fm_pending_reply_get "$rec" resolved_via)")
+      close_line=$(status_stamp_line "$close_line") || true
       close_rc=0
       fm_wake_status_append_self_announced "${parent_status%/*}" "$parent_status" "$close_line" \
         2>/dev/null || close_rc=$?
@@ -1044,12 +1135,12 @@ fm_pending_reply_maybe_escalate() {  # <state-dir> <corr_id>
 
 _fm_pending_reply_maybe_escalate_locked() {  # <state-dir> <corr_id>
   local state=$1 corr=$2
-  local rec phase completed now payload parent_status line kind
+  local rec phase completed now payload parent_status line kind key
   rec=$(fm_pending_reply_path "$state" "$corr")
   [ -f "$rec" ] || return 1
   phase=$(fm_pending_reply_get "$rec" phase)
   if [ "$phase" = delivery_unknown ]; then
-    fm_pending_reply_reconcile_delivery "$state" "$corr" || true
+    _fm_pending_reply_reconcile_delivery_locked "$state" "$corr" || true
     phase=$(fm_pending_reply_get "$rec" phase)
     [ "$phase" = delivery_unknown ] || return 0
   fi
@@ -1078,8 +1169,13 @@ _fm_pending_reply_maybe_escalate_locked() {  # <state-dir> <corr_id>
   payload=$(fm_pending_reply_escalation_payload "$rec" "$kind") || return 1
   [ -n "$parent_status" ] || return 1
   mkdir -p "$(dirname "$parent_status")" 2>/dev/null || return 1
-  line="blocked [key=$(fm_pending_reply_escalation_key "$corr")]: $payload"
-  if ! grep -Fqx "$line" "$parent_status" 2>/dev/null; then
+  key=$(fm_pending_reply_escalation_key "$corr")
+  # Deduped on the parsed event - same verb, same key, same note - because the
+  # line now carries its own event time and two appends of one escalation would
+  # never be byte-identical. The already-published line keeps the time it was
+  # first raised, which is the instant this blocker actually started waiting.
+  if [ -z "$(fm_pending_reply_escalation_line "$parent_status" "$rec" "$corr")" ]; then
+    line=$(status_stamp_line "blocked [key=$key]: $payload") || true
     printf '%s\n' "$line" >> "$parent_status" 2>/dev/null || return 1
   fi
   now=$(fm_pending_reply_now)

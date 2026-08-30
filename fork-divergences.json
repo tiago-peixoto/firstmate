@@ -92,6 +92,34 @@
         "supervision-owner-aware-recovery"
       ],
       "validation_pr": null
+    },
+    {
+      "date": "2026-08-21",
+      "fork_before": "83b5181391f6745108d72db5c2e23a5162be13f7",
+      "upstream_before": "1cb900c28faf23fe23c9bb54e63f7c3b436ea096",
+      "upstream_after": "3d125ad37378441b086d785bb24a555b1e46574a",
+      "touched": [
+        "firstmate-brief-scaffold-trim-v2",
+        "firstmate-next-cache-reclaim",
+        "firstmate-progressive-disclosure-restructure",
+        "fork-main-integration",
+        "supervision-owner-aware-recovery"
+      ],
+      "validation_pr": null
+    },
+    {
+      "date": "2026-08-24",
+      "fork_before": "510cdd54da67671b1210130497800f004526e8dd",
+      "upstream_before": "3d125ad37378441b086d785bb24a555b1e46574a",
+      "upstream_after": "038d0f7ec6ba7238a151722931434dcf06ff37c4",
+      "touched": [
+        "firstmate-brief-scaffold-trim-v2",
+        "firstmate-next-cache-reclaim",
+        "firstmate-progressive-disclosure-restructure",
+        "fork-main-integration",
+        "supervision-owner-aware-recovery"
+      ],
+      "validation_pr": null
     }
   ],
   "divergences": [
@@ -103,9 +131,10 @@
       "introduced": "2026-08-17",
       "upstream_pr": {
         "url": "https://github.com/kunchenguid/firstmate/pull/1944",
-        "disposition": "open"
+        "disposition": "open",
+        "disposition_note": "ROUTE FACT, recorded 2026-08-29 against live GitHub: this pull request is CLOSED and unmerged, closed BY US, not declined by the maintainer. The schema admits only open/rejected/merged, and \"rejected\" is reserved for a genuine upstream decline, so \"open\" is the least-wrong value available rather than an accurate one. See firstmate-divergence-manifest-cannot-express-withdrawal."
       },
-      "retire_when": "Upstream pull request 1944 is merged into official upstream main, so official upstream ships the fork-main integration workflow itself.",
+      "retire_when": "Upstream main carries an equivalent permanent fork-main integration - a supported fork-origin/upstream topology, an isolated fork-target validation registration, and a governed divergence manifest. Re-derived 2026-08-30 after the second time a condition keyed on upstream merging our pull request became unreachable: conditions key on what upstream MAIN CARRIES, never on our pull request merging, because we can withdraw it and upstream can decline it - and both have now happened.",
       "paths": [
         ".agents/skills/fork-main-integration/SKILL.md",
         ".agents/skills/secondmate-provisioning/SKILL.md",
@@ -143,42 +172,6 @@
       ]
     },
     {
-      "id": "supervision-owner-aware-recovery",
-      "summary": "Claude primary-session supervision fix: session-ownership alignment for the Stop auto-arm and turn-end guard, a bounded volatile entry trace, one-shot repeated-block escalation, a single supervision snapshot behind queue warnings, queued delivery treated as a supervision need until post-handling acknowledgement, and the BASH_SUBSHELL lock-ownership check stock macOS Bash 3.2 requires.",
-      "class": "pending",
-      "topic": "fm/divergence/supervision-owner-aware-recovery",
-      "introduced": "2026-08-17",
-      "upstream_pr": {
-        "url": "https://github.com/kunchenguid/firstmate/pull/2392",
-        "disposition": "open"
-      },
-      "retire_when": "Upstream pull request 2392 is merged into official upstream main, so official upstream ships owner-aware durable supervision recovery itself.",
-      "paths": [
-        ".agents/skills/harness-adapters/SKILL.md",
-        "AGENTS.md",
-        "bin/fm-claude-stop-autoarm.sh",
-        "bin/fm-guard.sh",
-        "bin/fm-supervision-lib.sh",
-        "bin/fm-turnend-guard.sh",
-        "bin/fm-wake-lib.sh",
-        "docs/architecture.md",
-        "docs/configuration.md",
-        "docs/supervision-protocols/claude.md",
-        "docs/turnend-guard.md",
-        "docs/verification/process-event-sources.md",
-        "docs/verification/supervision.md",
-        "docs/watcher-continuity.md",
-        "tests/fm-claude-stop-autoarm-live-e2e.test.sh",
-        "tests/fm-claude-stop-autoarm.test.sh",
-        "tests/fm-guard-stale-banner.test.sh",
-        "tests/fm-turnend-guard.test.sh",
-        "tests/fm-wake-queue.test.sh",
-        "tests/fm-watch-triage.test.sh",
-        "tests/fm-watcher-lock.test.sh",
-        "tests/wake-helpers.sh"
-      ]
-    },
-    {
       "id": "firstmate-brief-scaffold-trim-v2",
       "summary": "Trim generated brief scaffolds to retain only load-bearing worker instructions and current status protocol.",
       "class": "pending",
@@ -186,7 +179,8 @@
       "introduced": "2026-08-17",
       "upstream_pr": {
         "url": "https://github.com/kunchenguid/firstmate/pull/2538",
-        "disposition": "open"
+        "disposition": "open",
+        "disposition_note": "ROUTE FACT, recorded 2026-08-29 against live GitHub: this pull request is CLOSED and unmerged, closed BY US, not declined by the maintainer. The schema admits only open/rejected/merged, and \"rejected\" is reserved for a genuine upstream decline, so \"open\" is the least-wrong value available rather than an accurate one. See firstmate-divergence-manifest-cannot-express-withdrawal."
       },
       "retire_when": "upstream main carries this scaffold trim or an equivalent",
       "paths": [
@@ -202,7 +196,8 @@
       "introduced": "2026-08-18",
       "upstream_pr": {
         "url": "https://github.com/kunchenguid/firstmate/pull/2547",
-        "disposition": "open"
+        "disposition": "open",
+        "disposition_note": "ROUTE FACT, recorded 2026-08-29 against live GitHub: this pull request is CLOSED and unmerged, closed BY US, not declined by the maintainer. The schema admits only open/rejected/merged, and \"rejected\" is reserved for a genuine upstream decline, so \"open\" is the least-wrong value available rather than an accurate one. See firstmate-divergence-manifest-cannot-express-withdrawal."
       },
       "retire_when": "upstream main carries this restructure or an equivalent",
       "paths": [

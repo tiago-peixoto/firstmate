@@ -21,7 +21,7 @@ export FM_ROOT_OVERRIDE
 command -v jq >/dev/null 2>&1 || { echo "skip: jq not found"; exit 0; }
 
 # A fakebin that stubs the local tools the canonical snapshot may reach for, plus a
-# gh/gh-axi that RECORDS every call to $NET_LOG so a test can prove the default path
+# gh that RECORDS every call to $NET_LOG so a test can prove the default path
 # makes no network call. gh returns one fixture open PR keyed to the ship task.
 make_fakebin() {  # <dir>
   local fb
@@ -59,18 +59,12 @@ cat <<'JSON'
 [{"number":9,"title":"Ship the thing","url":"https://github.com/kunchenguid/firstmate/pull/9","headRefName":"fm/ship-task","reviewDecision":"APPROVED","mergeable":"MERGEABLE","statusCheckRollup":[{"conclusion":"SUCCESS","status":"COMPLETED"}]}]
 JSON
 SH
-  cat > "$fb/gh-axi" <<'SH'
-#!/usr/bin/env bash
-echo "gh-axi $*" >> "$NET_LOG"
-[ "${FAKE_GH_FAIL:-0}" = 1 ] && exit 1
-exit 0
-SH
   cat > "$fb/curl" <<'SH'
 #!/usr/bin/env bash
 echo "curl $*" >> "$NET_LOG"
 exit 1
 SH
-  chmod +x "$fb/no-mistakes" "$fb/tmux" "$fb/gh" "$fb/gh-axi" "$fb/curl"
+  chmod +x "$fb/no-mistakes" "$fb/tmux" "$fb/gh" "$fb/curl"
   printf '%s\n' "$fb"
 }
 
@@ -892,7 +886,7 @@ test_default_is_bounded_and_local_only() {
   local canon; canon=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$ROOT/bin/fm-fleet-snapshot.sh" --json)
   [ "${#toon}" -lt "${#canon}" ] || fail "projection must be smaller than the canonical snapshot"
   # Local-only: no GitHub/network call on the default path.
-  [ ! -s "$home/net.log" ] || fail "default run must make no gh/gh-axi call, got: $(cat "$home/net.log")"
+  [ ! -s "$home/net.log" ] || fail "default run must make no gh call, got: $(cat "$home/net.log")"
   # Definitive not-requested PR state, never a silent omission.
   assert_contains "$toon" 'prs: "not_requested' "default must state PR checks were not requested"
   assert_contains "$toon" "live PR discovery + checks,\"--include-prs\"" "omitted must mark the dropped live-PR surface"
@@ -968,6 +962,52 @@ test_superseded_queued_item_dropped_by_default() {
   printf '%s' "$json" | jq -e '.gates | any(.[]; .id == "dead-gate")' >/dev/null \
     || fail "--all-queued must restore the superseded item"
   pass "superseded queued items are dropped by default and restored with --all-queued"
+}
+
+# The collapsed captain-call contract: any due, unblocked captain-held task is
+# Captain's Call whatever its kind; a date-deferred hold is a dated gate until
+# due; a prose-deferred hold leaves the default views with a disclosure; and
+# Recently Landed excludes only what closed while still held for the captain.
+test_collapsed_captain_call_deferral_and_landed() {
+  local home fakebin json
+  home=$(make_home collapsed-call)
+  mkdir -p "$home/data"
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+
+## Queued
+- [ ] work-gate - Captain-gated ship work (repo: firstmate) (kind: ship) (hold: captain go needed) (hold-kind: captain)
+- [ ] later-call - Deferred captain call (repo: firstmate) (kind: captain) (hold: revisit with the captain) (hold-kind: captain) (hold-until: 2026-08-01)
+- [ ] due-call - Due captain call (repo: firstmate) (kind: captain) (hold: overdue captain choice) (hold-kind: captain) (hold-until: 2026-07-11)
+- [ ] parked-call - Prose-parked captain call (repo: firstmate) (kind: ship) (hold: DEFERRED by captain revisit later) (hold-kind: captain)
+- [ ] external-gate - Externally held work (repo: firstmate) (kind: ship) (hold: upstream release pending) (hold-kind: external)
+
+## Done
+- [x] answered-call - Answered captain question (repo: firstmate) (kind: captain) (done 2026-07-10) (hold: captain choice pending) (hold-kind: captain)
+- [x] shipped-work - Ordinary landed work (repo: firstmate) (kind: ship) (merged 2026-07-10)
+EOF
+  fakebin=$(make_fakebin "$home")
+  json=$(run "$home" "$fakebin" --json)
+  printf '%s' "$json" | jq -e '
+    (.decisions_open | any(.[]; .id == "work-gate"))
+      and (.decisions_open | any(.[]; .id == "due-call"))
+      and (.decisions_open | any(.[]; .id == "later-call") | not)
+      and (.decisions_open | any(.[]; .id == "parked-call") | not)
+      and (.decisions_open | any(.[]; .id == "external-gate") | not)
+      and (.gates | any(.[]; .id == "later-call" and (.reason | startswith("until 2026-08-01"))))
+      and (.gates | any(.[]; .id == "work-gate") | not)
+      and (.gates | any(.[]; .id == "parked-call") | not)
+      and (.gates | any(.[]; .id == "external-gate"))
+      and (.landed | any(.[]; .id == "shipped-work"))
+      and (.landed | any(.[]; .id == "answered-call") | not)
+      and (.omitted | any(.[]; .surface | startswith("captain holds marked deferred")))
+  ' >/dev/null || fail "the collapsed captain-call projection is wrong: $json"
+  json=$(run "$home" "$fakebin" --json --all-decisions --all-queued)
+  printf '%s' "$json" | jq -e '
+    (.decisions_open | any(.[]; .id == "parked-call"))
+      and (.gates | any(.[]; .id == "parked-call") | not)
+  ' >/dev/null || fail "--all-decisions must reveal the prose-deferred call: $json"
+  pass "captain-held tasks of any kind reach Captain's Call, deferral is honored, and landed excludes answered calls"
 }
 
 test_include_prs_is_the_only_fetch_path() {
@@ -1177,7 +1217,7 @@ test_landed_includes_secondmate_home_merges() {
       and (.landed | any(.[]; .id == "done-a"))
   ' >/dev/null || fail "landed must merge secondmate-home Done with main-home Done: $json"
   # Still zero network on this default path.
-  [ ! -s "$home/net.log" ] || fail "landed roll-up must make no gh/gh-axi call, got: $(cat "$home/net.log")"
+  [ ! -s "$home/net.log" ] || fail "landed roll-up must make no gh call, got: $(cat "$home/net.log")"
   pass "landed includes secondmate-managed merges alongside main-home merges"
 }
 
@@ -1932,6 +1972,7 @@ test_include_prs_is_the_only_fetch_path
 test_partial_github_failure_degrades
 test_perl_fallback_bounds_github_call
 test_section_caps_and_expansion_flags
+test_collapsed_captain_call_deferral_and_landed
 test_pr_repository_cap_and_expansion
 test_per_repository_pr_cap_is_disclosed
 test_projection_and_toon_fail_closed

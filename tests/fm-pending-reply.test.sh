@@ -31,6 +31,17 @@ set -u
 # shellcheck source=bin/fm-pending-reply-lib.sh
 . "$ROOT/bin/fm-pending-reply-lib.sh"
 
+# Count events on <status-file> whose parsed verb and key match, optionally
+# also requiring the note to start with <note-prefix>. The lines these
+# assertions cover are written by this library, and each carries the
+# "[at=...]" instant it was raised, so their exact bytes are not a fixed shape
+# to grep for - the parsed event is (bin/fm-classify-lib.sh).
+count_events() {  # <status-file> <verb> <key> [<note-prefix>]
+  status_timed_events "$1" | LC_ALL=C awk -F '\t' \
+    -v v="$2" -v k="$3" -v n="${4:-}" \
+    '$3 == v && $4 == k && (n == "" || index($5, n) == 1)' | wc -l | tr -d ' '
+}
+
 SEND="$ROOT/bin/fm-send.sh"
 REPORT="$ROOT/bin/fm-secondmate-report.sh"
 TMP_ROOT=$(fm_test_tmproot fm-pending-reply)
@@ -95,6 +106,16 @@ run_send() {
 
 phase_of() {  # <state> <corr>
   fm_pending_reply_get "$(fm_pending_reply_path "$1" "$2")" phase
+}
+
+# A local steer now rides the durable steering inbox rather than the typed
+# channel, so marker/corr assertions read the latest enqueued record through
+# the production owner (bin/fm-task-inbox-lib.sh).
+latest_record_body() {  # <home> <task>
+  local rec
+  rec=$(find "$1/state/$2.inbox" -maxdepth 1 -name '*.msg' 2>/dev/null | sort | tail -1)
+  [ -n "$rec" ] || return 1
+  bash -c '. "$1"; fm_task_inbox_body "$2"' _ "$ROOT/bin/fm-task-inbox-lib.sh" "$rec"
 }
 
 # --- tests ------------------------------------------------------------------
@@ -282,9 +303,19 @@ test_second_missed_turn_escalates_once_and_stays_durable() {
   fm_pending_reply_maybe_escalate "$state" "$corr" || fail "escalation should fire"
   [ "$(phase_of "$state" "$corr")" = escalated ] || fail "phase should be escalated"
   status_line=$(tail -1 "$state/hibit.status")
-  case "$status_line" in
-    "blocked [key=pending-reply-$corr]:"*pending-reply-missed:*pending-reply-id=$corr*) : ;;
-    *) fail "parent status should carry one blocked missed-report line"$'\n'"$status_line" ;;
+  # Read through the parsers (fm-pending-reply-lib sources fm-classify-lib):
+  # the escalation also carries the "[at=...]" instant it was raised, which is
+  # what makes the wait it opens measurable, so its bytes are not a fixed shape.
+  [ "$(status_line_verb "$status_line")" = blocked ] \
+    && [ "$(_fm_decision_key "$status_line")" = "pending-reply-$corr" ] \
+    && [ -n "$(status_line_at "$status_line")" ] \
+    && case "$(status_line_note "$status_line")" in
+         pending-reply-missed:*pending-reply-id=$corr*) true ;;
+         *) false ;;
+       esac
+  case $? in
+    0) : ;;
+    *) fail "parent status should carry one timed blocked missed-report line"$'\n'"$status_line" ;;
   esac
   [ ! -s "$state/.wake-queue" ] || fail "direct escalation must not enqueue a duplicate check wake"
   # Second escalate must be a no-op (phase no longer recovery_sent).
@@ -293,7 +324,9 @@ test_second_missed_turn_escalates_once_and_stays_durable() {
     :
   fi
   [ "$(phase_of "$state" "$corr")" = escalated ] || fail "phase must stay escalated"
-  escalations=$(grep -Fc "blocked [key=pending-reply-$corr]:" "$state/hibit.status")
+  # Counted through the parsed event stream: the escalation carries the instant
+  # it was raised, so its exact bytes are not a fixed shape to grep for.
+  escalations=$(count_events "$state/hibit.status" blocked "pending-reply-$corr")
   [ "$escalations" = 1 ] || fail "missed recovery should publish one escalation, got $escalations"
   # Durable record retained (never silently expired).
   rec=$(fm_pending_reply_path "$state" "$corr")
@@ -349,7 +382,7 @@ test_escalation_wakes_and_its_close_stays_quiet() {
   prime_seen "$state" "$state/hibit.status" || fail "could not mark the reply announced"
   # The home's own escalation CLOSE is bookkeeping and stays quiet.
   fm_pending_reply_try_resolve "$state" "$corr" || fail "correlated reply should resolve"
-  grep -Fq "resolved [key=pending-reply-$corr]" "$state/hibit.status" \
+  [ "$(count_events "$state/hibit.status" resolved "pending-reply-$corr")" -ge 1 ] \
     || fail "resolution did not close the escalation decision"
   seen_gate "$state" "$state/hibit.status" \
     || fail "the home's own escalation close re-woke its own watcher gate"
@@ -379,7 +412,7 @@ test_escalation_publication_failure_retries() {
   rmdir "$target"
   fm_pending_reply_maybe_escalate "$state" "$corr" || fail "escalation retry should succeed"
   [ "$(phase_of "$state" "$corr")" = escalated ] || fail "successful retry should commit escalation"
-  escalations=$(grep -Fc "blocked [key=pending-reply-$corr]:" "$target")
+  escalations=$(count_events "$target" blocked "pending-reply-$corr")
   [ "$escalations" = 1 ] || fail "successful retry should publish exactly once, got $escalations"
   pass "failed escalation publication remains retryable and publishes once"
 }
@@ -399,7 +432,8 @@ test_legacy_escalation_closes_default_decision() {
   printf 'done [corr=%s]: delayed legacy reply\n' "$corr" >> "$state/hibit.status"
 
   fm_pending_reply_try_resolve "$state" "$corr" || fail "legacy reply should resolve its record"
-  [ "$(grep -Fc "resolved [key=default]: pending-reply-resolved: task=hibit pending-reply-id=$corr" "$state/hibit.status")" -eq 1 ] \
+  [ "$(count_events "$state/hibit.status" resolved default \
+      "pending-reply-resolved: task=hibit pending-reply-id=$corr")" -eq 1 ] \
     || fail "legacy escalation did not append one guarded default-key resolution"
   open=$(status_open_decisions "$state/hibit.status")
   [ -z "$open" ] || fail "resolved legacy escalation remained open: $open"
@@ -424,7 +458,7 @@ test_legacy_escalation_does_not_close_taken_default_decision() {
   printf 'done [corr=%s]: delayed legacy reply\n' "$corr" >> "$state/hibit.status"
 
   fm_pending_reply_try_resolve "$state" "$corr" || fail "legacy reply should resolve its record"
-  if grep -Fq 'resolved [key=default]: pending-reply-resolved:' "$state/hibit.status"; then
+  if [ "$(count_events "$state/hibit.status" resolved default 'pending-reply-resolved:')" -ne 0 ]; then
     fail "legacy escalation emitted an unsafe default-key resolution"
   fi
   fm_pending_reply_tick "$state" || fail "legacy close retry failed"
@@ -456,8 +490,10 @@ test_foreign_blocker_is_not_selected_as_escalation() {
     "pending-reply closure cleared the foreign release decision"
   assert_not_contains "$open" "pending-reply-$corr" \
     "genuine keyed escalation remained open"
-  assert_no_grep 'resolved [key=release]: pending-reply-resolved:' "$state/hibit.status" \
-    "foreign release decision was selected as the pending-reply escalation"
+  # Counted through the parsed events, not the raw bytes: a byte grep for a
+  # line shape that stamping made impossible would pass whatever happened.
+  [ "$(count_events "$state/hibit.status" resolved release 'pending-reply-resolved:')" -eq 0 ] \
+    || fail "foreign release decision was selected as the pending-reply escalation"
   [ -n "$(fm_pending_reply_get "$rec" escalation_closed_epoch)" ] \
     || fail "genuine keyed escalation closure was not recorded"
   pass "foreign correlated blocker cannot impersonate a pending-reply escalation"
@@ -627,7 +663,7 @@ test_delivery_confirmation_fallback_reconciles() {
       || fail "delivery uncertainty should use its distinct escalation"
     fm_pending_reply_tick_one "$state" "$prepared_corr" unknown \
       || fail "repeated delivery-unknown tick should be inert"
-    escalations=$(grep -Fc "blocked [key=pending-reply-$prepared_corr]:" "$state/hibit.status")
+    escalations=$(count_events "$state/hibit.status" blocked "pending-reply-$prepared_corr")
     [ "$escalations" = 1 ] \
       || fail "delivery-unknown escalation should publish once, got $escalations"
     printf 'done [corr=%s]: late report proves delivery\n' "$prepared_corr" >> "$state/hibit.status"
@@ -636,7 +672,7 @@ test_delivery_confirmation_fallback_reconciles() {
       || fail "late report should resolve escalated delivery-unknown"
     [ "$(fm_pending_reply_get "$prepared_rec" delivered_epoch)" = 5760 ] \
       || fail "late report should provide delivery evidence"
-    escalations=$(grep -Fc "blocked [key=pending-reply-$prepared_corr]:" "$state/hibit.status")
+    escalations=$(count_events "$state/hibit.status" blocked "pending-reply-$prepared_corr")
     [ "$escalations" = 1 ] || fail "late report must not re-escalate delivery-unknown"
     fm_pending_reply_tick "$state" || fail "resolved late report should remain idempotent"
     [ "$(phase_of "$state" "$prepared_corr")" = resolved ] \
@@ -662,6 +698,60 @@ test_delivery_confirmation_fallback_reconciles() {
     fi
   ) || fail "delivery confirmation fallback regression failed"
   pass "delivery confirmation fallback reconciles durably"
+}
+
+test_delivery_confirmation_serializes_with_reconciliation() {
+  (
+    local home state corr rec calls entered release confirm_pid reconcile_pid count i
+    home=$(setup_parent delivery-confirm-reconcile-race)
+    state="$home/state"
+    # This fixture clock is intentionally scoped to the isolated subshell.
+    # shellcheck disable=SC2030,SC2031
+    export FM_PENDING_REPLY_NOW=5900
+    corr=$(fm_pending_reply_create "$home" "$state" hibit "serialized delivery")
+    rec=$(fm_pending_reply_path "$state" "$corr")
+    calls="$home/mark-delivered.calls"
+    entered="$home/mark-delivered.entered"
+    release="$home/mark-delivered.release"
+    fm_pending_reply_mark_delivered() {
+      local pending_state=$1 pending_corr=$2 epoch=$3 pending_rec phase
+      printf '%s\n' "$BASHPID" >> "$calls"
+      : > "$entered"
+      while [ ! -e "$release" ]; do /bin/sleep 0.01; done
+      pending_rec=$(fm_pending_reply_path "$pending_state" "$pending_corr")
+      fm_pending_reply_set "$pending_rec" delivered_epoch "$epoch" || return 1
+      phase=$(fm_pending_reply_get "$pending_rec" phase)
+      [ "$phase" != delivery_unknown ] \
+        || fm_pending_reply_set "$pending_rec" phase awaiting_report
+    }
+    fm_pending_reply_confirm_delivery "$state" "$corr" &
+    # The background PID is consumed within this isolated test subshell.
+    # shellcheck disable=SC2031
+    confirm_pid=$!
+    for i in $(seq 1 100); do
+      [ -e "$entered" ] && break
+      /bin/sleep 0.01
+    done
+    [ -e "$entered" ] || fail "delivery confirmation did not reach its commit boundary"
+    fm_pending_reply_reconcile_delivery "$state" "$corr" &
+    # The background PID is consumed within this isolated test subshell.
+    # shellcheck disable=SC2031
+    reconcile_pid=$!
+    /bin/sleep 0.1
+    : > "$release"
+    wait "$confirm_pid" || fail "delivery confirmation should commit"
+    wait "$reconcile_pid" || fail "reconciliation should observe committed delivery"
+    count=$(wc -l < "$calls" | tr -d ' ')
+    [ "$count" = 1 ] \
+      || fail "confirmation and reconciliation raced through $count delivery commits"
+    [ "$(fm_pending_reply_get "$rec" delivered_epoch)" = 5900 ] \
+      || fail "serialized confirmation should retain delivered_epoch"
+    [ "$(phase_of "$state" "$corr")" = awaiting_report ] \
+      || fail "serialized confirmation should retain awaiting_report phase"
+    [ ! -e "$(fm_pending_reply_delivery_confirmation_path "$state" "$corr")" ] \
+      || fail "serialized delivery marker should be removed"
+  ) || fail "delivery confirmation serialization regression failed"
+  pass "delivery confirmation serializes with reconciliation"
 }
 
 test_unrelated_and_stale_corr_cannot_resolve() {
@@ -765,8 +855,8 @@ test_unmarked_captain_input_creates_no_expectation() {
     "harness=echo" "kind=ship" "mode=no-mistakes" "yolo=off"
   run_send "$fb" "$home" "$log" "build" "captain says hello"; rc=$?
   expect_code 0 "$rc" "unmarked crewmate send should succeed"
-  [ "$(cat "$log")" = "captain says hello" ] \
-    || fail "crewmate send should stay unmarked"$'\n'"$(cat "$log" | od -An -c)"
+  [ "$(latest_record_body "$home" build)" = "captain says hello" ] \
+    || fail "crewmate steer should be recorded unmarked"$'\n'"$(latest_record_body "$home" build | od -An -c)"
   pending_count=$(find "$home/state/pending-replies" -type f 2>/dev/null | wc -l | tr -d ' ')
   [ "$pending_count" = 0 ] || fail "unmarked input must create no pending-reply records (got $pending_count)"
   pass "direct unmarked captain input creates no expectation"
@@ -780,10 +870,10 @@ test_fm_send_marked_secondmate_creates_pending_and_embeds_corr() {
   fm_write_secondmate_meta "$home/state/hibit.meta" "$home/sm" "sess:fm-hibit"
   run_send "$fb" "$home" "$log" "hibit" "audit the build"; rc=$?
   expect_code 0 "$rc" "secondmate send should succeed"
-  got=$(cat "$log")
+  got=$(latest_record_body "$home" hibit)
   case "$got" in
     "$FM_FROMFIRST_MARK"corr=*) : ;;
-    *) fail "secondmate send must embed marker+corr"$'\n'"$(printf '%s' "$got" | od -An -c)" ;;
+    *) fail "secondmate steer record must embed marker+corr"$'\n'"$(printf '%s' "$got" | od -An -c)" ;;
   esac
   corr=$(fm_pending_reply_extract_corr "$got")
   [ "${#corr}" -eq 16 ] || fail "corr id should be 16 hex chars, got '$corr'"
@@ -1006,12 +1096,19 @@ test_correlations_reuse_only_for_matching_open_task() {
   fm_write_secondmate_meta "$state/domain.meta" "$home/domain" "sess:fm-domain"
   fm_write_secondmate_meta "$state/other.meta" "$home/other" "sess:fm-other"
   run_send "$fb" "$home" "$log" domain "first request" || fail "first marked send failed"
-  got=$(cat "$log")
+  got=$(latest_record_body "$home" domain)
   corr1=$(fm_pending_reply_extract_corr "$got")
   export FM_PENDING_REPLY_EXISTING_CORR=$corr1
-  run_send "$fb" "$home" "$log" other "forwarded request" || fail "cross-task send failed"
+  if run_send "$fb" "$home" "$log" other "forwarded request"; then
+    fail "an explicit cross-task correlation must be refused"
+  fi
   unset FM_PENDING_REPLY_EXISTING_CORR
-  corr2=$(fm_pending_reply_extract_corr "$(cat "$log")")
+  if latest_record_body "$home" other >/dev/null 2>&1; then
+    fail "a refused cross-task correlation must not enqueue a steer"
+  fi
+  run_send "$fb" "$home" "$log" other "forwarded request" \
+    || fail "fresh cross-task send failed"
+  corr2=$(fm_pending_reply_extract_corr "$(latest_record_body "$home" other)")
   [ -n "$corr2" ] && [ "$corr2" != "$corr1" ] \
     || fail "cross-task send must receive a new correlation"
   rec=$(fm_pending_reply_path "$state" "$corr2")
@@ -1021,7 +1118,7 @@ test_correlations_reuse_only_for_matching_open_task() {
   fm_pending_reply_try_resolve "$state" "$corr1" || fail "first expectation should resolve"
   run_send "$fb" "$home" "$log" domain "${FM_FROMFIRST_MARK}corr=${corr1} follow-up" \
     || fail "resolved-correlation follow-up failed"
-  corr3=$(fm_pending_reply_extract_corr "$(cat "$log")")
+  corr3=$(fm_pending_reply_extract_corr "$(latest_record_body "$home" domain)")
   [ -n "$corr3" ] && [ "$corr3" != "$corr1" ] \
     || fail "resolved correlation must not guard a new send"
   rec=$(fm_pending_reply_path "$state" "$corr3")
@@ -1197,6 +1294,7 @@ test_concurrent_escalation_yields_to_late_reply
 test_transport_success_is_not_reply_success
 test_undelivered_records_are_scan_immutable
 test_delivery_confirmation_fallback_reconciles
+test_delivery_confirmation_serializes_with_reconciliation
 test_unrelated_and_stale_corr_cannot_resolve
 test_restart_preserves_expectation_and_parent_destination
 test_wrong_home_detected_not_acknowledged

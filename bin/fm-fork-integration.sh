@@ -6,13 +6,18 @@
 #   fm-fork-integration.sh plan <fork-url> <upstream-url>
 #   fm-fork-integration.sh ensure <fork-url> <upstream-url> --confirm
 #   fm-fork-integration.sh check <fork-url> <upstream-url>
+#   fm-fork-integration.sh worker-source <fork-url> <upstream-url>
 #
 # The ordinary Firstmate registration must already name upstream-url as its
 # remote and fork-url as its fork. This script never initializes, refreshes, or
 # reconfigures that live registration. The private integration clone lives at
 # $FM_HOME/data/fork-integration by default, has origin=fork and
 # upstream=official, and gets a separate plain no-mistakes registration whose
-# upstream is therefore the fork.
+# upstream is therefore the fork. `worker-source` is read only and prints that
+# clone's absolute path only after both registrations, the fork topology, and
+# the clone-local pull-request target guard pass. A disposable worker leased
+# from that source resolves the fork registration through Git's shared common
+# directory without reading the operating checkout.
 #
 # ensure snapshots the ordinary registration's remote/fork facts before doing
 # anything and proves they are byte-identical afterwards. An existing private
@@ -139,6 +144,25 @@ require_integration_registration() {
     || die "integration no-mistakes registration unexpectedly has a fork target '$fork'; refusing reconfiguration"
 }
 
+require_integration_guard() {
+  "$SCRIPT_DIR/fm-nm-pr-target.sh" installed "$INTEGRATION_DIR" >/dev/null \
+    || die "integration clone does not carry the current pull-request target guard; run the printed ensure command before dispatching a fork worker"
+}
+
+prove_worker_source() {
+  local tmp primary integration
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/fm-fork-integration-check.XXXXXX") || die "cannot create temporary state"
+  FM_FORK_INTEGRATION_TMP=$tmp
+  trap 'rm -rf "$FM_FORK_INTEGRATION_TMP"' EXIT
+  primary="$tmp/primary"
+  integration="$tmp/integration"
+  registration_facts "$FM_ROOT" "$primary"
+  require_primary_registration "$primary"
+  require_integration_clone
+  require_integration_registration "$integration"
+  require_integration_guard
+}
+
 cmd_plan() {
   [ "$#" -eq 0 ] || { usage >&2; exit 2; }
   printf 'integration-clone: %s\n' "$INTEGRATION_DIR"
@@ -155,17 +179,14 @@ cmd_plan() {
 
 cmd_check() {
   [ "$#" -eq 0 ] || { usage >&2; exit 2; }
-  local tmp primary integration
-  tmp=$(mktemp -d "${TMPDIR:-/tmp}/fm-fork-integration-check.XXXXXX") || die "cannot create temporary state"
-  FM_FORK_INTEGRATION_TMP=$tmp
-  trap 'rm -rf "$FM_FORK_INTEGRATION_TMP"' EXIT
-  primary="$tmp/primary"
-  integration="$tmp/integration"
-  registration_facts "$FM_ROOT" "$primary"
-  require_primary_registration "$primary"
-  require_integration_clone
-  require_integration_registration "$integration"
+  prove_worker_source
   printf 'integration-registration: isolated ordinary=%s fork-target=%s\n' "$UPSTREAM_URL" "$FORK_URL"
+}
+
+cmd_worker_source() {
+  [ "$#" -eq 0 ] || { usage >&2; exit 2; }
+  prove_worker_source
+  printf '%s\n' "$INTEGRATION_DIR"
 }
 
 cmd_ensure() {
@@ -203,12 +224,15 @@ cmd_ensure() {
     fi
   fi
 
+  require_integration_clone
+  require_integration_registration "$integration"
+  "$SCRIPT_DIR/fm-nm-pr-target.sh" install "$INTEGRATION_DIR" >/dev/null \
+    || die "could not install the pull-request target guard in the integration clone; ordinary registration was not reconfigured"
   registration_facts "$FM_ROOT" "$after"
   if ! cmp -s "$before" "$after"; then
     die "ordinary no-mistakes registration changed while provisioning the integration clone; stop and inspect rather than reconfigure it"
   fi
-  require_integration_clone
-  require_integration_registration "$integration"
+  require_integration_guard
   printf 'integration-registration: ready at %s (created=%s)\n' "$INTEGRATION_DIR" "$created"
 }
 
@@ -216,6 +240,7 @@ case "$MODE" in
   plan) cmd_plan "$@" ;;
   check) cmd_check "$@" ;;
   ensure) cmd_ensure "$@" ;;
+  worker-source) cmd_worker_source "$@" ;;
   -h|--help|help) usage ;;
   *) usage >&2; exit 2 ;;
 esac

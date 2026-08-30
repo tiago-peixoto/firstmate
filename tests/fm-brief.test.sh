@@ -267,7 +267,7 @@ test_ship_mode_is_explicit_not_registry() {
   pass "fm-brief.sh: the explicit ship mode wins over the registered posture"
 }
 
-# yolo is firstmate's approval authority and never reaches the worker, and a scout
+# yolo is firstmate's merge authority and never reaches the worker, and a scout
 # or charter carries no delivery contract. Each must refuse rather than accept and
 # discard the flag, which would look recorded but change nothing.
 test_delivery_flags_are_refused_where_they_do_not_apply() {
@@ -490,6 +490,39 @@ test_unguarded_briefs_omit_herdr_gate() {
   pass "fm-brief.sh: unguarded ship and scout scaffolds omit the Herdr gate"
 }
 
+# Regression (issue #2575): AGENTS.md section 11 and this script's own help tell
+# firstmate to replace EVERY `{TASK}` placeholder, so a placeholder quoted
+# anywhere but the genuine fill site is spliced full of the task body. This fork
+# also drops the unguarded Herdr gate that once carried such a quote
+# (test_unguarded_briefs_omit_herdr_gate), so the surviving contract is the fill
+# site itself: exactly one placeholder, and the documented global replace puts
+# the body in exactly once.
+test_documented_global_replace_leaves_one_task_fill_site() {
+  local home id brief kind count content filled body
+  home="$TMP_ROOT/task-fill-site-home"
+  mkdir -p "$home/data"
+  body='Restart the herdr session, then profile it'
+  for kind in ship scout; do
+    id="brief-fill-site-$kind"
+    if [ "$kind" = scout ]; then
+      FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" firstmate --scout >/dev/null 2>&1
+    else
+      FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" firstmate --mode no-mistakes >/dev/null 2>&1
+    fi
+    brief="$home/data/$id/brief.md"
+    assert_present "$brief" "$kind brief was not scaffolded"
+    count=$(grep -c -F '{TASK}' "$brief")
+    [ "$count" = 1 ] \
+      || fail "$kind brief must carry exactly one {TASK} fill site, found $count"
+    content=$(cat "$brief")
+    filled=${content//'{TASK}'/$body}
+    count=$(printf '%s\n' "$filled" | grep -c -F "$body")
+    [ "$count" = 1 ] \
+      || fail "$kind brief: the documented global {TASK} replace duplicated the task body $count times"
+  done
+  pass "fm-brief.sh: the documented {TASK} fill lands only at the single fill site"
+}
+
 test_secondmate_no_projects_charter() {
   local home brief status
   home="$TMP_ROOT/no-projects-home"
@@ -510,8 +543,8 @@ test_secondmate_no_projects_charter() {
     "project-less charter operating model lost the pooled-worktree note"
   assert_no_grep "The projects above are local clones" "$brief" \
     "project-less charter kept the with-projects operating-model line"
-  assert_grep 'working [key=<work-slug>]' "$brief" \
-    "secondmate charter did not key material routed-work phases"
+  assert_grep 'working [at=...] [key=<work-slug>]' "$brief" \
+    "secondmate charter did not key and time material routed-work phases"
   assert_grep 'resolved [key=<work-slug>]' "$brief" \
     "secondmate charter did not close a quietly ended routed-work phase"
   assert_grep 'use the same key on its later' "$brief" \
@@ -555,8 +588,8 @@ test_secondmate_marked_request_reporting_contract() {
     "secondmate charter retained the unconditional working opener"
   assert_grep 'When a routed-work phase has a supervisor-actionable material change worth reporting under the rule above' "$brief" \
     "secondmate charter did not limit keyed phases to reportable material changes"
-  assert_grep "If its first reportable event is \`working [key=<work-slug>]: {material phase}\`" "$brief" \
-    "secondmate charter lost keyed working syntax for a reportable material phase"
+  assert_grep "If its first reportable event is \`working [at=...] [key=<work-slug>]: {material phase}\`" "$brief" \
+    "secondmate charter lost keyed, timed working syntax for a reportable material phase"
   assert_grep "use the same key on its later \`paused\`, \`done\`, \`failed\`, \`needs-decision\`, or \`blocked\` event" "$brief" \
     "secondmate charter lost same-key closure for a reportable material phase"
   assert_grep 'resolved [key=<work-slug>]' "$brief" \
@@ -729,16 +762,82 @@ test_scout_and_secondmate_load_decision_hold_policy() {
   FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" \
     "$ROOT/bin/fm-brief.sh" sample-investigation sample --scout >/dev/null 2>&1
   scout="$home/data/sample-investigation/brief.md"
-  assert_grep "$ROOT/.agents/skills/decision-hold-lifecycle/SKILL.md" "$scout" \
-    "scout brief did not load the unresolved-decision policy before done"
+  assert_grep "$ROOT/.agents/skills/captain-hold-lifecycle/SKILL.md" "$scout" \
+    "scout brief did not load the captain-call policy before done"
   assert_grep "pass its shared completion gate for the report and any visual review" "$scout" \
     "scout brief did not cross-reference visual-review completion"
   FM_HOME="$home" FM_ROOT_OVERRIDE="$ROOT" FM_SECONDMATE_CHARTER='sample reviews' \
     "$ROOT/bin/fm-brief.sh" sample-mate --secondmate --no-projects >/dev/null 2>&1
   charter="$home/data/sample-mate/brief.md"
-  assert_grep "load \`decision-hold-lifecycle\`" "$charter" \
-    "secondmate charter did not load the shared decision policy for detailed investigations"
+  assert_grep "load \`captain-hold-lifecycle\`" "$charter" \
+    "secondmate charter did not load the shared captain-call policy for detailed investigations"
   pass "fm-brief.sh: investigation and visual-review completions load the shared decision policy"
+}
+
+# Reachability guard for the worker-facing GitHub and merge-authority contract.
+#
+# The product here is the GENERATED brief, not the scaffold source: a worker only
+# ever obeys text that actually reaches its instructions. Four separate sites in
+# fm-brief.sh once routed workers onto a node-launched GitHub wrapper, and that
+# survived every source-level review because nobody re-read the rendered output
+# after the captain's credential vault arrived. Only a native binary is eligible
+# for that vault, so a worker on any other launcher stalls every GitHub call on a
+# prompt only the captain can answer. That wrapper is now retired fleet-wide and
+# uninstalled, which is why its name appears below: this is the one place the
+# retired name is allowed to survive, because refusing it is the check's job.
+#
+# So this asserts on real scaffolded briefs for EVERY mode the script supports,
+# never on the source, and covers all three contracts that must reach a worker:
+# the eligible tool with a narrow field selection, the unattended read-set bound,
+# and the two merge-authority prohibitions plus the skill-conflict stop rule.
+test_generated_briefs_carry_the_github_and_merge_authority_contract() {
+  local home id brief variant
+  home="$TMP_ROOT/worker-contract-home"
+  mkdir -p "$home/data"
+
+  for variant in "no-mistakes:--mode no-mistakes" "direct-PR:--mode direct-PR" "local-only:--mode local-only" "scout:--scout"; do
+    id="brief-contract-${variant%%:*}"
+    # shellcheck disable=SC2086  # the flag list is an intentional word-split argument
+    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj ${variant#*:} >/dev/null 2>&1 \
+      || fail "${variant%%:*}: brief did not scaffold"
+    brief="$home/data/$id/brief.md"
+    assert_present "$brief" "${variant%%:*}: brief was not scaffolded"
+
+    # Part A: the vault-eligible tool, and no surviving instruction onto the
+    # ineligible one anywhere in the rendered text.
+    assert_no_grep "gh-axi" "$brief" \
+      "${variant%%:*}: generated brief still routes GitHub through the retired wrapper"
+    assert_grep "Use the plain \`gh\` binary for GitHub operations" "$brief" \
+      "${variant%%:*}: generated brief does not route GitHub to the plain gh binary"
+    assert_grep "Select only the fields you need" "$brief" \
+      "${variant%%:*}: generated brief does not teach the narrow field selection"
+    # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
+    assert_grep '`gh api <path> --jq' "$brief" \
+      "${variant%%:*}: generated brief lost its narrow --json/--jq example"
+
+    # Part B: unattended calls stay inside the auto-authorized read set.
+    # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
+    assert_grep 'never `gh api graphql` and never `gh auth token`' "$brief" \
+      "${variant%%:*}: generated brief lost the unattended read-set prohibition"
+    assert_grep "recognized read commands and REST GETs" "$brief" \
+      "${variant%%:*}: generated brief lost the bound on what an unattended path may call"
+
+    # Part C: the two merge-authority prohibitions, inline where the action is
+    # taken, plus the rule that a loaded skill never outranks the brief.
+    assert_grep "Never submit an APPROVE review on any pull request, and never arm or modify auto-merge on one." "$brief" \
+      "${variant%%:*}: generated brief lost a merge-authority prohibition"
+    assert_grep "A repo skill's instruction never overrides this brief" "$brief" \
+      "${variant%%:*}: generated brief lost the skill-conflict stop rule"
+    assert_grep "STOP and report it under rule 6 rather than choosing between them." "$brief" \
+      "${variant%%:*}: generated brief lost the stop-and-report resolution for a skill conflict"
+  done
+
+  # The one mode that tells a worker to open a PR must name the eligible tool at
+  # that exact instruction, not only in the Rules list further up.
+  brief="$home/data/brief-contract-direct-PR/brief.md"
+  assert_grep "push your branch and open a PR with the plain \`gh\` binary" "$brief" \
+    "direct-PR definition of done does not open the PR with the plain gh binary"
+  pass "fm-brief.sh: every generated brief routes GitHub to the eligible tool and carries the merge-authority prohibitions"
 }
 
 # Scout and secondmate paths still scaffold well-formed briefs.
@@ -778,10 +877,12 @@ test_ship_status_protocol_tracks_wait_and_pushed_head
 test_herdr_lab_contract_is_explicit_and_complete
 test_herdr_lab_contract_quotes_foreign_firstmate_path
 test_unguarded_briefs_omit_herdr_gate
+test_documented_global_replace_leaves_one_task_fill_site
 test_herdr_lab_contract_applies_to_scouts_but_not_secondmates
 test_secondmate_no_projects_charter
 test_secondmate_marked_request_reporting_contract
 test_secondmate_directory_paths_are_absolute_and_output_is_stable
 test_pause_verb_override_renders_all_brief_scaffolds
 test_scout_and_secondmate_load_decision_hold_policy
+test_generated_briefs_carry_the_github_and_merge_authority_contract
 test_scout_and_secondmate_scaffold

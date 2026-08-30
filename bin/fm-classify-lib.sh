@@ -13,7 +13,7 @@
 # daemon keeps its escalation-digest seen-markers; the watcher keeps its .seen-*
 # signatures).
 #
-# There are two documented exceptions. The absorb classification
+# There are three documented exceptions. The absorb classification
 # (crew_absorb_class and its working/paused wrappers) is NOT a pure status-file
 # read: it reuses bin/fm-crew-state.sh, which may make a bounded no-mistakes call,
 # to decide whether a crew that just stopped its turn or went stale is working,
@@ -23,7 +23,9 @@
 # open-decisions fold" below) also writes: it persists a per-status-file byte
 # cursor and folded open-set as a side effect, so a per-drain fleet-wide scan
 # stays bounded by new appends instead of re-reading each task's whole lifetime
-# log every time.
+# log every time. crew_worktree_written_since reads the task's meta file and walks
+# a bounded slice of its worktree instead of a status file, so callers run it only
+# at the moment they would otherwise escalate.
 
 # Directory of this library, used to locate the sibling fm-crew-state.sh reader.
 # Resolved at source time from BASH_SOURCE so it works whether sourced by a
@@ -34,6 +36,19 @@ _FM_CLASSIFY_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null)"
 # Overridable so tests can stub the run-step/pane verdict without a real worktree
 # or no-mistakes install; absent, it points at the real sibling script.
 FM_CREW_STATE_BIN="${FM_CREW_STATE_BIN:-$_FM_CLASSIFY_LIB_DIR/fm-crew-state.sh}"
+
+# fm_run_timed, the shared hard bound the worktree write probe below puts around
+# its one filesystem walk. bin/fm-timeout-lib.sh owns bounded execution for this
+# repo, so nothing here re-derives the coreutils/BSD/perl selection. That library
+# declares `set -u` for its own hygiene, which a sourced sibling must not impose on
+# THIS library's consumers - several of them deliberately run without it - so the
+# caller's setting is restored around the source.
+case $- in *u*) _fm_classify_nounset=on ;; *) _fm_classify_nounset=off ;; esac
+# shellcheck source=bin/fm-timeout-lib.sh
+# shellcheck disable=SC1091
+. "$_FM_CLASSIFY_LIB_DIR/fm-timeout-lib.sh"
+[ "$_fm_classify_nounset" = on ] || set +u
+unset _fm_classify_nounset
 
 # Captain-relevant status verbs. A status line carrying any of these is work
 # firstmate must see. Lines without these verbs are no-verb signals: the watcher
@@ -61,7 +76,7 @@ FM_CLASSIFY_CAPTAIN_RE_DEFAULT='done:|needs-decision:|blocked:|failed:|PR ready|
 # drift between the two consumers. FM_CLASSIFY_PAUSED_VERB overrides it.
 FM_CLASSIFY_PAUSED_VERB_DEFAULT='paused'
 
-# Bounded re-surface cadence for a declared pause or a dead-agent captain hold.
+# Bounded re-surface cadence for a declared pause or a verified captain hold.
 # Far longer than the wedge threshold (FM_STALE_ESCALATE_SECS, default 240s), it
 # avoids nagging a deliberate wait while ensuring a forgotten hold cannot rot
 # invisibly - it re-surfaces once for a recheck every window. One hour by default;
@@ -73,7 +88,7 @@ FM_PAUSE_RESURFACE_SECS_DEFAULT=3600
 # The resolution verb and durable-backlog-transfer verb that CLOSE a keyed
 # status decision opened by needs-decision or blocked. See status_open_decisions
 # below for the status-fold contract. The transfer verb is written only after
-# fm-decision-hold.sh has verified the corresponding captain-held backlog item.
+# fm-captain-hold.sh has verified the corresponding captain-held backlog item.
 FM_CLASSIFY_RESOLVE_VERB_DEFAULT='resolved'
 FM_CLASSIFY_CAPTAIN_HELD_VERB_DEFAULT='captain-held'
 
@@ -131,17 +146,167 @@ status_is_paused() {  # <status-line>
   [ "$verb" = "${FM_CLASSIFY_PAUSED_VERB:-$FM_CLASSIFY_PAUSED_VERB_DEFAULT}" ]
 }
 
-# 0 if a status line declares either an external-wait pause or a verified
-# captain-held transfer.
-# Both declarations can intentionally leave an exited crew's endpoint idle, so
-# the watcher applies its bounded pause cadence when agent death confirms that
-# no live decision gate is being silenced.
-status_is_paused_or_captain_held() {  # <status-line>
+# 0 if a status line's leading verb is the verified captain-held transfer verb.
+# The same pure verb read as status_is_paused, and the discriminator a supervisor
+# needs once a declared wait has already been recognized: the two declarations get
+# the same bounded cadence, but they block on DIFFERENT humans, so a recheck that
+# names an external dependency for a hold points the captain away from the fact
+# that they are the one who can clear it.
+status_is_captain_held() {  # <status-line>
   local line=$1 verb
-  status_is_paused "$line" && return 0
   [ -n "$line" ] || return 1
   verb=$(status_line_verb "$line")
   [ "$verb" = "${FM_CLASSIFY_CAPTAIN_HELD_VERB:-$FM_CLASSIFY_CAPTAIN_HELD_VERB_DEFAULT}" ]
+}
+
+# 0 if a status line declares either an external-wait pause or a verified
+# captain-held transfer.
+# Both declarations can intentionally leave a crew's endpoint idle, so both
+# supervisors give them one cadence: the away-mode daemon defers the wedge and
+# ages a pause marker instead, and the watcher applies its bounded pause cadence
+# once pause_state_class has admitted the wait (fm-watch.sh owns which liveness
+# evidence each kind of crew must supply for that).
+status_is_paused_or_captain_held() {  # <status-line>
+  local line=$1
+  status_is_paused "$line" || status_is_captain_held "$line"
+}
+
+# --- event time -------------------------------------------------------------
+#
+# The status stream is an append-only EVENT log, and every latency read off it
+# needs the instant an event HAPPENED. So the appender stamps its own line: an
+# optional "[at=<stamp>]" tag in the same before-the-colon metadata region that
+# already carries "[key=...]" and "[corr=...]".
+#
+#   working [at=20260829T134516Z]: pushed 39594f22a4
+#   resolved [at=20260829T134516Z] [key=api-shape]: answered: use REST
+#
+# The stamp is UTC in ISO 8601 BASIC form (no separators) because this grammar
+# splits on the line's FIRST colon: an extended "13:45:16" stamp would move
+# that split into the timestamp itself and take the note (status_line_note) and
+# the stated key (_fm_decision_key) with it. Basic form is what the rest of the
+# repo already uses wherever a colon is unsafe - bin/fm-control.sh's relaunch
+# transaction id, bin/fm-config-inherit-lib.sh's generation stamp.
+#
+# The stamp is written at APPEND time, never at read time. The interval between
+# a worker appending an event and a reader first observing it IS part of the
+# latency being measured, so an observation stamp would silently subtract it;
+# worse, it would be arbitrarily late - or never written at all - exactly when
+# no reader is running, which is when latency is worst and most worth seeing.
+#
+# An unstamped line is a line with NO event time, and every reader keeps
+# working on one: lines written before this existed are never stamped
+# retroactively, and an appender that fumbles the tag degrades to that same
+# no-time case rather than to a wrong time. Nothing here ever infers a time.
+FM_CLASSIFY_AT_FORMAT='%Y%m%dT%H%M%SZ'
+
+# The current UTC instant in stamp form. FM_CLASSIFY_NOW pins it for tests; an
+# invalid override is rejected downstream by _fm_stamp_ok rather than trusted.
+status_now_stamp() {
+  if [ -n "${FM_CLASSIFY_NOW:-}" ]; then
+    printf '%s' "$FM_CLASSIFY_NOW"
+    return 0
+  fi
+  date -u "+$FM_CLASSIFY_AT_FORMAT"
+}
+
+# 0 when <stamp> is a well-formed UTC instant in that form. A malformed stamp
+# is REJECTED, never repaired: its line then reads as unstamped, which is a
+# missing measurement rather than a wrong one - the same "reject, never
+# rewrite" rule _fm_decision_slug_ok applies to a malformed key.
+_fm_stamp_ok() {  # <stamp>
+  local s=$1 mo d h mi se
+  # The pattern pins the stamp to exactly sixteen ASCII characters before any
+  # caller slices it, so byte and character indexing agree in every locale.
+  case "$s" in
+    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) ;;
+    *) return 1 ;;
+  esac
+  mo=$((10#${s:4:2})); d=$((10#${s:6:2}))
+  h=$((10#${s:9:2})); mi=$((10#${s:11:2})); se=$((10#${s:13:2}))
+  [ "$mo" -ge 1 ] || return 1
+  [ "$mo" -le 12 ] || return 1
+  [ "$d" -ge 1 ] || return 1
+  [ "$d" -le 31 ] || return 1
+  [ "$h" -le 23 ] || return 1
+  [ "$mi" -le 59 ] || return 1
+  [ "$se" -le 59 ] || return 1
+  return 0
+}
+
+# The stamp a status line carries; nonzero when it carries none. Read ONLY from
+# the before-the-colon metadata region, the same place _fm_key_before_colon
+# reads a stated key, so an "[at=...]" written after the colon stays note prose
+# and its line is simply unstamped.
+status_line_at() {  # <status-line> -> stamp
+  local head=${1%%:*} s
+  case "$head" in *\[at=*\]*) ;; *) return 1 ;; esac
+  s=${head#*\[at=}
+  s=${s%%\]*}
+  _fm_stamp_ok "$s" || return 1
+  printf '%s' "$s"
+}
+
+# UTC seconds since the epoch for one valid stamp. Pure integer arithmetic
+# (Howard Hinnant's days-from-civil), NOT `date` parsing: BSD date needs -j -f
+# and GNU date needs -d, and the two disagree about the basic form, so one
+# conversion here keeps macOS and Linux on the same answer with no fallback
+# chain to go quietly wrong.
+status_stamp_to_epoch() {  # <stamp> -> seconds since 1970-01-01T00:00:00Z
+  local s=$1 y mo d h mi se era yoe doy doe days
+  _fm_stamp_ok "$s" || return 1
+  y=$((10#${s:0:4})); mo=$((10#${s:4:2})); d=$((10#${s:6:2}))
+  h=$((10#${s:9:2})); mi=$((10#${s:11:2})); se=$((10#${s:13:2}))
+  if [ "$mo" -le 2 ]; then
+    y=$((y - 1))
+    doy=$(( (153 * (mo + 9) + 2) / 5 + d - 1 ))
+  else
+    doy=$(( (153 * (mo - 3) + 2) / 5 + d - 1 ))
+  fi
+  era=$((y / 400))
+  yoe=$((y - era * 400))
+  doe=$(( yoe * 365 + yoe / 4 - yoe / 100 + doy ))
+  days=$(( era * 146097 + doe - 719468 ))
+  printf '%s' $(( days * 86400 + h * 3600 + mi * 60 + se ))
+}
+
+# The event time of a status line as epoch seconds; nonzero when unstamped.
+status_line_at_epoch() {  # <status-line> -> seconds since the epoch
+  local s
+  s=$(status_line_at "$1") || return 1
+  status_stamp_to_epoch "$s"
+}
+
+# <status-line> with an "[at=...]" tag inserted after its verb, so every
+# appender stamps through one grammar instead of hand-building the tag.
+# Always prints a line, and returns 1 when it could not stamp one, so a writer
+# appends the event it meant to append either way. Three lines pass through
+# unchanged: an already-stamped one (re-stamping never overwrites the first
+# time recorded), one with no colon to separate verb from note (inserting a tag
+# would push metadata into the note), and one with no leading verb.
+status_stamp_line() {  # <status-line> [<stamp>] -> line
+  local line=$1 stamp=${2:-} verb pre rest
+  if status_line_at "$line" >/dev/null 2>&1; then
+    printf '%s' "$line"
+    return 0
+  fi
+  case "$line" in
+    *:*) ;;
+    *) printf '%s' "$line"; return 1 ;;
+  esac
+  [ -n "$stamp" ] || stamp=$(status_now_stamp)
+  if ! _fm_stamp_ok "$stamp"; then
+    printf '%s' "$line"
+    return 1
+  fi
+  verb=$(status_line_verb "$line")
+  if [ -z "$verb" ]; then
+    printf '%s' "$line"
+    return 1
+  fi
+  pre=${line%%"$verb"*}
+  rest=${line#"$pre$verb"}
+  printf '%s%s [at=%s]%s' "$pre" "$verb" "$stamp" "$rest"
 }
 
 # --- durable keyed decisions ------------------------------------------------
@@ -349,6 +514,75 @@ status_open_decisions() {  # <status-file>
     open=$(_fm_decision_fold_line "$open" "$line" "$resolve" "$held")
   done < "$f"
   printf '%s' "$open"
+}
+
+# 0 when <key> has a record in a folded "<key>\t<verb>\t<note>" open set.
+_fm_open_set_has() {  # <open-set> <key>
+  case "$1" in
+    "$2"$'\t'*|*$'\n'"$2"$'\t'*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# The verb stored for <key> in a folded open set (empty when it has no record).
+_fm_open_set_verb() {  # <open-set> <key>
+  local line
+  while IFS= read -r line; do
+    case "$line" in
+      "$2"$'\t'*) line=${line#*$'\t'}; printf '%s' "${line%%$'\t'*}"; return 0 ;;
+    esac
+  done <<EOF
+$1
+EOF
+  return 0
+}
+
+# The verb that last moved <key> in a status stream, which is what tells a
+# consumer HOW the status side currently reads that key. Prints the opening verb
+# (needs-decision or blocked) while the key is still open, the closing verb
+# (resolved, or the captain-held durable-transfer verb) once it is closed, and
+# nothing at all when no line in the stream ever stated a transition for it.
+#
+# The distinction between the two closing verbs is the whole point: a
+# `captain-held` close is the VERIFIED handoff to a durable captain-held task
+# (fm-captain-hold.sh complete writes it only after verifying that task), so the
+# structured row staying open afterwards is correct. A `resolved` close claims
+# the question is settled outright, so a structured row still open behind it is a
+# contradiction between the two records - see fm-captain-hold.sh's `diverged`.
+#
+# Semantics are not re-derived here: every line goes through the same
+# _fm_decision_fold_line rule the two folds use, and the reported verb is read
+# off the transitions that rule produces. Only lines whose parsed key equals the
+# requested one can move that key, so a caller-supplied key other than "default"
+# lets the scan pre-filter the stream to lines carrying its token and stay cheap
+# on a long log.
+status_key_closing_verb() {  # <status-file> <key>
+  local f=$1 want=$2 line resolve held open='' was verb='' stream
+  [ -f "$f" ] && [ -r "$f" ] && [ ! -L "$f" ] || return 0
+  [ -n "$want" ] || return 0
+  resolve=${FM_CLASSIFY_RESOLVE_VERB:-$FM_CLASSIFY_RESOLVE_VERB_DEFAULT}
+  held=${FM_CLASSIFY_CAPTAIN_HELD_VERB:-$FM_CLASSIFY_CAPTAIN_HELD_VERB_DEFAULT}
+  if [ "$want" = default ]; then
+    stream=$(cat "$f") || return 0
+  else
+    stream=$(grep -F "[key=$want]" "$f") || stream=''
+  fi
+  [ -n "$stream" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    was=0
+    _fm_open_set_has "$open" "$want" && was=1
+    open=$(_fm_decision_fold_line "$open" "$line" "$resolve" "$held")
+    if [ "$was" = 1 ] && ! _fm_open_set_has "$open" "$want"; then
+      verb=$(status_line_verb "$line")
+    fi
+  done <<EOF
+$stream
+EOF
+  if _fm_open_set_has "$open" "$want"; then
+    _fm_open_set_verb "$open" "$want"
+    return 0
+  fi
+  printf '%s' "$verb"
 }
 
 # Fleet-wide wrapper around status_open_decisions: scans every task's status
@@ -1003,6 +1237,78 @@ $snapshot
 EOF
 }
 
+# --- timed event stream -----------------------------------------------------
+#
+# The append-only log, read as measurable events instead of as current state.
+# One row per non-blank line, in append order (which is the order the events
+# happened):
+#
+#   <epoch>\t<stamp>\t<verb>\t<key>\t<note>
+#
+# A single "-" stands for a field this line does not supply: no event time
+# (epoch and stamp together), no leading verb, or a stated key too malformed to
+# read. So a consumer computing a latency SEES the gap and can name the endpoint
+# it is missing instead of silently substituting a guess.
+#
+# The marker exists rather than an empty field because a tab is IFS whitespace:
+# `IFS=$'\t' read` folds runs of tabs into one separator and drops leading ones,
+# so a row that began with two empty fields would shift every later field left
+# and read a verb as an epoch. It can never be mistaken for a real time: an
+# epoch is digits and a stamp is the fixed 16-character instant. A line whose
+# leading verb or stated key is literally "-" would read the same as one that
+# supplies neither - nothing writes such a line, and the cost is one event that
+# reads as unattributed rather than any wrong time. The note is last and
+# printed as it stands, so a tab a worker managed to write into its prose can
+# shift nothing before it.
+FM_CLASSIFY_EVENT_NONE='-'
+_fm_status_timed_events_stream() {
+  local line verb key note stamp epoch stripped none=$FM_CLASSIFY_EVENT_NONE
+  while IFS= read -r line || [ -n "$line" ]; do
+    stripped=${line//[[:space:]]/}
+    [ -n "$stripped" ] || continue
+    verb=$(status_line_verb "$line")
+    [ -n "$verb" ] || verb=$none
+    key=$(_fm_decision_key "$line") || key=$none
+    note=$(status_line_note "$line")
+    stamp=$(status_line_at "$line") || stamp=$none
+    epoch=$none
+    if [ "$stamp" != "$none" ]; then
+      epoch=$(status_stamp_to_epoch "$stamp") || { epoch=$none; stamp=$none; }
+    fi
+    printf '%s\t%s\t%s\t%s\t%s\n' "$epoch" "$stamp" "$verb" "$key" "$note"
+  done
+}
+
+status_timed_events() {  # <status-file-or-dash>
+  local f=$1
+  if [ "$f" = - ]; then
+    _fm_status_timed_events_stream
+    return 0
+  fi
+  [ -f "$f" ] || return 0
+  _fm_status_timed_events_stream < "$f"
+}
+
+# Every home's timed events as "<task>\t<epoch>\t<stamp>\t<verb>\t<key>\t<note>"
+# rows, in glob (task id) order. The fleet-wide read the acceptance review needs:
+# three of its four numbers span two events, and one of them spans two tasks.
+scan_timed_events() {  # <state>
+  local state=$1 f task row rows
+  for f in "$state"/*.status; do
+    [ -e "$f" ] || continue
+    task=$(basename "$f"); task="${task%.status}"
+    rows=$(status_timed_events "$f")
+    [ -n "$rows" ] || continue
+    while IFS= read -r row; do
+      [ -n "$row" ] || continue
+      printf '%s\t%s\n' "$task" "$row"
+    done <<EOF
+$rows
+EOF
+  done
+  return 0
+}
+
 # Fold material routed-work phases in the same keyed event stream.
 # A working or declared-pause event opens or replaces one phase for its key.
 # A later done, failed, needs-decision, blocked, or resolved event carrying that
@@ -1131,6 +1437,94 @@ crew_is_provably_working() {  # <id>
 # escalating a possible wedge.
 crew_is_paused() {  # <id>
   [ "$(crew_absorb_class "$1")" = paused ]
+}
+
+# Directories excluded from the worktree write probe below, and the depth it walks.
+# The excluded set is everything a supervisor read or a package manager can write
+# without the crew doing any work - .git first, so firstmate's own read-only git
+# commands against the worktree can never make the probe self-fulfilling - plus the
+# large generated trees that would make the walk expensive. Both are overridable so
+# a home with an unusual layout can widen or narrow the probe. The list is a skip
+# list, so clearing it skips nothing and widens the walk to the whole depth-bounded
+# tree; it never disables the probe, which would quietly cost the wedge detector a
+# liveness input on a home that meant to widen it. Defaulted with the plain form so
+# an explicitly empty value stays empty: clearing the knob in the environment is the
+# documented way to ask for that wider walk, and treating empty as unset would hand
+# the default skip list back to exactly the home that asked for more coverage.
+FM_WORKTREE_WRITE_PRUNE=${FM_WORKTREE_WRITE_PRUNE-'.git node_modules .venv venv __pycache__ .mypy_cache .pytest_cache .ruff_cache .tox target dist build .next .cache vendor'}
+FM_WORKTREE_WRITE_MAXDEPTH=${FM_WORKTREE_WRITE_MAXDEPTH:-6}
+
+# Wall-clock seconds the probe's single walk may take. The walk runs synchronously
+# inside the caller's poll loop at the exact moment an escalation would otherwise
+# fire, and -xdev keeps it out of a nested mount but cannot help when the worktree
+# root ITSELF sits on a hung network or container mount; unbounded, such a walk
+# would wedge the very supervisor that exists to notice a wedge, stalling its
+# heartbeat instead of escalating. Hitting the bound is a negative outcome like
+# every other: it reads as no evidence, so the caller's escalation schedule is
+# untouched and a stall that writes nothing still escalates on the existing
+# schedule. A value that is not a positive integer is not a bound at all (`timeout
+# 0` and the perl fallback's `alarm 0` both disable the deadline), so the default
+# applies instead; the check lives at the point of use so an in-process override
+# gets it too.
+FM_WORKTREE_WRITE_TIMEOUT=${FM_WORKTREE_WRITE_TIMEOUT:-10}
+
+# 0 when some regular file under <id>'s recorded worktree is newer than
+# <anchor-file>: positive evidence the crew is still producing work even though its
+# rendered pane has gone quiet. This is the third liveness input the wedge detector
+# has, after pane quietness and the run step, and it exists because neither of
+# those can see a crew that is writing source, then tests, then documentation
+# behind a static pane.
+#
+# 1 for every other outcome, including an id with no recorded worktree, a worktree
+# that is gone, a missing anchor, and a walk that fails or finds nothing. Absence of
+# evidence therefore always leaves the caller's existing escalation schedule
+# untouched, so a crew that writes nothing still escalates exactly as before.
+#
+# A kind=secondmate task records a provisioned firstmate home, not a code tree, and
+# such a home runs its OWN supervision inside it: its state/ directory churns a
+# watcher beacon, pane hashes, and heartbeats whether or not the mate is producing
+# anything, so a walk there would report liveness for a mate that has done nothing.
+# Those homes are excluded outright rather than by pruning "state", which would also
+# hide a legitimate source directory of that name in an ordinary worktree. The
+# exclusion is a negative outcome like any other, so an unproductive mate keeps
+# escalating on the caller's unchanged schedule.
+#
+# The anchor is the caller's own idle-window timer file, whose mtime already marks
+# when the quiet window opened, so `-newer` needs no clock arithmetic, no temp
+# file, and no portable mtime-setting. Not a pure status-file read (see the header):
+# one pruned, depth-bounded, wall-clock-bounded walk per call, which callers must
+# reach only when they are otherwise about to escalate, never on every poll. A walk
+# that outlives FM_WORKTREE_WRITE_TIMEOUT is killed and reported as no evidence, so
+# a hung mount costs the escalation nothing but the bound. -xdev holds that walk to the
+# worktree's own filesystem rather than descending into a nested network or container
+# mount, so a write that lands only under such a mount is one more negative outcome.
+crew_worktree_written_since() {  # <id> <state> <anchor-file>
+  local id=$1 state=$2 anchor=$3 wt kind name hit bound
+  local -a names=() prune=()
+  [ -n "$id" ] || return 1
+  [ -f "$anchor" ] || return 1
+  wt=$(grep '^worktree=' "$state/$id.meta" 2>/dev/null | tail -1 | cut -d= -f2- || true)
+  [ -n "$wt" ] && [ -d "$wt" ] || return 1
+  kind=$(grep '^kind=' "$state/$id.meta" 2>/dev/null | tail -1 | cut -d= -f2- || true)
+  [ "$kind" != secondmate ] || return 1
+  if [ -e "$wt/.fm-secondmate-home" ] || [ -L "$wt/.fm-secondmate-home" ]; then
+    return 1
+  fi
+  read -r -a names <<< "$FM_WORKTREE_WRITE_PRUNE"
+  for name in ${names[@]+"${names[@]}"}; do
+    [ "${#prune[@]}" -eq 0 ] || prune+=( -o )
+    prune+=( -name "$name" )
+  done
+  bound=$FM_WORKTREE_WRITE_TIMEOUT
+  case "$bound" in ''|*[!0-9]*|0) bound=10 ;; esac
+  if [ "${#prune[@]}" -gt 0 ]; then
+    hit=$(fm_run_timed "$bound" find "$wt" -xdev -maxdepth "$FM_WORKTREE_WRITE_MAXDEPTH" \
+      \( "${prune[@]}" \) -prune -o -type f -newer "$anchor" -print -quit 2>/dev/null || true)
+  else
+    hit=$(fm_run_timed "$bound" find "$wt" -xdev -maxdepth "$FM_WORKTREE_WRITE_MAXDEPTH" \
+      -type f -newer "$anchor" -print -quit 2>/dev/null || true)
+  fi
+  [ -n "$hit" ]
 }
 
 # 0 (benign/absorb) if EVERY task referenced by a no-verb "signal:" wake is provably

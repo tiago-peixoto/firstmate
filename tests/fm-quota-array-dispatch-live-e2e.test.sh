@@ -160,6 +160,19 @@ write_fixture() {
   cat > "$FIXTURE"
 }
 
+# Quota timestamps are boundaries, not historical inputs. Anchor every reset
+# and projected-exhaustion instant to the same injectable clock used by the
+# public-followup behavior suite, preserving each fixture's original offsets.
+# A fixed 2030 date would eventually make a supposedly fresh quota snapshot
+# stale without any code change.
+fixture_instant() {  # <seconds-after-generatedAt> -> RFC3339 UTC
+  local epoch=$((FIXTURE_NOW_EPOCH + $1))
+  date -u -r "$epoch" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+    || date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ
+}
+
+FIXTURE_NOW_EPOCH=${FMX_NOW_OVERRIDE:-$(date -u +%s)}
+
 run_case() {
   local label=$1 expected=$2 expected_calls=$3 prompt=$4 out calls required
   shift 4
@@ -184,9 +197,9 @@ run_case() {
   printf 'ok - %s\n' "$label"
 }
 
-write_fixture <<'JSON'
+write_fixture <<JSON
 {
-  "generatedAt": "2030-01-01T00:00:00Z",
+  "generatedAt": "$(fixture_instant 0)",
   "schemaVersion": 5,
   "providers": [
     {
@@ -198,7 +211,7 @@ write_fixture <<'JSON'
           "label": "week",
           "kind": "weekly",
           "percentRemaining": 80,
-          "resetsAt": "2030-01-07T07:12:00Z",
+          "resetsAt": "$(fixture_instant 544320)",
           "pace": { "status": "ahead", "reservePercentPoints": -10, "burnMultiple": 2 }
         }
       ],
@@ -215,7 +228,7 @@ write_fixture <<'JSON'
             "runway": {
               "status": "projected_exhaustion",
               "usableRunwaySeconds": 241920,
-              "projectedExhaustedAt": "2030-01-03T19:12:00Z",
+              "projectedExhaustedAt": "$(fixture_instant 241920)",
               "limitingWindowId": "weekly",
               "projectionConfidence": "established"
             },
@@ -233,7 +246,7 @@ write_fixture <<'JSON'
           "label": "week",
           "kind": "weekly",
           "percentRemaining": 20,
-          "resetsAt": "2030-01-03T19:12:00Z",
+          "resetsAt": "$(fixture_instant 241920)",
           "pace": { "status": "ahead", "reservePercentPoints": -20, "burnMultiple": 1.3333 }
         }
       ],
@@ -250,7 +263,7 @@ write_fixture <<'JSON'
             "runway": {
               "status": "projected_exhaustion",
               "usableRunwaySeconds": 90720,
-              "projectedExhaustedAt": "2030-01-02T01:12:00Z",
+              "projectedExhaustedAt": "$(fixture_instant 90720)",
               "limitingWindowId": "weekly",
               "projectionConfidence": "established"
             },
@@ -270,9 +283,9 @@ run_case \
   "FACT=claude|headroom=80|spendPriority=-1.1111|runway_seconds=241920" \
   "FACT=codex|headroom=20|spendPriority=-0.8333|runway_seconds=90720"
 
-write_fixture <<'JSON'
+write_fixture <<JSON
 {
-  "generatedAt": "2030-01-01T00:00:00Z",
+  "generatedAt": "$(fixture_instant 0)",
   "schemaVersion": 5,
   "providers": [
     {
@@ -284,7 +297,7 @@ write_fixture <<'JSON'
           "label": "week",
           "kind": "weekly",
           "percentRemaining": 55,
-          "resetsAt": "2030-01-08T00:00:00Z",
+          "resetsAt": "$(fixture_instant 604800)",
           "pace": { "status": "unknown", "reason": "missing_cycle" }
         }
       ],
@@ -313,7 +326,7 @@ write_fixture <<'JSON'
           "label": "week",
           "kind": "weekly",
           "percentRemaining": 45,
-          "resetsAt": "2030-01-04T20:24:00Z",
+          "resetsAt": "$(fixture_instant 332640)",
           "pace": { "status": "ahead", "reservePercentPoints": -10, "burnMultiple": 1.2222 }
         }
       ],
@@ -330,7 +343,7 @@ write_fixture <<'JSON'
             "runway": {
               "status": "projected_exhaustion",
               "usableRunwaySeconds": 222676,
-              "projectedExhaustedAt": "2030-01-03T13:51:16Z",
+              "projectedExhaustedAt": "$(fixture_instant 222676)",
               "limitingWindowId": "weekly",
               "projectionConfidence": "established"
             },
@@ -351,9 +364,9 @@ JSON" \
   "FACT=claude|eligible=yes|headroom=55|runway=unknown|spendPriority=unknown|unmeasurable=weekly" \
   "FACT=codex|eligible=yes|headroom=45|spendPriority=-0.404|runway_seconds=222676|supports_horizon=yes"
 
-write_fixture <<'JSON'
+write_fixture <<JSON
 {
-  "generatedAt": "2030-01-01T00:00:00Z",
+  "generatedAt": "$(fixture_instant 0)",
   "schemaVersion": 5,
   "providers": [
     {
@@ -365,7 +378,7 @@ write_fixture <<'JSON'
           "label": "week",
           "kind": "weekly",
           "percentRemaining": 5,
-          "resetsAt": "2030-01-04T12:00:00Z",
+          "resetsAt": "$(fixture_instant 302400)",
           "pace": { "status": "ahead", "reservePercentPoints": -45, "burnMultiple": 1.9 }
         }
       ],
@@ -382,7 +395,7 @@ write_fixture <<'JSON'
             "runway": {
               "status": "projected_exhaustion",
               "usableRunwaySeconds": 15916,
-              "projectedExhaustedAt": "2030-01-01T04:25:16Z",
+              "projectedExhaustedAt": "$(fixture_instant 15916)",
               "limitingWindowId": "weekly",
               "projectionConfidence": "established"
             },
@@ -400,7 +413,7 @@ write_fixture <<'JSON'
           "label": "week",
           "kind": "weekly",
           "percentRemaining": 80,
-          "resetsAt": "2030-01-06T22:48:00Z",
+          "resetsAt": "$(fixture_instant 514080)",
           "pace": { "status": "ahead", "reservePercentPoints": -5, "burnMultiple": 1.3333 }
         }
       ],
@@ -417,7 +430,7 @@ write_fixture <<'JSON'
             "runway": {
               "status": "projected_exhaustion",
               "usableRunwaySeconds": 362880,
-              "projectedExhaustedAt": "2030-01-05T04:48:00Z",
+              "projectedExhaustedAt": "$(fixture_instant 362880)",
               "limitingWindowId": "weekly",
               "projectionConfidence": "established"
             },
@@ -437,9 +450,9 @@ run_case \
   "FACT=claude|reasoning=required|headroom=5|spendPriority=-1.8|runway_seconds=15916" \
   "FACT=codex|reasoning=weaker|headroom=80|spendPriority=-0.3921|runway_seconds=362880"
 
-write_fixture <<'JSON'
+write_fixture <<JSON
 {
-  "generatedAt": "2030-01-01T00:00:00Z",
+  "generatedAt": "$(fixture_instant 0)",
   "schemaVersion": 5,
   "providers": [
     {
@@ -451,7 +464,7 @@ write_fixture <<'JSON'
           "label": "5-hour",
           "kind": "five_hour",
           "percentRemaining": 20,
-          "resetsAt": "2030-01-01T02:00:00Z",
+          "resetsAt": "$(fixture_instant 7200)",
           "pace": { "status": "ahead", "reservePercentPoints": -20, "burnMultiple": 1.3333 }
         }
       ],
@@ -468,7 +481,7 @@ write_fixture <<'JSON'
             "runway": {
               "status": "projected_exhaustion",
               "usableRunwaySeconds": 2700,
-              "projectedExhaustedAt": "2030-01-01T00:45:00Z",
+              "projectedExhaustedAt": "$(fixture_instant 2700)",
               "limitingWindowId": "five_hour",
               "projectionConfidence": "established"
             },
@@ -486,7 +499,7 @@ write_fixture <<'JSON'
           "label": "week",
           "kind": "weekly",
           "percentRemaining": 5,
-          "resetsAt": "2030-01-04T12:00:00Z",
+          "resetsAt": "$(fixture_instant 302400)",
           "pace": { "status": "ahead", "reservePercentPoints": -45, "burnMultiple": 1.9 }
         }
       ],
@@ -503,7 +516,7 @@ write_fixture <<'JSON'
             "runway": {
               "status": "projected_exhaustion",
               "usableRunwaySeconds": 15916,
-              "projectedExhaustedAt": "2030-01-01T04:25:16Z",
+              "projectedExhaustedAt": "$(fixture_instant 15916)",
               "limitingWindowId": "weekly",
               "projectionConfidence": "established"
             },
