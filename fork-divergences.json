@@ -131,9 +131,10 @@
       "introduced": "2026-08-17",
       "upstream_pr": {
         "url": "https://github.com/kunchenguid/firstmate/pull/1944",
-        "disposition": "open"
+        "disposition": "open",
+        "disposition_note": "ROUTE FACT, recorded 2026-08-29 against live GitHub: this pull request is CLOSED and unmerged, closed BY US, not declined by the maintainer. The schema admits only open/rejected/merged, and \"rejected\" is reserved for a genuine upstream decline, so \"open\" is the least-wrong value available rather than an accurate one. See firstmate-divergence-manifest-cannot-express-withdrawal."
       },
-      "retire_when": "Upstream pull request 1944 is merged into official upstream main, so official upstream ships the fork-main integration workflow itself.",
+      "retire_when": "Upstream main carries an equivalent permanent fork-main integration - a supported fork-origin/upstream topology, an isolated fork-target validation registration, and a governed divergence manifest. Re-derived 2026-08-30 after the second time a condition keyed on upstream merging our pull request became unreachable: conditions key on what upstream MAIN CARRIES, never on our pull request merging, because we can withdraw it and upstream can decline it - and both have now happened.",
       "paths": [
         ".agents/skills/fork-main-integration/SKILL.md",
         ".agents/skills/secondmate-provisioning/SKILL.md",
@@ -178,7 +179,8 @@
       "introduced": "2026-08-17",
       "upstream_pr": {
         "url": "https://github.com/kunchenguid/firstmate/pull/2538",
-        "disposition": "open"
+        "disposition": "open",
+        "disposition_note": "ROUTE FACT, recorded 2026-08-29 against live GitHub: this pull request is CLOSED and unmerged, closed BY US, not declined by the maintainer. The schema admits only open/rejected/merged, and \"rejected\" is reserved for a genuine upstream decline, so \"open\" is the least-wrong value available rather than an accurate one. See firstmate-divergence-manifest-cannot-express-withdrawal."
       },
       "retire_when": "upstream main carries this scaffold trim or an equivalent",
       "paths": [
@@ -194,7 +196,8 @@
       "introduced": "2026-08-18",
       "upstream_pr": {
         "url": "https://github.com/kunchenguid/firstmate/pull/2547",
-        "disposition": "open"
+        "disposition": "open",
+        "disposition_note": "ROUTE FACT, recorded 2026-08-29 against live GitHub: this pull request is CLOSED and unmerged, closed BY US, not declined by the maintainer. The schema admits only open/rejected/merged, and \"rejected\" is reserved for a genuine upstream decline, so \"open\" is the least-wrong value available rather than an accurate one. See firstmate-divergence-manifest-cannot-express-withdrawal."
       },
       "retire_when": "upstream main carries this restructure or an equivalent",
       "paths": [
