@@ -94,7 +94,9 @@ case "${1:-}" in
           ;;
       esac
       if [ -n "$branch" ] && [ -n "$head_sha" ] && [ -n "$run_status" ]; then
-        printf '%-12s %s %s  %s\n' "$run_status" "$branch" "${head_sha:0:8}" "$(date '+%Y-%m-%d %H:%M')"
+        run_stamp=$(date -r "${FM_FAKE_RUN_EPOCH:-1787243797}" '+%Y-%m-%d %H:%M' 2>/dev/null \
+          || date -d "@${FM_FAKE_RUN_EPOCH:-1787243797}" '+%Y-%m-%d %H:%M')
+        printf '%-12s %s %s  %s\n' "$run_status" "$branch" "${head_sha:0:8}" "$run_stamp"
       fi
     fi ;;
 esac
@@ -244,6 +246,8 @@ reset_fakes() {
   FM_FAKE_RUNS_LIST=""
   FM_FAKE_RUNS_EMPTY=0
   FM_FAKE_DISABLE_AUTO_INCAR=0
+  FM_FAKE_RUN_ID=01M0G0G71F75XY782REH7Y3KRZ
+  FM_FAKE_RUN_EPOCH=1787243797
   FM_FAKE_BUSY=0
   FM_FAKE_BUSY_TEXT=
   FM_FAKE_TMUX_MISSING=0
@@ -257,6 +261,7 @@ reset_fakes() {
   FM_FAKE_PR_HEAD=""
   FM_FAKE_GH_FAILS=0
   export FM_FAKE_AXI_STATUS FM_FAKE_AXI_STATUS_RUN FM_FAKE_RUNS_LIST FM_FAKE_RUNS_EMPTY FM_FAKE_DISABLE_AUTO_INCAR
+  export FM_FAKE_RUN_ID FM_FAKE_RUN_EPOCH
   export FM_FAKE_BUSY FM_FAKE_BUSY_TEXT FM_FAKE_TMUX_MISSING
   export FM_FAKE_HERDR_BUSY FM_FAKE_HERDR_MISSING FM_FAKE_HERDR_AGENT_STATUS FM_FAKE_CI_LOGS
   export FM_FAKE_CHECK_SUITES FM_FAKE_CHECK_SUITES_PAGE_1 FM_FAKE_CHECK_SUITES_ALL
@@ -274,7 +279,7 @@ suites_green() { printf '2\ncompleted|success|12\ncompleted|success|1\n'; }
 run_running() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: running
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -289,7 +294,7 @@ EOF
 run_fixing() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: fixing
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -301,7 +306,7 @@ EOF
 run_top_level_ci() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: ci
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -313,7 +318,7 @@ EOF
 run_parked() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: awaiting_approval
   awaiting_agent: parked 2m10s
@@ -329,7 +334,7 @@ EOF
 run_parked_scalar_gate_running() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: running
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -343,7 +348,7 @@ EOF
 run_parked_in_gate_block() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: running
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -363,7 +368,7 @@ EOF
 run_passed() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: completed
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -376,7 +381,7 @@ EOF
 run_checks_passed() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: running
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -394,7 +399,7 @@ EOF
 run_passed_pr_published_ci_skipped() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: completed
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -416,7 +421,7 @@ EOF
 run_passed_publish_skipped() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: completed
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -435,10 +440,27 @@ outcome: passed
 EOF
 }
 
+run_passed_branch_pushed_pr_skipped() {  # <branch>
+  cat <<EOF
+run:
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
+  branch: $1
+  status: completed
+  head: "${FM_FAKE_RUN_HEAD:-abc1234}"
+  findings: none
+  steps[4]{step,status,findings,duration_ms}:
+    intent,completed,0,0
+    push,completed,0,0
+    pr,skipped,0,0
+    ci,skipped,0,0
+outcome: passed
+EOF
+}
+
 run_failed() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: completed
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -451,7 +473,7 @@ EOF
 run_ci_monitoring() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: running
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -468,7 +490,7 @@ EOF
 run_fixing_ci_running() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: fixing
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -485,7 +507,7 @@ EOF
 run_ci_fixing() {  # <branch>
   cat <<EOF
 run:
-  id: "01RUN"
+  id: "${FM_FAKE_RUN_ID:-01M0G0G71F75XY782REH7Y3KRZ}"
   branch: $1
   status: fixing
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
@@ -1739,6 +1761,22 @@ test_passed_run_with_skipped_publish_claims_no_pr() {
   pass "passed run with skipped publishing steps does not claim a PR"
 }
 
+test_passed_run_with_branch_push_and_skipped_pr_names_both() {
+  reset_fakes
+  local d; d=$(new_case passed-branch-only)
+  make_repo_on_branch "$d/wt" fm/feat-branch-only
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/branch-only.meta" "window=fm:fm-branch-only" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_passed_branch_pushed_pr_skipped fm/feat-branch-only)"
+  local out; out=$(run_crew_state "$d" branch-only)
+  assert_contains "$out" "branch published" "a completed push is reported as branch publication"
+  assert_contains "$out" "PR creation skipped" "a skipped PR step is reported separately"
+  assert_not_contains "$out" "nothing published" "a completed branch push is publication"
+  assert_not_contains "$out" "merged" "a skipped PR step proves no terminal PR disposition"
+  assert_not_contains "$out" "closed unmerged" "a skipped PR step proves no terminal PR disposition"
+  pass "passed run distinguishes a branch push from skipped PR creation"
+}
+
 test_passed_run_names_a_merge_when_the_log_records_one() {
   reset_fakes
   local d; d=$(new_case passed-merged)
@@ -1891,6 +1929,8 @@ test_run_predating_this_incarnation_is_not_terminal_authority() {
   fm_write_meta "$d/state/feat-earlier.meta" "window=fm:fm-feat-earlier" "worktree=$d/wt" "kind=ship" \
     "spawn_gen=s$spawn_epoch.123.456"
   printf 'working: rebuilding from a clean base\n' > "$d/state/feat-earlier.status"
+  FM_FAKE_RUN_ID=01M065KCG00000000000000000
+  FM_FAKE_RUN_EPOCH=1786913600
   FM_FAKE_AXI_STATUS="$(run_failed fm/feat-earlier)"
   # The run is the newest for the branch, but it started a day before the spawn.
   stamp=$(date -r $((spawn_epoch - 86400)) '+%Y-%m-%d %H:%M' 2>/dev/null \
@@ -1900,6 +1940,53 @@ test_run_predating_this_incarnation_is_not_terminal_authority() {
   assert_not_contains "$out" "state: failed" "a run from an earlier incarnation is not this task's failure"
   assert_contains "$out" "source: pane" "the worker's own signals answer instead"
   pass "a run predating this incarnation cannot report a terminal verdict"
+}
+
+test_same_minute_run_predating_spawn_is_not_terminal_authority() {
+  reset_fakes
+  local d spawn_epoch stamp
+  d=$(new_case same-minute-earlier-incarnation)
+  make_repo_on_branch "$d/wt" fm/feat-same-minute-earlier
+  make_fakebin "$d" >/dev/null
+  spawn_epoch=1787243810
+  fm_write_meta "$d/state/same-minute-earlier.meta" \
+    "window=fm:fm-same-minute-earlier" "worktree=$d/wt" "kind=ship" "harness=claude" \
+    "spawn_gen=s$spawn_epoch.123.456"
+  printf 'working: replacement worker is healthy\n' > "$d/state/same-minute-earlier.status"
+  FM_FAKE_RUN_ID=01M0G0G71F75XY782REH7Y3KRZ
+  FM_FAKE_RUN_EPOCH=1787243797
+  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-same-minute-earlier)"
+  FM_FAKE_BUSY=1
+  arm_busy_record "$d/state" same-minute-earlier
+  stamp=$(date -r "$FM_FAKE_RUN_EPOCH" '+%Y-%m-%d %H:%M' 2>/dev/null \
+    || date -d "@$FM_FAKE_RUN_EPOCH" '+%Y-%m-%d %H:%M')
+  FM_FAKE_RUNS_LIST="  failed       fm/feat-same-minute-earlier ${FM_FAKE_RUN_HEAD:0:8}  $stamp"
+  local out; out=$(run_crew_state "$d" same-minute-earlier)
+  assert_contains "$out" "state: working" "the replacement worker answers instead"
+  assert_not_contains "$out" "state: failed" "a pre-spawn run from the same minute is not current"
+  pass "run identity disambiguates a same-minute worker respawn"
+}
+
+test_same_minute_run_after_spawn_keeps_terminal_authority() {
+  reset_fakes
+  local d spawn_epoch stamp
+  d=$(new_case same-minute-current-incarnation)
+  make_repo_on_branch "$d/wt" fm/feat-same-minute-current
+  make_fakebin "$d" >/dev/null
+  spawn_epoch=1787243810
+  fm_write_meta "$d/state/same-minute-current.meta" \
+    "window=fm:fm-same-minute-current" "worktree=$d/wt" "kind=ship" \
+    "spawn_gen=s$spawn_epoch.123.456"
+  FM_FAKE_RUN_ID=01M0G0GT180000000000000000
+  FM_FAKE_RUN_EPOCH=1787243817
+  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-same-minute-current)"
+  stamp=$(date -r "$FM_FAKE_RUN_EPOCH" '+%Y-%m-%d %H:%M' 2>/dev/null \
+    || date -d "@$FM_FAKE_RUN_EPOCH" '+%Y-%m-%d %H:%M')
+  FM_FAKE_RUNS_LIST="  failed       fm/feat-same-minute-current ${FM_FAKE_RUN_HEAD:0:8}  $stamp"
+  local out; out=$(run_crew_state "$d" same-minute-current)
+  assert_contains "$out" "state: failed" "a post-spawn run in the same minute stays authoritative"
+  assert_contains "$out" "source: run-step" "the current run remains the source"
+  pass "same-minute post-spawn run identity keeps terminal authority"
 }
 
 # The same run, started after the spawn, keeps its authority - the guard must
@@ -1913,6 +2000,8 @@ test_run_within_this_incarnation_keeps_terminal_authority() {
   spawn_epoch=$(awk 'BEGIN { print 1787000000 }')
   fm_write_meta "$d/state/feat-current.meta" "window=fm:fm-feat-current" "worktree=$d/wt" "kind=ship" \
     "spawn_gen=s$spawn_epoch.123.456"
+  FM_FAKE_RUN_ID=01M08RJDE00000000000000000
+  FM_FAKE_RUN_EPOCH=1787000600
   FM_FAKE_AXI_STATUS="$(run_failed fm/feat-current)"
   stamp=$(date -r $((spawn_epoch + 600)) '+%Y-%m-%d %H:%M' 2>/dev/null \
     || date -d "@$((spawn_epoch + 600))" '+%Y-%m-%d %H:%M')
@@ -1970,6 +2059,28 @@ test_coarse_terminal_without_incarnation_proof_falls_back() {
   assert_contains "$out" "state: working" "a coarse terminal result without spawn proof falls back"
   assert_not_contains "$out" "state: done" "coarse terminal state needs incarnation proof"
   pass "coarse terminal result also requires incarnation proof"
+}
+
+test_coarse_terminal_from_spawn_minute_falls_back() {
+  reset_fakes
+  local d spawn_epoch stamp
+  d=$(new_case coarse-terminal-same-minute)
+  make_repo_on_branch "$d/wt" fm/feat-coarse-same-minute
+  make_fakebin "$d" >/dev/null
+  spawn_epoch=1787243810
+  fm_write_meta "$d/state/coarse-same-minute.meta" \
+    "window=fm:fm-coarse-same-minute" "worktree=$d/wt" "kind=ship" "harness=claude" \
+    "spawn_gen=s$spawn_epoch.123.456"
+  FM_FAKE_AXI_STATUS="$(run_running fm/other-branch)"
+  stamp=$(date -r "$spawn_epoch" '+%Y-%m-%d %H:%M' 2>/dev/null \
+    || date -d "@$spawn_epoch" '+%Y-%m-%d %H:%M')
+  FM_FAKE_RUNS_LIST="  completed    fm/feat-coarse-same-minute ${FM_FAKE_RUN_HEAD:0:8}  $stamp"
+  FM_FAKE_BUSY=1
+  arm_busy_record "$d/state" coarse-same-minute
+  local out; out=$(run_crew_state "$d" coarse-same-minute)
+  assert_contains "$out" "state: working" "a minute-only row cannot identify the current incarnation"
+  assert_not_contains "$out" "state: done" "ambiguous coarse terminal evidence fails closed"
+  pass "coarse same-minute terminal evidence is not authoritative"
 }
 
 test_newer_same_head_run_supersedes_old_failure() {
@@ -2187,10 +2298,14 @@ test_declared_pause_beats_inferred_done
 test_declared_pause_does_not_beat_recorded_outcome
 test_superseded_failed_run_does_not_report_failure
 test_run_predating_this_incarnation_is_not_terminal_authority
+test_same_minute_run_predating_spawn_is_not_terminal_authority
+test_same_minute_run_after_spawn_keeps_terminal_authority
+test_passed_run_with_branch_push_and_skipped_pr_names_both
 test_run_within_this_incarnation_keeps_terminal_authority
 test_terminal_run_without_runs_row_falls_back_to_worker
 test_terminal_run_without_spawn_generation_falls_back
 test_coarse_terminal_without_incarnation_proof_falls_back
+test_coarse_terminal_from_spawn_minute_falls_back
 test_newer_same_head_run_supersedes_old_failure
 test_marker_prefix_collision_is_not_pipeline_output
 test_ci_marker_mapping_by_input

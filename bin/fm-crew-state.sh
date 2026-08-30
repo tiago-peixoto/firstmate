@@ -52,10 +52,10 @@
 #          recorded as the run's outcome, loses to the worker's own declared
 #          `paused:` line: the worker saying "I am waiting and not finished"
 #          outranks an inference about a surface that has misreported before.
-#      What a finished run PUBLISHED is read from its pr step and pr field, not
-#      inferred from the outcome (nm_publication_detail): a run whose publishing
-#      steps were skipped published nothing, which is a different fact from a
-#      pull request that reached a terminal disposition.
+#      What a finished run PUBLISHED is read from its push and pr steps plus its
+#      pr field, not inferred from the outcome (nm_publication_detail): a branch
+#      push is distinct from skipped PR creation, and both differ from a pull
+#      request that reached a terminal disposition.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
 #      the run-step shows the run moved on, the log is deterministically stale and
 #      is flagged superseded. A genuinely parked run plus a needs-decision log
@@ -345,17 +345,30 @@ nm_ci_step_status() {
 # a run whose push, pr and ci steps had all been SKIPPED and for which no pull
 # request existed anywhere: a positive claim about an artifact that was never
 # created. Skipped, succeeded, merged and closed-unmerged are four different
-# facts, so this reads the pr step and the run's own pr field instead.
+# facts, so this reads the push and pr steps plus the run's own pr field instead.
 #
 # Merged vs closed-unmerged comes from the ci log (nm_ci_pr_disposition), not
 # from the outcome, and when the log cannot say the wording stays honestly
 # ambiguous rather than claiming a merge that may not have happened.
 nm_publication_detail() {
-  local pr_step pr_url disposition
+  local push_step pr_step pr_url disposition
+  push_step=$(nm_step_status push)
   pr_step=$(nm_step_status pr)
   pr_url=$(strip_quotes "$(nm_field pr)")
-  if [ "$pr_step" = skipped ] || { [ -z "$pr_step" ] && [ -z "$pr_url" ]; }; then
-    printf 'nothing published (publishing steps skipped)'
+  if [ -z "$pr_url" ] && { [ "$pr_step" = skipped ] || [ -z "$pr_step" ]; }; then
+    if [ "$push_step" = completed ]; then
+      if [ "$pr_step" = skipped ]; then
+        printf 'branch published; PR creation skipped'
+      else
+        printf 'branch published; PR status unavailable'
+      fi
+    elif [ "$push_step" = skipped ] && [ "$pr_step" = skipped ]; then
+      printf 'nothing published (publishing steps skipped)'
+    elif [ "$pr_step" = skipped ]; then
+      printf 'PR creation skipped; branch publication unavailable'
+    else
+      printf 'publishing status unavailable'
+    fi
     return
   fi
   disposition=$(nm_ci_pr_disposition)
@@ -685,14 +698,40 @@ short_sha_eq() {  # <a> <b>
 # spawn_gen= or the host's date cannot format an epoch, which leaves terminal
 # run evidence unattributed. BSD date takes -r <epoch>; GNU date reads
 # -r as a reference FILE and fails, so it is served by the -d @<epoch> form.
-spawn_generation_stamp() {
+spawn_generation_epoch() {
   local gen epoch
   gen=$(meta_value spawn_gen)
   epoch=${gen#s}
   epoch=${epoch%%.*}
   case "$epoch" in ''|*[!0-9]*) return 0 ;; esac
+  printf '%s\n' "$epoch"
+}
+
+epoch_minute_stamp() {  # <epoch>
+  local epoch=$1
   date -r "$epoch" '+%Y-%m-%d %H:%M' 2>/dev/null && return 0
   date -d "@$epoch" '+%Y-%m-%d %H:%M' 2>/dev/null || true
+}
+
+spawn_generation_stamp() {
+  local epoch
+  epoch=$(spawn_generation_epoch)
+  [ -n "$epoch" ] || return 0
+  epoch_minute_stamp "$epoch"
+}
+
+nm_run_id_millis() {  # <run-id>
+  LC_ALL=C awk -v id="$1" 'BEGIN {
+    alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+    if (length(id) != 26 || index("01234567", substr(id, 1, 1)) == 0) exit 1
+    value = 0
+    for (i = 1; i <= 26; i++) {
+      digit = index(alphabet, substr(id, i, 1)) - 1
+      if (digit < 0) exit 1
+      if (i <= 10) value = value * 32 + digit
+    }
+    printf "%.0f\n", value
+  }'
 }
 
 # Does the attributed run describe the CURRENT incarnation of this task?
@@ -708,8 +747,8 @@ spawn_generation_stamp() {
 # happened. A run-step verdict therefore has to prove currency before it may
 # outrank the worker's own live signals - but only when the verdict is
 # terminal, so the ordinary still-validating read pays nothing for this.
-nm_run_is_current_incarnation() {  # <run-head> <runs-status>
-  local head=$1 expected_status=$2 newest st sha day clock stamp
+nm_run_is_current_incarnation() {  # <run-head> <runs-status> [run-id]
+  local head=$1 expected_status=$2 run_id=${3:-} newest st sha day clock stamp spawn_epoch run_millis
   newest=$(nm_branch_run_rows | head -1)
   [ -n "$newest" ] || return 3
   st=${newest%% *};    newest=${newest#* }
@@ -724,10 +763,14 @@ nm_run_is_current_incarnation() {  # <run-head> <runs-status>
   fi
   stamp=$(spawn_generation_stamp)
   [ -n "$stamp" ] && [ -n "$day" ] && [ -n "$clock" ] || return 3
-  # "YYYY-MM-DD HH:MM" compares lexicographically exactly as it does
-  # chronologically, so no epoch arithmetic and no timezone handling is needed.
-  [[ "$day $clock" < "$stamp" ]] && return 2
-  return 0
+  if [ -n "$run_id" ]; then
+    spawn_epoch=$(spawn_generation_epoch)
+    run_millis=$(nm_run_id_millis "$run_id") || return 3
+    [ -n "$spawn_epoch" ] && [ -n "$run_millis" ] || return 3
+    [ "$run_millis" -ge "$((spawn_epoch * 1000 + 1000))" ] || return 2
+    return 0
+  fi
+  [[ "$day $clock" > "$stamp" ]] || return 3
 }
 
 # CREW_BRANCH is empty at detached HEAD (a just-spawned crew, or a scout's
@@ -941,10 +984,13 @@ if [ "$HAVE_RUN" = 1 ]; then
   # both times this misfired.
   if [ "$RUN_STATE" = failed ] || [ "$RUN_STATE" = "done" ]; then
     CURRENCY_RC=0
+    RUN_ID=""
     if [ "$RUN_SOURCE" = coarse ]; then RUN_HEAD=$COARSE_HEAD
-    else RUN_HEAD=$(strip_quotes "$(nm_field head)")
+    else
+      RUN_HEAD=$(strip_quotes "$(nm_field head)")
+      RUN_ID=$(strip_quotes "$(nm_field id)")
     fi
-    nm_run_is_current_incarnation "$RUN_HEAD" "$RUN_LIST_STATUS" || CURRENCY_RC=$?
+    nm_run_is_current_incarnation "$RUN_HEAD" "$RUN_LIST_STATUS" "$RUN_ID" || CURRENCY_RC=$?
     [ "$CURRENCY_RC" = 0 ] || HAVE_RUN=0
   fi
 fi
