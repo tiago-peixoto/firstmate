@@ -235,6 +235,99 @@ test_drain_dedupes_obvious_duplicates() {
 # plain drain-and-handle turn that runs no other supervision script. It must warn
 # when work is in flight with no live watcher, and stay silent right after a
 # normal fire from a live watcher with a fresh beacon, so it never false-alarms.
+make_secondmate_stall_case() {  # <name> <last-status-line>
+  local dir state sub fakebin
+  dir=$(make_case "$1")
+  state="$dir/state"
+  sub="$dir/secondmate"
+  mkdir -p "$sub/state"
+  printf 'mate\n' > "$sub/.fm-secondmate-home"
+  printf 'window=firstmate:fm-mate\nkind=secondmate\nharness=claude\nbackend=tmux\nhome=%s\n' \
+    "$sub" > "$state/mate.meta"
+  printf '%s\n' "$2" > "$state/mate.status"
+  printf '%s\t41\tcheck\trouted\tcheck: routed row\n' \
+    "$(( $(date +%s) - 10 ))" > "$sub/state/.wake-queue"
+  fakebin="$dir/fakebin"
+  cat > "$fakebin/tmux" <<'SH'
+#!/usr/bin/env bash
+case "${1:-}" in
+  list-windows) printf '%s\n' 'firstmate:fm-mate' ;;
+  capture-pane) printf '%s\n' 'pane fixture' ;;
+  display-message) printf '0\n' ;;
+  *) exit 0 ;;
+esac
+SH
+  chmod +x "$fakebin/tmux"
+  printf '%s' "$dir"
+}
+
+run_secondmate_stall_case() {  # <case-dir>
+  local dir=$1
+  PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
+    FM_STATE_OVERRIDE="$dir/state" FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 \
+    FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 \
+    > "$dir/watch.out" 2> "$dir/watch.err" || true
+}
+
+assert_secondmate_stall_wake() {  # <case-dir> <context>
+  local dir=$1 context=$2
+  grep -F 'check: secondmate wake-loop stalled: mate=mate row=41' "$dir/watch.out" >/dev/null \
+    || fail "$context did not wake the parent: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+}
+
+assert_no_secondmate_stall_wake() {  # <case-dir> <context>
+  local dir=$1 context=$2
+  if grep -F 'secondmate wake-loop stalled' "$dir/watch.out" >/dev/null; then
+    fail "$context woke the parent: $(cat "$dir/watch.out")"
+  fi
+  if grep -F 'secondmate-wake-loop-mate-' "$dir/state/.wake-queue" >/dev/null 2>&1; then
+    fail "$context published a durable parent stall notification"
+  fi
+}
+
+test_secondmate_busy_aged_queue_is_not_stalled() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-busy 'working: dispatching reviews')
+  "$ROOT/bin/fm-busy-event.sh" arm "$dir/state" mate >/dev/null \
+    || fail "could not arm the busy mate fixture"
+  run_secondmate_stall_case "$dir"
+  assert_no_secondmate_stall_wake "$dir" "a provably busy mate with an aged row"
+  pass "a provably busy secondmate is not stalled regardless of foreign row age"
+}
+
+test_secondmate_blocked_aged_queue_wakes_even_while_busy() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-blocked \
+    'blocked [key=primary-routing]: waiting for primary routing')
+  "$ROOT/bin/fm-busy-event.sh" arm "$dir/state" mate >/dev/null \
+    || fail "could not arm the blocked mate fixture"
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_wake "$dir" "a mate whose last status verb is blocked"
+  pass "a blocked secondmate wakes the parent even when its endpoint still reads busy"
+}
+
+test_secondmate_idle_aged_queue_wakes() {
+  local dir gen
+  dir=$(make_secondmate_stall_case secondmate-stall-idle 'working: between turns')
+  gen=$("$ROOT/bin/fm-busy-event.sh" arm "$dir/state" mate) \
+    || fail "could not arm the idle mate fixture"
+  "$ROOT/bin/fm-busy-event.sh" apply "$dir/state" mate idle --gen "$gen" \
+    --source claude-hook --event stop \
+    || fail "could not settle the idle mate fixture"
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_wake "$dir" "an idle non-blocked mate with an aged row"
+  pass "an idle non-blocked secondmate with an aged row wakes conservatively"
+}
+
+test_secondmate_unknown_liveness_aged_queue_wakes() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-unknown 'working: liveness unavailable')
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_wake "$dir" "a mate whose liveness is unknown"
+  pass "unknown secondmate liveness wakes conservatively rather than hiding a blocked mate"
+}
+
 test_secondmate_foreign_queue_stall_is_one_shot_and_read_only() {
   local dir state sub fakebin out row_before row_after stall_count
   dir=$(make_case secondmate-foreign-stall)
@@ -995,6 +1088,10 @@ test_historical_annotation_skips_announced_status() {
 }
 
 test_self_held_lock_reclaims_instead_of_deadlocking
+test_secondmate_busy_aged_queue_is_not_stalled
+test_secondmate_blocked_aged_queue_wakes_even_while_busy
+test_secondmate_idle_aged_queue_wakes
+test_secondmate_unknown_liveness_aged_queue_wakes
 test_secondmate_foreign_queue_stall_is_one_shot_and_read_only
 test_secondmate_stall_marker_rejects_symlink
 test_acknowledged_stall_publication_survives_pre_marker_crash

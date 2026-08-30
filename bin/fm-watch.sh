@@ -78,8 +78,11 @@
 #   check: secondmate wake-loop stalled: mate=<id> row=<seq> age=<seconds>s
 #                          the oldest valid row in an endpoint-recorded local
 #                          secondmate home's durable wake queue exceeded
-#                          FM_SECONDMATE_WAKE_STALL_SECS; observation is read-only
-#                          and one parent receipt suppresses repeats for that row
+#                          FM_SECONDMATE_WAKE_STALL_SECS while the mate was not
+#                          provably busy; a last blocked: verb always wakes, and
+#                          idle, dead, or unknown liveness wakes conservatively
+#                          (observation is read-only and one parent receipt
+#                          suppresses repeats for that row)
 # For normal supervision, resume the session-start primary-harness protocol
 # after each printed reason. Direct duplicate invocations of this script still
 # no-op through the watcher singleton lock.
@@ -192,7 +195,7 @@ STALE_ESCALATE_SECS=${FM_STALE_ESCALATE_SECS:-240}  # idle secs before a provabl
 # between completed turns, including long tool calls, builds, or test runs.
 BUSY_TURN_MAX_SECS=${FM_BUSY_TURN_MAX_SECS:-3600}
 # A local secondmate's foreign queue is checked on every poll, but only after this
-# bounded age can it produce a parent notification.
+# bounded age can its status and endpoint liveness produce a parent notification.
 SECONDMATE_WAKE_STALL_SECS=${FM_SECONDMATE_WAKE_STALL_SECS:-60}
 # A crew that declared a pause is idling on a known external wait, so its stale
 # pane is absorbed rather than wedge-escalated.
@@ -396,13 +399,39 @@ secondmate_oldest_queue_row() {  # <queue-path>
   ' "$queue" 2>/dev/null || true
 }
 
+# Read a mate's own last status verb directly. fm-crew-state intentionally skips
+# busy reconciliation for secondmates and carries broader current-state machinery
+# this detector does not need. An unreadable or unsafe log supplies no verb.
+secondmate_last_status_verb() {  # <task-id>
+  local status="$STATE/$1.status" line
+  [ -f "$status" ] && [ ! -L "$status" ] || { printf ''; return 0; }
+  line=$(last_status_line "$status")
+  status_line_verb "$line"
+}
+
+# Classify the mate's recorded endpoint through the shared semantic busy owner.
+# This runs only for an aged, unhandled row: stored semantic adapters pay one
+# endpoint probe plus constant-sized record reads, while pull adapters pay their
+# existing bounded capture or log fold only when the detector could actually fire.
+secondmate_live_busy_verdict() {  # <meta-file> <task-id>
+  local meta=$1 task=$2 backend target harness
+  backend=$(fm_backend_of_meta "$meta")
+  target=$(fm_backend_target_of_meta "$meta")
+  harness=$(fm_meta_get "$meta" harness)
+  fm_busy_classify_live "$backend" "$target" "$harness" "$task" "$STATE" "fm-$task"
+}
+
 # Surface one durable parent check for one unchanged foreign row after its
-# bounded age. The primary marker and queued-key check make repeated watcher
-# cycles converge without a notification storm, while an empty queue removes
-# only this home's marker so a later row can be observed.
+# bounded age unless the mate is provably mid-turn. A last blocked: verb means
+# the mate waits on the primary by definition and takes precedence over a busy
+# record. Idle, dead, and unknown liveness all wake conservatively: an unknown
+# must never hide the worse failure of a genuinely blocked mate. The primary
+# marker and queued-key check make repeated watcher cycles converge without a
+# notification storm, while an empty queue removes only this home's marker so a
+# later row can be observed.
 secondmate_wake_stall_tick() {
   local now=$(( $(date +%s) )) threshold=$SECONDMATE_WAKE_STALL_SECS
-  local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued age reason
+  local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued age reason status_verb busy_verdict
   case "$threshold" in ''|*[!0-9]*|0) threshold=60 ;; esac
   # Endpoint metadata admits this queue-loop check; secondmate-liveness owns registered mates whose endpoint is missing or dead.
   for meta in "$STATE"/*.meta; do
@@ -444,6 +473,11 @@ EOF
     fi
     [ "$(cat "$marker" 2>/dev/null || true)" = "$row_key" ] && continue
     [ "$(cat "$receipt" 2>/dev/null || true)" = "$row_key" ] && continue
+    status_verb=$(secondmate_last_status_verb "$task")
+    if [ "$status_verb" != blocked ]; then
+      busy_verdict=$(secondmate_live_busy_verdict "$meta" "$task")
+      [ "${busy_verdict%% *}" = busy ] && continue
+    fi
     notify_key="secondmate-wake-loop-$task-$row_key"
     reason="check: secondmate wake-loop stalled: mate=$task row=$seq age=${age}s"
     queued=$(fm_wake_queued_keys check)
