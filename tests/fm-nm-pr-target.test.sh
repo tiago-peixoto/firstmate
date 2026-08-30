@@ -33,8 +33,8 @@
 #   (h) fail-closed: unparseable URL on either side
 #   (i) install is idempotent, repairs its own stale copy, and refuses to clobber
 #       a foreign pre-push hook
-#   (j) a shim whose guard script is gone refuses, and recovers from the pushing
-#       worktree's own copy when there is one
+#   (j) the installed hook carries its own guard payload, refuses when that
+#       payload is missing, and repairs it without reading another checkout
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -333,12 +333,12 @@ chmod +x "$hook"
 grep -q 'someone elses hook' "$hook" || fail "(i) the foreign hook was overwritten"
 pass "(i) install refuses to replace a pre-push hook it did not write"
 
-# --- (j) a shim whose guard script is gone --------------------------------------
+# --- (j) the hook carries a clone-local guard payload --------------------------
 #
-# The installed shim records where the guard lived. If that path disappears it
-# must not silently stop guarding, and it must not turn every ordinary push into
-# collateral damage either: it falls back to the pushing worktree's own copy, and
-# refuses outright when there is none.
+# A disposable linked worktree must not execute the guard out of the primary
+# checkout. The common hook directory belongs to the clone and is shared by all
+# of its worktrees, so installation puts the executable guard there as well as
+# the pre-push entrypoint.
 
 sandbox=$(make_sandbox brokenshim "$FORK_SSH")
 work=$(work_of "$sandbox"); gate=$(gate_of "$sandbox")
@@ -346,21 +346,33 @@ FM_ROOT_OVERRIDE="$TMP_ROOT/gone" "$GUARD" install "$work" >/dev/null \
   || fail "(j) install with a relocated root failed"
 export FM_FAKE_NM_REMOTE="$FORK_SSH" FM_FAKE_NM_FORK=''
 
-# Targets AGREE here, so a refusal can only come from the unreachable guard.
+# Targets agree, and the tracked checkout recorded at install time is absent.
+# Success therefore proves the hook executed its clone-local payload.
+git -C "$work" push --quiet no-mistakes HEAD:refs/heads/topic \
+  || fail "(j) the installed hook still depended on the checkout that installed it"
+gate_has_topic "$gate" || fail "(j) the clone-local guard did not let the matching branch reach the gate"
+pass "(j) the installed hook runs from clone-local Git metadata"
+
+# Losing that payload is a refusal, not an unguarded pass. Repair restores it
+# from the command's current trusted copy and the next push succeeds.
+hook=$(git -C "$work" rev-parse --path-format=absolute --git-path hooks/pre-push)
+payload="$(dirname "$hook")/.fm-nm-pr-target.sh"
+rm -f "$payload"
+printf 'second change\n' >> "$work/change.txt"
+git -C "$work" add change.txt
+git -C "$work" -c user.name=t -c user.email=t@example.invalid commit -qm 'second topic change'
+prior=$(git -C "$gate" rev-parse refs/heads/topic)
 push_out=$(git -C "$work" push no-mistakes HEAD:refs/heads/topic 2>&1) \
-  && fail "(j) a shim whose guard script is missing let the push through"
-gate_has_topic "$gate" && fail "(j) the gate received the branch through a broken shim"
+  && fail "(j) a missing clone-local guard payload let the push through"
+[ "$(git -C "$gate" rev-parse refs/heads/topic)" = "$prior" ] \
+  || fail "(j) the gate advanced while the clone-local guard payload was missing"
 case "$push_out" in
   *REFUSED*) ;;
-  *) fail "(j) a broken shim failed silently instead of saying why; got: $push_out" ;;
+  *) fail "(j) a missing clone-local guard failed silently instead of saying why; got: $push_out" ;;
 esac
-pass "(j) a shim whose guard script is missing refuses instead of passing the push through"
-
-# With a copy in the pushing worktree, the same shim recovers rather than
-# blocking work that has nothing to do with the pipeline.
-mkdir -p "$work/bin"
-cp "$ROOT/bin/fm-nm-pr-target.sh" "$ROOT/bin/fm-nm-pr-target-lib.sh" "$work/bin/"
+"$GUARD" install "$work" >/dev/null || fail "(j) clone-local guard repair failed"
 git -C "$work" push --quiet no-mistakes HEAD:refs/heads/topic \
-  || fail "(j) the shim did not fall back to the worktree's own copy of the guard"
-gate_has_topic "$gate" || fail "(j) the recovered push did not reach the gate"
-pass "(j) a relocated shim falls back to the pushing worktree's own guard"
+  || fail "(j) repaired clone-local guard still refused the matching push"
+[ "$(git -C "$gate" rev-parse refs/heads/topic)" = "$(git -C "$work" rev-parse HEAD)" ] \
+  || fail "(j) repaired clone-local guard did not deliver the new head"
+pass "(j) a missing clone-local guard refuses and is repairable"

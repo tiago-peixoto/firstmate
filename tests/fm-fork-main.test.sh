@@ -35,6 +35,7 @@ STATUS="$ROOT/bin/fm-fork-status.sh"
 MERGE="$ROOT/bin/fm-fork-merge.sh"
 TOPIC="$ROOT/bin/fm-fork-topic.sh"
 INTEGRATION="$ROOT/bin/fm-fork-integration.sh"
+TARGET_GUARD="$ROOT/bin/fm-nm-pr-target.sh"
 UPDATE="$ROOT/bin/fm-update.sh"
 REMOTE_PROVISION="$ROOT/bin/fm-remote-home-provision.sh"
 
@@ -1564,6 +1565,7 @@ test_upstream_revert_before_sync_keeps_divergence_visible() {
 # upstream/fork registration. A mismatch stops before clone creation.
 test_no_mistakes_registration_isolation_is_proven() {
   local w primary primary_real home fakebin log before after out bad_home fail_home rc
+  local source source_expected worker worker_status primary_status gate hook
   w=$(new_world registration)
   primary="$w/primary"
   home="$w/home"
@@ -1577,7 +1579,12 @@ test_no_mistakes_registration_isolation_is_proven() {
 #!/usr/bin/env bash
 case "${1:-}" in
   status)
-    here=$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PWD")
+    common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+    if [ "$(basename "$common")" = .git ]; then
+      here=$(dirname "$common")
+    else
+      here=$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PWD")
+    fi
     here=$(cd "$here" && pwd -P)
     if [ "$here" = "${FAKE_PRIMARY:?}" ]; then
       if [ -f "$FAKE_PRIMARY/.fake-registration-mutated" ]; then
@@ -1586,8 +1593,8 @@ case "${1:-}" in
         printf 'remote: %s\n' "${FAKE_UPSTREAM:?}"
       fi
       printf 'fork: %s\n' "${FAKE_FORK:?}"
-    elif [ -f .fake-nm-init ]; then
-      printf 'remote: %s\n' "$(git remote get-url origin)"
+    elif [ -f "$here/.fake-nm-init" ]; then
+      printf 'remote: %s\n' "$(git -C "$here" remote get-url origin)"
       printf 'fork: \n'
     else
       exit 1
@@ -1600,6 +1607,7 @@ case "${1:-}" in
       exit 9
     fi
     : > .fake-nm-init
+    git init -q --bare "$PWD/.fake-gate.git"
     git remote add no-mistakes "$PWD/.fake-gate.git"
     ;;
   *) exit 2 ;;
@@ -1616,6 +1624,50 @@ SH
   after=$(git -C "$primary" config --list | sort)
   [ "$before" = "$after" ] || fail "integration provisioning changed ordinary Git registration config"
   [ "$(wc -l < "$log" | tr -d ' ')" -eq 1 ] || fail "integration registration initialized more than once"
+  source=$(PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
+    FAKE_FORK="$w/fork.git" FAKE_LOG="$log" FM_ROOT_OVERRIDE="$primary" FM_HOME="$home" \
+    FM_FORK_INTEGRATION_DIR="$home/data/fork-integration" \
+    "$INTEGRATION" worker-source "$w/fork.git" "$w/upstream.git" 2>&1) \
+    || fail "fork worker source did not resolve: $source"
+  source_expected=$(cd "$home/data/fork-integration" && pwd -P)
+  [ "$source" = "$source_expected" ] \
+    || fail "fork worker source resolved '$source', expected '$source_expected'"
+  "$TARGET_GUARD" installed "$source" >/dev/null \
+    || fail "integration provisioning did not install the pull-request target guard"
+
+  worker="$w/fork-worker"
+  git -C "$source" worktree add --quiet --detach "$worker" HEAD
+  git -C "$worker" switch -qc fm/fork-worker
+  printf 'fork worker\n' > "$worker/fork-worker.txt"
+  git -C "$worker" add fork-worker.txt
+  git -C "$worker" commit -qm 'Fork worker change'
+
+  worker_status=$(cd "$worker" && PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" \
+    FAKE_UPSTREAM="$w/upstream.git" FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    no-mistakes status 2>&1) \
+    || fail "disposable fork worker could not resolve the fork registration: $worker_status"
+  assert_contains "$worker_status" "remote: $w/fork.git" \
+    "disposable fork worker resolved a registration other than the fork"
+  PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
+    FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    "$TARGET_GUARD" check "$worker" >/dev/null \
+    || fail "target guard refused a disposable worker resolved through the fork registration"
+  PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
+    FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    git -C "$worker" push --quiet no-mistakes HEAD:refs/heads/fm/fork-worker \
+    || fail "target guard refused gate entry from a disposable fork worker"
+  gate=$(git -C "$source" remote get-url no-mistakes)
+  git -C "$gate" rev-parse --verify --quiet refs/heads/fm/fork-worker >/dev/null \
+    || fail "fork registration gate did not receive the disposable worker branch"
+
+  primary_status=$(cd "$primary" && PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" \
+    FAKE_UPSTREAM="$w/upstream.git" FAKE_FORK="$w/fork.git" FAKE_LOG="$log" \
+    no-mistakes status 2>&1) \
+    || fail "ordinary registration became unreadable after fork worker entry: $primary_status"
+  assert_contains "$primary_status" "remote: $w/upstream.git" \
+    "fork worker entry changed the ordinary registration away from official upstream"
+  hook=$(git -C "$source" rev-parse --path-format=absolute --git-path hooks/pre-push)
+  [ -x "$hook" ] || fail "fork worker source lost its executable target guard"
   PATH="$fakebin:$PATH" FAKE_PRIMARY="$primary_real" FAKE_UPSTREAM="$w/upstream.git" \
     FAKE_FORK="$w/fork.git" FAKE_LOG="$log" FM_ROOT_OVERRIDE="$primary" FM_HOME="$home" \
     FM_FORK_INTEGRATION_DIR="$home/data/fork-integration" \
@@ -1652,7 +1704,7 @@ SH
   [ "$(grep -c '/fail-home/data/fork-integration$' "$log")" -eq 1 ] \
     || fail "failed integration init was retried"
   rm -f "$primary/.fake-registration-mutated"
-  pass "fork integration: isolated no-mistakes registration is proven without reconfiguring the live one"
+  pass "fork integration: disposable workers reach the isolated registration without changing the ordinary lane"
 }
 
 # Stating a problem upstream as an issue is a real upstream route, so a
