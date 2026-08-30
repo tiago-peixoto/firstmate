@@ -892,6 +892,95 @@ run_check_capture() {
   fm_check_output_cleanup
 }
 
+FM_PR_MONITOR_WAKE=
+FM_PR_MONITOR_NEXT_SEEN=
+
+prepare_pr_monitor_transition() {
+  local observation=$1 now review_activity=0 comment_activity=0 prefix=
+  FM_PR_MONITOR_WAKE=
+  FM_PR_MONITOR_NEXT_SEEN=
+  now=$(date +%s)
+  if ! fm_pr_poll_observation_parse "$observation"; then
+    FM_PR_MONITOR_NEXT_SEEN=$(fm_pr_poll_seen_record \
+      "$FM_PR_POLL_SNAPSHOT_UPDATED" \
+      "$FM_PR_POLL_SNAPSHOT_REVIEWS" \
+      "$FM_PR_POLL_SNAPSHOT_ISSUE_COMMENTS" \
+      "$FM_PR_POLL_SNAPSHOT_REVIEW_COMMENTS" \
+      "$FM_PR_POLL_SNAPSHOT_REQUESTED" error \
+      "$FM_PR_POLL_SNAPSHOT_OBSERVED_AT") || return 1
+    [ "$FM_PR_POLL_SNAPSHOT_HEALTH" = error ] \
+      || FM_PR_MONITOR_WAKE='PR monitor unavailable: invalid observation'
+    return 0
+  fi
+  case "$FM_PR_OBSERVATION_KIND" in
+    merged)
+      FM_PR_MONITOR_WAKE=merged
+      return 0
+      ;;
+    unavailable)
+      FM_PR_MONITOR_NEXT_SEEN=$(fm_pr_poll_seen_record \
+        "$FM_PR_POLL_SNAPSHOT_UPDATED" \
+        "$FM_PR_POLL_SNAPSHOT_REVIEWS" \
+        "$FM_PR_POLL_SNAPSHOT_ISSUE_COMMENTS" \
+        "$FM_PR_POLL_SNAPSHOT_REVIEW_COMMENTS" \
+        "$FM_PR_POLL_SNAPSHOT_REQUESTED" error \
+        "$FM_PR_POLL_SNAPSHOT_OBSERVED_AT") || return 1
+      [ "$FM_PR_POLL_SNAPSHOT_HEALTH" = error ] \
+        || FM_PR_MONITOR_WAKE="PR monitor unavailable: $FM_PR_OBSERVATION_PROVIDER lookup failed"
+      return 0
+      ;;
+    unchanged)
+      FM_PR_MONITOR_NEXT_SEEN=$(fm_pr_poll_seen_record \
+        "$FM_PR_OBSERVATION_UPDATED" \
+        "$FM_PR_POLL_SNAPSHOT_REVIEWS" \
+        "$FM_PR_POLL_SNAPSHOT_ISSUE_COMMENTS" \
+        "$FM_PR_POLL_SNAPSHOT_REVIEW_COMMENTS" \
+        "$FM_PR_OBSERVATION_REQUESTED" ok "$now") || return 1
+      [ "$FM_PR_POLL_SNAPSHOT_HEALTH" = error ] \
+        && FM_PR_MONITOR_WAKE='PR monitor recovered'
+      return 0
+      ;;
+    observed)
+      if [ "$FM_PR_POLL_SNAPSHOT_HEALTH" = baseline ]; then
+        FM_PR_MONITOR_NEXT_SEEN=$(fm_pr_poll_seen_record \
+          "$FM_PR_OBSERVATION_UPDATED" \
+          "$FM_PR_OBSERVATION_REVIEWS" \
+          "$FM_PR_OBSERVATION_ISSUE_COMMENTS" \
+          "$FM_PR_OBSERVATION_REVIEW_COMMENTS" \
+          "$FM_PR_OBSERVATION_REQUESTED" ok "$now") || return 1
+        return 0
+      fi
+      fm_pr_poll_numeric_gt "$FM_PR_OBSERVATION_REVIEWS" "$FM_PR_POLL_SNAPSHOT_REVIEWS" \
+        && review_activity=1
+      if fm_pr_poll_numeric_gt "$FM_PR_OBSERVATION_ISSUE_COMMENTS" "$FM_PR_POLL_SNAPSHOT_ISSUE_COMMENTS" \
+        || fm_pr_poll_numeric_gt "$FM_PR_OBSERVATION_REVIEW_COMMENTS" "$FM_PR_POLL_SNAPSHOT_REVIEW_COMMENTS"; then
+        comment_activity=1
+      fi
+      FM_PR_MONITOR_NEXT_SEEN=$(fm_pr_poll_seen_record \
+        "$FM_PR_OBSERVATION_UPDATED" \
+        "$FM_PR_OBSERVATION_REVIEWS" \
+        "$FM_PR_OBSERVATION_ISSUE_COMMENTS" \
+        "$FM_PR_OBSERVATION_REVIEW_COMMENTS" \
+        "$FM_PR_OBSERVATION_REQUESTED" ok "$now") || return 1
+      if [ "$FM_PR_POLL_SNAPSHOT_HEALTH" = error ]; then
+        prefix='PR monitor recovered; '
+      fi
+      if [ "$review_activity" -eq 1 ] && [ "$comment_activity" -eq 1 ]; then
+        FM_PR_MONITOR_WAKE="${prefix}review activity and comment activity"
+      elif [ "$review_activity" -eq 1 ]; then
+        FM_PR_MONITOR_WAKE="${prefix}review activity"
+      elif [ "$comment_activity" -eq 1 ]; then
+        FM_PR_MONITOR_WAKE="${prefix}comment activity"
+      elif [ -n "$prefix" ]; then
+        FM_PR_MONITOR_WAKE=${prefix%; }
+      fi
+      if [ "$review_activity" -eq 1 ] && [ "$FM_PR_OBSERVATION_REQUESTED" = 0 ]; then
+        FM_PR_MONITOR_WAKE="$FM_PR_MONITOR_WAKE; NOBODY requested"
+      fi
+      ;;
+  esac
+}
+
 # Surfaced-marker bookkeeping for the heartbeat backstop is owned by
 # fm-push-transition-lib.sh because push and poll paths must write one format.
 # Mark every current captain-relevant status as surfaced. Called after the
@@ -1172,7 +1261,51 @@ while :; do
     triage_log "inactive-outcome reconciliation unavailable"
   fi
 
-  # Slow per-task checks (firstmate writes these, e.g. a merged-PR poll).
+  # Canonical PR monitors run on the existing supervision cycle. They are kept
+  # out of the slow custom-check sweep below: review activity must not wait for
+  # an unrelated supervision turn, and one registered monitor owns review,
+  # comments, lookup health, and merge together.
+  for c in "$STATE"/*.check.sh; do
+    [ -e "$c" ] || continue
+    id=$(basename "$c" .check.sh)
+    fm_pr_poll_snapshot_capture "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" || continue
+    provider=$FM_PR_POLL_SNAPSHOT_PROVIDER
+    url=$FM_PR_POLL_SNAPSHOT_URL
+    host=$FM_PR_POLL_SNAPSHOT_HOST
+    path=$FM_PR_POLL_SNAPSHOT_PATH
+    number=$FM_PR_POLL_SNAPSHOT_NUMBER
+    run_check_capture "$SCRIPT_DIR/fm-pr-poll.sh" --validated \
+      "$provider" "$url" "$host" "$path" "$number" "$FM_PR_POLL_SNAPSHOT_UPDATED" || exit 1
+    out=$FM_CHECK_RESULT
+    fm_pr_poll_snapshot_matches "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" || continue
+    prepare_pr_monitor_transition "$out" || exit 1
+    if [ -z "$FM_PR_MONITOR_WAKE" ]; then
+      if [ -n "$FM_PR_MONITOR_NEXT_SEEN" ] \
+        && ! fm_pr_poll_seen_publish "$STATE" "$id" "$FM_PR_MONITOR_NEXT_SEEN"; then
+        reason="check: $c: PR monitor state update failed"
+        fm_wake_append check "$c" "$reason" || exit 1
+        wake "$reason"
+      fi
+      continue
+    fi
+
+    reason="check: $c: $FM_PR_MONITOR_WAKE"
+    fm_wake_append check "$c" "$reason" || exit 1
+    if [ "$FM_PR_MONITOR_WAKE" = merged ]; then
+      if fm_pr_poll_retirement_publish "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" merged; then
+        fm_pr_poll_retirement_recover_one "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" \
+          || triage_log "merged PR monitor retirement remains recoverable for $id"
+      else
+        triage_log "merged PR monitor retirement deferred because its canonical snapshot changed for $id"
+      fi
+    elif [ -n "$FM_PR_MONITOR_NEXT_SEEN" ] \
+      && ! fm_pr_poll_seen_publish "$STATE" "$id" "$FM_PR_MONITOR_NEXT_SEEN"; then
+      triage_log "PR monitor observation remains replayable for $id"
+    fi
+    wake "$reason"
+  done
+
+  # Slow per-task checks (firstmate writes these for bounded custom conditions).
   # Time-based via .last-check mtime so the cadence survives watcher restarts.
   # Evaluated BEFORE the signal scan: wake() exits the cycle, so a check placed
   # after the signal scan would be starved whenever a chatty sibling crewmate
@@ -1183,7 +1316,6 @@ while :; do
     rejected_checks=
     for c in "$STATE"/*.check.sh; do
       [ -e "$c" ] || continue
-      is_pr_poll=0
       if [ "$(basename "$c")" = x-watch.check.sh ]; then
         if fmx_poll_shim_valid "$c" "$FM_HOME" "$FM_ROOT" \
           && [ -f "$FM_ROOT/bin/fm-x-poll.sh" ] && [ ! -L "$FM_ROOT/bin/fm-x-poll.sh" ]; then
@@ -1196,15 +1328,8 @@ while :; do
       else
         id=$(basename "$c" .check.sh)
         if fm_pr_poll_snapshot_capture "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh"; then
-          is_pr_poll=1
-          provider=$FM_PR_POLL_SNAPSHOT_PROVIDER
-          url=$FM_PR_POLL_SNAPSHOT_URL
-          host=$FM_PR_POLL_SNAPSHOT_HOST
-          path=$FM_PR_POLL_SNAPSHOT_PATH
-          number=$FM_PR_POLL_SNAPSHOT_NUMBER
-          run_check_capture "$SCRIPT_DIR/fm-pr-poll.sh" --validated \
-            "$provider" "$url" "$host" "$path" "$number" || exit 1
-          out=$FM_CHECK_RESULT
+          # The fast loop above is the sole owner of canonical PR monitors.
+          continue
         elif fm_custom_check_snapshot_prepare "$STATE" "$id"; then
           custom_snapshot=$FM_CUSTOM_CHECK_SNAPSHOT
           run_check_capture "$custom_snapshot" || exit 1
@@ -1219,14 +1344,6 @@ while :; do
       if [ -n "$out" ]; then
         reason="check: $c: $out"
         fm_wake_append check "$c" "$reason" || exit 1
-        if [ "$is_pr_poll" -eq 1 ] && [ "$out" = merged ]; then
-          if fm_pr_poll_retirement_publish "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" "$out"; then
-            fm_pr_poll_retirement_recover_one "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" \
-              || triage_log "merged PR poll retirement remains recoverable for $id"
-          else
-            triage_log "merged PR poll retirement deferred because its canonical snapshot changed for $id"
-          fi
-        fi
         touch "$STATE/.last-check"
         wake "$reason"
       fi

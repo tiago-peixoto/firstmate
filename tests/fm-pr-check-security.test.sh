@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Security and regression tests for canonical PR parsing, static merge polls,
+# Security and regression tests for canonical PR parsing, static PR monitors,
 # private atomic artifacts, non-executing migration, and teardown cleanup.
 set -u
 
@@ -90,11 +90,40 @@ case "${1:-} ${2:-}" in
 esac
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
 case " $* " in
+  *" /repos/"*"/reviews?per_page=100 "*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    [ -z "${FM_TEST_REVIEW_ID:-10}" ] || printf '%s\n' "${FM_TEST_REVIEW_ID:-10}"
+    exit 0
+    ;;
+  *" /repos/"*"/issues/"*"/comments?per_page=100 "*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    [ -z "${FM_TEST_ISSUE_COMMENT_ID:-20}" ] || printf '%s\n' "${FM_TEST_ISSUE_COMMENT_ID:-20}"
+    exit 0
+    ;;
+  *" /repos/"*"/pulls/"*"/comments?per_page=100 "*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    [ -z "${FM_TEST_REVIEW_COMMENT_ID:-30}" ] || printf '%s\n' "${FM_TEST_REVIEW_COMMENT_ID:-30}"
+    exit 0
+    ;;
+  *" /repos/"*"/pulls/"*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    case "${FM_TEST_GH_STATE-OPEN}" in
+      MERGED|merged) state=merged ;;
+      OPEN|open) state=open ;;
+      CLOSED|closed) state=closed ;;
+      *) state=${FM_TEST_GH_STATE-OPEN} ;;
+    esac
+    printf '%s\t%s\t%s\n' "$state" "${FM_TEST_REQUESTED_COUNT:-1}" \
+      "${FM_TEST_UPDATED_AT:-2026-08-30T10:00:00Z}"
+    exit 0
+    ;;
+esac
+case " $* " in
   *" headRefOid "*) printf '%s\n' "${FM_TEST_GH_HEAD:-0123456789abcdef0123456789abcdef01234567}" ;;
   *" state "*)
     [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
     [ "${FM_TEST_GH_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_SLEEP"
-    printf '%s\n' "${FM_TEST_GH_STATE:-OPEN}"
+    printf '%s\n' "${FM_TEST_GH_STATE-OPEN}"
     ;;
 esac
 SH
@@ -105,7 +134,7 @@ SH
 printf '%s\n' "$*" >> "$FM_TEST_GLAB_LOG"
 [ "${FM_TEST_GLAB_FAIL:-0}" = 0 ] || exit 1
 [ "${FM_TEST_GLAB_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GLAB_SLEEP"
-printf 'title:\tfixture merge request\nstate:\t%s\nauthor:\tsomeone\n' "${FM_TEST_GLAB_STATE:-opened}"
+printf 'title:\tfixture merge request\nstate:\t%s\nauthor:\tsomeone\n' "${FM_TEST_GLAB_STATE-opened}"
 SH
   chmod +x "$fakebin/gh" "$fakebin/glab"
   : > "$dir/gh.log"
@@ -575,7 +604,7 @@ test_valid_recording_and_merge_derivation() {
   FM_TEST_GH_STATE=MERGED run_watcher_bounded "$dir/home" "$dir/fakebin" > "$dir/merged-watch.out" 2> "$dir/merged-watch.err"
   rc=$?
   set -e
-  [ "$rc" -eq 0 ] || fail "guarded merge poll retirement failed: $(cat "$dir/merged-watch.err")"
+  [ "$rc" -eq 0 ] || fail "guarded PR monitor retirement failed: $(cat "$dir/merged-watch.err")"
   assert_poll_absent "$dir/home/state" task-a
   grep -qxF 'pr=https://github.com/my-org/repo_name.with-dots/pull/37' "$dir/home/state/task-a.meta" \
     || fail "guarded merge retirement removed pr metadata"
@@ -734,19 +763,18 @@ test_static_poll_contract() {
   dir=$(make_case poll-contract)
   make_poll_fixture "$dir"
 
-  for state in OPEN CLOSED EMPTY MALFORMED; do
-    case "$state" in
-      EMPTY) value= ;;
-      MALFORMED) value='not-a-state' ;;
-      *) value=$state ;;
-    esac
+  for value in OPEN CLOSED; do
     out=$(FM_TEST_GH_STATE="$value" run_poll "$dir")
     [ -z "$out" ] || fail "static poll emitted for non-merged state"
+  done
+  for value in '' not-a-state; do
+    out=$(FM_TEST_GH_STATE="$value" run_poll "$dir")
+    [ "$out" = 'PR monitor unavailable' ] || fail "static poll hid an unreadable GitHub state"
   done
   out=$(FM_TEST_GH_STATE=MERGED run_poll "$dir")
   [ "$out" = merged ] || fail "static poll did not emit exactly one merged line"
   out=$(FM_TEST_GH_FAIL=1 run_poll "$dir")
-  [ -z "$out" ] || fail "static poll emitted after gh failure"
+  [ "$out" = 'PR monitor unavailable' ] || fail "static poll hid a gh failure"
 
   mv "$dir/home/state/task-a.pr-poll" "$dir/home/state/task-a.pr-poll.missing"
   out=$(run_poll "$dir")
@@ -780,7 +808,7 @@ test_static_poll_contract() {
   set -e
   [ "$rc" -eq 0 ] || fail "watcher did not surface merged poll"
   [ "$(grep -c '^check: .*: merged$' "$dir/watch.out")" -eq 1 ] || fail "watcher did not convert merged output into exactly one wake"
-  pass "static poll is silent except for one merged line and remains watcher-bounded"
+  pass "static poll reports only merge or lookup health and remains watcher-bounded"
 }
 
 test_atomic_interruption_leaves_no_partial_artifact() {
@@ -2409,12 +2437,23 @@ SH
   rc=$?
   set -e
   [ "$rc" -eq 0 ] || fail "watcher remained blocked after unsafe legacy check exclusion: $(cat "$dir/watch.err")"
-  [ -e "$x_poll_marker" ] || fail "watcher did not continue X mention polling after isolated migration failure"
   assert_no_grep 'replacement-ran' "$dir/watch.out" \
     "watcher executed an unauthenticated check created after scan completion"
   assert_grep "check: $state/z-healthy.check.sh: merged" "$dir/watch.out" \
     "watcher did not continue the healthy authenticated poll"
   ack_watcher_cycle "$state" || fail "healthy authenticated poll wake acknowledgement failed"
+  printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' stop-cycle" > "$state/z-stop.check.sh"
+  chmod 0700 "$state/z-stop.check.sh"
+  FM_HOME="$dir/home" "$REGISTER" z-stop >/dev/null \
+    || fail "could not register the post-merge control check"
+  rm -f "$state/.last-check" "$x_poll_marker"
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$dir/root" FM_TEST_X_POLL_MARKER="$x_poll_marker" \
+    FM_TEST_GH_STATE=OPEN FM_POLL=0 FM_CHECK_INTERVAL=0 FM_SIGNAL_GRACE=0 \
+    PATH="$fakebin:$BASE_PATH" "$WATCH" > "$dir/watch-x.out" 2> "$dir/watch-x.err" \
+    || fail "watcher did not continue after the priority merge notification: $(cat "$dir/watch-x.err")"
+  [ -e "$x_poll_marker" ] || fail "watcher did not continue X mention polling after isolated migration failure"
+  ack_watcher_cycle "$state" || fail "post-merge control wake acknowledgement failed"
+  rm -f "$state/z-stop.check.sh" "$state/z-stop.check-trust"
   [ ! -e "$state/task-a.check.sh" ] && [ ! -L "$state/task-a.check.sh" ] \
     || fail "watcher continuation rearmed the unsafe legacy check"
   rm -f "$state/a-replaced.check.sh" "$state/.last-check" "$x_poll_marker"
@@ -2825,16 +2864,21 @@ gitlab.example
 group/subgroup/project
 7" ] || fail "published GitLab sidecar bytes were not exact"
 
-  # Only an exact merged state wakes firstmate. Every other reading, including
-  # an unreadable merge request and a changed output format, stays silent.
-  for value in opened closed locked '' not-a-state MERGED merged-but-not; do
+  # Only an exact merged state reports merge. Valid nonterminal states are
+  # quiet; an unreadable or changed forge response is visibly unhealthy.
+  for value in opened closed; do
     out=$(FM_TEST_GLAB_STATE="$value" run_poll "$dir")
     [ -z "$out" ] || fail "GitLab poll emitted for a non-merged state"
+  done
+  for value in locked '' not-a-state MERGED merged-but-not; do
+    out=$(FM_TEST_GLAB_STATE="$value" run_poll "$dir")
+    [ "$out" = 'PR monitor unavailable' ] \
+      || fail "GitLab poll hid an unreadable state"
   done
   out=$(FM_TEST_GLAB_STATE=merged run_poll "$dir")
   [ "$out" = merged ] || fail "GitLab poll did not emit exactly one merged line"
   out=$(FM_TEST_GLAB_FAIL=1 run_poll "$dir")
-  [ -z "$out" ] || fail "GitLab poll emitted after a glab failure"
+  [ "$out" = 'PR monitor unavailable' ] || fail "GitLab poll hid a glab failure"
 
   # glab is addressed by project URL and merge request number, never by the
   # merge request URL, which the real CLI resolves through the current git
@@ -2844,7 +2888,7 @@ group/subgroup/project
   ! grep -qF -- "$url" "$dir/glab.log" \
     || fail "GitLab poll passed a merge request URL to glab"
 
-  # An absent CLI must produce no wake rather than a false merge. The whole
+  # An absent CLI must report unhealthy state rather than a false merge. The whole
   # search path is mirrored without glab, because a real glab anywhere on
   # PATH would make this prove nothing.
   noglab="$dir/noglab"
@@ -2866,7 +2910,7 @@ EOF
   out=$(FM_TEST_GLAB_STATE=merged FM_TEST_GH_LOG="$dir/gh.log" FM_TEST_GLAB_LOG="$dir/glab.log" \
     PATH="$noglab" \
     bash "$state/task-a.check.sh")
-  [ -z "$out" ] || fail "GitLab poll emitted with glab absent from PATH"
+  [ "$out" = 'PR monitor unavailable' ] || fail "GitLab poll hid an absent glab"
 
   # A doctored sidecar cannot redirect the poll: the stored parts must rebuild
   # the stored URL exactly.
@@ -3195,7 +3239,15 @@ test_external_merge_transition_retires_only_terminal_poll() {
     rc=$?
     set -e
     [ "$rc" -eq 0 ] || fail "$label watcher cycle failed: $(cat "$dir/$label.err")"
-    case "$(cat "$dir/$label.out")" in check:*z-stop.check.sh:*stop-cycle) ;; *) fail "$label did not reach the control check" ;; esac
+    if [ "$label" = forge-error ]; then
+      case "$(cat "$dir/$label.out")" in check:*task-a.check.sh:*PR\ monitor\ unavailable*) ;;
+        *) fail "forge error did not surface monitor health" ;;
+      esac
+    else
+      case "$(cat "$dir/$label.out")" in check:*z-stop.check.sh:*stop-cycle) ;;
+        *) fail "$label did not reach the control check" ;;
+      esac
+    fi
     [ "$(poll_artifact_snapshot "$state" task-a)" = "$before" ] || fail "$label changed the armed poll"
     ack_watcher_cycle "$state" || fail "$label control wake acknowledgement failed"
   done

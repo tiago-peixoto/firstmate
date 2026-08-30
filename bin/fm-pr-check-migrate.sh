@@ -737,12 +737,14 @@ canonical_terminal_success() {
 }
 
 ambiguous_terminal_success() {
-  local id=$1 check data registration
+  local id=$1 check data seen registration
   check="$STATE/$id.check.sh"
   data="$STATE/$id.pr-poll"
+  seen="$STATE/$id.pr-poll-seen"
   registration="$STATE/$id.pr-poll-registration"
   [ ! -e "$check" ] && [ ! -L "$check" ] \
     && [ ! -e "$data" ] && [ ! -L "$data" ] \
+    && [ ! -e "$seen" ] && [ ! -L "$seen" ] \
     && [ ! -e "$registration" ] && [ ! -L "$registration" ] \
     && quarantined_artifact_exists "$id" check
 }
@@ -793,9 +795,10 @@ record_ambiguous_failure() {
 }
 
 canonical_repair_from_pending() {
-  local id=$1 meta data registration provider url host path number check
+  local id=$1 meta data seen registration provider url host path number check
   meta="$STATE/$id.meta"
   data="$STATE/$id.pr-poll"
+  seen="$STATE/$id.pr-poll-seen"
   registration="$STATE/$id.pr-poll-registration"
   check="$STATE/$id.check.sh"
   [ ! -e "$check" ] && [ ! -L "$check" ] || return 1
@@ -807,8 +810,10 @@ canonical_repair_from_pending() {
   path=$MIGRATION_PATH
   number=$MIGRATION_NUMBER
   quarantine_artifact "$data" "$id" data || return 1
+  quarantine_artifact "$seen" "$id" seen || return 1
   quarantine_artifact "$registration" "$id" registration || return 1
   [ ! -e "$data" ] && [ ! -L "$data" ] || return 1
+  [ ! -e "$seen" ] && [ ! -L "$seen" ] || return 1
   [ ! -e "$registration" ] && [ ! -L "$registration" ] || return 1
   fm_pr_poll_prepare "$STATE" "$id" "$provider" "$url" "$host" "$path" "$number" "$TEMPLATE" || return 1
   fm_pr_poll_publish_prepared || return 1
@@ -816,13 +821,15 @@ canonical_repair_from_pending() {
 }
 
 ambiguous_repair_from_pending() {
-  local id=$1 check data registration
+  local id=$1 check data seen registration
   check="$STATE/$id.check.sh"
   data="$STATE/$id.pr-poll"
+  seen="$STATE/$id.pr-poll-seen"
   registration="$STATE/$id.pr-poll-registration"
   [ ! -e "$check" ] && [ ! -L "$check" ] || return 1
   quarantined_artifact_exists "$id" check || return 1
   quarantine_artifact "$data" "$id" data || return 1
+  quarantine_artifact "$seen" "$id" seen || return 1
   quarantine_artifact "$registration" "$id" registration || return 1
   ambiguous_terminal_success "$id"
 }
@@ -841,7 +848,7 @@ live_check_matches_quarantined() {
 
 replacement_artifacts_present() {
   local id=$1 path
-  for path in "$STATE/$id.check.sh" "$STATE/$id.pr-poll" "$STATE/$id.pr-poll-registration"; do
+  for path in "$STATE/$id.check.sh" "$STATE/$id.pr-poll" "$STATE/$id.pr-poll-seen" "$STATE/$id.pr-poll-registration"; do
     [ -e "$path" ] || [ -L "$path" ] || continue
     return 0
   done
@@ -853,6 +860,7 @@ quarantine_untrusted_replacement() {
   ensure_outcome_obligation "$id" failure-replacement || return 1
   quarantine_artifact "$STATE/$id.check.sh" "$id" replacement-check || return 1
   quarantine_artifact "$STATE/$id.pr-poll" "$id" replacement-data || return 1
+  quarantine_artifact "$STATE/$id.pr-poll-seen" "$id" replacement-seen || return 1
   quarantine_artifact "$STATE/$id.pr-poll-registration" "$id" replacement-registration || return 1
 }
 
@@ -1046,6 +1054,7 @@ if migration_needed; then
       prefix=$id
       meta="$STATE/$id.meta"
       data="$STATE/$id.pr-poll"
+      seen="$STATE/$id.pr-poll-seen"
       registration="$STATE/$id.pr-poll-registration"
       if metadata_pr_is_canonical "$meta"; then
         provider=$MIGRATION_PROVIDER
@@ -1062,6 +1071,7 @@ if migration_needed; then
         fi
         if quarantine_artifact "$check" "$prefix" check \
           && quarantine_artifact "$data" "$prefix" data \
+          && quarantine_artifact "$seen" "$prefix" seen \
           && quarantine_artifact "$registration" "$prefix" registration \
           && fm_pr_poll_prepare "$STATE" "$id" "$provider" "$url" "$host" "$path" "$number" "$TEMPLATE" \
           && fm_pr_poll_publish_prepared \
@@ -1081,6 +1091,7 @@ if migration_needed; then
         fi
         if quarantine_artifact "$check" "$prefix" check \
           && quarantine_artifact "$data" "$prefix" data \
+          && quarantine_artifact "$seen" "$prefix" seen \
           && quarantine_artifact "$registration" "$prefix" registration \
           && complete_ambiguous_outcome "$id"; then
           :
@@ -1099,6 +1110,7 @@ if migration_needed; then
       fi
       if quarantine_artifact "$check" "$NONCANONICAL_PREFIX" check \
         && quarantine_artifact "$STATE/$id.pr-poll" "$NONCANONICAL_PREFIX" data \
+        && quarantine_artifact "$STATE/$id.pr-poll-seen" "$NONCANONICAL_PREFIX" seen \
         && quarantine_artifact "$STATE/$id.pr-poll-registration" "$NONCANONICAL_PREFIX" registration \
         && complete_noncanonical_outcome; then
         :

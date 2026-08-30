@@ -53,7 +53,7 @@ Two things about plain `glab` were established by running it, because assuming e
 First, plain `glab` has no field selector.
 `gh` reads one field with `--json state -q .state`; `glab mr view` offers only `-F, --output string  Format output as: text, json`.
 Its JSON would need a JSON processor, and `jq` is not one of firstmate's common tools, so the state is read from glab's own field output instead.
-Only an exact `merged` wakes firstmate, so a changed output format produces no wake rather than a false merge.
+Only an exact `merged` reports a merge; a changed output format reports unhealthy monitor state rather than either a false merge or false quiet state.
 
 Second, `glab` cannot take a merge request URL the way `gh pr view` can.
 That form shells out to git for the current repository, and the watcher runs in no repository:
@@ -91,11 +91,11 @@ Three tasks were armed, two against the fixture and one against the placeholder 
 
 ```
 $ fm-pr-check.sh e1 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/1
-armed: state/e1.check.sh
+armed review-and-merge monitor: state/e1.check.sh
 $ fm-pr-check.sh e2 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
-armed: state/e2.check.sh
+armed review-and-merge monitor: state/e2.check.sh
 $ fm-pr-check.sh e3 https://gitlab.example/group/subgroup/project/-/merge_requests/7
-armed: state/e3.check.sh
+armed review-and-merge monitor: state/e3.check.sh
 ```
 
 The stored record for each, showing the host and the full project namespace as data:
@@ -136,14 +136,16 @@ group/subgroup/project
 Running each published poll the way the watcher does, where an empty result means the poll stayed silent and produced no wake:
 
 ```
-$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e1.pr-poll)
+$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e1.pr-poll) -
 merged
-$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e2.pr-poll)
-$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e3.pr-poll)
+$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e2.pr-poll) -
+observed - 0 0 0 0
+$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e3.pr-poll) -
+unavailable gitlab
 ```
 
 The merged fixture merge request produces exactly one `merged` line.
-The open one produces nothing, and the unreachable placeholder host produces nothing rather than a false merge.
+The open one produces a machine observation for the watcher, and the unreachable placeholder host produces an explicit unhealthy observation rather than a false merge or false quiet state.
 
 The same bytes work in the watcher's sidecar-driven mode, where the published check locates its own record:
 
@@ -152,14 +154,15 @@ $ state/e1x.check.sh
 merged
 ```
 
-## A missing CLI produces no wake, never a false merge
+## A missing CLI is visible and never a false merge
 
-The poll is silent on every error by design, so a missing `glab` would otherwise be indistinguishable from a merge request that is never merged.
-With `glab` removed from `PATH`, the poll stays silent even for the merge request that is genuinely merged:
+With `glab` removed from `PATH`, the monitor reports that the forge is unavailable, including for a merge request that is genuinely merged:
 
 ```
-$ PATH="$noglab" fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e1.pr-poll)
-$ PATH="$noglab" fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e3.pr-poll)
+$ PATH="$noglab" fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e1.pr-poll) -
+unavailable gitlab
+$ PATH="$noglab" fm-pr-poll.sh --validated $(tr '\n' ' ' < state/e3.pr-poll) -
+unavailable gitlab
 ```
 
 Arming is the one point where that can be reported, so it refuses there instead of arming a watch that can never fire:
@@ -175,7 +178,7 @@ A GitHub task is unaffected by a missing `glab`:
 
 ```
 $ PATH="$noglab" fm-pr-check.sh e6 https://github.com/kunchenguid/firstmate/pull/750
-armed: state/e6.check.sh
+armed review-and-merge monitor: state/e6.check.sh
 ```
 
 ## Upgrade path from an existing armed watch
@@ -200,7 +203,7 @@ task t1: canonical legacy poll rebuilt and armed
 The rebuilt poll works, verified against a pull request that is genuinely merged:
 
 ```
-$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/t1.pr-poll)
+$ fm-pr-poll.sh --validated $(tr '\n' ' ' < state/t1.pr-poll) -
 merged
 ```
 
@@ -235,7 +238,7 @@ The merged half of the fixture is refused, and every failing condition is listed
 
 ```
 $ fm-pr-merge.sh e1 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/1
-armed: state/e1.check.sh
+armed review-and-merge monitor: state/e1.check.sh
 error: refusing to merge https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/1
   - state is "merged", not open
   - detailed_merge_status is "not_open", not mergeable
@@ -250,7 +253,7 @@ The fixture runs no CI, so its `head_pipeline` is `null`, which is reported as `
 
 ```
 $ fm-pr-merge.sh e2 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
-armed: state/e2.check.sh
+armed review-and-merge monitor: state/e2.check.sh
 error: refusing to merge https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
   - the head pipeline status is "none", not success
   - the head pipeline ran at "none", not at the current head 66b8a6777bea5e291d7fa2fc20c42ad7686f6bc8
@@ -261,14 +264,14 @@ $ echo $?
 A project that runs no pipeline at all therefore cannot merge through this path.
 That is the intended reading of the requirement rather than an oversight: a successful pipeline at the head is a condition, and "there is no pipeline" does not satisfy it.
 
-Both refusals came after `pr=` was recorded and the merge poll was armed, exactly as a failing `gh pr merge` does on the GitHub side, so a refusal still leaves the audit trail and the watch in place.
+Both refusals came after `pr=` was recorded and the unified monitor was armed, exactly as a failing `gh pr merge` does on the GitHub side, so a refusal still leaves the audit trail and review-and-merge coverage in place.
 
 A recorded `pr_head=` that no longer matches the live head is reported, and the live head is what gets verified.
 The stale value below was written into the task record by hand, because a GitLab task never records one on its own:
 
 ```
 $ fm-pr-merge.sh e4 https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
-armed: state/e4.check.sh
+armed review-and-merge monitor: state/e4.check.sh
 notice: recorded head 1111111111111111111111111111111111111111 disagrees with the live head 66b8a6777bea5e291d7fa2fc20c42ad7686f6bc8; verifying the live head
 error: refusing to merge https://gitlab.com/KarotKris/gitlab-merge-watch-fixture/-/merge_requests/2
   - the head pipeline status is "none", not success
