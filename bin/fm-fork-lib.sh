@@ -2,7 +2,7 @@
 # Shared fork-main primitives.
 # Usage: . bin/fm-fork-lib.sh
 #
-# Nine facts are read by more than one fork script and must mean exactly the
+# Eight facts are read by more than one fork script and must mean exactly the
 # same thing in each, so they live here rather than being copied:
 #   - which branch a remote's default is (origin/upstream default resolution);
 #   - which ref is a divergence's canonical topic (published fork branch first,
@@ -12,8 +12,7 @@
 #   - what one commit's patch identity is;
 #   - which first-parent commits arrived through direct or regular PR delivery;
 #   - whether a patch can be reversed from a current tree through a private index;
-#   - how a conflict receipt binds the unaffected index;
-#   - how to read gh-axi's current one-value TOON API envelope.
+#   - how a conflict receipt binds the unaffected index.
 #
 # Path ownership in particular is a shared invariant between two competing
 # consumers: fm-fork-merge.sh derives the affected-unit list for a conflict
@@ -120,26 +119,4 @@ fm_fork_index_without_paths_hash() { # <repo> <newline-delimited-path-file>
     pathspecs+=(":(top,exclude,literal)$path")
   done < "$paths_file"
   git -C "$repo" ls-files "${pathspecs[@]}" | git hash-object --stdin
-}
-
-fm_fork_gh_axi_scalar() { # current gh-axi API TOON envelope on stdin
-  # gh-axi 0.1.29 documents --jq but does not promise raw stdout. Its current
-  # authenticated API surface wraps one selected scalar as:
-  #   api_response:
-  #     body: <value>
-  #     truncated: false
-  # Accept only that complete, untruncated one-body shape. A serializer change
-  # then stops refresh instead of turning envelope text into an upstream review disposition.
-  local line body='' body_count=0 root_count=0 truncated=''
-  while IFS= read -r line || [ -n "$line" ]; do
-    case "$line" in
-      api_response:) root_count=$((root_count + 1)) ;;
-      '  body: '*) body=${line#'  body: '}; body_count=$((body_count + 1)) ;;
-      '  truncated: '*) truncated=${line#'  truncated: '} ;;
-      '') ;;
-      *) return 1 ;;
-    esac
-  done
-  [ "$root_count" -eq 1 ] && [ "$body_count" -eq 1 ] && [ "$truncated" = false ] && [ -n "$body" ] || return 1
-  printf '%s\n' "$body"
 }

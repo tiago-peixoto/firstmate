@@ -767,7 +767,7 @@ command_answers() {
 }
 
 command_complete() {
-  local origin=${1:-} meta previous='' supplied='' keys='' entry key status_file open raw_open has_meta=0 transfer_rc
+  local origin=${1:-} meta previous='' supplied='' keys='' entry key status_file open raw_open has_meta=0 transfer_rc transfer_line
   [ "$#" -ge 2 ] || { usage >&2; exit 2; }
   validate_slug origin-id "$origin"
   shift
@@ -828,8 +828,9 @@ EOF
       while IFS=$'\t' read -r key _verb _summary; do
         [ -n "$key" ] || continue
         transfer_rc=0
+        transfer_line=$(status_stamp_line "captain-held [key=$key]: tracked by $keys") || true
         fm_wake_status_append_self_announced "$STATE" "$status_file" \
-          "captain-held [key=$key]: tracked by $keys" || transfer_rc=$?
+          "$transfer_line" || transfer_rc=$?
         [ "$transfer_rc" -ne 2 ] || fail "cannot append the captain-held transfer for $origin/$key"
       done <<EOF
 $raw_open

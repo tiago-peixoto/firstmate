@@ -437,8 +437,14 @@ test_remote_resolve_key_closes_at_enqueue() {
   send_env "$fb" "$home" "$ssh_log" \
     "$SEND" rsm --resolve-key upgrade-window "the weekend, freeze Friday" >/dev/null 2>&1 || rc=$?
   expect_code 0 "$rc" "a durably recorded remote answer must exit 0"
-  grep -F 'resolved [key=upgrade-window]: answered: the weekend, freeze Friday' "$home/state/rsm.status" >/dev/null \
-    || fail "a recorded remote answer must close the decision at enqueue: $(cat "$home/state/rsm.status")"
+  # Matched on the parsed event, since the close carries its own "[at=...]"
+  # instant (bin/fm-classify-lib.sh), and assert that instant is readable: the
+  # answer time is what makes the decision's relay latency measurable.
+  status_timed_events "$home/state/rsm.status" | LC_ALL=C awk -F '\t' '
+    $3 == "resolved" && $4 == "upgrade-window" \
+      && $5 == "answered: the weekend, freeze Friday" && $1 != "-" { found = 1 }
+    END { exit found ? 0 : 1 }' \
+    || fail "a recorded remote answer must close the decision at enqueue, with its time: $(cat "$home/state/rsm.status")"
   out=$(drain_out "$home")
   if printf '%s' "$out" | grep -F 'OPEN DECISIONS' >/dev/null; then
     fail "the answered decision still lists as open after a recorded remote answer: $out"

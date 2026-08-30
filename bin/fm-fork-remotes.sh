@@ -41,6 +41,9 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
+# shellcheck source=bin/fm-nm-pr-target-lib.sh
+. "$SCRIPT_DIR/fm-nm-pr-target-lib.sh"
+
 usage() {
   sed -n '2,/^set -eu$/p' "$0" | sed 's/^# \{0,1\}//; $d'
 }
@@ -178,19 +181,19 @@ preflight_url() {
     || die "$label URL is unreachable or requires interactive authentication: $url"
 }
 
+# Reading the registration is bin/fm-nm-pr-target-lib.sh's job, so the field that
+# means "pull-request base" is decided in exactly one place. This function keeps
+# only the migration-specific part: proving those fields are the two URLs the
+# operator asked to migrate to.
 no_mistakes_registration() { # <repo>, prints remote<TAB>fork
-  local repo=$1 out remote fork
-  command -v no-mistakes >/dev/null 2>&1 \
-    || die "no-mistakes is required to prove the ordinary registration before migration"
-  out=$(cd "$repo" && no-mistakes status 2>&1) \
-    || die "no-mistakes status failed; shared service left untouched and migration refused"
-  remote=$(printf '%s\n' "$out" | awk '$1 == "remote:" { sub(/^[^:]*:[[:space:]]*/, ""); print; exit }')
-  fork=$(printf '%s\n' "$out" | awk '$1 == "fork:" { sub(/^[^:]*:[[:space:]]*/, ""); print; exit }')
-  [ "$remote" = "$UPSTREAM_URL" ] \
-    || die "ordinary no-mistakes registration remote is '${remote:-missing}', expected official upstream"
-  [ "$fork" = "$FORK_URL" ] \
-    || die "ordinary no-mistakes registration fork is '${fork:-missing}', expected personal fork"
-  printf '%s\t%s\n' "$remote" "$fork"
+  local repo=$1
+  fm_nm_target_registration_read "$repo" \
+    || die "$FM_NM_TARGET_REASON; shared service left untouched and migration refused"
+  [ "$FM_NM_TARGET_REG_REMOTE" = "$UPSTREAM_URL" ] \
+    || die "ordinary no-mistakes registration remote is '${FM_NM_TARGET_REG_REMOTE:-missing}', expected official upstream"
+  [ "$FM_NM_TARGET_REG_FORK" = "$FORK_URL" ] \
+    || die "ordinary no-mistakes registration fork is '${FM_NM_TARGET_REG_FORK:-missing}', expected personal fork"
+  printf '%s\t%s\n' "$FM_NM_TARGET_REG_REMOTE" "$FM_NM_TARGET_REG_FORK"
 }
 
 configure_policy() {
@@ -386,13 +389,19 @@ cmd_inherit() {
   set_single_remote_url "$target_real" upstream "$source_upstream"
   copy_remote_fetch "$source_real" "$target_real" origin
   copy_remote_fetch "$source_real" "$target_real" upstream
+  # Adopt the source's remote HEADs BEFORE resolving which branch to configure.
+  # A fresh clone's origin/HEAD follows whatever the source happened to have
+  # checked out, so resolving first configures tracking for that branch, and the
+  # copy below then repoints origin/HEAD at the real default - leaving the
+  # default branch with no tracking remote and failing validation. Cloning from
+  # a source on a task branch is the ordinary case, not an exotic one.
+  copy_remote_head "$source_real" "$target_real" origin
+  copy_remote_head "$source_real" "$target_real" upstream
   branch=$(default_branch "$target_real") || branch=$(default_branch "$source_real") || branch=main
   git -C "$target_real" config "branch.$branch.remote" origin
   git -C "$target_real" config "branch.$branch.merge" "refs/heads/$branch"
   git -C "$target_real" config rerere.enabled true
   git -C "$target_real" config rerere.autoupdate false
-  copy_remote_head "$source_real" "$target_real" origin
-  copy_remote_head "$source_real" "$target_real" upstream
   validate_topology "$target_real" "$(remote_url "$target_real" origin)" "$(remote_url "$target_real" upstream)"
   FM_FORK_INHERIT_COMMITTED=1
   rm -f "$backup_config"
