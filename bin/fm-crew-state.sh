@@ -98,7 +98,7 @@ LOG="$STATE/$ID.status"
 NM_TIMEOUT=${FM_CREW_STATE_NM_TIMEOUT:-10}
 case "$NM_TIMEOUT" in ''|*[!0-9]*) NM_TIMEOUT=10 ;; esac
 # How many of the most recent `no-mistakes runs` rows the cross-branch fallback
-# (nm_runs_status_for_branch, below) scans. Generous enough to still find a
+# (nm_runs_row_for_branch, below) scans. Generous enough to still find a
 # branch's own run on a busy multi-crew fleet without listing the entire
 # history every call.
 FM_CREW_STATE_RUNS_LIMIT=${FM_CREW_STATE_RUNS_LIMIT:-200}
@@ -359,11 +359,14 @@ nm_publication_detail() {
     return
   fi
   disposition=$(nm_ci_pr_disposition)
-  [ -n "$disposition" ] || disposition='merged or closed unmerged'
-  if [ -n "$pr_url" ]; then
+  if [ -n "$disposition" ] && [ -n "$pr_url" ]; then
     printf 'PR %s - %s' "$disposition" "$pr_url"
-  else
+  elif [ -n "$disposition" ]; then
     printf 'PR %s' "$disposition"
+  elif [ -n "$pr_url" ]; then
+    printf 'PR published - %s' "$pr_url"
+  else
+    printf 'publishing step completed; PR URL unavailable'
   fi
 }
 
@@ -452,7 +455,7 @@ nm_ci_pr_disposition() {
   log_tail=$(nm_run axi logs --step ci --run "$run_id") || true
   [ -n "$log_tail" ] || return 0
   marker=$(printf '%s\n' "$log_tail" \
-    | grep -E '^[[:space:]]*"?PR has been (merged|closed)' | tail -1)
+    | grep -E '^[[:space:]]*"?PR has been (merged!|closed)"?[[:space:]]*$' | tail -1)
   case "$marker" in
     *"has been merged"*) printf 'merged' ;;
     *"has been closed"*) printf 'closed unmerged' ;;
@@ -487,39 +490,53 @@ forge_pr_coordinates() {  # <pr-url>
 # documented response carries total_count plus each suite's status, conclusion,
 # and latest_check_runs_count (GitHub REST "List check suites for a Git
 # reference", API version 2022-11-28). The docs do not say what a repo with no
-# CI returns; verified empirically 2026-08-21 that it is total_count 0
-# (kunchenguid/firstmate PR 2674 head 3d398129, the head of the 2026-08-20
-# false-green), while an approval-gated head returns suites at
-# conclusion=action_required with latest_check_runs_count 0 (PR 2747 head
-# 681a637c). The verdict deliberately turns on the STRUCTURE - are there
+# CI returns; re-verified 2026-08-30 that PR 2674 head 3d398129 has total_count
+# 0, PR 3244 head 4812b9b0 has two action_required suites with zero check runs,
+# and PR 1944 head 80ea450f has 13 successful check runs. The verdict
+# deliberately turns on the STRUCTURE - are there
 # suites, did they finish, did they produce runs - so it does not depend on
 # GitHub's conclusion vocabulary staying fixed; the conclusion is read only to
 # say WHY in the detail line.
-forge_zero_check_verdict() {  # <pr-url> -> verdict[ <detail>]
-  local url=$1 coords repo number sha suites total unfinished=0 runs=0 gated=0
+forge_zero_check_verdict() {  # <pr-url> <expected-head> -> verdict[ <detail>]
+  local url=$1 expected_head=$2 coords repo number sha suites total='' seen=0 invalid=0
+  local unfinished=0 runs=0 gated=0 kind status conclusion count value
   command -v gh >/dev/null 2>&1 || { printf 'unknown'; return; }
+  [ -n "$expected_head" ] || { printf 'unknown'; return; }
   coords=$(forge_pr_coordinates "$url")
   [ -n "$coords" ] || { printf 'unknown'; return; }
   repo=${coords%% *}
   number=${coords##* }
   sha=$(fm_run_timed "$FORGE_TIMEOUT" gh api "repos/$repo/pulls/$number" --jq .head.sha) || sha=
   sha=$(trim "$sha")
-  [ -n "$sha" ] || { printf 'unknown'; return; }
-  suites=$(fm_run_timed "$FORGE_TIMEOUT" gh api "repos/$repo/commits/$sha/check-suites" \
-    --jq '.total_count, (.check_suites[] | "\(.status)|\(.conclusion)|\(.latest_check_runs_count)")') || suites=
-  total=$(printf '%s\n' "$suites" | head -1)
-  case "$total" in ''|*[!0-9]*) printf 'unknown'; return ;; esac
-  [ "$total" = 0 ] && { printf 'no-ci-configured'; return; }
-  local status conclusion count
-  while IFS='|' read -r status conclusion count; do
-    [ -n "$status" ] || continue
-    case "$status" in completed) ;; *) unfinished=1 ;; esac
-    case "$conclusion" in success|skipped|neutral) ;; *) unfinished=1 ;; esac
-    case "$conclusion" in action_required) gated=1 ;; esac
-    case "$count" in ''|*[!0-9]*) ;; *) runs=$((runs + count)) ;; esac
+  short_sha_eq "$expected_head" "$sha" || { printf 'unknown'; return; }
+  suites=$(fm_run_timed "$FORGE_TIMEOUT" gh api \
+    "repos/$repo/commits/$expected_head/check-suites?per_page=100" --paginate \
+    --jq '"total|\(.total_count)", (.check_suites[] | "suite|\(.status)|\(.conclusion)|\(.latest_check_runs_count)")') || suites=
+  [ -n "$suites" ] || { printf 'unknown'; return; }
+  while IFS='|' read -r kind status conclusion count; do
+    case "$kind" in
+      total)
+        value=$status
+        case "$value" in ''|*[!0-9]*) invalid=1; continue ;; esac
+        if [ -z "$total" ]; then total=$value
+        elif [ "$total" != "$value" ]; then invalid=1
+        fi
+        ;;
+      suite)
+        seen=$((seen + 1))
+        case "$status" in completed) ;; *) unfinished=1 ;; esac
+        case "$conclusion" in success|skipped|neutral) ;; *) unfinished=1 ;; esac
+        case "$conclusion" in action_required) gated=1 ;; esac
+        case "$count" in ''|*[!0-9]*) invalid=1 ;; *) runs=$((runs + count)) ;; esac
+        ;;
+      *) invalid=1 ;;
+    esac
   done <<EOF
-$(printf '%s\n' "$suites" | tail -n +2)
+$suites
 EOF
+  [ "$invalid" = 0 ] && [ -n "$total" ] && [ "$seen" -eq "$total" ] \
+    || { printf 'unknown'; return; }
+  [ "$total" = 0 ] && { printf 'no-ci-configured'; return; }
   if [ "$unfinished" = 0 ] && [ "$runs" -gt 0 ]; then
     printf 'green'
     return
@@ -531,6 +548,19 @@ EOF
   printf 'ci-pending no checks have reported yet'
 }
 
+nm_forge_ci_state() {
+  local pr head verdict
+  pr=$(strip_quotes "$(nm_field pr)")
+  head=$(strip_quotes "$(nm_field head)")
+  verdict=$(forge_zero_check_verdict "$pr" "$head")
+  case "${verdict%% *}" in
+    green)            printf 'green' ;;
+    no-ci-configured) printf 'no-ci-configured' ;;
+    ci-pending)       printf 'not-ready %s' "${verdict#ci-pending }" ;;
+    *)                printf 'unknown' ;;
+  esac
+}
+
 # Current CI readiness for the monitoring ci step, as "<state>[ <detail>]":
 #   green            - checks ran and passed; only merge/close is outstanding.
 #   no-ci-configured - the PR has no CI at all, so nothing will ever verify it.
@@ -540,32 +570,27 @@ EOF
 # the current one. A marker that would end the wait (passed or zero-checks) is
 # confirmed at the forge before it is believed, because both of this reader's
 # reported incidents came from believing such a marker. When the forge cannot
-# answer, a "passed" marker keeps its own verdict - it is itself derived from
-# the forge and has never been implicated - while a zero-checks marker never
-# becomes green, because "we saw nothing" is not evidence of a pass.
+# answer, no log-only marker becomes terminal.
 nm_ci_checks_state() {
-  local run_id log_tail marker class pr verdict
+  local run_id log_tail marker class verdict
   run_id=$(strip_quotes "$(nm_field id)")
   [ -n "$run_id" ] || { printf 'unknown'; return; }
   log_tail=$(nm_run axi logs --step ci --run "$run_id") || true
   [ -n "$log_tail" ] || { printf 'unknown'; return; }
   marker=$(printf '%s\n' "$log_tail" \
-    | grep -E '^[[:space:]]*"?(all CI checks passed|no CI checks reported|skipping CI|CI checks running|checks failed|issues detected|base branch advanced.*re-arming CI monitor timeout)' \
+    | grep -E '^[[:space:]]*"?(all CI checks passed - still monitoring until merged or closed|no CI checks reported - still monitoring until merged or closed|no CI checks reported yet, waiting for checks to register\.\.\.|skipping CI(: [^"]*)?|CI checks running, waiting for results\.\.\.|checks failed[^"]*|issues detected:[^"]*|base branch advanced \([^"]*\), re-arming CI monitor timeout)"?[[:space:]]*$' \
     | tail -1)
   [ -n "$marker" ] || { printf 'unknown'; return; }
   class=$(nm_ci_marker_class "$marker")
   case "$class" in
     pending) printf 'not-ready'; return ;;
   esac
-  pr=$(strip_quotes "$(nm_field pr)")
-  verdict=$(forge_zero_check_verdict "$pr")
+  verdict=$(nm_forge_ci_state)
   case "${verdict%% *}" in
-    green)            printf 'green' ;;
-    no-ci-configured) printf 'no-ci-configured' ;;
-    ci-pending)       printf 'not-ready %s' "${verdict#ci-pending }" ;;
+    green|no-ci-configured) printf '%s' "$verdict" ;;
+    not-ready)              printf '%s' "$verdict" ;;
     *)
-      # Forge unreadable. Trust a passed marker, never a zero-checks one.
-      if [ "$class" = passed ]; then printf 'green'
+      if [ "$class" = passed ]; then printf 'not-ready passed marker could not be confirmed at the forge'
       else printf 'not-ready no checks reported and the forge could not be reached'
       fi
       ;;
@@ -629,16 +654,16 @@ nm_branch_run_rows() {
   return 0
 }
 
-# Coarse status word (running/completed/cancelled/failed) of the most recent
-# run for this crew's branch whose head still binds to the worktree, or empty
-# when the branch has no such run within FM_CREW_STATE_RUNS_LIMIT rows.
-nm_runs_status_for_branch() {
-  local st sha
-  while read -r st sha _; do
+# Coarse row of the most recent run for this crew's branch whose head still
+# binds to the worktree, or empty when the branch has no such run within
+# FM_CREW_STATE_RUNS_LIMIT rows.
+nm_runs_row_for_branch() {
+  local st sha rest
+  while read -r st sha rest; do
     # Same code-identity rule as axi status: skip a same-branch row whose
     # short-sha does not match this worktree (rewritten or advanced tip).
     nm_coarse_head_matches_worktree "$sha" || continue
-    printf '%s' "$st"
+    printf '%s\n' "$st $sha $rest"
     return 0
   done <<< "$(nm_branch_run_rows)"
   return 0
@@ -657,8 +682,8 @@ short_sha_eq() {  # <a> <b>
 
 # This worker incarnation's spawn time, formatted exactly as `no-mistakes runs`
 # prints a run's start ("YYYY-MM-DD HH:MM", local). Empty when the meta predates
-# spawn_gen= or the host's date cannot format an epoch, which simply means the
-# incarnation test below cannot run. BSD date takes -r <epoch>; GNU date reads
+# spawn_gen= or the host's date cannot format an epoch, which leaves terminal
+# run evidence unattributed. BSD date takes -r <epoch>; GNU date reads
 # -r as a reference FILE and fails, so it is served by the -d @<epoch> form.
 spawn_generation_stamp() {
   local gen epoch
@@ -671,10 +696,9 @@ spawn_generation_stamp() {
 }
 
 # Does the attributed run describe the CURRENT incarnation of this task?
-#   0 - yes, or there is not enough evidence to say otherwise
-#   1 - superseded: a newer run exists for this branch (NEWER_RUN_STATUS is set)
-#   2 - it started before this worker was spawned, so it belongs to an earlier
-#       incarnation of the same task id
+#   0 - yes, with positive run-row and spawn-generation evidence
+#   1 - superseded: a newer run exists for this branch
+#   2 - it predates this worker; 3 - positive incarnation evidence is unavailable
 #
 # `axi status` answers with the active-or-most-recent run it can find for the
 # branch, and it has twice handed back a run that did not describe the work in
@@ -684,22 +708,22 @@ spawn_generation_stamp() {
 # happened. A run-step verdict therefore has to prove currency before it may
 # outrank the worker's own live signals - but only when the verdict is
 # terminal, so the ordinary still-validating read pays nothing for this.
-NEWER_RUN_STATUS=""
-nm_run_is_current_incarnation() {  # <run-head>
-  local head=$1 newest st sha day clock stamp
-  NEWER_RUN_STATUS=""
+nm_run_is_current_incarnation() {  # <run-head> <runs-status>
+  local head=$1 expected_status=$2 newest st sha day clock stamp
   newest=$(nm_branch_run_rows | head -1)
-  [ -n "$newest" ] || return 0
+  [ -n "$newest" ] || return 3
   st=${newest%% *};    newest=${newest#* }
   sha=${newest%% *};   newest=${newest#* }
   day=${newest%% *};   newest=${newest#* }
   clock=${newest%% *}
   if ! short_sha_eq "$head" "$sha"; then
-    NEWER_RUN_STATUS=$st
+    return 1
+  fi
+  if [ -z "$expected_status" ] || [ "$st" != "$expected_status" ]; then
     return 1
   fi
   stamp=$(spawn_generation_stamp)
-  [ -n "$stamp" ] && [ -n "$day" ] && [ -n "$clock" ] || return 0
+  [ -n "$stamp" ] && [ -n "$day" ] && [ -n "$clock" ] || return 3
   # "YYYY-MM-DD HH:MM" compares lexicographically exactly as it does
   # chronologically, so no epoch arithmetic and no timezone handling is needed.
   [[ "$day $clock" < "$stamp" ]] && return 2
@@ -733,6 +757,8 @@ HAVE_RUN=0
 # run-step block below skips the TOON field parsing entirely for this crew.
 RUN_SOURCE=full
 COARSE_STATUS=""
+COARSE_HEAD=""
+COARSE_ROW=""
 # Scouts and secondmates never drive a no-mistakes validation of their own
 # worktree, so skip the lookup for them and read state from pane/log directly.
 if [ "$KIND" = ship ] && [ -n "$CREW_BRANCH" ] && command -v no-mistakes >/dev/null 2>&1; then
@@ -749,8 +775,11 @@ if [ "$KIND" = ship ] && [ -n "$CREW_BRANCH" ] && command -v no-mistakes >/dev/n
       # primary call means the CLI itself did not respond, so retrying it
       # immediately with a second bounded call would just double the wait
       # for no better answer.
-      COARSE_STATUS=$(nm_runs_status_for_branch)
-      if [ -n "$COARSE_STATUS" ]; then
+      COARSE_ROW=$(nm_runs_row_for_branch)
+      if [ -n "$COARSE_ROW" ]; then
+        COARSE_STATUS=${COARSE_ROW%% *}
+        COARSE_ROW=${COARSE_ROW#* }
+        COARSE_HEAD=${COARSE_ROW%% *}
         HAVE_RUN=1
         RUN_SOURCE=coarse
       fi
@@ -766,11 +795,14 @@ if [ "$HAVE_RUN" = 1 ]; then
   CI_STEP_STATUS=""
   CI_LOG_STATE=""
   RUN_STATUS=""
+  RUN_LIST_STATUS=""
+  RUN_EMIT_SOURCE=run-step
   # 1 only when `done` was INFERRED from the CI surface rather than recorded by
   # no-mistakes itself as the run's own outcome. The distinction decides
   # whether a worker's declared pause may overrule it below.
   RUN_DONE_INFERRED=0
   if [ "$RUN_SOURCE" = coarse ]; then
+    RUN_LIST_STATUS=$COARSE_STATUS
     # No step/gate detail is available from the plain runs list - only ever
     # true/working, done, or failed. A crew genuinely parked at a gate still
     # gets full detail once `axi status` reports its own branch again (e.g.
@@ -796,10 +828,23 @@ if [ "$HAVE_RUN" = 1 ]; then
 
     if [ -n "$outcome" ]; then
       case "$outcome" in
-        passed)        RUN_STATE="done"; RUN_DETAIL="run passed: $(nm_publication_detail)" ;;
-        checks-passed) RUN_STATE="done"; RUN_DETAIL="checks green: PR ready for review" ;;
-        failed)        RUN_STATE=failed; RUN_DETAIL="run failed" ;;
-        cancelled)     RUN_STATE=failed; RUN_DETAIL="run cancelled" ;;
+        passed)        RUN_STATE="done"; RUN_DETAIL="run passed: $(nm_publication_detail)"; RUN_LIST_STATUS=completed ;;
+        checks-passed)
+          RUN_LIST_STATUS=running
+          CI_LOG_STATE=$(nm_forge_ci_state)
+          case "${CI_LOG_STATE%% *}" in
+            green) RUN_STATE="done"; RUN_DETAIL="checks green: PR ready for review" ;;
+            no-ci-configured) RUN_STATE="done"; RUN_DETAIL="$(nm_no_ci_detail)" ;;
+            *)
+              RUN_STATE=working
+              RUN_DETAIL="checks-passed outcome awaiting current forge evidence"
+              [ "$CI_LOG_STATE" = unknown ] \
+                || RUN_DETAIL="$RUN_DETAIL${SEP}${CI_LOG_STATE#not-ready }"
+              ;;
+          esac
+          ;;
+        failed)        RUN_STATE=failed; RUN_DETAIL="run failed"; RUN_LIST_STATUS=failed ;;
+        cancelled)     RUN_STATE=failed; RUN_DETAIL="run cancelled"; RUN_LIST_STATUS=cancelled ;;
         *)             RUN_STATE=unknown; RUN_DETAIL="outcome: $outcome" ;;
       esac
     elif [ -n "$awaiting" ] || [ "$status" = awaiting_approval ] || [ "$status" = fix_review ] || [ -n "$gate_status" ] || [ "$has_gate" = 1 ]; then
@@ -821,9 +866,9 @@ if [ "$HAVE_RUN" = 1 ]; then
       case "$status" in
         ci)             RUN_STATE=working; RUN_DETAIL="ci running" ;;
         running|fixing) RUN_STATE=working; RUN_DETAIL="validating ($status)" ;;
-        completed)      RUN_STATE="done"; RUN_DETAIL="run completed" ;;
-        failed)         RUN_STATE=failed;  RUN_DETAIL="run failed" ;;
-        cancelled)      RUN_STATE=failed;  RUN_DETAIL="run cancelled" ;;
+        completed)      RUN_STATE="done"; RUN_DETAIL="run completed"; RUN_LIST_STATUS=completed ;;
+        failed)         RUN_STATE=failed;  RUN_DETAIL="run failed"; RUN_LIST_STATUS=failed ;;
+        cancelled)      RUN_STATE=failed;  RUN_DETAIL="run cancelled"; RUN_LIST_STATUS=cancelled ;;
         "")             RUN_STATE=working; RUN_DETAIL="run active" ;;
         *)              RUN_STATE=working; RUN_DETAIL="run active ($status)" ;;
       esac
@@ -837,11 +882,13 @@ if [ "$HAVE_RUN" = 1 ]; then
                 RUN_STATE="done"
                 RUN_DETAIL="checks green: PR ready for review (still monitoring for merge/close)"
                 RUN_DONE_INFERRED=1
+                RUN_LIST_STATUS=running
                 ;;
               no-ci-configured)
                 RUN_STATE="done"
                 RUN_DETAIL="$(nm_no_ci_detail)"
                 RUN_DONE_INFERRED=1
+                RUN_LIST_STATUS=running
                 ;;
               not-ready)
                 [ "$CI_LOG_STATE" = not-ready ] \
@@ -858,31 +905,32 @@ if [ "$HAVE_RUN" = 1 ]; then
   fi
 
   if [ "$RUN_STATE" = working ] && log_reports_ci_ready; then
-    if [ "$RUN_SOURCE" = coarse ]; then
-      emit "done" status-log "$(status_line_note "$LOG_LINE")${SEP}run still monitoring PR"
+    if [ "$RUN_SOURCE" = full ]; then
+      [ -n "$CI_STEP_STATUS" ] || CI_STEP_STATUS=$(nm_effective_ci_step_status)
+      if [ "$RUN_STATUS" = fixing ] || [ "$CI_STEP_STATUS" = fixing ]; then
+        CI_LOG_STATE=not-ready
+      elif [ "$CI_STEP_STATUS" = running ] && [ -z "$CI_LOG_STATE" ]; then
+        CI_LOG_STATE=$(nm_ci_checks_state)
+      fi
+      if [ "$CI_STEP_STATUS" = running ] && [ "$CI_LOG_STATE" = unknown ]; then
+        CI_LOG_STATE=$(nm_forge_ci_state)
+      fi
+      case "${CI_LOG_STATE%% *}" in
+        green)
+          RUN_STATE="done"
+          RUN_DETAIL="$(status_line_note "$LOG_LINE")${SEP}run still monitoring PR"
+          RUN_DONE_INFERRED=1
+          RUN_LIST_STATUS=running
+          RUN_EMIT_SOURCE=status-log
+          ;;
+        no-ci-configured)
+          RUN_STATE="done"
+          RUN_DETAIL="$(nm_no_ci_detail)"
+          RUN_DONE_INFERRED=1
+          RUN_LIST_STATUS=running
+          ;;
+      esac
     fi
-    [ -n "$CI_STEP_STATUS" ] || CI_STEP_STATUS=$(nm_effective_ci_step_status)
-    if [ "$RUN_STATUS" = fixing ]; then
-      CI_LOG_STATE=not-ready
-    elif [ "$CI_STEP_STATUS" = running ] && [ -z "$CI_LOG_STATE" ]; then
-      CI_LOG_STATE=$(nm_ci_checks_state)
-    elif [ "$CI_STEP_STATUS" = fixing ]; then
-      CI_LOG_STATE=not-ready
-    fi
-    case "${CI_LOG_STATE%% *}" in
-      not-ready)
-        # The worker reported checks green, and the ci step's own reading says
-        # they are not. Never relay a claim the pipeline contradicts.
-        ;;
-      no-ci-configured)
-        # The worker's wording ("checks green") is wrong here and must not be
-        # passed on to a supervisor; state what is actually true instead.
-        emit "done" run-step "$(nm_no_ci_detail)"
-        ;;
-      *)
-        emit "done" status-log "$(status_line_note "$LOG_LINE")${SEP}run still monitoring PR"
-        ;;
-    esac
   fi
 
   # A terminal verdict must prove it describes the CURRENT incarnation before
@@ -891,22 +939,13 @@ if [ "$HAVE_RUN" = 1 ]; then
   # reading from an earlier incarnation is dropped entirely, leaving the worker's
   # own live signals below to answer, which is what firstmate had to do by hand
   # both times this misfired.
-  if [ "$RUN_SOURCE" = full ] && { [ "$RUN_STATE" = failed ] || [ "$RUN_STATE" = "done" ]; }; then
+  if [ "$RUN_STATE" = failed ] || [ "$RUN_STATE" = "done" ]; then
     CURRENCY_RC=0
-    nm_run_is_current_incarnation "$(strip_quotes "$(nm_field head)")" || CURRENCY_RC=$?
-    SUPERSEDED_DETAIL="$RUN_STATE - $RUN_DETAIL"
-    case "$CURRENCY_RC" in
-      1)
-        case "$NEWER_RUN_STATUS" in
-          running)          RUN_STATE=working; RUN_DETAIL="validating (newer run for this branch)" ;;
-          completed)        RUN_STATE="done";  RUN_DETAIL="newer run for this branch completed" ;;
-          failed|cancelled) RUN_STATE=failed;  RUN_DETAIL="newer run for this branch $NEWER_RUN_STATUS" ;;
-          *)                HAVE_RUN=0 ;;
-        esac
-        [ "$HAVE_RUN" = 1 ] && RUN_DETAIL="$RUN_DETAIL${SEP}superseded reading: $SUPERSEDED_DETAIL"
-        ;;
-      2) HAVE_RUN=0 ;;
-    esac
+    if [ "$RUN_SOURCE" = coarse ]; then RUN_HEAD=$COARSE_HEAD
+    else RUN_HEAD=$(strip_quotes "$(nm_field head)")
+    fi
+    nm_run_is_current_incarnation "$RUN_HEAD" "$RUN_LIST_STATUS" || CURRENCY_RC=$?
+    [ "$CURRENCY_RC" = 0 ] || HAVE_RUN=0
   fi
 fi
 
@@ -938,7 +977,7 @@ if [ "$HAVE_RUN" = 1 ]; then
       ;;
   esac
 
-  emit "$RUN_STATE" run-step "$RUN_DETAIL"
+  emit "$RUN_STATE" "$RUN_EMIT_SOURCE" "$RUN_DETAIL"
 fi
 
 # --- fallback: no run attributed to this crew ------------------------------
