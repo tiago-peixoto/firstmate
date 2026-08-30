@@ -18,7 +18,7 @@ GitHub Actions and Dependabot are exempt so their automation keeps working, but 
 
 1. Fork the repo, then clone the parent repo or set your local `origin` to the parent (`git@github.com:kunchenguid/firstmate.git`).
 2. Initialize the gate with your fork as the push target: `no-mistakes init --fork-url git@github.com:<you>/firstmate.git` (this contribution workflow requires **no-mistakes v1.46.0+**; without a fork, plain `no-mistakes init` still works for maintainers with push access).
-3. If this clone will run permanently from your fork main, use `gh-axi repo fork --remote` after gate initialization so the fork becomes `origin` and the parent becomes `upstream`, then follow [`docs/fork-main.md`](docs/fork-main.md).
+3. If this clone will run permanently from your fork main, use `gh repo fork --remote` after gate initialization so the fork becomes `origin` and the parent becomes `upstream`, then follow [`docs/fork-main.md`](docs/fork-main.md).
 4. Create the topic branch from the oldest integration branch it targets, normally official `main`, and make your changes.
 5. Commit your changes.
 6. Push through the gate instead of pushing directly to a repository remote:

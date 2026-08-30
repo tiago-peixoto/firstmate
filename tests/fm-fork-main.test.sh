@@ -331,6 +331,35 @@ test_remote_topology_inheritance_refuses_unrelated_clones() {
   pass "fork remotes: standalone and linked homes converge without overwriting unrelated clones"
 }
 
+# A crewmate's source repo sits on its task branch, never on main, so a fresh
+# clone's origin/HEAD initially follows THAT branch. Inheritance must still
+# configure the real default branch: resolving the branch before adopting the
+# source's remote HEAD configured tracking for the task branch, then repointed
+# origin/HEAD at main, leaving main with no tracking remote. Every seed from a
+# task worktree then refused with "main tracks 'nothing', expected origin".
+test_remote_topology_inheritance_ignores_the_source_checkout_branch() {
+  local w source target
+  w=$(new_world inherit-branch)
+  source="$w/source"
+  target="$w/target"
+  git clone -q "$w/fork.git" "$source"
+  configure_fork_clone "$source" "$w"
+  git -C "$source" checkout -q -b fm/some-task
+  git clone -q "$source" "$target"
+  # Assert the divergence the case exists for, so it can never go vacuous.
+  [ "$(git -C "$target" symbolic-ref --short refs/remotes/origin/HEAD)" = origin/fm/some-task ] \
+    || fail "the fixture must start with the target following the source's task branch"
+  "$REMOTES" inherit "$source" "$target" >/dev/null \
+    || fail "inheritance must not depend on which branch the source has checked out"
+  [ "$(git -C "$target" symbolic-ref --short refs/remotes/origin/HEAD)" = origin/main ] \
+    || fail "inheritance must adopt the source's remote HEAD"
+  [ "$(git -C "$target" config --get branch.main.remote)" = origin ] \
+    || fail "the default branch must track origin after inheritance"
+  [ "$(git -C "$target" config --get branch.main.merge)" = refs/heads/main ] \
+    || fail "the default branch must merge from its own remote branch"
+  pass "fork remotes: inheritance configures the default branch whatever the source has checked out"
+}
+
 # Remote provisioning carries the primary-approved URLs to an official-origin
 # code root, prints its reversal, and makes both the root and persistent home
 # consume fork main without touching a real host.
@@ -787,9 +816,11 @@ test_manifest_class_disposition_pairs_are_enforced() {
   pass "fork manifest: supported class/disposition pairs are enforced at production and health boundaries"
 }
 
-# gh-axi 0.1.29 wraps a selected scalar in an api_response TOON envelope.
-# Refresh parses that current real shape and rejects the old fake-scalar assumption.
-test_refresh_parses_current_gh_axi_scalar_envelope() {
+# Startup runs --refresh with nobody present, so it reads GitHub through the plain
+# `gh` binary, whose `--jq` prints the selected scalar and nothing else. Refresh
+# accepts only that single-line value, and any other shape must refuse rather than
+# be compared as an upstream review disposition.
+test_refresh_reads_a_single_scalar_from_plain_gh() {
   local w repo fakebin out log tmp rc
   w=$(new_world refresh-envelope)
   add_topic_and_merge "$w" repo-issues repo-issues.txt current
@@ -819,7 +850,12 @@ test_refresh_parses_current_gh_axi_scalar_envelope() {
   fakebin="$w/fakebin"
   log="$w/gh-api-paths"
   mkdir -p "$fakebin"
-  cat > "$fakebin/gh-axi" <<'SH'
+  # gh is the only GitHub tool this fakebin provides, mirroring the real machine,
+  # so a read that reached for any other launcher would die as command-not-found.
+  # Plain `gh api --jq` behaviour: the selected scalar on one line, nothing else.
+  # /repos/acme/repo/issues/7 additionally answers with a multi-line serializer
+  # envelope, the shape refresh must refuse instead of comparing as a disposition.
+  cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 : "${FAKE_GH_LOG:?}"
 printf '%s\n' "${2:-}" >> "$FAKE_GH_LOG"
@@ -833,15 +869,21 @@ case "${2:-}" in
   *) exit 1 ;;
 esac
 body=$(printf '%s\n' "$payload" | jq -r "${4:?}") || exit 1
-printf '%s\n' 'api_response:' "  body: $body" '  truncated: false'
+if [ "${2:-}" = /repos/acme/repo/issues/7 ]; then
+  printf '%s\n' 'api_response:' "  body: $body" '  truncated: false'
+  exit 0
+fi
+printf '%s\n' "$body"
 SH
-  chmod +x "$fakebin/gh-axi"
+  chmod +x "$fakebin/gh"
   set +e
   out=$(PATH="$fakebin:$PATH" FAKE_GH_LOG="$log" "$STATUS" --repo "$repo" --refresh 2>&1); rc=$?
   set -e
   [ "$rc" -ne 0 ] || fail "refresh accepted an issue closed as completed or with an unavailable closure reason"
   assert_not_contains "$out" 'records open but its live upstream review is api_response' \
-    "refresh compared the serializer envelope as the live disposition"
+    "refresh compared a multi-line serializer envelope as the live disposition"
+  assert_contains "$out" 'manifest unit genuine-issue upstream review disposition could not be refreshed as a single scalar from the GitHub API' \
+    "refresh accepted a multi-line response instead of refusing it"
   grep -Fxq -- '/repos/acme/issues/pulls/7' "$log" \
     || fail "a repository named issues routed a pull request through the issue endpoint"
   grep -Fxq -- '/repos/issues/repo/pulls/7' "$log" \
@@ -859,8 +901,8 @@ SH
   assert_contains "$out" 'manifest unit duplicate-pending-issue upstream issue was closed as DUPLICATE; this is not a decline because review continues at the canonical issue, and its recorded route must be repointed at that canonical issue by a person' \
     "an issue closed as duplicate left a pending route looking healthy"
   [ "$(wc -l < "$log" | tr -d ' ')" -eq 8 ] || fail "refresh queried an unexpected number of API paths"
-  assert_contains "$out" 'errors=4' "refresh did not isolate the four invalid issue closure outcomes"
-  pass "fork health refresh parses envelopes, routes structurally, and distinguishes issue closure reasons"
+  assert_contains "$out" 'errors=5' "refresh did not isolate the four invalid issue closure outcomes plus the refused non-scalar response"
+  pass "fork health refresh reads one plain-gh scalar, routes structurally, and distinguishes issue closure reasons"
 }
 
 # Two canonical topics integrate as separate merge units, and discarding one
@@ -1716,6 +1758,7 @@ test_upstream_route_accepts_an_issue_and_still_refuses_a_missing_one() {
 test_startup_upstream_probe_requires_validated_topology
 test_remote_topology_is_explicit_and_reversible
 test_remote_topology_inheritance_refuses_unrelated_clones
+test_remote_topology_inheritance_ignores_the_source_checkout_branch
 test_remote_provisioning_inherits_fork_topology
 test_brief_supports_explicit_upstream_start_ref
 test_self_update_stays_fast_forward_only
@@ -1725,7 +1768,7 @@ test_health_uses_git_cherry_equivalence_and_exposes_drift
 test_health_requires_declared_paths_to_cover_the_canonical_patch
 test_health_attributes_pipeline_fixes_and_supports_disposition_transition
 test_manifest_class_disposition_pairs_are_enforced
-test_refresh_parses_current_gh_axi_scalar_envelope
+test_refresh_reads_a_single_scalar_from_plain_gh
 test_upstream_route_accepts_an_issue_and_still_refuses_a_missing_one
 test_topics_are_independently_revertible_units
 test_topic_integration_conflict_has_receipt_bound_continuation

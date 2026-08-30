@@ -2,12 +2,15 @@
 # Merge a task's PR or MR after recording pr= and any available pr_head= through
 # bin/fm-pr-check.sh, so teardown can verify landed work after squash merges.
 # The full canonical URL is parsed by bin/fm-pr-lib.sh. A GitHub pull request is
-# addressed through gh-axi by the derived owner and repository; a GitLab merge
-# request is addressed through glab by the project URL rebuilt from the parsed
-# host and path, so any instance works and no host is hardcoded.
+# addressed through the plain `gh` binary by the derived owner and repository; a
+# GitLab merge request is addressed through glab by the project URL rebuilt from
+# the parsed host and path, so any instance works and no host is hardcoded.
 #
 # Merge method on GitHub defaults to --squash when the caller passes none of
-# --squash, --merge, --rebase, or --method after the optional -- separator.
+# gh pr merge's own method flags after the optional -- separator: --squash/-s,
+# --merge/-m, or --rebase/-r (gh pr merge --help, gh 2.97.0). gh has no
+# `--method=<value>` form, so a caller passing one gets gh's own unknown-flag
+# error instead of a merge by a method nobody selected.
 # GitLab adds no method flag at all: its merge method is the project's own
 # setting, which the merge API applies, and imposing squash there would override
 # that convention rather than mirror the GitHub default.
@@ -65,11 +68,20 @@ PROJECT_URL="https://$FM_PR_HOST/$FM_PR_PATH"
 shift 2
 [ "${1:-}" = "--" ] && shift
 
+# Does the caller already choose gh's merge method, so this script must not add
+# its default --squash on top? Long and short forms both count: gh binds -s, -m,
+# and -r to --squash, --merge, and --rebase, and expands a single-dash cluster one
+# character at a time, so -ds carries --squash exactly as a bare -s does. Reading
+# a value-taking short flag's argument as a method (-bm, say) only means the
+# default is withheld and gh then reports the missing method itself, which is a
+# visible refusal rather than a merge by an unchosen method.
 caller_has_merge_method() {
   local arg
   for arg in "$@"; do
     case "$arg" in
-      --squash|--merge|--rebase|--method|--method=*) return 0 ;;
+      --squash|--merge|--rebase) return 0 ;;
+      --*) ;;
+      -*[smr]*) return 0 ;;
     esac
   done
   return 1
@@ -251,7 +263,7 @@ case "$PROVIDER" in
     if ! caller_has_merge_method "$@"; then
       merge_args=(--squash)
     fi
-    gh-axi pr merge "$PR_NUMBER" --repo "$PR_OWNER/$PR_REPO" "${merge_args[@]+"${merge_args[@]}"}" "$@"
+    gh pr merge "$PR_NUMBER" --repo "$PR_OWNER/$PR_REPO" "${merge_args[@]+"${merge_args[@]}"}" "$@"
     ;;
   gitlab)
     gitlab_verify_mergeable || exit 1

@@ -254,6 +254,144 @@ status_is_paused_or_captain_held() {  # <status-line>
   status_is_paused "$line" || status_is_captain_held "$line"
 }
 
+# --- event time -------------------------------------------------------------
+#
+# The status stream is an append-only EVENT log, and every latency read off it
+# needs the instant an event HAPPENED. So the appender stamps its own line: an
+# optional "[at=<stamp>]" tag in the same before-the-colon metadata region that
+# already carries "[key=...]" and "[corr=...]".
+#
+#   working [at=20260829T134516Z]: pushed 39594f22a4
+#   resolved [at=20260829T134516Z] [key=api-shape]: answered: use REST
+#
+# The stamp is UTC in ISO 8601 BASIC form (no separators) because this grammar
+# splits on the line's FIRST colon: an extended "13:45:16" stamp would move
+# that split into the timestamp itself and take the note (status_line_note) and
+# the stated key (_fm_decision_key) with it. Basic form is what the rest of the
+# repo already uses wherever a colon is unsafe - bin/fm-control.sh's relaunch
+# transaction id, bin/fm-config-inherit-lib.sh's generation stamp.
+#
+# The stamp is written at APPEND time, never at read time. The interval between
+# a worker appending an event and a reader first observing it IS part of the
+# latency being measured, so an observation stamp would silently subtract it;
+# worse, it would be arbitrarily late - or never written at all - exactly when
+# no reader is running, which is when latency is worst and most worth seeing.
+#
+# An unstamped line is a line with NO event time, and every reader keeps
+# working on one: lines written before this existed are never stamped
+# retroactively, and an appender that fumbles the tag degrades to that same
+# no-time case rather than to a wrong time. Nothing here ever infers a time.
+FM_CLASSIFY_AT_FORMAT='%Y%m%dT%H%M%SZ'
+
+# The current UTC instant in stamp form. FM_CLASSIFY_NOW pins it for tests; an
+# invalid override is rejected downstream by _fm_stamp_ok rather than trusted.
+status_now_stamp() {
+  if [ -n "${FM_CLASSIFY_NOW:-}" ]; then
+    printf '%s' "$FM_CLASSIFY_NOW"
+    return 0
+  fi
+  date -u "+$FM_CLASSIFY_AT_FORMAT"
+}
+
+# 0 when <stamp> is a well-formed UTC instant in that form. A malformed stamp
+# is REJECTED, never repaired: its line then reads as unstamped, which is a
+# missing measurement rather than a wrong one - the same "reject, never
+# rewrite" rule _fm_decision_slug_ok applies to a malformed key.
+_fm_stamp_ok() {  # <stamp>
+  local s=$1 mo d h mi se
+  # The pattern pins the stamp to exactly sixteen ASCII characters before any
+  # caller slices it, so byte and character indexing agree in every locale.
+  case "$s" in
+    [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) ;;
+    *) return 1 ;;
+  esac
+  mo=$((10#${s:4:2})); d=$((10#${s:6:2}))
+  h=$((10#${s:9:2})); mi=$((10#${s:11:2})); se=$((10#${s:13:2}))
+  [ "$mo" -ge 1 ] || return 1
+  [ "$mo" -le 12 ] || return 1
+  [ "$d" -ge 1 ] || return 1
+  [ "$d" -le 31 ] || return 1
+  [ "$h" -le 23 ] || return 1
+  [ "$mi" -le 59 ] || return 1
+  [ "$se" -le 59 ] || return 1
+  return 0
+}
+
+# The stamp a status line carries; nonzero when it carries none. Read ONLY from
+# the before-the-colon metadata region, the same place _fm_key_before_colon
+# reads a stated key, so an "[at=...]" written after the colon stays note prose
+# and its line is simply unstamped.
+status_line_at() {  # <status-line> -> stamp
+  local head=${1%%:*} s
+  case "$head" in *\[at=*\]*) ;; *) return 1 ;; esac
+  s=${head#*\[at=}
+  s=${s%%\]*}
+  _fm_stamp_ok "$s" || return 1
+  printf '%s' "$s"
+}
+
+# UTC seconds since the epoch for one valid stamp. Pure integer arithmetic
+# (Howard Hinnant's days-from-civil), NOT `date` parsing: BSD date needs -j -f
+# and GNU date needs -d, and the two disagree about the basic form, so one
+# conversion here keeps macOS and Linux on the same answer with no fallback
+# chain to go quietly wrong.
+status_stamp_to_epoch() {  # <stamp> -> seconds since 1970-01-01T00:00:00Z
+  local s=$1 y mo d h mi se era yoe doy doe days
+  _fm_stamp_ok "$s" || return 1
+  y=$((10#${s:0:4})); mo=$((10#${s:4:2})); d=$((10#${s:6:2}))
+  h=$((10#${s:9:2})); mi=$((10#${s:11:2})); se=$((10#${s:13:2}))
+  if [ "$mo" -le 2 ]; then
+    y=$((y - 1))
+    doy=$(( (153 * (mo + 9) + 2) / 5 + d - 1 ))
+  else
+    doy=$(( (153 * (mo - 3) + 2) / 5 + d - 1 ))
+  fi
+  era=$((y / 400))
+  yoe=$((y - era * 400))
+  doe=$(( yoe * 365 + yoe / 4 - yoe / 100 + doy ))
+  days=$(( era * 146097 + doe - 719468 ))
+  printf '%s' $(( days * 86400 + h * 3600 + mi * 60 + se ))
+}
+
+# The event time of a status line as epoch seconds; nonzero when unstamped.
+status_line_at_epoch() {  # <status-line> -> seconds since the epoch
+  local s
+  s=$(status_line_at "$1") || return 1
+  status_stamp_to_epoch "$s"
+}
+
+# <status-line> with an "[at=...]" tag inserted after its verb, so every
+# appender stamps through one grammar instead of hand-building the tag.
+# Always prints a line, and returns 1 when it could not stamp one, so a writer
+# appends the event it meant to append either way. Three lines pass through
+# unchanged: an already-stamped one (re-stamping never overwrites the first
+# time recorded), one with no colon to separate verb from note (inserting a tag
+# would push metadata into the note), and one with no leading verb.
+status_stamp_line() {  # <status-line> [<stamp>] -> line
+  local line=$1 stamp=${2:-} verb pre rest
+  if status_line_at "$line" >/dev/null 2>&1; then
+    printf '%s' "$line"
+    return 0
+  fi
+  case "$line" in
+    *:*) ;;
+    *) printf '%s' "$line"; return 1 ;;
+  esac
+  [ -n "$stamp" ] || stamp=$(status_now_stamp)
+  if ! _fm_stamp_ok "$stamp"; then
+    printf '%s' "$line"
+    return 1
+  fi
+  verb=$(status_line_verb "$line")
+  if [ -z "$verb" ]; then
+    printf '%s' "$line"
+    return 1
+  fi
+  pre=${line%%"$verb"*}
+  rest=${line#"$pre$verb"}
+  printf '%s%s [at=%s]%s' "$pre" "$verb" "$stamp" "$rest"
+}
+
 # --- durable keyed decisions ------------------------------------------------
 #
 # The status stream is an append-only EVENT log. Reading it last-event-wins
@@ -1180,6 +1318,78 @@ EOF
   done <<EOF
 $snapshot
 EOF
+}
+
+# --- timed event stream -----------------------------------------------------
+#
+# The append-only log, read as measurable events instead of as current state.
+# One row per non-blank line, in append order (which is the order the events
+# happened):
+#
+#   <epoch>\t<stamp>\t<verb>\t<key>\t<note>
+#
+# A single "-" stands for a field this line does not supply: no event time
+# (epoch and stamp together), no leading verb, or a stated key too malformed to
+# read. So a consumer computing a latency SEES the gap and can name the endpoint
+# it is missing instead of silently substituting a guess.
+#
+# The marker exists rather than an empty field because a tab is IFS whitespace:
+# `IFS=$'\t' read` folds runs of tabs into one separator and drops leading ones,
+# so a row that began with two empty fields would shift every later field left
+# and read a verb as an epoch. It can never be mistaken for a real time: an
+# epoch is digits and a stamp is the fixed 16-character instant. A line whose
+# leading verb or stated key is literally "-" would read the same as one that
+# supplies neither - nothing writes such a line, and the cost is one event that
+# reads as unattributed rather than any wrong time. The note is last and
+# printed as it stands, so a tab a worker managed to write into its prose can
+# shift nothing before it.
+FM_CLASSIFY_EVENT_NONE='-'
+_fm_status_timed_events_stream() {
+  local line verb key note stamp epoch stripped none=$FM_CLASSIFY_EVENT_NONE
+  while IFS= read -r line || [ -n "$line" ]; do
+    stripped=${line//[[:space:]]/}
+    [ -n "$stripped" ] || continue
+    verb=$(status_line_verb "$line")
+    [ -n "$verb" ] || verb=$none
+    key=$(_fm_decision_key "$line") || key=$none
+    note=$(status_line_note "$line")
+    stamp=$(status_line_at "$line") || stamp=$none
+    epoch=$none
+    if [ "$stamp" != "$none" ]; then
+      epoch=$(status_stamp_to_epoch "$stamp") || { epoch=$none; stamp=$none; }
+    fi
+    printf '%s\t%s\t%s\t%s\t%s\n' "$epoch" "$stamp" "$verb" "$key" "$note"
+  done
+}
+
+status_timed_events() {  # <status-file-or-dash>
+  local f=$1
+  if [ "$f" = - ]; then
+    _fm_status_timed_events_stream
+    return 0
+  fi
+  [ -f "$f" ] || return 0
+  _fm_status_timed_events_stream < "$f"
+}
+
+# Every home's timed events as "<task>\t<epoch>\t<stamp>\t<verb>\t<key>\t<note>"
+# rows, in glob (task id) order. The fleet-wide read the acceptance review needs:
+# three of its four numbers span two events, and one of them spans two tasks.
+scan_timed_events() {  # <state>
+  local state=$1 f task row rows
+  for f in "$state"/*.status; do
+    [ -e "$f" ] || continue
+    task=$(basename "$f"); task="${task%.status}"
+    rows=$(status_timed_events "$f")
+    [ -n "$rows" ] || continue
+    while IFS= read -r row; do
+      [ -n "$row" ] || continue
+      printf '%s\t%s\n' "$task" "$row"
+    done <<EOF
+$rows
+EOF
+  done
+  return 0
 }
 
 # Fold material routed-work phases in the same keyed event stream.

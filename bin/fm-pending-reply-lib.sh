@@ -1016,16 +1016,27 @@ fm_pending_reply_escalation_payload() {  # <record-path> <kind>
 # over that key, the close is withheld so the unrelated decision is not cleared.
 fm_pending_reply_escalation_line() {  # <status-file> <record-path> <corr_id>
   local status_file=$1 rec=$2 corr=$3 line found='' kind payload own_key
+  local line_key line_note
   [ -f "$status_file" ] || return 0
   [ "$(fm_pending_reply_get "$rec" corr_id)" = "$corr" ] || return 0
   own_key=$(fm_pending_reply_escalation_key "$corr")
+  # Matched on the line's PARSED key and note (bin/fm-classify-lib.sh), never on
+  # its raw bytes: an escalation carries an "[at=...]" event-time tag its own
+  # writer stamped, and a byte comparison against a rebuilt literal would stop
+  # recognizing the very line this library published.
   while IFS= read -r line || [ -n "$line" ]; do
     [ "$(status_line_verb "$line")" = blocked ] || continue
+    line_key=$(_fm_decision_key "$line") || continue
+    case "$line_key" in
+      "$own_key"|default) ;;
+      *) continue ;;
+    esac
+    line_note=$(status_line_note "$line")
     for kind in missed delivery-unknown recovery-delivery; do
       payload=$(fm_pending_reply_escalation_payload "$rec" "$kind") || continue
-      case "$line" in
-        "blocked [key=$own_key]: $payload"|"blocked: $payload") found=$line; break ;;
-      esac
+      [ "$line_note" = "$payload" ] || continue
+      found=$line
+      break
     done
   done < "$status_file"
   printf '%s' "$found"
@@ -1086,6 +1097,7 @@ _fm_pending_reply_close_escalation_locked() {  # <state-dir> <corr_id>
       close_line=$(printf 'resolved [key=%s]: pending-reply-resolved: task=%s pending-reply-id=%s via=%s' \
         "$key" "$(fm_pending_reply_get "$rec" task_id)" "$corr" \
         "$(fm_pending_reply_get "$rec" resolved_via)")
+      close_line=$(status_stamp_line "$close_line") || true
       close_rc=0
       fm_wake_status_append_self_announced "${parent_status%/*}" "$parent_status" "$close_line" \
         2>/dev/null || close_rc=$?
@@ -1123,7 +1135,7 @@ fm_pending_reply_maybe_escalate() {  # <state-dir> <corr_id>
 
 _fm_pending_reply_maybe_escalate_locked() {  # <state-dir> <corr_id>
   local state=$1 corr=$2
-  local rec phase completed now payload parent_status line kind
+  local rec phase completed now payload parent_status line kind key
   rec=$(fm_pending_reply_path "$state" "$corr")
   [ -f "$rec" ] || return 1
   phase=$(fm_pending_reply_get "$rec" phase)
@@ -1157,8 +1169,13 @@ _fm_pending_reply_maybe_escalate_locked() {  # <state-dir> <corr_id>
   payload=$(fm_pending_reply_escalation_payload "$rec" "$kind") || return 1
   [ -n "$parent_status" ] || return 1
   mkdir -p "$(dirname "$parent_status")" 2>/dev/null || return 1
-  line="blocked [key=$(fm_pending_reply_escalation_key "$corr")]: $payload"
-  if ! grep -Fqx "$line" "$parent_status" 2>/dev/null; then
+  key=$(fm_pending_reply_escalation_key "$corr")
+  # Deduped on the parsed event - same verb, same key, same note - because the
+  # line now carries its own event time and two appends of one escalation would
+  # never be byte-identical. The already-published line keeps the time it was
+  # first raised, which is the instant this blocker actually started waiting.
+  if [ -z "$(fm_pending_reply_escalation_line "$parent_status" "$rec" "$corr")" ]; then
+    line=$(status_stamp_line "blocked [key=$key]: $payload") || true
     printf '%s\n' "$line" >> "$parent_status" 2>/dev/null || return 1
   fi
   now=$(fm_pending_reply_now)

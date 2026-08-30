@@ -64,7 +64,8 @@ A `local-only` project may have no remote and skips no-mistakes initialization.
 
 Creating a GitHub repository is outward-facing.
 Before making that remote change, propose the repository name, owner or organization, visibility, and delivery posture, defaulting visibility to private and the posture to `no-mistakes-prod-only`, then obtain the captain's explicit consent for those exact values; a stated default never replaces that consent.
-Use `gh-axi` for the approved GitHub operation and consult its current help rather than relying on remembered flags.
+Use the plain `gh` binary for the approved GitHub operation and consult its current help rather than relying on remembered flags.
+Only the native `gh` binary is eligible for the captain's credential vault, so routing the call through any other launcher stalls it on a prompt only the captain can answer.
 After remote creation succeeds, clone it locally, add the registry entry, and initialize it according to its delivery posture.
 
 For a purely `local-only` project, create a local Git repository under its unused `projects/<name>` path, add the registry entry, and make no GitHub call.
