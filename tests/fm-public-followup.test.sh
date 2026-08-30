@@ -42,7 +42,10 @@ iso_utc() {  # <epoch-seconds> -> RFC3339 UTC. BSD date first, then GNU date.
     || date -u -d "@$1" +%Y-%m-%dT%H:%M:%SZ
 }
 
-NOW_EPOCH=$(date -u +%s)
+# Use the same clock as the code under test. A caller can advance this suite
+# beyond every fixture date without constructing the windows from wall time and
+# then comparing them against a different injected instant.
+NOW_EPOCH=${FMX_NOW_OVERRIDE:-$(date -u +%s)}
 # Both thread windows sit well beyond the 48-hour "closing" threshold, so a
 # freshly seeded loop is unambiguously open. They keep the two seeds distinct,
 # exactly as the two literals they replace were.
