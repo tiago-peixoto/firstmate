@@ -58,6 +58,12 @@ Follow the issue-first contribution order and its current validation-lane limit 
 A vague retirement reminder is not a valid manifest condition.
 Use a falsifiable statement such as "Upstream ships equivalent endpoint identity validation" or "This compatibility path is no longer reachable on every supported backend".
 
+**"Upstream merges our pull request" is NOT a valid retirement condition.**
+Key every condition on what upstream MAIN CARRIES, never on the fate of our pull request.
+Measured twice, both times leaving a condition that could never fire: `fork-main-integration` retired on upstream pull request 1944 merging, which we closed ourselves on 2026-08-19; the fail-closed pull-request target guard was about to be keyed on no-mistakes pull request 891, which upstream closed as not-a-defect on 2026-08-30.
+Our pull request can be withdrawn by us and declined by them, and both have now happened, so its fate says nothing about whether we still need to carry the behaviour.
+What upstream main carries is observable, falsifiable, and independent of who authored the change.
+
 ## Upstream review disposition
 
 Only a genuine upstream decline permits reclassifying a pending divergence to `rejected-but-retained`.

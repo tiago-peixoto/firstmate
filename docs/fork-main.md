@@ -18,6 +18,8 @@ A fresh home initializes no-mistakes while the official repository is still `ori
 It then uses `gh repo fork --remote` so GitHub CLI makes the fork `origin` and renames the official remote to `upstream`.
 Run the guarded `plan` and confirmed `apply` below afterwards; the already-renamed case validates the exact URLs, proves the no-mistakes registration, and establishes the branch and rerere policy without renaming again.
 This preserves the ordinary no-mistakes registration as the upstream-submission lane while giving the operating checkout the correct fork topology.
+Changing the Git topology does not and must not rewrite that registration's recorded upstream URL from the parent to the fork.
+After the topology change, a permanent fork-main home provisions the separate fork registration with `fm-fork-integration.sh ensure` and uses its verified worker source for fork-targeted work; rerunning `no-mistakes init` in the operating checkout would destroy the deliberate upstream lane rather than complete the migration.
 
 Changing `origin` on a running captain home is never a startup or self-update side effect.
 Inspect the plan first:
@@ -45,12 +47,25 @@ Inspect or provision that clone with:
 bin/fm-fork-integration.sh plan <fork-url> <upstream-url>
 bin/fm-fork-integration.sh ensure <fork-url> <upstream-url> --confirm
 bin/fm-fork-integration.sh check <fork-url> <upstream-url>
+bin/fm-fork-integration.sh worker-source <fork-url> <upstream-url>
 ```
 
 The private clone defaults to `data/fork-integration` and therefore stays outside tracked source and project clones.
 Provisioning snapshots the ordinary registration's upstream and fork facts before any init and proves them byte-identical afterwards.
 It refuses an existing mismatch rather than refreshing either registration.
 A no-mistakes error stops the operation and never restarts, updates, or reconfigures the shared service.
+Provisioning also installs or repairs the pull-request target guard and its executable payload in the private clone's common Git metadata.
+Every disposable worktree leased from that clone shares the fork registration and the guard payload through Git, so validation runs entirely from the worker's isolated copy without reading the operating checkout.
+
+Resolve the source immediately before dispatching fork-targeted work:
+
+```sh
+fork_worker_source=$(bin/fm-fork-integration.sh worker-source <fork-url> <upstream-url>)
+bin/fm-spawn.sh <task-id> "$fork_worker_source" --mode no-mistakes --yolo off
+```
+
+`worker-source` is read only and prints only the canonical clone path after the ordinary upstream lane, fork topology, separate fork registration, and clone-local target guard all pass.
+An upstream-submission topic still starts from the operating checkout with `--start-ref upstream/main` and therefore continues to resolve the ordinary registration.
 
 ### The pull-request target is enforced, not assumed
 
@@ -68,9 +83,9 @@ bin/fm-nm-pr-target.sh check          # read-only verdict for this code root
 bin/fm-nm-pr-target.sh install        # install or repair the refusal
 ```
 
-Session start installs and repairs it, and reports a `PR_TARGET_GUARD:` line when the guard is missing or the pipeline is currently blocked; the `bootstrap-diagnostics` skill owns handling those lines.
+Session start installs and repairs it for the operating checkout, and reports a `PR_TARGET_GUARD:` line when the guard is missing or the pipeline is currently blocked; the `bootstrap-diagnostics` skill owns handling those lines.
 One install covers a code root's primary checkout and every linked task worktree, because they share one hook directory.
-A separate clone needs its own install: the private integration clone above is guarded by its own, and passes by construction because its registration names the fork it pushes to.
+A separate clone needs its own install: `fm-fork-integration.sh ensure` owns the private integration clone's, and that clone passes because its registration names the fork it pushes to.
 
 Two limits are worth knowing rather than discovering.
 `git push --no-verify` bypasses Git hooks by design, which makes bypassing this a deliberate operator act rather than something the pipeline can do on its own.

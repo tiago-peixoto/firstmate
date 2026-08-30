@@ -8,10 +8,11 @@
 #       pipeline would open a pull request against, and exit 0 only when they are
 #       the same place. Exits 4 on a mismatch or on anything unreadable.
 #   fm-nm-pr-target.sh install [<repo>]
-#       Idempotently install the pre-push guard into <repo>'s hook directory, so
-#       a pipeline run cannot start while the targets disagree. Prints one line
-#       saying whether it installed, repaired, or found the guard current.
-#       Refuses to replace a foreign pre-push hook it did not write.
+#       Idempotently install the pre-push guard and its executable payload into
+#       <repo>'s hook directory, so every linked worktree can enforce the target
+#       without reading the checkout that installed it. Prints one line saying
+#       whether it installed, repaired, or found the guard current. Refuses to
+#       replace a foreign pre-push hook or payload it did not write.
 #   fm-nm-pr-target.sh installed [<repo>]
 #       Read only. Exit 0 when the current guard is installed, 1 when it is
 #       absent or stale, 4 when a foreign hook occupies the slot.
@@ -32,11 +33,12 @@
 # checked. `git push --no-verify` bypasses hooks by design and is a deliberate
 # operator act, not a path the pipeline itself can take.
 #
-# SCOPE OF ONE INSTALL. Hooks live in the repository's common Git directory, so
-# one install covers the primary checkout and every linked task worktree - which
-# is exactly the population that runs the pipeline. A separate clone (the private
-# fork-integration clone, a project clone) has its own hook directory and is
-# guarded by its own install; bin/fm-bootstrap.sh installs this home's.
+# SCOPE OF ONE INSTALL. Hooks and this guard's executable payload live in the
+# repository's common Git directory, so one install covers the primary checkout
+# and every linked task worktree without executing a script from another working
+# copy. A separate clone (the private fork-integration clone, a project clone)
+# has its own hook directory and is guarded by its own install;
+# bin/fm-bootstrap.sh installs this home's.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -47,8 +49,10 @@ FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
 # Bumped whenever the installed shim's bytes change, so `install` can recognize
 # and repair its own older copy while still refusing a hook it did not write.
-FM_NM_TARGET_HOOK_VERSION=1
+FM_NM_TARGET_HOOK_VERSION=2
 FM_NM_TARGET_HOOK_MARKER='fm-nm-pr-target guard'
+FM_NM_TARGET_PAYLOAD_SCRIPT='.fm-nm-pr-target.sh'
+FM_NM_TARGET_PAYLOAD_LIB='fm-nm-pr-target-lib.sh'
 
 usage() {
   sed -n '2,/^set -eu$/p' "$0" | sed 's/^# \{0,1\}//; $d'
@@ -81,38 +85,69 @@ hooks_dir() { # <repo>
   printf '%s/hooks\n' "$common"
 }
 
-# The installed shim stays a thin forwarder: the guard's logic lives in this
-# tracked script, so landing a change to it takes effect without reinstalling.
+# The installed shim stays a thin forwarder to a payload in the clone's common
+# hook directory. Session start or the fork-integration provisioning owner
+# repairs that payload from the current trusted code before work begins. A
+# disposable worktree therefore executes the guard carried by its own clone,
+# never a script under the primary home's working copy and never its unvalidated
+# topic-branch copy.
 hook_body() {
   cat <<EOF
 #!/usr/bin/env bash
 # $FM_NM_TARGET_HOOK_MARKER v$FM_NM_TARGET_HOOK_VERSION - installed by bin/fm-nm-pr-target.sh.
-# Forwards to the tracked guard so its logic can change without a reinstall.
-# Remove with: git config --unset core.hooksPath (if set) and delete this file.
-#
-# The recorded path is where the guard lived at install time. If the checkout was
-# moved since, fall back to this worktree's own copy rather than turning every
-# ordinary push into collateral damage; a relocated home repairs the recorded
-# path at its next session start anyway. If NEITHER exists, exec fails and the
-# push is refused, which is the right direction for a checkout that has lost its
-# own guard.
+# Forwards to the clone-local payload beside this hook.
 set -eu
-guard=$(printf '%q' "$FM_ROOT/bin/fm-nm-pr-target.sh")
-if [ ! -x "\$guard" ]; then
-  top=\$(git rev-parse --show-toplevel 2>/dev/null || true)
-  if [ -n "\$top" ] && [ -x "\$top/bin/fm-nm-pr-target.sh" ]; then
-    guard="\$top/bin/fm-nm-pr-target.sh"
-  else
-    echo "REFUSED: the pull-request target guard is installed but its script is missing (\$guard); reinstall it with fm-nm-pr-target.sh install, and do not push around it." >&2
-    exit $FM_NM_TARGET_EXIT
-  fi
+hook_dir=\$(CDPATH= cd -- "\$(dirname -- "\$0")" 2>/dev/null && pwd -P) || {
+  echo "REFUSED: the pull-request target guard cannot resolve its clone-local hook directory; reinstall it with fm-nm-pr-target.sh install, and do not push around it." >&2
+  exit $FM_NM_TARGET_EXIT
+}
+guard="\$hook_dir/$FM_NM_TARGET_PAYLOAD_SCRIPT"
+if [ ! -f "\$guard" ] || [ -L "\$guard" ] || [ ! -x "\$guard" ]; then
+  echo "REFUSED: the pull-request target guard's clone-local payload is missing or unsafe (\$guard); reinstall it with fm-nm-pr-target.sh install, and do not push around it." >&2
+  exit $FM_NM_TARGET_EXIT
 fi
 exec "\$guard" hook "\$@"
 EOF
 }
 
+payload_state() { # <hook-path> -> echoes current|stale|foreign|absent
+  local hook=$1 dir script lib
+  dir=$(dirname "$hook")
+  script="$dir/$FM_NM_TARGET_PAYLOAD_SCRIPT"
+  lib="$dir/$FM_NM_TARGET_PAYLOAD_LIB"
+  if [ ! -e "$script" ] && [ ! -L "$script" ] && [ ! -e "$lib" ] && [ ! -L "$lib" ]; then
+    printf 'absent\n'
+    return 0
+  fi
+  if [ -L "$script" ] || [ -L "$lib" ] \
+     || { [ -e "$script" ] && [ ! -f "$script" ]; } \
+     || { [ -e "$lib" ] && [ ! -f "$lib" ]; }; then
+    printf 'foreign\n'
+    return 0
+  fi
+  if [ -f "$script" ] && ! grep -q "$FM_NM_TARGET_HOOK_MARKER" "$script" 2>/dev/null; then
+    printf 'foreign\n'
+    return 0
+  fi
+  if [ ! -f "$script" ] || [ ! -f "$lib" ]; then
+    if [ -f "$hook" ] && grep -q "$FM_NM_TARGET_HOOK_MARKER" "$hook" 2>/dev/null; then
+      printf 'stale\n'
+    else
+      printf 'foreign\n'
+    fi
+    return 0
+  fi
+  if cmp -s "$SCRIPT_DIR/fm-nm-pr-target.sh" "$script" \
+     && cmp -s "$SCRIPT_DIR/fm-nm-pr-target-lib.sh" "$lib" \
+     && [ -x "$script" ]; then
+    printf 'current\n'
+    return 0
+  fi
+  printf 'stale\n'
+}
+
 hook_state() { # <hook-path> -> echoes current|stale|foreign|absent
-  local path=$1
+  local path=$1 payload
   if [ ! -e "$path" ]; then
     printf 'absent\n'
     return 0
@@ -121,7 +156,9 @@ hook_state() { # <hook-path> -> echoes current|stale|foreign|absent
     printf 'foreign\n'
     return 0
   fi
-  if [ -f "$path" ] && [ ! -L "$path" ] && hook_body | cmp -s - "$path"; then
+  payload=$(payload_state "$path")
+  if [ -f "$path" ] && [ ! -L "$path" ] && hook_body | cmp -s - "$path" \
+     && [ "$payload" = current ]; then
     printf 'current\n'
     return 0
   fi
@@ -143,13 +180,14 @@ cmd_check() {
 
 cmd_install() {
   [ "$#" -le 1 ] || { usage >&2; exit 2; }
-  local repo dir path state tmp
+  local repo dir path state payload script lib script_tmp lib_tmp tmp
   repo=$(repo_real "${1:-$FM_ROOT}") || die "not a directory: ${1:-$FM_ROOT}"
   git -C "$repo" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
     || die "not a Git worktree: $repo"
   dir=$(hooks_dir "$repo") || die "cannot resolve the hook directory for $repo"
   path="$dir/pre-push"
   state=$(hook_state "$path")
+  payload=$(payload_state "$path")
   case "$state" in
     current)
       printf 'pr-target-guard: current %s\n' "$path"
@@ -159,7 +197,28 @@ cmd_install() {
       printf 'pr-target-guard: refused %s (a pre-push hook this guard did not write already exists)\n' "$path" >&2
       exit "$FM_NM_TARGET_EXIT" ;;
   esac
+  if [ "$payload" = foreign ]; then
+    printf 'pr-target-guard: refused %s (clone-local payload paths this guard did not write already exist)\n' "$dir" >&2
+    exit "$FM_NM_TARGET_EXIT"
+  fi
   mkdir -p "$dir" || die "cannot create the hook directory: $dir"
+  script="$dir/$FM_NM_TARGET_PAYLOAD_SCRIPT"
+  lib="$dir/$FM_NM_TARGET_PAYLOAD_LIB"
+  script_tmp=$(mktemp "$dir/.fm-nm-pr-target-script.XXXXXX") \
+    || die "cannot write the clone-local guard payload"
+  lib_tmp=$(mktemp "$dir/.fm-nm-pr-target-lib.XXXXXX") \
+    || { rm -f "$script_tmp"; die "cannot write the clone-local guard library"; }
+  if ! cp "$SCRIPT_DIR/fm-nm-pr-target.sh" "$script_tmp" \
+     || ! cp "$SCRIPT_DIR/fm-nm-pr-target-lib.sh" "$lib_tmp" \
+     || ! chmod 0755 "$script_tmp" \
+     || ! chmod 0644 "$lib_tmp"; then
+    rm -f "$script_tmp" "$lib_tmp"
+    die "cannot prepare the clone-local guard payload"
+  fi
+  mv -f "$lib_tmp" "$lib" \
+    || { rm -f "$script_tmp" "$lib_tmp"; die "cannot install the clone-local guard library"; }
+  mv -f "$script_tmp" "$script" \
+    || { rm -f "$script_tmp"; die "cannot install the clone-local guard payload"; }
   tmp=$(mktemp "$dir/.pre-push.XXXXXX") || die "cannot write into the hook directory: $dir"
   hook_body > "$tmp" || { rm -f "$tmp"; die "cannot write the hook body"; }
   chmod 0755 "$tmp" || { rm -f "$tmp"; die "cannot make the hook executable"; }
@@ -207,7 +266,7 @@ cmd_hook() {
     printf '  Nothing was pushed and no validation run was started, so no pull request\n'
     printf '  can be opened until this is settled.\n'
     printf '\n'
-    printf '  Inspect it with: %s check %s\n' "$FM_ROOT/bin/fm-nm-pr-target.sh" "$repo"
+    printf '  Inspect it with: %s check %s\n' "$0" "$repo"
     printf '  Correct the pull-request base by re-registering the pipeline against the\n'
     printf '  repository this home pushes to; do not reach for --no-verify.\n'
     printf '\n'
