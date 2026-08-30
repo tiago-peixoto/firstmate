@@ -53,17 +53,35 @@ case " $* " in
     ;;
   *" /repos/o/r/pulls/1 "*)
     [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
-    printf '%s\t%s\t%s\n' "${FM_TEST_GH_STATE:-open}" "${FM_TEST_REQUESTED_COUNT:-1}" \
+    case "${FM_TEST_GH_STATE:-open}" in
+      MERGED|merged) state=merged ;;
+      OPEN|open) state=open ;;
+      CLOSED|closed) state=closed ;;
+      *) state=${FM_TEST_GH_STATE:-open} ;;
+    esac
+    printf '%s\t%s\t%s\n' "$state" "${FM_TEST_REQUESTED_COUNT:-1}" \
       "${FM_TEST_UPDATED_AT:-2026-08-30T10:00:00Z}"
     ;;
   *" state "*)
     [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
-    printf '%s\n' "${FM_TEST_GH_STATE:-OPEN}"
+    case "${FM_TEST_GH_STATE:-OPEN}" in
+      MERGED|merged) printf '%s\n' MERGED ;;
+      OPEN|open) printf '%s\n' OPEN ;;
+      CLOSED|closed) printf '%s\n' CLOSED ;;
+      *) printf '%s\n' "${FM_TEST_GH_STATE:-OPEN}" ;;
+    esac
     ;;
 esac
 SH
-  chmod 0700 "$fake_root/bin/fm-guard.sh" "$fakebin/gh"
+  cat > "$fakebin/glab" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${FM_TEST_GLAB_LOG:?}"
+[ "${FM_TEST_GLAB_FAIL:-0}" = 0 ] || exit 1
+printf 'title:\tfixture merge request\nstate:\t%s\nauthor:\tsomeone\n' "${FM_TEST_GLAB_STATE:-opened}"
+SH
+  chmod 0700 "$fake_root/bin/fm-guard.sh" "$fakebin/gh" "$fakebin/glab"
   : > "$dir/gh.log"
+  : > "$dir/glab.log"
   fm_write_meta "$dir/home/state/task-a.meta" \
     'window=firstmate:fm-task-a' \
     'endpoint_task_id=task-a' \
@@ -75,9 +93,10 @@ SH
 }
 
 arm_watch() {
-  local dir=$1
-  FM_ROOT_OVERRIDE="$dir/root" FM_HOME="$dir/home" FM_TEST_GH_LOG="$dir/gh.log" PATH="$dir/fakebin:$BASE_PATH" \
-    "$PR_CHECK" task-a https://github.com/o/r/pull/1 >/dev/null || return 1
+  local dir=$1 url=${2:-https://github.com/o/r/pull/1}
+  FM_ROOT_OVERRIDE="$dir/root" FM_HOME="$dir/home" FM_TEST_GH_LOG="$dir/gh.log" \
+    FM_TEST_GLAB_LOG="$dir/glab.log" PATH="$dir/fakebin:$BASE_PATH" \
+    "$PR_CHECK" task-a "$url" >/dev/null || return 1
   bash -c '. "$1"; fm_pr_poll_artifacts_valid "$2" task-a "$3"' _ \
     "$ROOT/bin/fm-pr-lib.sh" "$dir/home/state" "$ROOT/bin/fm-pr-poll.sh"
 }
@@ -87,6 +106,7 @@ run_watcher_for() {
   shift 2
   FM_TEST_LIMIT="$seconds" perl -MTime::HiRes=time,sleep -e 'my $pid=fork; die unless defined $pid; if (!$pid) { exec @ARGV } my $end=time()+$ENV{FM_TEST_LIMIT}; while (time() < $end) { my $done=waitpid($pid, 1); exit($? >> 8) if $done == $pid; sleep 0.02 } kill "TERM", $pid; for (1..25) { my $done=waitpid($pid, 1); exit 124 if $done == $pid; sleep 0.02 } kill "KILL", $pid; waitpid $pid, 0; exit 124' \
     env FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$ROOT" FM_TEST_GH_LOG="$dir/gh.log" \
+      FM_TEST_GLAB_LOG="$dir/glab.log" \
       FM_CHECK_INTERVAL=999999 FM_CHECK_TIMEOUT=1 FM_POLL=0.02 FM_HEARTBEAT=999999 \
       FM_SIGNAL_GRACE=0 PATH="$dir/fakebin:$BASE_PATH" "$WATCH" "$@"
 }
@@ -167,20 +187,31 @@ test_lookup_failure_is_visibly_different_from_quiet() {
   return 0
 }
 
-test_merge_still_wakes_and_retires_the_unified_monitor() {
-  local dir state rc suffix
-  dir=$(make_case unified-merge)
-  state="$dir/home/state"
-  arm_watch "$dir" || fail "could not arm merge fixture"
-  assert_review_watch_armed "$state"
-  set +e
-  FM_TEST_GH_STATE=merged run_watcher_for "$dir" 8 >"$dir/merge.out" 2>"$dir/merge.err"
-  rc=$?
-  set -e
-  [ "$rc" -eq 0 ] || fail "merge did not wake through the unified monitor: $(cat "$dir/merge.err")"
-  grep -q ': merged$' "$dir/merge.out" || fail "merge notification changed or disappeared"
-  for suffix in check.sh pr-poll pr-poll-registration pr-poll-seen pr-poll-retirement; do
-    [ ! -e "$state/task-a.$suffix" ] || fail "merged unified monitor left task-a.$suffix"
+test_every_old_forge_merge_path_wakes_and_retires_the_unified_monitor() {
+  local provider dir state rc suffix url
+  for provider in github gitlab; do
+    dir=$(make_case "unified-merge-$provider")
+    state="$dir/home/state"
+    url=https://github.com/o/r/pull/1
+    [ "$provider" = github ] \
+      || url=https://gitlab.example/group/project/-/merge_requests/2
+    arm_watch "$dir" "$url" || fail "could not arm $provider merge fixture"
+    set +e
+    if [ "$provider" = github ]; then
+      FM_TEST_GH_STATE=merged run_watcher_for "$dir" 8 >"$dir/merge.out" 2>"$dir/merge.err"
+    else
+      FM_TEST_GLAB_STATE=merged run_watcher_for "$dir" 8 >"$dir/merge.out" 2>"$dir/merge.err"
+    fi
+    rc=$?
+    set -e
+    [ "$rc" -eq 0 ] \
+      || fail "$provider merge did not wake through the unified monitor: $(cat "$dir/merge.err")"
+    grep -q ': merged$' "$dir/merge.out" \
+      || fail "$provider merge notification changed or disappeared"
+    for suffix in check.sh pr-poll pr-poll-registration pr-poll-seen pr-poll-retirement; do
+      [ ! -e "$state/task-a.$suffix" ] \
+        || fail "$provider merged unified monitor left task-a.$suffix"
+    done
   done
 }
 
@@ -199,7 +230,7 @@ for test_name in \
   test_review_wakes_on_fast_cycle_and_flags_nobody_requested \
   test_comments_wake_and_unchanged_state_stays_silent \
   test_lookup_failure_is_visibly_different_from_quiet \
-  test_merge_still_wakes_and_retires_the_unified_monitor; do
+  test_every_old_forge_merge_path_wakes_and_retires_the_unified_monitor; do
   if [ "$#" -eq 0 ] || [ "$1" = "$test_name" ]; then
     run_one "$test_name" || failures=$((failures + 1))
   fi
