@@ -145,6 +145,7 @@ family_for_basename() {
     fm-operational-input.test.sh|fm-pi-primary-types.test.sh|\
     fm-send-popup-settle.test.sh|fm-send-settle.test.sh|\
     fm-subagent-pretool-check.test.sh|\
+    fm-status-event-time.test.sh|\
     fm-supervision-instructions.test.sh|fm-task-delivery.test.sh|\
     fm-tmux-submit-busy.test.sh|fm-trace-context-lib.test.sh|\
     fm-transition-lib.test.sh|\
@@ -477,6 +478,7 @@ tests/fm-spawn-pool-base-freshen.test.sh 13257
 tests/fm-spawn-worktree-settle.test.sh 4828
 tests/fm-startup-memory-budget.test.sh 6550
 tests/fm-startup-network.test.sh 48888
+tests/fm-status-event-time.test.sh 2068
 tests/fm-stow-cascade.test.sh 2986
 tests/fm-subagent-pretool-check.test.sh 1066
 tests/fm-supervision-events.test.sh 1431

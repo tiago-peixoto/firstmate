@@ -122,6 +122,11 @@ Run `bin/fm-doc-audience-check.sh`; it enforces classification, README setup rou
 - When a task names a specific tool, implement the work with that tool, or explicitly flag the substitution and its new dependency footprint for review before shipping.
 - Colocate tests with the existing pattern in `tests/`, name them `<subject>.test.sh`, and extend an existing script rather than inventing a new runner.
 - Tests must exercise behavior through an executable or public interface and must never assert implementation-source bytes, including through parsers, regexes, snapshots, or indirect wrappers.
+- Never write an absolute instant where a test needs a deadline to be in the future; express the boundary as an offset from test time and derive both sides of it from that offset.
+  A literal turns a passing suite into a failing one on a fixed date with no commit to blame, and moving the literal forward only re-arms it.
+  A date that is purely a fixed input, never compared against now, may stay literal.
+- Measure text length and match characters with a locale-independent tool, not `${#var}` or a shell glob.
+  Both count and match bytes under a C or POSIX locale, so a correct 600-codepoint bound reports 1200 on any runner that does not export a UTF-8 locale; `jq`'s `length` and `test` are codepoint-based whatever the caller's locale.
 - A maintainer-verification record under `docs/verification/` records active empirical facts, not assumptions or task chronology.
 - Include the date, version, exact commands run, and exact output needed to support the current guarantee.
 - Keep incident chronology and delivery evidence in private task reports or PR evidence unless a concise rationale is required to maintain a current safety boundary.

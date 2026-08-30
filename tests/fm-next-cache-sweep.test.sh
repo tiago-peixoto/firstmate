@@ -2047,7 +2047,7 @@ make_teardown_case() {  # <name>
   local case_dir=$1 dir
   dir="$TMP_ROOT/$case_dir"
   mkdir -p "$dir/state" "$dir/config" "$dir/fakebin"
-  fm_fake_exit0 "$dir/fakebin" treehouse tmux gh gh-axi no-mistakes tasks-axi
+  fm_fake_exit0 "$dir/fakebin" treehouse tmux gh no-mistakes tasks-axi
 
   git init -q --bare "$dir/origin.git"
   git -C "$dir/origin.git" symbolic-ref HEAD refs/heads/main

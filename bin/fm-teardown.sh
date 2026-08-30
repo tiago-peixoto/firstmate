@@ -996,15 +996,21 @@ remove_pr_poll_artifacts() {
   fi
 }
 
-# Resolve the PR number for a worktree branch via gh-axi. Echoes the number on a
-# single match and returns 0; returns non-zero on no match or any lookup failure,
-# so the caller treats it as "no PR found" (fail-safe).
+# Resolve the PR number for a worktree branch. Echoes the number on a single
+# match and returns 0; returns non-zero on no match or any lookup failure, so the
+# caller treats it as "no PR found" (fail-safe). This is a recognized read on the
+# native gh binary, matching pr_is_merged below: teardown can run with the captain
+# away, and only gh is eligible for the captain's credential vault, so any other
+# launcher would stall the landed-work check on a prompt nobody is present to
+# answer. `--json number` selects the one field this needs instead of the whole
+# pull-request object.
 pr_number_from_branch() {
-  local branch=$1 out n
+  local branch=$1 n
   [ -n "$branch" ] && [ "$branch" != HEAD ] || return 1
-  out=$( cd "$WT" && gh-axi pr list --state all --head "$branch" --limit 1 2>/dev/null ) || return 1
-  n=$(printf '%s\n' "$out" | sed -n 's/^[[:space:]]*\([0-9][0-9]*\),.*/\1/p' | head -1)
-  [ -n "$n" ] || return 1
+  n=$( cd "$WT" && gh pr list --state all --head "$branch" --limit 1 --json number --jq '.[0].number' 2>/dev/null ) || return 1
+  case "$n" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
   printf '%s' "$n"
 }
 
