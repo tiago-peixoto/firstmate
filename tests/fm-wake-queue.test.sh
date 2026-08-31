@@ -377,7 +377,7 @@ test_secondmate_unknown_liveness_aged_queue_wakes() {
 }
 
 test_secondmate_foreign_queue_report_is_one_shot_and_read_only() {
-  local dir state sub fakebin out row_before row_after stall_count
+  local dir state sub fakebin out row_before row_after stall_count rc
   dir=$(make_case secondmate-foreign-stall)
   state="$dir/state"
   sub="$dir/secondmate"
@@ -403,12 +403,15 @@ SH
   chmod +x "$fakebin/tmux"
   out="$dir/watch.out"
 
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 3 > "$out" 2> "$dir/watch.err" || true
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 3 > "$out" 2> "$dir/watch.err" || rc=$?
+  [ "$rc" -eq 0 ] \
+    || fail "the initial parent checkpoint exited $rc, expected 0: out=$(cat "$out"); err=$(cat "$dir/watch.err")"
   grep -F 'check: secondmate wake-loop undetermined: mate=mate row=7' "$out" >/dev/null \
     || fail "an aged foreign row did not report its undetermined state: $(cat "$out"); err=$(cat "$dir/watch.err"); meta=$(cat "$state/mate.meta"); foreign=$(cat "$sub/state/.wake-queue")"
   [ -s "$state/.wake-queue" ] || fail "the parent notification was not durable"
@@ -423,36 +426,59 @@ SH
     || fail "parent stall notification could not be acknowledged"
 
   sleep 1
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-second.out" 2> "$dir/watch-second.err" || true
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-second.out" 2> "$dir/watch-second.err" || rc=$?
+  [ "$rc" -eq 124 ] \
+    || fail "the repeated parent checkpoint exited $rc, expected 124: out=$(cat "$dir/watch-second.out"); err=$(cat "$dir/watch-second.err")"
+  [ "$(cat "$dir/watch-second.out")" = 'checkpoint: no actionable wake within 2s' ] \
+    || fail "the repeated parent checkpoint omitted the exact quiet result: out=$(cat "$dir/watch-second.out"); err=$(cat "$dir/watch-second.err")"
   [ ! -s "$state/.wake-queue" ] || {
     stall_count=$(grep -c 'secondmate-wake-loop-mate-' "$state/.wake-queue" || true)
     [ "$stall_count" -eq 0 ] || fail "repeated checkpoint re-published the same stall notification"
   }
   cp "$sub/state/.wake-queue" "$row_after"
   cmp -s "$row_before" "$row_after" || fail "foreign queue changed after idempotent re-check"
+  FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/drain-second.out" 2> "$dir/drain-second.err" \
+    || fail "parent drain failed after the repeated quiet checkpoint"
+  ack_drain_err "$state" "$dir/drain-second.err" \
+    || fail "repeated quiet checkpoint recovery could not be acknowledged"
 
   : > "$sub/state/.wake-queue"
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-empty.out" 2> "$dir/watch-empty.err" || true
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-empty.out" 2> "$dir/watch-empty.err" || rc=$?
+  [ "$rc" -eq 124 ] \
+    || fail "the empty-queue checkpoint exited $rc, expected 124: out=$(cat "$dir/watch-empty.out"); err=$(cat "$dir/watch-empty.err")"
+  [ "$(cat "$dir/watch-empty.out")" = 'checkpoint: no actionable wake within 2s' ] \
+    || fail "the empty-queue checkpoint omitted the exact quiet result: out=$(cat "$dir/watch-empty.out"); err=$(cat "$dir/watch-empty.err")"
   ! grep -F 'secondmate wake-loop ' "$dir/watch-empty.out" >/dev/null \
     || fail "an empty foreign queue produced a stall notification"
+  FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/drain-empty.out" 2> "$dir/drain-empty.err" \
+    || fail "parent drain failed after the empty-queue checkpoint"
+  ack_drain_err "$state" "$dir/drain-empty.err" \
+    || fail "empty-queue checkpoint recovery could not be acknowledged"
 
   printf '%s\t8\tcheck\thealthy\tcheck: healthy row\n' "$(date +%s)" > "$sub/state/.wake-queue"
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=60 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-healthy.out" 2> "$dir/watch-healthy.err" || true
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-healthy.out" 2> "$dir/watch-healthy.err" || rc=$?
+  [ "$rc" -eq 124 ] \
+    || fail "the young-row checkpoint exited $rc, expected 124: out=$(cat "$dir/watch-healthy.out"); err=$(cat "$dir/watch-healthy.err")"
+  [ "$(cat "$dir/watch-healthy.out")" = 'checkpoint: no actionable wake within 2s' ] \
+    || fail "the young-row checkpoint omitted the exact quiet result: out=$(cat "$dir/watch-healthy.out"); err=$(cat "$dir/watch-healthy.err")"
   ! grep -F 'secondmate wake-loop ' "$dir/watch-healthy.out" >/dev/null \
     || fail "a healthy foreign queue produced a stall notification"
   pass "foreign secondmate queue reports notify once, remain byte-stable, and stay quiet when empty or healthy"
