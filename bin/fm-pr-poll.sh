@@ -108,6 +108,8 @@ case "$provider" in
     summary=$(gh api "/repos/$path/pulls/$number" \
       --jq '[if .merged_at != null then "merged" else .state end, ((.requested_reviewers | length) + (.requested_teams | length)), .updated_at] | @tsv' \
       2>/dev/null) || { emit_observation 'unavailable github'; exit 0; }
+    read_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
+      || { emit_observation 'unavailable github'; exit 0; }
     IFS=$(printf '\t') read -r state requested updated extra <<EOF
 $summary
 EOF
@@ -121,7 +123,7 @@ EOF
       *) emit_observation 'unavailable github'; exit 0 ;;
     esac
     if [ "$mode" = validated ] && [ "$updated" = "$prior_updated" ]; then
-      emit_observation "unchanged $updated $requested"
+      emit_observation "unchanged $updated $read_at $requested"
       exit 0
     fi
 
@@ -131,7 +133,7 @@ EOF
       || { emit_observation 'unavailable github'; exit 0; }
     review_comments=$(github_ids "/repos/$path/pulls/$number/comments?per_page=100") \
       || { emit_observation 'unavailable github'; exit 0; }
-    emit_observation "observed $updated $reviews $issue_comments $review_comments $requested"
+    emit_observation "observed $updated $read_at $reviews $issue_comments $review_comments $requested"
     ;;
   gitlab)
     [ "${#host}" -ge 1 ] && [ "${#host}" -le 253 ] || exit 0
@@ -161,14 +163,17 @@ EOF
     [ "$url" = "https://$host/$path/-/merge_requests/$number" ] || exit 0
     raw=$(glab mr view "$number" -R "https://$host/$path" 2>/dev/null) \
       || { emit_observation 'unavailable gitlab'; exit 0; }
+    read_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
+      || { emit_observation 'unavailable gitlab'; exit 0; }
     state=$(printf '%s\n' "$raw" | sed -n 's/^state:[[:space:]]*//p' | head -1) || exit 0
     case "$state" in
       merged) emit_observation merged ;;
       opened|closed)
-        if [ "$mode" = validated ] && [ "$prior_updated" = - ]; then
-          emit_observation 'unchanged - 0'
+        if [ "$mode" = validated ] \
+          && [[ "$prior_updated" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; then
+          emit_observation "unchanged $prior_updated $read_at 0"
         else
-          emit_observation 'observed - 0 0 0 0'
+          emit_observation "observed $read_at $read_at 0 0 0 0"
         fi
         ;;
       *) emit_observation 'unavailable gitlab' ;;
