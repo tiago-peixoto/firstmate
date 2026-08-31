@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Shared validation and atomic artifact helpers for merge polling on the
-# supported forges. Callers must validate task IDs and raw PR/MR URLs before
+# Shared validation and atomic artifact helpers for merge polling and PR review
+# observations. Callers must validate task IDs and raw PR/MR URLs before
 # constructing task paths or performing any side effect.
 #
 # The stored identity is provider-tagged: provider, url, host, path, number.
@@ -62,6 +62,13 @@ FM_PR_POLL_EXPECT_DATA_IDENTITY=
 FM_PR_POLL_EXPECT_CHECK_IDENTITY=
 FM_PR_POLL_TEMPLATE=
 FM_PR_POLL_STATE_DEVICE=
+FM_PR_OBSERVATION_KIND=
+FM_PR_OBSERVATION_PROVIDER=
+FM_PR_OBSERVATION_UPDATED=
+FM_PR_OBSERVATION_REVIEWS=
+FM_PR_OBSERVATION_ISSUE_COMMENTS=
+FM_PR_OBSERVATION_REVIEW_COMMENTS=
+FM_PR_OBSERVATION_REQUESTED=
 FM_PR_POLL_SNAPSHOT_ID=
 FM_PR_POLL_SNAPSHOT_PROVIDER=
 FM_PR_POLL_SNAPSHOT_URL=
@@ -360,6 +367,62 @@ fm_pr_poll_data_parse() {
   FM_PR_DATA_HOST=$FM_PR_HOST
   FM_PR_DATA_PATH=$FM_PR_PATH
   FM_PR_DATA_NUMBER=$FM_PR_NUMBER
+}
+
+fm_pr_poll_updated_valid() {
+  local value=$1
+  [ "$value" = - ] || [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
+}
+
+# shellcheck disable=SC2034 # Observation fields are the sourced library's output API.
+fm_pr_poll_observation_parse() {
+  local observation=$1 kind updated reviews issue_comments review_comments requested extra
+  FM_PR_OBSERVATION_KIND=
+  FM_PR_OBSERVATION_PROVIDER=
+  FM_PR_OBSERVATION_UPDATED=
+  FM_PR_OBSERVATION_REVIEWS=
+  FM_PR_OBSERVATION_ISSUE_COMMENTS=
+  FM_PR_OBSERVATION_REVIEW_COMMENTS=
+  FM_PR_OBSERVATION_REQUESTED=
+  IFS=' ' read -r kind updated reviews issue_comments review_comments requested extra <<EOF
+$observation
+EOF
+  [ -z "${extra:-}" ] || return 1
+  case "$kind" in
+    merged)
+      [ -z "${updated:-}" ] || return 1
+      FM_PR_OBSERVATION_KIND=merged
+      ;;
+    unavailable)
+      case "${updated:-}" in github|gitlab) ;; *) return 1 ;; esac
+      [ -z "${reviews:-}" ] || return 1
+      FM_PR_OBSERVATION_KIND=unavailable
+      FM_PR_OBSERVATION_PROVIDER=$updated
+      ;;
+    unchanged)
+      fm_pr_poll_updated_valid "${updated:-}" || return 1
+      case "${reviews:-}" in ''|*[!0-9]*) return 1 ;; esac
+      [ -z "${issue_comments:-}" ] || return 1
+      FM_PR_OBSERVATION_KIND=unchanged
+      FM_PR_OBSERVATION_UPDATED=$updated
+      FM_PR_OBSERVATION_REQUESTED=$reviews
+      ;;
+    observed)
+      fm_pr_poll_updated_valid "${updated:-}" || return 1
+      case "${reviews:-}${issue_comments:-}${review_comments:-}${requested:-}" in
+        *[!0-9]*) return 1 ;;
+      esac
+      [ -n "${reviews:-}" ] && [ -n "${issue_comments:-}" ] \
+        && [ -n "${review_comments:-}" ] && [ -n "${requested:-}" ] || return 1
+      FM_PR_OBSERVATION_KIND=observed
+      FM_PR_OBSERVATION_UPDATED=$updated
+      FM_PR_OBSERVATION_REVIEWS=$reviews
+      FM_PR_OBSERVATION_ISSUE_COMMENTS=$issue_comments
+      FM_PR_OBSERVATION_REVIEW_COMMENTS=$review_comments
+      FM_PR_OBSERVATION_REQUESTED=$requested
+      ;;
+    *) return 1 ;;
+  esac
 }
 
 # Registration layout: version tag, task id, then the same provider-tagged
