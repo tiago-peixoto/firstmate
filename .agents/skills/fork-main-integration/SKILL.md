@@ -91,11 +91,17 @@ Report the named requirement to the captain and, once they confirm, complete the
 3. Run `bin/fm-fork-merge.sh prepare`.
 4. On a clean result, inspect the emitted `git range-diff --remerge-diff` review and health result before starting no-mistakes.
 5. On exit 3, treat every named conflict as a divergence re-justification decision before resolving files.
+   Ask the drop question PER FILE, not per unit: a unit passes `git cherry` while individual files inside it have silently gone upstream.
+   Verify a resolution by NAMING the constructs that must survive and checking each against fork, upstream, and result - never by comparing file sizes or diffing for equality, because identical-to-upstream is what a silently dropped divergence looks like.
+   A replayed rerere result restores a file's previous resolution; it never answers whether that divergence still earns its place.
 6. Load `ask-user-authority` before deciding whether routine authority can answer a re-justification.
    A material behavior expansion, destructive choice, security-sensitive choice, or captain-owned product trade-off still goes to the captain.
 7. Resolve files only after the decision is settled, write the complete `firstmate.fork-rejustify.v1` decision file outside the candidate working tree, and run `continue`.
    If the settled decision is complete removal, use the receipt-bound upstream `abort`, then the independent topic `discard` path, land that candidate, and retry upstream preparation instead of continuing the conflict.
 8. Drive no-mistakes through the private fork registration and process every gate.
+   Review the RESOLUTION, not upstream's diff: upstream's commits were reviewed upstream, and re-reviewing them buries the only part that is ours.
+   Give the review the merge result diffed against each parent - what the fork gave up, and what it kept that upstream lacks.
+   When that is still too large, review it per FILE GROUP: a resolution decomposes by file even though a merge does not decompose by commit, which is what makes merge review possible at all.
 9. Require fork CI green and captain merge approval.
 10. Use the regular merge method, then run `/updatefirstmate`.
 
