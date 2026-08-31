@@ -1,0 +1,20 @@
+Typed PR-review observation protocol consumer transcript
+Accepted records expose only their typed fields:
+ACCEPT merged              input=merged exit=0 kind=merged provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+ACCEPT unavailable-github  input=unavailable\ github exit=0 kind=unavailable provider=github updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+ACCEPT unavailable-gitlab  input=unavailable\ gitlab exit=0 kind=unavailable provider=gitlab updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+ACCEPT unchanged           input=unchanged\ 2026-08-31T21:30:00Z\ 2026-08-31T21:30:01Z\ 2 exit=0 kind=unchanged provider=<empty> updated=2026-08-31T21:30:00Z read_at=2026-08-31T21:30:01Z reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=2
+ACCEPT observed            input=observed\ 2026-08-31T21:30:00Z\ 2026-08-31T21:30:01Z\ 12\ 3\ 44\ 2 exit=0 kind=observed provider=<empty> updated=2026-08-31T21:30:00Z read_at=2026-08-31T21:30:01Z reviews=12 issue_comments=3 review_comments=44 requested=2
+Rejected records return 1 and clear pre-seeded output fields:
+REJECT leading-space       input=\ merged exit=1 fields_empty=yes
+REJECT trailing-space      input=merged\  exit=1 fields_empty=yes
+REJECT repeated-space      input=unavailable\ \ github exit=1 fields_empty=yes
+REJECT carriage-return     input=$'merged\r' exit=1 fields_empty=yes
+REJECT multiline           input=$'merged\njunk' exit=1 fields_empty=yes
+REJECT unsupported-provider input=unavailable\ bitbucket exit=1 fields_empty=yes
+REJECT sentinel-timestamp  input=unchanged\ -\ 2026-08-31T21:30:01Z\ 2 exit=1 fields_empty=yes
+REJECT malformed-timestamp input=unchanged\ 2026-08-31\ 2026-08-31T21:30:01Z\ 2 exit=1 fields_empty=yes
+REJECT malformed-decimal   input=observed\ 2026-08-31T21:30:00Z\ 2026-08-31T21:30:01Z\ 12\ 3x\ 44\ 2 exit=1 fields_empty=yes
+REJECT missing-id          input=observed\ 2026-08-31T21:30:00Z\ 2026-08-31T21:30:01Z\ 12\ 3\ 44 exit=1 fields_empty=yes
+REJECT extra-field         input=merged\ junk exit=1 fields_empty=yes
+All consumer assertions passed.
