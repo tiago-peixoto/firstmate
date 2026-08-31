@@ -372,7 +372,7 @@ test_crew_absorb_class_classifier() {
   FM_FAKE_CREW_STATE='state: unknown · source: none · worktree gone'
   [ "$(crew_absorb_class a)" = none ] || fail "unknown crew classed absorbable"
   FM_FAKE_CREW_STATE='state: undetermined · source: run-step · conflicting direct evidence'
-  [ "$(crew_absorb_class a)" = none ] || fail "undetermined crew classed absorbable"
+  [ "$(crew_absorb_class a)" = undetermined ] || fail "undetermined crew lost its distinct classifier result"
   ! crew_is_provably_working a || fail "undetermined crew treated as provably working"
   ! crew_is_paused a || fail "undetermined crew classed paused"
   FM_FAKE_CREW_STATE='state: unknown · source: none · worktree gone'
@@ -1122,6 +1122,47 @@ test_exited_declared_pause_is_bounded_but_live_gate_surfaces() {
   [ "$wakes" -eq 0 ] || fail "acknowledged external-decision surface replayed $wakes wakes"
   [ "$bare" -eq 0 ] || fail "acknowledged external-decision bare stale remained queued"
   pass "exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once"
+}
+
+test_undetermined_declared_pause_surfaces_for_workers_and_secondmates() {
+  local kind id dir state fakebin out capture_file statusf window key pane_hash sig pid
+  for kind in ship secondmate; do
+    id="undetermined-$kind"
+    dir=$(make_case "$id"); state="$dir/state"; fakebin="$dir/fakebin"
+    out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/$id.status"
+    window="test:fm-$id"
+    printf 'idle with conflicting current evidence\n' > "$capture_file"
+    printf 'window=%s\nkind=%s\nharness=grok\nbackend=tmux\n' "$window" "$kind" > "$state/$id.meta"
+    printf 'paused: awaiting the upstream release\n' > "$statusf"
+    sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-${id}_status"
+    key=$(printf '%s' "$window" | tr '.:/' '___')
+    pane_hash=$(hash_text "idle with conflicting current evidence")
+    printf '%s' "$pane_hash" > "$state/.hash-$key"
+    printf '1\n' > "$state/.count-$key"
+    PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+      FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+      FM_FAKE_CREW_STATE='state: undetermined · source: run-step · conflicting current evidence' \
+      FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+      FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+      FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+    pid=$!
+    if wait_poll_cycle "$state" "$pid"; then
+      reap "$pid"
+      fail "undetermined $kind pause was absorbed instead of surfaced"
+    elif kill -0 "$pid" 2>/dev/null; then
+      reap "$pid"
+      fail "undetermined $kind watcher timed out before completing a poll cycle"
+    else
+      wait "$pid" || fail "undetermined $kind watcher failed while surfacing"
+    fi
+    grep -Fx "stale: $window" "$out" >/dev/null \
+      || fail "undetermined $kind pause did not surface a plain stale wake: $(cat "$out")"
+    grep -F "awaiting external" "$out" >/dev/null \
+      && fail "undetermined $kind pause was mislabeled as an admitted external wait"
+    grep "$(printf '\tstale\t')" "$state/.wake-queue" | grep -F "$window" >/dev/null \
+      || fail "undetermined $kind pause did not enqueue a stale wake"
+  done
+  pass "undetermined declared pauses surface for workers and secondmates"
 }
 
 test_secondmate_paused_resurfaces_in_normal_mode() {
@@ -2625,6 +2666,7 @@ test_classifier_primitives
 test_crew_is_provably_working_classifier
 test_status_is_paused_classifier
 test_crew_absorb_class_classifier
+test_undetermined_declared_pause_surfaces_for_workers_and_secondmates
 test_crew_worktree_written_since_classifier
 test_empty_write_prune_widens_the_probe
 test_empty_write_prune_from_the_environment_widens_the_probe

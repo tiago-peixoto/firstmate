@@ -1399,11 +1399,12 @@ signal_reason_is_actionable() {  # <file> ...
 #             (e.g. waiting on CI);
 #   paused  - the crew's authoritative current state is a declared external-wait
 #             pause (paused:), which is EXPECTED to idle;
+#   undetermined - current evidence conflicts or is unsubstantiated, so the wake
+#             must surface;
 #   none    - neither, so the wake must surface (a stopped/finished/parked/failed/
-#             torn-down/undetermined/unknown crew, or an unreadable verdict).
-# One fm-crew-state.sh read serves BOTH absorb reasons at once. An undetermined
-# conflict maps to none so the wake surfaces instead of being absorbed as either
-# working or paused.
+#             torn-down/unknown crew, or an unreadable verdict).
+# One fm-crew-state.sh read serves both absorb reasons and preserves undetermined
+# for callers that reconcile declared pauses.
 # NOT a pure read: fm-crew-state.sh may make a bounded no-mistakes call, so callers
 # run it only on no-verb signal and first-sighting stale paths, never every wake.
 # FM_CREW_STATE_BIN lets tests stub the verdict.
@@ -1419,7 +1420,7 @@ crew_absorb_class() {  # <id>
       src=${line#*source: }; src=${src%% *}
       case "$src" in run-step|pane) printf 'working'; return ;; esac
       ;;
-    undetermined) printf 'none'; return ;;
+    undetermined) printf 'undetermined'; return ;;
   esac
   printf 'none'
 }
