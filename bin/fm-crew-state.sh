@@ -39,9 +39,8 @@
 #      awaiting_approval/fix_review -> parked (with gate findings), terminal
 #      passed/checks-passed -> done, failed/cancelled -> failed. Two more
 #      specific records can replace that coarse answer: the latest recognized
-#      CI marker while the ci step runs, and a worker's explicit current state.
-#      The latter says what happened to the WORK after a terminal run state was
-#      recorded, so it wins; a declared pause also wins while a monitor runs.
+#      CI marker while the ci step runs, and a worker's explicit current state
+#      after a historical run's branch or code identity no longer matches.
 #      A finished run's publication detail likewise comes from its push and PR
 #      step rows, never from the run outcome alone.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
@@ -292,14 +291,6 @@ nm_gate_findings_count() {
   case "$rest" in ''|*[!0-9]*) return 0 ;; esac
   printf '%s' "$rest"
 }
-log_reports_ci_ready() {
-  [ "$LOG_VERB" = "done" ] || return 1
-  case "$(status_line_note "$LOG_LINE")" in
-    *PR*"checks green"*|*"checks green"*PR*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 # Status word of one row in the run's steps[] table. A finished run's outcome
 # says whether the pipeline ended, not which publishing steps actually ran.
 nm_step_status() {  # <step-name>
@@ -323,7 +314,7 @@ nm_ci_pr_disposition() {
   [ -n "$run_id" ] || return 0
   log_tail=$(nm_run axi logs --step ci --run "$run_id") || true
   marker=$(printf '%s\n' "$log_tail" \
-    | grep -E '^[[:space:]]*"?PR has been (merged!|closed)"?[[:space:]]*$' \
+    | grep -E '^[[:space:]]*"?PR has been (merged(!|; clearing stale CI approval gate)|closed(; clearing stale CI approval gate)?)"?[[:space:]]*$' \
     | tail -1)
   case "$marker" in
     *"has been merged"*) printf 'merged' ;;
@@ -397,7 +388,7 @@ nm_ci_checks_state() {
   log_tail=$(nm_run axi logs --step ci --run "$run_id") || true
   [ -n "$log_tail" ] || { printf 'unknown'; return; }
   marker=$(printf '%s\n' "$log_tail" \
-    | grep -E '^[[:space:]]*"?(all CI checks passed - still monitoring until merged or closed|no CI checks reported - still monitoring until merged or closed|no CI checks reported yet, waiting for checks to register\.\.\.|skipping CI(: [^"]*)?|CI checks running, waiting for results\.\.\.|checks failed[^"]*|issues detected:[^"]*|base branch advanced \([^"]*\), re-arming CI monitor timeout)"?[[:space:]]*$' \
+    | grep -E '^[[:space:]]*"?(all CI checks passed - still monitoring until merged or closed|no CI checks reported - still monitoring until merged or closed|no CI checks reported yet, waiting for checks to register\.\.\.|skipping CI(: [^"]*)?|CI checks running, waiting for results\.\.\.|checks failed[^"]*|issues detected:[^"]*|issues detected but checks still pending, waiting for all checks to complete\.\.\.|base branch advanced \([^"]*\), re-arming CI monitor timeout)"?[[:space:]]*$' \
     | tail -1)
   case "$marker" in
     *"all CI checks passed - still monitoring until merged or closed"*) printf 'green' ;;
@@ -466,12 +457,33 @@ nm_runs_status_for_branch() {  # <branch>
 # scratch worktree); with no branch there is no run to attribute to this crew.
 CREW_BRANCH=$(git -C "$WT" symbolic-ref --quiet --short HEAD 2>/dev/null || true)
 
-# 0 if the active axi-status run's head field matches this worktree's code
-# identity. Branch match is a precondition (caller). Rule owned by
-# fm_nm_head_matches_worktree in bin/fm-nm-run-lib.sh.
+# Branch match is a precondition (caller).
 nm_run_head_matches_worktree() {
-  local run_head
+  local run_head worktree_head sync_local sync_pipeline sync_branch sync_head
+  local sync_submitted_head sync_current_head sync_relation
   run_head=$(strip_quotes "$(nm_field head)")
+  [ "${#run_head}" -ge 7 ] || return 1
+  if ! printf '%s\n' "$RUN_OUT" | grep -Eq '^[[:space:]]*branch_sync:[[:space:]]*$'; then
+    fm_nm_head_matches_worktree "$WT" "$run_head"
+    return
+  fi
+  worktree_head=$(git -C "$WT" rev-parse HEAD 2>/dev/null) || return 1
+  sync_local=$(printf '%s\n' "$RUN_OUT" \
+    | sed -n '/^[[:space:]][[:space:]]local:[[:space:]]*$/,/^[[:space:]][[:space:]][^[:space:]][^:]*:[[:space:]]*/p')
+  sync_pipeline=$(printf '%s\n' "$RUN_OUT" \
+    | sed -n '/^[[:space:]][[:space:]]pipeline:[[:space:]]*$/,/^[[:space:]][[:space:]][^[:space:]][^:]*:[[:space:]]*/p')
+  sync_branch=$(strip_quotes "$(fm_nm_field "$sync_local" branch)")
+  sync_head=$(strip_quotes "$(fm_nm_field "$sync_local" head)")
+  sync_submitted_head=$(strip_quotes "$(fm_nm_field "$sync_pipeline" submitted_head)")
+  sync_current_head=$(strip_quotes "$(fm_nm_field "$sync_pipeline" current_head)")
+  sync_relation=$(strip_quotes "$(fm_nm_field "$RUN_OUT" relation)")
+  [ "$sync_branch" = "$CREW_BRANCH" ] || return 1
+  [ "$sync_head" = "$worktree_head" ] || return 1
+  case "$sync_current_head" in "$run_head"*) ;; *) return 1 ;; esac
+  case "$sync_relation" in equal|behind|unknown) ;; *) return 1 ;; esac
+  if [ "$sync_current_head" = "$worktree_head" ] || [ "$sync_submitted_head" = "$worktree_head" ]; then
+    return 0
+  fi
   fm_nm_head_matches_worktree "$WT" "$run_head"
 }
 
@@ -549,7 +561,15 @@ if [ "$HAVE_RUN" = 1 ]; then
     if [ -n "$outcome" ]; then
       case "$outcome" in
         passed)        RUN_STATE="done"; RUN_DETAIL="run passed: $(nm_publication_detail)" ;;
-        checks-passed) RUN_STATE="done"; RUN_DETAIL="checks green: PR ready for review" ;;
+        checks-passed)
+          RUN_STATE="done"
+          CI_LOG_STATE=$(nm_ci_checks_state)
+          if [ "$CI_LOG_STATE" = green ]; then
+            RUN_DETAIL="checks green: PR ready for review"
+          else
+            RUN_DETAIL="run completed (checks-passed outcome; CI checks not confirmed)"
+          fi
+          ;;
         failed)        RUN_STATE=failed; RUN_DETAIL="run failed" ;;
         cancelled)     RUN_STATE=failed; RUN_DETAIL="run cancelled" ;;
         *)             RUN_STATE=unknown; RUN_DETAIL="outcome: $outcome" ;;
@@ -594,35 +614,6 @@ if [ "$HAVE_RUN" = 1 ]; then
             ;;
         esac
       fi
-    fi
-  fi
-
-  # The newest explicit worker state is more specific than a historical
-  # terminal run: a run says how validation ended, while the worker says what
-  # happened to the work afterward. A declared pause also beats an active
-  # monitor because waiting is the worker's intentional current state.
-  LOG_STATE=$(map_log_state "$LOG_LINE")
-  case "$LOG_STATE:$RUN_STATE" in
-    paused:*|working:done|working:failed|parked:done|parked:failed|blocked:done|blocked:failed)
-      emit "$LOG_STATE" status-log \
-        "$(status_line_note "$LOG_LINE")${SEP}run reads $RUN_STATE - $RUN_DETAIL"
-      ;;
-  esac
-
-  if [ "$RUN_STATE" = working ] && log_reports_ci_ready; then
-    if [ "$RUN_SOURCE" = coarse ]; then
-      emit "done" status-log "$(status_line_note "$LOG_LINE")${SEP}run still monitoring PR"
-    fi
-    [ -n "$CI_STEP_STATUS" ] || CI_STEP_STATUS=$(nm_effective_ci_step_status)
-    if [ "$RUN_STATUS" = fixing ]; then
-      CI_LOG_STATE=not-ready
-    elif [ "$CI_STEP_STATUS" = running ] && [ -z "$CI_LOG_STATE" ]; then
-      CI_LOG_STATE=$(nm_ci_checks_state)
-    elif [ "$CI_STEP_STATUS" = fixing ]; then
-      CI_LOG_STATE=not-ready
-    fi
-    if [ "$CI_LOG_STATE" != not-ready ]; then
-      emit "done" status-log "$(status_line_note "$LOG_LINE")${SEP}run still monitoring PR"
     fi
   fi
 
