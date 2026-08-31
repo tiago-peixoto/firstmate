@@ -257,7 +257,12 @@ make_secondmate_stall_case() {  # <name> <last-status-line> [harness] [pane] [ta
 case "${1:-}" in
   list-windows) printf '%s\n' 'firstmate:fm-mate' ;;
   capture-pane) cat "$FM_SECONDMATE_TEST_PANE" ;;
-  display-message) printf '0\n' ;;
+  display-message)
+    case " $* " in
+      *' -t firstmate:fm-missing '*) exit 1 ;;
+      *) printf '0\n' ;;
+    esac
+    ;;
   *) exit 0 ;;
 esac
 SH
@@ -271,7 +276,7 @@ run_secondmate_stall_case() {  # <case-dir>
     FM_STATE_OVERRIDE="$dir/state" FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 \
     FM_CREW_STATE_BIN="$ROOT/bin/fm-crew-state.sh" FM_SECONDMATE_TEST_PANE="$dir/pane.txt" \
     FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 \
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 5 \
     > "$dir/watch.out" 2> "$dir/watch.err" || rc=$?
   printf '%s\n' "$rc" > "$dir/watch.rc"
 }
@@ -290,7 +295,7 @@ assert_no_secondmate_stall_wake() {  # <case-dir> <context>
   rc=$(cat "$dir/watch.rc")
   [ "$rc" -eq 124 ] \
     || fail "$context checkpoint exited $rc, expected 124: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
-  grep -Fx 'checkpoint: no actionable wake within 2s' "$dir/watch.out" >/dev/null \
+  grep -Fx 'checkpoint: no actionable wake within 5s' "$dir/watch.out" >/dev/null \
     || fail "$context omitted the quiet checkpoint result: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
   if grep -F 'secondmate wake-loop stalled' "$dir/watch.out" >/dev/null; then
     fail "$context woke the parent: $(cat "$dir/watch.out")"
@@ -364,6 +369,16 @@ test_secondmate_idle_aged_queue_wakes() {
   run_secondmate_stall_case "$dir"
   assert_secondmate_stall_wake "$dir" "an idle non-blocked mate with an aged row"
   pass "an idle non-blocked secondmate with an aged row wakes conservatively"
+}
+
+test_secondmate_dead_endpoint_aged_queue_wakes() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-dead \
+    'resolved [key=previous-work]: previous phase settled' claude 'pane fixture' \
+    'firstmate:fm-missing')
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_wake "$dir" "a mate whose recorded endpoint is dead"
+  pass "an exact dead endpoint verdict reports the aged foreign row as stalled"
 }
 
 test_secondmate_unknown_liveness_aged_queue_wakes() {
@@ -1166,6 +1181,7 @@ test_secondmate_marked_request_without_busy_evidence_is_undetermined
 test_secondmate_live_busy_verdict_is_not_stalled
 test_secondmate_blocked_aged_queue_wakes_even_while_busy
 test_secondmate_idle_aged_queue_wakes
+test_secondmate_dead_endpoint_aged_queue_wakes
 test_secondmate_unknown_liveness_aged_queue_wakes
 test_secondmate_foreign_queue_report_is_one_shot_and_read_only
 test_secondmate_stall_marker_rejects_symlink
