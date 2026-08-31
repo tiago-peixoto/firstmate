@@ -802,6 +802,20 @@ test_declared_pause_distinguishes_no_ci_from_approval_wait() {
   pass "worker state distinguishes no CI from an approval-gated wait"
 }
 
+test_working_status_beats_older_failed_outcome() {
+  reset_fakes
+  local d; d=$(new_case working-vs-failed)
+  make_repo_on_branch "$d/wt" fm/feat-workingfailed
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/workingfailed.meta" "window=fm:fm-workingfailed" "worktree=$d/wt" "kind=ship"
+  printf 'working: preserved work resumed after an infrastructure failure\n' > "$d/state/workingfailed.status"
+  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-workingfailed)"
+  local out; out=$(run_crew_state "$d" workingfailed)
+  assert_contains "$out" "state: working" "the worker's explicit current state wins"
+  assert_not_contains "$out" "state: failed" "an older run failure cannot overrule resumed work"
+  pass "working status beats an older failed outcome"
+}
+
 test_passed_run_with_skipped_publish_claims_no_pr() {
   reset_fakes
   local d; d=$(new_case passed-skipped-publish)
@@ -1606,6 +1620,7 @@ test_terminal_failed
 test_declared_pause_beats_recorded_outcome
 test_declared_pause_beats_recorded_cancelled_outcome
 test_declared_pause_distinguishes_no_ci_from_approval_wait
+test_working_status_beats_older_failed_outcome
 test_passed_run_with_skipped_publish_claims_no_pr
 test_passed_run_with_branch_push_and_skipped_pr_names_both
 test_passed_run_names_a_merge_when_the_log_records_one

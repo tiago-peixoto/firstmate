@@ -39,9 +39,9 @@
 #      awaiting_approval/fix_review -> parked (with gate findings), terminal
 #      passed/checks-passed -> done, failed/cancelled -> failed. Two more
 #      specific records can replace that coarse answer: the latest recognized
-#      CI marker while the ci step runs, and a worker's explicit declared pause.
-#      The latter says what happened to the WORK after the run state was
-#      recorded, so it wins even when validation passed or was cancelled.
+#      CI marker while the ci step runs, and a worker's explicit current state.
+#      The latter says what happened to the WORK after a terminal run state was
+#      recorded, so it wins; a declared pause also wins while a monitor runs.
 #      A finished run's publication detail likewise comes from its push and PR
 #      step rows, never from the run outcome alone.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
@@ -597,15 +597,17 @@ if [ "$HAVE_RUN" = 1 ]; then
     fi
   fi
 
-  # A declared pause is the worker's explicit CURRENT state. The pipeline may
-  # still have a historical terminal outcome or an intentionally long-running
-  # monitor, but neither says whether the work was preserved and parked after
-  # that point. The newest status-log line is therefore the more specific
-  # record whenever it declares a pause.
-  if status_is_paused "$LOG_LINE"; then
-    emit paused status-log \
-      "$(status_line_note "$LOG_LINE")${SEP}run reads $RUN_STATE - $RUN_DETAIL"
-  fi
+  # The newest explicit worker state is more specific than a historical
+  # terminal run: a run says how validation ended, while the worker says what
+  # happened to the work afterward. A declared pause also beats an active
+  # monitor because waiting is the worker's intentional current state.
+  LOG_STATE=$(map_log_state "$LOG_LINE")
+  case "$LOG_STATE:$RUN_STATE" in
+    paused:*|working:done|working:failed|parked:done|parked:failed|blocked:done|blocked:failed)
+      emit "$LOG_STATE" status-log \
+        "$(status_line_note "$LOG_LINE")${SEP}run reads $RUN_STATE - $RUN_DETAIL"
+      ;;
+  esac
 
   if [ "$RUN_STATE" = working ] && log_reports_ci_ready; then
     if [ "$RUN_SOURCE" = coarse ]; then
