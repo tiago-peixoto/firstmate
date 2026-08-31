@@ -371,10 +371,15 @@ test_crew_absorb_class_classifier() {
   [ "$(crew_absorb_class a)" = none ] || fail "stale working: status-log classed absorbable"
   FM_FAKE_CREW_STATE='state: unknown · source: none · worktree gone'
   [ "$(crew_absorb_class a)" = none ] || fail "unknown crew classed absorbable"
+  FM_FAKE_CREW_STATE='state: undetermined · source: run-step · conflicting direct evidence'
+  [ "$(crew_absorb_class a)" = none ] || fail "undetermined crew classed absorbable"
+  ! crew_is_provably_working a || fail "undetermined crew treated as provably working"
+  ! crew_is_paused a || fail "undetermined crew classed paused"
+  FM_FAKE_CREW_STATE='state: unknown · source: none · worktree gone'
   ! crew_is_paused a || fail "unknown crew classed paused"
   [ "$(crew_absorb_class "")" = none ] || fail "empty id not classed none"
   unset FM_FAKE_CREW_STATE
-  pass "crew_absorb_class: working/paused/none from one read; crew_is_paused and crew_is_provably_working agree"
+  pass "crew_absorb_class surfaces undetermined and absorbs only proven working or paused"
 }
 
 # The wedge detector's third liveness input: writes inside the crew's own recorded

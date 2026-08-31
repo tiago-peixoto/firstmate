@@ -1532,18 +1532,15 @@ EOF
           # BEFORE that validation started for the run's entire (possibly
           # many-minutes) duration, while stale_is_terminal - which has no
           # run-step awareness - keeps reporting it as still-current on every
-          # poll. Root cause of the 2026-07 herdr false-surface incidents: a
-          # validating crew was surfaced as stale every few minutes despite an
-          # actively-running pipeline, purely because of this stale leftover
-          # line. On a NEW hash, give an active run/busy pane (the same
-          # authoritative source fm-crew-state.sh itself already prioritizes
-          # over the log) a chance to override before trusting the log.
+          # poll. On a NEW hash, consult fm-crew-state.sh: only positive,
+          # unconflicted working evidence is absorbable, while an undetermined
+          # run/status conflict surfaces for review.
           if [ "$(cat "$sf" 2>/dev/null || true)" != "$h" ]; then
             if crew_is_provably_working "$(window_to_task "$w" "$STATE")"; then
               printf '%s' "$h" > "$sf"
               date +%s > "$ssf"
               clear_write_tracking "$key"
-              triage_log "absorbed stale (provably working, overriding a stale captain-relevant status): $w"
+              triage_log "absorbed stale (provably working without conflicting current-state evidence): $w"
             else
               fm_wake_append stale "$w" "stale: $w" || exit 1
               printf '%s' "$h" > "$sf"
