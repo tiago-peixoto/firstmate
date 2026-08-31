@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Record a PR-ready task: store one validated canonical pr=<url> and the forge's
-# exact pr_head=<sha> when available, then atomically arm the one review-and-
-# merge monitor with an initial successful observation.
+# exact pr_head=<sha> when available, preserve or arm its merge poll, and add
+# GitHub review monitoring from an initial successful observation.
 # The watcher check source is byte-for-byte bin/fm-pr-poll.sh; task and PR data
 # live only in a private sidecar and are never interpolated into shell source.
 # A GitHub pull request URL and a GitLab merge request URL are both accepted,
@@ -50,9 +50,10 @@ fm_pr_poll_retirement_recover_one "$STATE" "$ID" "$SCRIPT_DIR/fm-pr-poll.sh" || 
   exit 1
 }
 
-# Refuse to arm a GitLab monitor with no glab on PATH. Runtime lookup failures
-# are visible through monitor health, but a known missing prerequisite can be
-# rejected before publishing a monitor that cannot make its first observation.
+# Refuse to arm a GitLab watch with no glab on PATH. The poll is silent on
+# every error by design, so a missing CLI would be indistinguishable from a
+# merge request that is never merged. Arming is the one point where that can be
+# reported, so the absent tool stops the watch here instead of watching nothing.
 if [ "$PROVIDER" = gitlab ] && ! command -v glab >/dev/null 2>&1; then
   echo "error: watching a GitLab merge request requires glab on PATH" >&2
   exit 1
@@ -63,6 +64,16 @@ fi
 # it quarantines or rebuilds them.
 "$SCRIPT_DIR/fm-pr-check-migrate.sh" --checks-safe || exit 1
 "$FM_ROOT/bin/fm-guard.sh" || true
+
+KEEP_MERGE_POLL=0
+if fm_pr_poll_snapshot_capture "$STATE" "$ID" "$SCRIPT_DIR/fm-pr-poll.sh" \
+  && [ "$FM_PR_POLL_SNAPSHOT_PROVIDER" = "$PROVIDER" ] \
+  && [ "$FM_PR_POLL_SNAPSHOT_URL" = "$URL" ] \
+  && [ "$FM_PR_POLL_SNAPSHOT_HOST" = "$HOST" ] \
+  && [ "$FM_PR_POLL_SNAPSHOT_PATH" = "$PROJECT_PATH" ] \
+  && [ "$FM_PR_POLL_SNAPSHOT_NUMBER" = "$NUMBER" ]; then
+  KEEP_MERGE_POLL=1
+fi
 
 # pr_head is recorded only when the forge's CLI can supply it. gh exposes the
 # head commit as a selectable field; plain glab exposes it only inside its JSON
@@ -84,7 +95,7 @@ fi
 
 if [ "$PROVIDER" = github ]; then
   INITIAL_OBSERVATION=$(
-    "$SCRIPT_DIR/fm-pr-poll.sh" --snapshot \
+    "$SCRIPT_DIR/fm-pr-review-poll.sh" --snapshot \
       "$PROVIDER" "$URL" "$HOST" "$PROJECT_PATH" "$NUMBER"
   )
   if ! fm_pr_poll_observation_parse "$INITIAL_OBSERVATION"; then
@@ -93,7 +104,7 @@ if [ "$PROVIDER" = github ]; then
   fi
   case "$FM_PR_OBSERVATION_KIND" in
     observed)
-      FM_PR_POLL_INITIAL_SEEN=$(fm_pr_poll_seen_record \
+      PR_REVIEW_SEEN=$(fm_pr_poll_seen_record \
         "$FM_PR_OBSERVATION_UPDATED" \
         "$FM_PR_OBSERVATION_REVIEWS" \
         "$FM_PR_OBSERVATION_ISSUE_COMMENTS" \
@@ -101,7 +112,7 @@ if [ "$PROVIDER" = github ]; then
         "$FM_PR_OBSERVATION_REQUESTED" ok "$(date +%s)") || exit 1
       ;;
     merged)
-      FM_PR_POLL_INITIAL_SEEN=$(fm_pr_poll_seen_record - 0 0 0 0 baseline 0) || exit 1
+      PR_REVIEW_SEEN=$(fm_pr_poll_seen_record - 0 0 0 0 baseline 0) || exit 1
       ;;
     unavailable)
       echo "error: could not read the PR while arming its monitor" >&2
@@ -109,7 +120,7 @@ if [ "$PROVIDER" = github ]; then
       ;;
   esac
 else
-  FM_PR_POLL_INITIAL_SEEN=$(fm_pr_poll_seen_record - 0 0 0 0 baseline 0) || exit 1
+  PR_REVIEW_SEEN=
 fi
 
 META_TMP=
@@ -125,8 +136,10 @@ pr_check_cleanup() {
 }
 trap pr_check_cleanup EXIT
 trap 'exit 1' HUP INT TERM
-fm_pr_poll_prepare "$STATE" "$ID" "$PROVIDER" "$URL" "$HOST" "$PROJECT_PATH" "$NUMBER" "$SCRIPT_DIR/fm-pr-poll.sh" \
-  || { echo "error: could not prepare PR poll" >&2; exit 1; }
+if [ "$KEEP_MERGE_POLL" -eq 0 ]; then
+  fm_pr_poll_prepare "$STATE" "$ID" "$PROVIDER" "$URL" "$HOST" "$PROJECT_PATH" "$NUMBER" "$SCRIPT_DIR/fm-pr-poll.sh" \
+    || { echo "error: could not prepare PR poll" >&2; exit 1; }
+fi
 
 META_LOCK=$(fm_meta_lock_path "$META") || exit 1
 fm_lock_acquire_wait "$META_LOCK"
@@ -162,8 +175,21 @@ fm_pr_metadata_identity_parse "$META" || exit 1
 fm_lock_release "$META_LOCK"
 META_LOCK_HELD=0
 
-fm_pr_poll_publish_prepared || {
-  echo "error: could not publish PR poll" >&2
-  exit 1
-}
-printf 'armed review-and-merge monitor: state/%s.check.sh\n' "$ID"
+if [ "$PROVIDER" = github ]; then
+  fm_pr_poll_seen_publish "$STATE" "$ID" "$PR_REVIEW_SEEN" || {
+    echo "error: could not publish PR review state" >&2
+    exit 1
+  }
+else
+  fm_pr_poll_seen_remove "$STATE" "$ID" || {
+    echo "error: could not clear inapplicable PR review state" >&2
+    exit 1
+  }
+fi
+if [ "$KEEP_MERGE_POLL" -eq 0 ]; then
+  fm_pr_poll_publish_prepared || {
+    echo "error: could not publish PR poll" >&2
+    exit 1
+  }
+fi
+printf 'armed: state/%s.check.sh\n' "$ID"

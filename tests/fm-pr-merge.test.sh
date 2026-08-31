@@ -23,7 +23,7 @@
 #   (n) an unreadable merge request state refuses rather than merging blind
 #   (o) glab or jq absent refuses before any state is recorded
 #   (p) --sha in extra GitLab args fails fast, and still forwards on GitHub
-#   (q) a GitLab refusal still leaves pr= recorded and the unified monitor armed
+#   (q) a GitLab refusal still leaves pr= recorded and the merge poll armed
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -335,7 +335,7 @@ test_malformed_url_refuses_before_merge() {
   assert_no_grep 'pr=https://gitlab.com/example/-/merge_requests/1' "$case_dir/state/task-x1.meta" \
     "malformed-url: malformed PR URL was recorded in meta"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "malformed-url: malformed PR URL armed a PR monitor"
+    "malformed-url: malformed PR URL armed a merge poll"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "malformed-url: gh pr merge was invoked for a malformed URL"
   pass "fm-pr-merge refuses malformed PR URLs before calling gh"
@@ -362,7 +362,7 @@ test_rejects_unsafe_url_segments_before_recording() {
   assert_no_grep 'pr=https://github.com/evil$(echo pwned)/repo/pull/7' "$case_dir/state/task-x1.meta" \
     "unsafe-url-segment: unsafe PR URL was recorded in meta"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "unsafe-url-segment: unsafe PR URL armed a PR monitor"
+    "unsafe-url-segment: unsafe PR URL armed a merge poll"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "unsafe-url-segment: gh pr merge was invoked for an unsafe URL"
   pass "fm-pr-merge refuses unsafe PR URL segments before recording state"
@@ -387,7 +387,7 @@ test_repo_override_args_refuse_before_recording() {
   assert_no_grep 'pr=https://github.com/right/repo/pull/5' "$case_dir/state/task-x1.meta" \
     "repo-override: PR URL was recorded before rejecting repo override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "repo-override: repo override armed a PR monitor"
+    "repo-override: repo override armed a merge poll"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "repo-override: gh pr merge was invoked despite repo override"
   pass "fm-pr-merge refuses repo override args before recording state"
@@ -416,7 +416,7 @@ test_bundled_repo_override_args_refuse_before_recording() {
   assert_no_grep 'pr=https://github.com/right/repo/pull/6' "$case_dir/state/task-x1.meta" \
     "bundled-repo-override: PR URL was recorded before rejecting the bundled repo override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "bundled-repo-override: a bundled repo override armed a PR monitor"
+    "bundled-repo-override: a bundled repo override armed a merge poll"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "bundled-repo-override: gh pr merge was invoked despite the bundled repo override"
 
@@ -434,7 +434,7 @@ test_bundled_repo_override_args_refuse_before_recording() {
   assert_no_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
     "bundled-repo-override-gitlab: the URL was recorded before rejecting the bundled override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "bundled-repo-override-gitlab: a bundled override armed a PR monitor"
+    "bundled-repo-override-gitlab: a bundled override armed a merge poll"
   [ ! -s "$case_dir/glab.log" ] \
     || fail "bundled-repo-override-gitlab: glab was invoked despite the bundled override"
 
@@ -656,7 +656,7 @@ test_gitlab_each_condition_refuses_independently() {
     assert_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
       "gitlab-refuse-$name: a refusal should still leave the recorded PR reference"
     assert_present "$case_dir/state/task-x1.check.sh" \
-      "gitlab-refuse-$name: a refusal should still leave the PR monitor armed"
+      "gitlab-refuse-$name: a refusal should still leave the merge poll armed"
   done
   pass "fm-pr-merge refuses on each GitLab pre-merge condition independently"
 }
@@ -788,7 +788,7 @@ test_gitlab_missing_tool_refuses_before_recording() {
     assert_no_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
       "gitlab-no-$tool: a PR reference was recorded despite the missing tool"
     assert_absent "$case_dir/state/task-x1.check.sh" \
-      "gitlab-no-$tool: a PR monitor was armed despite the missing tool"
+      "gitlab-no-$tool: a merge poll was armed despite the missing tool"
   done
   pass "fm-pr-merge refuses before recording anything when glab or jq is absent"
 }
@@ -809,7 +809,7 @@ test_gitlab_head_override_args_refuse_before_recording() {
   assert_no_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
     "gitlab-head-override: the URL was recorded before rejecting the head override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "gitlab-head-override: a head override armed a PR monitor"
+    "gitlab-head-override: a head override armed a merge poll"
   [ ! -s "$case_dir/glab.log" ] || fail "gitlab-head-override: glab was invoked despite the head override"
   pass "fm-pr-merge refuses a GitLab head override before recording state"
 }

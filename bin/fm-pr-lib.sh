@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Shared validation and atomic artifact helpers for PR activity monitoring on
-# the supported forges. Callers must validate task IDs and raw PR/MR URLs before
-# constructing task paths or performing any side effect.
+# Shared validation and atomic artifact helpers for merge polling and review
+# activity on supported forges. Callers must validate task IDs and raw PR/MR
+# URLs before constructing task paths or performing any side effect.
 #
 # The stored identity is provider-tagged: provider, url, host, path, number.
 # "path" is the full project path, which is owner/repository on GitHub and an
@@ -45,11 +45,9 @@ FM_PR_REG_TEMPLATE_HASH=
 FM_PR_REG_DATA_IDENTITY=
 FM_PR_REG_CHECK_IDENTITY=
 FM_PR_POLL_DATA_TMP=
-FM_PR_POLL_SEEN_TMP=
 FM_PR_POLL_CHECK_TMP=
 FM_PR_POLL_REG_TMP=
 FM_PR_POLL_DATA_DEST=
-FM_PR_POLL_SEEN_DEST=
 FM_PR_POLL_CHECK_DEST=
 FM_PR_POLL_REG_DEST=
 FM_PR_POLL_EXPECT_ID=
@@ -64,7 +62,6 @@ FM_PR_POLL_EXPECT_DATA_IDENTITY=
 FM_PR_POLL_EXPECT_CHECK_IDENTITY=
 FM_PR_POLL_TEMPLATE=
 FM_PR_POLL_STATE_DEVICE=
-FM_PR_POLL_INITIAL_SEEN=
 FM_PR_SEEN_UPDATED=
 FM_PR_SEEN_REVIEWS=
 FM_PR_SEEN_ISSUE_COMMENTS=
@@ -388,8 +385,8 @@ fm_pr_poll_data_parse() {
 
 # Mutable observation state is deliberately separate from the immutable,
 # registration-bound PR identity. Its one-line format makes a successful quiet
-# observation inspectably different from a lookup failure or a never-run
-# migrated monitor. observed-at is the last successful forge read.
+# observation inspectably different from a lookup failure or an unarmed review
+# monitor. observed-at is the last successful forge read.
 fm_pr_poll_updated_valid() {
   local value=$1
   [ "$value" = - ] || [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
@@ -516,6 +513,16 @@ fm_pr_poll_seen_publish() {
   fi
 }
 
+fm_pr_poll_seen_remove() {
+  local state=$1 id=$2 state_device destination
+  fm_pr_task_id_valid "$id" || return 1
+  [ -d "$state" ] && [ ! -L "$state" ] || return 1
+  state_device=$(fm_pr_file_device "$state") || return 1
+  destination="$state/$id.pr-poll-seen"
+  fm_pr_regular_destination_on_device_or_absent "$destination" "$state_device" || return 1
+  rm -f -- "$destination"
+}
+
 # Registration layout: version tag, task id, then the same provider-tagged
 # identity as the sidecar, then the two hashes and the two file identities.
 # The version tag moved to v2 with the provider tag, so a registration written
@@ -577,11 +584,9 @@ fm_pr_poll_registration_parse() {
 
 fm_pr_poll_cleanup() {
   [ -z "$FM_PR_POLL_DATA_TMP" ] || rm -f -- "$FM_PR_POLL_DATA_TMP"
-  [ -z "$FM_PR_POLL_SEEN_TMP" ] || rm -f -- "$FM_PR_POLL_SEEN_TMP"
   [ -z "$FM_PR_POLL_CHECK_TMP" ] || rm -f -- "$FM_PR_POLL_CHECK_TMP"
   [ -z "$FM_PR_POLL_REG_TMP" ] || rm -f -- "$FM_PR_POLL_REG_TMP"
   FM_PR_POLL_DATA_TMP=
-  FM_PR_POLL_SEEN_TMP=
   FM_PR_POLL_CHECK_TMP=
   FM_PR_POLL_REG_TMP=
 }
@@ -599,18 +604,14 @@ fm_pr_poll_revoke_final() {
   if [ -e "$FM_PR_POLL_DATA_DEST" ] || [ -L "$FM_PR_POLL_DATA_DEST" ]; then
     rm -f -- "$FM_PR_POLL_DATA_DEST" || failed=1
   fi
-  if [ -e "$FM_PR_POLL_SEEN_DEST" ] || [ -L "$FM_PR_POLL_SEEN_DEST" ]; then
-    rm -f -- "$FM_PR_POLL_SEEN_DEST" || failed=1
-  fi
   [ ! -e "$FM_PR_POLL_CHECK_DEST" ] && [ ! -L "$FM_PR_POLL_CHECK_DEST" ] || failed=1
   [ ! -e "$FM_PR_POLL_REG_DEST" ] && [ ! -L "$FM_PR_POLL_REG_DEST" ] || failed=1
   [ ! -e "$FM_PR_POLL_DATA_DEST" ] && [ ! -L "$FM_PR_POLL_DATA_DEST" ] || failed=1
-  [ ! -e "$FM_PR_POLL_SEEN_DEST" ] && [ ! -L "$FM_PR_POLL_SEEN_DEST" ] || failed=1
   return "$failed"
 }
 
 fm_pr_poll_prepare() {
-  local state=$1 id=$2 provider=$3 url=$4 host=$5 path=$6 number=$7 template=$8 initial_seen
+  local state=$1 id=$2 provider=$3 url=$4 host=$5 path=$6 number=$7 template=$8
   fm_pr_task_id_valid "$id" || return 1
   fm_pr_url_parse "$url" || return 1
   [ "$provider" = "$FM_PR_PROVIDER" ] || return 1
@@ -624,7 +625,6 @@ fm_pr_poll_prepare() {
   [ -d "$state" ] && [ ! -L "$state" ] || return 1
   umask 077
   FM_PR_POLL_DATA_DEST="$state/$id.pr-poll"
-  FM_PR_POLL_SEEN_DEST="$state/$id.pr-poll-seen"
   FM_PR_POLL_CHECK_DEST="$state/$id.check.sh"
   FM_PR_POLL_REG_DEST="$state/$id.pr-poll-registration"
   FM_PR_POLL_EXPECT_ID=$id
@@ -637,10 +637,6 @@ fm_pr_poll_prepare() {
   FM_PR_POLL_STATE_DEVICE=$(fm_pr_file_device "$state") || return 1
   [ -n "$FM_PR_POLL_STATE_DEVICE" ] || return 1
   FM_PR_POLL_DATA_TMP=$(mktemp "$state/.fm-pr-poll-data.XXXXXX") || return 1
-  FM_PR_POLL_SEEN_TMP=$(mktemp "$state/.fm-pr-poll-seen.XXXXXX") || {
-    fm_pr_poll_cleanup
-    return 1
-  }
   FM_PR_POLL_CHECK_TMP=$(mktemp "$state/.fm-pr-poll-check.XXXXXX") || {
     fm_pr_poll_cleanup
     return 1
@@ -650,10 +646,6 @@ fm_pr_poll_prepare() {
     return 1
   }
 
-  initial_seen=${FM_PR_POLL_INITIAL_SEEN:-$(fm_pr_poll_seen_record - 0 0 0 0 baseline 0)} || {
-    fm_pr_poll_cleanup
-    return 1
-  }
   if ! printf '%s\n%s\n%s\n%s\n%s\n' "$provider" "$url" "$host" "$path" "$number" > "$FM_PR_POLL_DATA_TMP" \
     || ! chmod 0600 "$FM_PR_POLL_DATA_TMP" \
     || ! fm_pr_private_file_valid "$FM_PR_POLL_DATA_TMP" 600 "$FM_PR_POLL_STATE_DEVICE" \
@@ -663,10 +655,6 @@ fm_pr_poll_prepare() {
     || [ "$FM_PR_DATA_HOST" != "$host" ] \
     || [ "$FM_PR_DATA_PATH" != "$path" ] \
     || [ "$FM_PR_DATA_NUMBER" != "$number" ] \
-    || ! printf '%s\n' "$initial_seen" > "$FM_PR_POLL_SEEN_TMP" \
-    || ! chmod 0600 "$FM_PR_POLL_SEEN_TMP" \
-    || ! fm_pr_private_file_valid "$FM_PR_POLL_SEEN_TMP" 600 "$FM_PR_POLL_STATE_DEVICE" \
-    || ! fm_pr_poll_seen_parse "$FM_PR_POLL_SEEN_TMP" \
     || ! cp "$template" "$FM_PR_POLL_CHECK_TMP" \
     || ! chmod 0600 "$FM_PR_POLL_CHECK_TMP" \
     || ! fm_pr_private_file_valid "$FM_PR_POLL_CHECK_TMP" 600 "$FM_PR_POLL_STATE_DEVICE" \
@@ -698,7 +686,6 @@ fm_pr_poll_publish_prepared() {
   [ -n "$FM_PR_POLL_DATA_TMP" ] && [ -n "$FM_PR_POLL_CHECK_TMP" ] \
     && [ -n "$FM_PR_POLL_REG_TMP" ] || return 1
   fm_pr_regular_destination_on_device_or_absent "$FM_PR_POLL_DATA_DEST" "$FM_PR_POLL_STATE_DEVICE" || return 1
-  fm_pr_regular_destination_on_device_or_absent "$FM_PR_POLL_SEEN_DEST" "$FM_PR_POLL_STATE_DEVICE" || return 1
   fm_pr_regular_destination_on_device_or_absent "$FM_PR_POLL_REG_DEST" "$FM_PR_POLL_STATE_DEVICE" || return 1
   fm_pr_regular_destination_on_device_or_absent "$FM_PR_POLL_CHECK_DEST" "$FM_PR_POLL_STATE_DEVICE" || return 1
 
@@ -716,17 +703,6 @@ fm_pr_poll_publish_prepared() {
     || [ "$FM_PR_DATA_HOST" != "$FM_PR_POLL_EXPECT_HOST" ] \
     || [ "$FM_PR_DATA_PATH" != "$FM_PR_POLL_EXPECT_PATH" ] \
     || [ "$FM_PR_DATA_NUMBER" != "$FM_PR_POLL_EXPECT_NUMBER" ]; then
-    fm_pr_poll_revoke_final || true
-    return 1
-  fi
-
-  if ! mv -f -- "$FM_PR_POLL_SEEN_TMP" "$FM_PR_POLL_SEEN_DEST"; then
-    fm_pr_poll_revoke_final || true
-    return 1
-  fi
-  FM_PR_POLL_SEEN_TMP=
-  if ! fm_pr_private_file_valid "$FM_PR_POLL_SEEN_DEST" 600 "$FM_PR_POLL_STATE_DEVICE" \
-    || ! fm_pr_poll_seen_parse "$FM_PR_POLL_SEEN_DEST"; then
     fm_pr_poll_revoke_final || true
     return 1
   fi
@@ -765,24 +741,21 @@ fm_pr_poll_publish_prepared() {
 }
 
 fm_pr_poll_artifacts_valid() {
-  local state=$1 id=$2 template=$3 state_device check data seen registration meta data_hash template_hash data_identity check_identity
+  local state=$1 id=$2 template=$3 state_device check data registration meta data_hash template_hash data_identity check_identity
   fm_pr_task_id_valid "$id" || return 1
   [ -d "$state" ] && [ ! -L "$state" ] || return 1
   state_device=$(fm_pr_file_device "$state") || return 1
   check="$state/$id.check.sh"
   data="$state/$id.pr-poll"
-  seen="$state/$id.pr-poll-seen"
   registration="$state/$id.pr-poll-registration"
   meta="$state/$id.meta"
   fm_pr_private_file_valid "$check" 600 "$state_device" || return 1
   fm_pr_private_file_valid "$data" 600 "$state_device" || return 1
-  fm_pr_private_file_valid "$seen" 600 "$state_device" || return 1
   fm_pr_private_file_valid "$registration" 600 "$state_device" || return 1
   [ -f "$meta" ] && [ ! -L "$meta" ] || return 1
   [ "$(fm_pr_file_link_count "$meta")" = 1 ] || return 1
   cmp -s "$template" "$check" || return 1
   fm_pr_poll_data_parse "$data" || return 1
-  fm_pr_poll_seen_parse "$seen" || return 1
   data_hash=$(fm_pr_sha256 "$data") || return 1
   template_hash=$(fm_pr_sha256 "$check") || return 1
   data_identity=$(fm_pr_file_identity "$data") || return 1
@@ -808,14 +781,11 @@ fm_pr_poll_artifacts_valid() {
 
 # shellcheck disable=SC2034 # Snapshot fields are the sourced library's output API.
 fm_pr_poll_snapshot_capture() {
-  local state=$1 id=$2 template=$3 registration seen
+  local state=$1 id=$2 template=$3 registration
   fm_pr_poll_artifacts_valid "$state" "$id" "$template" || return 1
   registration="$state/$id.pr-poll-registration"
-  seen="$state/$id.pr-poll-seen"
   FM_PR_POLL_SNAPSHOT_REG_HASH=$(fm_pr_sha256 "$registration") || return 1
   FM_PR_POLL_SNAPSHOT_REG_IDENTITY=$(fm_pr_file_identity "$registration") || return 1
-  fm_pr_poll_seen_parse "$seen" || return 1
-  FM_PR_POLL_SNAPSHOT_UPDATED=$FM_PR_SEEN_UPDATED
   FM_PR_POLL_SNAPSHOT_ID=$id
   FM_PR_POLL_SNAPSHOT_PROVIDER=$FM_PR_DATA_PROVIDER
   FM_PR_POLL_SNAPSHOT_URL=$FM_PR_DATA_URL
@@ -826,6 +796,17 @@ fm_pr_poll_snapshot_capture() {
   FM_PR_POLL_SNAPSHOT_TEMPLATE_HASH=$FM_PR_REG_TEMPLATE_HASH
   FM_PR_POLL_SNAPSHOT_DATA_IDENTITY=$FM_PR_REG_DATA_IDENTITY
   FM_PR_POLL_SNAPSHOT_CHECK_IDENTITY=$FM_PR_REG_CHECK_IDENTITY
+}
+
+fm_pr_poll_seen_snapshot_capture() {
+  local state=$1 id=$2 state_device seen
+  fm_pr_task_id_valid "$id" || return 1
+  [ -d "$state" ] && [ ! -L "$state" ] || return 1
+  state_device=$(fm_pr_file_device "$state") || return 1
+  seen="$state/$id.pr-poll-seen"
+  fm_pr_private_file_valid "$seen" 600 "$state_device" || return 1
+  fm_pr_poll_seen_parse "$seen" || return 1
+  FM_PR_POLL_SNAPSHOT_UPDATED=$FM_PR_SEEN_UPDATED
   FM_PR_POLL_SNAPSHOT_REVIEWS=$FM_PR_SEEN_REVIEWS
   FM_PR_POLL_SNAPSHOT_ISSUE_COMMENTS=$FM_PR_SEEN_ISSUE_COMMENTS
   FM_PR_POLL_SNAPSHOT_REVIEW_COMMENTS=$FM_PR_SEEN_REVIEW_COMMENTS
@@ -1008,10 +989,10 @@ fm_pr_poll_retirement_state_valid() {
   [ ! -e "$seen" ] && [ ! -L "$seen" ] || has_seen=1
   [ ! -e "$registration" ] && [ ! -L "$registration" ] || has_registration=1
   if [ "$has_check" -eq 1 ]; then
-    [ "$has_data" -eq 1 ] && [ "$has_seen" -eq 1 ] && [ "$has_registration" -eq 1 ] || return 1
+    [ "$has_data" -eq 1 ] && [ "$has_registration" -eq 1 ] || return 1
     fm_pr_poll_retirement_check_valid "$state" "$id" || return 1
     fm_pr_poll_retirement_data_valid "$state" "$id" || return 1
-    fm_pr_poll_retirement_seen_valid "$state" "$id" || return 1
+    [ "$has_seen" -eq 0 ] || fm_pr_poll_retirement_seen_valid "$state" "$id" || return 1
     fm_pr_poll_retirement_registration_valid "$state" "$id" || return 1
     return 0
   fi

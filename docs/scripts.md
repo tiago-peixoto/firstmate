@@ -115,10 +115,11 @@ The shared no-mistakes gate refusal for fleet lifecycle entrypoints is summarize
 | `fm-check-register.sh`   | Bind an intentional custom watcher check to its current bytes                       |
 | `fm-check-lib.sh`        | Validate custom-check registrations and prepare private execution snapshots          |
 | `fm-tool-update-check.sh` | Report watched tooling with an update available, and updates installed but left inert by PATH order |
-| `fm-pr-lib.sh`           | Own canonical task and PR validation plus private atomic PR-monitor publication, observation health, and identity-bound retirement |
-| `fm-pr-poll.sh`          | Observe review, comment, health, and merge state for validated PR/MR sidecars       |
+| `fm-pr-lib.sh`           | Own canonical task and PR validation plus private atomic merge-poll publication, review observation health, and identity-bound retirement |
+| `fm-pr-poll.sh`          | Provide the byte-static watcher program for validated PR/MR merge-poll sidecars     |
+| `fm-pr-review-poll.sh`   | Read validated GitHub PR review, comment, and lookup-health observations             |
 | `fm-pr-check-migrate.sh` | Quarantine older task polls without execution and rebuild only canonical polls       |
-| `fm-pr-check.sh`         | Record validated `pr=` and `pr_head=` values, then atomically arm the unified review-and-merge monitor |
+| `fm-pr-check.sh`         | Record validated `pr=` and `pr_head=` values, preserve or arm the merge poll, and add GitHub review coverage |
 | `fm-pr-merge.sh`         | Record PR metadata, then merge a task's canonical full GitHub or GitLab URL          |
 | `fm-promote.sh`          | Promote a scout task in place to a protected ship task with an explicit delivery mode |
 | `fm-teardown.sh`         | Fail-closed teardown: return landed ship worktrees, require completed scout deliverables, retire secondmate homes |

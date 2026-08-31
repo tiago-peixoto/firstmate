@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Behavioral regressions for the one automatic review-and-merge PR monitor.
+# Behavioral regressions for automatic review coverage beside merge polling.
 set -u
 
 # shellcheck source=tests/lib.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 PR_CHECK="$ROOT/bin/fm-pr-check.sh"
+MIGRATE="$ROOT/bin/fm-pr-check-migrate.sh"
 WATCH="$ROOT/bin/fm-watch.sh"
 TMP_ROOT=$(fm_test_tmproot fm-pr-activity-watch)
 BASE_PATH=${FM_TEST_BASE_PATH:-/usr/bin:/bin:/usr/sbin:/sbin}
@@ -107,8 +108,14 @@ run_watcher_for() {
   FM_TEST_LIMIT="$seconds" perl -MTime::HiRes=time,sleep -e 'my $pid=fork; die unless defined $pid; if (!$pid) { exec @ARGV } my $end=time()+$ENV{FM_TEST_LIMIT}; while (time() < $end) { my $done=waitpid($pid, 1); exit($? >> 8) if $done == $pid; sleep 0.02 } kill "TERM", $pid; for (1..25) { my $done=waitpid($pid, 1); exit 124 if $done == $pid; sleep 0.02 } kill "KILL", $pid; waitpid $pid, 0; exit 124' \
     env FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$ROOT" FM_TEST_GH_LOG="$dir/gh.log" \
       FM_TEST_GLAB_LOG="$dir/glab.log" \
-      FM_CHECK_INTERVAL=999999 FM_CHECK_TIMEOUT=1 FM_POLL=0.02 FM_HEARTBEAT=999999 \
+      FM_CHECK_INTERVAL="${FM_TEST_CHECK_INTERVAL:-999999}" FM_CHECK_TIMEOUT=1 FM_POLL=0.02 FM_HEARTBEAT=999999 \
       FM_SIGNAL_GRACE=0 PATH="$dir/fakebin:$BASE_PATH" "$WATCH" "$@"
+}
+
+merge_artifact_identities() {
+  local state=$1
+  bash -c '. "$1"; fm_pr_file_identity "$2/task-a.check.sh"; fm_pr_file_identity "$2/task-a.pr-poll"; fm_pr_file_identity "$2/task-a.pr-poll-registration"' \
+    _ "$ROOT/bin/fm-pr-lib.sh" "$state"
 }
 
 assert_review_watch_armed() {
@@ -118,15 +125,58 @@ assert_review_watch_armed() {
     || fail "reporting a PR armed something other than the review-bearing monitor"
 }
 
-test_report_arms_review_and_merge_together() {
-  local dir state
+test_migration_preserves_existing_merge_only_poll() {
+  local dir state before after
+  dir=$(make_case migration-preserves-merge)
+  state="$dir/home/state"
+  arm_watch "$dir" || fail "could not create the existing merge fixture"
+  rm -f "$state/task-a.pr-poll-seen"
+  before=$(merge_artifact_identities "$state") || fail "could not identify the existing merge artifacts"
+  FM_ROOT_OVERRIDE="$dir/root" FM_HOME="$dir/home" PATH="$dir/fakebin:$BASE_PATH" \
+    "$MIGRATE" --checks-safe >/dev/null || fail "migration rejected an existing canonical merge poll"
+  after=$(merge_artifact_identities "$state") || fail "migration damaged the existing merge artifacts"
+  [ "$after" = "$before" ] || fail "migration replaced an existing merge-only poll"
+  [ ! -e "$state/task-a.pr-poll-seen" ] || fail "migration armed baseline review state that can absorb the first review"
+}
+
+test_report_preserves_merge_poll_and_arms_review() {
+  local dir state before after
   dir=$(make_case automatic-arm)
   state="$dir/home/state"
+  arm_watch "$dir" || fail "could not create the existing merge fixture"
+  rm -f "$state/task-a.pr-poll-seen"
+  before=$(merge_artifact_identities "$state") || fail "could not identify the existing merge artifacts"
   arm_watch "$dir" || fail "reporting a PR failed"
+  after=$(merge_artifact_identities "$state") || fail "reporting a PR damaged the merge artifacts"
+  [ "$after" = "$before" ] || fail "reporting a PR replaced its existing merge poll"
   assert_review_watch_armed "$state"
-  [ -f "$state/task-a.pr-poll" ] || fail "the unified monitor lost merge identity"
+  [ -f "$state/task-a.pr-poll" ] || fail "review arming lost merge identity"
   cmp -s "$ROOT/bin/fm-pr-poll.sh" "$state/task-a.check.sh" \
-    || fail "reporting a PR did not arm the canonical unified monitor"
+    || fail "reporting a PR did not preserve the canonical merge poll"
+}
+
+test_merge_poll_remains_on_slow_cadence() {
+  local dir state rc
+  dir=$(make_case merge-cadence)
+  state="$dir/home/state"
+  arm_watch "$dir" || fail "could not arm merge cadence fixture"
+  touch "$state/.last-check"
+  set +e
+  FM_TEST_GH_STATE=merged run_watcher_for "$dir" 2 >"$dir/fast.out" 2>"$dir/fast.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 124 ] || fail "merge moved onto the fast review cadence"
+  [ ! -s "$dir/fast.out" ] || fail "fast review monitoring surfaced a merge"
+
+  dir=$(make_case merge-slow-cadence)
+  state="$dir/home/state"
+  arm_watch "$dir" || fail "could not arm slow merge cadence fixture"
+  set +e
+  FM_TEST_GH_STATE=merged FM_TEST_CHECK_INTERVAL=0 run_watcher_for "$dir" 8 >"$dir/slow.out" 2>"$dir/slow.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "the existing slow merge poll did not wake: $(cat "$dir/slow.err")"
+  grep -q ': merged$' "$dir/slow.out" || fail "the slow merge poll lost its merge notification"
 }
 
 test_review_wakes_on_fast_cycle_and_flags_nobody_requested() {
@@ -187,10 +237,10 @@ test_lookup_failure_is_visibly_different_from_quiet() {
   return 0
 }
 
-test_every_old_forge_merge_path_wakes_and_retires_the_unified_monitor() {
+test_every_old_forge_merge_path_wakes_and_retires_the_monitor() {
   local provider dir state rc suffix url
   for provider in github gitlab; do
-    dir=$(make_case "unified-merge-$provider")
+    dir=$(make_case "merge-$provider")
     state="$dir/home/state"
     url=https://github.com/o/r/pull/1
     [ "$provider" = github ] \
@@ -205,12 +255,12 @@ test_every_old_forge_merge_path_wakes_and_retires_the_unified_monitor() {
     rc=$?
     set -e
     [ "$rc" -eq 0 ] \
-      || fail "$provider merge did not wake through the unified monitor: $(cat "$dir/merge.err")"
+      || fail "$provider merge did not wake through the existing merge poll: $(cat "$dir/merge.err")"
     grep -q ': merged$' "$dir/merge.out" \
       || fail "$provider merge notification changed or disappeared"
     for suffix in check.sh pr-poll pr-poll-registration pr-poll-seen pr-poll-retirement; do
       [ ! -e "$state/task-a.$suffix" ] \
-        || fail "$provider merged unified monitor left task-a.$suffix"
+        || fail "$provider merged monitor left task-a.$suffix"
     done
   done
 }
@@ -226,11 +276,13 @@ run_one() {
 
 failures=0
 for test_name in \
-  test_report_arms_review_and_merge_together \
+  test_migration_preserves_existing_merge_only_poll \
+  test_report_preserves_merge_poll_and_arms_review \
+  test_merge_poll_remains_on_slow_cadence \
   test_review_wakes_on_fast_cycle_and_flags_nobody_requested \
   test_comments_wake_and_unchanged_state_stays_silent \
   test_lookup_failure_is_visibly_different_from_quiet \
-  test_every_old_forge_merge_path_wakes_and_retires_the_unified_monitor; do
+  test_every_old_forge_merge_path_wakes_and_retires_the_monitor; do
   if [ "$#" -eq 0 ] || [ "$1" = "$test_name" ]; then
     run_one "$test_name" || failures=$((failures + 1))
   fi

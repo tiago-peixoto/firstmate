@@ -914,7 +914,6 @@ prepare_pr_monitor_transition() {
   fi
   case "$FM_PR_OBSERVATION_KIND" in
     merged)
-      FM_PR_MONITOR_WAKE=merged
       return 0
       ;;
     unavailable)
@@ -1261,20 +1260,19 @@ while :; do
     triage_log "inactive-outcome reconciliation unavailable"
   fi
 
-  # Canonical PR monitors run on the existing supervision cycle. They are kept
-  # out of the slow custom-check sweep below: review activity must not wait for
-  # an unrelated supervision turn, and one registered monitor owns review,
-  # comments, lookup health, and merge together.
+  # GitHub review observations run beside the canonical merge polls.
   for c in "$STATE"/*.check.sh; do
     [ -e "$c" ] || continue
     id=$(basename "$c" .check.sh)
     fm_pr_poll_snapshot_capture "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" || continue
+    [ "$FM_PR_POLL_SNAPSHOT_PROVIDER" = github ] || continue
+    fm_pr_poll_seen_snapshot_capture "$STATE" "$id" || continue
     provider=$FM_PR_POLL_SNAPSHOT_PROVIDER
     url=$FM_PR_POLL_SNAPSHOT_URL
     host=$FM_PR_POLL_SNAPSHOT_HOST
     path=$FM_PR_POLL_SNAPSHOT_PATH
     number=$FM_PR_POLL_SNAPSHOT_NUMBER
-    run_check_capture "$SCRIPT_DIR/fm-pr-poll.sh" --validated \
+    run_check_capture "$SCRIPT_DIR/fm-pr-review-poll.sh" --validated \
       "$provider" "$url" "$host" "$path" "$number" "$FM_PR_POLL_SNAPSHOT_UPDATED" || exit 1
     out=$FM_CHECK_RESULT
     fm_pr_poll_snapshot_matches "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" || continue
@@ -1291,21 +1289,14 @@ while :; do
 
     reason="check: $c: $FM_PR_MONITOR_WAKE"
     fm_wake_append check "$c" "$reason" || exit 1
-    if [ "$FM_PR_MONITOR_WAKE" = merged ]; then
-      if fm_pr_poll_retirement_publish "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" merged; then
-        fm_pr_poll_retirement_recover_one "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" \
-          || triage_log "merged PR monitor retirement remains recoverable for $id"
-      else
-        triage_log "merged PR monitor retirement deferred because its canonical snapshot changed for $id"
-      fi
-    elif [ -n "$FM_PR_MONITOR_NEXT_SEEN" ] \
+    if [ -n "$FM_PR_MONITOR_NEXT_SEEN" ] \
       && ! fm_pr_poll_seen_publish "$STATE" "$id" "$FM_PR_MONITOR_NEXT_SEEN"; then
       triage_log "PR monitor observation remains replayable for $id"
     fi
     wake "$reason"
   done
 
-  # Slow per-task checks (firstmate writes these for bounded custom conditions).
+  # Slow per-task checks (firstmate writes these, e.g. a merged-PR poll).
   # Time-based via .last-check mtime so the cadence survives watcher restarts.
   # Evaluated BEFORE the signal scan: wake() exits the cycle, so a check placed
   # after the signal scan would be starved whenever a chatty sibling crewmate
@@ -1316,6 +1307,7 @@ while :; do
     rejected_checks=
     for c in "$STATE"/*.check.sh; do
       [ -e "$c" ] || continue
+      is_pr_poll=0
       if [ "$(basename "$c")" = x-watch.check.sh ]; then
         if fmx_poll_shim_valid "$c" "$FM_HOME" "$FM_ROOT" \
           && [ -f "$FM_ROOT/bin/fm-x-poll.sh" ] && [ ! -L "$FM_ROOT/bin/fm-x-poll.sh" ]; then
@@ -1328,8 +1320,15 @@ while :; do
       else
         id=$(basename "$c" .check.sh)
         if fm_pr_poll_snapshot_capture "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh"; then
-          # The fast loop above is the sole owner of canonical PR monitors.
-          continue
+          is_pr_poll=1
+          provider=$FM_PR_POLL_SNAPSHOT_PROVIDER
+          url=$FM_PR_POLL_SNAPSHOT_URL
+          host=$FM_PR_POLL_SNAPSHOT_HOST
+          path=$FM_PR_POLL_SNAPSHOT_PATH
+          number=$FM_PR_POLL_SNAPSHOT_NUMBER
+          run_check_capture "$SCRIPT_DIR/fm-pr-poll.sh" --validated \
+            "$provider" "$url" "$host" "$path" "$number" || exit 1
+          out=$FM_CHECK_RESULT
         elif fm_custom_check_snapshot_prepare "$STATE" "$id"; then
           custom_snapshot=$FM_CUSTOM_CHECK_SNAPSHOT
           run_check_capture "$custom_snapshot" || exit 1
@@ -1344,6 +1343,14 @@ while :; do
       if [ -n "$out" ]; then
         reason="check: $c: $out"
         fm_wake_append check "$c" "$reason" || exit 1
+        if [ "$is_pr_poll" -eq 1 ] && [ "$out" = merged ]; then
+          if fm_pr_poll_retirement_publish "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" "$out"; then
+            fm_pr_poll_retirement_recover_one "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" \
+              || triage_log "merged PR poll retirement remains recoverable for $id"
+          else
+            triage_log "merged PR poll retirement deferred because its canonical snapshot changed for $id"
+          fi
+        fi
         touch "$STATE/.last-check"
         wake "$reason"
       fi
