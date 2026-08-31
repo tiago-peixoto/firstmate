@@ -125,6 +125,34 @@ test_review_wakes_on_fast_cycle_and_flags_nobody_requested() {
   grep -q 'NOBODY requested' "$dir/watch.out" || fail "new review with no requested reviewer hid the dangerous state"
 }
 
+test_requested_reviewer_addition_wakes_without_other_activity() {
+  local dir rc
+  dir=$(make_case requested-reviewer-added)
+  arm_watch "$dir" || fail "could not arm requested-reviewer addition fixture"
+  set +e
+  FM_TEST_UPDATED_AT=2026-08-30T10:01:00Z FM_TEST_REQUESTED_COUNT=2 \
+    run_watcher_for "$dir" 8 >"$dir/addition.out" 2>"$dir/addition.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "requested-reviewer addition did not wake: $(cat "$dir/addition.err")"
+  grep -q 'review activity' "$dir/addition.out" || fail "requested-reviewer addition did not identify its wake"
+  ! grep -q 'comment activity' "$dir/addition.out" || fail "requested-reviewer addition falsely reported comment activity"
+}
+
+test_requested_reviewer_removal_wakes_without_other_activity() {
+  local dir rc
+  dir=$(make_case requested-reviewer-removed)
+  FM_TEST_REQUESTED_COUNT=2 arm_watch "$dir" || fail "could not arm requested-reviewer removal fixture"
+  set +e
+  FM_TEST_UPDATED_AT=2026-08-30T10:01:00Z FM_TEST_REQUESTED_COUNT=1 \
+    run_watcher_for "$dir" 8 >"$dir/removal.out" 2>"$dir/removal.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "requested-reviewer removal did not wake: $(cat "$dir/removal.err")"
+  grep -q 'review activity' "$dir/removal.out" || fail "requested-reviewer removal did not identify its wake"
+  ! grep -q 'comment activity' "$dir/removal.out" || fail "requested-reviewer removal falsely reported comment activity"
+}
+
 test_comments_wake_and_unchanged_state_stays_silent() {
   local dir rc
   dir=$(make_case comment-and-quiet)
@@ -197,6 +225,8 @@ failures=0
 for test_name in \
   test_report_arms_review_and_merge_together \
   test_review_wakes_on_fast_cycle_and_flags_nobody_requested \
+  test_requested_reviewer_addition_wakes_without_other_activity \
+  test_requested_reviewer_removal_wakes_without_other_activity \
   test_comments_wake_and_unchanged_state_stays_silent \
   test_lookup_failure_is_visibly_different_from_quiet \
   test_merge_still_wakes_and_retires_the_unified_monitor; do

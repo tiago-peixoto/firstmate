@@ -950,8 +950,10 @@ prepare_pr_monitor_transition() {
           "$FM_PR_OBSERVATION_REQUESTED" ok "$now") || return 1
         return 0
       fi
-      fm_pr_poll_numeric_gt "$FM_PR_OBSERVATION_REVIEWS" "$FM_PR_POLL_SNAPSHOT_REVIEWS" \
-        && review_activity=1
+      if fm_pr_poll_numeric_gt "$FM_PR_OBSERVATION_REVIEWS" "$FM_PR_POLL_SNAPSHOT_REVIEWS" \
+        || [ "$FM_PR_OBSERVATION_REQUESTED" != "$FM_PR_POLL_SNAPSHOT_REQUESTED" ]; then
+        review_activity=1
+      fi
       if fm_pr_poll_numeric_gt "$FM_PR_OBSERVATION_ISSUE_COMMENTS" "$FM_PR_POLL_SNAPSHOT_ISSUE_COMMENTS" \
         || fm_pr_poll_numeric_gt "$FM_PR_OBSERVATION_REVIEW_COMMENTS" "$FM_PR_POLL_SNAPSHOT_REVIEW_COMMENTS"; then
         comment_activity=1
