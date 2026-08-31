@@ -92,6 +92,9 @@ Report the named requirement to the captain and, once they confirm, complete the
 4. On a clean result, inspect the emitted `git range-diff --remerge-diff` review and health result before starting no-mistakes.
 5. On exit 3, treat every named conflict as a divergence re-justification decision before resolving files.
    Ask the drop question PER FILE, not per unit: a unit passes `git cherry` while individual files inside it have silently gone upstream.
+   CAPTAIN RULING 2026-08-31, and it decides most conflicts on its own: our changes stay ON TOP of upstream, with the minimum change necessary. Where upstream has diverged CONCEPTUALLY - a different design for the same job, not merely different code - PREFER THE UPSTREAM VERSION, even when ours works.
+   So the resolution question is not "which side is better" but "is this a different concept or an addition on top of one". A different concept means adopt upstream and drop ours. An addition means keep ours layered over upstream's, never replacing it.
+   Measured 2026-08-31: restoring the fork's lock-held auto-arm claim over upstream's generation-claim design deleted `fm_autoarm_claim_open` and left `MY_GEN` unset under `set -u`, so supervision never armed. The fork's trace events were a genuine addition and belonged on top; the claim mechanism was a competing concept and did not.
    Verify a resolution by NAMING the constructs that must survive and checking each against fork, upstream, and result - never by comparing file sizes or diffing for equality, because identical-to-upstream is what a silently dropped divergence looks like.
    A replayed rerere result restores a file's previous resolution; it never answers whether that divergence still earns its place.
 6. Load `ask-user-authority` before deciding whether routine authority can answer a re-justification.
@@ -102,7 +105,10 @@ Report the named requirement to the captain and, once they confirm, complete the
    Review the RESOLUTION, not upstream's diff: upstream's commits were reviewed upstream, and re-reviewing them buries the only part that is ours.
    Give the review the merge result diffed against each parent - what the fork gave up, and what it kept that upstream lacks.
    When that is still too large, review it per FILE GROUP: a resolution decomposes by file even though a merge does not decompose by commit, which is what makes merge review possible at all.
+   Size is NOT the rule. What a review needs is a COHERENT BOUNDED ARTIFACT - one group of related decisions it can hold at once. Measured 2026-08-31: a 719-line group returned a full verdict while the same merge at about 38,000 lines timed out, as did every attempt above roughly 600. Do not carry "under 600 lines" forward as a threshold; carry "one coherent group of decisions", and split by what belongs together rather than by counting.
 9. Require fork CI green and captain merge approval.
+   ORDER MATTERS, and this is the sequence: review the RESOLUTION first, then land, then prove supervision still works.
+   Proving supervision after landing is necessary and NOT sufficient. Measured 2026-08-31: a restoration that deleted upstream's generation-claim block left `MY_GEN` unset under `set -u`, so a normal eligible invocation exited before arming supervision - the exact unattended-session incident the restoration existed to prevent. No end-to-end supervision test catches that; it needs both designs read together, which is what the resolution review does and a runtime proof cannot.
 10. Use the regular merge method, then run `/updatefirstmate`.
 
 A replayed rerere result supplies only the previously accepted file resolution, never the answer to whether the divergence is still worth carrying; the unmerged index is the barrier that keeps that decision explicit, so never let a replay stand in for it.
