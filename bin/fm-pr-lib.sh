@@ -374,6 +374,15 @@ fm_pr_poll_updated_valid() {
   [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
 }
 
+# Typed PR-review observation protocol, accepted only as one CR/LF-free record:
+#   merged
+#   unavailable <github|gitlab>
+#   unchanged <updated-at> <requested-reviewer-count>
+#   observed <updated-at> <max-review-id> <max-issue-comment-id> <max-review-comment-id> <requested-reviewer-count>
+# The updated-at field has the fixed UTC shape YYYY-MM-DDTHH:MM:SSZ.
+# Every ID and count field is a non-empty unsigned decimal string.
+# A successful parse exposes the typed fields through the FM_PR_OBSERVATION_*
+# variables, while a refusal leaves all of those fields empty.
 # shellcheck disable=SC2034 # Observation fields are the sourced library's output API.
 fm_pr_poll_observation_parse() {
   local observation=$1 kind updated reviews issue_comments review_comments requested extra

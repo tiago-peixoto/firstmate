@@ -2,6 +2,18 @@
 # Read one validated GitHub pull request for review and comment activity.
 # Usage: fm-pr-review-poll.sh --snapshot <provider> <url> <host> <path> <number>
 #        fm-pr-review-poll.sh --validated <provider> <url> <host> <path> <number> <prior-updated>
+# Output uses the typed protocol owned by fm_pr_poll_observation_parse in
+# fm-pr-lib.sh.
+# Snapshot mode reads the PR summary and every page of review, issue-comment,
+# and review-comment IDs, then reports each exact decimal maximum or zero when
+# that collection is empty.
+# Validated mode skips those detail lookups when the summary timestamp matches
+# prior-updated, but still reports the current requested-user and requested-team
+# total in its unchanged record.
+# Both modes stop at the summary for a merged PR.
+# Invalid arguments or a mismatched identity are silent and never call GitHub.
+# After identity validation, a failed or malformed lookup reports unavailable
+# rather than looking unchanged.
 set -u
 LC_ALL=C
 export LC_ALL
