@@ -16,7 +16,7 @@
 # fixed mapping logic, no heuristics and no LLM. Output is one stable, parseable,
 # token-tight line firstmate can read every heartbeat:
 #
-#   state: <working|parked|done|blocked|paused|failed|unknown> · source: <run-step|pane|status-log|remote-endpoint|none> · <detail>
+#   state: <working|parked|done|blocked|paused|failed|undetermined|unknown> · source: <run-step|pane|status-log|remote-endpoint|none> · <detail>
 #
 # Logic, in order:
 #   1. Resolve worktree + backend target + kind from state/<id>.meta. A meta
@@ -36,17 +36,14 @@
 #      the same line of history). Local work that advanced past the run head, or
 #      diverged from it, invalidates attribution.
 #      The run-step normally answers: running/fixing -> working, ci -> working,
-#      awaiting_approval/fix_review -> parked (with gate findings), terminal
-#      passed/checks-passed -> done, failed/cancelled -> failed. Two more
-#      specific records can replace that coarse answer: the latest recognized
-#      CI marker while the ci step runs, and a later stamped worker nonterminal
-#      after a matching terminal run began.
-#      A finished run's publication detail likewise comes from its push and PR
-#      step rows, never from the run outcome alone.
-#   3. Reconcile the status log: if its last line says needs-decision/blocked but
-#      the run-step shows the run moved on, the log is deterministically stale and
-#      is flagged superseded. A genuinely parked run plus a needs-decision log
-#      agree, and are reported as parked.
+#      awaiting_approval/fix_review -> parked (with gate findings), substantiated
+#      passed/checks-passed -> done, failed/cancelled -> failed. The latest
+#      recognized CI marker can refine a ci step, and a finished run's publication
+#      detail comes from its push and PR step rows, never from the outcome alone.
+#   3. Reconcile the status log without inferring order. Agreeing direct records
+#      retain their state; conflicting direct records report undetermined. A run
+#      verdict that lacks the evidence required to substantiate it is likewise
+#      undetermined.
 #   4. No run for this crew (pre-validation, or kind=scout): fall back to the
 #      recorded backend's pane busy state, then the status log's last line only
 #      when its verb maps to a recognized run-state. Decision-only events such as
@@ -192,10 +189,9 @@ if [ -n "$REMOTE_HOST" ]; then
   esac
 fi
 
-# pane_readable is consulted ONLY in the no-run fallback below. The run-step path
-# stays authoritative regardless of pane liveness - judge by the run-step, not the
-# shell - so a finished crew whose endpoint has closed still reports its run-step
-# state (e.g. done) instead of being masked as unknown. Backend-aware
+# pane_readable is consulted ONLY in the no-run fallback below. Matching run
+# evidence remains available regardless of pane liveness, so a closed endpoint
+# cannot mask it as unknown. Backend-aware
 # (fm_backend_of_meta defaults absent backend= to tmux, the P1 contract): a
 # herdr task is read through fm_backend_capture instead of a bare tmux probe.
 TASK_BACKEND=$(fm_backend_of_meta "$META")
@@ -222,7 +218,7 @@ crew_busy_verdict() {  # <target>
   fm_busy_classify "$TASK_BACKEND" "$1" "$HARNESS" "$ID" "$STATE" "$tail40"
 }
 
-# --- no-mistakes run lookup (authoritative when a run matches this branch) --
+# --- no-mistakes run lookup (eligible when branch and code identity match) ---
 # trim, strip_quotes, the bounded nm_run call, nm_field's TOON parse, and the
 # branch+head attribution rule below are thin wrappers over the ONE owner in
 # bin/fm-nm-run-lib.sh, shared with fm-teardown.sh's pre-teardown run abort.
@@ -336,8 +332,10 @@ nm_publication_detail() {
       printf 'branch published; PR creation skipped'
     elif [ "$push_step" = skipped ]; then
       printf 'nothing published (publishing steps skipped)'
+      return 1
     else
       printf 'PR creation skipped; branch publication unknown'
+      return 1
     fi
   elif [ -n "$pr_url" ]; then
     disposition=$(nm_ci_pr_disposition)
@@ -350,6 +348,7 @@ nm_publication_detail() {
     printf 'PR published; URL unavailable'
   else
     printf 'publishing status unavailable'
+    return 1
   fi
 }
 
@@ -530,7 +529,7 @@ if [ "$KIND" = ship ] && [ -n "$CREW_BRANCH" ] && command -v no-mistakes >/dev/n
   fi
 fi
 
-# --- run-step authoritative path -------------------------------------------
+# --- matching run-step path ------------------------------------------------
 
 if [ "$HAVE_RUN" = 1 ]; then
   RUN_STATE=working
@@ -538,10 +537,10 @@ if [ "$HAVE_RUN" = 1 ]; then
   CI_STEP_STATUS=""
   CI_LOG_STATE=""
   RUN_STATUS=""
-  RUN_TERMINAL=0
   if [ "$RUN_SOURCE" = coarse ]; then
-    # No step/gate detail is available from the plain runs list - only ever
-    # true/working, done, or failed. A crew genuinely parked at a gate still
+    # No step/gate detail is available from the plain runs list. Running and failed
+    # states remain direct, while completion without outcome or delivery detail is
+    # undetermined. A crew genuinely parked at a gate still
     # gets full detail once `axi status` reports its own branch again (e.g.
     # once its own step is the most-recently-touched one), and its own
     # needs-decision/blocked status-log append (a captain-relevant VERB) is
@@ -549,17 +548,15 @@ if [ "$HAVE_RUN" = 1 ]; then
     # coarse-vs-full distinction, so a real gate is never silently missed.
     case "$COARSE_STATUS" in
       running)   RUN_STATE=working; RUN_DETAIL="validating (background run)" ;;
-      completed) RUN_STATE="done";  RUN_DETAIL="run completed"; RUN_TERMINAL=1 ;;
-      failed)    RUN_STATE=failed;  RUN_DETAIL="run failed"; RUN_TERMINAL=1 ;;
-      cancelled) RUN_STATE=failed;  RUN_DETAIL="run cancelled"; RUN_TERMINAL=1 ;;
-      *)         RUN_STATE=unknown; RUN_DETAIL="runs list status: $COARSE_STATUS" ;;
+      completed) RUN_STATE=undetermined; RUN_DETAIL="run completion lacks delivery evidence" ;;
+      failed)    RUN_STATE=failed; RUN_DETAIL="run failed" ;;
+      cancelled) RUN_STATE=failed; RUN_DETAIL="run cancelled" ;;
+      *)         RUN_STATE=undetermined; RUN_DETAIL="unsupported runs list status: $COARSE_STATUS" ;;
     esac
   else
     status=$(strip_quotes "$(nm_field status)")
     RUN_STATUS=$status
     outcome=$(strip_quotes "$(nm_field outcome)")
-    case "$status" in completed|failed|cancelled) RUN_TERMINAL=1 ;; esac
-    [ -n "$outcome" ] && RUN_TERMINAL=1
     awaiting=$(printf '%s\n' "$RUN_OUT" | grep -E '^[[:space:]]*awaiting_agent:' | head -1 || true)
     gate_status=$(nm_gate_status)
     has_gate=0
@@ -567,19 +564,28 @@ if [ "$HAVE_RUN" = 1 ]; then
 
     if [ -n "$outcome" ]; then
       case "$outcome" in
-        passed)        RUN_STATE="done"; RUN_DETAIL="run passed: $(nm_publication_detail)" ;;
+        passed)
+          if publication=$(nm_publication_detail); then
+            RUN_STATE=done
+            RUN_DETAIL="run passed: $publication"
+          else
+            RUN_STATE=undetermined
+            RUN_DETAIL="run passed but delivery is unsubstantiated: $publication"
+          fi
+          ;;
         checks-passed)
-          RUN_STATE="done"
           CI_LOG_STATE=$(nm_ci_checks_state)
           if [ "$CI_LOG_STATE" = green ]; then
+            RUN_STATE=done
             RUN_DETAIL="checks green: PR ready for review"
           else
-            RUN_DETAIL="run completed (checks-passed outcome; CI checks not confirmed)"
+            RUN_STATE=undetermined
+            RUN_DETAIL="checks-passed outcome lacks the complete all-checks-passed marker"
           fi
           ;;
         failed)        RUN_STATE=failed; RUN_DETAIL="run failed" ;;
         cancelled)     RUN_STATE=failed; RUN_DETAIL="run cancelled" ;;
-        *)             RUN_STATE=unknown; RUN_DETAIL="outcome: $outcome" ;;
+        *)             RUN_STATE=undetermined; RUN_DETAIL="unsupported run outcome: $outcome" ;;
       esac
     elif [ -n "$awaiting" ] || [ "$status" = awaiting_approval ] || [ "$status" = fix_review ] || [ -n "$gate_status" ] || [ "$has_gate" = 1 ]; then
       if [ "$has_gate" = 1 ]; then
@@ -600,11 +606,11 @@ if [ "$HAVE_RUN" = 1 ]; then
       case "$status" in
         ci)             RUN_STATE=working; RUN_DETAIL="ci running" ;;
         running|fixing) RUN_STATE=working; RUN_DETAIL="validating ($status)" ;;
-        completed)      RUN_STATE="done"; RUN_DETAIL="run completed" ;;
+        completed)      RUN_STATE=undetermined; RUN_DETAIL="run completion lacks an outcome and delivery evidence" ;;
         failed)         RUN_STATE=failed;  RUN_DETAIL="run failed" ;;
         cancelled)      RUN_STATE=failed;  RUN_DETAIL="run cancelled" ;;
-        "")             RUN_STATE=working; RUN_DETAIL="run active" ;;
-        *)              RUN_STATE=working; RUN_DETAIL="run active ($status)" ;;
+        "")             RUN_STATE=undetermined; RUN_DETAIL="run status unavailable" ;;
+        *)              RUN_STATE=undetermined; RUN_DETAIL="unsupported run status: $status" ;;
       esac
       if [ "$RUN_STATE" = working ]; then
         CI_STEP_STATUS=$(nm_effective_ci_step_status)
@@ -624,45 +630,15 @@ if [ "$HAVE_RUN" = 1 ]; then
     fi
   fi
 
-  if [ "$RUN_SOURCE" = full ] && [ "$RUN_TERMINAL" = 1 ]; then
-    LOG_STATE=$(map_log_state "$LOG_LINE")
-    case "$LOG_STATE:$RUN_STATE" in
-      paused:done|paused:failed|working:done|working:failed|parked:done|parked:failed|blocked:done|blocked:failed)
-        LOG_EVENT_EPOCH=$(status_line_at_epoch "$LOG_LINE" || true)
-        RUN_ID=$(strip_quotes "$(nm_field id)")
-        RUN_STARTED_MILLIS=$(LC_ALL=C awk -v id="$RUN_ID" 'BEGIN {
-          alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-          if (length(id) != 26 || index("01234567", substr(id, 1, 1)) == 0) exit 1
-          value = 0
-          for (i = 1; i <= 26; i++) {
-            digit = index(alphabet, substr(id, i, 1)) - 1
-            if (digit < 0) exit 1
-            if (i <= 10) value = value * 32 + digit
-          }
-          printf "%.0f\n", value
-        }' 2>/dev/null || true)
-        if [ -n "$LOG_EVENT_EPOCH" ] && [ -n "$RUN_STARTED_MILLIS" ] \
-          && [ "$((LOG_EVENT_EPOCH * 1000))" -gt "$RUN_STARTED_MILLIS" ]; then
-          emit "$LOG_STATE" status-log "$LOG_NOTE"
-        fi
-        ;;
-    esac
+  LOG_STATE=$(map_log_state "$LOG_LINE")
+  if [ "$LOG_STATE" != unknown ] && [ "$LOG_STATE" != "$RUN_STATE" ]; then
+    if [ "$RUN_STATE" = undetermined ]; then
+      RUN_DETAIL="conflicting direct evidence: run is undetermined ($RUN_DETAIL); status-log reports $LOG_STATE"
+    else
+      RUN_DETAIL="conflicting direct evidence: run reports $RUN_STATE; status-log reports $LOG_STATE"
+    fi
+    RUN_STATE=undetermined
   fi
-
-  # Reconcile the status log. A needs-decision/blocked log line that the run-step
-  # has moved past (anything but a genuinely parked run) is deterministically
-  # stale: the gate resolved and the run resumed or finished.
-  case "$LOG_VERB" in
-    needs-decision|blocked)
-      if [ "$RUN_STATE" != parked ]; then
-        if [ "$RUN_STATE" = working ]; then
-          RUN_DETAIL="$RUN_DETAIL${SEP}status-log superseded by active run"
-        else
-          RUN_DETAIL="$RUN_DETAIL${SEP}status-log superseded (run $RUN_STATE)"
-        fi
-      fi
-      ;;
-  esac
 
   emit "$RUN_STATE" run-step "$RUN_DETAIL"
 fi

@@ -4,15 +4,15 @@
 #
 # The status file (state/<id>.status) is a best-effort append-only EVENT LOG, so
 # `tail -1` of it reports the last event, not the current state. fm-crew-state
-# reads the AUTHORITATIVE source (a matching no-mistakes run-step, else the
+# reads direct current-code evidence (a matching no-mistakes run-step, else the
 # semantic busy-state contract) and reconciles the possibly-stale log against it. These
 # cases pin every branch of that logic, hermetically, over real throwaway git
 # repos with a fake `no-mistakes` (run-step source) and a fake `tmux` (pane
 # source):
-#   (a) active run-step is authoritative                          -> run-step
-#   (b) needs-decision/blocked log + resumed run = SUPERSEDED     -> run-step
-#   (c) genuine parked run + needs-decision log = NOT superseded  -> run-step
-#   (d) terminal run-step, unless a later worker nonterminal is more specific
+#   (a) an unopposed active run-step                              -> run-step
+#   (b) conflicting run-step and worker records                  -> undetermined
+#   (c) genuine parked run + needs-decision log agree             -> run-step
+#   (d) substantiated terminal run-step                           -> run-step
 #   (e) cross-branch attribution: this branch's own run found via list lookup
 #   (f) no run + semantic busy                                    -> pane
 #   (g) no run + semantic idle falls to the status-log verb       -> status-log
@@ -453,7 +453,7 @@ test_active_run_is_authoritative() {
   pass "active run-step is authoritative"
 }
 
-test_active_run_beats_later_worker_declaration() {
+test_active_run_conflicting_worker_is_undetermined() {
   reset_fakes
   local d; d=$(new_case active-vs-worker)
   make_repo_on_branch "$d/wt" fm/feat-active-worker
@@ -464,14 +464,16 @@ test_active_run_beats_later_worker_declaration() {
   FM_FAKE_AXI_STATUS="$(run_running fm/feat-active-worker)"
   arm_idle_record "$d/state" active-worker
   local out; out=$(run_crew_state "$d" active-worker)
-  assert_contains "$out" "state: working" "the active run remains authoritative"
-  assert_contains "$out" "source: run-step" "active validation stays run-step sourced"
-  assert_not_contains "$out" "state: paused" "a worker note cannot overrule active validation"
-  pass "active run beats a later idle worker declaration"
+  assert_contains "$out" "state: undetermined" "conflicting active and paused records cannot be ranked"
+  assert_contains "$out" "source: run-step" "the conflicting run evidence remains identified"
+  assert_contains "$out" "conflicting direct evidence" "the conflict is loud"
+  assert_not_contains "$out" "state: working" "a conflict cannot be reported as working"
+  assert_not_contains "$out" "state: paused" "a conflict cannot be reported as paused"
+  pass "active run and paused worker conflict is undetermined"
 }
 
 # (b) needs-decision log + a resumed (running/fixing) run = SUPERSEDED
-test_stale_needs_decision_superseded() {
+test_active_run_conflicting_decision_is_undetermined() {
   reset_fakes
   local d; d=$(new_case superseded)
   make_repo_on_branch "$d/wt" fm/feat-b
@@ -480,14 +482,15 @@ test_stale_needs_decision_superseded() {
   printf 'working: started\nneeds-decision: pick A or B\n' > "$d/state/feat-b.status"
   FM_FAKE_AXI_STATUS="$(run_fixing fm/feat-b)"
   local out; out=$(run_crew_state "$d" feat-b)
-  assert_contains "$out" "state: working" "resumed run -> working despite needs-decision log"
-  assert_contains "$out" "source: run-step" "resumed run -> run-step source"
-  assert_contains "$out" "superseded" "stale needs-decision log flagged superseded"
-  pass "stale needs-decision over active run is superseded"
+  assert_contains "$out" "state: undetermined" "working and parked records cannot be ranked"
+  assert_contains "$out" "conflicting direct evidence" "the decision conflict is loud"
+  assert_not_contains "$out" "state: working" "the run cannot silently overrule the decision"
+  assert_not_contains "$out" "state: parked" "the decision cannot silently overrule the run"
+  pass "active run and decision conflict is undetermined"
 }
 
 # blocked log + a resumed run is also superseded
-test_stale_blocked_superseded() {
+test_active_run_conflicting_blocker_is_undetermined() {
   reset_fakes
   local d; d=$(new_case superseded-blocked)
   make_repo_on_branch "$d/wt" fm/feat-bb
@@ -496,9 +499,11 @@ test_stale_blocked_superseded() {
   printf 'blocked: waiting on review answer\n' > "$d/state/feat-bb.status"
   FM_FAKE_AXI_STATUS="$(run_running fm/feat-bb)"
   local out; out=$(run_crew_state "$d" feat-bb)
-  assert_contains "$out" "state: working" "resumed run -> working despite blocked log"
-  assert_contains "$out" "superseded" "stale blocked log flagged superseded"
-  pass "stale blocked over active run is superseded"
+  assert_contains "$out" "state: undetermined" "working and blocked records cannot be ranked"
+  assert_contains "$out" "conflicting direct evidence" "the blocker conflict is loud"
+  assert_not_contains "$out" "state: working" "the run cannot silently overrule the blocker"
+  assert_not_contains "$out" "state: blocked" "the blocker cannot silently overrule the run"
+  pass "active run and blocker conflict is undetermined"
 }
 
 # (c) genuine parked run + needs-decision log AGREE -> parked, NOT superseded
@@ -570,7 +575,7 @@ test_ci_ready_done_log_beats_monitoring_run() {
   pass "ci-ready status agrees with the complete green marker"
 }
 
-test_ci_ready_done_log_without_marker_stays_working() {
+test_ci_ready_done_log_without_marker_is_undetermined() {
   reset_fakes
   local d; d=$(new_case ci-ready-unverified)
   make_repo_on_branch "$d/wt" fm/feat-ci-unverified
@@ -579,10 +584,12 @@ test_ci_ready_done_log_without_marker_stays_working() {
   printf 'done: PR https://github.com/o/r/pull/2 checks green\n' > "$d/state/feat-ci-unverified.status"
   FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-ci-unverified)"
   local out; out=$(run_crew_state "$d" feat-ci-unverified)
-  assert_contains "$out" "state: working" "an unverified checks-green event cannot finish active CI"
-  assert_contains "$out" "source: run-step" "the active CI record remains authoritative"
+  assert_contains "$out" "state: undetermined" "unverified done and active CI records conflict"
+  assert_contains "$out" "source: run-step" "the conflicting CI record remains identified"
+  assert_contains "$out" "conflicting direct evidence" "the unverified completion conflict is loud"
+  assert_not_contains "$out" "state: working" "conflicting evidence cannot be reported working"
   assert_not_contains "$out" "checks green" "an absent complete marker cannot report checks green"
-  pass "checks-green status requires the complete CI marker"
+  pass "unverified checks-green status conflicts with active CI"
 }
 
 # Regression for the PR #252 incident: the crew's own status log never got a
@@ -760,7 +767,7 @@ EOF
   pass "pending issues after green keep CI working"
 }
 
-test_ci_ready_done_log_relapse_stays_working() {
+test_ci_ready_done_log_relapse_is_undetermined() {
   reset_fakes
   local d; d=$(new_case ci-ready-then-relapse)
   make_repo_on_branch "$d/wt" fm/feat-cireadyrelapse
@@ -775,13 +782,15 @@ CI checks running, waiting for results...
 EOF
 )
   local out; out=$(run_crew_state "$d" feat-cireadyrelapse)
-  assert_contains "$out" "state: working" "a stale ready status must not mask a later CI relapse"
-  assert_contains "$out" "source: run-step" "relapsed ci run remains run-step sourced"
+  assert_contains "$out" "state: undetermined" "a ready status and relapsed CI cannot be ranked"
+  assert_contains "$out" "source: run-step" "the relapsed CI evidence remains identified"
+  assert_contains "$out" "conflicting direct evidence" "the relapse conflict is loud"
+  assert_not_contains "$out" "state: working" "conflicting evidence cannot be reported working"
   assert_not_contains "$out" "state: done" "relapsed ci run with stale done log must not read as done"
-  pass "stale checks-green status log does not mask CI relapse"
+  pass "checks-green status and CI relapse conflict is undetermined"
 }
 
-test_ci_fixing_after_green_stays_working() {
+test_ci_fixing_after_green_status_is_undetermined() {
   reset_fakes
   local d; d=$(new_case ci-fixing-after-green)
   make_repo_on_branch "$d/wt" fm/feat-cifixing
@@ -791,10 +800,12 @@ test_ci_fixing_after_green_stays_working() {
   FM_FAKE_AXI_STATUS="$(run_ci_fixing fm/feat-cifixing)"
   FM_FAKE_CI_LOGS="all CI checks passed - still monitoring until merged or closed"
   local out; out=$(run_crew_state "$d" feat-cifixing)
-  assert_contains "$out" "state: working" "ci fixing step must stay working"
-  assert_contains "$out" "source: run-step" "ci fixing remains run-step sourced"
+  assert_contains "$out" "state: undetermined" "fixing and done records cannot be ranked"
+  assert_contains "$out" "source: run-step" "the fixing run evidence remains identified"
+  assert_contains "$out" "conflicting direct evidence" "the fixing conflict is loud"
+  assert_not_contains "$out" "state: working" "conflicting evidence cannot be reported working"
   assert_not_contains "$out" "state: done" "ci fixing must not read as checks-green done"
-  pass "ci fixing is not overridden by an earlier green marker"
+  pass "CI fixing and green worker status conflict is undetermined"
 }
 
 test_top_level_fixing_ci_running_after_green_stays_working() {
@@ -813,7 +824,7 @@ test_top_level_fixing_ci_running_after_green_stays_working() {
   pass "top-level fixing is not overridden by a stale ci running row"
 }
 
-test_top_level_fixing_done_log_stays_working() {
+test_top_level_fixing_done_log_is_undetermined() {
   reset_fakes
   local d; d=$(new_case top-level-fixing-done-log)
   make_repo_on_branch "$d/wt" fm/feat-topfixing
@@ -823,11 +834,12 @@ test_top_level_fixing_done_log_stays_working() {
   FM_FAKE_AXI_STATUS="$(run_fixing fm/feat-topfixing)"
   FM_FAKE_CI_LOGS="all CI checks passed - still monitoring until merged or closed"
   local out; out=$(run_crew_state "$d" feat-topfixing)
-  assert_contains "$out" "state: working" "top-level fixing must stay working"
-  assert_contains "$out" "source: run-step" "top-level fixing remains run-step sourced"
-  assert_contains "$out" "validating (fixing)" "top-level fixing keeps fixing detail"
+  assert_contains "$out" "state: undetermined" "fixing and done records cannot be ranked"
+  assert_contains "$out" "source: run-step" "the fixing run evidence remains identified"
+  assert_contains "$out" "conflicting direct evidence" "the top-level fixing conflict is loud"
+  assert_not_contains "$out" "state: working" "conflicting evidence cannot be reported working"
   assert_not_contains "$out" "state: done" "top-level fixing must not read as stale checks-green done"
-  pass "top-level fixing is not overridden by a stale done log"
+  pass "top-level fixing and done log conflict is undetermined"
 }
 
 # (d) terminal run-step is authoritative
@@ -857,7 +869,7 @@ test_terminal_failed() {
   pass "terminal failed run is authoritative"
 }
 
-test_declared_pause_beats_recorded_outcome() {
+test_declared_pause_conflicting_with_outcome_is_undetermined() {
   reset_fakes
   local d local_head pipeline_head; d=$(new_case pause-vs-outcome)
   make_repo_on_branch "$d/wt" fm/feat-pauseoutcome
@@ -870,12 +882,14 @@ test_declared_pause_beats_recorded_outcome() {
   FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-pauseoutcome "$local_head" "$pipeline_head" passed)"
   arm_idle_record "$d/state" feat-pauseoutcome
   local out; out=$(run_crew_state "$d" feat-pauseoutcome)
-  assert_contains "$out" "state: paused" "the worker's explicit current state wins"
-  assert_not_contains "$out" "state: done" "a run outcome cannot overrule a later pause"
-  pass "declared pause beats an older passed outcome"
+  assert_contains "$out" "state: undetermined" "passed and paused records cannot be ordered"
+  assert_contains "$out" "conflicting direct evidence" "the terminal conflict is loud"
+  assert_not_contains "$out" "state: paused" "the pause cannot silently overrule the run"
+  assert_not_contains "$out" "state: done" "the run cannot silently overrule the pause"
+  pass "declared pause and passed outcome conflict is undetermined"
 }
 
-test_declared_pause_beats_recorded_cancelled_outcome() {
+test_declared_pause_conflicting_with_cancelled_is_undetermined() {
   reset_fakes
   local d local_head pipeline_head; d=$(new_case pause-vs-cancelled)
   make_repo_on_branch "$d/wt" fm/feat-pausecancelled
@@ -888,9 +902,11 @@ test_declared_pause_beats_recorded_cancelled_outcome() {
   FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-pausecancelled "$local_head" "$pipeline_head" cancelled)"
   arm_idle_record "$d/state" feat-pausecancelled
   local out; out=$(run_crew_state "$d" feat-pausecancelled)
-  assert_contains "$out" "state: paused" "the worker's explicit current state wins"
-  assert_not_contains "$out" "state: failed" "a cancelled run is not the work's current state"
-  pass "declared pause beats an older cancelled outcome"
+  assert_contains "$out" "state: undetermined" "cancelled and paused records cannot be ordered"
+  assert_contains "$out" "conflicting direct evidence" "the cancelled conflict is loud"
+  assert_not_contains "$out" "state: paused" "the pause cannot silently overrule cancellation"
+  assert_not_contains "$out" "state: failed" "cancellation cannot silently overrule the pause"
+  pass "declared pause and cancelled outcome conflict is undetermined"
 }
 
 test_declared_pause_distinguishes_no_ci_from_approval_wait() {
@@ -911,7 +927,7 @@ test_declared_pause_distinguishes_no_ci_from_approval_wait() {
   pass "worker state distinguishes no CI from an approval-gated wait"
 }
 
-test_working_status_beats_older_failed_outcome() {
+test_working_status_conflicting_with_failure_is_undetermined() {
   reset_fakes
   local d local_head pipeline_head; d=$(new_case working-vs-failed)
   make_repo_on_branch "$d/wt" fm/feat-workingfailed
@@ -924,12 +940,14 @@ test_working_status_beats_older_failed_outcome() {
   FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-workingfailed "$local_head" "$pipeline_head" failed)"
   arm_idle_record "$d/state" workingfailed
   local out; out=$(run_crew_state "$d" workingfailed)
-  assert_contains "$out" "state: working" "the worker's explicit current state wins"
-  assert_not_contains "$out" "state: failed" "an older run failure cannot overrule resumed work"
-  pass "working status beats an older failed outcome"
+  assert_contains "$out" "state: undetermined" "failed and working records cannot be ordered"
+  assert_contains "$out" "conflicting direct evidence" "the failure conflict is loud"
+  assert_not_contains "$out" "state: working" "working cannot silently overrule failure"
+  assert_not_contains "$out" "state: failed" "failure cannot silently overrule working"
+  pass "working status and failed outcome conflict is undetermined"
 }
 
-test_older_working_status_does_not_beat_newer_failure() {
+test_unordered_working_status_and_failure_is_undetermined() {
   reset_fakes
   local d local_head pipeline_head; d=$(new_case older-working-vs-failed)
   make_repo_on_branch "$d/wt" fm/feat-olderworkingfailed
@@ -941,13 +959,14 @@ test_older_working_status_does_not_beat_newer_failure() {
   FM_FAKE_RUN_ID=01M0G0GT180000000000000000
   FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-olderworkingfailed "$local_head" "$pipeline_head" failed)"
   local out; out=$(run_crew_state "$d" olderworkingfailed)
-  assert_contains "$out" "state: failed" "the newer terminal record wins"
-  assert_contains "$out" "source: run-step" "the newer failure remains run-step sourced"
-  assert_not_contains "$out" "state: working" "an older working event cannot overrule the failure"
-  pass "older working status does not beat a newer failure"
+  assert_contains "$out" "state: undetermined" "timestamps cannot order working against failure"
+  assert_contains "$out" "conflicting direct evidence" "the unordered conflict is loud"
+  assert_not_contains "$out" "state: working" "working cannot silently win"
+  assert_not_contains "$out" "state: failed" "failure cannot silently win"
+  pass "working status and failure remain undetermined without ordering"
 }
 
-test_later_parked_and_blocked_declarations_beat_terminal_run() {
+test_parked_and_blocked_conflicts_with_terminal_run_are_undetermined() {
   local name line want d local_head pipeline_head out
   while IFS='|' read -r name line want; do
     reset_fakes
@@ -962,16 +981,18 @@ test_later_parked_and_blocked_declarations_beat_terminal_run() {
     FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync "fm/feat-later-$name" "$local_head" "$pipeline_head" failed)"
     arm_idle_record "$d/state" "later-$name"
     out=$(run_crew_state "$d" "later-$name")
-    assert_contains "$out" "state: $want" "later $name declaration wins"
-    assert_not_contains "$out" "state: failed" "older failure cannot overrule later $name"
+    assert_contains "$out" "state: undetermined" "$name and failure cannot be ordered"
+    assert_contains "$out" "conflicting direct evidence" "$name conflict is loud"
+    assert_not_contains "$out" "state: $want" "$name cannot silently win"
+    assert_not_contains "$out" "state: failed" "failure cannot silently win over $name"
   done <<'EOF'
 parked|needs-decision [at=20260820T163820Z]: review choice remains open|parked
 blocked|blocked [at=20260820T163820Z]: external dependency remains unresolved|blocked
 EOF
-  pass "later parked and blocked declarations beat terminal runs"
+  pass "parked and blocked terminal conflicts are undetermined"
 }
 
-test_active_ci_supersedes_unresolved_worker_events_after_green() {
+test_green_ci_conflicting_with_worker_events_is_undetermined() {
   local name line d out
   while IFS='|' read -r name line; do
     reset_fakes
@@ -984,16 +1005,17 @@ test_active_ci_supersedes_unresolved_worker_events_after_green() {
     FM_FAKE_AXI_STATUS="$(run_ci_monitoring "fm/feat-active-green-$name")"
     FM_FAKE_CI_LOGS='all CI checks passed - still monitoring until merged or closed'
     out=$(run_crew_state "$d" "active-green-$name")
-    assert_contains "$out" "state: done" "active CI supersedes the unresolved $name event"
-    assert_contains "$out" "source: run-step" "active CI provenance remains authoritative"
-    assert_contains "$out" "superseded" "the stale $name event is identified"
+    assert_contains "$out" "state: undetermined" "green CI and unresolved $name cannot be ordered"
+    assert_contains "$out" "source: run-step" "the green CI evidence remains identified"
+    assert_contains "$out" "conflicting direct evidence" "the unresolved $name conflict is loud"
+    assert_not_contains "$out" "state: done" "green CI cannot silently win the conflict"
     assert_not_contains "$out" "state: blocked" "active CI cannot report stale blocked state"
     assert_not_contains "$out" "state: parked" "active CI cannot report stale parked state"
   done <<'EOF'
 decision|needs-decision [at=20260820T163820Z]: earlier review choice
 blocked|blocked [at=20260820T163820Z]: earlier dependency wait
 EOF
-  pass "active CI provenance supersedes unresolved worker events"
+  pass "green CI and unresolved worker events are undetermined"
 }
 
 test_checks_passed_outcome_requires_complete_green_marker() {
@@ -1005,10 +1027,12 @@ test_checks_passed_outcome_requires_complete_green_marker() {
   FM_FAKE_AXI_STATUS="$(run_checks_passed fm/feat-checks-passed-no-green)"
   FM_FAKE_CI_LOGS='no CI checks reported - still monitoring until merged or closed'
   local out; out=$(run_crew_state "$d" checks-passed-no-green)
-  assert_contains "$out" "state: done" "the terminal run outcome remains complete"
-  assert_contains "$out" "source: run-step" "the terminal outcome remains directly sourced"
+  assert_contains "$out" "state: undetermined" "unverified checks-passed cannot be terminal"
+  assert_contains "$out" "source: run-step" "the unverified outcome remains identified"
+  assert_contains "$out" "lacks the complete all-checks-passed marker" "the missing evidence is loud"
+  assert_not_contains "$out" "state: done" "an unverified pass cannot report done"
   assert_not_contains "$out" "checks green" "zero checks cannot produce a checks-green label"
-  pass "checks-passed outcome does not bypass the green marker"
+  pass "checks-passed outcome without complete marker is undetermined"
 }
 
 test_checks_passed_outcome_keeps_true_green() {
@@ -1033,10 +1057,13 @@ test_passed_run_with_skipped_publish_claims_no_pr() {
   fm_write_meta "$d/state/publish-skipped.meta" "window=fm:fm-publish-skipped" "worktree=$d/wt" "kind=ship"
   FM_FAKE_AXI_STATUS="$(run_passed_publish_skipped fm/feat-publish-skipped)"
   local out; out=$(run_crew_state "$d" publish-skipped)
+  assert_contains "$out" "state: undetermined" "skipped delivery cannot substantiate done"
   assert_contains "$out" "nothing published" "skipped publishing is reported directly"
+  assert_not_contains "$out" "state: done" "skipped delivery cannot report done"
+  assert_not_contains "$out" "state: failed" "skipped delivery cannot report failed"
   assert_not_contains "$out" "merged" "a skipped PR step cannot claim a merge"
   assert_not_contains "$out" "closed" "a skipped PR step cannot claim a closed PR"
-  pass "passed run with skipped publishing does not invent a PR"
+  pass "passed run with skipped publishing is undetermined"
 }
 
 test_passed_run_with_branch_push_and_skipped_pr_names_both() {
@@ -1047,8 +1074,10 @@ test_passed_run_with_branch_push_and_skipped_pr_names_both() {
   fm_write_meta "$d/state/branch-only.meta" "window=fm:fm-branch-only" "worktree=$d/wt" "kind=ship"
   FM_FAKE_AXI_STATUS="$(run_passed_branch_pushed_pr_skipped fm/feat-branch-only)"
   local out; out=$(run_crew_state "$d" branch-only)
+  assert_contains "$out" "state: done" "a completed branch publication substantiates done"
   assert_contains "$out" "branch published" "a completed push is reported"
   assert_contains "$out" "PR creation skipped" "a skipped PR step is reported separately"
+  assert_not_contains "$out" "state: undetermined" "branch-only publication remains a substantiated disposition"
   assert_not_contains "$out" "merged" "no PR means no merge claim"
   pass "passed run distinguishes a branch push from skipped PR creation"
 }
@@ -1147,61 +1176,6 @@ EOF
   pass "cross-branch attribution picks the branch's most recent row"
 }
 
-test_live_v157_stale_v1_failure_falls_back_to_live_v2_worker() {
-  reset_fakes
-  local d local_head active_head stale_head out
-  d=$(new_case branch-sync-active-head)
-  make_repo_on_branch "$d/wt" fm/firstmate-crew-state-false-green-v2
-  local_head=$(git -C "$d/wt" rev-parse HEAD)
-  active_head=1111111111111111111111111111111111111111
-  stale_head=2222222222222222222222222222222222222222
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/crew-state.meta" "window=fm:fm-crew-state" "worktree=$d/wt" "kind=ship" "harness=claude"
-  printf 'working [at=20260831T120000Z]: validating the replacement branch at its active pipeline head\n' > "$d/state/crew-state.status"
-  arm_idle_record "$d/state" crew-state
-  FM_FAKE_AXI_STATUS=$(cat <<EOF
-run:
-  id: "01M19Q0G000000000000000000"
-  branch: fm/firstmate-crew-state-false-green
-  status: completed
-  head: "${stale_head:0:8}"
-  pr: ""
-  findings: none
-outcome: failed
-branch_sync:
-  state: pipeline_owned
-  changed: false
-  local:
-    branch: fm/firstmate-crew-state-false-green-v2
-    head: "$local_head"
-    clean: true
-  pipeline:
-    run: "01M1AVKJC8MW6KD48XJVHC9ZPA"
-    status: running
-    phase: pre_push
-    submitted_head: "$local_head"
-    current_head: "$active_head"
-    pushed_head: ""
-    pushed_at: 0
-    push_generation: 0
-  relation: unknown
-  safety: blocked_pipeline_owned
-  pr_state: ""
-EOF
-)
-  FM_FAKE_RUNS_LIST=$(cat <<EOF
-  running  fm/firstmate-crew-state-false-green-v2 ${active_head:0:8}  2026-08-31 12:00
-  failed   fm/firstmate-crew-state-false-green ${stale_head:0:8}  2026-08-30 18:00
-EOF
-)
-  out=$(run_crew_state "$d" crew-state)
-  assert_contains "$out" "state: working" "the live v2 worker record defeats the selected stale v1 failure"
-  assert_contains "$out" "source: status-log" "the different-head v2 run leaves the live worker record authoritative"
-  assert_contains "$out" "validating the replacement branch" "the live worker detail is preserved"
-  assert_not_contains "$out" "state: failed" "the selected stale v1 failure cannot replace live v2 work"
-  pass "live v1.57 stale v1 failure yields to the v2 worker"
-}
-
 test_unmatched_run_downgrades_stale_checks_green_status() {
   reset_fakes
   local d; d=$(new_case unmatched-green-status)
@@ -1237,10 +1211,29 @@ EOF
 )"
   FM_FAKE_CI_LOGS="CI checks running, waiting for results..."
   local out; out=$(run_crew_state "$d" feat-coarseready)
-  assert_contains "$out" "state: working" "coarse status cannot prove checks green"
-  assert_contains "$out" "source: run-step" "the attributed coarse run remains authoritative"
+  assert_contains "$out" "state: undetermined" "coarse working and done records cannot be ranked"
+  assert_contains "$out" "source: run-step" "the conflicting coarse run remains identified"
+  assert_contains "$out" "conflicting direct evidence" "the coarse conflict is loud"
+  assert_not_contains "$out" "state: working" "conflicting evidence cannot report working"
   assert_not_contains "$out" "checks green" "another branch's log cannot verify the ready status"
   pass "coarse run does not promote an unverified ready status"
+}
+
+test_coarse_completion_without_delivery_is_undetermined() {
+  reset_fakes
+  local d short out; d=$(new_case coarse-completed)
+  make_repo_on_branch "$d/wt" fm/feat-coarse-completed
+  short=$(git -C "$d/wt" rev-parse --short=7 HEAD)
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/coarse-completed.meta" "window=fm:fm-coarse-completed" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_running fm/other-crew)"
+  FM_FAKE_RUNS_LIST="completed  fm/feat-coarse-completed $short  2026-08-31 12:00"
+  out=$(run_crew_state "$d" coarse-completed)
+  assert_contains "$out" "state: undetermined" "coarse completion lacks delivery evidence"
+  assert_contains "$out" "run completion lacks delivery evidence" "the missing evidence is loud"
+  assert_not_contains "$out" "state: done" "coarse completion cannot report done"
+  assert_not_contains "$out" "state: failed" "coarse completion cannot report failed"
+  pass "coarse completion without delivery is undetermined"
 }
 
 # A different-branch run with NO matching runs-list row must NOT be
@@ -1892,14 +1885,14 @@ test_missing_run_head_falls_back_to_current_state() {
 }
 
 test_active_run_is_authoritative
-test_active_run_beats_later_worker_declaration
-test_stale_needs_decision_superseded
-test_stale_blocked_superseded
+test_active_run_conflicting_worker_is_undetermined
+test_active_run_conflicting_decision_is_undetermined
+test_active_run_conflicting_blocker_is_undetermined
 test_genuine_parked_not_superseded
 test_scalar_gate_parked_not_superseded
 test_gate_block_parked_not_superseded
 test_ci_ready_done_log_beats_monitoring_run
-test_ci_ready_done_log_without_marker_stays_working
+test_ci_ready_done_log_without_marker_is_undetermined
 test_ci_monitoring_checks_green_surfaces_done
 test_top_level_ci_checks_green_surfaces_done
 test_ci_monitoring_no_checks_stays_working
@@ -1909,20 +1902,20 @@ test_ci_monitoring_no_checks_yet_stays_working
 test_ci_monitoring_still_waiting_stays_working
 test_ci_monitoring_green_then_new_issue_stays_working
 test_ci_monitoring_green_then_pending_issue_stays_working
-test_ci_ready_done_log_relapse_stays_working
-test_ci_fixing_after_green_stays_working
+test_ci_ready_done_log_relapse_is_undetermined
+test_ci_fixing_after_green_status_is_undetermined
 test_top_level_fixing_ci_running_after_green_stays_working
-test_top_level_fixing_done_log_stays_working
+test_top_level_fixing_done_log_is_undetermined
 test_unmatched_run_downgrades_stale_checks_green_status
 test_terminal_passed
 test_terminal_failed
-test_declared_pause_beats_recorded_outcome
-test_declared_pause_beats_recorded_cancelled_outcome
+test_declared_pause_conflicting_with_outcome_is_undetermined
+test_declared_pause_conflicting_with_cancelled_is_undetermined
 test_declared_pause_distinguishes_no_ci_from_approval_wait
-test_working_status_beats_older_failed_outcome
-test_older_working_status_does_not_beat_newer_failure
-test_later_parked_and_blocked_declarations_beat_terminal_run
-test_active_ci_supersedes_unresolved_worker_events_after_green
+test_working_status_conflicting_with_failure_is_undetermined
+test_unordered_working_status_and_failure_is_undetermined
+test_parked_and_blocked_conflicts_with_terminal_run_are_undetermined
+test_green_ci_conflicting_with_worker_events_is_undetermined
 test_checks_passed_outcome_requires_complete_green_marker
 test_checks_passed_outcome_keeps_true_green
 test_passed_run_with_skipped_publish_claims_no_pr
@@ -1931,8 +1924,8 @@ test_passed_run_names_a_merge_when_the_log_records_one
 test_passed_run_names_a_close_when_the_log_records_one
 test_cross_branch_attribution_via_runs_list
 test_cross_branch_attribution_picks_most_recent_row
-test_live_v157_stale_v1_failure_falls_back_to_live_v2_worker
 test_coarse_run_does_not_promote_unverified_ready_status
+test_coarse_completion_without_delivery_is_undetermined
 test_other_branch_run_ignored
 test_no_run_busy_pane
 test_no_run_footer_text_alone_is_not_working

@@ -17,6 +17,9 @@ make_fakebin() {  # <dir>
   fb=$(fm_fakebin "$1")
   cat > "$fb/no-mistakes" <<'SH'
 #!/usr/bin/env bash
+if [ "${1:-}" = axi ] && [ "${2:-}" = status ]; then
+  printf '%s\n' "${FM_FAKE_AXI_STATUS:-}"
+fi
 exit 0
 SH
   cat > "$fb/tmux" <<'SH'
@@ -417,6 +420,60 @@ test_event_hints_follow_reconciled_current_state() {
       and task("stale-blocked").hints.blocked_event == false
   ' >/dev/null || fail "event hints must follow reconciled current state"
   pass "snapshot event hints follow reconciled current state"
+}
+
+test_undetermined_state_stays_nonterminal_and_keeps_decision() {
+  local home wt head fakebin run_status out summary view
+  home=$(make_home undetermined-state)
+  wt="$home/projects/undetermined-task"
+  fm_git_init_commit "$wt"
+  git -C "$wt" checkout -q -b fm/undetermined-task
+  head=$(git -C "$wt" rev-parse HEAD)
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+- [ ] undetermined-task - Undetermined Task (repo: alpha) (kind: ship) (since 2026-08-31)
+EOF
+  fm_write_meta "$home/state/undetermined-task.meta" \
+    "window=firstmate:fm-undetermined-task" \
+    "worktree=$wt" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=ship"
+  printf 'needs-decision [key=route]: choose the delivery route\n' > "$home/state/undetermined-task.status"
+  run_status=$(cat <<EOF
+run:
+  id: "01M1B000000000000000000000"
+  branch: fm/undetermined-task
+  status: completed
+  head: "$head"
+  pr: ""
+  findings: none
+  steps[2]{step,status,findings,duration_ms}:
+    push,completed,0,0
+    pr,skipped,0,0
+outcome: passed
+EOF
+)
+  fakebin=$(make_fakebin "$home")
+  out=$(PATH="$fakebin:$PATH" FM_FAKE_AXI_STATUS="$run_status" FM_HOME="$home" "$SNAPSHOT" --json)
+  printf '%s' "$out" | jq -e '
+    .tasks[] | select(.id == "undetermined-task")
+    | .current_state.state == "undetermined"
+      and .current_state.source == "run-step"
+      and .hints.pending_decision == true
+      and (.hints.open_decisions | length) == 1
+  ' >/dev/null || fail "undetermined state must retain its open decision: $out"
+  summary=$(PATH="$fakebin:$PATH" FM_FAKE_AXI_STATUS="$run_status" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$summary" | jq -e '
+    .valid == false
+      and .state == "unknown"
+      and .reason == "child current state unavailable or undetermined: undetermined-task"
+      and .invalidity == {kind:"child_current_unavailable",ids:["undetermined-task"]}
+  ' >/dev/null || fail "secondmate summary treated undetermined child as settled: $summary"
+  view=$(PATH="$fakebin:$PATH" FM_FAKE_AXI_STATUS="$run_status" FM_HOME="$home" "$VIEW")
+  assert_contains "$view" "undetermined / run-step" "fleet view must render undetermined loudly"
+  pass "snapshot preserves undetermined as unresolved and nonterminal"
 }
 
 test_scout_reports_include_teardown_reports() {
@@ -831,6 +888,7 @@ test_fixture_snapshot_json
 test_main_inventory_orphan_and_unstructured_disclosure
 test_normalized_roles_and_plural_blocker_readiness
 test_event_hints_follow_reconciled_current_state
+test_undetermined_state_stays_nonterminal_and_keeps_decision
 test_open_decision_survives_later_unrelated_event
 test_secondmate_open_decision_survives_live_endpoint
 test_open_decision_transfers_to_captain_hold
