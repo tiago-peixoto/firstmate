@@ -497,7 +497,8 @@ task_json_lines() {
     open_decisions_tsv=$(status_open_decisions "$status_log")
     if [ "$kind" != secondmate ] && \
        { { { [ "$current_source" = run-step ] || [ "$current_source" = pane ]; } \
-           && [ "$current_state" = working ]; } \
+           && [ "$current_state" != parked ] && [ "$current_state" != blocked ] \
+           && [ "$current_state" != undetermined ]; } \
          || { [ "$current_state" = "done" ] || [ "$current_state" = "failed" ]; }; }; then
       open_decisions_tsv=""
     fi
@@ -697,8 +698,8 @@ secondmate_home_summary_json() {  # <backlog-json> <tasks-json>
             report_path:((.report_path // null) | if . == null then null else trunc(500) end),
             local_note:((.local_note // null) | if . == null then null else trunc(120) end),completion} ]
        | sort_by([(.completion.date // ""), .id]) | reverse) as $landed_all
-    | ([ $tasks[]
-         | select(.current_state.state == "unknown" or .current_state.state == "undetermined") ]) as $unknown_children
+    | ([ $tasks[] | select(.current_state.state == "unknown") ]) as $unknown_children
+    | ([ $tasks[] | select(.current_state.state == "undetermined") ]) as $undetermined_children
     | ([ $owned_in_flight[]
          | select(.requires_child_metadata)
          | select(.id as $id | [$tasks[].id] | index($id) | not) ]) as $orphan_in_flight
@@ -755,15 +756,24 @@ secondmate_home_summary_json() {  # <backlog-json> <tasks-json>
     | ($backlog.present == true
        and ($unstructured_current | length) == 0
        and ($unknown_children | length) == 0
+       and ($undetermined_children | length) == 0
        and ($orphan_in_flight | length) == 0
        and ($unowned_children | length) == 0
        and ($terminal_in_flight | length) == 0) as $valid
     | (if ($strict_invalidities | length) > 0 then $strict_invalidities[0].reason
+       elif ($unknown_children | length) > 0 and ($undetermined_children | length) > 0 then
+         "child current state unavailable or undetermined: " +
+         (($unknown_children + $undetermined_children) | map(.id) | join(", "))
        elif ($unknown_children | length) > 0 then
-         "child current state unavailable or undetermined: " + ($unknown_children | map(.id) | join(", "))
+         "child current state unavailable: " + ($unknown_children | map(.id) | join(", "))
+       elif ($undetermined_children | length) > 0 then
+         "child current state unavailable or undetermined: " + ($undetermined_children | map(.id) | join(", "))
        else null end) as $reason
     | (if ($strict_invalidities | length) > 0 then $strict_invalidities[0] | del(.reason)
+       elif ($unknown_children | length) > 0 and ($undetermined_children | length) > 0 then
+         {kind:"child_current_unavailable",ids:(($unknown_children + $undetermined_children) | map(.id))}
        elif ($unknown_children | length) > 0 then {kind:"child_current_unavailable",ids:($unknown_children | map(.id))}
+       elif ($undetermined_children | length) > 0 then {kind:"child_current_unavailable",ids:($undetermined_children | map(.id))}
        else {kind:null,ids:[]} end) as $invalidity
     | (if $valid | not then "unknown"
        elif any($decisions_all[]; .verb == "needs-decision" or .verb == "captain-hold") then "captain_decision"

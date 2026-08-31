@@ -464,6 +464,46 @@ SH
   pass "snapshot preserves undetermined as unresolved and nonterminal"
 }
 
+test_unknown_pane_state_preserves_existing_clearing() {
+  local home fakebin crew_state out summary
+  home=$(make_home unknown-pane-state)
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+- [ ] unknown-task - Unknown Task (repo: alpha) (kind: ship) (since 2026-08-31)
+EOF
+  fm_write_meta "$home/state/unknown-task.meta" \
+    "window=firstmate:fm-unknown-task" \
+    "worktree=$home/projects/unknown-task" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=ship"
+  printf 'needs-decision [key=route]: choose the delivery route\n' > "$home/state/unknown-task.status"
+  fakebin=$(make_fakebin "$home")
+  crew_state="$fakebin/fm-crew-state.sh"
+  cat > "$crew_state" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' 'state: unknown · source: pane · busy evidence unavailable'
+SH
+  chmod +x "$crew_state"
+  out=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --json)
+  printf '%s' "$out" | jq -e '
+    .tasks[] | select(.id == "unknown-task")
+    | .current_state.state == "unknown"
+      and .current_state.source == "pane"
+      and .hints.pending_decision == false
+      and (.hints.open_decisions | length) == 0
+  ' >/dev/null || fail "unknown pane state changed existing decision clearing: $out"
+  summary=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$summary" | jq -e '
+    .valid == false
+      and .state == "unknown"
+      and .reason == "child current state unavailable: unknown-task"
+      and .invalidity == {kind:"child_current_unavailable",ids:["unknown-task"]}
+  ' >/dev/null || fail "unknown child summary changed existing reason text: $summary"
+  pass "unknown pane state preserves existing decision and summary behavior"
+}
+
 test_scout_reports_include_teardown_reports() {
   local home out
   home=$(make_home teardown-reports)
@@ -877,6 +917,7 @@ test_main_inventory_orphan_and_unstructured_disclosure
 test_normalized_roles_and_plural_blocker_readiness
 test_event_hints_follow_reconciled_current_state
 test_undetermined_state_stays_nonterminal_and_keeps_decision
+test_unknown_pane_state_preserves_existing_clearing
 test_open_decision_survives_later_unrelated_event
 test_secondmate_open_decision_survives_live_endpoint
 test_open_decision_transfers_to_captain_hold
