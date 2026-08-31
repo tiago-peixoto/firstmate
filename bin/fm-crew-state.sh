@@ -35,13 +35,15 @@
 #      is an ancestor of the run head (pipeline fix commits advanced the run on
 #      the same line of history). Local work that advanced past the run head, or
 #      diverged from it, invalidates attribution.
-#      The run-step is AUTHORITATIVE: running/fixing -> working, ci -> working,
+#      The run-step normally answers: running/fixing -> working, ci -> working,
 #      awaiting_approval/fix_review -> parked (with gate findings), terminal
-#      passed/checks-passed -> done, failed/cancelled -> failed. EXCEPT: while
-#      the active step is ci, `axi status` alone cannot tell "still waiting on
-#      checks" from "checks green, waiting on merge" (see nm_ci_checks_state) -
-#      a ci-step log-tail check overrides working -> done once checks read
-#      green, so a green PR is never silently read as still-validating.
+#      passed/checks-passed -> done, failed/cancelled -> failed. Two more
+#      specific records can replace that coarse answer: the latest recognized
+#      CI marker while the ci step runs, and a worker's explicit declared pause.
+#      The latter says what happened to the WORK after the run state was
+#      recorded, so it wins even when validation passed or was cancelled.
+#      A finished run's publication detail likewise comes from its push and PR
+#      step rows, never from the run outcome alone.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
 #      the run-step shows the run moved on, the log is deterministically stale and
 #      is flagged superseded. A genuinely parked run plus a needs-decision log
@@ -298,13 +300,62 @@ log_reports_ci_ready() {
   esac
 }
 
-nm_ci_step_status() {
+# Status word of one row in the run's steps[] table. A finished run's outcome
+# says whether the pipeline ended, not which publishing steps actually ran.
+nm_step_status() {  # <step-name>
   local row rest
-  row=$(printf '%s\n' "$RUN_OUT" | grep -E '^[[:space:]]*ci,[[:space:]]*"?(running|fixing)"?[[:space:]]*,' | head -1)
+  row=$(printf '%s\n' "$RUN_OUT" | grep -E "^[[:space:]]*$1,[[:space:]]*\"?[a-z_]+\"?[[:space:]]*," | head -1)
   [ -n "$row" ] || return 0
   row=$(trim "$row")
   rest=${row#*,}
   strip_quotes "$(trim "${rest%%,*}")"
+}
+
+nm_ci_step_status() {
+  local step_status
+  step_status=$(nm_step_status ci)
+  case "$step_status" in running|fixing) printf '%s' "$step_status" ;; esac
+}
+
+nm_ci_pr_disposition() {
+  local run_id log_tail marker
+  run_id=$(strip_quotes "$(nm_field id)")
+  [ -n "$run_id" ] || return 0
+  log_tail=$(nm_run axi logs --step ci --run "$run_id") || true
+  marker=$(printf '%s\n' "$log_tail" \
+    | grep -E '^[[:space:]]*"?PR has been (merged!|closed)"?[[:space:]]*$' \
+    | tail -1)
+  case "$marker" in
+    *"has been merged"*) printf 'merged' ;;
+    *"has been closed"*) printf 'closed unmerged' ;;
+  esac
+}
+
+nm_publication_detail() {
+  local push_step pr_step pr_url disposition
+  push_step=$(nm_step_status push)
+  pr_step=$(nm_step_status pr)
+  pr_url=$(strip_quotes "$(nm_field pr)")
+  if [ "$pr_step" = skipped ]; then
+    if [ "$push_step" = completed ]; then
+      printf 'branch published; PR creation skipped'
+    elif [ "$push_step" = skipped ]; then
+      printf 'nothing published (publishing steps skipped)'
+    else
+      printf 'PR creation skipped; branch publication unknown'
+    fi
+  elif [ -n "$pr_url" ]; then
+    disposition=$(nm_ci_pr_disposition)
+    if [ -n "$disposition" ]; then
+      printf 'PR %s - %s' "$disposition" "$pr_url"
+    else
+      printf 'PR published - %s' "$pr_url"
+    fi
+  elif [ "$pr_step" = completed ]; then
+    printf 'PR published; URL unavailable'
+  else
+    printf 'publishing status unavailable'
+  fi
 }
 
 nm_effective_ci_step_status() {
@@ -334,10 +385,11 @@ nm_effective_ci_step_status() {
 # monitoring until merged or closed" or "no CI checks reported - still
 # monitoring until merged or closed" (verified against 360+ real run logs under
 # ~/.no-mistakes/logs/*/ci.log on the installed v1.32.2 binary, including the
-# actual PR #252 run). Reads the ci step's log tail via `axi logs` and scans it
-# for the MOST RECENT recognized marker (the log is append-only/chronological,
-# so the last match is current): green with nothing red after it means CI is
-# green right now, still only waiting on merge/close.
+# actual PR #252 run). The log is append-only, so the newest complete marker is
+# the current record. Only the marker that explicitly says every check passed
+# is green. Both "no checks reported" spellings say the same thing - zero
+# checks ran - and remain not-ready, as do every running, failing, fixing,
+# re-armed, or skipped marker.
 nm_ci_checks_state() {
   local run_id log_tail marker
   run_id=$(strip_quotes "$(nm_field id)")
@@ -345,11 +397,11 @@ nm_ci_checks_state() {
   log_tail=$(nm_run axi logs --step ci --run "$run_id") || true
   [ -n "$log_tail" ] || { printf 'unknown'; return; }
   marker=$(printf '%s\n' "$log_tail" \
-    | grep -E 'CI checks passed|no CI checks reported - still monitoring|no CI checks reported yet|checks failed|issues detected|CI checks running|base branch advanced.*re-arming CI monitor timeout' \
+    | grep -E '^[[:space:]]*"?(all CI checks passed - still monitoring until merged or closed|no CI checks reported - still monitoring until merged or closed|no CI checks reported yet, waiting for checks to register\.\.\.|skipping CI(: [^"]*)?|CI checks running, waiting for results\.\.\.|checks failed[^"]*|issues detected:[^"]*|base branch advanced \([^"]*\), re-arming CI monitor timeout)"?[[:space:]]*$' \
     | tail -1)
   case "$marker" in
-    *"checks passed"*|*"no CI checks reported - still monitoring"*) printf 'green' ;;
-    *"no CI checks reported yet"*|*"checks failed"*|*"issues detected"*|*"CI checks running"*|*"base branch advanced"*"re-arming CI monitor timeout"*) printf 'not-ready' ;;
+    *"all CI checks passed - still monitoring until merged or closed"*) printf 'green' ;;
+    *"no CI checks reported"*|*"skipping CI"*|*"CI checks running"*|*"checks failed"*|*"issues detected"*|*"base branch advanced"*"re-arming CI monitor timeout"*) printf 'not-ready' ;;
     *) printf 'unknown' ;;
   esac
 }
@@ -496,7 +548,7 @@ if [ "$HAVE_RUN" = 1 ]; then
 
     if [ -n "$outcome" ]; then
       case "$outcome" in
-        passed)        RUN_STATE="done"; RUN_DETAIL="run passed: PR merged/closed" ;;
+        passed)        RUN_STATE="done"; RUN_DETAIL="run passed: $(nm_publication_detail)" ;;
         checks-passed) RUN_STATE="done"; RUN_DETAIL="checks green: PR ready for review" ;;
         failed)        RUN_STATE=failed; RUN_DETAIL="run failed" ;;
         cancelled)     RUN_STATE=failed; RUN_DETAIL="run cancelled" ;;
@@ -543,6 +595,16 @@ if [ "$HAVE_RUN" = 1 ]; then
         esac
       fi
     fi
+  fi
+
+  # A declared pause is the worker's explicit CURRENT state. The pipeline may
+  # still have a historical terminal outcome or an intentionally long-running
+  # monitor, but neither says whether the work was preserved and parked after
+  # that point. The newest status-log line is therefore the more specific
+  # record whenever it declares a pause.
+  if status_is_paused "$LOG_LINE"; then
+    emit paused status-log \
+      "$(status_line_note "$LOG_LINE")${SEP}run reads $RUN_STATE - $RUN_DETAIL"
   fi
 
   if [ "$RUN_STATE" = working ] && log_reports_ci_ready; then
