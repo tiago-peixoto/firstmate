@@ -16,23 +16,62 @@ make_case() {
   cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "${FM_TEST_GH_LOG:?}"
+api_host=${GH_HOST:-github.com}
+expect_hostname=0
+include=0
+for arg in "$@"; do
+  if [ "$expect_hostname" -eq 1 ]; then
+    api_host=$arg
+    expect_hostname=0
+    continue
+  fi
+  case "$arg" in
+    --hostname) expect_hostname=1 ;;
+    --hostname=*) api_host=${arg#--hostname=} ;;
+    --include) include=1 ;;
+  esac
+done
+foreign=0
+if [ "$api_host" != github.com ]; then
+  foreign=1
+fi
 case " $* " in
   *" /repos/o/r/pulls/7/reviews?per_page=100 "*)
     [ "${FM_TEST_DETAIL_FAIL:-0}" = 0 ] || exit 1
-    printf '%b' "${FM_TEST_REVIEW_IDS:-10\\n}"
+    if [ "$foreign" -eq 1 ]; then
+      printf '901\n'
+    else
+      printf '%b' "${FM_TEST_REVIEW_IDS:-10\\n}"
+    fi
     ;;
   *" /repos/o/r/issues/7/comments?per_page=100 "*)
     [ "${FM_TEST_DETAIL_FAIL:-0}" = 0 ] || exit 1
-    printf '%b' "${FM_TEST_ISSUE_COMMENT_IDS:-20\\n}"
+    if [ "$foreign" -eq 1 ]; then
+      printf '902\n'
+    else
+      printf '%b' "${FM_TEST_ISSUE_COMMENT_IDS:-20\\n}"
+    fi
     ;;
   *" /repos/o/r/pulls/7/comments?per_page=100 "*)
     [ "${FM_TEST_DETAIL_FAIL:-0}" = 0 ] || exit 1
-    printf '%b' "${FM_TEST_REVIEW_COMMENT_IDS:-30\\n}"
+    if [ "$foreign" -eq 1 ]; then
+      printf '903\n'
+    else
+      printf '%b' "${FM_TEST_REVIEW_COMMENT_IDS:-30\\n}"
+    fi
     ;;
   *" /repos/o/r/pulls/7 "*)
     [ "${FM_TEST_SUMMARY_FAIL:-0}" = 0 ] || exit 1
-    printf '%s\t%s\t%s\n' "${FM_TEST_STATE:-open}" \
-      "${FM_TEST_REQUESTED:-1}" "${FM_TEST_UPDATED:-2026-08-31T03:00:00Z}"
+    if [ "$include" -eq 1 ]; then
+      printf 'HTTP/2.0 200 OK\nDate: %s\r\n\r\n' \
+        "${FM_TEST_READ_AT_RFC1123:-Mon, 31 Aug 2026 03:00:01 GMT}"
+    fi
+    if [ "$foreign" -eq 1 ]; then
+      printf 'open\t9\t2026-08-31T03:00:00Z\n'
+    else
+      printf '%s\t%s\t%s\n' "${FM_TEST_STATE:-open}" \
+        "${FM_TEST_REQUESTED:-1}" "${FM_TEST_UPDATED:-2026-08-31T03:00:00Z}"
+    fi
     ;;
   *)
     exit 2
@@ -68,7 +107,7 @@ test_snapshot_reports_maximum_activity_ids() {
     FM_TEST_REQUESTED=2 run_reader "$dir" --snapshot github \
       https://github.com/o/r/pull/7 github.com o/r 7) \
     || fail "snapshot reader failed"
-  [ "$out" = 'observed 2026-08-31T03:00:00Z 12 3 44 2' ] \
+  [ "$out" = 'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 12 3 44 2' ] \
     || fail "snapshot observation lost activity maxima: $out"
 }
 
@@ -86,7 +125,7 @@ SH
     run_reader "$dir" --snapshot github \
       https://github.com/o/r/pull/7 github.com o/r 7) \
     || fail "huge-ID snapshot failed without sort"
-  [ "$out" = 'observed 2026-08-31T03:00:00Z 1000000000000000000000000000000000000 184467440737095516160 43 1' ] \
+  [ "$out" = 'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 1000000000000000000000000000000000000 184467440737095516160 43 1' ] \
     || fail "huge-ID snapshot lost exact maxima without sort: $out"
 }
 
@@ -94,9 +133,10 @@ test_unchanged_summary_skips_detail_requests() {
   local dir out
   dir=$(make_case unchanged)
   out=$(FM_TEST_REQUESTED=0 run_reader "$dir" --validated github \
-    https://github.com/o/r/pull/7 github.com o/r 7 2026-08-31T03:00:00Z) \
+    https://github.com/o/r/pull/7 github.com o/r 7 \
+      2026-08-31T03:00:00Z 2026-08-31T03:00:01Z) \
     || fail "unchanged reader failed"
-  [ "$out" = 'unchanged 2026-08-31T03:00:00Z 0' ] \
+  [ "$out" = 'unchanged 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 0' ] \
     || fail "unchanged observation was not stable: $out"
   assert_summary_only "$dir/gh.log"
 }
@@ -161,21 +201,60 @@ test_invalid_identity_is_silent_without_github_access() {
   [ ! -s "$dir/gh.log" ] || fail "invalid identity reached GitHub"
 }
 
+test_reader_pins_every_request_to_validated_host() {
+  local dir out
+  dir=$(make_case pinned-host)
+  out=$(GH_HOST=ghe.example run_reader "$dir" --snapshot github \
+    https://github.com/o/r/pull/7 github.com o/r 7) \
+    || fail "host-pinned reader failed"
+  [ "$out" = 'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 10 20 30 1' ] \
+    || fail "reader observed the ambient GitHub host: $out"
+}
+
+test_same_second_review_forces_one_detail_refresh() {
+  local dir out
+  dir=$(make_case same-second-review)
+  cat > "$dir/fakebin/date" <<'SH'
+#!/usr/bin/env bash
+printf '2026-08-31T03:00:02Z\n'
+SH
+  chmod 0700 "$dir/fakebin/date"
+
+  out=$(FM_TEST_READ_AT_RFC1123='Mon, 31 Aug 2026 03:00:01 GMT' \
+    FM_TEST_REVIEW_IDS='11\n' run_reader "$dir" --validated github \
+      https://github.com/o/r/pull/7 github.com o/r 7 2026-08-31T03:00:00Z) \
+    || fail "legacy same-second baseline changed the reader exit contract"
+  [ "$out" = 'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 11 20 30 1' ] \
+    || fail "same-second review was permanently suppressed as unchanged: $out"
+
+  : > "$dir/gh.log"
+  out=$(FM_TEST_READ_AT_RFC1123='Mon, 31 Aug 2026 03:00:01 GMT' \
+    FM_TEST_REVIEW_IDS='11\n' run_reader "$dir" --validated github \
+      https://github.com/o/r/pull/7 github.com o/r 7 \
+      2026-08-31T03:00:00Z 2026-08-31T03:00:00Z) \
+    || fail "same-second snapshot baseline changed the reader exit contract"
+  [ "$out" = 'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 11 20 30 1' ] \
+    || fail "same-second snapshot missed the later review: $out"
+  [ "$(wc -l < "$dir/gh.log" | tr -d ' ')" = 4 ] \
+    || fail "same-second snapshot did not refresh all detail collections"
+}
+
 test_protocol_parser_accepts_only_typed_observations() {
   local parsed
   parsed=$(bash -c '
     . "$1"
     fm_pr_poll_observation_parse "$2" || exit 1
-    printf "%s|%s|%s|%s|%s|%s|%s\n" \
+    printf "%s|%s|%s|%s|%s|%s|%s|%s\n" \
       "$FM_PR_OBSERVATION_KIND" "$FM_PR_OBSERVATION_PROVIDER" \
-      "$FM_PR_OBSERVATION_UPDATED" "$FM_PR_OBSERVATION_REVIEWS" \
+      "$FM_PR_OBSERVATION_UPDATED" "$FM_PR_OBSERVATION_READ_AT" \
+      "$FM_PR_OBSERVATION_REVIEWS" \
       "$FM_PR_OBSERVATION_ISSUE_COMMENTS" \
       "$FM_PR_OBSERVATION_REVIEW_COMMENTS" \
       "$FM_PR_OBSERVATION_REQUESTED"
   ' _ "$ROOT/bin/fm-pr-lib.sh" \
-    'observed 2026-08-31T03:00:00Z 12 3 44 2') \
+    'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 12 3 44 2') \
     || fail "parser rejected a valid observed protocol line"
-  [ "$parsed" = 'observed||2026-08-31T03:00:00Z|12|3|44|2' ] \
+  [ "$parsed" = 'observed||2026-08-31T03:00:00Z|2026-08-31T03:00:01Z|12|3|44|2' ] \
     || fail "parser returned the wrong observed fields: $parsed"
 
   parsed=$(bash -c '
@@ -188,22 +267,32 @@ test_protocol_parser_accepts_only_typed_observations() {
     || fail "parser returned the wrong unavailable fields: $parsed"
 
   if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
-    "$ROOT/bin/fm-pr-lib.sh" 'observed 2026-08-31T03:00:00Z 12 nope 44 2'; then
+    "$ROOT/bin/fm-pr-lib.sh" \
+      'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 12 nope 44 2'; then
     fail "parser accepted a malformed numeric field"
   fi
 }
 
 test_protocol_parser_rejects_observed_sentinel_timestamp() {
   if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
-    "$ROOT/bin/fm-pr-lib.sh" 'observed - 12 3 44 2'; then
+    "$ROOT/bin/fm-pr-lib.sh" \
+      'observed - 2026-08-31T03:00:01Z 12 3 44 2'; then
     fail "parser accepted a sentinel timestamp in an observed record"
   fi
 }
 
 test_protocol_parser_rejects_unchanged_sentinel_timestamp() {
   if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
-    "$ROOT/bin/fm-pr-lib.sh" 'unchanged - 2'; then
+    "$ROOT/bin/fm-pr-lib.sh" 'unchanged - 2026-08-31T03:00:01Z 2'; then
     fail "parser accepted a sentinel timestamp in an unchanged record"
+  fi
+}
+
+test_protocol_parser_rejects_missing_read_timestamp() {
+  if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
+    "$ROOT/bin/fm-pr-lib.sh" \
+      'observed 2026-08-31T03:00:00Z - 12 3 44 2'; then
+    fail "parser accepted a missing snapshot read timestamp"
   fi
 }
 
@@ -241,9 +330,12 @@ for test_name in \
   test_detail_failure_is_explicitly_unavailable \
   test_malformed_activity_id_is_explicitly_unavailable \
   test_invalid_identity_is_silent_without_github_access \
+  test_reader_pins_every_request_to_validated_host \
+  test_same_second_review_forces_one_detail_refresh \
   test_protocol_parser_accepts_only_typed_observations \
   test_protocol_parser_rejects_observed_sentinel_timestamp \
   test_protocol_parser_rejects_unchanged_sentinel_timestamp \
+  test_protocol_parser_rejects_missing_read_timestamp \
   test_protocol_parser_rejects_multiline_record \
   test_protocol_parser_rejects_carriage_return; do
   run_one "$test_name" || failures=$((failures + 1))

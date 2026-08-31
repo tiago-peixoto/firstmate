@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Read one validated GitHub pull request for review and comment activity.
 # Usage: fm-pr-review-poll.sh --snapshot <provider> <url> <host> <path> <number>
-#        fm-pr-review-poll.sh --validated <provider> <url> <host> <path> <number> <prior-updated>
+#        fm-pr-review-poll.sh --validated <provider> <url> <host> <path> <number> <prior-updated> [prior-read-at]
 # Output uses the typed protocol owned by fm_pr_poll_observation_parse in
 # fm-pr-lib.sh.
 # Snapshot mode reads the PR summary and every page of review, issue-comment,
 # and review-comment IDs, then reports each exact decimal maximum or zero when
 # that collection is empty.
-# Validated mode skips those detail lookups when the summary timestamp matches
-# prior-updated, but still reports the current requested-user and requested-team
-# total in its unchanged record.
+# Validated mode skips those detail lookups only when the summary timestamp
+# matches prior-updated and the prior snapshot started after that timestamp's
+# whole UTC second had closed. A baseline without prior-read-at refreshes once.
 # Both modes stop at the summary for a merged PR.
 # Invalid arguments or a mismatched identity are silent and never call GitHub.
 # After identity validation, a failed or malformed lookup reports unavailable
@@ -24,7 +24,8 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 mode=
 prior_updated=
-if [ "$#" -eq 7 ] && [ "$1" = --validated ]; then
+prior_read_at=
+if { [ "$#" -eq 7 ] || [ "$#" -eq 8 ]; } && [ "$1" = --validated ]; then
   mode=validated
   provider=$2
   url=$3
@@ -32,6 +33,9 @@ if [ "$#" -eq 7 ] && [ "$1" = --validated ]; then
   path=$5
   number=$6
   prior_updated=$7
+  if [ "$#" -eq 8 ]; then
+    prior_read_at=$8
+  fi
 elif [ "$#" -eq 6 ] && [ "$1" = --snapshot ]; then
   mode=snapshot
   provider=$2
@@ -47,6 +51,12 @@ fm_pr_url_parse "$url" || exit 0
 [ "$provider" = github ] && [ "$provider" = "$FM_PR_PROVIDER" ] || exit 0
 [ "$host" = "$FM_PR_HOST" ] && [ "$path" = "$FM_PR_PATH" ] \
   && [ "$number" = "$FM_PR_NUMBER" ] || exit 0
+if [ "$mode" = validated ]; then
+  fm_pr_poll_utc_timestamp_valid "$prior_updated" || exit 0
+  if [ -n "$prior_read_at" ]; then
+    fm_pr_poll_utc_timestamp_valid "$prior_read_at" || exit 0
+  fi
+fi
 
 decimal_greater_than() {
   local left=$1 right=$2 left_rest=$1 right_rest=$2
@@ -81,27 +91,91 @@ EOF
 
 github_ids() {
   local endpoint=$1 raw
-  raw=$(gh api --paginate "$endpoint" --jq '.[].id' 2>/dev/null) || return 1
+  raw=$(gh api --hostname "$host" --paginate "$endpoint" --jq '.[].id' 2>/dev/null) \
+    || return 1
   numeric_max "$raw"
 }
 
-summary=$(gh api "/repos/$path/pulls/$number" \
+github_date_to_utc() {
+  local raw=$1 weekday day month year clock zone extra month_number
+  IFS=' ' read -r weekday day month year clock zone extra <<EOF
+$raw
+EOF
+  [[ "$weekday" =~ ^[A-Z][a-z]{2},$ ]] || return 1
+  [[ "$day" =~ ^[0-9]{2}$ ]] || return 1
+  [[ "$year" =~ ^[0-9]{4}$ ]] || return 1
+  [[ "$clock" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}$ ]] || return 1
+  [ "$zone" = GMT ] && [ -z "${extra:-}" ] || return 1
+  case "$month" in
+    Jan) month_number=01 ;;
+    Feb) month_number=02 ;;
+    Mar) month_number=03 ;;
+    Apr) month_number=04 ;;
+    May) month_number=05 ;;
+    Jun) month_number=06 ;;
+    Jul) month_number=07 ;;
+    Aug) month_number=08 ;;
+    Sep) month_number=09 ;;
+    Oct) month_number=10 ;;
+    Nov) month_number=11 ;;
+    Dec) month_number=12 ;;
+    *) return 1 ;;
+  esac
+  printf '%s-%s-%sT%sZ\n' "$year" "$month_number" "$day" "$clock"
+}
+
+summary_response=$(gh api --hostname "$host" --include "/repos/$path/pulls/$number" \
   --jq '[if .merged_at != null then "merged" else .state end, ((.requested_reviewers | length) + (.requested_teams | length)), .updated_at] | @tsv' \
   2>/dev/null) || { printf '%s\n' 'unavailable github'; exit 0; }
+summary=
+summary_date=
+summary_headers=1
+summary_body_lines=0
+summary_invalid=0
+while IFS= read -r line || [ -n "$line" ]; do
+  line=${line%$'\r'}
+  if [ "$summary_headers" -eq 1 ]; then
+    if [ -z "$line" ]; then
+      summary_headers=0
+      continue
+    fi
+    case "$line" in
+      [Dd][Aa][Tt][Ee]:\ *)
+        [ -z "$summary_date" ] || summary_invalid=1
+        summary_date=${line#*: }
+        ;;
+    esac
+    continue
+  fi
+  if [ "$summary_body_lines" -eq 0 ]; then
+    summary=$line
+  else
+    summary_invalid=1
+  fi
+  summary_body_lines=$((summary_body_lines + 1))
+done <<EOF
+$summary_response
+EOF
+[ "$summary_invalid" -eq 0 ] && [ "$summary_headers" -eq 0 ] \
+  && [ "$summary_body_lines" -eq 1 ] && [ -n "$summary_date" ] \
+  || { printf '%s\n' 'unavailable github'; exit 0; }
+read_at=$(github_date_to_utc "$summary_date") \
+  || { printf '%s\n' 'unavailable github'; exit 0; }
 IFS=$(printf '\t') read -r state requested updated extra <<EOF
 $summary
 EOF
 [ -z "${extra:-}" ] || { printf '%s\n' 'unavailable github'; exit 0; }
 case "$requested" in ''|*[!0-9]*) printf '%s\n' 'unavailable github'; exit 0 ;; esac
-fm_pr_poll_updated_valid "$updated" \
+fm_pr_poll_utc_timestamp_valid "$updated" \
   || { printf '%s\n' 'unavailable github'; exit 0; }
 case "$state" in
   merged) printf '%s\n' merged; exit 0 ;;
   open|closed) ;;
   *) printf '%s\n' 'unavailable github'; exit 0 ;;
 esac
-if [ "$mode" = validated ] && [ "$updated" = "$prior_updated" ]; then
-  printf 'unchanged %s %s\n' "$updated" "$requested"
+if [ "$mode" = validated ] && [ "$updated" = "$prior_updated" ] \
+  && [ -n "$prior_read_at" ] && [[ "$prior_read_at" > "$updated" ]]; then
+  printf 'unchanged %s %s %s\n' "$updated" "$prior_read_at" "$requested"
   exit 0
 fi
 
@@ -111,5 +185,5 @@ issue_comments=$(github_ids "/repos/$path/issues/$number/comments?per_page=100")
   || { printf '%s\n' 'unavailable github'; exit 0; }
 review_comments=$(github_ids "/repos/$path/pulls/$number/comments?per_page=100") \
   || { printf '%s\n' 'unavailable github'; exit 0; }
-printf 'observed %s %s %s %s %s\n' \
-  "$updated" "$reviews" "$issue_comments" "$review_comments" "$requested"
+printf 'observed %s %s %s %s %s %s\n' \
+  "$updated" "$read_at" "$reviews" "$issue_comments" "$review_comments" "$requested"
