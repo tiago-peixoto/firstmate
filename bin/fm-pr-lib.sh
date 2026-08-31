@@ -75,6 +75,7 @@ FM_PR_SEEN_OBSERVED_AT=
 FM_PR_OBSERVATION_KIND=
 FM_PR_OBSERVATION_PROVIDER=
 FM_PR_OBSERVATION_UPDATED=
+FM_PR_OBSERVATION_READ_AT=
 FM_PR_OBSERVATION_REVIEWS=
 FM_PR_OBSERVATION_ISSUE_COMMENTS=
 FM_PR_OBSERVATION_REVIEW_COMMENTS=
@@ -439,17 +440,36 @@ fm_pr_poll_seen_record() {
     "$updated" "$reviews" "$issue_comments" "$review_comments" "$requested" "$health" "$observed_at"
 }
 
+fm_pr_poll_utc_timestamp_valid() {
+  local value=$1
+  [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
+}
+
+# Typed PR-review observation protocol, accepted only as one CR/LF-free record:
+#   merged
+#   unavailable <github|gitlab>
+#   unchanged <updated-at> <read-at> <requested-reviewer-count>
+#   observed <updated-at> <read-at> <max-review-id> <max-issue-comment-id> <max-review-comment-id> <requested-reviewer-count>
+# The updated-at and read-at fields have the fixed UTC shape
+# YYYY-MM-DDTHH:MM:SSZ.
+# Every ID and count field is a non-empty unsigned decimal string.
+# A successful parse exposes the typed fields through the FM_PR_OBSERVATION_*
+# variables, while a refusal leaves all of those fields empty.
 # shellcheck disable=SC2034 # Observation fields are the sourced library's output API.
 fm_pr_poll_observation_parse() {
-  local observation=$1 kind updated reviews issue_comments review_comments requested extra
+  local observation=$1 kind updated read_at reviews issue_comments review_comments requested extra
   FM_PR_OBSERVATION_KIND=
   FM_PR_OBSERVATION_PROVIDER=
   FM_PR_OBSERVATION_UPDATED=
+  FM_PR_OBSERVATION_READ_AT=
   FM_PR_OBSERVATION_REVIEWS=
   FM_PR_OBSERVATION_ISSUE_COMMENTS=
   FM_PR_OBSERVATION_REVIEW_COMMENTS=
   FM_PR_OBSERVATION_REQUESTED=
-  IFS=' ' read -r kind updated reviews issue_comments review_comments requested extra <<EOF
+  case "$observation" in
+    *$'\r'*|*$'\n'*) return 1 ;;
+  esac
+  IFS=' ' read -r kind updated read_at reviews issue_comments review_comments requested extra <<EOF
 $observation
 EOF
   [ -z "${extra:-}" ] || return 1
@@ -460,25 +480,31 @@ EOF
       ;;
     unavailable)
       case "${updated:-}" in github|gitlab) ;; *) return 1 ;; esac
-      [ -z "${reviews:-}" ] || return 1
+      [ -z "${read_at:-}" ] || return 1
       FM_PR_OBSERVATION_KIND=unavailable
       FM_PR_OBSERVATION_PROVIDER=$updated
       ;;
     unchanged)
-      fm_pr_poll_updated_valid "${updated:-}" || return 1
+      fm_pr_poll_utc_timestamp_valid "${updated:-}" || return 1
+      fm_pr_poll_utc_timestamp_valid "${read_at:-}" || return 1
       case "${reviews:-}" in ''|*[!0-9]*) return 1 ;; esac
       [ -z "${issue_comments:-}" ] || return 1
       FM_PR_OBSERVATION_KIND=unchanged
       FM_PR_OBSERVATION_UPDATED=$updated
+      FM_PR_OBSERVATION_READ_AT=$read_at
       FM_PR_OBSERVATION_REQUESTED=$reviews
       ;;
     observed)
-      fm_pr_poll_updated_valid "${updated:-}" || return 1
-      case "${reviews:-}${issue_comments:-}${review_comments:-}${requested:-}" in *[!0-9]*) return 1 ;; esac
+      fm_pr_poll_utc_timestamp_valid "${updated:-}" || return 1
+      fm_pr_poll_utc_timestamp_valid "${read_at:-}" || return 1
+      case "${reviews:-}${issue_comments:-}${review_comments:-}${requested:-}" in
+        *[!0-9]*) return 1 ;;
+      esac
       [ -n "${reviews:-}" ] && [ -n "${issue_comments:-}" ] \
         && [ -n "${review_comments:-}" ] && [ -n "${requested:-}" ] || return 1
       FM_PR_OBSERVATION_KIND=observed
       FM_PR_OBSERVATION_UPDATED=$updated
+      FM_PR_OBSERVATION_READ_AT=$read_at
       FM_PR_OBSERVATION_REVIEWS=$reviews
       FM_PR_OBSERVATION_ISSUE_COMMENTS=$issue_comments
       FM_PR_OBSERVATION_REVIEW_COMMENTS=$review_comments
