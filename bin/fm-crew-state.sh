@@ -39,8 +39,8 @@
 #      awaiting_approval/fix_review -> parked (with gate findings), terminal
 #      passed/checks-passed -> done, failed/cancelled -> failed. Two more
 #      specific records can replace that coarse answer: the latest recognized
-#      CI marker while the ci step runs, and a worker's explicit current state
-#      after a historical run's branch or code identity no longer matches.
+#      CI marker while the ci step runs, and a later stamped worker nonterminal
+#      after a matching terminal run began.
 #      A finished run's publication detail likewise comes from its push and PR
 #      step rows, never from the run outcome alone.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
@@ -148,6 +148,10 @@ map_log_state() {  # <line>
 
 LOG_LINE=$(log_last_line || true)
 LOG_VERB=$(status_line_verb "$LOG_LINE")
+LOG_NOTE=$(status_line_note "$LOG_LINE")
+case "$LOG_VERB:$LOG_NOTE" in
+  done:*"checks green"*) LOG_NOTE="completion reported; CI readiness unverified" ;;
+esac
 
 # --- remote secondmate: the true source is the remote endpoint ---------------
 # A remote mate's recorded worktree and backend target live on its own host, so
@@ -171,7 +175,7 @@ if [ -n "$REMOTE_HOST" ]; then
       if [ -n "$LOG_VERB" ]; then
         LOG_STATE=$(map_log_state "$LOG_LINE")
         if [ "$LOG_STATE" != unknown ]; then
-          emit "$LOG_STATE" status-log "$(status_line_note "$LOG_LINE")${SEP}remote endpoint alive on $REMOTE_HOST"
+          emit "$LOG_STATE" status-log "$LOG_NOTE${SEP}remote endpoint alive on $REMOTE_HOST"
         fi
       fi
       emit unknown remote-endpoint "alive on $REMOTE_HOST (an idle secondmate is healthy)"
@@ -534,6 +538,7 @@ if [ "$HAVE_RUN" = 1 ]; then
   CI_STEP_STATUS=""
   CI_LOG_STATE=""
   RUN_STATUS=""
+  RUN_TERMINAL=0
   if [ "$RUN_SOURCE" = coarse ]; then
     # No step/gate detail is available from the plain runs list - only ever
     # true/working, done, or failed. A crew genuinely parked at a gate still
@@ -544,15 +549,17 @@ if [ "$HAVE_RUN" = 1 ]; then
     # coarse-vs-full distinction, so a real gate is never silently missed.
     case "$COARSE_STATUS" in
       running)   RUN_STATE=working; RUN_DETAIL="validating (background run)" ;;
-      completed) RUN_STATE="done";  RUN_DETAIL="run completed" ;;
-      failed)    RUN_STATE=failed;  RUN_DETAIL="run failed" ;;
-      cancelled) RUN_STATE=failed;  RUN_DETAIL="run cancelled" ;;
+      completed) RUN_STATE="done";  RUN_DETAIL="run completed"; RUN_TERMINAL=1 ;;
+      failed)    RUN_STATE=failed;  RUN_DETAIL="run failed"; RUN_TERMINAL=1 ;;
+      cancelled) RUN_STATE=failed;  RUN_DETAIL="run cancelled"; RUN_TERMINAL=1 ;;
       *)         RUN_STATE=unknown; RUN_DETAIL="runs list status: $COARSE_STATUS" ;;
     esac
   else
     status=$(strip_quotes "$(nm_field status)")
     RUN_STATUS=$status
     outcome=$(strip_quotes "$(nm_field outcome)")
+    case "$status" in completed|failed|cancelled) RUN_TERMINAL=1 ;; esac
+    [ -n "$outcome" ] && RUN_TERMINAL=1
     awaiting=$(printf '%s\n' "$RUN_OUT" | grep -E '^[[:space:]]*awaiting_agent:' | head -1 || true)
     gate_status=$(nm_gate_status)
     has_gate=0
@@ -617,6 +624,31 @@ if [ "$HAVE_RUN" = 1 ]; then
     fi
   fi
 
+  if [ "$RUN_SOURCE" = full ] && [ "$RUN_TERMINAL" = 1 ]; then
+    LOG_STATE=$(map_log_state "$LOG_LINE")
+    case "$LOG_STATE:$RUN_STATE" in
+      paused:done|paused:failed|working:done|working:failed|parked:done|parked:failed|blocked:done|blocked:failed)
+        LOG_EVENT_EPOCH=$(status_line_at_epoch "$LOG_LINE" || true)
+        RUN_ID=$(strip_quotes "$(nm_field id)")
+        RUN_STARTED_MILLIS=$(LC_ALL=C awk -v id="$RUN_ID" 'BEGIN {
+          alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+          if (length(id) != 26 || index("01234567", substr(id, 1, 1)) == 0) exit 1
+          value = 0
+          for (i = 1; i <= 26; i++) {
+            digit = index(alphabet, substr(id, i, 1)) - 1
+            if (digit < 0) exit 1
+            if (i <= 10) value = value * 32 + digit
+          }
+          printf "%.0f\n", value
+        }' 2>/dev/null || true)
+        if [ -n "$LOG_EVENT_EPOCH" ] && [ -n "$RUN_STARTED_MILLIS" ] \
+          && [ "$((LOG_EVENT_EPOCH * 1000))" -gt "$RUN_STARTED_MILLIS" ]; then
+          emit "$LOG_STATE" status-log "$LOG_NOTE"
+        fi
+        ;;
+    esac
+  fi
+
   # Reconcile the status log. A needs-decision/blocked log line that the run-step
   # has moved past (anything but a genuinely parked run) is deterministically
   # stale: the gate resolved and the run resumed or finished.
@@ -670,7 +702,7 @@ fi
 if [ -n "$LOG_VERB" ]; then
   LOG_STATE=$(map_log_state "$LOG_LINE")
   if [ "$LOG_STATE" != unknown ]; then
-    emit "$LOG_STATE" status-log "$(status_line_note "$LOG_LINE")"
+    emit "$LOG_STATE" status-log "$LOG_NOTE"
   fi
 fi
 

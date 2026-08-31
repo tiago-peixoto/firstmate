@@ -354,6 +354,38 @@ outcome: cancelled
 EOF
 }
 
+run_terminal_branch_sync() {  # <branch> <local-head> <pipeline-head> <outcome>
+  cat <<EOF
+run:
+  id: "${FM_FAKE_RUN_ID:-01RUN}"
+  branch: $1
+  status: completed
+  head: "${3:0:8}"
+  pr: ""
+  findings: none
+outcome: $4
+branch_sync:
+  state: pipeline_owned
+  changed: false
+  local:
+    branch: $1
+    head: "$2"
+    clean: true
+  pipeline:
+    run: "${FM_FAKE_RUN_ID:-01RUN}"
+    status: completed
+    phase: complete
+    submitted_head: "$2"
+    current_head: "$3"
+    pushed_head: ""
+    pushed_at: 0
+    push_generation: 0
+  relation: unknown
+  safety: released
+  pr_state: ""
+EOF
+}
+
 run_ci_monitoring() {  # <branch>
   cat <<EOF
 run:
@@ -419,6 +451,23 @@ test_active_run_is_authoritative() {
   assert_contains "$out" "source: run-step" "active run -> run-step source"
   assert_contains "$out" "validating (running)" "active run reports the step"
   pass "active run-step is authoritative"
+}
+
+test_active_run_beats_later_worker_declaration() {
+  reset_fakes
+  local d; d=$(new_case active-vs-worker)
+  make_repo_on_branch "$d/wt" fm/feat-active-worker
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/active-worker.meta" "window=fm:fm-active-worker" "worktree=$d/wt" "kind=ship" "harness=claude"
+  printf 'paused [at=20260820T163820Z]: waiting while validation owns the branch\n' > "$d/state/active-worker.status"
+  FM_FAKE_RUN_ID=01M0G0GT180000000000000000
+  FM_FAKE_AXI_STATUS="$(run_running fm/feat-active-worker)"
+  arm_idle_record "$d/state" active-worker
+  local out; out=$(run_crew_state "$d" active-worker)
+  assert_contains "$out" "state: working" "the active run remains authoritative"
+  assert_contains "$out" "source: run-step" "active validation stays run-step sourced"
+  assert_not_contains "$out" "state: paused" "a worker note cannot overrule active validation"
+  pass "active run beats a later idle worker declaration"
 }
 
 # (b) needs-decision log + a resumed (running/fixing) run = SUPERSEDED
@@ -810,13 +859,15 @@ test_terminal_failed() {
 
 test_declared_pause_beats_recorded_outcome() {
   reset_fakes
-  local d; d=$(new_case pause-vs-outcome)
+  local d local_head pipeline_head; d=$(new_case pause-vs-outcome)
   make_repo_on_branch "$d/wt" fm/feat-pauseoutcome
+  local_head=$(git -C "$d/wt" rev-parse HEAD)
+  pipeline_head=1111111111111111111111111111111111111111
   make_fakebin "$d" >/dev/null
   fm_write_meta "$d/state/feat-pauseoutcome.meta" "window=fm:fm-pauseoutcome" "worktree=$d/wt" "kind=ship" "harness=claude"
   printf 'paused [at=20260820T163820Z]: waiting on the delivery path; work is preserved\n' > "$d/state/feat-pauseoutcome.status"
-  FM_FAKE_RUN_HEAD=1111111111111111111111111111111111111111
-  FM_FAKE_AXI_STATUS="$(run_passed fm/feat-pauseoutcome)"
+  FM_FAKE_RUN_ID=01M0G0GT180000000000000000
+  FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-pauseoutcome "$local_head" "$pipeline_head" passed)"
   arm_idle_record "$d/state" feat-pauseoutcome
   local out; out=$(run_crew_state "$d" feat-pauseoutcome)
   assert_contains "$out" "state: paused" "the worker's explicit current state wins"
@@ -826,13 +877,15 @@ test_declared_pause_beats_recorded_outcome() {
 
 test_declared_pause_beats_recorded_cancelled_outcome() {
   reset_fakes
-  local d; d=$(new_case pause-vs-cancelled)
+  local d local_head pipeline_head; d=$(new_case pause-vs-cancelled)
   make_repo_on_branch "$d/wt" fm/feat-pausecancelled
+  local_head=$(git -C "$d/wt" rev-parse HEAD)
+  pipeline_head=1111111111111111111111111111111111111111
   make_fakebin "$d" >/dev/null
   fm_write_meta "$d/state/feat-pausecancelled.meta" "window=fm:fm-pausecancelled" "worktree=$d/wt" "kind=ship" "harness=claude"
   printf 'paused [at=20260820T163820Z]: work is preserved; validation was deliberately stopped\n' > "$d/state/feat-pausecancelled.status"
-  FM_FAKE_RUN_HEAD=1111111111111111111111111111111111111111
-  FM_FAKE_AXI_STATUS="$(run_cancelled fm/feat-pausecancelled)"
+  FM_FAKE_RUN_ID=01M0G0GT180000000000000000
+  FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-pausecancelled "$local_head" "$pipeline_head" cancelled)"
   arm_idle_record "$d/state" feat-pausecancelled
   local out; out=$(run_crew_state "$d" feat-pausecancelled)
   assert_contains "$out" "state: paused" "the worker's explicit current state wins"
@@ -860,13 +913,15 @@ test_declared_pause_distinguishes_no_ci_from_approval_wait() {
 
 test_working_status_beats_older_failed_outcome() {
   reset_fakes
-  local d; d=$(new_case working-vs-failed)
+  local d local_head pipeline_head; d=$(new_case working-vs-failed)
   make_repo_on_branch "$d/wt" fm/feat-workingfailed
+  local_head=$(git -C "$d/wt" rev-parse HEAD)
+  pipeline_head=1111111111111111111111111111111111111111
   make_fakebin "$d" >/dev/null
   fm_write_meta "$d/state/workingfailed.meta" "window=fm:fm-workingfailed" "worktree=$d/wt" "kind=ship" "harness=claude"
   printf 'working [at=20260820T163820Z]: preserved work resumed after an infrastructure failure\n' > "$d/state/workingfailed.status"
-  FM_FAKE_RUN_HEAD=1111111111111111111111111111111111111111
-  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-workingfailed)"
+  FM_FAKE_RUN_ID=01M0G0GT180000000000000000
+  FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-workingfailed "$local_head" "$pipeline_head" failed)"
   arm_idle_record "$d/state" workingfailed
   local out; out=$(run_crew_state "$d" workingfailed)
   assert_contains "$out" "state: working" "the worker's explicit current state wins"
@@ -876,13 +931,15 @@ test_working_status_beats_older_failed_outcome() {
 
 test_older_working_status_does_not_beat_newer_failure() {
   reset_fakes
-  local d; d=$(new_case older-working-vs-failed)
+  local d local_head pipeline_head; d=$(new_case older-working-vs-failed)
   make_repo_on_branch "$d/wt" fm/feat-olderworkingfailed
+  local_head=$(git -C "$d/wt" rev-parse HEAD)
+  pipeline_head=1111111111111111111111111111111111111111
   make_fakebin "$d" >/dev/null
   fm_write_meta "$d/state/olderworkingfailed.meta" "window=fm:fm-olderworkingfailed" "worktree=$d/wt" "kind=ship"
   printf 'working [at=20260820T163637Z]: work before validation\n' > "$d/state/olderworkingfailed.status"
   FM_FAKE_RUN_ID=01M0G0GT180000000000000000
-  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-olderworkingfailed)"
+  FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync fm/feat-olderworkingfailed "$local_head" "$pipeline_head" failed)"
   local out; out=$(run_crew_state "$d" olderworkingfailed)
   assert_contains "$out" "state: failed" "the newer terminal record wins"
   assert_contains "$out" "source: run-step" "the newer failure remains run-step sourced"
@@ -891,16 +948,18 @@ test_older_working_status_does_not_beat_newer_failure() {
 }
 
 test_later_parked_and_blocked_declarations_beat_terminal_run() {
-  local name line want d out
+  local name line want d local_head pipeline_head out
   while IFS='|' read -r name line want; do
     reset_fakes
     d=$(new_case "later-$name-vs-failed")
     make_repo_on_branch "$d/wt" "fm/feat-later-$name"
+    local_head=$(git -C "$d/wt" rev-parse HEAD)
+    pipeline_head=1111111111111111111111111111111111111111
     make_fakebin "$d" >/dev/null
     fm_write_meta "$d/state/later-$name.meta" "window=fm:fm-later-$name" "worktree=$d/wt" "kind=ship" "harness=claude"
     printf '%s\n' "$line" > "$d/state/later-$name.status"
-    FM_FAKE_RUN_HEAD=1111111111111111111111111111111111111111
-    FM_FAKE_AXI_STATUS="$(run_failed "fm/feat-later-$name")"
+    FM_FAKE_RUN_ID=01M0G0GT180000000000000000
+    FM_FAKE_AXI_STATUS="$(run_terminal_branch_sync "fm/feat-later-$name" "$local_head" "$pipeline_head" failed)"
     arm_idle_record "$d/state" "later-$name"
     out=$(run_crew_state "$d" "later-$name")
     assert_contains "$out" "state: $want" "later $name declaration wins"
@@ -1088,25 +1147,27 @@ EOF
   pass "cross-branch attribution picks the branch's most recent row"
 }
 
-test_branch_sync_identity_keeps_active_pipeline_authoritative() {
+test_live_v157_stale_v1_failure_falls_back_to_live_v2_worker() {
   reset_fakes
-  local d local_head local_short active_head out
+  local d local_head active_head stale_head out
   d=$(new_case branch-sync-active-head)
   make_repo_on_branch "$d/wt" fm/firstmate-crew-state-false-green-v2
   local_head=$(git -C "$d/wt" rev-parse HEAD)
-  local_short=$(git -C "$d/wt" rev-parse --short=8 HEAD)
   active_head=1111111111111111111111111111111111111111
+  stale_head=2222222222222222222222222222222222222222
   make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/crew-state.meta" "window=fm:fm-crew-state" "worktree=$d/wt" "kind=ship"
+  fm_write_meta "$d/state/crew-state.meta" "window=fm:fm-crew-state" "worktree=$d/wt" "kind=ship" "harness=claude"
   printf 'working [at=20260831T120000Z]: validating the replacement branch at its active pipeline head\n' > "$d/state/crew-state.status"
+  arm_idle_record "$d/state" crew-state
   FM_FAKE_AXI_STATUS=$(cat <<EOF
 run:
-  id: "01M1AVKJC8MW6KD48XJVHC9ZPA"
-  branch: fm/firstmate-crew-state-false-green-v2
-  status: running
-  head: "${active_head:0:8}"
+  id: "01M19Q0G000000000000000000"
+  branch: fm/firstmate-crew-state-false-green
+  status: completed
+  head: "${stale_head:0:8}"
   pr: ""
   findings: none
+outcome: failed
 branch_sync:
   state: pipeline_owned
   changed: false
@@ -1130,15 +1191,34 @@ EOF
 )
   FM_FAKE_RUNS_LIST=$(cat <<EOF
   running  fm/firstmate-crew-state-false-green-v2 ${active_head:0:8}  2026-08-31 12:00
-  failed   fm/firstmate-crew-state-false-green-v2 $local_short  2026-08-31 11:50
-  failed   fm/firstmate-crew-state-false-green deadbeef  2026-08-30 18:00
+  failed   fm/firstmate-crew-state-false-green ${stale_head:0:8}  2026-08-30 18:00
 EOF
 )
   out=$(run_crew_state "$d" crew-state)
-  assert_contains "$out" "state: working" "the active v2 pipeline is authoritative for its submitted code"
-  assert_contains "$out" "source: run-step" "the active direct run remains the source"
-  assert_not_contains "$out" "state: failed" "superseded failures cannot replace the active pipeline"
-  pass "branch-sync identity keeps the active replacement pipeline authoritative"
+  assert_contains "$out" "state: working" "the live v2 worker record defeats the selected stale v1 failure"
+  assert_contains "$out" "source: status-log" "the different-head v2 run leaves the live worker record authoritative"
+  assert_contains "$out" "validating the replacement branch" "the live worker detail is preserved"
+  assert_not_contains "$out" "state: failed" "the selected stale v1 failure cannot replace live v2 work"
+  pass "live v1.57 stale v1 failure yields to the v2 worker"
+}
+
+test_unmatched_run_downgrades_stale_checks_green_status() {
+  reset_fakes
+  local d; d=$(new_case unmatched-green-status)
+  make_repo_on_branch "$d/wt" fm/feat-unmatched-green
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/unmatched-green.meta" "window=fm:fm-unmatched-green" "worktree=$d/wt" "kind=ship" "harness=claude"
+  printf 'done: PR https://github.com/o/r/pull/4 checks green\n' > "$d/state/unmatched-green.status"
+  FM_FAKE_RUN_HEAD=1111111111111111111111111111111111111111
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-unmatched-green)"
+  FM_FAKE_CI_LOGS='no CI checks reported - still monitoring until merged or closed'
+  arm_idle_record "$d/state" unmatched-green
+  local out; out=$(run_crew_state "$d" unmatched-green)
+  assert_contains "$out" "state: done" "the explicit completion event remains visible"
+  assert_contains "$out" "source: status-log" "the unmatched run falls back to the worker event"
+  assert_contains "$out" "CI readiness unverified" "the fallback downgrades the unverified CI claim"
+  assert_not_contains "$out" "checks green" "an unmatched run cannot substantiate checks green"
+  pass "unmatched run downgrades a stale checks-green status"
 }
 
 test_coarse_run_does_not_promote_unverified_ready_status() {
@@ -1812,6 +1892,7 @@ test_missing_run_head_falls_back_to_current_state() {
 }
 
 test_active_run_is_authoritative
+test_active_run_beats_later_worker_declaration
 test_stale_needs_decision_superseded
 test_stale_blocked_superseded
 test_genuine_parked_not_superseded
@@ -1832,6 +1913,7 @@ test_ci_ready_done_log_relapse_stays_working
 test_ci_fixing_after_green_stays_working
 test_top_level_fixing_ci_running_after_green_stays_working
 test_top_level_fixing_done_log_stays_working
+test_unmatched_run_downgrades_stale_checks_green_status
 test_terminal_passed
 test_terminal_failed
 test_declared_pause_beats_recorded_outcome
@@ -1849,7 +1931,7 @@ test_passed_run_names_a_merge_when_the_log_records_one
 test_passed_run_names_a_close_when_the_log_records_one
 test_cross_branch_attribution_via_runs_list
 test_cross_branch_attribution_picks_most_recent_row
-test_branch_sync_identity_keeps_active_pipeline_authoritative
+test_live_v157_stale_v1_failure_falls_back_to_live_v2_worker
 test_coarse_run_does_not_promote_unverified_ready_status
 test_other_branch_run_ignored
 test_no_run_busy_pane
