@@ -78,10 +78,11 @@
 #   check: secondmate wake-loop stalled: mate=<id> row=<seq> age=<seconds>s
 #                          the oldest valid row in an endpoint-recorded local
 #                          secondmate home's durable wake queue exceeded
-#                          FM_SECONDMATE_WAKE_STALL_SECS while the mate was not
-#                          provably working; a current blocked state always wakes,
-#                          exact idle or dead wakes, and unavailable state or
-#                          endpoint evidence wakes conservatively
+#                          FM_SECONDMATE_WAKE_STALL_SECS and current evidence
+#                          proves the mate is blocked, idle, or dead
+#   check: secondmate wake-loop undetermined: mate=<id> row=<seq> age=<seconds>s (...)
+#                          the same row exceeded the floor, but current-state and
+#                          endpoint-busy evidence cannot prove busy or stalled
 #                          (observation is read-only and one parent receipt
 #                          suppresses repeats for that row)
 # For normal supervision, resume the session-start primary-harness protocol
@@ -196,7 +197,7 @@ STALE_ESCALATE_SECS=${FM_STALE_ESCALATE_SECS:-240}  # idle secs before a provabl
 # between completed turns, including long tool calls, builds, or test runs.
 BUSY_TURN_MAX_SECS=${FM_BUSY_TURN_MAX_SECS:-3600}
 # A local secondmate's foreign queue is checked on every poll, but only after this
-# bounded age can its current state and endpoint liveness produce a parent notification.
+# bounded age can its current state and endpoint liveness produce a parent verdict.
 SECONDMATE_WAKE_STALL_SECS=${FM_SECONDMATE_WAKE_STALL_SECS:-60}
 # A crew that declared a pause is idling on a known external wait, so its stale
 # pane is absorbed rather than wedge-escalated.
@@ -409,7 +410,7 @@ secondmate_current_state() {  # <task-id>
   state=${line#state: }
   state=${state%% *}
   case "$state" in
-    working|parked|done|blocked|paused|failed|unknown) printf '%s' "$state" ;;
+    working|parked|done|blocked|paused|failed|undetermined|unknown) printf '%s' "$state" ;;
     *) printf 'unknown' ;;
   esac
 }
@@ -427,15 +428,13 @@ secondmate_live_busy_verdict() {  # <meta-file> <task-id>
 }
 
 # Surface one durable parent check for one unchanged foreign row after its
-# bounded age unless the mate is provably mid-turn. A current blocked state means
-# the mate waits on the primary by definition and takes precedence over endpoint
-# evidence. Exact busy is sufficient on its own; a current working state also
-# suppresses when the endpoint is live but its harness cannot provide a semantic
-# busy verdict. Exact idle, dead, and unavailable current-state or endpoint
-# evidence wake conservatively. The primary
-# marker and queued-key check make repeated watcher cycles converge without a
-# notification storm, while an empty queue removes only this home's marker so a
-# later row can be observed.
+# bounded age. A current blocked state means the mate waits on the primary by
+# definition and takes precedence over endpoint evidence. Exact busy suppresses;
+# exact idle or dead reports stalled. Every other combination reports
+# undetermined with both evidence values instead of silently guessing either
+# verdict. The primary marker and queued-key check make repeated watcher cycles
+# converge without a notification storm, while an empty queue removes only this
+# home's marker so a later row can be observed.
 secondmate_wake_stall_tick() {
   local now=$(( $(date +%s) )) threshold=$SECONDMATE_WAKE_STALL_SECS
   local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued age reason current_state busy_verdict
@@ -482,16 +481,20 @@ EOF
     [ "$(cat "$receipt" 2>/dev/null || true)" = "$row_key" ] && continue
     current_state=$(secondmate_current_state "$task")
     busy_verdict=$(secondmate_live_busy_verdict "$meta" "$task")
-    if [ "$current_state" != blocked ]; then
+    notify_key="secondmate-wake-loop-$task-$row_key"
+    if [ "$current_state" = blocked ]; then
+      reason="check: secondmate wake-loop stalled: mate=$task row=$seq age=${age}s"
+    else
       case "${busy_verdict%% *}" in
         busy) continue ;;
-        unknown)
-          [ "$current_state" = working ] && [ "$busy_verdict" != "unknown no-target" ] && continue
+        idle|dead)
+          reason="check: secondmate wake-loop stalled: mate=$task row=$seq age=${age}s"
+          ;;
+        *)
+          reason="check: secondmate wake-loop undetermined: mate=$task row=$seq age=${age}s (current-state=$current_state; endpoint-busy=$busy_verdict)"
           ;;
       esac
     fi
-    notify_key="secondmate-wake-loop-$task-$row_key"
-    reason="check: secondmate wake-loop stalled: mate=$task row=$seq age=${age}s"
     queued=$(fm_wake_queued_keys check)
     if ! printf '%s\n' "$queued" | grep -Fx "$notify_key" >/dev/null 2>&1; then
       fm_wake_append check "$notify_key" "$reason" || return 1
