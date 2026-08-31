@@ -371,7 +371,7 @@ fm_pr_poll_data_parse() {
 
 fm_pr_poll_updated_valid() {
   local value=$1
-  [ "$value" = - ] || [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
+  [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
 }
 
 # shellcheck disable=SC2034 # Observation fields are the sourced library's output API.
@@ -384,6 +384,9 @@ fm_pr_poll_observation_parse() {
   FM_PR_OBSERVATION_ISSUE_COMMENTS=
   FM_PR_OBSERVATION_REVIEW_COMMENTS=
   FM_PR_OBSERVATION_REQUESTED=
+  case "$observation" in
+    *$'\r'*|*$'\n'*) return 1 ;;
+  esac
   IFS=' ' read -r kind updated reviews issue_comments review_comments requested extra <<EOF
 $observation
 EOF

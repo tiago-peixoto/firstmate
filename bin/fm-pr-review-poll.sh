@@ -36,17 +36,31 @@ fm_pr_url_parse "$url" || exit 0
 [ "$host" = "$FM_PR_HOST" ] && [ "$path" = "$FM_PR_PATH" ] \
   && [ "$number" = "$FM_PR_NUMBER" ] || exit 0
 
+decimal_greater_than() {
+  local left=$1 right=$2 left_rest=$1 right_rest=$2
+  while [ -n "$left_rest" ] && [ -n "$right_rest" ]; do
+    left_rest=${left_rest:1}
+    right_rest=${right_rest:1}
+  done
+  if [ -n "$left_rest" ]; then
+    return 0
+  fi
+  [ -z "$right_rest" ] || return 1
+  [[ "$left" > "$right" ]]
+}
+
 numeric_max() {
-  local raw=$1 value normalized candidate max=0
+  local raw=$1 value normalized max=0
   while IFS= read -r value || [ -n "$value" ]; do
     [ -n "$value" ] || continue
-    case "$value" in *[!0-9]*) return 1 ;; esac
+    [[ "$value" =~ ^[0-9]+$ ]] || return 1
     normalized=$value
     while [ "${normalized#0}" != "$normalized" ] && [ "$normalized" != 0 ]; do
       normalized=${normalized#0}
     done
-    candidate=$(printf '%s\n%s\n' "$max" "$normalized" | sort -n | tail -n 1) || return 1
-    [ "$candidate" != "$normalized" ] || max=$normalized
+    if decimal_greater_than "$normalized" "$max"; then
+      max=$normalized
+    fi
   done <<EOF
 $raw
 EOF

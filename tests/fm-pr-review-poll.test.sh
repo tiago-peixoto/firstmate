@@ -72,6 +72,24 @@ test_snapshot_reports_maximum_activity_ids() {
     || fail "snapshot observation lost activity maxima: $out"
 }
 
+test_snapshot_preserves_huge_ids_without_sort() {
+  local dir out
+  dir=$(make_case huge-ids-without-sort)
+  cat > "$dir/fakebin/sort" <<'SH'
+#!/usr/bin/env bash
+exit 91
+SH
+  chmod 0700 "$dir/fakebin/sort"
+  out=$(FM_TEST_REVIEW_IDS='999999999999999999999999999999999999\n1000000000000000000000000000000000000\n' \
+    FM_TEST_ISSUE_COMMENT_IDS='000184467440737095516160\n184467440737095516159\n' \
+    FM_TEST_REVIEW_COMMENT_IDS='42\n0000000000000000000000000000000000043\n' \
+    run_reader "$dir" --snapshot github \
+      https://github.com/o/r/pull/7 github.com o/r 7) \
+    || fail "huge-ID snapshot failed without sort"
+  [ "$out" = 'observed 2026-08-31T03:00:00Z 1000000000000000000000000000000000000 184467440737095516160 43 1' ] \
+    || fail "huge-ID snapshot lost exact maxima without sort: $out"
+}
+
 test_unchanged_summary_skips_detail_requests() {
   local dir out
   dir=$(make_case unchanged)
@@ -101,6 +119,16 @@ test_summary_failure_is_explicitly_unavailable() {
     || fail "summary failure changed the reader exit contract"
   [ "$out" = 'unavailable github' ] \
     || fail "summary failure looked quiet instead of unavailable: $out"
+}
+
+test_reader_rejects_missing_live_timestamp() {
+  local dir out
+  dir=$(make_case missing-live-timestamp)
+  out=$(FM_TEST_UPDATED=- run_reader "$dir" --snapshot github \
+    https://github.com/o/r/pull/7 github.com o/r 7) \
+    || fail "missing timestamp changed the reader exit contract"
+  [ "$out" = 'unavailable github' ] \
+    || fail "missing timestamp became a live observation: $out"
 }
 
 test_detail_failure_is_explicitly_unavailable() {
@@ -165,6 +193,34 @@ test_protocol_parser_accepts_only_typed_observations() {
   fi
 }
 
+test_protocol_parser_rejects_observed_sentinel_timestamp() {
+  if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
+    "$ROOT/bin/fm-pr-lib.sh" 'observed - 12 3 44 2'; then
+    fail "parser accepted a sentinel timestamp in an observed record"
+  fi
+}
+
+test_protocol_parser_rejects_unchanged_sentinel_timestamp() {
+  if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
+    "$ROOT/bin/fm-pr-lib.sh" 'unchanged - 2'; then
+    fail "parser accepted a sentinel timestamp in an unchanged record"
+  fi
+}
+
+test_protocol_parser_rejects_multiline_record() {
+  if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
+    "$ROOT/bin/fm-pr-lib.sh" $'merged\njunk'; then
+    fail "parser accepted a second protocol record"
+  fi
+}
+
+test_protocol_parser_rejects_carriage_return() {
+  if bash -c '. "$1"; fm_pr_poll_observation_parse "$2"' _ \
+    "$ROOT/bin/fm-pr-lib.sh" $'merged\r'; then
+    fail "parser accepted a carriage return"
+  fi
+}
+
 run_one() {
   local name=$1
   if ("$name"); then
@@ -177,13 +233,19 @@ run_one() {
 failures=0
 for test_name in \
   test_snapshot_reports_maximum_activity_ids \
+  test_snapshot_preserves_huge_ids_without_sort \
   test_unchanged_summary_skips_detail_requests \
   test_merged_summary_stops_before_detail_requests \
   test_summary_failure_is_explicitly_unavailable \
+  test_reader_rejects_missing_live_timestamp \
   test_detail_failure_is_explicitly_unavailable \
   test_malformed_activity_id_is_explicitly_unavailable \
   test_invalid_identity_is_silent_without_github_access \
-  test_protocol_parser_accepts_only_typed_observations; do
+  test_protocol_parser_accepts_only_typed_observations \
+  test_protocol_parser_rejects_observed_sentinel_timestamp \
+  test_protocol_parser_rejects_unchanged_sentinel_timestamp \
+  test_protocol_parser_rejects_multiline_record \
+  test_protocol_parser_rejects_carriage_return; do
   run_one "$test_name" || failures=$((failures + 1))
 done
 
