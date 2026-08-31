@@ -235,24 +235,28 @@ test_drain_dedupes_obvious_duplicates() {
 # plain drain-and-handle turn that runs no other supervision script. It must warn
 # when work is in flight with no live watcher, and stay silent right after a
 # normal fire from a live watcher with a fresh beacon, so it never false-alarms.
-make_secondmate_stall_case() {  # <name> <last-status-line>
-  local dir state sub fakebin
+make_secondmate_stall_case() {  # <name> <last-status-line> [harness] [pane] [target]
+  local dir state sub fakebin harness=${3:-claude} pane=${4:-pane fixture}
+  local target=${5-firstmate:fm-mate}
   dir=$(make_case "$1")
   state="$dir/state"
   sub="$dir/secondmate"
   mkdir -p "$sub/state"
   printf 'mate\n' > "$sub/.fm-secondmate-home"
-  printf 'window=firstmate:fm-mate\nkind=secondmate\nharness=claude\nbackend=tmux\nhome=%s\n' \
-    "$sub" > "$state/mate.meta"
+  printf 'window=%s\nworktree=%s\nkind=secondmate\nharness=%s\nbackend=tmux\nhome=%s\n' \
+    "$target" "$sub" "$harness" "$sub" > "$state/mate.meta"
   printf '%s\n' "$2" > "$state/mate.status"
+  prime_status_seen "$state" "$state/mate.status" \
+    || fail "could not mark the secondmate fixture status as already observed"
   printf '%s\t41\tcheck\trouted\tcheck: routed row\n' \
     "$(( $(date +%s) - 10 ))" > "$sub/state/.wake-queue"
+  printf '%s\n' "$pane" > "$dir/pane.txt"
   fakebin="$dir/fakebin"
   cat > "$fakebin/tmux" <<'SH'
 #!/usr/bin/env bash
 case "${1:-}" in
   list-windows) printf '%s\n' 'firstmate:fm-mate' ;;
-  capture-pane) printf '%s\n' 'pane fixture' ;;
+  capture-pane) cat "$FM_SECONDMATE_TEST_PANE" ;;
   display-message) printf '0\n' ;;
   *) exit 0 ;;
 esac
@@ -262,22 +266,32 @@ SH
 }
 
 run_secondmate_stall_case() {  # <case-dir>
-  local dir=$1
+  local dir=$1 rc=0
   PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$dir/state" FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 \
+    FM_CREW_STATE_BIN="$ROOT/bin/fm-crew-state.sh" FM_SECONDMATE_TEST_PANE="$dir/pane.txt" \
     FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
     "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 \
-    > "$dir/watch.out" 2> "$dir/watch.err" || true
+    > "$dir/watch.out" 2> "$dir/watch.err" || rc=$?
+  printf '%s\n' "$rc" > "$dir/watch.rc"
 }
 
 assert_secondmate_stall_wake() {  # <case-dir> <context>
-  local dir=$1 context=$2
+  local dir=$1 context=$2 rc
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 0 ] \
+    || fail "$context checkpoint exited $rc, expected 0: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
   grep -F 'check: secondmate wake-loop stalled: mate=mate row=41' "$dir/watch.out" >/dev/null \
     || fail "$context did not wake the parent: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
 }
 
 assert_no_secondmate_stall_wake() {  # <case-dir> <context>
-  local dir=$1 context=$2
+  local dir=$1 context=$2 rc
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 124 ] \
+    || fail "$context checkpoint exited $rc, expected 124: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+  grep -Fx 'checkpoint: no actionable wake within 2s' "$dir/watch.out" >/dev/null \
+    || fail "$context omitted the quiet checkpoint result: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
   if grep -F 'secondmate wake-loop stalled' "$dir/watch.out" >/dev/null; then
     fail "$context woke the parent: $(cat "$dir/watch.out")"
   fi
@@ -289,32 +303,33 @@ assert_no_secondmate_stall_wake() {  # <case-dir> <context>
 test_secondmate_busy_aged_queue_is_not_stalled() {
   local dir
   dir=$(make_secondmate_stall_case secondmate-stall-busy 'working: dispatching reviews')
-  "$ROOT/bin/fm-busy-event.sh" arm "$dir/state" mate >/dev/null \
-    || fail "could not arm the busy mate fixture"
   run_secondmate_stall_case "$dir"
   assert_no_secondmate_stall_wake "$dir" "a provably busy mate with an aged row"
   pass "a provably busy secondmate is not stalled regardless of foreign row age"
 }
 
+test_secondmate_live_busy_verdict_is_not_stalled() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-live-busy \
+    'resolved [key=previous-work]: current status settled' grok 'Ctrl+c:cancel')
+  run_secondmate_stall_case "$dir"
+  assert_no_secondmate_stall_wake "$dir" "a mate with an exact live busy verdict"
+  pass "an exact live busy verdict suppresses the aged foreign row"
+}
+
 test_secondmate_blocked_aged_queue_wakes_even_while_busy() {
   local dir
   dir=$(make_secondmate_stall_case secondmate-stall-blocked \
-    'blocked [key=primary-routing]: waiting for primary routing')
-  "$ROOT/bin/fm-busy-event.sh" arm "$dir/state" mate >/dev/null \
-    || fail "could not arm the blocked mate fixture"
+    'blocked [key=primary-routing]: waiting for primary routing' grok 'Ctrl+c:cancel')
   run_secondmate_stall_case "$dir"
-  assert_secondmate_stall_wake "$dir" "a mate whose last status verb is blocked"
+  assert_secondmate_stall_wake "$dir" "a mate whose current state is blocked"
   pass "a blocked secondmate wakes the parent even when its endpoint still reads busy"
 }
 
 test_secondmate_idle_aged_queue_wakes() {
-  local dir gen
-  dir=$(make_secondmate_stall_case secondmate-stall-idle 'working: between turns')
-  gen=$("$ROOT/bin/fm-busy-event.sh" arm "$dir/state" mate) \
-    || fail "could not arm the idle mate fixture"
-  "$ROOT/bin/fm-busy-event.sh" apply "$dir/state" mate idle --gen "$gen" \
-    --source claude-hook --event stop \
-    || fail "could not settle the idle mate fixture"
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-idle \
+    'resolved [key=previous-work]: previous phase settled' grok 'idle prompt')
   run_secondmate_stall_case "$dir"
   assert_secondmate_stall_wake "$dir" "an idle non-blocked mate with an aged row"
   pass "an idle non-blocked secondmate with an aged row wakes conservatively"
@@ -322,7 +337,8 @@ test_secondmate_idle_aged_queue_wakes() {
 
 test_secondmate_unknown_liveness_aged_queue_wakes() {
   local dir
-  dir=$(make_secondmate_stall_case secondmate-stall-unknown 'working: liveness unavailable')
+  dir=$(make_secondmate_stall_case secondmate-stall-unknown \
+    'resolved [key=previous-work]: current activity unavailable' claude 'pane fixture' '')
   run_secondmate_stall_case "$dir"
   assert_secondmate_stall_wake "$dir" "a mate whose liveness is unknown"
   pass "unknown secondmate liveness wakes conservatively rather than hiding a blocked mate"
@@ -1089,6 +1105,7 @@ test_historical_annotation_skips_announced_status() {
 
 test_self_held_lock_reclaims_instead_of_deadlocking
 test_secondmate_busy_aged_queue_is_not_stalled
+test_secondmate_live_busy_verdict_is_not_stalled
 test_secondmate_blocked_aged_queue_wakes_even_while_busy
 test_secondmate_idle_aged_queue_wakes
 test_secondmate_unknown_liveness_aged_queue_wakes
