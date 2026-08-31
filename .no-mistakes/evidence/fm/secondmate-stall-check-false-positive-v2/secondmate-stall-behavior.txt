@@ -1,0 +1,46 @@
+SECOND-MATE AGED-QUEUE END-TO-END TRANSCRIPT
+target=f3ca318a7c2ad86b48aaf7925396644efa132525
+threshold_fixture=1s (production default remains 60s)
+
+[CURRENT / exact busy endpoint / aged row]
+exit=124
+stdout: checkpoint: no actionable wake within 5s
+parent_notification=absent
+foreign_row_checksum_before=880696463 45
+foreign_row_checksum_after=880696463 45
+
+[CURRENT / blocked current state overrides busy endpoint]
+exit=0
+stdout: check: secondmate wake-loop stalled: mate=mate row=41 age=11s
+
+[CURRENT / exact idle endpoint / aged row]
+exit=0
+stdout: check: secondmate wake-loop stalled: mate=mate row=41 age=12s
+
+[CURRENT / dead recorded endpoint / aged row]
+exit=0
+stdout: check: secondmate wake-loop stalled: mate=mate row=41 age=11s
+
+[CURRENT / real marked request / missing semantic busy evidence]
+send_exit=0
+request_marker=[fm-from-firstmate]
+semantic_busy_record=absent
+checkpoint_exit=0
+checkpoint_stdout: check: secondmate wake-loop undetermined: mate=mate row=41 age=14s (current-state=done; endpoint-busy=unknown missing)
+foreign_row_checksum_before=2142853470 45
+foreign_row_checksum_after_first=2142853470 45
+
+[CURRENT / same marked row after parent acknowledgement]
+repeat_exit=124
+repeat_stdout: checkpoint: no actionable wake within 5s
+foreign_row_checksum_after_repeat=2142853470 45
+republished_parent_notification=absent
+
+[UNFIXED 064a231cff1620e6cb69881a747c51cc253ebdca / same exact busy endpoint / aged row]
+exit=0
+stdout: check: secondmate wake-loop stalled: mate=mate row=41 age=11s
+regression_expectation=quiet exit 124; unfixed detector instead emitted stalled exit 0
+
+SUMMARY
+current_busy=quiet; current_blocked=stalled; current_idle=stalled; current_dead=stalled; marked_missing_evidence=undetermined; repeat=quiet; foreign_row=byte-stable; unfixed_busy=stalled_false_positive
+VERIFICATION=PASS
