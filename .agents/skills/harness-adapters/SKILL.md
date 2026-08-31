@@ -11,37 +11,31 @@ metadata:
 
 # harness-adapters
 
-Use this reference before any harness-specific firstmate operation: spawn, recovery, trust-dialog handling, skill invocation, interrupt, exit, resume, or adapter verification.
+This is the one skill, trigger, and routing owner for harness-specific Firstmate operations.
+Load this router first, then exactly the common reference and one harness reference selected below.
+When an action spans rows, load the union once rather than every reference.
+Files under `references/` are resources of this skill, not additional catalogued skills.
 
-Crewmates default to the same harness firstmate is running on unless `config/crew-harness` records an adapter name.
-Optional dispatch profiles in `config/crew-dispatch.json` can override that static default for one crewmate or scout dispatch by selecting concrete harness, model, and effort axes at intake.
-When a matched rule or default is a profile array, load `quota-array-dispatch` for the completion-aware candidate choice after this skill establishes harness and model/provider facts.
-The captain may override that file at session start or later; a per-task instruction such as "run this one on codex" overrides it for that dispatch only.
-`default` means mirror firstmate's own harness.
+## Path contract
 
-Secondmates have their own harness knob, so a secondmate can run on a different adapter than crewmates.
-`config/secondmate-harness` is the harness the primary uses to launch SECONDMATE agents, resolved through the fallback chain `config/secondmate-harness` -> `config/crew-harness` -> firstmate's own.
-An absent or `default` `config/secondmate-harness` therefore behaves exactly as the crew harness did before this knob existed (secondmates launched on the crew harness); setting it splits the two.
-The [`secondmate-provisioning` skill](../secondmate-provisioning/SKILL.md) owns the complete inherited-local-material allowlist and propagation contract.
-This skill owns only the harness-relevant consequence: a secondmate's own crewmates use the primary's inherited dispatch profiles and static harness value, while `config/secondmate-harness` is the primary's own setting and is never inherited - secondmates do not spawn secondmates.
-Inheritance copies the literal `config/crew-harness` file, so for a secondmate's own crewmates to run on the primary's crewmate harness the captain must set `config/crew-harness` to a concrete adapter name, such as `codex`.
-If `config/crew-harness` is unset or `default`, there is no concrete value to inherit, so the secondmate's own crewmates fall back to the secondmate's own/detected harness rather than the primary's effective crewmate harness.
-Inheritance also copies the literal `config/crew-dispatch.json` file, so secondmates apply the same best-fit profile rules for their own crewmates.
+The skill directory is the directory containing this `SKILL.md`.
+Resolve on-demand reference links and relative links to their executable, documentation, or sibling-skill owners against the skill directory, including links named by a nested reference.
+Operational paths keep the context named by their owner: `config/` and active-home settings belong to the active Firstmate home, `state/` belongs to that home, and project settings such as `.claude/settings.json` belong to the target project.
 
-Each adapter splits into mechanics and knowledge.
-The per-task mechanics, including launch command, autonomy flag, and any enabled crewmate turn-end hook, live in `bin/fm-spawn.sh`.
-Agent lifecycle mechanics - which key interrupts a turn, how many times it must be sent, whether the composer needs clearing afterwards, which command exits the agent, and which task kinds the adapter can run - are owned by the executable control plane in `bin/fm-control-lib.sh` and delivered by `bin/fm-control.sh <task-id> interrupt|exit|relaunch`.
-Never hand-type an interrupt key or exit command through `fm-send`: a routing-marked lifecycle command becomes chat the agent reasons about instead of executing, which is the defect the control plane exists to remove ([`docs/agent-control.md`](../../../docs/agent-control.md)).
-The per-adapter `Exit command` and `Interrupt` rows below remain the verification record for those values; the executable owner is what firstmate actually runs, so a newly verified adapter is not reachable by the control plane until its rows land in that owner.
-The primary-session "no turn ends blind" guard contract and harness hook installation paths live in `docs/turnend-guard.md`.
-The primary-session watcher wake protocols are rendered from `docs/supervision-protocols/` by `bin/fm-supervision-instructions.sh`.
-The supervision knowledge lives here: busy state, exit command, interrupt, dialogs, resume behavior, skill invocation, and quirks.
-Each adapter's `Busy state` row names only which semantic source that harness uses; `bin/fm-busy-lib.sh` owns the contract itself, including verdicts, source attribution, and the verification gates that keep an unverified harness at unknown.
+## Non-negotiable safety
 
 Never dispatch a crewmate or secondmate on an unverified adapter.
-If `config/crew-harness` or `config/secondmate-harness` names an unverified adapter, tell the captain under `AGENTS.md` section 9 that the requested worker runtime is not verified yet, use firstmate's own verified runtime for current work, and ask only whether to verify the requested runtime before future use.
-Do not pause current work for that future-verification choice, and never launch an unverified adapter.
-If the captain asks for a new harness, propose verifying it first: spawn a trivial supervised task using `fm-spawn`'s raw-launch-command escape hatch, confirm every fact empirically, then record the mechanics in `fm-spawn`, its semantic busy source and trust gate in `bin/fm-busy-lib.sh`, any new composer shape, prompt glyph, or idle placeholder in `bin/fm-composer-lib.sh`'s shared screen classifier (the ONE fleet-wide owner of every composer shape and the `empty`/`pending`/`pending-unproven`/`unknown` decision - teaching it there gives every backend the shape in the same commit, and no adapter may carry its own copy), the tmux agent-process liveness classification in `bin/backends/tmux.sh` when the harness can launch a secondmate, and the verified knowledge here.
+If `config/crew-harness` or `config/secondmate-harness` names one, tell the captain under `../../../AGENTS.md` section 9 that the requested worker runtime is not verified, use firstmate's own verified runtime for current work, and ask only whether to verify the requested runtime for future work.
+Do not pause current work for that choice.
+
+On `unknown`, ask the captain instead of guessing.
+A current captain override beats detection, while a per-task override governs only that dispatch.
+For recovery and control, use the exact `harness=` in `state/<id>.meta`; never infer it from a model or provider.
+
+Deliver lifecycle actions only through `../../../bin/fm-control.sh <task-id> interrupt|exit|relaunch`.
+Never type an interrupt key or exit command through `fm-send`, where routing-marked lifecycle text becomes chat.
+Trust handling is complete only when inspection proves the target started processing its instructions; delivery success alone is not proof.
+Muse is verified only for crewmate and scout work, never a secondmate or primary.
 
 ## Detection
 
@@ -418,121 +412,3 @@ Herdr additionally draws the composer's rules with half-block glyphs, which the 
 ```bash
 FM_HARNESS_LIVENESS_DRIFT=1 bin/fm-test-run.sh tests/fm-harness-liveness-drift-live-e2e.test.sh
 ```
-
-Firstmate acquires and enters the treehouse worktree before launching Cursor, then passes that same absolute path through `--workspace`.
-NEVER pass Cursor's own `-w/--worktree`: it allocates a SECOND worktree under `~/.cursor/worktrees` and would break firstmate's worktree-isolation contract.
-The raw CLI accepts repeatable `--add-dir <path>` for deliberate multi-root workspaces; the adapter adds none, and the brief rides inline as the positional prompt, so the private brief directory needs no grant.
-
-Spawn a Cursor scout with an explicit model:
-
-```bash
-bin/fm-spawn.sh <task-id> <project> --scout --harness cursor --model cursor-grok-4.5-high
-```
-
-## kimi (VERIFIED 2026-07-25, kimi 0.29.1)
-
-Kimi Code CLI launches from the absolute path resolved from `PATH`, falling back to the executable `$HOME/.kimi-code/bin/kimi`.
-
-| Fact | Value |
-|---|---|
-| Binary | Executable `kimi` from `PATH`, then executable `$HOME/.kimi-code/bin/kimi`; spawning refuses if neither exists. |
-| Launch | Bare interactive TUI with `--auto`, followed by readiness-gated pointer delivery; positional prompts are rejected. |
-| Models | `kimi-code/kimi-for-coding` (default), `kimi-code/kimi-for-coding-highspeed`, `kimi-code/k3`, and `kimi-code/k3-256k`. |
-| Busy state | Standalone Kimi is unknown until a semantic source is live-verified; prefer Wire's `prompt` request lifetime, then documented hooks including `Interrupt`. Kimi behind Pi uses Pi's lifecycle. Its moon-phase spinner is not a state source. |
-| Exit command | `/exit` |
-| Interrupt | Single Escape, which prints `Interrupted by user`. |
-| Skill invocation | `/<skill>`, for example `/no-mistakes`; firstmate skills are discovered. |
-| Autonomy | `--auto`; `-y` and `--yolo` are weaker and are not used. |
-| Trust dialog | None on a clean first launch in a fresh pooled worktree. |
-| Slash submission | One Enter submits, with no popup swallow or settle hazard. |
-| Environment marker | None; detection relies on process ancestry command name `kimi`. |
-| Composer | Bordered box with a bare `>` prompt glyph and no observed ghost or placeholder text. |
-| Effort | No reasoning-effort flag exists, so requested effort is recorded in task metadata but omitted from launch. |
-
-`fm-spawn.sh` launches Kimi bare, waits for the composer box or `Welcome to Kimi Code!`, sends only `Read the brief at <absolute-path> and follow it exactly.`, and requires a cleared composer plus either the echoed `✨` submission or nonzero context before accepting delivery.
-This launch-then-send shape is mandatory because Kimi rejects a positional brief as an unknown command.
-Sending before readiness was reproduced as a silent drop with a zero exit status, an empty composer, `context: 0%`, no echoed user message, and a healthy-looking idle pane.
-The brief path must be absolute because the brief lives outside the task worktree, and Kimi reads it there without `--add-dir`.
-
-Observed live spinner captures included optional leading whitespace, a moon-phase glyph, whitespace around `·`, and rotating tip text, with the same shape observed during tool execution.
-Because every captured spinner row had whitespace on both sides of `·`, the matcher requires that whitespace, deliberately does not match the never-observed zero-whitespace form, and does not require trailing tip text.
-The startup input-readiness window is the established cause of Kimi's first-Enter delivery defect, while the banner is not the cause.
-An early Enter can expand Kimi's composer to multiple content rows, leaving the pointer text on the first row and the cursor on an empty later row, which is the same single-cursor-row reading defect exposed by Grok's bottom-border cursor quirk.
-The shared tmux reader now locates the complete bordered composer and treats real text on any content row as positive evidence that submission is still pending.
-No rendering signal is trustworthy for proving that Kimi will accept input during this window, so delivery retries Enter through the shared submit core and retains the existing postcondition verification rather than relaxing readiness or delivery checks.
-Kimi's footer tip rotates independently and can display `ctrl+c: cancel` while completely idle, which is one reason no Kimi rendered signature is a state source.
-The idle status bar can contain lowercase `thinking`, which is the model's effort label rather than a busy signal.
-The delivery-only spinner match covers the full moon-phase glyph set rather than one frame, but it remains locale- and emoji-font-sensitive because Kimi exposes no stable ASCII busy token.
-
-[`docs/turnend-guard.md`](../../../docs/turnend-guard.md) owns Kimi's verified global hook surface and captain-approved crew wake integration.
-`fm-spawn.sh` installs one marker-delimited Firstmate entry in `$HOME/.kimi-code/config.toml`, one silent always-zero hook script, and one private token registry under `$HOME/.kimi-code/fm-turn-end.d/`.
-Each Kimi crew worktree receives a gitignored `.fm-kimi-turnend` token pointer, and the global hook touches that task's `state/<id>.turn-ended` only when the Stop payload's `cwd`, pointer, and registry entry all agree.
-A guarded silent hook cannot be verified from absence of effect, so prove invocation with an unguarded probe before concluding that the hook did not fire.
-The guarded turn-end signal remains a wake notification; standalone Kimi has no busy-state source until one is live-verified.
-
-## muse (VERIFIED 2026-08-05, Muse Code 0.1.0-R708.1, build sha 427a430436)
-
-Muse Code is a CREWMATE and SCOUT adapter only.
-`bin/fm-spawn.sh` refuses `--secondmate` on muse, and muse has no supervision protocol under `docs/supervision-protocols/`, so a firstmate primary detected as muse falls back to the `unknown` protocol.
-
-| Fact | Value |
-|---|---|
-| Binary | Executable `muse` from `PATH`, resolved to an absolute path; spawning refuses if it is absent. The installed launcher `~/.local/bin/muse` `exec`s `~/.local/bin/muse-bin-<version>`, so the LIVE process name carries the version and changes on every auto-update. |
-| Launch | Positional prompt, the Grok/Pi shape, so the brief rides the launch command. |
-| Models | `--model <model>`; the only provider is `meta`. |
-| Busy state | Its own durable session event log, folded on demand by `bin/fm-busy-lib.sh`. There is no hook or plugin writer, so nothing is armed and no busy record is ever seeded. |
-| Exit command | `/exit` (the popup shows `/exit  Quit when idle`); one Enter submits it, and the pane prints `To continue this session, run muse resume <session-uuid>`. |
-| Interrupt | Single Escape, which closes the run with `terminal: cancelled` AND restores the interrupted prompt into the composer as real bright text, so `fm-control` follows Escape with `C-u` to clear it; `fm-send`'s legacy key path reads the same composer-clear table. |
-| Skill invocation | `/<skill>`, the claude/grok form. |
-| Autonomy | `--yolo`, which disables approval, disables the sandbox, and trusts the workspace for the run. |
-| Trust dialog | `Do you trust this workspace?` with `1 Trust and continue` preselected, accepted by Enter. `--yolo` suppresses it entirely, which is what firstmate relies on because every task gets a fresh worktree path. |
-| Environment marker | None. Detection is process ancestry on the anchored prefix `muse-bin-*`. The launch clears foreign primary markers before Muse starts so their higher detection precedence cannot override that ancestry. `MUSE_CURRENT_SESSION_LOG` is a session-log PATH rather than an identity, and its export to tool subprocesses is unverified. |
-| Composer | Bordered box whose prompt glyph is `⟩` (U+27E9) in truecolor `38;2;90;160;255`, luminance ~149.9 - the narrowest margin over the 128 ghost threshold in the fleet. Typed text is `38;2;204;211;219` (~209.8). No idle placeholder or ghost text was observed. |
-| Effort | `--reasoning-effort`, default `high`; see the launch-profile table above for the mapping. |
-| Resume | `muse resume --last` or `muse resume <session-uuid>`; bare `muse resume` opens a picker. |
-
-### Credentials are a spawn preflight, not a screen check
-
-muse reads `META_API_KEY` (which always wins) or a stored credential at `${XDG_CONFIG_HOME:-$HOME/.config}/muse/auth.json`, written by `muse login` (an OIDC device-code flow) or `muse auth set --api-key-stdin`.
-`bin/fm-spawn.sh` accepts `META_API_KEY` only when it can prove the backend worker already has it, because a command-scoped caller variable does not cross a long-lived backend daemon and the secret must never enter launch argv.
-The supported fleet path is the stored credential, and `fm-spawn` resolves the non-secret `XDG_CONFIG_HOME` and `XDG_DATA_HOME` roots to absolute paths before preflight and forwarding to keep authentication and session-log binding aligned with the worker.
-`bin/fm-spawn.sh` refuses the launch when neither worker-reachable path is present, because an unauthenticated pane does NOT exit: it sits on `Sign in at this page: https://auth.meta.com/oauth/device/?code=XXXX-XXXX` / `Waiting for approval…` indefinitely, which supervision would read as a wedged worker rather than a missing credential.
-Escalate that refusal to the captain as a needed credential.
-
-### Foreign personal context is a real privacy boundary
-
-muse loads the OPERATOR's foreign personal rules from `~/.claude` into every run and ships them to Meta-hosted inference, printing a first-launch notice that names the included Claude Code personal rules and `/settings` control.
-An isolated `XDG_CONFIG_HOME` does NOT prevent this, and the notice is shown only once per config (`tui.foreign_context_notice_shown` in `settings.json`), so a silent later launch is still loading them.
-`--no-foreign-personal-context` is `muse exec` ONLY: the interactive TUI rejects it with `unexpected argument`.
-The control that reaches a pane worker is `MUSE_EXPERIMENTAL_FOREIGN_PERSONAL_CONTEXT_KILL=on`, which `fm-spawn` sets on every muse launch.
-It was verified to drop the foreign `rules_file` context block while KEEPING a project's own `AGENTS.md` rules, which the crewmate contract depends on.
-
-### Session event log and the busy fold
-
-Sessions persist to `${XDG_DATA_HOME:-$HOME/.local/share}/muse/sessions/YYYY/MM/DD/<session-uuid>/session.jsonl`, and `fm-spawn` writes `state/<id>.muse-session` pinning that root, the task worktree, its binding incarnation, and every pre-existing matching main log so the classifier binds a pane to its one new log.
-After unique resolution, the classifier persists the exact main log in `state/<id>.muse-session-current`, folds that path directly while the bounded current-day main-session namespace is unchanged, and requires unique resolution again when that namespace changes, the path disappears, or a new spawn binding supersedes the incarnation.
-Each submitted turn is bracketed by `{"payload":{"kind":"run","run_id":"<uuid>","event":{"kind":"started"` and a matching `"event":{"kind":"terminal"`, whose `terminal` value was observed as `completed` and `cancelled`.
-Because the interrupt path produces a real terminal, this source covers interruption, which Claude's `Stop` hook does not.
-Never use `--no-session-log` for a crewmate: it disables the only busy source muse has.
-
-Two traps the fold already handles, which any change here must preserve.
-muse also emits nested `"record":{"kind":"terminal"}` cleanup-effect payloads that are NOT run terminals, so the match is anchored on the full structural prefix rather than a `"kind":"terminal"` search.
-muse's own native sub-agents write independent run lifecycles one directory deeper under `subagent/<child-session-id>/session.jsonl`, so the resolver is depth-bounded and folds only the main log.
-
-The recorded sessions root is the resolved `XDG_DATA_HOME` that `fm-spawn` also forwards to the worker launch, so the binding and pane remain aligned across a long-lived backend daemon.
-
-Both halves of the fold are trusted with no opt-in: an open run reads `busy`, a settled log reads `idle`, and only a resolution failure - no binding, no matching log, an unreadable or run-free log - reads `unknown`.
-[`docs/verification/muse.md`](../../../docs/verification/muse.md) owns the credentialed evidence for trusting idle and the post-upgrade refresh procedure.
-
-### Native sub-agents and worktrees
-
-muse fans out to its own sub-agents, but worktree isolation is per-child and opt-in: `--subagent-worktree-isolation` is a compatibility flag whose capability "defaults on" while "omission stays shared", and no nested git worktree appeared in any verified lab run.
-Firstmate deliberately does NOT exclude any muse path from `fm-teardown.sh`'s uncommitted-work check.
-Firstmate writes `.claude/settings.local.json` itself, which is why that path is excluded for claude; it does not write muse's, so a nested muse worktree or leftover scratch is the agent's own work product and MUST be able to refuse teardown.
-A teardown refusal naming muse scratch is therefore correct behavior: inspect it rather than forcing past it.
-
-### Maturity caveats
-
-muse is a day-0 `0.1.0` beta whose launcher polls a release channel hourly and can replace the running binary underneath the fleet, changing the process name with it.
-The captain accepted that risk, so firstmate does NOT set `MUSE_NO_AUTO_UPDATE=1`; a fleet that later wants stability can set it in the launch environment without any adapter change.
-Its plugin/hook engine reports `plugins are not available in this build` unless `MUSE_EXPERIMENTAL_PLUGINS=on`, which is why the busy source reads the session log instead of installing a hook.
