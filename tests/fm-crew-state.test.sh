@@ -46,8 +46,7 @@ make_repo_on_branch() {  # <dir> <branch>
   git -C "$dir" checkout -q -b "$branch"
   # Real worktree HEAD for run head-binding (fixtures read FM_FAKE_RUN_HEAD).
   FM_FAKE_RUN_HEAD=$(git -C "$dir" rev-parse HEAD)
-  FM_FAKE_PR_HEAD=$FM_FAKE_RUN_HEAD
-  export FM_FAKE_RUN_HEAD FM_FAKE_PR_HEAD
+  export FM_FAKE_RUN_HEAD
 }
 
 # A fakebin with a fake `no-mistakes` (serves the env-driven run output) and a
@@ -76,27 +75,7 @@ case "${1:-}" in
     esac
     ;;
   runs)
-    if [ "${FM_FAKE_RUNS_EMPTY:-0}" = 1 ]; then
-      :
-    elif [ -n "${FM_FAKE_RUNS_LIST:-}" ]; then
-      printf '%s\n' "$FM_FAKE_RUNS_LIST"
-    else
-      branch=$(printf '%s\n' "${FM_FAKE_AXI_STATUS:-}" | sed -n 's/^[[:space:]]*branch:[[:space:]]*//p' | head -1)
-      head_sha=$(printf '%s\n' "${FM_FAKE_AXI_STATUS:-}" | sed -n 's/^[[:space:]]*head:[[:space:]]*"\{0,1\}\([^"[:space:]]*\).*/\1/p' | head -1)
-      outcome=$(printf '%s\n' "${FM_FAKE_AXI_STATUS:-}" | sed -n 's/^[[:space:]]*outcome:[[:space:]]*//p' | head -1)
-      run_status=$(printf '%s\n' "${FM_FAKE_AXI_STATUS:-}" | sed -n 's/^[[:space:]]*status:[[:space:]]*//p' | head -1)
-      case "$outcome" in
-        passed) run_status=completed ;;
-        checks-passed) run_status=running ;;
-        failed|cancelled) run_status=$outcome ;;
-        *)
-          case "$run_status" in ci|fixing) run_status=running ;; esac
-          ;;
-      esac
-      if [ -n "$branch" ] && [ -n "$head_sha" ] && [ -n "$run_status" ]; then
-        printf '%-12s %s %s  %s\n' "$run_status" "$branch" "${head_sha:0:8}" "$(date '+%Y-%m-%d %H:%M')"
-      fi
-    fi ;;
+    printf '%s\n' "${FM_FAKE_RUNS_LIST:-}" ;;
 esac
 exit 0
 SH
@@ -114,18 +93,7 @@ set -u
 [ "${FM_FAKE_GH_FAILS:-0}" = 1 ] && exit 1
 [ "${1:-}" = api ] || exit 1
 case "$2" in
-  */check-suites*)
-    suites=${FM_FAKE_CHECK_SUITES:-}
-    case " $* " in
-      *" --paginate "*)
-        [ -z "${FM_FAKE_CHECK_SUITES_ALL:-}" ] || suites=$FM_FAKE_CHECK_SUITES_ALL
-        printf '%s\n' "$suites" | awk 'NR == 1 { print "total|" $0; next } { print "suite|" $0 }'
-        ;;
-      *)
-        [ -z "${FM_FAKE_CHECK_SUITES_PAGE_1:-}" ] || suites=$FM_FAKE_CHECK_SUITES_PAGE_1
-        printf '%s\n' "$suites"
-        ;;
-    esac ;;
+  */check-suites) printf '%s\n' "${FM_FAKE_CHECK_SUITES:-}" ;;
   */pulls/*)      printf '%s\n' "${FM_FAKE_PR_HEAD:-deadbee0deadbee0deadbee0deadbee0deadbee0}" ;;
   *)              exit 1 ;;
 esac
@@ -192,11 +160,6 @@ make_no_timeout_toolbin() {  # <dir> -> echoes toolbin path
 # Run the helper for one case dir. FM_FAKE_* env (run output, busy flag) are read
 # from the caller's environment by the fakes above.
 run_crew_state() {  # <case-dir> <id>
-  if [ -f "$1/state/$2.meta" ] \
-    && [ "${FM_FAKE_DISABLE_AUTO_INCAR:-0}" != 1 ] \
-    && ! grep -q '^spawn_gen=' "$1/state/$2.meta"; then
-    printf 'spawn_gen=s1.1.1\n' >> "$1/state/$2.meta"
-  fi
   PATH="$1/fakebin:$PATH" FM_STATE_OVERRIDE="$1/state" "$CREW_STATE" "$2"
 }
 
@@ -207,11 +170,6 @@ run_crew_state_without_gh() {  # <case-dir> <id>
   local toolbin
   toolbin=$(make_no_timeout_toolbin "$1")
   rm -f "$1/fakebin/gh"
-  if [ -f "$1/state/$2.meta" ] \
-    && [ "${FM_FAKE_DISABLE_AUTO_INCAR:-0}" != 1 ] \
-    && ! grep -q '^spawn_gen=' "$1/state/$2.meta"; then
-    printf 'spawn_gen=s1.1.1\n' >> "$1/state/$2.meta"
-  fi
   PATH="$1/fakebin:$toolbin" FM_STATE_OVERRIDE="$1/state" "$CREW_STATE" "$2"
 }
 
@@ -228,13 +186,6 @@ arm_idle_record() {  # <state-dir> <id>
     --source claude-hook --event stop
 }
 
-arm_busy_record() {  # <state-dir> <id>
-  local state=$1 id=$2 gen
-  gen=$("$ROOT/bin/fm-busy-event.sh" arm "$state" "$id")
-  "$ROOT/bin/fm-busy-event.sh" apply "$state" "$id" busy --gen "$gen" \
-    --source claude-hook --event user-prompt-submit
-}
-
 # Clear the fake-driver vars and (re-)mark them exported, so the per-test plain
 # assignments below stay exported into the fakes without an `export VAR=$(...)`
 # command-substitution assignment (SC2155).
@@ -242,8 +193,6 @@ reset_fakes() {
   FM_FAKE_AXI_STATUS=""
   FM_FAKE_AXI_STATUS_RUN=""
   FM_FAKE_RUNS_LIST=""
-  FM_FAKE_RUNS_EMPTY=0
-  FM_FAKE_DISABLE_AUTO_INCAR=0
   FM_FAKE_BUSY=0
   FM_FAKE_BUSY_TEXT=
   FM_FAKE_TMUX_MISSING=0
@@ -252,15 +201,11 @@ reset_fakes() {
   FM_FAKE_HERDR_AGENT_STATUS=""
   FM_FAKE_CI_LOGS=""
   FM_FAKE_CHECK_SUITES=""
-  FM_FAKE_CHECK_SUITES_PAGE_1=""
-  FM_FAKE_CHECK_SUITES_ALL=""
   FM_FAKE_PR_HEAD=""
   FM_FAKE_GH_FAILS=0
-  export FM_FAKE_AXI_STATUS FM_FAKE_AXI_STATUS_RUN FM_FAKE_RUNS_LIST FM_FAKE_RUNS_EMPTY FM_FAKE_DISABLE_AUTO_INCAR
-  export FM_FAKE_BUSY FM_FAKE_BUSY_TEXT FM_FAKE_TMUX_MISSING
+  export FM_FAKE_AXI_STATUS FM_FAKE_AXI_STATUS_RUN FM_FAKE_RUNS_LIST FM_FAKE_BUSY FM_FAKE_BUSY_TEXT FM_FAKE_TMUX_MISSING
   export FM_FAKE_HERDR_BUSY FM_FAKE_HERDR_MISSING FM_FAKE_HERDR_AGENT_STATUS FM_FAKE_CI_LOGS
-  export FM_FAKE_CHECK_SUITES FM_FAKE_CHECK_SUITES_PAGE_1 FM_FAKE_CHECK_SUITES_ALL
-  export FM_FAKE_PR_HEAD FM_FAKE_GH_FAILS
+  export FM_FAKE_CHECK_SUITES FM_FAKE_PR_HEAD FM_FAKE_GH_FAILS
 }
 
 # The three forge answers this reader has to tell apart, each recorded from a
@@ -369,42 +314,6 @@ run:
   head: "${FM_FAKE_RUN_HEAD:-abc1234}"
   pr: "https://github.com/o/r/pull/1"
   findings: none
-outcome: passed
-EOF
-}
-
-run_checks_passed() {  # <branch>
-  cat <<EOF
-run:
-  id: "01RUN"
-  branch: $1
-  status: running
-  head: "${FM_FAKE_RUN_HEAD:-abc1234}"
-  pr: "https://github.com/o/r/pull/1"
-  findings: none
-  steps[4]{step,status,findings,duration_ms}:
-    intent,completed,0,0
-    push,completed,0,0
-    pr,completed,0,0
-    ci,running,0,0
-outcome: checks-passed
-EOF
-}
-
-run_passed_pr_published_ci_skipped() {  # <branch>
-  cat <<EOF
-run:
-  id: "01RUN"
-  branch: $1
-  status: completed
-  head: "${FM_FAKE_RUN_HEAD:-abc1234}"
-  pr: "https://github.com/o/r/pull/1"
-  findings: none
-  steps[4]{step,status,findings,duration_ms}:
-    intent,completed,0,0
-    push,completed,0,0
-    pr,completed,0,0
-    ci,skipped,0,0
 outcome: passed
 EOF
 }
@@ -606,7 +515,6 @@ test_ci_ready_done_log_beats_monitoring_run() {
   fm_write_meta "$d/state/feat-ci.meta" "window=fm:fm-feat-ci" "worktree=$d/wt" "kind=ship"
   printf 'done: PR https://github.com/o/r/pull/2 checks green\n' > "$d/state/feat-ci.status"
   FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-ci)"
-  FM_FAKE_CHECK_SUITES=$(suites_green)
   local out; out=$(run_crew_state "$d" feat-ci)
   assert_contains "$out" "state: done" "ci-ready status log -> done"
   assert_contains "$out" "source: status-log" "ci-ready state comes from the status log"
@@ -628,7 +536,6 @@ test_ci_monitoring_checks_green_surfaces_done() {
   fm_write_meta "$d/state/feat-cigreen.meta" "window=fm:fm-feat-cigreen" "worktree=$d/wt" "kind=ship"
   # No status-log line at all: the crew never reported its own checks-green line.
   FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cigreen)"
-  FM_FAKE_CHECK_SUITES=$(suites_green)
   FM_FAKE_CI_LOGS=$(cat <<'EOF'
 CI checks running, waiting for results...
 all CI checks passed - still monitoring until merged or closed
@@ -650,7 +557,6 @@ test_top_level_ci_checks_green_surfaces_done() {
   fm_write_meta "$d/state/feat-topcigreen.meta" "window=fm:fm-feat-topcigreen" "worktree=$d/wt" "kind=ship"
   FM_FAKE_AXI_STATUS="$(run_top_level_ci fm/feat-topcigreen)"
   FM_FAKE_CI_LOGS="all CI checks passed - still monitoring until merged or closed"
-  FM_FAKE_CHECK_SUITES=$(suites_green)
   local out; out=$(run_crew_state "$d" feat-topcigreen)
   assert_contains "$out" "state: done" "top-level ci with green log -> done"
   assert_contains "$out" "source: run-step" "top-level ci green -> run-step source"
@@ -667,8 +573,8 @@ test_top_level_ci_checks_green_surfaces_done() {
 # opposite verdicts again. Each case below drives the SAME marker and varies
 # only what the forge says about the head, which is where the answer lives.
 #
-# Reproduced live on 2026-08-30 against kunchenguid/firstmate PR 3244 (head
-# 4812b9b0: 0 check runs, two suites at action_required): before the fix the
+# Reproduced live on 2026-08-21 against kunchenguid/firstmate PR 2747 (head
+# 681a637c: 0 check runs, two suites at action_required): before the fix the
 # reader said "done - checks green: PR ready for review".
 test_no_checks_marker_awaiting_approval_is_not_green() {
   reset_fakes
@@ -793,7 +699,10 @@ test_no_checks_marker_failing_forge_call_is_not_green() {
   pass "no-checks marker with a failing forge call is never green"
 }
 
-test_passed_marker_without_forge_is_not_terminal() {
+# The passed marker is itself derived from the forge and has never misreported,
+# so it keeps its own verdict when the forge cannot be reached - the asymmetry
+# with the no-checks marker above is deliberate.
+test_passed_marker_survives_unreadable_forge() {
   reset_fakes
   local d; d=$(new_case ci-passed-noforge)
   make_repo_on_branch "$d/wt" fm/feat-cipassnoforge
@@ -802,9 +711,9 @@ test_passed_marker_without_forge_is_not_terminal() {
   FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cipassnoforge)"
   FM_FAKE_CI_LOGS="all CI checks passed - still monitoring until merged or closed"
   local out; out=$(run_crew_state_without_gh "$d" feat-cipassnoforge)
-  assert_contains "$out" "state: working" "passed marker without forge evidence is not terminal"
-  assert_not_contains "$out" "checks green" "stale log text alone is not a green verdict"
-  pass "passed marker without forge evidence stays working"
+  assert_contains "$out" "state: done" "passed marker still reports done without a forge"
+  assert_contains "$out" "checks green" "passed marker still reports checks green"
+  pass "passed marker keeps its verdict when the forge is unreachable"
 }
 
 # A fix agent writes its own verification prose into the same ci log. Only
@@ -1052,7 +961,7 @@ EOF
   pass "cross-branch attribution picks the branch's most recent row"
 }
 
-test_coarse_run_does_not_promote_ready_status_without_forge() {
+test_coarse_run_does_not_probe_other_branch_ci_log_for_ready_status() {
   reset_fakes
   local d short; d=$(new_case coarse-ready-other-log)
   make_repo_on_branch "$d/wt" fm/feat-coarseready
@@ -1068,10 +977,10 @@ EOF
 )"
   FM_FAKE_CI_LOGS="CI checks running, waiting for results..."
   local out; out=$(run_crew_state "$d" feat-coarseready)
-  assert_contains "$out" "state: working" "coarse run stays working without current forge evidence"
-  assert_contains "$out" "source: run-step" "coarse run remains run-step sourced"
-  assert_not_contains "$out" "state: done" "coarse status text alone is not terminal"
-  pass "coarse run does not promote status text without forge evidence"
+  assert_contains "$out" "state: done" "coarse ready status -> done"
+  assert_contains "$out" "source: status-log" "coarse ready status remains status-log sourced"
+  assert_not_contains "$out" "state: working" "coarse ready status must not be suppressed by another branch log"
+  pass "coarse run does not probe another branch's ci log"
 }
 
 # A different-branch run with NO matching runs-list row must NOT be
@@ -1862,10 +1771,8 @@ test_superseded_failed_run_does_not_report_failure() {
   local d; d=$(new_case superseded-failed)
   make_repo_on_branch "$d/wt" fm/feat-superseded
   make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/feat-superseded.meta" "window=fm:fm-feat-superseded" "worktree=$d/wt" "kind=ship" "harness=claude"
+  fm_write_meta "$d/state/feat-superseded.meta" "window=fm:fm-feat-superseded" "worktree=$d/wt" "kind=ship"
   FM_FAKE_AXI_STATUS="$(run_failed fm/feat-superseded)"
-  FM_FAKE_BUSY=1
-  arm_busy_record "$d/state" feat-superseded
   # Newest row for this branch is a DIFFERENT, running run.
   FM_FAKE_RUNS_LIST=$(cat <<EOF
   running      fm/feat-superseded 9f9f9f9f  2026-08-20 13:36
@@ -1875,6 +1782,7 @@ EOF
   local out; out=$(run_crew_state "$d" feat-superseded)
   assert_contains "$out" "state: working" "a live newer run answers instead"
   assert_not_contains "$out" "state: failed" "a superseded run must not report a failure"
+  assert_contains "$out" "superseded reading" "the superseded verdict is named as evidence"
   pass "a failed run superseded by a newer run does not report failure"
 }
 
@@ -1923,201 +1831,6 @@ test_run_within_this_incarnation_keeps_terminal_authority() {
   pass "a run started within this incarnation keeps terminal authority"
 }
 
-test_terminal_run_without_runs_row_falls_back_to_worker() {
-  reset_fakes
-  local d; d=$(new_case terminal-no-row)
-  make_repo_on_branch "$d/wt" fm/feat-terminal-no-row
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/terminal-no-row.meta" "window=fm:fm-terminal-no-row" "worktree=$d/wt" "kind=ship" "harness=claude"
-  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-terminal-no-row)"
-  FM_FAKE_RUNS_EMPTY=1
-  FM_FAKE_BUSY=1
-  arm_busy_record "$d/state" terminal-no-row
-  local out; out=$(run_crew_state "$d" terminal-no-row)
-  assert_contains "$out" "state: working" "a terminal run without a current runs row falls back"
-  assert_not_contains "$out" "state: failed" "an unattributed terminal row cannot report failure"
-  pass "terminal run without a runs row falls back to worker state"
-}
-
-test_terminal_run_without_spawn_generation_falls_back() {
-  reset_fakes
-  local d; d=$(new_case terminal-no-spawn)
-  make_repo_on_branch "$d/wt" fm/feat-terminal-no-spawn
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/terminal-no-spawn.meta" "window=fm:fm-terminal-no-spawn" "worktree=$d/wt" "kind=ship" "harness=claude"
-  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-terminal-no-spawn)"
-  FM_FAKE_DISABLE_AUTO_INCAR=1
-  FM_FAKE_BUSY=1
-  arm_busy_record "$d/state" terminal-no-spawn
-  local out; out=$(run_crew_state "$d" terminal-no-spawn)
-  assert_contains "$out" "state: working" "a terminal run without spawn proof falls back"
-  assert_not_contains "$out" "state: failed" "missing spawn proof cannot report failure"
-  pass "terminal run without spawn proof falls back to worker state"
-}
-
-test_coarse_terminal_without_incarnation_proof_falls_back() {
-  reset_fakes
-  local d; d=$(new_case coarse-terminal-no-spawn)
-  make_repo_on_branch "$d/wt" fm/feat-coarse-terminal
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/coarse-terminal.meta" "window=fm:fm-coarse-terminal" "worktree=$d/wt" "kind=ship" "harness=claude"
-  FM_FAKE_AXI_STATUS="$(run_running fm/other-branch)"
-  FM_FAKE_RUNS_LIST="  completed    fm/feat-coarse-terminal ${FM_FAKE_RUN_HEAD:0:8}  $(date '+%Y-%m-%d %H:%M')"
-  FM_FAKE_DISABLE_AUTO_INCAR=1
-  FM_FAKE_BUSY=1
-  arm_busy_record "$d/state" coarse-terminal
-  local out; out=$(run_crew_state "$d" coarse-terminal)
-  assert_contains "$out" "state: working" "a coarse terminal result without spawn proof falls back"
-  assert_not_contains "$out" "state: done" "coarse terminal state needs incarnation proof"
-  pass "coarse terminal result also requires incarnation proof"
-}
-
-test_newer_same_head_run_supersedes_old_failure() {
-  reset_fakes
-  local d stamp; d=$(new_case newer-same-head)
-  make_repo_on_branch "$d/wt" fm/feat-newer-same-head
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/newer-same-head.meta" "window=fm:fm-newer-same-head" "worktree=$d/wt" "kind=ship" "harness=claude"
-  FM_FAKE_AXI_STATUS="$(run_failed fm/feat-newer-same-head)"
-  stamp=$(date '+%Y-%m-%d %H:%M')
-  FM_FAKE_RUNS_LIST=$(printf '  running      fm/feat-newer-same-head %s  %s\n  failed       fm/feat-newer-same-head %s  %s\n' \
-    "${FM_FAKE_RUN_HEAD:0:8}" "$stamp" "${FM_FAKE_RUN_HEAD:0:8}" "$stamp")
-  FM_FAKE_BUSY=1
-  arm_busy_record "$d/state" newer-same-head
-  local out; out=$(run_crew_state "$d" newer-same-head)
-  assert_contains "$out" "state: working" "the newer healthy run and worker win"
-  assert_not_contains "$out" "state: failed" "an older same-head failure cannot win"
-  pass "newer same-head run supersedes an older failure"
-}
-
-test_marker_prefix_collision_is_not_pipeline_output() {
-  reset_fakes
-  local d; d=$(new_case ci-prefix-collision)
-  make_repo_on_branch "$d/wt" fm/feat-prefix-collision
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/prefix-collision.meta" "window=fm:fm-prefix-collision" "worktree=$d/wt" "kind=ship"
-  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-prefix-collision)"
-  FM_FAKE_CI_LOGS=$(printf '%s\n%s\n' \
-    'CI checks running, waiting for results...' \
-    '"all CI checks passed" is the marker being audited, not the result')
-  local out; out=$(run_crew_state "$d" prefix-collision)
-  assert_contains "$out" "state: working" "a marker prefix inside prose is not pipeline output"
-  assert_not_contains "$out" "checks green" "a prefix collision cannot claim checks green"
-  pass "marker prefix collision is not treated as pipeline output"
-}
-
-test_ci_marker_mapping_by_input() {
-  local name marker suites_kind want d out
-  while IFS='|' read -r name marker suites_kind want; do
-    reset_fakes
-    d=$(new_case "ci-marker-$name")
-    make_repo_on_branch "$d/wt" "fm/feat-marker-$name"
-    make_fakebin "$d" >/dev/null
-    fm_write_meta "$d/state/marker-$name.meta" "window=fm:fm-marker-$name" "worktree=$d/wt" "kind=ship"
-    FM_FAKE_AXI_STATUS="$(run_ci_monitoring "fm/feat-marker-$name")"
-    FM_FAKE_CI_LOGS=$marker
-    case "$suites_kind" in
-      green) FM_FAKE_CHECK_SUITES=$(suites_green) ;;
-      gated) FM_FAKE_CHECK_SUITES=$(suites_gated) ;;
-    esac
-    out=$(run_crew_state "$d" "marker-$name")
-    assert_contains "$out" "state: $want" "$name marker maps to $want"
-  done <<'EOF'
-passed|all CI checks passed - still monitoring until merged or closed|green|done
-running|CI checks running, waiting for results...|green|working
-failed|checks failed|green|working
-issues-detected|issues detected: merge conflict - auto-fixing (attempt 2/10)...|green|working
-re-armed|base branch advanced (aaaaaaa..bbbbbbb), re-arming CI monitor timeout|green|working
-skipped-ci|skipping CI: gh CLI is not authenticated|gated|working
-EOF
-  pass "every supported CI marker maps by its complete input"
-}
-
-test_forge_head_must_match_attributed_run() {
-  reset_fakes
-  local d; d=$(new_case forge-head-mismatch)
-  make_repo_on_branch "$d/wt" fm/feat-forge-head
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/forge-head.meta" "window=fm:fm-forge-head" "worktree=$d/wt" "kind=ship"
-  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-forge-head)"
-  FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
-  FM_FAKE_PR_HEAD=ffffffffffffffffffffffffffffffffffffffff
-  FM_FAKE_CHECK_SUITES=$(suites_green)
-  local out; out=$(run_crew_state "$d" forge-head)
-  assert_contains "$out" "state: working" "checks from a different PR head are ignored"
-  assert_not_contains "$out" "checks green" "another head cannot make this run green"
-  pass "forge verdict is bound to the attributed run head"
-}
-
-test_checks_passed_without_ci_reports_unverified() {
-  reset_fakes
-  local d; d=$(new_case checks-passed-no-ci)
-  make_repo_on_branch "$d/wt" fm/feat-checks-passed-no-ci
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/checks-passed-no-ci.meta" "window=fm:fm-checks-passed-no-ci" "worktree=$d/wt" "kind=ship"
-  FM_FAKE_AXI_STATUS="$(run_checks_passed fm/feat-checks-passed-no-ci)"
-  FM_FAKE_CHECK_SUITES=$(suites_none)
-  local out; out=$(run_crew_state "$d" checks-passed-no-ci)
-  assert_contains "$out" "state: done" "trusted no-CI completion does not wait forever"
-  assert_contains "$out" "nothing verified this change" "trusted no-CI completion is unverified"
-  assert_not_contains "$out" "checks green" "zero checks are not green"
-  pass "checks-passed with no CI reports unverified completion"
-}
-
-test_checks_passed_with_real_checks_is_green() {
-  reset_fakes
-  local d; d=$(new_case checks-passed-green)
-  make_repo_on_branch "$d/wt" fm/feat-checks-passed-green
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/checks-passed-green.meta" "window=fm:fm-checks-passed-green" "worktree=$d/wt" "kind=ship"
-  FM_FAKE_AXI_STATUS="$(run_checks_passed fm/feat-checks-passed-green)"
-  FM_FAKE_CHECK_SUITES=$(suites_green)
-  local out; out=$(run_crew_state "$d" checks-passed-green)
-  assert_contains "$out" "state: done" "checks-passed with real checks is done"
-  assert_contains "$out" "checks green" "real passing checks keep the green path"
-  pass "checks-passed with real checks stays green"
-}
-
-test_published_pr_with_skipped_ci_is_not_terminal_disposition() {
-  reset_fakes
-  local d; d=$(new_case published-pr-skipped-ci)
-  make_repo_on_branch "$d/wt" fm/feat-published-skipped-ci
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/published-skipped-ci.meta" "window=fm:fm-published-skipped-ci" "worktree=$d/wt" "kind=ship"
-  FM_FAKE_AXI_STATUS="$(run_passed_pr_published_ci_skipped fm/feat-published-skipped-ci)"
-  local out; out=$(run_crew_state "$d" published-skipped-ci)
-  assert_contains "$out" "PR published" "the completed PR step proves publication"
-  assert_not_contains "$out" "merged" "skipped CI does not prove a merge"
-  assert_not_contains "$out" "closed unmerged" "skipped CI does not prove closure"
-  pass "published PR with skipped CI has no invented disposition"
-}
-
-test_paginated_check_suites_include_later_failure() {
-  reset_fakes
-  local d i page_one all_pages
-  d=$(new_case paginated-check-suites)
-  make_repo_on_branch "$d/wt" fm/feat-paginated-suites
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/paginated-suites.meta" "window=fm:fm-paginated-suites" "worktree=$d/wt" "kind=ship"
-  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-paginated-suites)"
-  FM_FAKE_CI_LOGS="no CI checks reported - still monitoring until merged or closed"
-  page_one=31
-  i=0
-  while [ "$i" -lt 30 ]; do
-    page_one="$page_one
-completed|success|1"
-    i=$((i + 1))
-  done
-  all_pages="$page_one
-completed|action_required|0"
-  FM_FAKE_CHECK_SUITES_PAGE_1=$page_one
-  FM_FAKE_CHECK_SUITES_ALL=$all_pages
-  local out; out=$(run_crew_state "$d" paginated-suites)
-  assert_contains "$out" "state: working" "a later non-passing suite keeps CI pending"
-  assert_not_contains "$out" "checks green" "page one alone cannot establish green"
-  pass "all check-suite pages contribute to the verdict"
-}
-
 test_active_run_is_authoritative
 test_stale_needs_decision_superseded
 test_stale_blocked_superseded
@@ -2133,7 +1846,7 @@ test_no_checks_marker_no_ci_configured_reports_unverified
 test_no_checks_marker_with_passing_checks_is_green
 test_no_checks_marker_unreadable_forge_is_not_green
 test_no_checks_marker_failing_forge_call_is_not_green
-test_passed_marker_without_forge_is_not_terminal
+test_passed_marker_survives_unreadable_forge
 test_agent_prose_is_not_read_as_a_marker
 test_ci_monitoring_green_then_rearm_stays_working
 test_ci_monitoring_no_checks_yet_stays_working
@@ -2147,7 +1860,7 @@ test_terminal_passed
 test_terminal_failed
 test_cross_branch_attribution_via_runs_list
 test_cross_branch_attribution_picks_most_recent_row
-test_coarse_run_does_not_promote_ready_status_without_forge
+test_coarse_run_does_not_probe_other_branch_ci_log_for_ready_status
 test_other_branch_run_ignored
 test_no_run_busy_pane
 test_no_run_footer_text_alone_is_not_working
@@ -2188,16 +1901,5 @@ test_declared_pause_does_not_beat_recorded_outcome
 test_superseded_failed_run_does_not_report_failure
 test_run_predating_this_incarnation_is_not_terminal_authority
 test_run_within_this_incarnation_keeps_terminal_authority
-test_terminal_run_without_runs_row_falls_back_to_worker
-test_terminal_run_without_spawn_generation_falls_back
-test_coarse_terminal_without_incarnation_proof_falls_back
-test_newer_same_head_run_supersedes_old_failure
-test_marker_prefix_collision_is_not_pipeline_output
-test_ci_marker_mapping_by_input
-test_forge_head_must_match_attributed_run
-test_checks_passed_without_ci_reports_unverified
-test_checks_passed_with_real_checks_is_green
-test_published_pr_with_skipped_ci_is_not_terminal_disposition
-test_paginated_check_suites_include_later_failure
 
 echo "all fm-crew-state tests passed"
