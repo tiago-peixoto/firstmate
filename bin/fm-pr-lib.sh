@@ -445,7 +445,8 @@ fm_pr_poll_utc_timestamp_valid() {
   [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
 }
 
-# Typed PR-review observation protocol, accepted only as one CR/LF-free record:
+# Typed PR-review observation protocol, accepted only as one CR/LF-free record
+# with exactly one ASCII space between fields and no surrounding whitespace:
 #   merged
 #   unavailable <github|gitlab>
 #   unchanged <updated-at> <read-at> <requested-reviewer-count>

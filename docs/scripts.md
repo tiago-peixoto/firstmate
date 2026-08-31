@@ -115,7 +115,7 @@ The shared no-mistakes gate refusal for fleet lifecycle entrypoints is summarize
 | `fm-check-register.sh`   | Bind an intentional custom watcher check to its current bytes                       |
 | `fm-check-lib.sh`        | Validate custom-check registrations and prepare private execution snapshots          |
 | `fm-tool-update-check.sh` | Report watched tooling with an update available, and updates installed but left inert by PATH order |
-| `fm-pr-lib.sh`           | Own canonical task and PR validation plus private atomic PR-monitor publication, observation health, and identity-bound retirement |
+| `fm-pr-lib.sh`           | Own canonical task/PR validation, typed review-observation parsing, and private PR-monitor publication, health, and identity-bound retirement |
 | `fm-pr-poll.sh`          | Observe review, comment, health, and merge state for validated PR/MR sidecars       |
 | `fm-pr-check-migrate.sh` | Quarantine older task polls without execution and rebuild only canonical polls       |
 | `fm-pr-check.sh`         | Record validated `pr=` and `pr_head=` values, then atomically arm the unified review-and-merge monitor |
