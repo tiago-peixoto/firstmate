@@ -467,7 +467,7 @@ fm_pr_poll_observation_parse() {
   FM_PR_OBSERVATION_REVIEW_COMMENTS=
   FM_PR_OBSERVATION_REQUESTED=
   case "$observation" in
-    *$'\r'*|*$'\n'*) return 1 ;;
+    *$'\r'*|*$'\n'*|' '*|*' '|*'  '*) return 1 ;;
   esac
   IFS=' ' read -r kind updated read_at reviews issue_comments review_comments requested extra <<EOF
 $observation

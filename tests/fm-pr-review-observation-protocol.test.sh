@@ -70,9 +70,16 @@ test_parser_rejects_multiline_record() {
     "parser accepted a second protocol record"
 }
 
-test_parser_rejects_carriage_return() {
+test_parser_rejects_noncanonical_record_forms() {
   assert_parser_rejects $'merged\r' \
     "parser accepted a carriage return"
+  assert_parser_rejects ' merged' \
+    "parser accepted a leading space"
+  assert_parser_rejects 'merged ' \
+    "parser accepted a trailing space"
+  assert_parser_rejects \
+    'observed 2026-08-31T03:00:00Z  2026-08-31T03:00:01Z 12 3 44 2' \
+    "parser accepted repeated spaces"
 }
 
 run_one() {
@@ -91,7 +98,7 @@ for test_name in \
   test_parser_rejects_unchanged_sentinel_timestamp \
   test_parser_rejects_missing_read_timestamp \
   test_parser_rejects_multiline_record \
-  test_parser_rejects_carriage_return; do
+  test_parser_rejects_noncanonical_record_forms; do
   run_one "$test_name" || failures=$((failures + 1))
 done
 
