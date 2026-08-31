@@ -1400,10 +1400,10 @@ signal_reason_is_actionable() {  # <file> ...
 #   paused  - the crew's authoritative current state is a declared external-wait
 #             pause (paused:), which is EXPECTED to idle;
 #   none    - neither, so the wake must surface (a stopped/finished/parked/failed/
-#             torn-down/unknown crew, or an unreadable verdict).
-# One fm-crew-state.sh read serves BOTH absorb reasons at once. Reading the state
-# authoritatively (not the status log) is what keeps run-step precedence: a crew
-# that appended paused: but then STARTED a run reports working, never paused.
+#             torn-down/undetermined/unknown crew, or an unreadable verdict).
+# One fm-crew-state.sh read serves BOTH absorb reasons at once. An undetermined
+# conflict maps to none so the wake surfaces instead of being absorbed as either
+# working or paused.
 # NOT a pure read: fm-crew-state.sh may make a bounded no-mistakes call, so callers
 # run it only on no-verb signal and first-sighting stale paths, never every wake.
 # FM_CREW_STATE_BIN lets tests stub the verdict.
@@ -1413,11 +1413,14 @@ crew_absorb_class() {  # <id>
   line=$("$FM_CREW_STATE_BIN" "$id" 2>/dev/null) || true
   case "$line" in state:*) ;; *) printf 'none'; return ;; esac
   state=${line#state: }; state=${state%% *}
-  if [ "$state" = paused ]; then printf 'paused'; return; fi
-  if [ "$state" = working ]; then
-    src=${line#*source: }; src=${src%% *}
-    case "$src" in run-step|pane) printf 'working'; return ;; esac
-  fi
+  case "$state" in
+    paused) printf 'paused'; return ;;
+    working)
+      src=${line#*source: }; src=${src%% *}
+      case "$src" in run-step|pane) printf 'working'; return ;; esac
+      ;;
+    undetermined) printf 'none'; return ;;
+  esac
   printf 'none'
 }
 
