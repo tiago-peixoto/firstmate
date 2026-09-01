@@ -2,7 +2,7 @@
 
 This report records the construct decision, causal evidence, red-to-green proof, and minimal resolution for each merge-owned failure.
 
-The post-fix mutation campaign made all ten target tests go red against a deliberate break of the behavior each one protects. No mutation-proof gap was found.
+The post-fix mutation campaign made each of the nine behavioral targets go red against a deliberate break of the behavior it protects. The tenth test, session start, failed only because an external comparison timeout expired; that timing classification has no behavior to mutate and therefore no mutation proof.
 
 ## Harness adapter routing artifact
 
@@ -132,9 +132,9 @@ The post-fix mutation campaign made all ten target tests go red against a delibe
 - Construct: upstream's locked-start `fm-home-summary-refresh.sh --best-effort` publication and its corresponding ledger assertion; the reported failure itself came from the comparison invocation's external `--per-script-timeout-secs 300` boundary, not from a failed session-start branch.
 - Verdict: addition retained upstream. The structured per-home summary is new upstream behavior and no fork mechanism competes with it; removing, stubbing, or weakening it would manufacture divergence merely to satisfy a non-project timing ceiling.
 - Cause: the comparative merged run was externally terminated at 301.387 seconds immediately before the watchdog assertion, while the same merged script completed every assertion in a direct run. The repository runner defaults this explicit bound to disabled for `--all` and uses 900 seconds for bounded `--changed`; 300 seconds was imposed only by the comparison harness.
-- Resolution: restore no construct. Keep upstream's synchronous best-effort publication and run the final comparison with the repository's authoritative timeout behavior rather than the ad hoc 300-second ceiling.
+- Resolution: restore no construct and change no production code. Keep upstream's synchronous best-effort publication, then raise this comparison's external per-script bound from 300 to 600 seconds. On 2026-09-01 the merged direct runs measured 213.480-251.623 seconds against 201.914-221.391 seconds on the control; 600 seconds is more than twice the merged direct maximum and leaves 298.613 seconds of headroom above the single loaded-suite termination at 301.387 seconds. This is deliberately not a runtime assertion or a second guard.
 - Red proof: the comparison log reports `not ok - tests/fm-session-start.test.sh exceeded the per-script bound of 300s and was terminated` after all assertions through Pi marker rejection had passed.
-- Mutation proof: replacing the locked-start `fm-home-summary-refresh.sh --best-effort` call with a no-op made the focused test exit 1 with `not ok - a locked session start did not publish the home summary ledger`.
+- Mutation proof: not applicable. The red was an external timeout, not a behavioral failure; mutating home-summary publication would test a different guarantee.
 - Green proof: the current merged head completes the entire script, including watchdog, runtime-bound, re-emit, baseline, and ownership assertions, in a direct run with exit 0; the earlier isolated merged run also completed in 213.480 seconds.
 - Divergence effect: none. Production and tests remain upstream-shaped for this construct.
 

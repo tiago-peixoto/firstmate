@@ -27,4 +27,4 @@ Therefore the added mechanism is explicitly bounded and selected by upstream. Th
 
 - Classification: bounded, explainable upstream cost; not an unbounded variable wait.
 - 300-second behavior: not consistently exceeded; the one loaded-suite result was marginally over and externally killed.
-- Recommended comparison posture: absorb the upstream cost by using the repository runner's authoritative timeout behavior (unbounded for `--all`, 900 seconds for bounded `--changed`) rather than preserving the ad hoc 300-second comparison ceiling.
+- Selected comparison posture: on 2026-09-01 the captain chose to absorb the preferred upstream publication cost and raise this comparison's external per-script bound from 300 to 600 seconds. That is more than twice the merged direct maximum of 251.623 seconds and leaves 298.613 seconds above the one loaded-suite termination at 301.387 seconds. No production timeout, runtime assertion, or second guard changes.
