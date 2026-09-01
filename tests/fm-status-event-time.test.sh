@@ -293,7 +293,7 @@ test_every_reader_agrees_across_unstamped_stamped_and_mixed() {
 }
 
 test_fleet_scan_and_reader_executables_read_a_mixed_log() {
-  local dir home out task_row bare stamped
+  local dir home out task_row bare stamped status_file task rc
   dir=$(case_dir executables)
   write_variants "$dir"
 
@@ -317,9 +317,17 @@ test_fleet_scan_and_reader_executables_read_a_mixed_log() {
       || fail "the fleet scan lost an open decision ($task_row): $out"
   done
 
-  out=$(scan_captain_relevant_statuses "$home/state" | cut -f2 | sort | tr '\n' ' ')
+  out=''
+  for status_file in "$home/state"/*.status; do
+    status_span_first_actionable_record "$status_file" 0 >/dev/null
+    rc=$?
+    [ "$rc" -eq 0 ] || continue
+    task=${status_file##*/}; task=${task%.status}
+    out="${out}${task}"$'\n'
+  done
+  out=$(printf '%s' "$out" | sort | tr '\n' ' ')
   [ "$out" = 'both new old ' ] \
-    || fail "the captain-relevant fleet scan disagreed on a mixed fleet: $out"
+    || fail "the captain-relevant span scan disagreed on a mixed fleet: $out"
 
   # The wake drain is the reader an agent actually sees. It must present every
   # open decision from the same mixed fleet.

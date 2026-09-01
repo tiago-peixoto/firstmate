@@ -53,3 +53,13 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Resolution: preserve upstream's runner and make the suite's shared home constructor produce canonical roots with `0700` state directories.
 - Red proof: the unfixed suite reports `not ok - reconcile never claimed the registered source`.
 - Green proof: the complete generic process-event behavior suite passes with production code unchanged.
+
+## Status event-time mixed-fleet scan
+
+- Test: `tests/fm-status-event-time.test.sh`.
+- Construct: the removed `scan_captain_relevant_statuses` last-line fleet scan, superseded upstream by `status_span_first_actionable_record` and caller-owned classified offsets.
+- Verdict: competing concept. Upstream deliberately replaced last-line scanning because a later routine append can hide an earlier actionable event; restoring the fork helper would reintroduce the defective read model and duplicate the span mechanism.
+- Cause: the fork-only event-time test still invoked the removed helper even though every production consumer had migrated to span classification.
+- Resolution: keep upstream's span classifier and retarget the mixed stamped/unstamped fleet proof to call it from offset zero for each fixture log. No production construct is restored.
+- Red proof: the unfixed suite reports `scan_captain_relevant_statuses: command not found` and then fails its mixed-fleet assertion.
+- Green proof: the full status event-time suite passes, including the mixed fleet, wake-drain, crew-state, and latency cases.
