@@ -1,0 +1,65 @@
+PR review observation protocol — target 802867192691c73b2beaabecceb3453e609ae52d
+
+[canonical observed record]
+input=observed\ 2026-08-31T03:00:00Z\ 2026-08-31T03:00:01Z\ 12\ 3\ 44\ 2
+verdict=ACCEPTED
+kind=observed provider=<empty> updated=2026-08-31T03:00:00Z read_at=2026-08-31T03:00:01Z reviews=12 issue_comments=3 review_comments=44 requested=2
+
+[lexical-only timestamps (calendar/time ranges intentionally not interpreted)]
+input=observed\ 2026-02-30T25:61:61Z\ 2026-13-99T99:99:99Z\ 12\ 3\ 44\ 2
+verdict=ACCEPTED
+kind=observed provider=<empty> updated=2026-02-30T25:61:61Z read_at=2026-13-99T99:99:99Z reviews=12 issue_comments=3 review_comments=44 requested=2
+
+[quiet queue]
+input=unchanged\ 2026-08-31T03:00:00Z\ 2026-08-31T03:00:01Z\ 2
+verdict=ACCEPTED
+kind=unchanged provider=<empty> updated=2026-08-31T03:00:00Z read_at=2026-08-31T03:00:01Z reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=2
+
+[unreachable GitHub lookup]
+input=unavailable\ github
+verdict=ACCEPTED
+kind=unavailable provider=github updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[merge-only compatibility]
+input=merged
+verdict=ACCEPTED
+kind=merged provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[malformed timestamp shape]
+input=observed\ 2026-8-31T03:00:00Z\ 2026-08-31T03:00:01Z\ 12\ 3\ 44\ 2
+verdict=REJECTED
+kind=<empty> provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[leading space]
+input=\ merged
+verdict=REJECTED
+kind=<empty> provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[trailing space]
+input=merged\ 
+verdict=REJECTED
+kind=<empty> provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[repeated space]
+input=observed\ 2026-08-31T03:00:00Z\ \ 2026-08-31T03:00:01Z\ 12\ 3\ 44\ 2
+verdict=REJECTED
+kind=<empty> provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[carriage return]
+input=$'merged\r'
+verdict=REJECTED
+kind=<empty> provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[embedded newline]
+input=$'merged\njunk'
+verdict=REJECTED
+kind=<empty> provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[extra field after prior accepted input]
+input=merged\ extra
+verdict=REJECTED
+kind=<empty> provider=<empty> updated=<empty> read_at=<empty> reviews=<empty> issue_comments=<empty> review_comments=<empty> requested=<empty>
+
+[red-before-fix regression reproduction]
+pre-fix d0776e1: ACCEPTED leading-space record (the regression)
+target 8028671: REJECTED leading-space record
