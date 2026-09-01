@@ -235,8 +235,164 @@ test_drain_dedupes_obvious_duplicates() {
 # plain drain-and-handle turn that runs no other supervision script. It must warn
 # when work is in flight with no live watcher, and stay silent right after a
 # normal fire from a live watcher with a fresh beacon, so it never false-alarms.
-test_secondmate_foreign_queue_stall_is_one_shot_and_read_only() {
-  local dir state sub fakebin out row_before row_after stall_count
+make_secondmate_stall_case() {  # <name> <last-status-line> [harness] [pane] [target]
+  local dir state sub fakebin harness=${3:-claude} pane=${4:-pane fixture}
+  local target=${5-firstmate:fm-mate}
+  dir=$(make_case "$1")
+  state="$dir/state"
+  sub="$dir/secondmate"
+  mkdir -p "$sub/state"
+  printf 'mate\n' > "$sub/.fm-secondmate-home"
+  printf 'window=%s\nworktree=%s\nkind=secondmate\nharness=%s\nbackend=tmux\nhome=%s\n' \
+    "$target" "$sub" "$harness" "$sub" > "$state/mate.meta"
+  printf '%s\n' "$2" > "$state/mate.status"
+  prime_status_seen "$state" "$state/mate.status" \
+    || fail "could not mark the secondmate fixture status as already observed"
+  printf '%s\t41\tcheck\trouted\tcheck: routed row\n' \
+    "$(( $(date +%s) - 10 ))" > "$sub/state/.wake-queue"
+  printf '%s\n' "$pane" > "$dir/pane.txt"
+  fakebin="$dir/fakebin"
+  cat > "$fakebin/tmux" <<'SH'
+#!/usr/bin/env bash
+case "${1:-}" in
+  list-windows) printf '%s\n' 'firstmate:fm-mate' ;;
+  capture-pane) cat "$FM_SECONDMATE_TEST_PANE" ;;
+  display-message)
+    case " $* " in
+      *' -t firstmate:fm-missing '*) exit 1 ;;
+      *) printf '0\n' ;;
+    esac
+    ;;
+  *) exit 0 ;;
+esac
+SH
+  chmod +x "$fakebin/tmux"
+  printf '%s' "$dir"
+}
+
+run_secondmate_stall_case() {  # <case-dir>
+  local dir=$1 rc=0
+  PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
+    FM_STATE_OVERRIDE="$dir/state" FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 \
+    FM_CREW_STATE_BIN="$ROOT/bin/fm-crew-state.sh" FM_SECONDMATE_TEST_PANE="$dir/pane.txt" \
+    FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 5 \
+    > "$dir/watch.out" 2> "$dir/watch.err" || rc=$?
+  printf '%s\n' "$rc" > "$dir/watch.rc"
+}
+
+assert_secondmate_stall_wake() {  # <case-dir> <context>
+  local dir=$1 context=$2 rc
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 0 ] \
+    || fail "$context checkpoint exited $rc, expected 0: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+  grep -F 'check: secondmate wake-loop stalled: mate=mate row=41' "$dir/watch.out" >/dev/null \
+    || fail "$context did not wake the parent: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+}
+
+assert_no_secondmate_stall_wake() {  # <case-dir> <context>
+  local dir=$1 context=$2 rc
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 124 ] \
+    || fail "$context checkpoint exited $rc, expected 124: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+  grep -Fx 'checkpoint: no actionable wake within 5s' "$dir/watch.out" >/dev/null \
+    || fail "$context omitted the quiet checkpoint result: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+  if grep -F 'secondmate wake-loop stalled' "$dir/watch.out" >/dev/null; then
+    fail "$context woke the parent: $(cat "$dir/watch.out")"
+  fi
+  if grep -F 'secondmate-wake-loop-mate-' "$dir/state/.wake-queue" >/dev/null 2>&1; then
+    fail "$context published a durable parent stall notification"
+  fi
+}
+
+assert_secondmate_stall_undetermined() {  # <case-dir> <context> <state> <busy-verdict>
+  local dir=$1 context=$2 current_state=$3 busy_verdict=$4 rc
+  rc=$(cat "$dir/watch.rc")
+  [ "$rc" -eq 0 ] \
+    || fail "$context checkpoint exited $rc, expected 0: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+  grep -F 'check: secondmate wake-loop undetermined: mate=mate row=41' "$dir/watch.out" >/dev/null \
+    || fail "$context did not report undetermined: out=$(cat "$dir/watch.out"); err=$(cat "$dir/watch.err")"
+  grep -F "current-state=$current_state" "$dir/watch.out" >/dev/null \
+    || fail "$context omitted current-state evidence: $(cat "$dir/watch.out")"
+  grep -F "endpoint-busy=$busy_verdict" "$dir/watch.out" >/dev/null \
+    || fail "$context omitted endpoint evidence: $(cat "$dir/watch.out")"
+  if grep -F 'secondmate wake-loop stalled' "$dir/watch.out" >/dev/null; then
+    fail "$context guessed stalled instead of reporting undetermined: $(cat "$dir/watch.out")"
+  fi
+}
+
+test_secondmate_marked_request_without_busy_evidence_is_undetermined() {
+  local dir record body
+  dir=$(make_secondmate_stall_case secondmate-stall-marked-request \
+    'done: previous routed request completed')
+  PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
+    FM_STATE_OVERRIDE="$dir/state" FM_SEND_SETTLE=0 \
+    "$ROOT/bin/fm-send.sh" mate 'dispatch the next review' \
+    > "$dir/send.out" 2> "$dir/send.err" \
+    || fail "could not deliver a marked secondmate request: $(cat "$dir/send.err")"
+  record="$dir/state/mate.inbox/001.msg"
+  [ -f "$record" ] || fail "marked request did not reach the secondmate inbox"
+  body=$(bash -c '. "$1"; fm_task_inbox_body "$2"' _ \
+    "$ROOT/bin/fm-task-inbox-lib.sh" "$record")
+  printf '%s' "$body" | grep -F '[fm-from-firstmate]' >/dev/null \
+    || fail "secondmate inbox request was not marked from firstmate: $body"
+  [ ! -e "$dir/state/mate.busy-state" ] \
+    || fail "marked request test manufactured a busy record the secondmate producer does not create"
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_undetermined "$dir" \
+    "a marked request with no semantic busy evidence" 'done' 'unknown missing'
+  pass "a recordless marked request reports undetermined instead of guessing stalled"
+}
+
+test_secondmate_live_busy_verdict_is_not_stalled() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-live-busy \
+    'resolved [key=previous-work]: current status settled' grok 'Ctrl+c:cancel')
+  run_secondmate_stall_case "$dir"
+  assert_no_secondmate_stall_wake "$dir" "a mate with an exact live busy verdict"
+  pass "an exact live busy verdict suppresses the aged foreign row"
+}
+
+test_secondmate_blocked_aged_queue_wakes_even_while_busy() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-blocked \
+    'blocked [key=primary-routing]: waiting for primary routing' grok 'Ctrl+c:cancel')
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_wake "$dir" "a mate whose current state is blocked"
+  pass "a blocked secondmate wakes the parent even when its endpoint still reads busy"
+}
+
+test_secondmate_idle_aged_queue_wakes() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-idle \
+    'resolved [key=previous-work]: previous phase settled' grok 'idle prompt')
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_wake "$dir" "an idle non-blocked mate with an aged row"
+  pass "an idle non-blocked secondmate with an aged row wakes conservatively"
+}
+
+test_secondmate_dead_endpoint_aged_queue_wakes() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-dead \
+    'resolved [key=previous-work]: previous phase settled' claude 'pane fixture' \
+    'firstmate:fm-missing')
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_wake "$dir" "a mate whose recorded endpoint is dead"
+  pass "an exact dead endpoint verdict reports the aged foreign row as stalled"
+}
+
+test_secondmate_unknown_liveness_aged_queue_wakes() {
+  local dir
+  dir=$(make_secondmate_stall_case secondmate-stall-unknown \
+    'resolved [key=previous-work]: current activity unavailable' claude 'pane fixture' '')
+  run_secondmate_stall_case "$dir"
+  assert_secondmate_stall_undetermined "$dir" \
+    "a mate whose liveness is unknown" unknown 'unknown no-target'
+  pass "unknown secondmate liveness is surfaced without guessing either verdict"
+}
+
+test_secondmate_foreign_queue_report_is_one_shot_and_read_only() {
+  local dir state sub fakebin out row_before row_after stall_count rc
   dir=$(make_case secondmate-foreign-stall)
   state="$dir/state"
   sub="$dir/secondmate"
@@ -262,14 +418,17 @@ SH
   chmod +x "$fakebin/tmux"
   out="$dir/watch.out"
 
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 3 > "$out" 2> "$dir/watch.err" || true
-  grep -F 'check: secondmate wake-loop stalled: mate=mate row=7' "$out" >/dev/null \
-    || fail "an aged foreign row did not wake the parent checkpoint: $(cat "$out"); err=$(cat "$dir/watch.err"); meta=$(cat "$state/mate.meta"); foreign=$(cat "$sub/state/.wake-queue")"
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 3 > "$out" 2> "$dir/watch.err" || rc=$?
+  [ "$rc" -eq 0 ] \
+    || fail "the initial parent checkpoint exited $rc, expected 0: out=$(cat "$out"); err=$(cat "$dir/watch.err")"
+  grep -F 'check: secondmate wake-loop undetermined: mate=mate row=7' "$out" >/dev/null \
+    || fail "an aged foreign row did not report its undetermined state: $(cat "$out"); err=$(cat "$dir/watch.err"); meta=$(cat "$state/mate.meta"); foreign=$(cat "$sub/state/.wake-queue")"
   [ -s "$state/.wake-queue" ] || fail "the parent notification was not durable"
   stall_count=$(grep -c 'secondmate-wake-loop-mate-' "$state/.wake-queue" || true)
   [ "$stall_count" -eq 1 ] || fail "the first parent checkpoint did not publish exactly one stall notification"
@@ -282,39 +441,62 @@ SH
     || fail "parent stall notification could not be acknowledged"
 
   sleep 1
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-second.out" 2> "$dir/watch-second.err" || true
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-second.out" 2> "$dir/watch-second.err" || rc=$?
+  [ "$rc" -eq 124 ] \
+    || fail "the repeated parent checkpoint exited $rc, expected 124: out=$(cat "$dir/watch-second.out"); err=$(cat "$dir/watch-second.err")"
+  [ "$(cat "$dir/watch-second.out")" = 'checkpoint: no actionable wake within 2s' ] \
+    || fail "the repeated parent checkpoint omitted the exact quiet result: out=$(cat "$dir/watch-second.out"); err=$(cat "$dir/watch-second.err")"
   [ ! -s "$state/.wake-queue" ] || {
     stall_count=$(grep -c 'secondmate-wake-loop-mate-' "$state/.wake-queue" || true)
     [ "$stall_count" -eq 0 ] || fail "repeated checkpoint re-published the same stall notification"
   }
   cp "$sub/state/.wake-queue" "$row_after"
   cmp -s "$row_before" "$row_after" || fail "foreign queue changed after idempotent re-check"
+  FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/drain-second.out" 2> "$dir/drain-second.err" \
+    || fail "parent drain failed after the repeated quiet checkpoint"
+  ack_drain_err "$state" "$dir/drain-second.err" \
+    || fail "repeated quiet checkpoint recovery could not be acknowledged"
 
   : > "$sub/state/.wake-queue"
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-empty.out" 2> "$dir/watch-empty.err" || true
-  ! grep -F 'secondmate wake-loop stalled' "$dir/watch-empty.out" >/dev/null \
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-empty.out" 2> "$dir/watch-empty.err" || rc=$?
+  [ "$rc" -eq 124 ] \
+    || fail "the empty-queue checkpoint exited $rc, expected 124: out=$(cat "$dir/watch-empty.out"); err=$(cat "$dir/watch-empty.err")"
+  [ "$(cat "$dir/watch-empty.out")" = 'checkpoint: no actionable wake within 2s' ] \
+    || fail "the empty-queue checkpoint omitted the exact quiet result: out=$(cat "$dir/watch-empty.out"); err=$(cat "$dir/watch-empty.err")"
+  ! grep -F 'secondmate wake-loop ' "$dir/watch-empty.out" >/dev/null \
     || fail "an empty foreign queue produced a stall notification"
+  FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/drain-empty.out" 2> "$dir/drain-empty.err" \
+    || fail "parent drain failed after the empty-queue checkpoint"
+  ack_drain_err "$state" "$dir/drain-empty.err" \
+    || fail "empty-queue checkpoint recovery could not be acknowledged"
 
   printf '%s\t8\tcheck\thealthy\tcheck: healthy row\n' "$(date +%s)" > "$sub/state/.wake-queue"
+  rc=0
   PATH="$fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
     FM_FAKE_TMUX_LOG="$dir/tmux.log" FM_FAKE_TMUX_CAPTURE="$dir/fake-tmux/pane.txt" \
     FM_SECONDMATE_WAKE_STALL_SECS=60 FM_POLL=1 FM_SIGNAL_GRACE=0 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
-    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-healthy.out" 2> "$dir/watch-healthy.err" || true
-  ! grep -F 'secondmate wake-loop stalled' "$dir/watch-healthy.out" >/dev/null \
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-healthy.out" 2> "$dir/watch-healthy.err" || rc=$?
+  [ "$rc" -eq 124 ] \
+    || fail "the young-row checkpoint exited $rc, expected 124: out=$(cat "$dir/watch-healthy.out"); err=$(cat "$dir/watch-healthy.err")"
+  [ "$(cat "$dir/watch-healthy.out")" = 'checkpoint: no actionable wake within 2s' ] \
+    || fail "the young-row checkpoint omitted the exact quiet result: out=$(cat "$dir/watch-healthy.out"); err=$(cat "$dir/watch-healthy.err")"
+  ! grep -F 'secondmate wake-loop ' "$dir/watch-healthy.out" >/dev/null \
     || fail "a healthy foreign queue produced a stall notification"
-  pass "foreign secondmate queue stalls notify once, remain byte-stable, and stay quiet when empty or healthy"
+  pass "foreign secondmate queue reports notify once, remain byte-stable, and stay quiet when empty or healthy"
 }
 
 test_secondmate_stall_marker_rejects_symlink() {
@@ -995,7 +1177,13 @@ test_historical_annotation_skips_announced_status() {
 }
 
 test_self_held_lock_reclaims_instead_of_deadlocking
-test_secondmate_foreign_queue_stall_is_one_shot_and_read_only
+test_secondmate_marked_request_without_busy_evidence_is_undetermined
+test_secondmate_live_busy_verdict_is_not_stalled
+test_secondmate_blocked_aged_queue_wakes_even_while_busy
+test_secondmate_idle_aged_queue_wakes
+test_secondmate_dead_endpoint_aged_queue_wakes
+test_secondmate_unknown_liveness_aged_queue_wakes
+test_secondmate_foreign_queue_report_is_one_shot_and_read_only
 test_secondmate_stall_marker_rejects_symlink
 test_acknowledged_stall_publication_survives_pre_marker_crash
 test_empty_prefix_mate_preserves_other_mate_receipt

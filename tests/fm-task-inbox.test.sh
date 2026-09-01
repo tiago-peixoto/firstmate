@@ -247,15 +247,25 @@ test_handled_mv_dedups_by_sequence() {
 }
 
 test_concurrent_writers_never_clobber() {
-  local state i pids=() count
+  local state i count
   state="$TMP_ROOT/race/state"; mkdir -p "$state"
-  for i in 1 2 3 4 5 6; do
-    inbox_lib "$state" fm_task_inbox_write "$state" t1 "steer number $i" >/dev/null &
-    pids+=($!)
-  done
-  for i in "${pids[@]}"; do
-    wait "$i" || fail "a concurrent inbox write failed"
-  done
+  # Source once, then fork real writers so adapter parsing is not part of the
+  # resource pressure this lock regression creates.
+  FM_STATE_OVERRIDE="$state" bash -c '
+    . "$1"
+    state=$2
+    pids=
+    status=0
+    for i in 1 2 3 4 5 6; do
+      fm_task_inbox_write "$state" t1 "steer number $i" >/dev/null &
+      pids="$pids $!"
+    done
+    for pid in $pids; do
+      wait "$pid" || status=1
+    done
+    exit "$status"
+  ' _ "$ROOT/bin/fm-task-inbox-lib.sh" "$state" \
+    || fail "a concurrent inbox write failed"
   count=$(find "$state/t1.inbox" -maxdepth 1 -name '*.msg' | wc -l | tr -d ' ')
   [ "$count" = 6 ] || fail "6 concurrent writes should yield 6 records, got $count:"$'\n'"$(ls "$state/t1.inbox")"
   for i in 1 2 3 4 5 6; do
