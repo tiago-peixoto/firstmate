@@ -716,8 +716,8 @@ clear_pause_tracking() {  # <window-key>
 # when the bounded pause cadence may absorb the pane. A caller that already
 # proved a pane busy passes `busy`: the declaration remains admissible for every
 # raw verdict except `undetermined`, preserving the existing external-wait
-# behavior without letting conflicting current evidence disappear. After
-# fm-crew-state falls back to stopped or unknown, paused classification is
+# behavior without letting conflicting current evidence disappear. On first
+# sight after fm-crew-state falls back to stopped or unknown, paused classification is
 # recovered only for a confidently dead ordinary crew, or for a secondmate,
 # whose endpoint liveness this function deliberately never reads.
 pause_state_class() {  # <window> <task> [busy]
@@ -752,10 +752,10 @@ pause_state_class() {  # <window> <task> [busy]
   fi
   # A live external-decision gate surfaces once before it can use the bounded
   # pause cadence. surface_nonterminal_stale records .paused-<key> on that first
-  # wake; a later exact paused verdict may then be admitted here. The current
+  # wake; a later non-working verdict may then be admitted here. The current
   # verdict is read before this marker, so the marker can never hide a later
-  # undetermined result.
-  if [ "$class" = paused ] && [ -e "$STATE/.paused-$key" ]; then
+  # working or undetermined result.
+  if [ -e "$STATE/.paused-$key" ]; then
     date +%s > "$recheck_file"
     printf 'paused'
     return

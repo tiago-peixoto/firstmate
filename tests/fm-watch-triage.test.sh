@@ -1137,6 +1137,8 @@ test_undetermined_declared_pause_surfaces_on_every_idle_path() {
       printf 'paused: awaiting the upstream release\n' > "$statusf"
       sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-${id}_status"
       key=$(printf '%s' "$window" | tr '.:/' '___')
+      : > "$state/.paused-$key"
+      set_mtime $(( $(date +%s) - 500 )) "$state/.paused-resurfaced-$key"
       if [ "$pane_path" = stable ]; then
         pane_hash=$(hash_text "idle with conflicting current evidence")
         printf '%s' "$pane_hash" > "$state/.hash-$key"
@@ -1167,6 +1169,52 @@ test_undetermined_declared_pause_surfaces_on_every_idle_path() {
     done
   done
   pass "undetermined declared pauses surface on stable and changed idle paths for workers and secondmates"
+}
+
+test_legacy_unknown_declared_pause_keeps_pause_cadence() {
+  local dir state fakebin out capture_file statusf window key pane_hash sig pid
+  dir=$(make_case legacy-unknown-pause); state="$dir/state"; fakebin="$dir/fakebin"
+  out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/legacy-unknown.status"
+  window="test:fm-legacy-unknown"
+  printf 'idle with unavailable pane semantics\n' > "$capture_file"
+  printf 'window=%s\nkind=ship\nharness=grok\nbackend=tmux\n' "$window" > "$state/legacy-unknown.meta"
+  printf 'paused: awaiting the upstream release\n' > "$statusf"
+  sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-legacy-unknown_status"
+  key=$(printf '%s' "$window" | tr '.:/' '___')
+  pane_hash=$(hash_text "idle with unavailable pane semantics")
+  printf '%s' "$pane_hash" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=grok \
+    FM_FAKE_CREW_STATE='state: unknown · source: pane · semantic state unavailable' \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || fail "legacy unknown declared pause did not surface once before pause admission"
+  grep -Fx "stale: $window" "$out" >/dev/null \
+    || fail "legacy unknown declared pause did not surface its first plain stale wake: $(cat "$out")"
+  [ -e "$state/.paused-$key" ] || fail "legacy unknown declared pause did not record its pause marker"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the first legacy unknown pause wake"
+
+  set_mtime $(( $(date +%s) - 500 )) "$statusf"
+  set_mtime $(( $(date +%s) - 500 )) "$state/.paused-resurfaced-$key"
+  sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-legacy-unknown_status"
+  : > "$out"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=grok \
+    FM_FAKE_CREW_STATE='state: unknown · source: pane · semantic state unavailable' \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_PAUSE_RESURFACE_SECS=1 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || fail "legacy unknown declared pause did not re-surface on the pause cadence"
+  grep -F "awaiting external" "$out" >/dev/null \
+    || fail "legacy unknown declared pause left the pause cadence on re-arm: $(cat "$out")"
+  grep -Fx "stale: $window" "$out" >/dev/null \
+    && fail "legacy unknown declared pause repeated a bare stale wake on re-arm"
+  pass "legacy unknown declared pauses retain their bounded pause cadence"
 }
 
 test_secondmate_paused_resurfaces_in_normal_mode() {
@@ -2709,6 +2757,7 @@ test_crew_is_provably_working_classifier
 test_status_is_paused_classifier
 test_crew_absorb_class_classifier
 test_undetermined_declared_pause_surfaces_on_every_idle_path
+test_legacy_unknown_declared_pause_keeps_pause_cadence
 test_crew_worktree_written_since_classifier
 test_empty_write_prune_widens_the_probe
 test_empty_write_prune_from_the_environment_widens_the_probe
