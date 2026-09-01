@@ -1,6 +1,7 @@
 # Upstream merge result-set classification
 
 Classification only; no additional fixes were made during this phase.
+The counts were reissued after `7a9ca327d461d197d2a48052dc6c70deef8eb013` landed on main and three previously undetermined failures received verified baseline causes.
 
 ## Accounting
 
@@ -11,10 +12,14 @@ Classification only; no additional fixes were made during this phase.
   - 23 were expected-gate-skipped on both sides, so their behavior could not be determined by these runs.
   - 3 failed on the control and passed on the merged candidate (upstream improvement, not a regression).
   - 9 passed on the control and failed on the merged candidate (merge-candidate regressions under the full-suite conditions).
-  - 16 failed on both sides: 4 environmental, 3 known-broken baseline, and 9 undetermined.
+  - 16 failed on both sides: 4 environmental, 6 known-broken baseline, and 6 undetermined.
   - 14 exist only on the merged candidate: 12 passed, 1 was expected-gate-skipped, and 1 exposed a merge defect by direct change inspection.
 
 The 26 merged-candidate failures therefore sit in exactly three sets: 9 control-pass/merged-fail, 16 fail-both, and 1 merged-only failure.
+Ten are merge-owned: the 9 control-pass/merged-fail results plus the confirmed merged-only router-artifact defect.
+
+**Unresolved-mechanism warning:** `tests/fm-session-start.test.sh` and `tests/fm-watch-arm.test.sh` pass in isolation but fail only in the full merged suite.
+Their order- or timing-dependent mechanism remains unresolved, so the isolated passes do not clear them.
 
 ## Control-pass / merged-fail: 9 merge-candidate regressions
 
@@ -45,27 +50,37 @@ The installed terminal manager reports `herdr 0.8.2`. Each of these four produce
 | `tests/fm-backend-herdr-presentation-e2e.test.sh` | 71.934 s | 69.283 s |
 | `tests/fm-backend-herdr-workspace-per-home-e2e.test.sh` | 69.125 s | 66.145 s |
 
-### Known-broken pre-merge baseline: 3
+### Known-broken pre-merge baseline: 6
 
-These are the stale portable-CI fixtures specifically repaired by `7a9ca327d461d197d2a48052dc6c70deef8eb013` (`test: repair stale portable CI fixtures`):
+Commit `7a9ca327d461d197d2a48052dc6c70deef8eb013` (`test: repair stale portable CI fixtures`) is now main itself, and main CI is all green after that repair.
+The commit changes and captured failures confirm these five as repaired stale portable-CI fixtures, fully clearing them of the merge:
 
+- `tests/fm-gotmp.test.sh` - both logs report that teardown left the task-temp directory behind; the repair supplies the fixture's missing session-lock library and orphan-reaper stub.
 - `tests/fm-kimi-harness.test.sh`
+- `tests/fm-on.test.sh` - both logs report that the read-only doctor missed the stopped worker; the repair supplies the remote fixture's missing runtime libraries and correct worker-tree cleanup.
 - `tests/fm-secondmate-safety.test.sh`
 - `tests/fm-teardown.test.sh`
 
-### Undetermined: 9
+`tests/fm-muse-harness.test.sh` is a separate confirmed baseline defect tracked as `firstmate-muse-detection-unknown-macos`.
+Both logs match that filed cause exactly: a `muse-bin-0.1.0-R708.1` process ancestor is expected to classify as `muse` but produces no verdict (`unknown`).
+
+### Undetermined: 6
 
 Both result sets are red, but there is neither the concrete Herdr 0.8.2 worktree-entry signature nor a named known-baseline repair. A fail-both result cannot clear or convict the merge for these:
 
 - `tests/fm-backend-herdr.test.sh` (both runs timed out at about 300 seconds after the same final unit assertion; unlike the four environmental cases, neither log identifies a worktree-entry timeout)
 - `tests/fm-composer-lib.test.sh`
 - `tests/fm-gitignore-config.test.sh`
-- `tests/fm-gotmp.test.sh`
-- `tests/fm-muse-harness.test.sh`
-- `tests/fm-on.test.sh`
 - `tests/fm-pending-reply.test.sh`
 - `tests/fm-pr-check-security.test.sh`
 - `tests/fm-remote-secondmate-lifecycle-e2e.test.sh`
+
+## Confirmed merged-only defect: dropped harness routing artifact
+
+`tests/fm-harness-adapter-references.test.sh` exposed a standalone merge defect.
+The merged router kept the split-router prose while dropping the machine-readable `harness-adapter-routing-v1` operation matrix.
+The upstream second parent `4ad8cbaeafc109a17c1af3911867b7fe9e04e801` carries that matrix, introduced by `c731c36c`, while the merge result does not.
+The matching prose hid the absent artifact: a construct present in upstream is not behavior running in the merge result.
 
 ## Merged-only corpus: 14 direct-change verdicts
 
@@ -79,7 +94,7 @@ These scripts do not exist on the control, so none is called control-pass or con
 | `tests/fm-classify-corr-token.test.sh` | Correlation-token-transparent status classification from `9ce69acf`. | Integrated and passed. |
 | `tests/fm-extension-binding.test.sh` | Trusted process-event extension bindings from `1fbc7bb1`. | Integrated and passed. |
 | `tests/fm-harness-adapter-instructions-live-e2e.test.sh` | Model evaluation of the split harness-router instructions from `c731c36c`. | Could not determine: the declared opt-in environment gate skipped it. |
-| `tests/fm-harness-adapter-references.test.sh` | Machine-readable `harness-adapter-routing-v1` operation/harness map from `c731c36c`. | Merge defect: the merged router kept the split-router prose but omitted the operation matrix, so the new structural test reads an empty artifact. Upstream's second parent contains the matrix. |
+| `tests/fm-harness-adapter-references.test.sh` | Machine-readable `harness-adapter-routing-v1` operation/harness map from `c731c36c`. | Confirmed merge defect: see the standalone defect section above. |
 | `tests/fm-home-summary-refresh.test.sh` | Per-home summary ledger publication from `a3906593`. | Integrated and passed. |
 | `tests/fm-no-mistakes-required.test.sh` | PR-head-bound no-mistakes attestation from `3e5577b2`. | Integrated and passed. |
 | `tests/fm-procevent-quota.test.sh` | Extracted mid-task quota polling from `4ad8cbae`. | Integrated and passed. |
@@ -90,7 +105,7 @@ These scripts do not exist on the control, so none is called control-pass or con
 
 ## Control failures removed on the merged candidate: 3
 
-These are upstream improvements relative to the currently red pre-merge baseline, not regressions:
+These are upstream improvements relative to the frozen pre-merge control result, not regressions:
 
 - `tests/fm-backend-orca.test.sh`
 - `tests/fm-bootstrap-network-parallel.test.sh`
