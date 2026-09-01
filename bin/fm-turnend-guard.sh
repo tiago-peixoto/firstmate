@@ -94,6 +94,8 @@ done
 . "$SCRIPT_DIR/fm-supervision-lib.sh"
 # shellcheck source=bin/fm-primary-scope-lib.sh
 . "$SCRIPT_DIR/fm-primary-scope-lib.sh"
+# shellcheck source=bin/fm-session-lock-lib.sh
+. "$SCRIPT_DIR/fm-session-lock-lib.sh"
 # shellcheck source=bin/fm-hook-host-lib.sh
 . "$SCRIPT_DIR/fm-hook-host-lib.sh"
 
@@ -143,6 +145,16 @@ fi
 # so this exempts them while guarding every real secondmate home.
 fm_primary_scope_matches "$FM_ROOT" "$STATE" || exit 0
 
+# A Claude session that can prove another live session owns this home is
+# read-only, and its matching auto-arm must defer to that owner too.
+if [ "$CLAUDE_MODE" -eq 1 ] && ! fm_session_lock_owned_by_self "$STATE"; then
+  SESSION_LOCK_PID=$(cat "$STATE/.lock" 2>/dev/null || true)
+  case "$SESSION_LOCK_PID" in
+    ''|*[!0-9]*) : ;;
+    *) fm_harness_pid_alive "$SESSION_LOCK_PID" && exit 0 ;;
+  esac
+fi
+
 # --- the actual predicate ----------------------------------------------------
 # shellcheck source=bin/fm-wake-lib.sh
 . "$SCRIPT_DIR/fm-wake-lib.sh"
@@ -187,6 +199,8 @@ block_stop() {
       printf '●  %s task(s) in flight, but no live watcher holds this home lock (last beat: %s).\n' "$FM_SUP_IN_FLIGHT" "$FM_SUP_BEACON_DESC"
     elif [ "$FM_SUP_SOURCES" -gt 0 ]; then
       printf '●  %s process-event source(s) registered, but no live watcher holds this home lock (last beat: %s).\n' "$FM_SUP_SOURCES" "$FM_SUP_BEACON_DESC"
+    elif [ "$FM_SUP_QUEUE_PENDING" = true ]; then
+      printf '●  Durable queued wake delivery pending, but no live watcher holds this home lock (last beat: %s).\n' "$FM_SUP_BEACON_DESC"
     else
       printf '●  X-mode relay polling needs supervision, but no live watcher holds this home lock (last beat: %s).\n' "$FM_SUP_BEACON_DESC"
     fi
@@ -414,6 +428,11 @@ fi
 
 # The auto-arm genuinely failed to establish: consume the bounded re-block
 # budget before considering the verified one-time attended fail-open.
+fm_supervision_status "$STATE" "$GRACE"
+if [ "$FM_SUP_NEEDED" = false ]; then
+  [ -e "$FAILURE_NOTICE" ] || budget_reset
+  exit 0
+fi
 budget_account_current_epoch || block_stop
 terminal_fail_open
 terminal_status=$?
@@ -422,6 +441,8 @@ if [ "$terminal_status" -eq 0 ]; then
     NEED_DESC="$FM_SUP_IN_FLIGHT task(s) in flight"
   elif [ "$FM_SUP_SOURCES" -gt 0 ]; then
     NEED_DESC="$FM_SUP_SOURCES process-event source(s) registered"
+  elif [ "$FM_SUP_QUEUE_PENDING" = true ]; then
+    NEED_DESC="queued wake delivery pending"
   else
     NEED_DESC="X-mode relay polling active"
   fi

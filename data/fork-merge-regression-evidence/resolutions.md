@@ -63,3 +63,44 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Resolution: keep upstream's span classifier and retarget the mixed stamped/unstamped fleet proof to call it from offset zero for each fixture log. No production construct is restored.
 - Red proof: the unfixed suite reports `scan_captain_relevant_statuses: command not found` and then fails its mixed-fleet assertion.
 - Green proof: the full status event-time suite passes, including the mixed fleet, wake-drain, crew-state, and latency cases.
+
+## Turn-end guard queued-wake reason
+
+- Test: `tests/fm-turnend-guard.test.sh`.
+- Construct: the queue-only branches in `block_stop` and the terminal attended-failure `NEED_DESC` selection.
+- Verdict: addition. Upstream's Stop-owned recovery and bounded block mechanism remains authoritative; the fork's shared supervision predicate adds durable queued wakes as a fourth reason supervision is needed, so its two user-facing reason selectors must name that state instead of falling through to X-mode.
+- Cause: the merge kept the fork's `FM_SUP_QUEUE_PENDING` supervision input but adopted upstream's three-way guard message selection for tasks, sources, and X-mode, mislabelling an undelivered wake as Relay polling.
+- Resolution: layer the two queue-only reason branches onto upstream's guard without changing its recovery mechanism.
+- Red proof: the unfixed suite reports that the block reason is missing `queued wake delivery pending` and shows the incorrect X-mode reason.
+
+### Read-only session ownership
+
+- Construct: the foreign-live-session owner exemption before the Claude recovery predicate.
+- Verdict: addition. Upstream's generation-claim recovery remains authoritative for the session that may mutate the home; this check covers a distinct scope where the current session is provably read-only and its matching auto-arm already defers to the live owner.
+- Cause: adopting upstream's guard verbatim dropped the fork's narrow session-lock alignment, so the read-only session was blocked for failing to start recovery it was forbidden to own.
+- Resolution: source the existing session-lock owner and add the pre-predicate foreign-live-owner exemption; do not restore the fork's superseded lock-held auto-arm claim or escalation machinery.
+- Red proof: after the queue reason was restored, the suite reports that the read-only session returned exit 2 instead of 0.
+
+### Auto-arm entry trace
+
+- Construct: the `.claude-autoarm-entry-trace` assertion for `event=gate-live-session-owner`.
+- Verdict: competing concept. The trace names decision points from the fork's retired lock-held-claim design and does not participate in the read-only-session guarantee.
+- Resolution: keep upstream's generation-claim design and drop the trace assertion while preserving the end-to-end checks that both auto-arm and guard defer without displacing the live owner.
+- Red proof: once behavior was restored, the suite failed only because the deliberately retired trace file was absent.
+
+### Separate identical-block escalation
+
+- Construct: `terminal_unclaimed_escalation`, its `UNCLAIMED_BLOCK_BUDGET`, evidence signatures, `reblocks=` ledger field, and `.turnend-claude-escalated` marker.
+- Verdict: competing concept. Upstream replaces this second escalation path with generation-claim ownership plus `FM_CLAUDE_TURNEND_BLOCK_BUDGET`, `terminal_fail_open`, and fresh exhausted-failure epochs.
+- Resolution: retain upstream's single recovery progression and delete the fork-only tests and marker assertions. The source-retirement test still proves the additive queued wake remains guarded, and the existing upstream-aligned tests continue to prove bounded failure progression and recovery reset.
+- Red proof: the upstream-shaped guard correctly returned another block on the second unchanged stop, while the obsolete fork test expected its separate captain escalation.
+
+### Post-wait supervision refresh
+
+- Construct: the second `fm_supervision_status` read after the bounded auto-arm claim wait and before upstream's failure-budget accounting.
+- Verdict: addition. It does not change generation claims or failure progression; it refreshes the shared predicate after a wait during which the supervised identity can retire and leave a durable queued wake.
+- Cause: the initial snapshot still named the process-event source after it had retired, so the queue stayed guarded but the banner reported the stale source instead of the now-authoritative undelivered wake.
+- Resolution: refresh the predicate at the end of the wait, exit if supervision genuinely ended, then continue through upstream's budget mechanism with current task/source/queue facts.
+- Red proof: the source-retirement case remained blocked as required but incorrectly named one registered source instead of `queued wake delivery pending`.
+- Green proof: the complete turn-end guard suite passes with upstream's generation-claim and bounded failure-epoch tests intact, the read-only owner and queued-wake additions covered end to end, and the superseded trace and separate escalation tests removed.
+- Divergence effect: net reduced. The production guard is upstream plus 21 additive lines, while deleting the retired fork recovery tests reduces the two-file diff against upstream from 211 changed lines to 154.
