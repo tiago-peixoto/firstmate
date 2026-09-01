@@ -7,7 +7,9 @@
 # host and path, so any instance works and no host is hardcoded.
 #
 # Merge method on GitHub defaults to --squash when the caller passes none of
-# --squash, --merge, --rebase, or --method after the optional -- separator.
+# gh pr merge's own method flags after the optional -- separator: --squash/-s,
+# --merge/-m, or --rebase/-r. Native gh has no --method form, so retired wrapper
+# syntax never suppresses the default and remains visible to gh as an error.
 # The gh merge command always performs the merge; the outcome read that
 # follows it never becomes a prerequisite for reaching that abstraction. After
 # gh returns success, GitHub's live state is read back and accepted only
@@ -100,32 +102,33 @@ PROJECT_URL="https://$FM_PR_HOST/$FM_PR_PATH"
 shift 2
 [ "${1:-}" = "--" ] && shift
 
+# Native gh expands a single-dash cluster one character at a time, so -ds
+# carries --squash exactly as a bare -s does.
 caller_has_merge_method() {
   local arg
   for arg in "$@"; do
     case "$arg" in
-      --squash|--merge|--rebase|--method|--method=*) return 0 ;;
+      --squash|--merge|--rebase) return 0 ;;
+      --*) ;;
+      -*[smr]*) return 0 ;;
     esac
   done
   return 1
 }
 
-# The merge method the caller's own extra arguments named, in the --flag,
-# --method <value> and --method=<value> forms caller_has_merge_method accepts.
+# The native merge method the caller's own extra arguments named, including a
+# method shorthand in a single-dash cluster.
 caller_merge_method() {
-  local arg method='' pending=false
+  local arg method=''
   for arg in "$@"; do
-    if [ "$pending" = true ]; then
-      method=$arg
-      pending=false
-      continue
-    fi
     case "$arg" in
       --squash) method=squash ;;
       --merge) method=merge ;;
       --rebase) method=rebase ;;
-      --method) pending=true ;;
-      --method=*) method=${arg#--method=} ;;
+      --*) ;;
+      -*s*) method=squash ;;
+      -*m*) method=merge ;;
+      -*r*) method=rebase ;;
     esac
   done
   printf '%s' "$method"

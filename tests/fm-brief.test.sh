@@ -412,7 +412,7 @@ test_no_mistakes_daemon_rule_is_mode_scoped() {
   id="brief-daemon-no-mistakes"
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null 2>&1
   brief="$home/data/$id/brief.md"
-  assert_grep "7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving" "$brief" \
+  assert_grep "Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving" "$brief" \
     "no-mistakes brief lost the daemon rule"
   assert_grep "daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon." "$brief" \
     "no-mistakes brief changed the daemon rule"

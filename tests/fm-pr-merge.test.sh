@@ -198,22 +198,6 @@ SH
   chmod +x "$case_dir/fakebin/gh"
 }
 
-# gh mock that merges but cannot answer its own view, so a case can prove
-# what happens when neither reader can establish the outcome. Args: case_dir
-add_gh_mock_view_fails() {
-  local case_dir=$1
-  cat > "$case_dir/fakebin/gh" <<'SH'
-#!/usr/bin/env bash
-printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
-case "${1:-} ${2:-}" in
-  "pr merge") printf 'merged:\n  number: %s\n  status: ok\n' "${3:-}" ;;
-  "pr view") exit 1 ;;
-esac
-exit 0
-SH
-  chmod +x "$case_dir/fakebin/gh"
-}
-
 add_failing_poll_publish_mv() {
   local case_dir=$1
   cat > "$case_dir/fakebin/mv" <<'SH'
@@ -414,6 +398,12 @@ case "${1:-} ${2:-}" in
   "pr view")
     printf 'pull_request:\n  number: %s\n  state: merged\n' "$3"
     ;;
+  "api graphql")
+    cat "$FM_TEST_GH_OUTCOME"
+    ;;
+  api\ *)
+    cat "$FM_TEST_GH_RULES"
+    ;;
 esac
 exit 0
 SH
@@ -531,8 +521,6 @@ test_github_unreadable_outcome_keeps_pr_bookkeeping() {
   mkdir -p "$case_dir/wt"
   add_gh_mocks "$case_dir" 3131313131313131313131313131313131313131
   add_gh_mock_outcome_read_fails "$case_dir" 3131313131313131313131313131313131313131
-  add_gh_mock_view_fails "$case_dir"
-  : > "$case_dir/gh.log"
   : > "$case_dir/gh.log"
 
   set +e
@@ -544,8 +532,8 @@ test_github_unreadable_outcome_keeps_pr_bookkeeping() {
   expect_code 1 "$rc" "github-outcome-read-fails: an unreadable outcome must fail"
   assert_grep 'could not read the GitHub pull request outcome after the merge attempt' \
     "$case_dir/stderr" "github-outcome-read-fails: the unreadable outcome was not reported"
-  assert_grep 'the gh read failed and the gh view could not prove the outcome either' \
-    "$case_dir/stderr" "github-outcome-read-fails: the refusal did not name both failed reads"
+  assert_grep 'the gh read failed; PR metadata and merge poll remain recorded' \
+    "$case_dir/stderr" "github-outcome-read-fails: the refusal did not name the failed native read"
   assert_no_grep 'verified: ' "$case_dir/stdout" \
     "github-outcome-read-fails: an unproved merge was reported as verified"
   # The merge call itself returned success, so the pull request may well have
@@ -568,6 +556,8 @@ test_github_refusal_quotes_the_forge_output() {
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
 case "${1:-} ${2:-}" in
   "pr merge") echo "will be added to the merge queue when all requirements are met" ;;
+  "api graphql") cat "$FM_TEST_GH_OUTCOME" ;;
+  api\ *) cat "$FM_TEST_GH_RULES" ;;
 esac
 exit 0
 SH
@@ -629,7 +619,7 @@ test_github_auto_merge_without_queue_refuses_legibly() {
       "github-auto-no-queue: the refusal left the operator to infer the pending state"
     grep -qxF "pr merge 66 --repo example/repo $spelling --merge" "$case_dir/gh.log" \
       || fail "github-auto-no-queue: the attempted merge was changed unexpectedly"
-    [ "$(wc -l < "$case_dir/gh.log" | tr -d '[:space:]')" = 1 ] \
+    [ "$(grep -c '^pr merge ' "$case_dir/gh.log")" = 1 ] \
       || fail "github-auto-no-queue: the wrapper attempted more than one merge"
     assert_grep 'pr=https://github.com/example/repo/pull/66' "$case_dir/state/task-x1.meta" \
       "github-auto-no-queue: the attempted merge lost its PR reference"
@@ -856,19 +846,22 @@ test_github_unreadable_outcome_refusal_quotes_the_forge_output() {
   local case_dir rc
   case_dir=$(make_case github-unreadable-outcome-quotes-forge)
   mkdir -p "$case_dir/wt"
-  add_gh_mocks "$case_dir" 8787878787878787878787878787878787878787
   cat > "$case_dir/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
 case "${1:-} ${2:-}" in
   "pr merge") echo "will be added to the merge queue when all requirements are met" ;;
-  "pr view") exit 1 ;;
+  "pr view")
+    case " $* " in
+      *headRefOid*) printf '%s\n' 8787878787878787878787878787878787878787 ; exit 0 ;;
+    esac
+    exit 1
+    ;;
+  "api graphql") echo 'error: could not reach the GitHub API' >&2; exit 1 ;;
 esac
 exit 0
 SH
   chmod +x "$case_dir/fakebin/gh"
-  add_gh_mock_outcome_read_fails "$case_dir" 8787878787878787878787878787878787878787
-  : > "$case_dir/gh.log"
   : > "$case_dir/gh.log"
 
   set +e
@@ -987,7 +980,7 @@ test_github_zero_exit_queue_required_refuses_with_exact_retry() {
     "github-zero-exit-queue-required: queue rules were not read with pagination and encoded branch path"
   grep -qxF 'pr merge 56 --repo example/repo --squash' "$case_dir/gh.log" \
     || fail "github-zero-exit-queue-required: the attempted merge was changed unexpectedly"
-  [ "$(wc -l < "$case_dir/gh.log" | tr -d '[:space:]')" = 1 ] \
+  [ "$(grep -c '^pr merge ' "$case_dir/gh.log")" = 1 ] \
     || fail "github-zero-exit-queue-required: the wrapper attempted more than one merge"
   assert_no_grep --auto "$case_dir/gh.log" \
     "github-zero-exit-queue-required: queue flags were auto-applied to the attempted merge"
@@ -1333,19 +1326,41 @@ test_explicit_merge_method_not_overridden() {
   pass "fm-pr-merge does not add default --squash when the caller passes an explicit merge method"
 }
 
-test_method_equals_merge_method_not_overridden() {
+test_short_merge_method_is_not_overridden() {
   local case_dir
-  case_dir=$(make_case method-equals-merge-method)
+  case_dir=$(make_case short-merge-method)
   mkdir -p "$case_dir/wt"
   add_gh_mocks "$case_dir" 7777777777777777777777777777777777777777
   : > "$case_dir/gh.log"
 
-  run_pr_merge "$case_dir" task-x1 https://github.com/example/repo/pull/23 -- --method=merge \
-    > "$case_dir/stdout" 2> "$case_dir/stderr" || fail "method-equals-merge-method: fm-pr-merge failed"
+  run_pr_merge "$case_dir" task-x1 https://github.com/example/repo/pull/23 -- -r \
+    > "$case_dir/stdout" 2> "$case_dir/stderr" || fail "short-merge-method: fm-pr-merge failed"
 
-  grep -qxF 'pr merge 23 --repo example/repo --method=merge' "$case_dir/gh.log" \
-    || fail "method-equals-merge-method: caller --method=merge was not forwarded without an extra default --squash"
-  pass "fm-pr-merge respects --method=<value> as an explicit merge method"
+  grep -qxF 'pr merge 23 --repo example/repo -r' "$case_dir/gh.log" \
+    || fail "short-merge-method: caller -r was not forwarded without an extra default --squash"
+
+  case_dir=$(make_case clustered-merge-method)
+  mkdir -p "$case_dir/wt"
+  add_gh_mocks "$case_dir" 7878787878787878787878787878787878787878
+  : > "$case_dir/gh.log"
+
+  run_pr_merge "$case_dir" task-x1 https://github.com/example/repo/pull/24 -- -ds \
+    > "$case_dir/stdout" 2> "$case_dir/stderr" || fail "clustered-merge-method: fm-pr-merge failed"
+
+  grep -qxF 'pr merge 24 --repo example/repo -ds' "$case_dir/gh.log" \
+    || fail "clustered-merge-method: a -ds cluster carrying --squash still received the default --squash"
+
+  case_dir=$(make_case method-equals-is-not-native)
+  mkdir -p "$case_dir/wt"
+  add_gh_mocks "$case_dir" 7979797979797979797979797979797979797979
+  : > "$case_dir/gh.log"
+
+  run_pr_merge "$case_dir" task-x1 https://github.com/example/repo/pull/25 -- --method=merge \
+    > "$case_dir/stdout" 2> "$case_dir/stderr" || fail "method-equals-is-not-native: fixture merge failed"
+
+  grep -qxF 'pr merge 25 --repo example/repo --squash --method=merge' "$case_dir/gh.log" \
+    || fail "method-equals-is-not-native: unsupported wrapper syntax suppressed the native default"
+  pass "fm-pr-merge treats gh's short and clustered method flags as explicit, but not retired wrapper syntax"
 }
 
 test_parses_pr_url_for_gh() {
@@ -1661,21 +1676,22 @@ test_gitlab_head_override_args_refuse_before_recording() {
   pass "fm-pr-merge refuses a GitLab head override before recording state"
 }
 
-test_github_still_forwards_sha_arg() {
+test_github_still_forwards_head_binding_arg() {
   local case_dir
-  case_dir=$(make_case github-sha-arg)
+  case_dir=$(make_case github-head-binding-arg)
   mkdir -p "$case_dir/wt"
   add_gh_mocks "$case_dir" dddddddddddddddddddddddddddddddddddddddd
   : > "$case_dir/gh.log"
 
-  # --sha is rejected only where the head is firstmate's to determine. GitHub's
-  # extra args are the caller's business exactly as they were.
-  run_pr_merge "$case_dir" task-x1 https://github.com/example/repo/pull/44 -- --sha abc123 \
-    > "$case_dir/stdout" 2> "$case_dir/stderr" || fail "github-sha-arg: fm-pr-merge failed"
+  # A head binding is refused only where the head is firstmate's to determine,
+  # which is the GitLab path. GitHub's extra args stay the caller's business,
+  # and native gh spells this one --match-head-commit.
+  run_pr_merge "$case_dir" task-x1 https://github.com/example/repo/pull/44 -- --match-head-commit abc123 \
+    > "$case_dir/stdout" 2> "$case_dir/stderr" || fail "github-head-binding-arg: fm-pr-merge failed"
 
-  grep -qxF 'pr merge 44 --repo example/repo --squash --sha abc123' "$case_dir/gh.log" \
-    || fail "github-sha-arg: the GitHub path stopped forwarding a caller --sha"
-  pass "fm-pr-merge leaves GitHub extra-arg handling unchanged, including --sha"
+  grep -qxF 'pr merge 44 --repo example/repo --squash --match-head-commit abc123' "$case_dir/gh.log" \
+    || fail "github-head-binding-arg: the GitHub path stopped forwarding a caller head binding"
+  pass "fm-pr-merge leaves GitHub extra-arg handling unchanged, including --match-head-commit"
 }
 
 # --- durable merge outcome ---------------------------------------------------
@@ -1999,9 +2015,9 @@ test_rejects_unsafe_url_segments_before_recording
 test_repo_override_args_refuse_before_recording
 test_bundled_repo_override_args_refuse_before_recording
 test_explicit_merge_method_not_overridden
-test_method_equals_merge_method_not_overridden
+test_short_merge_method_is_not_overridden
 test_parses_pr_url_for_gh
-test_github_still_forwards_sha_arg
+test_github_still_forwards_head_binding_arg
 test_gitlab_url_resolves_and_merges
 test_gitlab_host_comes_from_the_url
 test_gitlab_imposes_no_merge_method

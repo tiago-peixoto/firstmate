@@ -20,6 +20,7 @@ command -v tasks-axi >/dev/null 2>&1 || { echo "skip: tasks-axi not found"; exit
 make_home() {  # <name>
   local home="$TMP_ROOT/$1" fakebin
   mkdir -p "$home/data" "$home/state" "$home/config" "$home/projects"
+  home=$(cd "$home" && pwd -P) || fail "could not canonicalize fixture home"
   cp "$ROOT/.tasks.toml" "$home/.tasks.toml"
   cat > "$home/data/backlog.md" <<'EOF'
 ## In flight
@@ -637,10 +638,11 @@ EOF
   pass "main-home and secondmate-home captain calls remain correctly routed"
 }
 
-# The one keyed-answer intake, fed through the real process-event runner by a
-# fixture channel that knows nothing about captain holds: task-id keys close at
-# answer time, a card-declared release mode frees held work, freeform prose can
-# forge nothing, and a replayed capture is idempotent.
+# The one keyed-answer intake, fed through the real process-event runner by its
+# built-in Lavish adapter: task-id keys close at answer time, a card-declared
+# release mode frees held work, freeform prose can forge nothing, and a replayed
+# capture is idempotent. External adapters deliberately cannot enter this
+# authority-bearing path; upstream's extension boundary owns those sources.
 test_bound_channel_answers_close_at_answer_time() {
   local home id sid artifact result out show rc
   home=$(make_home channel-answer-closure)
@@ -705,27 +707,18 @@ EOF
   assert_not_contains "$out" "sample-invalid-close-call" \
     "an unsupported card close mode defaulted to completion"
 
-  mkdir -p "$home/adapter-root/bin"
-  cat > "$home/adapter-root/bin/fm-procevent-fixturechan.sh" <<SH
-#!/usr/bin/env bash
-# Fixture channel: reports keyed captain answers and nothing else.
-case "\${1-}" in
-  answers) exec "$ROOT/bin/fm-procevent-lavish.sh" answers "\${2-}" ;;
-esac
-exit 2
-SH
-  chmod +x "$home/adapter-root/bin/fm-procevent-fixturechan.sh"
   run_captain "$home" bind fixture-src >/dev/null \
-    || fail "could not bind the fixture channel"
-  PATH="$home/fakebin:$PATH" FM_ROOT_OVERRIDE="$home/adapter-root" FM_HOME="$home" \
+    || fail "could not bind the fixture source"
+  PATH="$home/fakebin:$PATH" FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" \
     FM_STATE_OVERRIDE="$home/state" FM_DATA_OVERRIDE="$home/data" \
     FM_PROCEVENT_CLAIM_ROOT="$home/procevent-claims" \
-    "$ROOT/bin/fm-procevent.sh" register fixturechan fixture-src -- cat "$result" >/dev/null \
-    || fail "could not register the fixture channel source"
-  PATH="$home/fakebin:$PATH" FM_ROOT_OVERRIDE="$home/adapter-root" FM_HOME="$home" \
+    "$ROOT/bin/fm-procevent.sh" register lavish fixture-src -- cat "$result" >/dev/null \
+    || fail "could not register the built-in fixture source"
+  out=$(PATH="$home/fakebin:$PATH" FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" \
     FM_STATE_OVERRIDE="$home/state" FM_DATA_OVERRIDE="$home/data" \
     FM_PROCEVENT_CLAIM_ROOT="$home/procevent-claims" \
-    "$ROOT/bin/fm-procevent.sh" start fixture-src >/dev/null 2>&1
+    "$ROOT/bin/fm-procevent.sh" start fixture-src 2>&1) \
+    || fail "could not capture the built-in fixture source: $out"
   assert_absent "$home/state/procevent-inbox/fixture-src.1.handled" \
     "feeding a captain answer retired the notification firstmate still needs"
   assert_present "$home/state/procevent-inbox/fixture-src.1.result" \

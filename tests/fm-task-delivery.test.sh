@@ -357,6 +357,8 @@ STUB
     "promoted no-mistakes worker did not receive the --yes prohibition"
   assert_grep "It is banned fleet-wide" "$payload" \
     "promoted no-mistakes worker did not receive the fleet-wide ban wording"
+  assert_grep "Never stop, restart, or update the shared \`no-mistakes\` daemon" "$payload" \
+    "promoted no-mistakes worker did not receive the shared-daemon safety rule"
 
   payload="$TMP_ROOT/promote-dod/payload-promote-dod-direct-pr"
   assert_grep "supersede the scout delivery rules and report-based Definition of done" "$payload" \
@@ -371,6 +373,10 @@ STUB
     "promoted local-only worker lost its no-remote contract"
   assert_no_grep "no-mistakes axi respond" "$TMP_ROOT/promote-dod/payload-promote-dod-direct-pr" \
     "promoted direct-PR worker received the pipeline gate contract"
+  assert_no_grep "shared \`no-mistakes\` daemon" "$TMP_ROOT/promote-dod/payload-promote-dod-direct-pr" \
+    "promoted direct-PR worker received the no-mistakes-only daemon rule"
+  assert_no_grep "shared \`no-mistakes\` daemon" "$TMP_ROOT/promote-dod/payload-promote-dod-local-only" \
+    "promoted local-only worker received the no-mistakes-only daemon rule"
   pass "fm-promote: a promoted worker receives the same mode-specific delivery contract a briefed one does"
 }
 
