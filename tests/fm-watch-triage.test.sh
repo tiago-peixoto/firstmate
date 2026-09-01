@@ -372,7 +372,7 @@ test_crew_absorb_class_classifier() {
   FM_FAKE_CREW_STATE='state: unknown · source: none · worktree gone'
   [ "$(crew_absorb_class a)" = none ] || fail "unknown crew classed absorbable"
   FM_FAKE_CREW_STATE='state: undetermined · source: run-step · conflicting direct evidence'
-  [ "$(crew_absorb_class a)" = none ] || fail "undetermined crew classed absorbable"
+  [ "$(crew_absorb_class a)" = undetermined ] || fail "undetermined crew lost its distinct classifier result"
   ! crew_is_provably_working a || fail "undetermined crew treated as provably working"
   ! crew_is_paused a || fail "undetermined crew classed paused"
   FM_FAKE_CREW_STATE='state: unknown · source: none · worktree gone'
@@ -1124,6 +1124,51 @@ test_exited_declared_pause_is_bounded_but_live_gate_surfaces() {
   pass "exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once"
 }
 
+test_undetermined_declared_pause_surfaces_on_every_idle_path() {
+  local kind pane_path id dir state fakebin out capture_file statusf window key pane_hash sig pid
+  for kind in ship secondmate; do
+    for pane_path in stable changed; do
+      id="undetermined-$kind-$pane_path"
+      dir=$(make_case "$id"); state="$dir/state"; fakebin="$dir/fakebin"
+      out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/$id.status"
+      window="test:fm-$id"
+      printf 'idle with conflicting current evidence\n' > "$capture_file"
+      printf 'window=%s\nkind=%s\nharness=grok\nbackend=tmux\n' "$window" "$kind" > "$state/$id.meta"
+      printf 'paused: awaiting the upstream release\n' > "$statusf"
+      sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-${id}_status"
+      key=$(printf '%s' "$window" | tr '.:/' '___')
+      if [ "$pane_path" = stable ]; then
+        pane_hash=$(hash_text "idle with conflicting current evidence")
+        printf '%s' "$pane_hash" > "$state/.hash-$key"
+        printf '1\n' > "$state/.count-$key"
+      fi
+      PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+        FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+        FM_FAKE_CREW_STATE='state: undetermined · source: run-step · conflicting direct evidence' \
+        FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+        FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+        FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+      pid=$!
+      if wait_poll_cycle "$state" "$pid"; then
+        reap "$pid"
+        fail "undetermined $kind $pane_path pause was absorbed instead of surfaced"
+      elif kill -0 "$pid" 2>/dev/null; then
+        reap "$pid"
+        fail "undetermined $kind $pane_path watcher timed out before completing a poll cycle"
+      else
+        wait "$pid" || fail "undetermined $kind $pane_path watcher failed while surfacing"
+      fi
+      grep -Fx "stale: $window" "$out" >/dev/null \
+        || fail "undetermined $kind $pane_path pause did not surface a plain stale wake: $(cat "$out")"
+      grep -F "awaiting external" "$out" >/dev/null \
+        && fail "undetermined $kind $pane_path pause was mislabeled as an admitted external wait"
+      grep "$(printf '\tstale\t')" "$state/.wake-queue" | grep -F "$window" >/dev/null \
+        || fail "undetermined $kind $pane_path pause did not enqueue a stale wake"
+    done
+  done
+  pass "undetermined declared pauses surface on stable and changed idle paths for workers and secondmates"
+}
+
 test_secondmate_paused_resurfaces_in_normal_mode() {
   local dir state fakebin out capture_file statusf window key pane_hash sig pid back
   dir=$(make_case secondmate-paused-resurface); state="$dir/state"; fakebin="$dir/fakebin"
@@ -1774,6 +1819,44 @@ test_busy_declared_pause_is_rechecked_not_wedge_escalated() {
   wait_for_exit "$pid" 100 || { reap "$pid"; fail "a lifted pause on an over-age busy pane no longer wedge-escalates"; }
   grep -F "possible wedge" "$out" >/dev/null || fail "the restored busy-turn escalation did not flag a possible wedge: $(cat "$out")"
   pass "a busy pane under a declared pause is rechecked on the long cadence, and lifting the pause restores the wedge escalation"
+}
+
+# Regression for a busy pane whose historical paused declaration conflicts with
+# the current reader verdict. Replacing the busy-turn classifier with the raw
+# status-verb check must make this test fail by absorbing the pane and labeling
+# its wake as an external-wait recheck.
+test_busy_undetermined_pause_surfaces_without_pause_cadence() {
+  local dir state fakebin out capture_file window key sig pid statusf back
+  dir=$(make_case busy-undetermined-pause); state="$dir/state"; fakebin="$dir/fakebin"
+  out="$dir/watch.out"; capture_file="$dir/pane.txt"; window="test:fm-busy-undetermined"
+  statusf="$state/busy-undetermined.status"
+  printf 'Working... (7200.4s) waiting for validation\n' > "$capture_file"
+  printf 'window=%s\nkind=ship\nharness=pi\n' "$window" > "$state/busy-undetermined.meta"
+  record_pi_busy "$state" busy-undetermined
+  printf 'paused: awaiting the validation service\n' > "$statusf"
+  back=$(( $(date +%s) - 500 ))
+  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$statusf"
+  else touch -m -d "@$back" "$statusf"; fi
+  sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-busy-undetermined_status"
+  key=$(printf '%s' "$window" | tr ':/.' '___')
+  touch -t 200001010000 "$state/busy-undetermined.meta"
+
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_FAKE_CREW_STATE='state: undetermined · source: run-step · conflicting direct evidence' \
+    FM_BUSY_TURN_MAX_SECS=1 FM_STALE_ESCALATE_SECS=1 FM_PAUSE_RESURFACE_SECS=1 \
+    FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || { reap "$pid"; fail "an undetermined busy pause was absorbed instead of surfaced"; }
+  grep -Fx "stale: $window" "$out" >/dev/null \
+    || fail "an undetermined busy pause did not surface a plain stale wake: $(cat "$out")"
+  grep -F "awaiting external" "$out" >/dev/null \
+    && fail "an undetermined busy pause was mislabeled as an admitted external wait: $(cat "$out")"
+  grep "$(printf '\tstale\t')" "$state/.wake-queue" | grep -F "$window" >/dev/null \
+    || fail "an undetermined busy pause did not enqueue its surfaced stale wake"
+  [ ! -e "$state/.stale-since-$key" ] || fail "an undetermined busy pause started a wedge timer instead of surfacing"
+  pass "an undetermined busy pause surfaces without entering the pause or wedge cadence"
 }
 
 # Behavioral proof that the production default (no FM_BUSY_TURN_MAX_SECS override
@@ -2625,6 +2708,7 @@ test_classifier_primitives
 test_crew_is_provably_working_classifier
 test_status_is_paused_classifier
 test_crew_absorb_class_classifier
+test_undetermined_declared_pause_surfaces_on_every_idle_path
 test_crew_worktree_written_since_classifier
 test_empty_write_prune_widens_the_probe
 test_empty_write_prune_from_the_environment_widens_the_probe
@@ -2650,6 +2734,7 @@ test_busy_pane_turn_end_touch_resets_age
 test_busy_pane_repeated_escalation_reaches_demand_deep_inspection
 test_busy_pane_default_turn_age_bound_is_3600s
 test_busy_declared_pause_is_rechecked_not_wedge_escalated
+test_busy_undetermined_pause_surfaces_without_pause_cadence
 test_nonterminal_stale_not_working_surfaced
 test_nonterminal_stale_paused_absorbed_then_resurfaced
 test_exited_declared_pause_is_bounded_but_live_gate_surfaces
