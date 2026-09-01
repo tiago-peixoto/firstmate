@@ -115,3 +115,14 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Red proof: the unfixed suite reports `error: cannot claim source: delivery-src` followed by `not ok - the fixture captured no process-event result`.
 - Green proof: the complete watcher triage suite passes, including proactive delivery, interrupted-handler replay, marker identity, serialization, crash-boundary replay, and acknowledgement behavior.
 - Divergence effect: one test-fixture line added; production remains exactly upstream-shaped for this construct.
+
+## Session-start comparison timeout
+
+- Test: `tests/fm-session-start.test.sh`.
+- Construct: upstream's locked-start `fm-home-summary-refresh.sh --best-effort` publication and its corresponding ledger assertion; the reported failure itself came from the comparison invocation's external `--per-script-timeout-secs 300` boundary, not from a failed session-start branch.
+- Verdict: addition retained upstream. The structured per-home summary is new upstream behavior and no fork mechanism competes with it; removing, stubbing, or weakening it would manufacture divergence merely to satisfy a non-project timing ceiling.
+- Cause: the comparative merged run was externally terminated at 301.387 seconds immediately before the watchdog assertion, while the same merged script completed every assertion in a direct run. The repository runner defaults this explicit bound to disabled for `--all` and uses 900 seconds for bounded `--changed`; 300 seconds was imposed only by the comparison harness.
+- Resolution: restore no construct. Keep upstream's synchronous best-effort publication and run the final comparison with the repository's authoritative timeout behavior rather than the ad hoc 300-second ceiling.
+- Red proof: the comparison log reports `not ok - tests/fm-session-start.test.sh exceeded the per-script bound of 300s and was terminated` after all assertions through Pi marker rejection had passed.
+- Green proof: the current merged head completes the entire script, including watchdog, runtime-bound, re-emit, baseline, and ownership assertions, in a direct run with exit 0; the earlier isolated merged run also completed in 213.480 seconds.
+- Divergence effect: none. Production and tests remain upstream-shaped for this construct.
