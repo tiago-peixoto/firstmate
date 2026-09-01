@@ -317,7 +317,7 @@ test_scan_marker_replaces_symlink_safely() {
 
 test_nonterminal_and_captain_held_states_do_not_report() {
   local state
-  for state in working paused parked unknown; do
+  for state in working paused parked undetermined unknown; do
     make_world "nonterminal-$state"; write_child "$MAIN" child 'working: still active'
     FM_FAKE_CREW_STATE="$state" run_reconcile "$MAIN" --startup
     [ "$(outcome_count "$MAIN" pending)" = 0 ] || fail "$state produced a terminal outcome"

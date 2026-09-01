@@ -1399,11 +1399,12 @@ signal_reason_is_actionable() {  # <file> ...
 #             (e.g. waiting on CI);
 #   paused  - the crew's authoritative current state is a declared external-wait
 #             pause (paused:), which is EXPECTED to idle;
+#   undetermined - current evidence conflicts or is unsubstantiated, so the wake
+#             must surface;
 #   none    - neither, so the wake must surface (a stopped/finished/parked/failed/
 #             torn-down/unknown crew, or an unreadable verdict).
-# One fm-crew-state.sh read serves BOTH absorb reasons at once. Reading the state
-# authoritatively (not the status log) is what keeps run-step precedence: a crew
-# that appended paused: but then STARTED a run reports working, never paused.
+# One fm-crew-state.sh read serves both absorb reasons and preserves undetermined
+# for the pause-admission boundary.
 # NOT a pure read: fm-crew-state.sh may make a bounded no-mistakes call, so callers
 # run it only on no-verb signal and first-sighting stale paths, never every wake.
 # FM_CREW_STATE_BIN lets tests stub the verdict.
@@ -1413,11 +1414,14 @@ crew_absorb_class() {  # <id>
   line=$("$FM_CREW_STATE_BIN" "$id" 2>/dev/null) || true
   case "$line" in state:*) ;; *) printf 'none'; return ;; esac
   state=${line#state: }; state=${state%% *}
-  if [ "$state" = paused ]; then printf 'paused'; return; fi
-  if [ "$state" = working ]; then
-    src=${line#*source: }; src=${src%% *}
-    case "$src" in run-step|pane) printf 'working'; return ;; esac
-  fi
+  case "$state" in
+    paused) printf 'paused'; return ;;
+    working)
+      src=${line#*source: }; src=${src%% *}
+      case "$src" in run-step|pane) printf 'working'; return ;; esac
+      ;;
+    undetermined) printf 'undetermined'; return ;;
+  esac
   printf 'none'
 }
 
@@ -1426,8 +1430,8 @@ crew_absorb_class() {  # <id>
 # absorb-only-when-provably-working: a no-verb turn-end or stale wake is absorbed
 # ONLY when this returns 0, and SURFACED otherwise (the crew may be done, waiting
 # on a decision, or wedged). For stale panes it is checked before trusting the
-# status log so a pre-validation captain-relevant line does not override an active
-# run. See crew_absorb_class for the exact working/paused/none decision.
+# status log so only unconflicted active-run evidence can override a stale line.
+# See crew_absorb_class for the exact working/paused/undetermined/none decision.
 crew_is_provably_working() {  # <id>
   [ "$(crew_absorb_class "$1")" = working ]
 }

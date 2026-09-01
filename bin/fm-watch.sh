@@ -8,20 +8,20 @@
 # otherwise, so a crew that finishes (or stops and waits) without a current
 # working signal is never silently swallowed. A declared wait, either a paused:
 # external wait or a verified captain-held transfer, is the separate idle absorb
-# case and re-surfaces only on its long bounded cadence, although its initial
-# no-verb status signal still surfaces in normal mode.
+# case only when pause_state_class admits it; that function's header owns the
+# admission rules. An admitted wait re-surfaces only on its long bounded cadence,
+# although its initial no-verb status signal still surfaces in normal mode.
 # While state/.afk exists, the daemon owns triage and this watcher queues and exits
 # on every wake. Printed reason lines:
 #   signal: <file>...      status/turn-end signals, surfaced when a listed status
 #                          has a captain-relevant verb OR a no-verb signal's crew
 #                          is not provably working, unless afk is active
-#   stale: <window>        a provably-working stale is ALWAYS absorbed (with a wedge
-#                          timer) regardless of what the status log says - an active
-#                          run-step or busy pane outranks even a captain-relevant log
-#                          line, since the crew's own log gets no new entry once
-#                          firstmate hands it to a no-mistakes validation. A declared
-#                          external-wait pause or verified captain-held transfer is
-#                          absorbed instead with its own long re-surface cadence,
+#   stale: <window>        a stale pane is absorbed with a wedge timer only on
+#                          positive, unconflicted working evidence; every other
+#                          current-state verdict surfaces unless pause_state_class
+#                          admits a declared wait. An admitted external-wait pause
+#                          or verified captain-held transfer is absorbed instead
+#                          with its own long re-surface cadence,
 #                          never as a wedge, and that recheck reason names which
 #                          human the wait is on. Only when neither absorb class
 #                          applies does the log's last line decide:
@@ -45,8 +45,9 @@
 #                          only up to BUSY_TURN_MAX_SECS with no completed turn
 #                          (state/<id>.turn-ended, or the spawn record before any
 #                          turn completes). Past that bound, a declared external
-#                          wait or verified captain-held transfer uses the long
-#                          pause recheck cadence; every other pane goes through
+#                          wait or verified captain-held transfer admitted by
+#                          pause_state_class uses the long pause recheck cadence;
+#                          every other pane goes through
 #                          the same wedge timer and surfaces with the identical
 #                          "stale: ..." reason, escalation count, and
 #                          demand-deep-inspection marker, for human inspection
@@ -191,16 +192,16 @@ STALE_ESCALATE_SECS=${FM_STALE_ESCALATE_SECS:-240}  # idle secs before a provabl
 # STALE_ESCALATE_SECS-paced wedge_timer_check used for a provably-working
 # non-busy stale - so it escalates via the existing stale reason, escalation
 # counter, and demand-deep-inspection marker for human inspection only, never an
-# automatic interrupt, signal, or restart - unless the crew declared the wait
-# itself, which takes the long pause cadence instead. A completed turn touches
+# automatic interrupt, signal, or restart - unless pause_state_class admits the
+# crew's declared wait to the long pause cadence instead. A completed turn touches
 # turn-ended and resets the age. Set generously above any legitimate interval
 # between completed turns, including long tool calls, builds, or test runs.
 BUSY_TURN_MAX_SECS=${FM_BUSY_TURN_MAX_SECS:-3600}
 # A local secondmate's foreign queue is checked on every poll, but only after this
 # bounded age can its current state and endpoint liveness produce a parent verdict.
 SECONDMATE_WAKE_STALL_SECS=${FM_SECONDMATE_WAKE_STALL_SECS:-60}
-# A crew that declared a pause is idling on a known external wait, so its stale
-# pane is absorbed rather than wedge-escalated.
+# pause_state_class is the sole authority that admits a declared pause to the
+# stale-pane absorb cadence rather than wedge escalation.
 # A captain-held or paused crew whose agent has confidently exited uses the same
 # bounded cadence, while a live or ambiguously read agent still surfaces once; a
 # secondmate earns the cadence on its declaration alone, because its endpoint
@@ -628,9 +629,9 @@ busy_turn_over_age() {  # <task>
 
 # Absorb a stale pane under a declared external-wait pause (paused:) or a
 # dead-agent captain-held transfer, and re-surface it once every
-# PAUSE_RESURFACE_SECS for a recheck so it cannot rot invisibly. Called on any
-# stale poll once pause_state_class permits the bounded cadence, so it must be
-# cheap: it NEVER re-reads crew state. The re-surface age is anchored on the
+# PAUSE_RESURFACE_SECS for a recheck so it cannot rot invisibly. Every caller
+# reaches this only after pause_state_class returns the exact `paused` verdict.
+# The re-surface age is anchored on the
 # status file mtime, not a per-hash marker, so a churny idle pane (a ticking
 # clock, a token counter) cannot keep resetting the cadence the way a hash-tied
 # timer would. The bounded re-surface itself is the shared resurface_absorbed
@@ -679,10 +680,20 @@ handle_paused_stale() {  # <window> <task> <hash>
 # remains daemon-owned and receives the undecorated wake identity for its own
 # classification.
 busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-file>
-  local win=$1 task=$2 h=$3 since_file=$4 escalation_file=$5
-  if ! afk_present && status_is_paused_or_captain_held "$(last_status_line "$STATE/$task.status")"; then
-    handle_paused_stale "$win" "$task" "$h"
-    return 0
+  local win=$1 task=$2 h=$3 since_file=$4 escalation_file=$5 class
+  if ! afk_present; then
+    class=$(pause_state_class "$win" "$task" busy)
+    case "$class" in
+      paused)
+        handle_paused_stale "$win" "$task" "$h"
+        return 0
+        ;;
+      working|none) ;;
+      *)
+        surface_nonterminal_stale "$win" "$h"
+        return 0
+        ;;
+    esac
   fi
   wedge_timer_check "$win" "$since_file" "busy (no completed turn)" "$escalation_file" "$task"
   return 1
@@ -700,12 +711,17 @@ clear_pause_tracking() {  # <window-key>
   rm -f "$STATE/.stale-$key" "$STATE/.stale-since-$key" "$STATE/.wedge-escalations-$key"
 }
 
-# Reconcile a declared pause or captain-held status with authoritative crew state.
-# After fm-crew-state has fallen back to stopped or unknown, paused classification is
-# recovered only for a confidently dead ordinary crew, or for a secondmate, whose
-# endpoint liveness this function deliberately never reads.
-pause_state_class() {  # <window> <task>
-  local win=$1 task=$2 key last recheck_file class agent_alive kind
+# The sole pause-admission boundary. It reconciles a declared pause or
+# captain-held status with authoritative crew state and prints `paused` only
+# when the bounded pause cadence may absorb the pane. A caller that already
+# proved a pane busy passes `busy`: the declaration remains admissible for every
+# raw verdict except `undetermined`, preserving the existing external-wait
+# behavior without letting conflicting current evidence disappear. On first
+# sight after fm-crew-state falls back to stopped or unknown, paused classification is
+# recovered only for a confidently dead ordinary crew, or for a secondmate,
+# whose endpoint liveness this function deliberately never reads.
+pause_state_class() {  # <window> <task> [busy]
+  local win=$1 task=$2 busy=${3:-} key last recheck_file class agent_alive kind
   key=$(window_key "$win")
   last=$(last_status_line "$STATE/$task.status")
   recheck_file="$STATE/.paused-rechecked-$key"
@@ -714,26 +730,34 @@ pause_state_class() {  # <window> <task>
     crew_absorb_class "$task"
     return
   fi
-  # Read once past the declared-wait gate and reused by both liveness gates below,
-  # so a mate's stale poll costs one metadata scan rather than one per gate, and the
-  # far more common no-declaration path above still costs none.
+  # Read once past the declared-wait gate and reuse the verdict below. Never
+  # reuse an earlier pause classification: a later undetermined verdict must
+  # surface on the first path that observes it.
   kind=$(window_kind "$win")
-  if [ -e "$STATE/.paused-$key" ] && [ "$(age_of "$recheck_file")" -lt "$STALE_ESCALATE_SECS" ]; then
-    if [ "$kind" != secondmate ]; then
-      agent_alive=$(fm_backend_agent_alive "$(window_backend "$win")" "$win" 2>/dev/null) || agent_alive=unknown
-      if [ "$agent_alive" != dead ]; then
-        rm -f "$recheck_file"
-        printf 'none'
-        return
-      fi
-    fi
+  class=$(crew_absorb_class "$task")
+  if [ "$class" = undetermined ]; then
+    rm -f "$recheck_file"
+    printf 'undetermined'
+    return
+  fi
+  if [ "$busy" = busy ]; then
+    date +%s > "$recheck_file"
     printf 'paused'
     return
   fi
-  class=$(crew_absorb_class "$task")
   if [ "$class" = working ]; then
     rm -f "$recheck_file"
     printf 'working'
+    return
+  fi
+  # A live external-decision gate surfaces once before it can use the bounded
+  # pause cadence. surface_nonterminal_stale records .paused-<key> on that first
+  # wake; a later non-working verdict may then be admitted here. The current
+  # verdict is read before this marker, so the marker can never hide a later
+  # working or undetermined result.
+  if [ -e "$STATE/.paused-$key" ]; then
+    date +%s > "$recheck_file"
+    printf 'paused'
     return
   fi
   if [ "$kind" != secondmate ]; then
@@ -1514,7 +1538,8 @@ EOF
         if [ "$kind" = secondmate ]; then
           case "$(pause_state_class "$w" "$task")" in
             paused) handle_paused_stale "$w" "$task" "$h" ;;
-            *)      clear_pause_tracking "$key" ;;
+            working|none) clear_pause_tracking "$key" ;;
+            *) surface_nonterminal_stale "$w" "$h" ;;
           esac
         elif afk_present; then
           # Daemon owns triage: one-shot per distinct stale hash, as before.
@@ -1532,18 +1557,15 @@ EOF
           # BEFORE that validation started for the run's entire (possibly
           # many-minutes) duration, while stale_is_terminal - which has no
           # run-step awareness - keeps reporting it as still-current on every
-          # poll. Root cause of the 2026-07 herdr false-surface incidents: a
-          # validating crew was surfaced as stale every few minutes despite an
-          # actively-running pipeline, purely because of this stale leftover
-          # line. On a NEW hash, give an active run/busy pane (the same
-          # authoritative source fm-crew-state.sh itself already prioritizes
-          # over the log) a chance to override before trusting the log.
+          # poll. On a NEW hash, consult fm-crew-state.sh: only positive,
+          # unconflicted working evidence is absorbable, while an undetermined
+          # run/status conflict surfaces for review.
           if [ "$(cat "$sf" 2>/dev/null || true)" != "$h" ]; then
             if crew_is_provably_working "$(window_to_task "$w" "$STATE")"; then
               printf '%s' "$h" > "$sf"
               date +%s > "$ssf"
               clear_write_tracking "$key"
-              triage_log "absorbed stale (provably working, overriding a stale captain-relevant status): $w"
+              triage_log "absorbed stale (provably working without conflicting current-state evidence): $w"
             else
               fm_wake_append stale "$w" "stale: $w" || exit 1
               printf '%s' "$h" > "$sf"
@@ -1563,20 +1585,9 @@ EOF
           # this same hash - nothing left to do (matches the original,
           # unmodified terminal-status behavior).
         else
-          # Non-terminal stale: a crew gone quiet without a captain-relevant status.
-          # Decided once per distinct stale hash (the costly state reads run only
-          # on first sight, never every poll) via pause_state_class, which returns:
-          #   - working: an actively-running pipeline legitimately sits on a static
-          #     pane (e.g. waiting on CI), so absorb and start the wedge timer so a
-          #     genuinely frozen run still escalates past STALE_ESCALATE_SECS;
-          #   - paused: a declared wait pause_state_class admits (its header owns which
-          #     liveness evidence each kind of crew must supply), so absorb on the long
-          #     PAUSE_RESURFACE_SECS cadence instead of wedge-escalating;
-          #   - none: no running pipeline, no exact busy verdict, no admitted declared wait.
-          #     Surface immediately so firstmate inspects the inconclusive state
-          #     (it may be done via an interactive menu that wrote no done: status,
-          #     waiting on a decision, or wedged) instead of leaving the finish to
-          #     wait out the timer.
+          # Non-terminal stale: decide once per distinct hash through pause_state_class;
+          # its header owns the verdict contract. Only working and paused absorb here;
+          # every other verdict surfaces immediately for firstmate inspection.
           if [ "$(cat "$sf" 2>/dev/null || true)" != "$h" ]; then
             task=$(window_to_task "$w" "$STATE")
             case "$(pause_state_class "$w" "$task")" in
@@ -1602,7 +1613,7 @@ EOF
                          printf '%s' "$h" > "$sf"
                          wedge_timer_check "$w" "$ssf" "non-terminal stale (provably working after a declared pause)" "$ewf" "$task"
                          triage_log "absorbed non-terminal stale (provably working): $w" ;;
-                *)       handle_paused_stale "$w" "$task" "$h" ;;
+                *) surface_nonterminal_stale "$w" "$h" ;;
               esac
             else
               wedge_timer_check "$w" "$ssf" "non-terminal stale" "$ewf" "$task"
@@ -1643,7 +1654,8 @@ EOF
       if ! afk_present && status_is_paused_or_captain_held "$(last_status_line "$STATE/$task.status")" && [ "$busy_now" -ne 0 ]; then
         case "$(pause_state_class "$w" "$task")" in
           paused) handle_paused_stale "$w" "$task" "$h" ;;
-          *)      clear_pause_tracking "$key" ;;
+          working|none) clear_pause_tracking "$key" ;;
+          *) surface_nonterminal_stale "$w" "$h" ;;
         esac
       elif [ "$paused_bound" -ne 0 ] && [ -e "$pf" ]; then
         # Same rule as the stable-hash branch: never clear pause bookkeeping the

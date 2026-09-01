@@ -26,7 +26,7 @@
 # captain-held. It then uses fm-crew-state.sh as the sole current-state source.
 # Only a done or failed state is suspicious enough to create a durable terminal
 # outcome record or wake the supervisor.
-# Working, paused, parked, blocked, unknown, persistent secondmates, and
+# Working, paused, parked, blocked, undetermined, unknown, persistent secondmates, and
 # captain-held work retain their existing supervision semantics.
 #
 # A terminal-outcomes/<fingerprint>.pending record remains until its upstream
@@ -363,6 +363,7 @@ reconcile_direct_child_locked() { # <id> <meta> <secondmate-id-or-empty> <timeou
   case "$state_line" in
     'state: done '*) state='done' ;;
     'state: failed '*) state='failed' ;;
+    'state: undetermined '*) return 0 ;;
     *) return 0 ;;
   esac
   pr=$(pr_for_task "$meta" "$status")
