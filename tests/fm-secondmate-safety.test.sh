@@ -48,10 +48,22 @@ SH
 }
 
 test_fm_home_parameterization() {
-  local brief home_one home_two out
+  local brief home_one home_two out fakebin
   home_one="$TMP_ROOT/home one"
   home_two="$TMP_ROOT/home-two"
   mkdir -p "$home_one/data" "$home_one/state" "$home_two/data" "$home_two/state"
+  fakebin=$(fm_fakebin "$TMP_ROOT/fm-home-parameterization")
+  cat > "$fakebin/gh" <<'SH'
+#!/usr/bin/env bash
+case " $* " in
+  *" /repos/example/repo/pulls/1/reviews"*) printf '%s\n' 10 ;;
+  *" /repos/example/repo/issues/1/comments"*) printf '%s\n' 20 ;;
+  *" /repos/example/repo/pulls/1/comments"*) printf '%s\n' 30 ;;
+  *" /repos/example/repo/pulls/1 "*) printf '%s\t%s\t%s\n' open 0 2026-08-31T10:00:00Z ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$fakebin/gh"
   printf '%s\n' '- app [local-only +yolo] - test app (added 2026-06-22)' > "$home_one/data/projects.md"
 
   out=$(FM_HOME="$home_one" "$ROOT/bin/fm-project-mode.sh" app)
@@ -74,7 +86,8 @@ test_fm_home_parameterization() {
   grep -F ">> '$home_one/state/task-c.status'" "$brief" >/dev/null || fail "secondmate brief did not shell-quote FM_HOME state path"
 
   printf 'project=x\n' > "$home_one/state/task-a.meta"
-  FM_HOME="$home_one" FM_GUARD_GRACE=999999 "$ROOT/bin/fm-pr-check.sh" task-a https://github.com/example/repo/pull/1 >/dev/null 2>/dev/null \
+  PATH="$fakebin:$PATH" FM_HOME="$home_one" FM_GUARD_GRACE=999999 \
+    "$ROOT/bin/fm-pr-check.sh" task-a https://github.com/example/repo/pull/1 >/dev/null 2>/dev/null \
     || fail "fm-pr-check failed under FM_HOME"
   [ -f "$home_one/state/task-a.check.sh" ] || fail "pr check was not written under FM_HOME/state"
   [ ! -e "$home_two/state/task-a.check.sh" ] || fail "pr check leaked into another home"
