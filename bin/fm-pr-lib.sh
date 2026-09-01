@@ -497,8 +497,11 @@ EOF
 }
 
 fm_pr_review_observation_timestamp_valid() {
-  local value=$1
-  [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
+  local value=$1 normalized
+  [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] || return 1
+  normalized=$(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$value" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null \
+    || date -u -d "$value" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null) || return 1
+  [ "$normalized" = "$value" ]
 }
 
 # Typed PR-review observation protocol, accepted only as one CR/LF-free record
@@ -507,7 +510,7 @@ fm_pr_review_observation_timestamp_valid() {
 #   unavailable <github|gitlab>
 #   unchanged <updated-at> <read-at> <requested-reviewer-count>
 #   observed <updated-at> <read-at> <max-review-id> <max-issue-comment-id> <max-review-comment-id> <requested-reviewer-count>
-# The updated-at and read-at fields have the fixed UTC shape
+# The updated-at and read-at fields are real UTC instants in the fixed shape
 # YYYY-MM-DDTHH:MM:SSZ.
 # Every ID and count field is a non-empty unsigned decimal string.
 # A successful parse exposes the typed fields through the
