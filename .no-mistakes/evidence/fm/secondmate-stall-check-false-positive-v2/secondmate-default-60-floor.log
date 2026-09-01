@@ -1,0 +1,6 @@
+Default threshold, row age 58s
+checkpoint exit: 124
+checkpoint: no actionable wake within 1s
+Default threshold, row age 62s
+checkpoint exit: 0
+check: secondmate wake-loop stalled: mate=mate row=60 age=62s

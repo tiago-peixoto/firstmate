@@ -1,0 +1,24 @@
+Marked delivery: mate.inbox/001.msg exists; semantic busy record absent
+Scenario: marked request, no semantic busy evidence
+checkpoint exit: 0
+check: secondmate wake-loop undetermined: mate=mate row=41 age=13s (current-state=done; endpoint-busy=unknown missing)
+Scenario: exact busy endpoint, aged row
+checkpoint exit: 124
+checkpoint: no actionable wake within 3s
+Scenario: current blocked state outranks busy endpoint
+checkpoint exit: 0
+check: secondmate wake-loop stalled: mate=mate row=41 age=10s
+Scenario: exact idle endpoint, aged row
+checkpoint exit: 0
+check: secondmate wake-loop stalled: mate=mate row=41 age=10s
+Scenario: dead endpoint, aged row
+checkpoint exit: 0
+check: secondmate wake-loop stalled: mate=mate row=41 age=11s
+Scenario: unknown liveness, aged row
+checkpoint exit: 0
+check: secondmate wake-loop undetermined: mate=mate row=41 age=11s (current-state=unknown; endpoint-busy=unknown no-target)
+foreign queue sha256 before/after first check: c5b8eff50e7a2bcd873f759ef9852ace8b4dc23101cd555f4aa54ed9d77ec523 / c5b8eff50e7a2bcd873f759ef9852ace8b4dc23101cd555f4aa54ed9d77ec523
+Scenario: acknowledged row repeat
+checkpoint exit: 124
+checkpoint: no actionable wake within 2s
+foreign queue sha256 after repeat: c5b8eff50e7a2bcd873f759ef9852ace8b4dc23101cd555f4aa54ed9d77ec523

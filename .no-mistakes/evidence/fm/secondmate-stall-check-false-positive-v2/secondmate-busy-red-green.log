@@ -1,0 +1,7 @@
+Counterfactual: exact live-busy secondmate with an aged durable row
+Base detector 927e74772075245662441433e279d43a4b5b19a3 exit: 1
+ok - an abandoned same-process lock hold is reclaimed; a parent's live hold is not
+not ok - a mate with an exact live busy verdict checkpoint exited 0, expected 124: out=check: secondmate wake-loop stalled: mate=mate row=41 age=11s; err=
+Target detector 9c5570fed29f804d42cda864ca27c20ac68a4018 exit: 0
+ok - an abandoned same-process lock hold is reclaimed; a parent's live hold is not
+ok - an exact live busy verdict suppresses the aged foreign row
