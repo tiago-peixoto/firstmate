@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Record a PR-ready task: store one validated canonical pr=<url> and the forge's
-# exact pr_head=<sha> when available, then atomically arm a static merge poll.
+# exact pr_head=<sha> when available, then atomically arm the one review-and-
+# merge monitor with an initial successful observation.
 # The watcher check source is byte-for-byte bin/fm-pr-poll.sh; task and PR data
 # live only in a private sidecar and are never interpolated into shell source.
 # A GitHub pull request URL and a GitLab merge request URL are both accepted,
@@ -49,10 +50,9 @@ fm_pr_poll_retirement_recover_one "$STATE" "$ID" "$SCRIPT_DIR/fm-pr-poll.sh" || 
   exit 1
 }
 
-# Refuse to arm a GitLab watch with no glab on PATH. The poll is silent on
-# every error by design, so a missing CLI would be indistinguishable from a
-# merge request that is never merged. Arming is the one point where that can be
-# reported, so the absent tool stops the watch here instead of watching nothing.
+# Refuse to arm a GitLab monitor with no glab on PATH. Runtime lookup failures
+# are visible through monitor health, but a known missing prerequisite can be
+# rejected before publishing a monitor that cannot make its first observation.
 if [ "$PROVIDER" = gitlab ] && ! command -v glab >/dev/null 2>&1; then
   echo "error: watching a GitLab merge request requires glab on PATH" >&2
   exit 1
@@ -76,6 +76,36 @@ if [ "$PROVIDER" = github ] && [ -n "$WT" ] && [ -d "$WT" ] && command -v gh >/d
     && fm_pr_head_valid "$REMOTE_HEAD"; then
     PR_HEAD=$REMOTE_HEAD
   fi
+fi
+
+if [ "$PROVIDER" = github ]; then
+  INITIAL_OBSERVATION=$(
+    "$SCRIPT_DIR/fm-pr-poll.sh" --snapshot \
+      "$PROVIDER" "$URL" "$HOST" "$PROJECT_PATH" "$NUMBER"
+  )
+  if ! fm_pr_poll_observation_parse "$INITIAL_OBSERVATION"; then
+    echo "error: could not establish initial PR monitor state" >&2
+    exit 1
+  fi
+  case "$FM_PR_OBSERVATION_KIND" in
+    observed)
+      FM_PR_POLL_INITIAL_SEEN=$(fm_pr_poll_seen_record \
+        "$FM_PR_OBSERVATION_UPDATED" \
+        "$FM_PR_OBSERVATION_REVIEWS" \
+        "$FM_PR_OBSERVATION_ISSUE_COMMENTS" \
+        "$FM_PR_OBSERVATION_REVIEW_COMMENTS" \
+        "$FM_PR_OBSERVATION_REQUESTED" ok "$(date +%s)") || exit 1
+      ;;
+    merged)
+      FM_PR_POLL_INITIAL_SEEN=$(fm_pr_poll_seen_record - 0 0 0 0 baseline 0) || exit 1
+      ;;
+    unavailable)
+      echo "error: could not read the PR while arming its monitor" >&2
+      exit 1
+      ;;
+  esac
+else
+  FM_PR_POLL_INITIAL_SEEN=$(fm_pr_poll_seen_record - 0 0 0 0 baseline 0) || exit 1
 fi
 
 META_TMP=
@@ -132,4 +162,4 @@ fm_pr_poll_publish_prepared || {
   echo "error: could not publish PR poll" >&2
   exit 1
 }
-printf 'armed: state/%s.check.sh\n' "$ID"
+printf 'armed review-and-merge monitor: state/%s.check.sh\n' "$ID"

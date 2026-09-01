@@ -17,6 +17,9 @@ make_fakebin() {  # <dir>
   fb=$(fm_fakebin "$1")
   cat > "$fb/no-mistakes" <<'SH'
 #!/usr/bin/env bash
+if [ "${1:-}" = axi ] && [ "${2:-}" = status ]; then
+  printf '%s\n' "${FM_FAKE_AXI_STATUS:-}"
+fi
 exit 0
 SH
   cat > "$fb/tmux" <<'SH'
@@ -417,6 +420,132 @@ test_event_hints_follow_reconciled_current_state() {
       and task("stale-blocked").hints.blocked_event == false
   ' >/dev/null || fail "event hints must follow reconciled current state"
   pass "snapshot event hints follow reconciled current state"
+}
+
+test_undetermined_state_stays_nonterminal_and_keeps_decision() {
+  local home fakebin crew_state out summary view
+  home=$(make_home undetermined-state)
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+- [ ] undetermined-task - Undetermined Task (repo: alpha) (kind: ship) (since 2026-08-31)
+EOF
+  fm_write_meta "$home/state/undetermined-task.meta" \
+    "window=firstmate:fm-undetermined-task" \
+    "worktree=$home/projects/undetermined-task" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=ship"
+  printf 'needs-decision [key=route]: choose the delivery route\n' > "$home/state/undetermined-task.status"
+  fakebin=$(make_fakebin "$home")
+  crew_state="$fakebin/fm-crew-state.sh"
+  cat > "$crew_state" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' 'state: undetermined · source: run-step · conflicting direct evidence'
+SH
+  chmod +x "$crew_state"
+  out=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --json)
+  printf '%s' "$out" | jq -e '
+    .tasks[] | select(.id == "undetermined-task")
+    | .current_state.state == "undetermined"
+      and .current_state.source == "run-step"
+      and .hints.pending_decision == true
+      and (.hints.open_decisions | length) == 1
+  ' >/dev/null || fail "undetermined state must retain its open decision: $out"
+  summary=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$summary" | jq -e '
+    .valid == false
+      and .state == "unknown"
+      and .reason == "child current state unavailable or undetermined: undetermined-task"
+      and .invalidity == {kind:"child_current_unavailable",ids:["undetermined-task"]}
+  ' >/dev/null || fail "secondmate summary treated undetermined child as settled: $summary"
+  view=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$VIEW")
+  assert_contains "$view" "undetermined / run-step" "fleet view must render undetermined loudly"
+  pass "snapshot preserves undetermined as unresolved and nonterminal"
+}
+
+test_unknown_pane_state_preserves_legacy_decision_clear() {
+  local home fakebin crew_state out
+  home=$(make_home unknown-pane-state)
+  mkdir -p "$home/projects/unknown-pane-task"
+  fm_write_meta "$home/state/unknown-pane-task.meta" \
+    "window=firstmate:fm-unknown-pane-task" \
+    "worktree=$home/projects/unknown-pane-task" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=ship"
+  printf 'needs-decision [key=route]: choose the delivery route\n' > "$home/state/unknown-pane-task.status"
+  fakebin=$(make_fakebin "$home")
+  crew_state="$fakebin/fm-crew-state.sh"
+  cat > "$crew_state" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' 'state: unknown · source: pane · harness state unavailable'
+SH
+  chmod +x "$crew_state"
+  out=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --json)
+  printf '%s' "$out" | jq -e '
+    .tasks[] | select(.id == "unknown-pane-task")
+    | .current_state.state == "unknown"
+      and .current_state.source == "pane"
+      and .hints.pending_decision == false
+      and (.hints.open_decisions | length) == 0
+  ' >/dev/null || fail "unknown pane state changed legacy open-decision clearing: $out"
+  pass "unknown pane state preserves legacy open-decision clearing"
+}
+
+test_secondmate_summary_distinguishes_unknown_from_undetermined() {
+  local home fakebin crew_state summary
+  home=$(make_home distinct-unavailable-states)
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+- [ ] unknown-task - Unknown Task (repo: alpha) (kind: ship)
+EOF
+  fm_write_meta "$home/state/unknown-task.meta" \
+    "window=firstmate:fm-unknown-task" \
+    "worktree=$home/projects/unknown-task" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=ship"
+  fakebin=$(make_fakebin "$home")
+  crew_state="$fakebin/fm-crew-state.sh"
+  cat > "$crew_state" <<'SH'
+#!/usr/bin/env bash
+case "${1:-}" in
+  unknown-task) printf '%s\n' 'state: unknown · source: pane · harness state unavailable' ;;
+  undetermined-task) printf '%s\n' 'state: undetermined · source: run-step · conflicting direct evidence' ;;
+esac
+SH
+  chmod +x "$crew_state"
+  summary=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$summary" | jq -e '
+    .valid == false
+      and .state == "unknown"
+      and .reason == "child current state unavailable: unknown-task"
+      and .invalidity == {kind:"child_current_unavailable",ids:["unknown-task"]}
+  ' >/dev/null || fail "unknown-only summary changed its legacy reason: $summary"
+
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+- [ ] undetermined-task - Undetermined Task (repo: alpha) (kind: ship)
+- [ ] unknown-task - Unknown Task (repo: alpha) (kind: ship)
+EOF
+  fm_write_meta "$home/state/undetermined-task.meta" \
+    "window=firstmate:fm-undetermined-task" \
+    "worktree=$home/projects/undetermined-task" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=ship"
+  summary=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$summary" | jq -e '
+    .valid == false
+      and .state == "unknown"
+      and .reason == "child current state unavailable or undetermined: undetermined-task, unknown-task"
+      and .invalidity == {kind:"child_current_unavailable",ids:["undetermined-task","unknown-task"]}
+  ' >/dev/null || fail "mixed unknown and undetermined children lost their distinct reason: $summary"
+  pass "secondmate summary distinguishes unknown from undetermined children"
 }
 
 test_scout_reports_include_teardown_reports() {
@@ -831,6 +960,9 @@ test_fixture_snapshot_json
 test_main_inventory_orphan_and_unstructured_disclosure
 test_normalized_roles_and_plural_blocker_readiness
 test_event_hints_follow_reconciled_current_state
+test_undetermined_state_stays_nonterminal_and_keeps_decision
+test_secondmate_summary_distinguishes_unknown_from_undetermined
+test_unknown_pane_state_preserves_legacy_decision_clear
 test_open_decision_survives_later_unrelated_event
 test_secondmate_open_decision_survives_live_endpoint
 test_open_decision_transfers_to_captain_hold

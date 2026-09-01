@@ -1,16 +1,25 @@
 #!/usr/bin/env bash
-# Static watcher program for a validated PR/MR poll sidecar.
-# It emits exactly one merged line for a merged PR or MR and stays silent
-# otherwise, including on every error, so a failed lookup can never be read as
-# a merge. The provider-tagged identity is data in the sidecar and is never
-# interpolated into this source: these bytes are identical for every task.
-# Each provider is read through its own standard CLI, gh for GitHub and glab
-# for GitLab, so an upstream checkout needs no extra tooling to follow either.
+# Static watcher program for one validated PR/MR monitor. GitHub observations
+# cover reviews, conversation comments, review-thread comments, and merge;
+# GitLab observations retain the existing merge coverage. Machine observations
+# are consumed by bin/fm-watch.sh, while direct execution stays silent unless
+# the PR/MR is merged or the forge cannot be read.
 set -u
 LC_ALL=C
 export LC_ALL
 
-if [ "$#" -eq 6 ] && [ "$1" = --validated ]; then
+mode=direct
+prior_updated=
+if [ "$#" -eq 7 ] && [ "$1" = --validated ]; then
+  mode=validated
+  provider=$2
+  url=$3
+  host=$4
+  path=$5
+  number=$6
+  prior_updated=$7
+elif [ "$#" -eq 6 ] && [ "$1" = --snapshot ]; then
+  mode=${1#--}
   provider=$2
   url=$3
   host=$4
@@ -45,9 +54,42 @@ case "$number" in
   *[!0-9]*) exit 0 ;;
 esac
 
-# Every component is revalidated here rather than trusted from the sidecar, and
-# the stored URL must then be exactly reconstructible from those components, so
-# a doctored sidecar cannot redirect this poll at another host or project.
+emit_observation() {
+  if [ "$mode" = direct ]; then
+    case "$1" in
+      merged) printf '%s\n' merged ;;
+      unavailable\ *) printf '%s\n' 'PR monitor unavailable' ;;
+    esac
+  else
+    printf '%s\n' "$1"
+  fi
+}
+
+numeric_max() {
+  local raw=$1 value normalized max=0
+  while IFS= read -r value || [ -n "$value" ]; do
+    [ -n "$value" ] || continue
+    case "$value" in *[!0-9]*) return 1 ;; esac
+    normalized=$value
+    while [ "${#normalized}" -gt 1 ] && [ "${normalized#0}" != "$normalized" ]; do
+      normalized=${normalized#0}
+    done
+    if [ "${#normalized}" -gt "${#max}" ] \
+      || { [ "${#normalized}" -eq "${#max}" ] && [ "$normalized" -gt "$max" ]; }; then
+      max=$normalized
+    fi
+  done <<EOF
+$raw
+EOF
+  printf '%s\n' "$max"
+}
+
+github_ids() {
+  local endpoint=$1 raw
+  raw=$(gh api --paginate "$endpoint" --jq '.[].id' 2>/dev/null) || return 1
+  numeric_max "$raw"
+}
+
 case "$provider" in
   github)
     [ "$host" = github.com ] || exit 0
@@ -62,8 +104,34 @@ case "$provider" in
       .|..|*[!A-Za-z0-9._-]*) exit 0 ;;
     esac
     [ "$url" = "https://github.com/$owner/$repo/pull/$number" ] || exit 0
-    state=$(gh pr view "$url" --json state -q .state 2>/dev/null) || exit 0
-    [ "$state" = MERGED ] && printf '%s\n' merged
+
+    summary=$(gh api "/repos/$path/pulls/$number" \
+      --jq '[if .merged_at != null then "merged" else .state end, ((.requested_reviewers | length) + (.requested_teams | length)), .updated_at] | @tsv' \
+      2>/dev/null) || { emit_observation 'unavailable github'; exit 0; }
+    IFS=$(printf '\t') read -r state requested updated extra <<EOF
+$summary
+EOF
+    [ -z "${extra:-}" ] || { emit_observation 'unavailable github'; exit 0; }
+    case "$requested" in ''|*[!0-9]*) emit_observation 'unavailable github'; exit 0 ;; esac
+    [[ "$updated" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] \
+      || { emit_observation 'unavailable github'; exit 0; }
+    case "$state" in
+      merged) emit_observation merged; exit 0 ;;
+      open|closed) ;;
+      *) emit_observation 'unavailable github'; exit 0 ;;
+    esac
+    if [ "$mode" = validated ] && [ "$updated" = "$prior_updated" ]; then
+      emit_observation "unchanged $updated $requested"
+      exit 0
+    fi
+
+    reviews=$(github_ids "/repos/$path/pulls/$number/reviews?per_page=100") \
+      || { emit_observation 'unavailable github'; exit 0; }
+    issue_comments=$(github_ids "/repos/$path/issues/$number/comments?per_page=100") \
+      || { emit_observation 'unavailable github'; exit 0; }
+    review_comments=$(github_ids "/repos/$path/pulls/$number/comments?per_page=100") \
+      || { emit_observation 'unavailable github'; exit 0; }
+    emit_observation "observed $updated $reviews $issue_comments $review_comments $requested"
     ;;
   gitlab)
     [ "${#host}" -ge 1 ] && [ "${#host}" -le 253 ] || exit 0
@@ -75,8 +143,6 @@ case "$provider" in
     case "$path" in
       /*|*/|*//*) exit 0 ;;
     esac
-    # A GitLab project sits under at least one group at no fixed depth, and
-    # GitLab reserves the "-" segment as its route separator.
     rest=$path
     segments=0
     while [ -n "$rest" ]; do
@@ -93,18 +159,20 @@ case "$provider" in
     done
     [ "$segments" -ge 2 ] || exit 0
     [ "$url" = "https://$host/$path/-/merge_requests/$number" ] || exit 0
-    # glab resolves the instance from the project URL passed to -R, so the host
-    # comes from the validated record rather than glab's configured default.
-    # It cannot take a merge request URL the way gh does: that form shells out
-    # to git for the current repository, and the watcher runs in no repository.
-    # The state is read from glab's own field output rather than its JSON,
-    # because plain glab has no field selector and firstmate does not require a
-    # JSON processor; only an exact "merged" wakes, so a changed format or an
-    # unreadable merge request stays silent instead of reporting a merge.
-    raw=$(glab mr view "$number" -R "https://$host/$path" 2>/dev/null) || exit 0
+    raw=$(glab mr view "$number" -R "https://$host/$path" 2>/dev/null) \
+      || { emit_observation 'unavailable gitlab'; exit 0; }
     state=$(printf '%s\n' "$raw" | sed -n 's/^state:[[:space:]]*//p' | head -1) || exit 0
-    [ "$state" = merged ] && printf '%s\n' merged
+    case "$state" in
+      merged) emit_observation merged ;;
+      opened|closed)
+        if [ "$mode" = validated ] && [ "$prior_updated" = - ]; then
+          emit_observation 'unchanged - 0'
+        else
+          emit_observation 'observed - 0 0 0 0'
+        fi
+        ;;
+      *) emit_observation 'unavailable gitlab' ;;
+    esac
     ;;
-  *) exit 0 ;;
 esac
 exit 0

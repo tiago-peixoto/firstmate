@@ -1437,6 +1437,7 @@ fi
 # sessions never touch state, and the deferred network pass never repeats it:
 # the local pass that ran first already closed that window.
 if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ] && local_phase; then
+  "$SCRIPT_DIR/fm-pr-check-migrate.sh" || true
   BOOTSTRAP_BACKLOG_GATE_KIND=secondmate
   if [ -e "$STATE" ] || [ -L "$STATE" ]; then
     if ! fm_backlog_directory_present "$STATE" "state directory"; then

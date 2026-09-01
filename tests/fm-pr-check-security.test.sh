@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Security and regression tests for canonical PR parsing, static merge polls,
-# private atomic artifacts, authenticated custom checks, and teardown cleanup.
+# Security and regression tests for canonical PR parsing, static PR monitors,
+# private atomic artifacts, authenticated custom checks, non-executing migration,
+# and teardown cleanup.
 set -u
 
 # shellcheck source=tests/lib.sh disable=SC1091
@@ -45,88 +46,6 @@ file_mode() {
   else
     stat -c %a "$1"
   fi
-}
-
-state_snapshot() {
-  local state=$1 file
-  (
-    cd "$state" || exit 1
-    find . \( -type f -o -type l \) -print | LC_ALL=C sort | while IFS= read -r file; do
-      if [ -L "$file" ]; then
-        printf 'link %s %s\n' "$file" "$(readlink "$file")"
-      else
-        printf 'file %s %s ' "$file" "$(file_mode "$file")"
-        shasum -a 256 "$file" | awk '{print $1}'
-      fi
-    done
-  )
-}
-
-make_case() {
-  local name=$1 dir fakebin fake_root
-  dir="$TMP_ROOT/$name"
-  fakebin="$dir/fakebin"
-  fake_root="$dir/root"
-  mkdir -p "$dir/home/state" "$dir/home/data" "$dir/home/config" "$dir/wt" "$fakebin" "$fake_root/bin"
-  cat > "$fake_root/bin/fm-guard.sh" <<'SH'
-#!/usr/bin/env bash
-printf 'guard\n' >> "$FM_TEST_GUARD_LOG"
-SH
-  chmod +x "$fake_root/bin/fm-guard.sh"
-  # Reads and merges both run on the native gh binary now, so they are logged
-  # apart: a "did the merge happen" assertion must not be satisfied by a PR-state
-  # read that the same mock also serves.
-  cat > "$fakebin/gh" <<'SH'
-#!/usr/bin/env bash
-case "${1:-} ${2:-}" in
-  "pr merge")
-    printf '%s\n' "$*" >> "$FM_TEST_GH_MERGE_LOG"
-    exit "${FM_TEST_GH_MERGE_RC:-0}"
-    ;;
-esac
-printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
-case " $* " in
-  *" headRefOid "*) printf '%s\n' "${FM_TEST_GH_HEAD:-0123456789abcdef0123456789abcdef01234567}" ;;
-  *" state "*)
-    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
-    [ "${FM_TEST_GH_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_SLEEP"
-    printf '%s\n' "${FM_TEST_GH_STATE:-OPEN}"
-    ;;
-esac
-SH
-  # Plain glab, reproducing the real CLI's contract: its field output on stdout
-  # and exit 0 on success, and a non-zero exit with no stdout on any failure.
-  cat > "$fakebin/glab" <<'SH'
-#!/usr/bin/env bash
-printf '%s\n' "$*" >> "$FM_TEST_GLAB_LOG"
-[ "${FM_TEST_GLAB_FAIL:-0}" = 0 ] || exit 1
-[ "${FM_TEST_GLAB_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GLAB_SLEEP"
-printf 'title:\tfixture merge request\nstate:\t%s\nauthor:\tsomeone\n' "${FM_TEST_GLAB_STATE:-opened}"
-SH
-  chmod +x "$fakebin/gh" "$fakebin/glab"
-  : > "$dir/gh.log"
-  : > "$dir/gh-merge.log"
-  : > "$dir/glab.log"
-  : > "$dir/guard.log"
-  printf '%s\n' "$dir"
-}
-
-write_task_meta() {
-  local dir=$1 id=${2:-task-a}
-  fm_write_meta "$dir/home/state/$id.meta" \
-    "window=firstmate:fm-$id" \
-    "endpoint_task_id=$id" \
-    "worktree=$dir/wt" \
-    "project=$dir/project" \
-    "kind=ship" \
-    "mode=no-mistakes"
-}
-
-write_poll_meta() {
-  local state=$1 id=$2 url=$3
-  fm_write_meta "$state/$id.meta" \
-    "window=fm-$id" \
-    "pr=$url"
 }
 
 write_ambiguous_poll() {
@@ -276,6 +195,12 @@ SH
   chmod +x "$fake_root/bin/fm-guard.sh"
   cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
+case "${1:-} ${2:-}" in
+  "pr merge")
+    printf '%s\n' "$*" >> "$FM_TEST_GH_MERGE_LOG"
+    exit "${FM_TEST_GH_MERGE_RC:-0}"
+    ;;
+esac
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
 case "${1:-} ${2:-}" in
   "api graphql")
@@ -288,11 +213,38 @@ case "${1:-} ${2:-}" in
     ;;
 esac
 case " $* " in
+  *" /repos/"*"/reviews?per_page=100 "*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    [ -z "${FM_TEST_REVIEW_ID:-10}" ] || printf '%s\n' "${FM_TEST_REVIEW_ID:-10}"
+    exit 0
+    ;;
+  *" /repos/"*"/issues/"*"/comments?per_page=100 "*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    [ -z "${FM_TEST_ISSUE_COMMENT_ID:-20}" ] || printf '%s\n' "${FM_TEST_ISSUE_COMMENT_ID:-20}"
+    exit 0
+    ;;
+  *" /repos/"*"/pulls/"*"/comments?per_page=100 "*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    [ -z "${FM_TEST_REVIEW_COMMENT_ID:-30}" ] || printf '%s\n' "${FM_TEST_REVIEW_COMMENT_ID:-30}"
+    exit 0
+    ;;
+  *" /repos/"*"/pulls/"*)
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    case "${FM_TEST_GH_STATE-OPEN}" in
+      MERGED|merged) state=merged ;;
+      OPEN|open) state=open ;;
+      CLOSED|closed) state=closed ;;
+      *) state=${FM_TEST_GH_STATE-OPEN} ;;
+    esac
+    printf '%s\t%s\t%s\n' "$state" "${FM_TEST_REQUESTED_COUNT:-1}" \
+      "${FM_TEST_UPDATED_AT:-2026-08-30T10:00:00Z}"
+    exit 0
+    ;;
   *" headRefOid "*) printf '%s\n' "${FM_TEST_GH_HEAD:-0123456789abcdef0123456789abcdef01234567}" ;;
   *" state "*)
     [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
     [ "${FM_TEST_GH_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_SLEEP"
-    printf '%s\n' "${FM_TEST_GH_STATE:-OPEN}"
+    printf '%s\n' "${FM_TEST_GH_STATE-OPEN}"
     ;;
 esac
 SH
@@ -314,10 +266,11 @@ SH
 printf '%s\n' "$*" >> "$FM_TEST_GLAB_LOG"
 [ "${FM_TEST_GLAB_FAIL:-0}" = 0 ] || exit 1
 [ "${FM_TEST_GLAB_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GLAB_SLEEP"
-printf 'title:\tfixture merge request\nstate:\t%s\nauthor:\tsomeone\n' "${FM_TEST_GLAB_STATE:-opened}"
+printf 'title:\tfixture merge request\nstate:\t%s\nauthor:\tsomeone\n' "${FM_TEST_GLAB_STATE-opened}"
 SH
   chmod +x "$fakebin/gh" "$fakebin/gh-axi" "$fakebin/glab"
   : > "$dir/gh.log"
+  : > "$dir/gh-merge.log"
   : > "$dir/gh-axi.log"
   : > "$dir/glab.log"
   : > "$dir/guard.log"
@@ -675,7 +628,7 @@ test_valid_recording_and_merge_derivation() {
   FM_TEST_GH_STATE=MERGED run_watcher_bounded "$dir/home" "$dir/fakebin" > "$dir/merged-watch.out" 2> "$dir/merged-watch.err"
   rc=$?
   set -e
-  [ "$rc" -eq 0 ] || fail "guarded merge poll retirement failed: $(cat "$dir/merged-watch.err")"
+  [ "$rc" -eq 0 ] || fail "guarded PR monitor retirement failed: $(cat "$dir/merged-watch.err")"
   assert_poll_absent "$dir/home/state" task-a
   assert_no_grep "merged-task-a" "$dir/home/state/.wake-queue" \
     "the drained self-merge outcome was republished by its poll"
@@ -829,19 +782,18 @@ test_static_poll_contract() {
   dir=$(make_case poll-contract)
   make_poll_fixture "$dir"
 
-  for state in OPEN CLOSED EMPTY MALFORMED; do
-    case "$state" in
-      EMPTY) value= ;;
-      MALFORMED) value='not-a-state' ;;
-      *) value=$state ;;
-    esac
+  for value in OPEN CLOSED; do
     out=$(FM_TEST_GH_STATE="$value" run_poll "$dir")
     [ -z "$out" ] || fail "static poll emitted for non-merged state"
+  done
+  for value in '' not-a-state; do
+    out=$(FM_TEST_GH_STATE="$value" run_poll "$dir")
+    [ "$out" = 'PR monitor unavailable' ] || fail "static poll hid an unreadable GitHub state"
   done
   out=$(FM_TEST_GH_STATE=MERGED run_poll "$dir")
   [ "$out" = merged ] || fail "static poll did not emit exactly one merged line"
   out=$(FM_TEST_GH_FAIL=1 run_poll "$dir")
-  [ -z "$out" ] || fail "static poll emitted after gh failure"
+  [ "$out" = 'PR monitor unavailable' ] || fail "static poll hid a gh failure"
 
   mv "$dir/home/state/task-a.pr-poll" "$dir/home/state/task-a.pr-poll.missing"
   out=$(run_poll "$dir")
@@ -875,7 +827,7 @@ test_static_poll_contract() {
   set -e
   [ "$rc" -eq 0 ] || fail "watcher did not surface merged poll"
   [ "$(grep -c '^check: .*: merged$' "$dir/watch.out")" -eq 1 ] || fail "watcher did not convert merged output into exactly one wake"
-  pass "static poll is silent except for one merged line and remains watcher-bounded"
+  pass "static poll reports only merge or lookup health and remains watcher-bounded"
 }
 
 test_atomic_interruption_leaves_no_partial_artifact() {
@@ -1145,7 +1097,7 @@ test_postrename_poll_validation_revokes_and_retries() {
   pass "post-rename poll validation faults revoke both names and allow a clean retry"
 }
 
-test_bootstrap_leaves_unauthenticated_checks() {
+test_bootstrap_migrates_before_other_mutations() {
   local dir state
   dir=$(make_case bootstrap-no-legacy-rewrite)
   state="$dir/home/state"
@@ -1160,14 +1112,167 @@ test_bootstrap_leaves_unauthenticated_checks() {
   FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$ROOT" FM_BOOTSTRAP_NETWORK=skip \
     PATH="$dir/fakebin:$BASE_PATH" \
     "$ROOT/bin/fm-bootstrap.sh" > "$dir/bootstrap.out" 2> "$dir/bootstrap.err" \
-    || fail "bootstrap failed after migration retirement"
-  [ "$(cat "$state/task-a.check.sh")" = 'legacy bytes' ] \
-    || fail "bootstrap rewrote an unauthenticated check after migration retirement"
-  assert_no_grep 'PR_CHECK_MIGRATION' "$dir/bootstrap.out" \
-    "bootstrap still emitted a retired migration diagnostic on stdout"
-  assert_no_grep 'PR_CHECK_MIGRATION' "$dir/bootstrap.err" \
-    "bootstrap still emitted a retired migration diagnostic on stderr"
-  pass "bootstrap does not rewrite unauthenticated checks or emit retired migration diagnostics"
+    || fail "bootstrap boundary failed"
+  cmp -s "$POLL" "$state/task-a.check.sh" || fail "bootstrap did not migrate the legacy poll"
+  [ "$(file_mode "$state/task-a.check.sh")" = 600 ] || fail "bootstrap migration did not publish privately"
+  pass "bootstrap runs the non-executing migration at the locked session boundary"
+}
+
+test_bootstrap_isolates_incomplete_poll_migration() {
+  local dir state fakebin fleet_marker x_poll_marker rc
+  dir=$(make_case bootstrap-migration-isolation)
+  state="$dir/home/state"
+  fakebin="$dir/fakebin"
+  fleet_marker="$dir/fleet-ran"
+  x_poll_marker="$dir/x-poll-ran"
+  fm_write_meta "$state/task-a.meta" \
+    'window=fm-task-a' \
+    'pr=https://github.com/o/r/pull/12'
+  printf 'legacy bytes\n' > "$state/task-a.check.sh"
+  mkdir "$state/task-a.pr-poll"
+  write_poll_meta "$state" z-healthy https://github.com/o/r/pull/13
+  fm_pr_poll_prepare "$state" z-healthy github https://github.com/o/r/pull/13 github.com o/r 13 "$POLL" \
+    || fail "could not prepare healthy poll for migration isolation"
+  fm_pr_poll_publish_prepared || fail "could not publish healthy poll for migration isolation"
+  fm_write_meta "$state/secondmate-a.meta" \
+    'window=firstmate:fm-secondmate-a' \
+    'kind=secondmate' \
+    'harness=codex' \
+    'backend=tmux'
+  printf 'FMX_PAIRING_TOKEN=test-token\n' > "$dir/home/.env"
+  mkdir -p "$dir/home/projects"
+  fm_fake_exit0 "$fakebin" curl jq
+  cat > "$fakebin/tmux" <<'SH'
+#!/usr/bin/env bash
+case " $* " in
+  *' list-windows '*) printf 'fm-secondmate-a\n' ;;
+  *' display-message '*) printf 'node\n' ;;
+esac
+SH
+  cat > "$dir/root/bin/fm-fleet-sync.sh" <<'SH'
+#!/usr/bin/env bash
+: > "${FM_TEST_FLEET_MARKER:?}"
+printf 'alpha: recovered: continued after isolated migration failure\n'
+SH
+  cat > "$dir/root/bin/fm-x-poll.sh" <<'SH'
+#!/usr/bin/env bash
+: > "${FM_TEST_X_POLL_MARKER:?}"
+SH
+  chmod +x "$fakebin/tmux" "$dir/root/bin/fm-fleet-sync.sh" "$dir/root/bin/fm-x-poll.sh"
+
+  set +e
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$dir/root" FM_TEST_FLEET_MARKER="$fleet_marker" \
+    PATH="$fakebin:$BASE_PATH" "$ROOT/bin/fm-bootstrap.sh" > "$dir/bootstrap.out" 2> "$dir/bootstrap.err"
+  rc=$?
+  set -e
+
+  [ "$rc" -eq 0 ] || fail "isolated bootstrap migration failure returned $rc"
+  [ ! -e "$state/task-a.check.sh" ] && [ ! -L "$state/task-a.check.sh" ] \
+    || fail "isolated bootstrap migration left the legacy check runnable"
+  [ -d "$state/task-a.pr-poll" ] || fail "isolated bootstrap migration changed the unrepaired sidecar"
+  find "$state/.pr-check-quarantine" -name 'task-a.check.*' -type f | grep . >/dev/null \
+    || fail "isolated bootstrap migration did not quarantine the legacy check"
+  assert_grep 'task task-a: canonical poll migration is incomplete; poll remains unarmed; repair its private artifacts, then rerun bootstrap' \
+    "$state/.pr-check-migration.log" "isolated bootstrap migration did not publish a durable repair diagnostic"
+  assert_grep 'migration did not complete safely' "$dir/bootstrap.err" \
+    "isolated bootstrap migration did not surface its incomplete status"
+  assert_grep 'SECONDMATE_SYNC: secondmate secondmate-a: skipped:' "$dir/bootstrap.out" \
+    "incomplete poll migration suppressed secondmate sync"
+  assert_grep 'SECONDMATE_LIVENESS: secondmate secondmate-a: skipped: existing endpoint has ambiguous agent process' "$dir/bootstrap.out" \
+    "incomplete poll migration suppressed persistent supervisor recovery"
+  assert_grep 'FMX: X mode on - relay poll armed' "$dir/bootstrap.out" \
+    "incomplete poll migration suppressed X mention setup"
+  fmx_poll_shim_valid "$state/x-watch.check.sh" "$dir/home" "$dir/root" \
+    || fail "incomplete poll migration did not arm a private authenticated X relay shim"
+  [ -e "$fleet_marker" ] || fail "incomplete poll migration suppressed fleet refresh"
+  assert_grep 'FLEET_SYNC: alpha: recovered: continued after isolated migration failure' "$dir/bootstrap.out" \
+    "continued fleet refresh was not operator-visible"
+  printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' replacement-ran" > "$state/a-replaced.check.sh"
+  chmod 0600 "$state/a-replaced.check.sh"
+  set +e
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$dir/root" FM_TEST_X_POLL_MARKER="$x_poll_marker" \
+    FM_TEST_GH_STATE=MERGED FM_POLL=0 FM_CHECK_INTERVAL=0 FM_SIGNAL_GRACE=0 \
+    PATH="$fakebin:$BASE_PATH" "$WATCH" > "$dir/watch.out" 2> "$dir/watch.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "watcher remained blocked after unsafe legacy check exclusion: $(cat "$dir/watch.err")"
+  assert_no_grep 'replacement-ran' "$dir/watch.out" \
+    "watcher executed an unauthenticated check created after scan completion"
+  assert_grep "check: $state/z-healthy.check.sh: merged" "$dir/watch.out" \
+    "watcher did not continue the healthy authenticated poll"
+  ack_watcher_cycle "$state" || fail "healthy authenticated poll wake acknowledgement failed"
+  printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' stop-cycle" > "$state/z-stop.check.sh"
+  chmod 0700 "$state/z-stop.check.sh"
+  FM_HOME="$dir/home" "$REGISTER" z-stop >/dev/null \
+    || fail "could not register the post-merge control check"
+  rm -f "$state/.last-check" "$x_poll_marker"
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$dir/root" FM_TEST_X_POLL_MARKER="$x_poll_marker" \
+    FM_TEST_GH_STATE=OPEN FM_POLL=0 FM_CHECK_INTERVAL=0 FM_SIGNAL_GRACE=0 \
+    PATH="$fakebin:$BASE_PATH" "$WATCH" > "$dir/watch-x.out" 2> "$dir/watch-x.err" \
+    || fail "watcher did not continue after the priority merge notification: $(cat "$dir/watch-x.err")"
+  [ -e "$x_poll_marker" ] || fail "watcher did not continue X mention polling after isolated migration failure"
+  ack_watcher_cycle "$state" || fail "post-merge control wake acknowledgement failed"
+  rm -f "$state/z-stop.check.sh" "$state/z-stop.check-trust"
+  [ ! -e "$state/task-a.check.sh" ] && [ ! -L "$state/task-a.check.sh" ] \
+    || fail "watcher continuation rearmed the unsafe legacy check"
+  rm -f "$state/a-replaced.check.sh" "$state/.last-check" "$x_poll_marker"
+  printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' custom-ready" > "$state/b-custom.check.sh"
+  chmod 0700 "$state/b-custom.check.sh"
+  FM_HOME="$dir/home" "$REGISTER" b-custom > "$dir/register.out" \
+    || fail "custom check registration failed"
+  assert_grep 'registered: state/b-custom.check.sh' "$dir/register.out" \
+    "custom check registration was not visible"
+  set +e
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$dir/root" FM_TEST_X_POLL_MARKER="$x_poll_marker" \
+    FM_TEST_GH_STATE=OPEN FM_POLL=0 FM_CHECK_INTERVAL=0 FM_SIGNAL_GRACE=0 \
+    PATH="$fakebin:$BASE_PATH" "$WATCH" > "$dir/watch-custom.out" 2> "$dir/watch-custom.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "registered custom check did not run: $(cat "$dir/watch-custom.err")"
+  assert_grep "check: $state/b-custom.check.sh: custom-ready" "$dir/watch-custom.out" \
+    "registered custom check output did not wake the watcher"
+  ack_watcher_cycle "$state" || fail "registered custom check wake acknowledgement failed"
+  printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' custom-replacement-ran" > "$state/b-custom.check.sh"
+  chmod 0700 "$state/b-custom.check.sh"
+  rm -f "$state/.last-check" "$x_poll_marker"
+  set +e
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$dir/root" FM_TEST_X_POLL_MARKER="$x_poll_marker" \
+    FM_TEST_GH_STATE=OPEN FM_POLL=0 FM_CHECK_INTERVAL=0 FM_SIGNAL_GRACE=0 \
+    PATH="$fakebin:$BASE_PATH" "$WATCH" > "$dir/watch-custom-replaced.out" 2> "$dir/watch-custom-replaced.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "watcher failed while rejecting a replaced custom check: $(cat "$dir/watch-custom-replaced.err")"
+  assert_no_grep 'custom-replacement-ran' "$dir/watch-custom-replaced.out" \
+    "watcher executed a custom check after its registered bytes changed"
+  [ -e "$x_poll_marker" ] || fail "custom replacement rejection suppressed the trusted X poll"
+  [ ! -e "$state/b-custom.check.sh" ] && [ ! -L "$state/b-custom.check.sh" ] \
+    || fail "marker-aware scan left the replaced custom check runnable"
+  find "$state/.pr-check-quarantine" -name 'b-custom.check.*' -type f | grep . >/dev/null \
+    || fail "marker-aware scan did not quarantine the replaced custom check"
+  printf '%s\n' '#!/usr/bin/env bash' "printf '%s\\n' forged-x-ran" > "$state/x-watch.check.sh"
+  chmod 0700 "$state/x-watch.check.sh"
+  rm -f "$state/.last-check" "$x_poll_marker"
+  set +e
+  FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$dir/root" FM_TEST_X_POLL_MARKER="$x_poll_marker" \
+    FM_TEST_GH_STATE=OPEN FM_POLL=0 FM_CHECK_INTERVAL=0 FM_SIGNAL_GRACE=0 \
+    PATH="$fakebin:$BASE_PATH" "$WATCH" > "$dir/watch-replaced.out" 2> "$dir/watch-replaced.err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "watcher failed while rejecting a replaced X shim: $(cat "$dir/watch-replaced.err")"
+  assert_no_grep 'forged-x-ran' "$dir/watch-replaced.out" \
+    "watcher executed a filename-only X shim replacement"
+  [ ! -e "$x_poll_marker" ] || fail "watcher trusted the replaced X shim identity"
+  [ ! -e "$state/b-custom.check.sh" ] && [ ! -L "$state/b-custom.check.sh" ] \
+    || fail "locked X-shim scan left the replaced custom check runnable"
+  [ ! -e "$state/x-watch.check.sh" ] && [ ! -L "$state/x-watch.check.sh" ] \
+    || fail "locked X-shim scan left the forged X shim runnable"
+  find "$state/.pr-check-quarantine" -name 'b-custom.check.*' -type f | grep . >/dev/null \
+    || fail "locked X-shim scan did not quarantine the replaced custom check"
+  find "$state/.pr-check-quarantine" -name 'x-watch.check.*' -type f | grep . >/dev/null \
+    || fail "locked X-shim scan did not quarantine the forged X shim"
+  [ -f "$state/.pr-check-quarantine/task-a.diagnostic.failure-canonical" ] \
+    || fail "watcher continuation lost the durable repair obligation"
+  pass "bootstrap isolates incomplete poll migration from unrelated recovery sweeps"
 }
 
 test_custom_snapshot_cleanup_on_signal() {
@@ -1438,16 +1543,21 @@ gitlab.example
 group/subgroup/project
 7" ] || fail "published GitLab sidecar bytes were not exact"
 
-  # Only an exact merged state wakes firstmate. Every other reading, including
-  # an unreadable merge request and a changed output format, stays silent.
-  for value in opened closed locked '' not-a-state MERGED merged-but-not; do
+  # Only an exact merged state reports merge. Valid nonterminal states are
+  # quiet; an unreadable or changed forge response is visibly unhealthy.
+  for value in opened closed; do
     out=$(FM_TEST_GLAB_STATE="$value" run_poll "$dir")
     [ -z "$out" ] || fail "GitLab poll emitted for a non-merged state"
+  done
+  for value in locked '' not-a-state MERGED merged-but-not; do
+    out=$(FM_TEST_GLAB_STATE="$value" run_poll "$dir")
+    [ "$out" = 'PR monitor unavailable' ] \
+      || fail "GitLab poll hid an unreadable state"
   done
   out=$(FM_TEST_GLAB_STATE=merged run_poll "$dir")
   [ "$out" = merged ] || fail "GitLab poll did not emit exactly one merged line"
   out=$(FM_TEST_GLAB_FAIL=1 run_poll "$dir")
-  [ -z "$out" ] || fail "GitLab poll emitted after a glab failure"
+  [ "$out" = 'PR monitor unavailable' ] || fail "GitLab poll hid a glab failure"
 
   # glab is addressed by project URL and merge request number, never by the
   # merge request URL, which the real CLI resolves through the current git
@@ -1457,7 +1567,7 @@ group/subgroup/project
   ! grep -qF -- "$url" "$dir/glab.log" \
     || fail "GitLab poll passed a merge request URL to glab"
 
-  # An absent CLI must produce no wake rather than a false merge. The whole
+  # An absent CLI must report unhealthy state rather than a false merge. The whole
   # search path is mirrored without glab, because a real glab anywhere on
   # PATH would make this prove nothing.
   noglab="$dir/noglab"
@@ -1479,7 +1589,7 @@ EOF
   out=$(FM_TEST_GLAB_STATE=merged FM_TEST_GH_LOG="$dir/gh.log" FM_TEST_GLAB_LOG="$dir/glab.log" \
     PATH="$noglab" \
     bash "$state/task-a.check.sh")
-  [ -z "$out" ] || fail "GitLab poll emitted with glab absent from PATH"
+  [ "$out" = 'PR monitor unavailable' ] || fail "GitLab poll hid an absent glab"
 
   # A doctored sidecar cannot redirect the poll: the stored parts must rebuild
   # the stored URL exactly.
@@ -2082,7 +2192,15 @@ test_external_merge_transition_retires_only_terminal_poll() {
     rc=$?
     set -e
     [ "$rc" -eq 0 ] || fail "$label watcher cycle failed: $(cat "$dir/$label.err")"
-    case "$(cat "$dir/$label.out")" in check:*z-stop.check.sh:*stop-cycle) ;; *) fail "$label did not reach the control check" ;; esac
+    if [ "$label" = forge-error ]; then
+      case "$(cat "$dir/$label.out")" in check:*task-a.check.sh:*PR\ monitor\ unavailable*) ;;
+        *) fail "forge error did not surface monitor health" ;;
+      esac
+    else
+      case "$(cat "$dir/$label.out")" in check:*z-stop.check.sh:*stop-cycle) ;;
+        *) fail "$label did not reach the control check" ;;
+      esac
+    fi
     [ "$(poll_artifact_snapshot "$state" task-a)" = "$before" ] || fail "$label changed the armed poll"
     ack_watcher_cycle "$state" || fail "$label control wake acknowledgement failed"
   done
@@ -2286,7 +2404,7 @@ test_concurrent_watcher_sees_only_complete_publication
 test_poll_publication_refuses_unsafe_destinations
 test_live_artifact_single_link_and_privacy_validation
 test_postrename_poll_validation_revokes_and_retries
-test_bootstrap_leaves_unauthenticated_checks
+test_bootstrap_migrates_before_other_mutations
 test_custom_snapshot_cleanup_on_signal
 test_returned_custom_check_descendants_are_drained
 test_teardown_removes_poll_artifacts

@@ -23,7 +23,7 @@
 #   (n) an unreadable merge request state refuses rather than merging blind
 #   (o) glab or jq absent refuses before any state is recorded
 #   (p) --sha in extra GitLab args fails fast, and still forwards on GitHub
-#   (q) a GitLab refusal still leaves pr= recorded and the merge poll armed
+#   (q) a GitLab refusal still leaves pr= recorded and the unified monitor armed
 #   (r) GitHub success is accepted only after the PR is read back as merged
 #   (s) an open GitHub PR that is neither merged nor queued fails verification
 #   (t) a GitHub PR in the merge queue is reported as queued, not merged
@@ -34,7 +34,7 @@
 #       recorded and the merge poll armed
 #   (y) agreeing queue rules still produce exact retry flags
 #   (z) conflicting queue rules report ambiguous retry guidance
-#   (aa) gh remains usable when gh is absent
+#   (aa) a missing gh refuses before recording or attempting a merge
 #   (ab) a landed merge whose fallback outcome read fails keeps its poll armed
 #   (ac) a successful merge in a secondmate home reports the landed PR upward
 #       once, on the route its parent binding names, and a repeat merge of the
@@ -127,6 +127,12 @@ add_gh_mocks() {
   cat > "$case_dir/fakebin/gh" <<SH
 #!/usr/bin/env bash
 printf '%s\n' "\$*" >> "\$FM_TEST_GH_LOG"
+case " \$* " in
+  *"/reviews?per_page=100"*) printf '%s\n' 10; exit 0 ;;
+  *"/issues/"*"/comments?per_page=100"*) printf '%s\n' 20; exit 0 ;;
+  *"/pulls/"*"/comments?per_page=100"*) printf '%s\n' 30; exit 0 ;;
+  *" api /repos/"*"/pulls/"*) printf '%s\t%s\t%s\n' open 1 2026-08-30T10:00:00Z; exit 0 ;;
+esac
 case "\${1:-} \${2:-}" in
   "pr merge") printf 'merged:\n  number: %s\n  status: ok\n' "\${3:-}" ; exit 0 ;;
   "pr view")
@@ -158,6 +164,12 @@ add_gh_mocks_merge_fails() {
   cat > "$case_dir/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
+case " $* " in
+  *"/reviews?per_page=100"*) printf '%s\n' 10; exit 0 ;;
+  *"/issues/"*"/comments?per_page=100"*) printf '%s\n' 20; exit 0 ;;
+  *"/pulls/"*"/comments?per_page=100"*) printf '%s\n' 30; exit 0 ;;
+  *" api /repos/"*"/pulls/"*) printf '%s\t%s\t%s\n' open 1 2026-08-30T10:00:00Z; exit 0 ;;
+esac
 case "${1:-} ${2:-}" in
   "pr merge") echo "error: pr merge failed" >&2 ; exit 1 ;;
   "api graphql")
@@ -182,6 +194,12 @@ add_gh_mock_outcome_read_fails() {
   cat > "$case_dir/fakebin/gh" <<SH
 #!/usr/bin/env bash
 printf '%s\n' "\$*" >> "\$FM_TEST_GH_LOG"
+case " \$* " in
+  *"/reviews?per_page=100"*) printf '%s\n' 10; exit 0 ;;
+  *"/issues/"*"/comments?per_page=100"*) printf '%s\n' 20; exit 0 ;;
+  *"/pulls/"*"/comments?per_page=100"*) printf '%s\n' 30; exit 0 ;;
+  *" api /repos/"*"/pulls/"*) printf '%s\t%s\t%s\n' open 1 2026-08-30T10:00:00Z; exit 0 ;;
+esac
 case "\${1:-} \${2:-}" in
   "pr view")
     case " \$* " in
@@ -390,6 +408,12 @@ test_pr_metadata_is_recorded_before_the_forge_call() {
   cat > "$case_dir/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
+case " $* " in
+  *"/reviews?per_page=100"*) printf '%s\n' 10; exit 0 ;;
+  *"/issues/"*"/comments?per_page=100"*) printf '%s\n' 20; exit 0 ;;
+  *"/pulls/"*"/comments?per_page=100"*) printf '%s\n' 30; exit 0 ;;
+  *" api /repos/"*"/pulls/"*) printf '%s\t%s\t%s\n' open 1 2026-08-30T10:00:00Z; exit 0 ;;
+esac
 case "${1:-} ${2:-}" in
   "pr merge")
     cat "$FM_STATE_OVERRIDE/task-x1.meta" > "$FM_TEST_META_AT_MERGE"
@@ -554,6 +578,12 @@ test_github_refusal_quotes_the_forge_output() {
   cat > "$case_dir/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
+case " $* " in
+  *"/reviews?per_page=100"*) printf '%s\n' 10; exit 0 ;;
+  *"/issues/"*"/comments?per_page=100"*) printf '%s\n' 20; exit 0 ;;
+  *"/pulls/"*"/comments?per_page=100"*) printf '%s\n' 30; exit 0 ;;
+  *" api /repos/"*"/pulls/"*) printf '%s\t%s\t%s\n' open 1 2026-08-30T10:00:00Z; exit 0 ;;
+esac
 case "${1:-} ${2:-}" in
   "pr merge") echo "will be added to the merge queue when all requirements are met" ;;
   "api graphql") cat "$FM_TEST_GH_OUTCOME" ;;
@@ -785,6 +815,12 @@ test_github_unreadable_queue_rules_are_not_reported_as_no_queue() {
   cat > "$case_dir/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
+case " $* " in
+  *"/reviews?per_page=100"*) printf '%s\n' 10; exit 0 ;;
+  *"/issues/"*"/comments?per_page=100"*) printf '%s\n' 20; exit 0 ;;
+  *"/pulls/"*"/comments?per_page=100"*) printf '%s\n' 30; exit 0 ;;
+  *" api /repos/"*"/pulls/"*) printf '%s\t%s\t%s\n' open 1 2026-08-30T10:00:00Z; exit 0 ;;
+esac
 case "${1:-} ${2:-}" in
   "pr view")
     case " $* " in
@@ -849,6 +885,12 @@ test_github_unreadable_outcome_refusal_quotes_the_forge_output() {
   cat > "$case_dir/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
+case " $* " in
+  *"/reviews?per_page=100"*) printf '%s\n' 10; exit 0 ;;
+  *"/issues/"*"/comments?per_page=100"*) printf '%s\n' 20; exit 0 ;;
+  *"/pulls/"*"/comments?per_page=100"*) printf '%s\n' 30; exit 0 ;;
+  *" api /repos/"*"/pulls/"*) printf '%s\t%s\t%s\n' open 1 2026-08-30T10:00:00Z; exit 0 ;;
+esac
 case "${1:-} ${2:-}" in
   "pr merge") echo "will be added to the merge queue when all requirements are met" ;;
   "pr view")
@@ -916,7 +958,7 @@ test_github_failed_merge_names_an_observed_landed_state() {
 }
 
 
-test_github_without_gh_failed_read_keeps_bookkeeping() {
+test_github_without_gh_refuses_before_merge() {
   local case_dir ghless_path rc
   case_dir=$(make_case github-without-gh-read-fails)
   mkdir -p "$case_dir/wt"
@@ -932,6 +974,7 @@ SH
   chmod +x "$case_dir/fakebin/gh"
   ghless_path="$case_dir/path-without-gh"
   mirror_path_without "$ghless_path" gh "$case_dir/fakebin"
+  rm -f "$case_dir/fakebin/gh"
   : > "$case_dir/gh.log"
 
   set +e
@@ -941,16 +984,16 @@ SH
   rc=$?
   set -e
 
-  expect_code 1 "$rc" "github-without-gh-read-fails: an unreadable outcome must fail"
-  assert_grep 'pr merge 61 --repo example/repo --squash' "$case_dir/gh.log" \
-    "github-without-gh-read-fails: the merge call did not happen before the failed read"
-  assert_grep 'could not read the GitHub pull request outcome after the merge attempt' \
-    "$case_dir/stderr" "github-without-gh-read-fails: the failed read was not reported"
-  assert_grep 'pr=https://github.com/example/repo/pull/61' "$case_dir/state/task-x1.meta" \
-    "github-without-gh-read-fails: a landed merge lost its PR metadata"
-  assert_present "$case_dir/state/task-x1.check.sh" \
-    "github-without-gh-read-fails: a landed merge lost its merge poll"
-  pass "fm-pr-merge preserves bookkeeping when gh is absent and the fallback read fails"
+  expect_code 1 "$rc" "github-without-gh-read-fails: a missing observation tool must fail"
+  [ ! -s "$case_dir/gh.log" ] \
+    || fail "github-without-gh-read-fails: the forge was invoked without gh on PATH"
+  assert_grep 'could not read the PR while arming its monitor' \
+    "$case_dir/stderr" "github-without-gh-read-fails: the initial monitor refusal was not reported"
+  assert_no_grep 'pr=https://github.com/example/repo/pull/61' "$case_dir/state/task-x1.meta" \
+    "github-without-gh-read-fails: PR metadata was recorded without an initial observation"
+  assert_absent "$case_dir/state/task-x1.check.sh" \
+    "github-without-gh-read-fails: a monitor was armed without an initial observation"
+  pass "fm-pr-merge refuses before recording or merging when gh is absent"
 }
 
 test_github_zero_exit_queue_required_refuses_with_exact_retry() {
@@ -1192,7 +1235,7 @@ test_malformed_url_refuses_before_merge() {
   assert_no_grep 'pr=https://gitlab.com/example/-/merge_requests/1' "$case_dir/state/task-x1.meta" \
     "malformed-url: malformed PR URL was recorded in meta"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "malformed-url: malformed PR URL armed a merge poll"
+    "malformed-url: malformed PR URL armed a PR monitor"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "malformed-url: gh pr merge was invoked for a malformed URL"
   pass "fm-pr-merge refuses malformed PR URLs before calling gh"
@@ -1219,7 +1262,7 @@ test_rejects_unsafe_url_segments_before_recording() {
   assert_no_grep 'pr=https://github.com/evil$(echo pwned)/repo/pull/7' "$case_dir/state/task-x1.meta" \
     "unsafe-url-segment: unsafe PR URL was recorded in meta"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "unsafe-url-segment: unsafe PR URL armed a merge poll"
+    "unsafe-url-segment: unsafe PR URL armed a PR monitor"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "unsafe-url-segment: gh pr merge was invoked for an unsafe URL"
   pass "fm-pr-merge refuses unsafe PR URL segments before recording state"
@@ -1244,7 +1287,7 @@ test_repo_override_args_refuse_before_recording() {
   assert_no_grep 'pr=https://github.com/right/repo/pull/5' "$case_dir/state/task-x1.meta" \
     "repo-override: PR URL was recorded before rejecting repo override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "repo-override: repo override armed a merge poll"
+    "repo-override: repo override armed a PR monitor"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "repo-override: gh pr merge was invoked despite repo override"
   pass "fm-pr-merge refuses repo override args before recording state"
@@ -1273,7 +1316,7 @@ test_bundled_repo_override_args_refuse_before_recording() {
   assert_no_grep 'pr=https://github.com/right/repo/pull/6' "$case_dir/state/task-x1.meta" \
     "bundled-repo-override: PR URL was recorded before rejecting the bundled repo override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "bundled-repo-override: a bundled repo override armed a merge poll"
+    "bundled-repo-override: a bundled repo override armed a PR monitor"
   assert_no_grep 'pr merge' "$case_dir/gh.log" \
     "bundled-repo-override: gh pr merge was invoked despite the bundled repo override"
 
@@ -1291,7 +1334,7 @@ test_bundled_repo_override_args_refuse_before_recording() {
   assert_no_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
     "bundled-repo-override-gitlab: the URL was recorded before rejecting the bundled override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "bundled-repo-override-gitlab: a bundled override armed a merge poll"
+    "bundled-repo-override-gitlab: a bundled override armed a PR monitor"
   [ ! -s "$case_dir/glab.log" ] \
     || fail "bundled-repo-override-gitlab: glab was invoked despite the bundled override"
 
@@ -1518,7 +1561,7 @@ test_gitlab_each_condition_refuses_independently() {
     assert_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
       "gitlab-refuse-$name: a refusal should still leave the recorded PR reference"
     assert_present "$case_dir/state/task-x1.check.sh" \
-      "gitlab-refuse-$name: a refusal should still leave the merge poll armed"
+      "gitlab-refuse-$name: a refusal should still leave the PR monitor armed"
   done
   pass "fm-pr-merge refuses on each GitLab pre-merge condition independently"
 }
@@ -1650,7 +1693,7 @@ test_gitlab_missing_tool_refuses_before_recording() {
     assert_no_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
       "gitlab-no-$tool: a PR reference was recorded despite the missing tool"
     assert_absent "$case_dir/state/task-x1.check.sh" \
-      "gitlab-no-$tool: a merge poll was armed despite the missing tool"
+      "gitlab-no-$tool: a PR monitor was armed despite the missing tool"
   done
   pass "fm-pr-merge refuses before recording anything when glab or jq is absent"
 }
@@ -1671,7 +1714,7 @@ test_gitlab_head_override_args_refuse_before_recording() {
   assert_no_grep "pr=$MR_URL" "$case_dir/state/task-x1.meta" \
     "gitlab-head-override: the URL was recorded before rejecting the head override"
   assert_absent "$case_dir/state/task-x1.check.sh" \
-    "gitlab-head-override: a head override armed a merge poll"
+    "gitlab-head-override: a head override armed a PR monitor"
   [ ! -s "$case_dir/glab.log" ] || fail "gitlab-head-override: glab was invoked despite the head override"
   pass "fm-pr-merge refuses a GitLab head override before recording state"
 }
@@ -2003,7 +2046,7 @@ test_github_auto_merge_without_queue_refuses_legibly
 test_github_failed_merge_never_claims_armed_auto_merge
 test_github_failed_merge_with_queue_flags_never_claims_acceptance
 test_github_failed_merge_names_an_observed_landed_state
-test_github_without_gh_failed_read_keeps_bookkeeping
+test_github_without_gh_refuses_before_merge
 test_github_merged_outcome_is_verified
 test_github_verified_merge_requires_poll_recording
 test_github_queued_outcome_is_verified
