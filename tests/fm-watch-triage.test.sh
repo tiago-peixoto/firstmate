@@ -350,9 +350,9 @@ test_status_is_paused_classifier() {
   pass "status_is_paused: only the leading paused verb matches, paused is not captain-relevant, and the two declared-wait verbs stay separable"
 }
 
-# crew_absorb_class: the single fm-crew-state.sh read that returns BOTH absorb
-# reasons - working (active run/busy pane), paused (declared external wait), or none
-# (surface it) - so the watcher's stale path gets both for one bounded call.
+# crew_absorb_class: one fm-crew-state.sh read returns the two absorb reasons,
+# preserves undetermined as a distinct surface verdict, and maps every other
+# non-absorbable outcome to none.
 # crew_is_paused delegates to it exactly as crew_is_provably_working does.
 test_crew_absorb_class_classifier() {
   local dir fakebin

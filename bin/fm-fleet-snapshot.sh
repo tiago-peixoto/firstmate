@@ -481,11 +481,10 @@ task_json_lines() {
     # (fm-classify-lib.sh's status_open_decisions) so a later unrelated event can
     # never mask a still-open captain decision. The set is derived purely from the
     # keyed fold - never from report bodies or decision-like prose - and then
-    # reconciled against the crew LIFECYCLE, which only clears a stale decision the
-    # crew has provably moved past. Two lifecycle signals clear it, neither of which
-    # reads any report content:
-    #   - a live activity read (run-step or busy pane) that is working/done, so a
-    #     crew that resumed past a gate is not still reported as parked; and
+    # reconciled against current_state. Two source/state conditions clear it,
+    # neither of which reads any report content:
+    #   - a source-qualified run-step or pane read unless it is parked, blocked,
+    #     or undetermined, including the legacy unknown-pane clearing behavior; and
     #   - a TERMINAL done/failed state on a single-owner task (scout or ship), whose
     #     deliverable is its report or PR, so a COMPLETED scout surfaces only as a
     #     report POINTER, never as a reopened pending decision.
