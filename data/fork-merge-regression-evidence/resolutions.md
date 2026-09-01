@@ -2,6 +2,8 @@
 
 This report records the construct decision, causal evidence, red-to-green proof, and minimal resolution for each merge-owned failure.
 
+The post-fix mutation campaign made all ten target tests go red against a deliberate break of the behavior each one protects. No mutation-proof gap was found.
+
 ## Harness adapter routing artifact
 
 - Test: `tests/fm-harness-adapter-references.test.sh`.
@@ -12,6 +14,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the merge kept upstream's split-router prose and reference files but omitted the matrix carried by upstream parent `4ad8cbaeafc109a17c1af3911867b7fe9e04e801`, leaving the structural reader with an empty artifact.
 - Resolution: restore upstream's matrix verbatim beneath the detection section.
 - Red proof: the unfixed branch reports `not ok - harness adapter routing artifact is not a normalized operation and harness map`.
+- Mutation proof: changing the artifact fence from `harness-adapter-routing-v1` to an unrecognized marker made the focused test exit 1 with that same normalized-map failure.
 - Green proof: the restored matrix reports `ok - harness adapter routing artifact is normalized and every target is readable`, and its JSON block is byte-identical to the upstream parent's block.
 
 ## Bearings board order proof
@@ -22,6 +25,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the behavior fixture created `state/` under the ambient `022` umask and passed macOS's noncanonical `/var/...` alias rather than its `/private/var/...` identity, so the upstream runner rejected the state root before recording a claim.
 - Resolution: keep upstream's claim mechanism and make the fixture model a real Firstmate state root: canonical absolute identity and mode `0700`.
 - Red proof: the unfixed branch reports `not ok - the order-proof board build failed` after `cannot claim source`.
+- Mutation proof: replacing the `fm-captain-hold.sh bind` call with a no-op made the focused test exit 1 with `not ok - the board source is not bound any-origin`.
 - Green proof: the same immediate-result order proof passes after correcting the fixture mode.
 
 ## Pi branch outcomes rendering
@@ -32,6 +36,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: upstream's renderer always reset `toolOutput` color per line. Pi 0.83.0 stock rendering holds one foreground scope across multiline output, so Calm-off output differed byte-for-byte even though the content was the same.
 - Resolution: extend the existing stock capability probe to detect foreground-reset scope and use either stock-style whole-output coloring or stock-style per-line coloring. Keep upstream's preview and expansion mechanism unchanged.
 - Red proof: the unfixed branch reports `Calm-off ToolExecutionComponent rendering differs from Pi stock` against installed Pi 0.83.0.
+- Mutation proof: forcing `renderResult` down the line-scoped color branch instead of following the stock-renderer capability probe made the focused test exit 1 with `Calm-off ToolExecutionComponent rendering differs from Pi stock`.
 - Green proof: the focused suite compares collapsed, expanded, live-toggle, and HTML-export consumers against the installed Pi 0.83.0 stock renderer and passes for its whole-output color scope; its capability-conditional assertions retain the collapsed-preview contract used by newer Pi renderers.
 
 ## Deterministic condition-to-action process events
@@ -42,6 +47,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the suite passed macOS's `/var/...` alias and `0755` state fixtures into the merged claim mechanism, so the winning registration could be published but its runner could not acquire a claim or produce an outcome.
 - Resolution: retain upstream's claim mechanism, canonicalize the suite temp root, and create every fixture state directory at mode `0700`.
 - Red proof: the unfixed suite reports `not ok - the winning concurrent arm did not produce an outcome`.
+- Mutation proof: making `cmd_run` execute `COND_ARGV` where it must execute `ACT_ARGV` made the focused test exit 1 because the winning concurrent registration recorded zero action invocations instead of one.
 - Green proof: the same concurrent-arm outcome and the complete `when` behavior suite pass with production code unchanged.
 
 ## Generic process-event runner
@@ -52,6 +58,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the generic suite's homes inherited a `0755` mode and macOS's `/var/...` alias, so registration succeeded but the detached runner never acquired `src-one`'s claim.
 - Resolution: preserve upstream's runner and make the suite's shared home constructor produce canonical roots with `0700` state directories.
 - Red proof: the unfixed suite reports `not ok - reconcile never claimed the registered source`.
+- Mutation proof: suppressing `publish_result`'s `fm_wake_append` call made the focused test exit 1 with `not ok - no event was published after the source completed`.
 - Green proof: the complete generic process-event behavior suite passes with production code unchanged.
 
 ## Status event-time mixed-fleet scan
@@ -62,6 +69,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the fork-only event-time test still invoked the removed helper even though every production consumer had migrated to span classification.
 - Resolution: keep upstream's span classifier and retarget the mixed stamped/unstamped fleet proof to call it from offset zero for each fixture log. No production construct is restored.
 - Red proof: the unfixed suite reports `scan_captain_relevant_statuses: command not found` and then fails its mixed-fleet assertion.
+- Mutation proof: making `status_span_first_actionable_record` skip every captain-relevant line made the focused test exit 1 with `not ok - the captain-relevant span scan disagreed on a mixed fleet` and an empty result.
 - Green proof: the full status event-time suite passes, including the mixed fleet, wake-drain, crew-state, and latency cases.
 
 ## Turn-end guard queued-wake reason
@@ -72,6 +80,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the merge kept the fork's `FM_SUP_QUEUE_PENDING` supervision input but adopted upstream's three-way guard message selection for tasks, sources, and X-mode, mislabelling an undelivered wake as Relay polling.
 - Resolution: layer the two queue-only reason branches onto upstream's guard without changing its recovery mechanism.
 - Red proof: the unfixed suite reports that the block reason is missing `queued wake delivery pending` and shows the incorrect X-mode reason.
+- Mutation proof: disabling `block_stop`'s queue-only reason branch made the focused test exit 1 with the same missing `queued wake delivery pending` assertion and the incorrect `X-mode relay polling` banner.
 
 ### Read-only session ownership
 
@@ -113,6 +122,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the fixture passed macOS's `/var/...` alias while upstream canonicalized it to `/private/var/...` for identity verification, so the runner refused the claim and the fixture produced no queued result.
 - Resolution: keep upstream's claim mechanism and canonicalize only the fixture case directory before registering, reconciling, or retiring its source.
 - Red proof: the unfixed suite reports `error: cannot claim source: delivery-src` followed by `not ok - the fixture captured no process-event result`.
+- Mutation proof: returning from `procevent_surface_queued` before inspecting the durable queue made the focused test exit 1 because the actionable reason was only `check: rearm-resurface` and did not name the queued process-event result.
 - Green proof: the complete watcher triage suite passes, including proactive delivery, interrupted-handler replay, marker identity, serialization, crash-boundary replay, and acknowledgement behavior.
 - Divergence effect: one test-fixture line added; production remains exactly upstream-shaped for this construct.
 
@@ -124,6 +134,7 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: the comparative merged run was externally terminated at 301.387 seconds immediately before the watchdog assertion, while the same merged script completed every assertion in a direct run. The repository runner defaults this explicit bound to disabled for `--all` and uses 900 seconds for bounded `--changed`; 300 seconds was imposed only by the comparison harness.
 - Resolution: restore no construct. Keep upstream's synchronous best-effort publication and run the final comparison with the repository's authoritative timeout behavior rather than the ad hoc 300-second ceiling.
 - Red proof: the comparison log reports `not ok - tests/fm-session-start.test.sh exceeded the per-script bound of 300s and was terminated` after all assertions through Pi marker rejection had passed.
+- Mutation proof: replacing the locked-start `fm-home-summary-refresh.sh --best-effort` call with a no-op made the focused test exit 1 with `not ok - a locked session start did not publish the home summary ledger`.
 - Green proof: the current merged head completes the entire script, including watchdog, runtime-bound, re-emit, baseline, and ownership assertions, in a direct run with exit 0; the earlier isolated merged run also completed in 213.480 seconds.
 - Divergence effect: none. Production and tests remain upstream-shaped for this construct.
 
@@ -135,5 +146,6 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Cause: under the full merged-suite load, the re-arm was still legitimately starting after 250 milliseconds, so the fixture injected a cleanup status and reported a false failure. The same recovery completed normally when allowed to reach its existing bounded outcome.
 - Resolution: keep upstream's recovery implementation and replace the fixed sleep/liveness guess with the shared `wait_for_exit` helper and its eight-second fixture bound, matching the surrounding recovery assertions.
 - Red proof: the comparative merged log reports `not ok - re-arm stayed live instead of surfacing durable wakes and the still-open remote decision`; the control happened to finish inside the fixed quarter-second window.
+- Mutation proof: making `resurface_after_downtime` return instead of emitting `check: rearm-resurface` made the focused test exit 1 with `not ok - re-arm stayed live instead of surfacing durable wakes and the still-open remote decision`.
 - Green proof: the complete watcher-arm suite passes, including durable queue replay, open-decision refolding, interrupted handling, stale-lock recovery, generation acknowledgements, and symlink safety.
-- Divergence effect: net reduced by two test lines; production remains upstream-shaped.
+- Divergence effect: the upstream file needed no fork diff before this repair; the bounded-wait fixture adds 11 changed lines (`+3/-8`) and shortens the file by five lines. Production remains upstream-shaped.
