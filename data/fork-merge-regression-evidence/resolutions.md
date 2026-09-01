@@ -126,3 +126,14 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Red proof: the comparison log reports `not ok - tests/fm-session-start.test.sh exceeded the per-script bound of 300s and was terminated` after all assertions through Pi marker rejection had passed.
 - Green proof: the current merged head completes the entire script, including watchdog, runtime-bound, re-emit, baseline, and ownership assertions, in a direct run with exit 0; the earlier isolated merged run also completed in 213.480 seconds.
 - Divergence effect: none. Production and tests remain upstream-shaped for this construct.
+
+## Watcher re-arm recovery timing
+
+- Test: `tests/fm-watch-arm.test.sh`.
+- Construct: the fixed `sleep 0.25` branch in `test_rearm_resurfaces_durable_queue_and_remote_open_decision`, which declared a live re-arm failed before observing its bounded lifecycle result.
+- Verdict: competing concept. Upstream's watcher now performs richer recovery startup and v2 status-signature work before surfacing durable downtime state; the fixture must observe that mechanism's result rather than reinstate a quarter-second startup assumption.
+- Cause: under the full merged-suite load, the re-arm was still legitimately starting after 250 milliseconds, so the fixture injected a cleanup status and reported a false failure. The same recovery completed normally when allowed to reach its existing bounded outcome.
+- Resolution: keep upstream's recovery implementation and replace the fixed sleep/liveness guess with the shared `wait_for_exit` helper and its eight-second fixture bound, matching the surrounding recovery assertions.
+- Red proof: the comparative merged log reports `not ok - re-arm stayed live instead of surfacing durable wakes and the still-open remote decision`; the control happened to finish inside the fixed quarter-second window.
+- Green proof: the complete watcher-arm suite passes, including durable queue replay, open-decision refolding, interrupted handling, stale-lock recovery, generation acknowledgements, and symlink safety.
+- Divergence effect: net reduced by two test lines; production remains upstream-shaped.
