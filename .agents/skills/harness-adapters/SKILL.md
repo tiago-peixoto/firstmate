@@ -51,6 +51,53 @@ When verifying a new adapter, record its env marker and command name in `bin/fm-
 For stuck recovery, the target window's harness is recorded as `harness=` in `state/<id>.meta`.
 Use that value for interrupt, exit, resume, and skill-invocation facts.
 
+## Operation-to-reference matrix
+
+Every emitted plan appends the selected or recorded harness reference after the named common references.
+The `harness-adapter-routing-v1` object is the machine-readable and human-visible selection contract: choose the operation, choose the scenario within it, then append the selected harness reference.
+`default` is the normal scenario when no narrower scenario applies.
+Kimi establishes its unsupported primary boundary in its selected harness reference; Muse follows Non-negotiable safety above.
+A new tool remains undispatchable until the `verify` plan, its harness entry, every named owner, and the live checks land.
+
+```json harness-adapter-routing-v1
+{
+  "operations": {
+    "start": {
+      "default": ["references/common/dispatch.md", "references/common/model-and-effort.md"],
+      "trust-dialog": ["references/common/control-and-recovery.md"]
+    },
+    "trust": {"default": ["references/common/control-and-recovery.md"]},
+    "skill": {"default": ["references/common/control-and-recovery.md"]},
+    "interrupt": {"default": ["references/common/control-and-recovery.md"]},
+    "exit": {"default": ["references/common/control-and-recovery.md"]},
+    "resume": {"default": ["references/common/control-and-recovery.md"]},
+    "recovery": {
+      "default": ["references/common/control-and-recovery.md"],
+      "replacement-profile": ["references/common/control-and-recovery.md", "references/common/dispatch.md", "references/common/model-and-effort.md"],
+      "secondmate": ["references/common/control-and-recovery.md", "references/common/primary-hooks.md"],
+      "replacement-secondmate": ["references/common/control-and-recovery.md", "references/common/dispatch.md", "references/common/model-and-effort.md", "references/common/primary-hooks.md"]
+    },
+    "primary": {"default": ["references/common/primary-hooks.md"]},
+    "model-effort": {
+      "default": ["references/common/model-and-effort.md"],
+      "configured-profile": ["references/common/model-and-effort.md", "references/common/dispatch.md"]
+    },
+    "verify": {"default": ["references/common/dispatch.md", "references/common/control-and-recovery.md", "references/common/primary-hooks.md", "references/common/model-and-effort.md"]}
+  },
+  "harnesses": {
+    "claude": "references/harness/claude.md",
+    "codex": "references/harness/codex.md",
+    "opencode": "references/harness/opencode.md",
+    "pi": "references/harness/pi.md",
+    "pi-signed": "references/harness/pi.md",
+    "grok": "references/harness/grok.md",
+    "kimi": "references/harness/kimi.md",
+    "cursor": "references/harness/cursor.md",
+    "muse": "references/harness/muse.md"
+  }
+}
+```
+
 ## Primary turn-end guard
 
 The primary integrations for `claude`, `codex`, `opencode`, `pi`, `pi-signed`, `grok`, and `cursor` have empirically validated hook paths for the "no turn ends blind" guard.
