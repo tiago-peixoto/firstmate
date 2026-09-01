@@ -259,7 +259,6 @@ add_gh_pr_merged_for_head() {
 case "\${1:-} \${2:-}" in
   "api /repos/example/repo/pulls/7") printf '%s\t%s\t%s\n' 'merged' '0' '2026-08-31T10:00:00Z' ; exit 0 ;;
   "pr list") printf '%s\n' '7' ; exit 0 ;;
-  "api /repos/example/repo/pulls/7") printf '%s\t%s\t%s\n' 'merged' '0' '2026-08-31T03:00:00Z' ; exit 0 ;;
   "pr view")
     case " \$* " in
       *"state,headRefOid"*) printf '%s\t%s\n' 'MERGED' '$head' ; exit 0 ;;
