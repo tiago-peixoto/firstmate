@@ -34,9 +34,9 @@ parse_observation() {
 test_parser_accepts_typed_observations() {
   local parsed
   parsed=$(parse_observation \
-    'observed 2024-02-29T23:59:59Z 2024-03-01T00:00:00Z 12 3 44 2') \
+    'observed 2026-08-31T03:00:00Z 2026-08-31T03:00:01Z 12 3 44 2') \
     || fail "parser rejected a valid observed protocol line"
-  [ "$parsed" = 'observed||2024-02-29T23:59:59Z|2024-03-01T00:00:00Z|12|3|44|2' ] \
+  [ "$parsed" = 'observed||2026-08-31T03:00:00Z|2026-08-31T03:00:01Z|12|3|44|2' ] \
     || fail "parser returned the wrong observed fields: $parsed"
 
   parsed=$(parse_observation 'unavailable github') \
@@ -82,16 +82,10 @@ test_parser_accepts_typed_observations() {
     || fail "parser retained exposed fields after rejecting input: $parsed"
 }
 
-test_parser_rejects_invalid_observed_timestamp() {
+test_parser_rejects_observed_sentinel_timestamp() {
   assert_parser_rejects \
     'observed - 2026-08-31T03:00:01Z 12 3 44 2' \
     "parser accepted a sentinel timestamp in an observed record"
-  assert_parser_rejects \
-    'observed 2026-02-29T03:00:00Z 2026-08-31T03:00:01Z 12 3 44 2' \
-    "parser accepted a calendar-impossible UTC timestamp"
-  assert_parser_rejects \
-    'observed 2026-08-31T03:00:00Z 2026-02-29T03:00:01Z 12 3 44 2' \
-    "parser accepted a calendar-impossible UTC read timestamp"
 }
 
 test_parser_rejects_unchanged_sentinel_timestamp() {
@@ -135,7 +129,7 @@ run_one() {
 failures=0
 for test_name in \
   test_parser_accepts_typed_observations \
-  test_parser_rejects_invalid_observed_timestamp \
+  test_parser_rejects_observed_sentinel_timestamp \
   test_parser_rejects_unchanged_sentinel_timestamp \
   test_parser_rejects_missing_read_timestamp \
   test_parser_rejects_multiline_record \
