@@ -104,3 +104,14 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Red proof: the source-retirement case remained blocked as required but incorrectly named one registered source instead of `queued wake delivery pending`.
 - Green proof: the complete turn-end guard suite passes with upstream's generation-claim and bounded failure-epoch tests intact, the read-only owner and queued-wake additions covered end to end, and the superseded trace and separate escalation tests removed.
 - Divergence effect: net reduced. The production guard is upstream plus 21 additive lines, while deleting the retired fork recovery tests reduces the two-file diff against upstream from 211 changed lines to 154.
+
+## Watcher process-event delivery fixture
+
+- Test: `tests/fm-watch-triage.test.sh`.
+- Construct: the `pe_case` fixture's state-root identity passed to `fm_procevent_claim_acquire_locked` while `seed_captured_procevent_result` creates the queued result used by the watcher delivery proofs.
+- Verdict: competing concept. Upstream replaced permissive process-event claims with claims bound to a canonical, owner-private state root; restoring the old acceptance rule would weaken the trusted extension mechanism for the sake of a test alias.
+- Cause: the fixture passed macOS's `/var/...` alias while upstream canonicalized it to `/private/var/...` for identity verification, so the runner refused the claim and the fixture produced no queued result.
+- Resolution: keep upstream's claim mechanism and canonicalize only the fixture case directory before registering, reconciling, or retiring its source.
+- Red proof: the unfixed suite reports `error: cannot claim source: delivery-src` followed by `not ok - the fixture captured no process-event result`.
+- Green proof: the complete watcher triage suite passes, including proactive delivery, interrupted-handler replay, marker identity, serialization, crash-boundary replay, and acknowledgement behavior.
+- Divergence effect: one test-fixture line added; production remains exactly upstream-shaped for this construct.

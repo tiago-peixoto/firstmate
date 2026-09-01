@@ -3356,6 +3356,7 @@ SH
 pe_case() {  # <dir> <command>...
   local dir=$1
   shift
+  dir=$(CDPATH='' cd -P -- "$dir" && pwd -P) || return 1
   (unset FM_ROOT_OVERRIDE
    FM_PROCEVENT_CLAIM_ROOT="$dir/claims" FM_HOME="$dir" "$ROOT/bin/fm-procevent.sh" "$@")
 }
