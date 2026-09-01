@@ -16,6 +16,7 @@ set -u
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 TMP_ROOT=$(fm_test_tmproot fm-procevent-when-tests)
+TMP_ROOT=$(cd -P "$TMP_ROOT" && pwd -P)
 export FM_PROCEVENT_CLAIM_ROOT="$TMP_ROOT/claims"
 
 pe()   { FM_HOME="$1" "$ROOT/bin/fm-procevent.sh" "${@:2}"; }
@@ -37,7 +38,7 @@ when_teardown() {
 }
 trap when_teardown EXIT
 
-new_home() { mkdir -p "$1/state"; WHEN_HOMES+=("$1"); }
+new_home() { mkdir -p "$1/state"; chmod 700 "$1/state"; WHEN_HOMES+=("$1"); }
 
 wake_payloads() { awk -F '\t' '{print $5}' "$1/state/.wake-queue" 2>/dev/null; }
 

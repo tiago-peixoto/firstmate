@@ -33,3 +33,13 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Resolution: extend the existing stock capability probe to detect foreground-reset scope and use either stock-style whole-output coloring or stock-style per-line coloring. Keep upstream's preview and expansion mechanism unchanged.
 - Red proof: the unfixed branch reports `Calm-off ToolExecutionComponent rendering differs from Pi stock` against installed Pi 0.83.0.
 - Green proof: the focused suite compares collapsed, expanded, live-toggle, and HTML-export consumers against the installed Pi 0.83.0 stock renderer and passes for its whole-output color scope; its capability-conditional assertions retain the collapsed-preview contract used by newer Pi renderers.
+
+## Deterministic condition-to-action process events
+
+- Test: `tests/fm-procevent-when.test.sh`.
+- Construct: the canonical owner-private state-root precondition used by the upstream process-event claim mechanism when `reconcile` starts the winning concurrent `when` registration.
+- Verdict: competing concept. Upstream's trusted extension capture supersedes permissive claims from noncanonical or group/world-writable state roots; the `when` adapter itself is unchanged and must not weaken that boundary.
+- Cause: the suite passed macOS's `/var/...` alias and `0755` state fixtures into the merged claim mechanism, so the winning registration could be published but its runner could not acquire a claim or produce an outcome.
+- Resolution: retain upstream's claim mechanism, canonicalize the suite temp root, and create every fixture state directory at mode `0700`.
+- Red proof: the unfixed suite reports `not ok - the winning concurrent arm did not produce an outcome`.
+- Green proof: the same concurrent-arm outcome and the complete `when` behavior suite pass with production code unchanged.
