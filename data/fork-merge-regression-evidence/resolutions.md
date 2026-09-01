@@ -13,3 +13,13 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Resolution: restore upstream's matrix verbatim beneath the detection section.
 - Red proof: the unfixed branch reports `not ok - harness adapter routing artifact is not a normalized operation and harness map`.
 - Green proof: the restored matrix reports `ok - harness adapter routing artifact is normalized and every target is readable`, and its JSON block is byte-identical to the upstream parent's block.
+
+## Bearings board order proof
+
+- Test: `tests/fm-bearings-board.test.sh`.
+- Construct: the owner-private `state/` precondition of `fm_procevent_claim_state_root_identity`, exercised while `fm-bearings-board.sh build` binds an immediately completing Lavish source before arming it.
+- Verdict: competing concept. Upstream replaced permissive process-event capture with identity-bound extension capture rooted in an owner-private state directory; weakening that invariant would restore an obsolete assumption, not fork behavior.
+- Cause: the behavior fixture created `state/` under the ambient `022` umask and passed macOS's noncanonical `/var/...` alias rather than its `/private/var/...` identity, so the upstream runner rejected the state root before recording a claim.
+- Resolution: keep upstream's claim mechanism and make the fixture model a real Firstmate state root: canonical absolute identity and mode `0700`.
+- Red proof: the unfixed branch reports `not ok - the order-proof board build failed` after `cannot claim source`.
+- Green proof: the same immediate-result order proof passes after correcting the fixture mode.
