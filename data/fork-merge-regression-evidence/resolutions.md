@@ -23,3 +23,13 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Resolution: keep upstream's claim mechanism and make the fixture model a real Firstmate state root: canonical absolute identity and mode `0700`.
 - Red proof: the unfixed branch reports `not ok - the order-proof board build failed` after `cannot claim source`.
 - Green proof: the same immediate-result order proof passes after correcting the fixture mode.
+
+## Pi branch outcomes rendering
+
+- Test: `tests/fm-pi-branch-extension.test.sh`.
+- Construct: the `fm_branch_outcomes` stock-rendering capability probe and `renderResult` color scoping in `.pi/extensions/fm-branch-supervision.ts`.
+- Verdict: addition. Upstream's custom renderer is the required mechanism for hiding outcome rows in Calm mode, and its stock preview probe is the right seam; the fork behavior to layer onto it is compatibility with every installed Pi stock renderer rather than only Pi 0.84.4's line-scoped colors.
+- Cause: upstream's renderer always reset `toolOutput` color per line. Pi 0.83.0 stock rendering holds one foreground scope across multiline output, so Calm-off output differed byte-for-byte even though the content was the same.
+- Resolution: extend the existing stock capability probe to detect foreground-reset scope and use either stock-style whole-output coloring or stock-style per-line coloring. Keep upstream's preview and expansion mechanism unchanged.
+- Red proof: the unfixed branch reports `Calm-off ToolExecutionComponent rendering differs from Pi stock` against installed Pi 0.83.0.
+- Green proof: the focused suite compares collapsed, expanded, live-toggle, and HTML-export consumers against the installed Pi 0.83.0 stock renderer and passes for its whole-output color scope; its capability-conditional assertions retain the collapsed-preview contract used by newer Pi renderers.

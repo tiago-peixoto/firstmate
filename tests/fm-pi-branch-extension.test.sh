@@ -3108,8 +3108,12 @@ if (JSON.stringify(collapsedActual) !== JSON.stringify(collapsedStock)) {
   throw new Error("Calm-off ToolExecutionComponent rendering differs from Pi stock");
 }
 const collapsedText = collapsedStock.join("\n");
-if (collapsedText.includes("OUTCOME_TWELVE") || !collapsedText.includes("more lines") || !collapsedText.includes("to expand")) {
-  throw new Error("stock rendering fixture did not exercise its collapsed preview and expansion hint");
+const stockCollapses = !collapsedText.includes("OUTCOME_TWELVE");
+if (stockCollapses && (!collapsedText.includes("more lines") || !collapsedText.includes("to expand"))) {
+  throw new Error("collapsed stock rendering omitted its expansion hint");
+}
+if (!stockCollapses && collapsedText.includes("more lines")) {
+  throw new Error("all-line stock rendering unexpectedly included an expansion hint");
 }
 stockRow.setExpanded(true);
 actualRow.setExpanded(true);
@@ -3118,8 +3122,11 @@ const expandedActual = actualRow.render(100);
 if (JSON.stringify(expandedActual) !== JSON.stringify(expandedStock)) {
   throw new Error("expanded Calm-off ToolExecutionComponent rendering differs from Pi stock");
 }
-if (!expandedStock.join("\n").includes("OUTCOME_TWELVE") || JSON.stringify(expandedStock) === JSON.stringify(collapsedStock)) {
-  throw new Error("stock rendering fixture did not exercise expanded output");
+if (!expandedStock.join("\n").includes("OUTCOME_TWELVE")) {
+  throw new Error("stock expanded rendering omitted the final outcome");
+}
+if (stockCollapses === (JSON.stringify(expandedStock) === JSON.stringify(collapsedStock))) {
+  throw new Error("stock expansion behavior did not match its collapsed capability");
 }
 pi.events.emit("firstmate:calm-presentation", { active: true, stockExportRendering: false });
 actualRow.invalidate();

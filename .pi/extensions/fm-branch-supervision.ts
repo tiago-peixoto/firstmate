@@ -1401,6 +1401,7 @@ ${context.command}
   };
 
   let stockOutcomesPreviewLines: number | null | undefined;
+  let stockOutcomesUsesLineScopedColor = false;
   const getStockOutcomesPreviewLines = (): number | undefined => {
     if (stockOutcomesPreviewLines !== undefined) return stockOutcomesPreviewLines ?? undefined;
     const probeTokens = Array.from(
@@ -1428,7 +1429,11 @@ ${context.command}
         content: [{ type: "text", text: probeTokens.join("\n") }],
         isError: false,
       });
-      const rendered = probe.render(4096).join("\n");
+      const renderedLines = probe.render(4096);
+      const firstOutputLine = renderedLines.find((line) => line.includes(probeTokens[0]));
+      stockOutcomesUsesLineScopedColor = firstOutputLine !== undefined &&
+        /\u001B\[(?:0|39)m/.test(firstOutputLine.slice(firstOutputLine.indexOf(probeTokens[0]) + probeTokens[0].length));
+      const rendered = renderedLines.join("\n");
       const visibleLines = probeTokens.filter((token) => rendered.includes(token)).length;
       stockOutcomesPreviewLines = visibleLines > 0 && visibleLines < probeTokens.length ? visibleLines : null;
     } catch {
@@ -1492,7 +1497,9 @@ ${context.command}
       const previewLines = getStockOutcomesPreviewLines();
       const displayLines = options.expanded || previewLines === undefined ? lines : lines.slice(0, previewLines);
       const remaining = lines.length - displayLines.length;
-      let renderedOutput = displayLines.map((line) => theme.fg("toolOutput", line)).join("\n");
+      let renderedOutput = stockOutcomesUsesLineScopedColor
+        ? displayLines.map((line) => theme.fg("toolOutput", line)).join("\n")
+        : theme.fg("toolOutput", displayLines.join("\n"));
       if (remaining > 0) {
         renderedOutput += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
       }
