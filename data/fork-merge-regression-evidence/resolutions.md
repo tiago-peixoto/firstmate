@@ -43,3 +43,13 @@ This report records the construct decision, causal evidence, red-to-green proof,
 - Resolution: retain upstream's claim mechanism, canonicalize the suite temp root, and create every fixture state directory at mode `0700`.
 - Red proof: the unfixed suite reports `not ok - the winning concurrent arm did not produce an outcome`.
 - Green proof: the same concurrent-arm outcome and the complete `when` behavior suite pass with production code unchanged.
+
+## Generic process-event runner
+
+- Test: `tests/fm-procevent.test.sh`.
+- Construct: `fm_procevent_claim_acquire_locked`'s state-root identity validation, first exercised when `reconcile` starts `src-one`.
+- Verdict: competing concept. Upstream's trusted extension runner intentionally refuses noncanonical or non-private state roots; the fork's generic runner behavior belongs on top of that safety boundary, not through a permissive duplicate path.
+- Cause: the generic suite's homes inherited a `0755` mode and macOS's `/var/...` alias, so registration succeeded but the detached runner never acquired `src-one`'s claim.
+- Resolution: preserve upstream's runner and make the suite's shared home constructor produce canonical roots with `0700` state directories.
+- Red proof: the unfixed suite reports `not ok - reconcile never claimed the registered source`.
+- Green proof: the complete generic process-event behavior suite passes with production code unchanged.
