@@ -65,14 +65,16 @@ NUMBER=$FM_PR_NUMBER
 ENDPOINT="/repos/$PATH_PART/pulls/$NUMBER"
 
 CORE=$(gh api "$ENDPOINT" --jq '
+  def tickets: [scan("(^|[^A-Za-z0-9])(ART-[0-9]+)"; "i") | .[1] | ascii_upcase];
   "state=\(.state)",
   "merged_at=\(.merged_at // "")",
   "draft=\(.draft)",
   "head=\(.head.sha)",
   "base=\(.base.ref)",
   "title=\(.title)",
-  "branch_ticket=\(([.head.ref | scan("(^|[^A-Za-z0-9-])(ART-[0-9]+)"; "i") | .[1]][0] // "") | ascii_upcase)",
-  "body_ticket=\(([.body // "" | scan("(^|[^A-Za-z0-9-])(ART-[0-9]+)"; "i") | .[1]][0] // "") | ascii_upcase)",
+  "branch_ticket=\((.head.ref | tickets)[0] // "")",
+  "body_ticket=\((.body // "" | tickets)[0] // "")",
+  (.title | tickets[] | "title_ticket=\(.)"),
   "author=\(.user.login)",
   (.requested_reviewers[]? | select(.type != "Bot") | "requested_user=\(.login)"),
   (.requested_teams[]? | "requested_team=\(.slug)")') || die "could not read $URL"
@@ -86,6 +88,7 @@ BASE=
 TITLE=
 BRANCH_TICKET=
 BODY_TICKET=
+TITLE_TICKETS=' '
 AUTHOR=
 HAS_REQUESTED_USER=0
 HAS_REQUESTED_TEAM=0
@@ -99,6 +102,7 @@ while IFS= read -r row; do
     title=*) TITLE=${row#title=} ;;
     branch_ticket=*) BRANCH_TICKET=${row#branch_ticket=} ;;
     body_ticket=*) BODY_TICKET=${row#body_ticket=} ;;
+    title_ticket=*) TITLE_TICKETS="$TITLE_TICKETS${row#title_ticket=} " ;;
     author=*) AUTHOR=${row#author=} ;;
     requested_user=*) HAS_REQUESTED_USER=1 ;;
     requested_team=*) HAS_REQUESTED_TEAM=1 ;;
@@ -178,9 +182,11 @@ if [ "$PATH_PART" = monalee-inc/artemis ]; then
   fi
   TICKET=$BRANCH_TICKET
   [ -n "$TICKET" ] || TICKET=$BODY_TICKET
-  if [ -n "$TICKET" ] \
-    && ! printf '%s\n' "$TITLE" | grep -Eqi -- "(^|[^A-Za-z0-9-])${TICKET}([^0-9]|$)"; then
-    printf 'TITLE: missing ticket identifier %s\n' "$TICKET"
+  if [ -n "$TICKET" ]; then
+    case "$TITLE_TICKETS" in
+      *" $TICKET "*) ;;
+      *) printf 'TITLE: missing ticket identifier %s\n' "$TICKET" ;;
+    esac
   fi
 fi
 

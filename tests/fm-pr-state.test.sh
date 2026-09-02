@@ -262,18 +262,29 @@ test_unknown_mergeability_and_missing_ticket_are_blockers() {
   pass "unknown mergeability and missing ticket identifier block readiness"
 }
 
-test_ticket_identifier_must_match_as_a_whole_token() {
-  local out
-  out=$(FM_TEST_HEAD_REF='feat/art-7-fixture' FM_TEST_TITLE='fix(ART-70): fixture' run_state) \
-    || fail "near-miss ticket fixture was refused"
-  assert_contains "$out" 'TITLE: missing ticket identifier ART-7' \
-    "ART-70 in the title must not satisfy the branch's ART-7"
-
-  out=$(FM_TEST_HEAD_REF='feat/art-7-fixture' FM_TEST_TITLE='fix(ART-7): fixture' run_state) \
-    || fail "matching ticket fixture was refused"
-  assert_not_contains "$out" 'TITLE:' \
-    "a title carrying the branch's own ticket is compliant"
-  pass "ticket identifiers match as whole tokens"
+test_ticket_boundary_table() {
+  local ref body title expect out
+  while IFS='|' read -r ref body title expect; do
+    out=$(FM_TEST_HEAD_REF=$ref FM_TEST_BODY=$body FM_TEST_TITLE=$title run_state) \
+      || fail "ticket table row was refused: $ref | $body | $title"
+    if [ -n "$expect" ]; then
+      assert_contains "$out" "TITLE: missing ticket identifier $expect" \
+        "branch '$ref' or body '$body' names $expect, which title '$title' lacks"
+    else
+      assert_not_contains "$out" 'TITLE:' \
+        "branch '$ref', body '$body', title '$title' must not raise a ticket blocker"
+    fi
+  done <<'EOF'
+fix-art-7-login||fix: login|ART-7
+x/sub-art-9-y||fix: sub|ART-9
+feat/part-2-checkout||Split the checkout|
+fm/fixture|see part-1|fix: fixture|
+fix/chart-12-legend||Legend|
+feat/art-7-fixture||fix(ART-70): fixture|ART-7
+feat/art-7-fixture||fix(ART-7): fixture|
+fix-art-7-login||fix-art-7-login|
+EOF
+  pass "a ticket is ART-<digits> not preceded by an alphanumeric, matched whole in the title"
 }
 
 test_ticketless_pr_does_not_require_title_identifier() {
@@ -282,12 +293,6 @@ test_ticketless_pr_does_not_require_title_identifier() {
     || fail "ticketless fixture was refused"
   assert_not_contains "$out" 'TITLE: missing ticket identifier' \
     "a PR with no ART reference in its body or branch is outside the title convention"
-
-  out=$(FM_TEST_HEAD_REF='feat/part-2-checkout' FM_TEST_BODY='see part-1 of the chart-12 legend' \
-    FM_TEST_TITLE='Split the checkout chart' run_state) \
-    || fail "art-suffixed word fixture was refused"
-  assert_not_contains "$out" 'TITLE:' \
-    "a word that merely ends in art followed by digits is not a ticket"
   pass "ticketless PR does not require a title identifier"
 }
 
@@ -324,7 +329,7 @@ test_no_required_checks_is_silent
 test_no_reported_checks_is_unverified
 test_help_discloses_unavailable_thread_resolution
 test_unknown_mergeability_and_missing_ticket_are_blockers
-test_ticket_identifier_must_match_as_a_whole_token
+test_ticket_boundary_table
 test_ticketless_pr_does_not_require_title_identifier
 test_mergeability_uses_current_pr_view_value_without_retry
 test_refusals_exit_nonzero
