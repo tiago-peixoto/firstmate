@@ -42,7 +42,8 @@ serve() {
         '{state: "open", merged_at: null, draft: false, mergeable: null,
           head: {sha: $head, ref: $ref}, base: {ref: "dev"},
           title: $title, body: $body, user: {login: "tiago-peixoto"},
-          requested_reviewers: ($users | split(" ") | map(select(. != "") | {login: .})),
+          requested_reviewers: ($users | split(" ") | map(select(. != "") | split(":")
+            | {login: .[0], type: (.[1] // "User")})),
           requested_teams: ($teams | split(" ") | map(select(. != "") | {slug: .}))}'
       ;;
     "api /repos/monalee-inc/artemis/pulls/7/reviews?per_page=100 --paginate --jq "*)
@@ -129,6 +130,11 @@ test_submitted_human_review_satisfies_the_user_request_only() {
     || fail "bot-reviewed fixture was refused"
   assert_contains "$out" 'REQUESTED USER: none' \
     "a bot review is not a requested human user"
+
+  out=$(FM_TEST_REQUESTED_USERS='Copilot:Bot' run_state) \
+    || fail "bot-requested fixture was refused"
+  assert_contains "$out" 'REQUESTED USER: none' \
+    "a pending Bot reviewer request is not a requested human user"
   pass "a submitted human review satisfies the user request but not the team request"
 }
 
@@ -213,20 +219,25 @@ test_required_failure_is_a_blocker() {
   pass "required failure blocks readiness"
 }
 
-test_missing_required_checks_are_not_a_refusal() {
+test_no_required_checks_is_silent() {
   local out status
   out=$(FM_TEST_CHECKS_ERROR="no required checks reported on the 'fm/fixture' branch" run_state) \
     || fail "a base without required checks was refused"
   [ -z "$out" ] || fail "a base without required checks has no check blocker, got: $out"
 
-  out=$(FM_TEST_CHECKS_ERROR="no checks reported on the 'fm/fixture' branch" run_state) \
-    || fail "a head without checks was refused"
-  [ -z "$out" ] || fail "a head without checks has no check blocker, got: $out"
-
   status=0
   FM_TEST_CHECKS_ERROR='HTTP 502: Bad Gateway' run_state >/dev/null 2>&1 || status=$?
   [ "$status" -ne 0 ] || fail "a real check lookup failure must still refuse"
-  pass "absent required checks are silence, other check lookup failures refuse"
+  pass "a base without required checks is silent, other check lookup failures refuse"
+}
+
+test_no_reported_checks_is_unverified() {
+  local out
+  out=$(FM_TEST_CHECKS_ERROR="no checks reported on the 'fm/fixture' branch" run_state) \
+    || fail "a head without reported checks was refused"
+  [ "$out" = "CHECKS: none reported yet on ${HEAD:0:7}" ] \
+    || fail "a head with no reported checks must read as unverified, not ready, got: $out"
+  pass "a head with no reported checks is unverified rather than ready"
 }
 
 test_help_discloses_unavailable_thread_resolution() {
@@ -268,6 +279,12 @@ test_ticketless_pr_does_not_require_title_identifier() {
     || fail "ticketless fixture was refused"
   assert_not_contains "$out" 'TITLE: missing ticket identifier' \
     "a PR with no ART reference in its body or branch is outside the title convention"
+
+  out=$(FM_TEST_HEAD_REF='feat/part-2-checkout' FM_TEST_BODY='see part-1 of the chart-12 legend' \
+    FM_TEST_TITLE='Split the checkout chart' run_state) \
+    || fail "art-suffixed word fixture was refused"
+  assert_not_contains "$out" 'TITLE:' \
+    "a word that merely ends in art followed by digits is not a ticket"
   pass "ticketless PR does not require a title identifier"
 }
 
@@ -300,7 +317,8 @@ test_current_changes_requested_review_is_a_blocker
 test_changes_requested_decision_is_never_silent
 test_pending_approval_is_not_a_blocker
 test_required_failure_is_a_blocker
-test_missing_required_checks_are_not_a_refusal
+test_no_required_checks_is_silent
+test_no_reported_checks_is_unverified
 test_help_discloses_unavailable_thread_resolution
 test_unknown_mergeability_and_missing_ticket_are_blockers
 test_ticket_identifier_must_match_as_a_whole_token

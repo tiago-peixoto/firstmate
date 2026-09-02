@@ -6,7 +6,8 @@
 # invocation time. It never posts, requests, approves, or merges.
 # Ready means nothing is left for the author: a pull request that only awaits
 # an approval (reviewDecision REVIEW_REQUIRED) is not reported as blocked.
-# Advisory checks do not block and are omitted. GitHub's reviewDecision owns
+# Advisory checks do not block and are omitted. A head on which no check has
+# reported yet is unverified, not ready. GitHub's reviewDecision owns
 # whether reviews block; review history is printed only to explain
 # CHANGES_REQUESTED, naming each reviewer whose latest verdict still requests
 # changes and marking it STALE when it was left at a superseded head.
@@ -70,10 +71,10 @@ CORE=$(gh api "$ENDPOINT" --jq '
   "head=\(.head.sha)",
   "base=\(.base.ref)",
   "title=\(.title)",
-  "branch_ticket=\(([.head.ref | scan("ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
-  "body_ticket=\(([.body // "" | scan("ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
+  "branch_ticket=\(([.head.ref | scan("(?<![A-Za-z0-9])ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
+  "body_ticket=\(([.body // "" | scan("(?<![A-Za-z0-9])ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
   "author=\(.user.login)",
-  (.requested_reviewers[]? | "requested_user=\(.login)"),
+  (.requested_reviewers[]? | select(.type != "Bot") | "requested_user=\(.login)"),
   (.requested_teams[]? | "requested_team=\(.slug)")') || die "could not read $URL"
 
 STATE=
@@ -149,11 +150,14 @@ if ! REQUIRED=$(gh pr checks "$URL" --required --json name,state,bucket,workflow
   .[]
   | select(.bucket != "pass" and .bucket != "skipping")
   | "REQUIRED CHECK: \(.name) (\(.state))"' 2>"$GH_STDERR"); then
-  grep -Eq "^no (required )?checks reported on the '" "$GH_STDERR" || {
+  if grep -q "^no checks reported on the '" "$GH_STDERR"; then
+    REQUIRED="CHECKS: none reported yet on ${HEAD:0:7}"
+  elif grep -q "^no required checks reported on the '" "$GH_STDERR"; then
+    REQUIRED=
+  else
     cat "$GH_STDERR" >&2
     die "could not read required checks for $URL"
-  }
-  REQUIRED=
+  fi
 fi
 [ -z "$REQUIRED" ] || printf '%s\n' "$REQUIRED"
 
