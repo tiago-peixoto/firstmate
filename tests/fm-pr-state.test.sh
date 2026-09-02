@@ -36,9 +36,6 @@ case "$*" in
   "api user --jq .login")
     printf '%s\n' 'tiago-peixoto'
     ;;
-  "api graphql "*)
-    [ -z "${FM_TEST_THREADS:-}" ] || printf '%s\n' "$FM_TEST_THREADS"
-    ;;
   "pr checks "*" --required --json name,state,bucket,workflow --jq "*)
     [ -z "${FM_TEST_REQUIRED:-}" ] || printf '%s\n' "$FM_TEST_REQUIRED"
     ;;
@@ -82,15 +79,22 @@ test_requested_users_and_teams_are_evaluated_separately() {
   pass "requested users and teams are separate readiness facts"
 }
 
-test_superseded_review_reports_both_heads() {
-  local out old_head current_head
-  old_head=4dc2291e6969de1bf204fbdb53c9e57a8353d4e2
+test_stale_blocking_reviews_survive_a_later_review() {
+  local out old_head_1 old_head_2 current_head
+  old_head_1=2710bc5efc936efb70e95b86ca3582e9da7e60f4
+  old_head_2=4dc2291e6969de1bf204fbdb53c9e57a8353d4e2
   current_head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e
-  out=$(FM_TEST_REVIEWS="coderabbitai[bot]\tCHANGES_REQUESTED\t$old_head\t2026-09-01T23:02:13Z" run_state) \
+  out=$(FM_TEST_REVIEWS=$'coderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_1"$'\t2026-09-01T00:15:44Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_2"$'\t2026-09-01T23:02:13Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$current_head"$'\t2026-09-02T13:53:41Z\nLipemenezes\tCOMMENTED\t'"$old_head_2"$'\t2026-09-01T23:10:00Z\nalice\tAPPROVED\t'"$old_head_2"$'\t2026-09-01T23:11:00Z' run_state) \
     || fail "voided-review fixture was refused"
-  assert_contains "$out" "VOIDED REVIEW: coderabbitai[bot] CHANGES_REQUESTED at $old_head; current head $current_head" \
-    "a superseded review must name both the reviewed and current heads"
-  pass "superseded review is reported as voided with both heads"
+  assert_contains "$out" "STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at $old_head_1; current head $current_head" \
+    "the first stale changes-requested verdict was hidden by a later review"
+  assert_contains "$out" "STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at $old_head_2; current head $current_head" \
+    "the second stale changes-requested verdict was hidden by a later review"
+  assert_contains "$out" "VOIDED APPROVAL (informational): alice at $old_head_2; current head $current_head" \
+    "a stale approval must be distinguished from a blocking verdict"
+  assert_not_contains "$out" 'Lipemenezes' \
+    "a stale COMMENTED review is informational noise"
+  pass "all stale blocking verdicts survive later reviews without COMMENTED noise"
 }
 
 test_current_changes_requested_review_is_a_blocker() {
@@ -103,16 +107,21 @@ test_current_changes_requested_review_is_a_blocker() {
   pass "current changes-requested review blocks readiness"
 }
 
-test_required_failure_and_unresolved_thread_are_blockers() {
+test_required_failure_is_a_blocker() {
   local out
-  out=$(FM_TEST_REQUIRED='REQUIRED CHECK: CI Status (FAILURE)' \
-    FM_TEST_THREADS='UNRESOLVED THREAD: alice https://github.com/monalee-inc/artemis/pull/7#discussion_r1' \
-    run_state) || fail "blocked fixture was refused"
+  out=$(FM_TEST_REQUIRED='REQUIRED CHECK: CI Status (FAILURE)' run_state) \
+    || fail "blocked fixture was refused"
   assert_contains "$out" 'REQUIRED CHECK: CI Status (FAILURE)' \
     "required failure was not reported"
-  assert_contains "$out" 'UNRESOLVED THREAD: alice https://github.com/monalee-inc/artemis/pull/7#discussion_r1' \
-    "unresolved thread was not reported"
-  pass "required failures and unresolved threads block readiness"
+  pass "required failure blocks readiness"
+}
+
+test_help_discloses_unavailable_thread_resolution() {
+  local out
+  out=$("$SCRIPT" --help) || fail "help was refused"
+  assert_contains "$out" 'Unresolved review-thread state is not reported' \
+    "help must disclose the REST-only thread-resolution limit"
+  pass "help discloses the unavailable REST thread-resolution signal"
 }
 
 test_unknown_mergeability_and_missing_ticket_are_blockers() {
@@ -139,8 +148,9 @@ test_refusals_exit_nonzero() {
 
 test_clean_pr_is_silent_and_ignores_advisory_failures
 test_requested_users_and_teams_are_evaluated_separately
-test_superseded_review_reports_both_heads
+test_stale_blocking_reviews_survive_a_later_review
 test_current_changes_requested_review_is_a_blocker
-test_required_failure_and_unresolved_thread_are_blockers
+test_required_failure_is_a_blocker
+test_help_discloses_unavailable_thread_resolution
 test_unknown_mergeability_and_missing_ticket_are_blockers
 test_refusals_exit_nonzero

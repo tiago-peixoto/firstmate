@@ -2,13 +2,14 @@
 # Report the live blockers that keep one GitHub pull request from being ready.
 #
 # This is a one-shot, read-only command. It reads the current pull request,
-# required checks, submitted reviews, review requests, and review threads from
-# GitHub at invocation time. It never posts, requests, approves, or merges.
+# required checks, submitted reviews, and review requests from GitHub at
+# invocation time. It never posts, requests, approves, or merges.
 # Advisory checks do not block and are omitted. Reviews apply only to the exact
-# head they read; the latest review from each non-author reviewer is reported as
-# VOIDED when its commit differs from the current head. GitHub exposes resolved
-# review-thread state only through GraphQL, so this attended command must not be
-# installed as an unattended monitor.
+# head they read. Every stale CHANGES_REQUESTED verdict is reported as blocking,
+# stale approvals are labeled informational, and stale COMMENTED reviews are
+# omitted as noise. Unresolved review-thread state is not reported because
+# GitHub's REST API does not expose resolution and unattended commands may not
+# use GraphQL.
 #
 # For fleet-authored Artemis pull requests, readiness also requires at least one
 # requested user and one requested team, and the title must carry a ticket such
@@ -135,36 +136,24 @@ REVIEWS=$(gh api "$ENDPOINT/reviews?per_page=100" --paginate --jq '
   | [.user.login, .state, .commit_id, .submitted_at]
   | @tsv') || die "could not read reviews for $URL"
 if [ -n "$REVIEWS" ]; then
-  LATEST_REVIEWS=$(printf '%s\n' "$REVIEWS" | awk -F '\t' '
-    !seen[$1] || $4 > latest[$1] { seen[$1] = 1; latest[$1] = $4; row[$1] = $0 }
-    END { for (reviewer in row) print row[reviewer] }
-  ' | LC_ALL=C sort)
   while IFS=$'\t' read -r reviewer review_state review_head _submitted_at; do
     [ "$reviewer" != "$AUTHOR" ] || continue
     case "$review_state" in
-      APPROVED|CHANGES_REQUESTED|COMMENTED)
+      CHANGES_REQUESTED)
         if [ "$review_head" != "$HEAD" ]; then
-          printf 'VOIDED REVIEW: %s %s at %s; current head %s\n' \
-            "$reviewer" "$review_state" "$review_head" "$HEAD"
-        elif [ "$review_state" = CHANGES_REQUESTED ]; then
+          printf 'STALE BLOCKING REVIEW: %s CHANGES_REQUESTED at %s; current head %s\n' \
+            "$reviewer" "$review_head" "$HEAD"
+        else
           printf 'REVIEW: %s CHANGES_REQUESTED at %s\n' "$reviewer" "$HEAD"
         fi
         ;;
+      APPROVED)
+        [ "$review_head" = "$HEAD" ] \
+          || printf 'VOIDED APPROVAL (informational): %s at %s; current head %s\n' \
+            "$reviewer" "$review_head" "$HEAD"
+        ;;
     esac
   done <<EOF
-$LATEST_REVIEWS
+$REVIEWS
 EOF
 fi
-
-# GraphQL variable names must reach gh literally.
-# shellcheck disable=SC2016
-THREADS=$(gh api graphql --paginate \
-  -F owner="$FM_PR_OWNER" \
-  -F name="$FM_PR_REPO" \
-  -F number="$NUMBER" \
-  -f query='query($owner:String!,$name:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){nodes{isResolved comments(first:1){nodes{author{login}url}}}pageInfo{hasNextPage endCursor}}}}}' \
-  --jq '.data.repository.pullRequest.reviewThreads.nodes[]
-    | select(.isResolved == false)
-    | "UNRESOLVED THREAD: \(.comments.nodes[0].author.login // "unknown") \(.comments.nodes[0].url // "unknown")"') \
-  || die "could not read review threads for $URL"
-[ -z "$THREADS" ] || printf '%s\n' "$THREADS"
