@@ -1,0 +1,46 @@
+# Every gh invocation issued by each script (shim logs argv, then execs the real gh).
+
+$ PATH=/tmp/fm-gh-shim:$PATH bin/fm-pr-state.sh https://github.com/cli/cli/pull/14057
+REVIEW DECISION: CHANGES_REQUESTED
+REVIEW: BagToad CHANGES_REQUESTED at e0081cd4f0e2c3c14237a2e7d9f6086a3a95bf91
+exit=0
+--- gh calls:
+gh api /repos/cli/cli/pulls/14057 --jq <program>
+  def tickets: [scan("(^|[^A-Za-z0-9])(ART-[0-9]+)"; "i") | .[1] | ascii_upcase];
+  "state=\(.state)",
+  "merged_at=\(.merged_at // "")",
+  "draft=\(.draft)",
+  "head=\(.head.sha)",
+  "base=\(.base.ref)",
+  "title=\(.title)",
+  "branch_ticket=\((.head.ref | tickets)[0] // "")",
+  "body_ticket=\((.body // "" | tickets)[0] // "")",
+  (.title | tickets[] | "title_ticket=\(.)"),
+  "author=\(.user.login)",
+  (.requested_reviewers[]? | select(.type != "Bot") | "requested_user=\(.login)"),
+  (.requested_teams[]? | "requested_team=\(.slug)")
+gh pr view https://github.com/cli/cli/pull/14057 --json mergeable,headRefOid,reviewDecision --jq <program>
+  "mergeability=\(if .mergeable == null or .mergeable == "UNKNOWN" then "unknown" else (.mergeable | ascii_downcase) end)",
+  "head=\(.headRefOid)",
+  "review_decision=\(.reviewDecision // "")"
+gh pr checks https://github.com/cli/cli/pull/14057 --required --json name,state,bucket,workflow --jq <program>
+  .[]
+  | select(.bucket != "pass" and .bucket != "skipping")
+  | "REQUIRED CHECK: \(.name) (\(.state))"
+gh api /repos/cli/cli/pulls/14057/reviews?per_page=100 --paginate --jq <program>
+  .[]
+  | select(.user.login != null and .commit_id != null and .submitted_at != null)
+  | [.user.login, .user.type, .state, .commit_id, .submitted_at]
+  | @tsv
+
+$ PATH=/tmp/fm-gh-shim:$PATH bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/14326
+BagToad	1 recent commit
+exit=0
+--- gh calls:
+gh api /repos/cli/cli/pulls/14326 --jq <program>
+gh api /repos/cli/cli/pulls/14326/files?per_page=100 --paginate --jq <program>
+gh api --method GET /repos/cli/cli/commits -f sha=adda317c11b892da5e5ed3fbbf26b69a5c163cc6 -f path=pkg/extensions/official.go -F per_page=100 --jq <program>
+gh api --method GET /repos/cli/cli/commits -f sha=adda317c11b892da5e5ed3fbbf26b69a5c163cc6 -f path=pkg/extensions/official_test.go -F per_page=100 --jq <program>
+
+--- verbs/endpoints summary (no graphql, no auth token, no POST/PUT/PATCH/DELETE):
+0

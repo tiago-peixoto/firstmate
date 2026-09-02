@@ -1,0 +1,82 @@
+# gh: gh version 2.98.0 (2026-08-20); jq: jq-1.7.1-apple; commit: 2c586e4
+
+$ bash tests/fm-pr-state.test.sh
+ok - clean PR is silent and advisory failures do not block
+ok - requested users and teams are separate readiness facts
+ok - a submitted human review satisfies the user request but not the team request
+ok - stale changes-requested verdicts explain a blocking review decision
+ok - approved PR ignores stale changes-requested history
+ok - current changes-requested review blocks readiness
+ok - a CHANGES_REQUESTED decision is always reported
+ok - a pending approval is not reported as a blocker
+ok - required failure blocks readiness
+ok - a base without required checks is silent, other check lookup failures refuse
+ok - a head with no reported checks is unverified rather than ready
+ok - help discloses the unavailable REST thread-resolution signal
+ok - unknown mergeability and missing ticket identifier block readiness
+ok - a ticket is ART-<digits> not preceded by an alphanumeric, matched whole in the title
+ok - ticketless PR does not require a title identifier
+ok - mergeability uses the current pull-request view value
+ok - argument and lookup refusals exit nonzero
+exit=0
+
+$ bash tests/fm-pr-reviewers.test.sh
+ok - reviewer candidates use API-resolved logins and unique commits
+ok - author-only evidence produces no candidate and says why
+ok - argument and lookup refusals exit nonzero
+exit=0
+
+$ FM_PR_STATE_LIVE_E2E=1 bash tests/fm-pr-state-live-e2e.test.sh
+ok - every fm-pr-state.sh jq program is accepted by gh's jq engine
+exit=0
+
+$ bin/fm-test-run.sh --check-coverage
+FM_TEST_COVERAGE ok total=179 parallel=24 serial=143 serial_shards=5 serial_unhinted=3 herdr=12
+
+
+# Mutation check on a throwaway copy of bin/ and tests/: each recorded failure mode is reintroduced and the behavioural test must go RED (non-zero).
+
+## mutation 1: a user request also satisfies the team check (users/teams merged)
+107c107
+<     requested_user=*) HAS_REQUESTED_USER=1 ;;
+---
+>     requested_user=*) HAS_REQUESTED_USER=1; HAS_REQUESTED_TEAM=1 ;;
+not ok - a user request must not hide a missing team request (missing: 'REQUESTED TEAM: none')
+--- output ---
+test exit=1
+
+## mutation 2: a stale CHANGES_REQUESTED at an old head is printed as if current (voided-review detection removed)
+205c205
+<         if (commit[reviewer] == head)
+---
+>         if (1)
+not ok - the reviewer's latest stale changes-requested verdict was not shown with both SHAs (missing: 'STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at 4dc2291e6969de1bf204fbdb53c9e57a8353d4e2; current head c2eac54c17a1ddc2633ad51b83e21e5fe888142e')
+--- output ---
+REVIEW DECISION: CHANGES_REQUESTED
+REVIEW: coderabbitai[bot] CHANGES_REQUESTED at c2eac54c17a1ddc2633ad51b83e21e5fe888142e
+test exit=1
+
+## mutation 3: requested_reviewers // requested_teams merged in jq (the recorded gotcha)
+79c79
+<   (.requested_reviewers[]? | select(.type != "Bot") | "requested_user=\(.login)"),
+---
+>   ((.requested_reviewers // .requested_teams)[]? | "requested_user=\(.login // .slug)"),
+not ok - a pending Bot reviewer request is not a requested human user (missing: 'REQUESTED USER: none')
+--- output ---
+test exit=1
+
+## mutation 4: fm-pr-reviewers no longer excludes the PR author
+92c92
+<   $2 != "" && $2 != author {
+---
+>   $2 != "" {
+not ok - the PR author must not be a reviewer candidate (unexpected: 'tiago-peixoto')
+--- output ---
+pedromuller-del	2 recent commits
+alice	1 recent commit
+tiago-peixoto	1 recent commit
+test exit=1
+
+## restored copies re-run green:
+fm-pr-state.test.sh exit=0
+fm-pr-reviewers.test.sh exit=0

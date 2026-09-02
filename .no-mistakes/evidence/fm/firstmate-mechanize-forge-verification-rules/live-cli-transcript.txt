@@ -1,0 +1,298 @@
+# fm-pr-state.sh / fm-pr-reviewers.sh live CLI transcript
+# branch fm/firstmate-mechanize-forge-verification-rules @ 2c586e4; gh version 2.98.0 (2026-08-20); jq jq-1.7.1-apple; 2026-09-02T21:04:06Z
+# Every command below is read-only; exit=0 with no output means ready.
+
+## 1. Merged PR: state and mergedAt come from the REST object
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/1   # merged in 2019
+STATE: merged at 2019-10-04T16:01:04Z
+MERGEABILITY: conflicting
+CHECKS: none reported yet on e9a3253
+exit=0
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/1
+mislav	5 recent commits
+exit=0
+
+## 2. CHANGES_REQUESTED: current verdict vs VOIDED/stale verdict with both SHAs
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/14057   # reviewDecision CHANGES_REQUESTED
+REVIEW DECISION: CHANGES_REQUESTED
+REVIEW: BagToad CHANGES_REQUESTED at e0081cd4f0e2c3c14237a2e7d9f6086a3a95bf91
+exit=0
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/13982   # reviewDecision CHANGES_REQUESTED
+MERGEABILITY: conflicting
+CHECKS: none reported yet on a560bea
+REVIEW DECISION: CHANGES_REQUESTED
+STALE BLOCKING REVIEW: BagToad CHANGES_REQUESTED at 65fb1e00b872328d96f97591bf4ddb36b2603489; current head a560bea91b8cd58b3c0d78e5db98c7fdc8e5036b
+exit=0
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/13506   # reviewDecision CHANGES_REQUESTED
+CHECKS: none reported yet on fdb4e47
+REVIEW DECISION: CHANGES_REQUESTED
+STALE BLOCKING REVIEW: babakks CHANGES_REQUESTED at 0a718221ba348647524dcfe982a55570ccf002f0; current head fdb4e47437a3140146e76d12c0f3b5dd23df34a1
+exit=0
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/13899   # reviewDecision CHANGES_REQUESTED
+REVIEW DECISION: CHANGES_REQUESTED
+STALE BLOCKING REVIEW: BagToad CHANGES_REQUESTED at c82266c2dcc3285033605501837434af1faeddfe; current head 7031269eafb54c8b814883a4757db7eb9f2a6100
+exit=0
+
+## 3. Required vs advisory checks, mergeability from the current view, draft
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/14327
+exit=0
+  (gh pr checks --required, for comparison:)
+  required: build (windows-latest) SUCCESS pass
+  required: build (macos-latest) SUCCESS pass
+  required: build (ubuntu-latest) SUCCESS pass
+  (all checks, failing only:)
+  advisory-or-required: govulncheck FAILURE fail
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/13788
+REQUIRED CHECK: build (ubuntu-latest) (FAILURE)
+REQUIRED CHECK: build (macos-latest) (FAILURE)
+REQUIRED CHECK: build (windows-latest) (FAILURE)
+exit=0
+  (gh pr checks --required, for comparison:)
+  required: build (ubuntu-latest) FAILURE fail
+  required: build (macos-latest) FAILURE fail
+  required: build (windows-latest) FAILURE fail
+  (all checks, failing only:)
+  advisory-or-required: build (ubuntu-latest) FAILURE fail
+  advisory-or-required: build (macos-latest) FAILURE fail
+  advisory-or-required: build (windows-latest) FAILURE fail
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/13505
+exit=0
+  (gh pr checks --required, for comparison:)
+no required checks reported on the 'codex/repo-visibility-confirmation' branch
+  (all checks, failing only:)
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/13364
+exit=0
+  (gh pr checks --required, for comparison:)
+  required: build (ubuntu-latest) SUCCESS pass
+  required: build (macos-latest) SUCCESS pass
+  required: build (windows-latest) SUCCESS pass
+  (all checks, failing only:)
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/14320
+DRAFT: pull request is not ready for review
+MERGEABILITY: conflicting
+exit=0
+  (gh pr checks --required, for comparison:)
+  required: build (macos-latest) SUCCESS pass
+  required: build (ubuntu-latest) SUCCESS pass
+  required: build (windows-latest) SUCCESS pass
+  (all checks, failing only:)
+
+
+# Why 13505 and 13364 printed no MERGEABILITY line: gh pr list showed UNKNOWN, but the script reads the current pr view value:
+$ gh pr view https://github.com/cli/cli/pull/13505 --json mergeable --jq .mergeable
+MERGEABLE
+$ gh api /repos/cli/cli/pulls/13505 --jq .mergeable   # REST object, not trusted by the script
+true
+$ gh pr view https://github.com/cli/cli/pull/13364 --json mergeable --jq .mergeable
+MERGEABLE
+$ gh api /repos/cli/cli/pulls/13364 --jq .mergeable   # REST object, not trusted by the script
+true
+
+## 4. Clean approved PRs are silent; reviewer candidates from changed-file authorship (author excluded)
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/14326   # open, APPROVED
+exit=0
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/13665   # open, APPROVED
+exit=0
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/14326
+BagToad	1 recent commit
+exit=0
+  (PR author: williammartin; changed files: pkg/extensions/official.go, pkg/extensions/official_test.go)
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/14057
+andyfeller	12 recent commits
+mislav	10 recent commits
+BagToad	4 recent commits
+babakks	4 recent commits
+its-miroma	3 recent commits
+vilmibm	3 recent commits
+williammartin	3 recent commits
+hongquan	2 recent commits
+0atman	1 recent commit
+AMS21	1 recent commit
+MagneticNeedle	1 recent commit
+SHSharkar	1 recent commit
+ShubhankarKG	1 recent commit
+Stefan-Heimersheim	1 recent commit
+SubOptimal	1 recent commit
+TheGejr	1 recent commit
+TobiX	1 recent commit
+Xeonacid	1 recent commit
+ajhalili2006	1 recent commit
+bsiegert	1 recent commit
+c-tonneslan	1 recent commit
+cassidyjames	1 recent commit
+chax	1 recent commit
+darkRaspberry	1 recent commit
+exil0867	1 recent commit
+gto406	1 recent commit
+hbenali	1 recent commit
+hugolgst	1 recent commit
+invakid404	1 recent commit
+jobegrabber	1 recent commit
+jonasjancarik	1 recent commit
+laffer1	1 recent commit
+legomushroom	1 recent commit
+nasirhm	1 recent commit
+nejat-njonjo	1 recent commit
+nopeinomicon	1 recent commit
+patrickwehbe	1 recent commit
+poplar-at-twilight	1 recent commit
+richterdavid	1 recent commit
+srgk26	1 recent commit
+timsu92	1 recent commit
+timsueberkrueb	1 recent commit
+tklauser	1 recent commit
+tniessen	1 recent commit
+tomrule007	1 recent commit
+yzgyyang	1 recent commit
+zpuskas	1 recent commit
+zxaos	1 recent commit
+exit=0
+  (PR author: felipeofdev-ai; changed files: docs/install_linux.md)
+
+## 5. No-candidates and large-PR ceiling
+$ bin/fm-pr-reviewers.sh https://github.com/tiago-peixoto/firstmate/pull/29
+kunchenguid	3 recent commits
+Inthuson	1 recent commit
+karotkriss	1 recent commit
+exit=0
+  (PR author: tiago-peixoto; changed files: bin/fm-pr-lib.sh [modified], tests/fm-pr-review-observation-protocol.test.sh [added])
+
+$ bin/fm-pr-reviewers.sh https://github.com/tiago-peixoto/firstmate/pull/31   # wholesale upstream sync, 271 changed files
+  (aborted by the tester after 2 minutes: the script issues one /commits query per changed file, so a 271-file PR takes minutes; documented ceiling, not a wrong answer)
+
+# cli/cli#14320 files: .github/workflows/acceptance.yml [added], AGENTS.md [modified], acceptance/AGENTS.md [added], acceptance/README.md [modified], acceptance/acceptance_test.go [modified], acceptance/fixture_repository_test.go [added], acceptance/testdata/api/basic-graphql.txtar [modified], acceptance/testdata/api/basic-rest.txtar [modified], acceptance/testdata/auth/auth-login-logout.txtar [modified], acceptance/testdata/auth/auth-setup-git.txtar [modified], acceptance/testdata/auth/auth-status.txtar [modified], acceptance/testdata/auth/auth-token.txtar [modified], acceptance/testdata/discussion/discussion-comment.txtar [modified], acceptance/testdata/discussion/discussion-create.txtar [modified], acceptance/testdata/discussion/discussion-edit.txtar [modified], acceptance/testdata/discussion/discussion-list.txtar [modified], acceptance/testdata/discussion/discussion-view.txtar [modified], acceptance/testdata/extension/extension-env.txtar [modified], acceptance/testdata/extension/extension.txtar [modified], acceptance/testdata/gpg-key/gpg-key.txtar [modified], acceptance/testdata/issue/issue-comment-edit-last-with-comments.txtar [modified], acceptance/testdata/issue/issue-comment-edit-last-without-comments-creates.txtar [modified], acceptance/testdata/issue/issue-comment-edit-last-without-comments-errors.txtar [modified], acceptance/testdata/issue/issue-comment-new.txtar [modified], acceptance/testdata/issue/issue-create-basic.txtar [modified], acceptance/testdata/issue/issue-create-edit-with-project.txtar [modified], acceptance/testdata/issue/issue-create-with-metadata.txtar [modified], acceptance/testdata/issue/issue-develop-worktree-cross-repo.txtar [modified], acceptance/testdata/issue/issue-develop-worktree.txtar [modified], acceptance/testdata/issue/issue-list.txtar [modified]
+# cli/cli#14017 files: pkg/cmd/discussion/create/create.go [modified], pkg/cmd/discussion/create/create_test.go [modified], pkg/cmd/discussion/shared/template.go [added], pkg/cmd/discussion/shared/template_test.go [added]
+## 6. Artemis project conventions under real gh (private repo, redacted)
+# Private repository (monalee-inc/artemis): author-owned open PRs, output redacted after each label.
+# Exercises the Artemis-only path (gh api user, requested user/team, ticket scan) under real gh/gojq.
+
+$ bin/fm-pr-state.sh https://github.com/monalee-inc/artemis/pull/<pr-1>
+REVIEW DECISION: CHANGES_REQUESTED
+STALE BLOCKING REVIEW: <reviewer> CHANGES_REQUESTED at <sha>; current head <sha>
+exit=0
+
+$ bin/fm-pr-state.sh https://github.com/monalee-inc/artemis/pull/<pr-2>
+REQUIRED CHECK: <check-name> (FAILURE)
+REQUESTED TEAM: none
+exit=0
+
+$ bin/fm-pr-state.sh https://github.com/monalee-inc/artemis/pull/<pr-3>
+REQUESTED TEAM: none
+TITLE: missing ticket identifier ART-<n>
+exit=0
+
+$ bin/fm-pr-reviewers.sh https://github.com/monalee-inc/artemis/pull/<pr-1>
+<login>	18 recent commits
+<login>	10 recent commits
+<login>	5 recent commits
+<login>	5 recent commits
+<login>	4 recent commits
+<login>	3 recent commits
+<login>	1 recent commit
+exit=0
+
+# Acceptance cases named in the task brief (Artemis, private; only values already present in the public test fixtures are shown unredacted):
+
+$ bin/fm-pr-state.sh https://github.com/monalee-inc/artemis/pull/4667   # brief: CHANGES_REQUESTED at superseded 4dc2291e while head is c2eac54c
+STATE: merged at 2026-09-02T17:02:12Z
+MERGEABILITY: unknown
+REQUESTED TEAM: none
+exit=0
+
+$ bin/fm-pr-reviewers.sh https://github.com/monalee-inc/artemis/pull/4721 | grep -c .   # candidate count; brief expects pedromuller-del resolved from the API mapping
+5
+pedromuller-del <tab> 46 recent commits
+author tiago-peixoto occurrences: 0
+exit=0
+
+# Why 4675 reports REQUESTED TEAM: none - the pending team request list is empty now (a team member review consumes it; the header documents that the team check reads pending requests only):
+$ gh api /repos/monalee-inc/artemis/pulls/4675 --jq "{pending_teams: (.requested_teams | length), pending_users: (.requested_reviewers | length)}"
+{"pending_teams":0,"pending_users":1}
+$ gh api /repos/monalee-inc/artemis/pulls/4675/reviews --jq "[.[] | select(.user.type != \"Bot\")] | length"   # submitted human reviews
+8
+
+
+## 7. Help text and refusals (every refusal exits 2)
+$ bin/fm-pr-state.sh --help
+Report the live blockers that keep one GitHub pull request from being ready.
+
+This is a one-shot, read-only command. It reads the current pull request,
+required checks, submitted reviews, and review requests from GitHub at
+invocation time. It never posts, requests, approves, or merges.
+Ready means nothing is left for the author: a pull request that only awaits
+an approval (reviewDecision REVIEW_REQUIRED) is not reported as blocked.
+Advisory checks do not block and are omitted. A head on which no check has
+reported yet is unverified, not ready. GitHub's reviewDecision owns
+whether reviews block; review history is printed only to explain
+CHANGES_REQUESTED, naming each reviewer whose latest verdict still requests
+changes and marking it STALE when it was left at a superseded head.
+Unresolved review-thread state is not reported because GitHub's REST API does
+not expose resolution and unattended commands may not use GraphQL.
+
+For fleet-authored Artemis pull requests, readiness also requires at least one
+requested user and one requested team. A user request is satisfied by a
+pending request or by a review a human already submitted; the team check
+reads pending team requests only, because a submitted review does not reveal
+team membership. An Artemis pull request whose branch or body names a ticket
+must carry that same identifier in its title. Those project conventions are
+deliberately local here rather than a new policy.
+
+Usage: fm-pr-state.sh <pr-url-or-number>
+  Prints one line per concrete blocker and nothing when none are found.
+  Blockers do not change the successful exit status; lookup or usage refusal
+  exits non-zero.
+exit=0
+
+$ bin/fm-pr-reviewers.sh --help
+Suggest GitHub reviewers from recent authorship of a pull request's files.
+
+This is a read-only advisory command. It reads the pull request's exact file
+list, then the most recent 100 commits on its base commit for each path. A
+commit is counted once even when it touched multiple changed paths. Candidates
+use GitHub's own commit author.login mapping; names and email addresses are
+never converted or guessed. The pull-request author and Bot accounts are
+excluded.
+
+Usage: fm-pr-reviewers.sh <pr-url-or-number>
+  Prints candidates in descending unique-commit count as:
+    <github-login><tab><count> recent commit[s]
+  When no mapped author other than the pull-request author appears, prints no
+  candidate and explains that result. Lookup or usage refusal exits non-zero.
+exit=0
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/99999999
+gh: Not Found (HTTP 404)
+fm-pr-state: could not read https://github.com/cli/cli/pull/99999999
+exit=2
+
+$ bin/fm-pr-state.sh
+fm-pr-state: usage: fm-pr-state.sh <pr-url-or-number>
+exit=2
+
+$ bin/fm-pr-state.sh 0
+fm-pr-state: expected a GitHub pull-request URL or positive pull-request number
+exit=2
+
+$ bin/fm-pr-reviewers.sh https://gitlab.com/o/r/-/merge_requests/1
+fm-pr-reviewers: expected a GitHub pull-request URL or positive pull-request number
+exit=2
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/99999999
+gh: Not Found (HTTP 404)
+fm-pr-reviewers: could not read https://github.com/cli/cli/pull/99999999
+exit=2
+
+$ PATH=/usr/bin:/bin bin/fm-pr-state.sh 7   # gh absent
+fm-pr-state: gh is required
+exit=2
