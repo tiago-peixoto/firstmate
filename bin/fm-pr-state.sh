@@ -4,16 +4,22 @@
 # This is a one-shot, read-only command. It reads the current pull request,
 # required checks, submitted reviews, and review requests from GitHub at
 # invocation time. It never posts, requests, approves, or merges.
-# Advisory checks do not block and are omitted. Reviews apply only to the exact
-# head they read. GitHub's reviewDecision owns whether reviews block; review
-# history is printed only to explain CHANGES_REQUESTED.
+# Ready means nothing is left for the author: a pull request that only awaits
+# an approval (reviewDecision REVIEW_REQUIRED) is not reported as blocked.
+# Advisory checks do not block and are omitted. GitHub's reviewDecision owns
+# whether reviews block; review history is printed only to explain
+# CHANGES_REQUESTED, naming each reviewer whose latest verdict still requests
+# changes and marking it STALE when it was left at a superseded head.
 # Unresolved review-thread state is not reported because GitHub's REST API does
 # not expose resolution and unattended commands may not use GraphQL.
 #
 # For fleet-authored Artemis pull requests, readiness also requires at least one
-# requested user and one requested team. An Artemis pull request whose branch or
-# body names a ticket must carry that same identifier in its title. Those
-# project conventions are deliberately local here rather than a new policy.
+# requested user and one requested team. A user request is satisfied by a
+# pending request or by a review a human already submitted; the team check
+# reads pending team requests only, because a submitted review does not reveal
+# team membership. An Artemis pull request whose branch or body names a ticket
+# must carry that same identifier in its title. Those project conventions are
+# deliberately local here rather than a new policy.
 #
 # Usage: fm-pr-state.sh <pr-url-or-number>
 #   Prints one line per concrete blocker and nothing when none are found.
@@ -87,7 +93,6 @@ while IFS= read -r row; do
     state=*) STATE=${row#state=} ;;
     merged_at=*) MERGED_AT=${row#merged_at=} ;;
     draft=*) DRAFT=${row#draft=} ;;
-    mergeability=*) MERGEABILITY=${row#mergeability=} ;;
     head=*) HEAD=${row#head=} ;;
     base=*) BASE=${row#base=} ;;
     title=*) TITLE=${row#title=} ;;
@@ -97,9 +102,9 @@ while IFS= read -r row; do
     requested_user=*) HAS_REQUESTED_USER=1 ;;
     requested_team=*) HAS_REQUESTED_TEAM=1 ;;
   esac
-done <<EOF
+done <<EOF_CORE
 $CORE
-EOF
+EOF_CORE
 [ -n "$STATE" ] && [ -n "$DRAFT" ] && [ -n "$HEAD" ] && [ -n "$BASE" ] \
   && [ -n "$TITLE" ] && [ -n "$AUTHOR" ] \
   || die "GitHub returned incomplete pull-request state for $URL"
@@ -116,9 +121,9 @@ while IFS= read -r row; do
     head=*) MERGE_HEAD=${row#head=} ;;
     review_decision=*) REVIEW_DECISION=${row#review_decision=} ;;
   esac
-done <<EOF
+done <<EOF_VIEW
 $MERGE_VIEW
-EOF
+EOF_VIEW
 [ -n "$MERGEABILITY" ] && [ -n "$MERGE_HEAD" ] \
   || die "GitHub returned incomplete mergeability for $URL"
 [ "$MERGE_HEAD" = "$HEAD" ] \
@@ -137,58 +142,61 @@ case "$MERGEABILITY" in
   *) die "GitHub returned invalid mergeability for $URL" ;;
 esac
 
-REQUIRED=$(gh pr checks "$URL" --required --json name,state,bucket,workflow --jq '
+GH_STDERR=$(mktemp "${TMPDIR:-/tmp}/fm-pr-state.XXXXXX") \
+  || die "could not create temporary file"
+trap 'rm -f "$GH_STDERR"' EXIT INT TERM
+if ! REQUIRED=$(gh pr checks "$URL" --required --json name,state,bucket,workflow --jq '
   .[]
   | select(.bucket != "pass" and .bucket != "skipping")
-  | "REQUIRED CHECK: \(.name) (\(.state))"') \
-  || die "could not read required checks for $URL"
-[ -z "$REQUIRED" ] || printf '%s\n' "$REQUIRED"
-
-if [ "$PATH_PART" = monalee-inc/artemis ]; then
-  VIEWER=$(gh api user --jq .login) || die "could not identify the authenticated GitHub user"
-  if [ "$AUTHOR" = "$VIEWER" ]; then
-    [ "$HAS_REQUESTED_USER" -eq 1 ] || printf 'REQUESTED USER: none\n'
-    [ "$HAS_REQUESTED_TEAM" -eq 1 ] || printf 'REQUESTED TEAM: none\n'
-  fi
-  TICKET=$BRANCH_TICKET
-  [ -n "$TICKET" ] || TICKET=$BODY_TICKET
-  if [ -n "$TICKET" ] && ! printf '%s\n' "$TITLE" | grep -Fqi -- "$TICKET"; then
-    printf 'TITLE: missing ticket identifier %s\n' "$TICKET"
-  fi
+  | "REQUIRED CHECK: \(.name) (\(.state))"' 2>"$GH_STDERR"); then
+  grep -Eq "^no (required )?checks reported on the '" "$GH_STDERR" || {
+    cat "$GH_STDERR" >&2
+    die "could not read required checks for $URL"
+  }
+  REQUIRED=
 fi
+[ -z "$REQUIRED" ] || printf '%s\n' "$REQUIRED"
 
 REVIEWS=$(gh api "$ENDPOINT/reviews?per_page=100" --paginate --jq '
   .[]
   | select(.user.login != null and .commit_id != null and .submitted_at != null)
-  | [.user.login, .state, .commit_id, .submitted_at]
+  | [.user.login, .user.type, .state, .commit_id, .submitted_at]
   | @tsv') || die "could not read reviews for $URL"
-if [ "$REVIEW_DECISION" = CHANGES_REQUESTED ] && [ -n "$REVIEWS" ]; then
-  while IFS=$'\t' read -r reviewer review_state review_head _submitted_at; do
-    [ "$reviewer" != "$AUTHOR" ] || continue
-    [ "$review_head" != "$HEAD" ] || continue
-    case "$review_state" in
-      CHANGES_REQUESTED)
-        printf 'STALE BLOCKING REVIEW: %s CHANGES_REQUESTED at %s; current head %s\n' \
-          "$reviewer" "$review_head" "$HEAD"
-        ;;
-    esac
-  done <<EOF
-$REVIEWS
-EOF
 
-  CURRENT_LATEST=$(printf '%s\n' "$REVIEWS" | awk -F '\t' -v head="$HEAD" '
-    $3 == head && (!seen[$1] || $4 >= latest[$1]) {
+if [ "$PATH_PART" = monalee-inc/artemis ]; then
+  VIEWER=$(gh api user --jq .login) || die "could not identify the authenticated GitHub user"
+  if [ "$AUTHOR" = "$VIEWER" ]; then
+    HUMAN_REVIEWER=$(printf '%s\n' "$REVIEWS" | awk -F '\t' -v author="$AUTHOR" '
+      NF == 5 && $1 != author && $2 != "Bot" { print $1; exit }')
+    [ "$HAS_REQUESTED_USER" -eq 1 ] || [ -n "$HUMAN_REVIEWER" ] \
+      || printf 'REQUESTED USER: none\n'
+    [ "$HAS_REQUESTED_TEAM" -eq 1 ] || printf 'REQUESTED TEAM: none\n'
+  fi
+  TICKET=$BRANCH_TICKET
+  [ -n "$TICKET" ] || TICKET=$BODY_TICKET
+  if [ -n "$TICKET" ] \
+    && ! printf '%s\n' "$TITLE" | grep -Eqi -- "(^|[^A-Za-z0-9-])${TICKET}([^0-9]|$)"; then
+    printf 'TITLE: missing ticket identifier %s\n' "$TICKET"
+  fi
+fi
+
+if [ "$REVIEW_DECISION" = CHANGES_REQUESTED ]; then
+  printf 'REVIEW DECISION: CHANGES_REQUESTED\n'
+  printf '%s\n' "$REVIEWS" | awk -F '\t' -v author="$AUTHOR" -v head="$HEAD" '
+    NF == 5 && $1 != author && $3 != "COMMENTED" && (!seen[$1] || $5 >= latest[$1]) {
       seen[$1] = 1
-      latest[$1] = $4
-      row[$1] = $0
+      latest[$1] = $5
+      state[$1] = $3
+      commit[$1] = $4
     }
-    END { for (reviewer in row) print row[reviewer] }
-  ')
-  while IFS=$'\t' read -r reviewer review_state _review_head _submitted_at; do
-    [ "$reviewer" != "$AUTHOR" ] || continue
-    [ "$review_state" != CHANGES_REQUESTED ] \
-      || printf 'REVIEW: %s CHANGES_REQUESTED at %s\n' "$reviewer" "$HEAD"
-  done <<EOF
-$CURRENT_LATEST
-EOF
+    END {
+      for (reviewer in state) {
+        if (state[reviewer] != "CHANGES_REQUESTED") continue
+        if (commit[reviewer] == head)
+          printf "REVIEW: %s CHANGES_REQUESTED at %s\n", reviewer, head
+        else
+          printf "STALE BLOCKING REVIEW: %s CHANGES_REQUESTED at %s; current head %s\n", \
+            reviewer, commit[reviewer], head
+      }
+    }' | LC_ALL=C sort
 fi

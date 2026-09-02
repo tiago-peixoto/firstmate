@@ -5,13 +5,14 @@
 # list, then the most recent 100 commits on its base commit for each path. A
 # commit is counted once even when it touched multiple changed paths. Candidates
 # use GitHub's own commit author.login mapping; names and email addresses are
-# never converted or guessed. The pull-request author is excluded.
+# never converted or guessed. The pull-request author and Bot accounts are
+# excluded.
 #
 # Usage: fm-pr-reviewers.sh <pr-url-or-number>
 #   Prints candidates in descending unique-commit count as:
 #     <github-login><tab><count> recent commit[s]
-#   When mapped evidence names only the pull-request author, prints no candidate
-#   and explains that result. Lookup or usage refusal exits non-zero.
+#   When no mapped author other than the pull-request author appears, prints no
+#   candidate and explains that result. Lookup or usage refusal exits non-zero.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -77,10 +78,10 @@ trap 'rm -f "$EVIDENCE"' EXIT INT TERM
 
 while IFS= read -r file; do
   ROWS=$(gh api --method GET "/repos/$PATH_PART/commits" \
-    -F sha="$BASE" \
-    -F path="$file" \
+    -f sha="$BASE" \
+    -f path="$file" \
     -F per_page=100 \
-    --jq '.[] | [.sha, (.author.login // "")] | @tsv') \
+    --jq '.[] | select(.author.type != "Bot") | [.sha, (.author.login // "")] | @tsv') \
     || die "could not read recent commits for $file"
   [ -z "$ROWS" ] || printf '%s\n' "$ROWS" >> "$EVIDENCE"
 done <<EOF
@@ -99,7 +100,7 @@ CANDIDATES=$(awk -F '\t' -v author="$AUTHOR" '
 ' "$EVIDENCE" | LC_ALL=C sort -t $'\t' -k2,2nr -k1,1)
 
 if [ -z "$CANDIDATES" ]; then
-  printf 'NO CANDIDATES: recent authorship names only the PR author\n'
+  printf 'NO CANDIDATES: no mapped author other than the PR author\n'
 else
   printf '%s\n' "$CANDIDATES"
 fi
