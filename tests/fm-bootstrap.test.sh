@@ -5,17 +5,15 @@
 # BOOTSTRAP_INFO fact, or completed bootstrap no-action fact and is silent when
 # all is well. firstmate consumes the exact 'MISSING: treehouse (install: ...)',
 # 'MISSING: tasks-axi (install: ...)', 'MISSING: quota-axi (install: ...)',
-# 'MISSING: lavish-axi (install: ...)', and 'BOOTSTRAP_INFO: ...' lines, so those
-# contracts are pinned verbatim. The cases
+# 'MISSING: gh-axi (install: ...)', 'MISSING: lavish-axi (install: ...)', and
+# 'BOOTSTRAP_INFO: ...' lines, so those contracts are pinned verbatim. The cases
 # are table-driven over the inputs that vary: whether `treehouse get --help`
 # advertises --lease, which (if any) tasks-axi version is on PATH, whether
 # tasks-axi update advertises --archive-body, whether its mv help advertises
 # multi-ID moves, whether quota-axi is on PATH,
 # whether the local backend config opts out of tasks-axi backlog mutations,
-# which no-mistakes version is on PATH, and which lavish-axi version is on PATH.
-# The retired node-launched GitHub wrapper is deliberately absent from the fake
-# toolchain: its absence must stay silent, which test_retired_github_wrapper_is_not_a_gap
-# pins as a contract rather than an accident of the fixture.
+# which no-mistakes version is on PATH, which gh-axi version is on PATH, and
+# which lavish-axi version is on PATH.
 # Dedicated fleet-sync cases pin the computed bootstrap timeout, explicit
 # override, blank-env defaulting, partial-output relay, and pre-launch timeout
 # scan.
@@ -48,6 +46,15 @@ make_fake_toolchain() {
   fakebin=$(fm_fakebin "$dir")
   fm_fake_exit0 "$fakebin" tmux node chrome-devtools-axi
   fm_fake_version_tool "$fakebin" lavish-axi FM_FAKE_LAVISH_AXI_VERSION 0.1.46
+  cat > "$fakebin/gh-axi" <<'SH'
+#!/usr/bin/env bash
+if [ "${1:-}" = --version ]; then
+  printf '%s\n' "${FM_FAKE_GH_AXI_VERSION:-0.1.29}"
+  exit 0
+fi
+exit 0
+SH
+  chmod +x "$fakebin/gh-axi"
   cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 if [ "${1:-}" = auth ] && [ "${2:-}" = status ]; then
@@ -72,7 +79,7 @@ SH
   cat > "$fakebin/no-mistakes" <<'SH'
 #!/usr/bin/env bash
 if [ "${1:-}" = --version ]; then
-  printf '%s\n' "${FM_FAKE_NO_MISTAKES_VERSION:-no-mistakes version v1.31.2 (fake) 2026-06-27T00:02:18Z}"
+  printf '%s\n' "${FM_FAKE_NO_MISTAKES_VERSION:-no-mistakes version v1.46.0 (fake) 2026-06-27T00:02:18Z}"
   exit 0
 fi
 exit 0
@@ -325,34 +332,44 @@ test_no_mistakes_min_version() {
         [ "$out" = "$missing" ] || fail "$label: expected '$missing', got: $out" ;;
     esac
   done <<'ROWS'
-minimum no-mistakes version is accepted^no-mistakes version v1.31.2 (fake)^empty
-newer no-mistakes minor is accepted^no-mistakes version v1.32.0 (fake)^empty
+minimum no-mistakes version is accepted^no-mistakes version v1.46.0 (fake)^empty
+newer no-mistakes minor is accepted^no-mistakes version v1.47.0 (fake)^empty
 newer no-mistakes major is accepted^no-mistakes version v2.0.0 (fake)^empty
-older no-mistakes patch reports an upgrade^no-mistakes version v1.31.1 (fake)^missing
+older no-mistakes patch reports an upgrade^no-mistakes version v1.45.4 (fake)^missing
 unparseable no-mistakes version reports an upgrade^no-mistakes development build^missing
 ROWS
   pass "bootstrap enforces no-mistakes minimum version"
 }
 
-# GitHub work runs on the native gh binary alone, because only a native binary is
-# eligible for the captain's credential vault. The node-launched GitHub wrapper is
-# retired fleet-wide and uninstalled, so its ABSENCE is the expected steady state.
-# Bootstrap must therefore stay silent about it: never a MISSING line, never an
-# install offer, and never a version floor to fall below. Left unpinned, a future
-# edit could quietly restore it to the required toolchain and start telling every
-# home to reinstall a tool the captain deliberately removed.
-test_retired_github_wrapper_is_not_a_gap() {
-  local case_dir fakebin out
-  case_dir="$TMP_ROOT/retired-github-wrapper"
-  mkdir -p "$case_dir/home/config"
-  printf '%s\n' manual > "$case_dir/home/config/backlog-backend"
-  fakebin=$(make_fake_toolchain "$case_dir")
-  [ ! -e "$fakebin/gh-axi" ] || fail "the fake toolchain still installs the retired GitHub wrapper"
-
-  out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$case_dir/home" FM_ROOT_OVERRIDE="$case_dir/home" \
-    FM_FAKE_TREEHOUSE_LEASE_HELP=1 "$ROOT/bin/fm-bootstrap.sh")
-  [ -z "$out" ] || fail "an absent retired GitHub wrapper was reported as a bootstrap problem: $out"
-  pass "bootstrap treats the retired GitHub wrapper's absence as the expected state"
+test_gh_axi_min_version() {
+  local label version mode case_dir fakebin out missing n
+  missing='MISSING: gh-axi (install: npm install -g gh-axi && gh-axi setup hooks)'
+  n=0
+  while IFS='^' read -r label version mode; do
+    [ -n "$label" ] || continue
+    n=$((n + 1))
+    case_dir="$TMP_ROOT/gh-axi-$n"
+    mkdir -p "$case_dir/home/config"
+    printf '%s\n' manual > "$case_dir/home/config/backlog-backend"
+    fakebin=$(make_fake_toolchain "$case_dir")
+    out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$case_dir/home" FM_ROOT_OVERRIDE="$case_dir/home" \
+      FM_FAKE_TREEHOUSE_LEASE_HELP=1 FM_FAKE_GH_AXI_VERSION="$version" "$ROOT/bin/fm-bootstrap.sh")
+    case "$mode" in
+      empty)
+        [ -z "$out" ] || fail "$label: expected silence, got: $out" ;;
+      missing)
+        [ "$out" = "$missing" ] || fail "$label: expected '$missing', got: $out" ;;
+    esac
+  done <<'ROWS'
+minimum gh-axi version is accepted^0.1.29^empty
+newer gh-axi patch is accepted^0.1.30^empty
+newer gh-axi minor is accepted^0.2.0^empty
+newer gh-axi major is accepted^1.0.0^empty
+older gh-axi patch reports an upgrade^0.1.19^missing
+much older gh-axi minor reports an upgrade^0.0.9^missing
+unparseable gh-axi version reports an upgrade^gh-axi development build^missing
+ROWS
+  pass "bootstrap enforces gh-axi minimum version"
 }
 
 test_lavish_axi_min_version() {
@@ -1133,7 +1150,7 @@ ROWS
 
 test_bootstrap_reporting
 test_no_mistakes_min_version
-test_retired_github_wrapper_is_not_a_gap
+test_gh_axi_min_version
 test_lavish_axi_min_version
 test_tasks_axi_min_version
 test_quota_axi_min_version

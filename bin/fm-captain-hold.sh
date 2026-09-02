@@ -767,7 +767,7 @@ command_answers() {
 }
 
 command_complete() {
-  local origin=${1:-} meta previous='' supplied='' keys='' entry key status_file open raw_open has_meta=0 transfer_rc transfer_line
+  local origin=${1:-} meta previous='' supplied='' keys='' entry key status_file open raw_open has_meta=0 transfer_rc
   [ "$#" -ge 2 ] || { usage >&2; exit 2; }
   validate_slug origin-id "$origin"
   shift
@@ -828,9 +828,8 @@ EOF
       while IFS=$'\t' read -r key _verb _summary; do
         [ -n "$key" ] || continue
         transfer_rc=0
-        transfer_line=$(status_stamp_line "captain-held [key=$key]: tracked by $keys") || true
         fm_wake_status_append_self_announced "$STATE" "$status_file" \
-          "$transfer_line" || transfer_rc=$?
+          "captain-held [key=$key]: tracked by $keys" || transfer_rc=$?
         [ "$transfer_rc" -ne 2 ] || fail "cannot append the captain-held transfer for $origin/$key"
       done <<EOF
 $raw_open
@@ -921,11 +920,9 @@ open_task_ids() {
   '
 }
 
-# Every explicit key token stated anywhere in a status log.
-# A cheap candidate scan over-includes tokens that are only prose, and
-# status_key_closing_verb below decides what the stream says about a key.
-# Legacy keyless events carry the implicit `default` key and intentionally have
-# no token for this prefilter to find.
+# Every key token stated anywhere in a status log. A cheap candidate scan: it
+# over-includes tokens that are only prose, and status_key_closing_verb below is
+# what actually decides what the stream says about a key.
 status_log_key_tokens() {  # <status-file>
   grep -o '\[key=[A-Za-z0-9._-]*\]' "$1" 2>/dev/null |
     sed 's/^\[key=//; s/\]$//' | LC_ALL=C sort -u
@@ -958,6 +955,7 @@ command_diverged() {
     [ -f "$f" ] && [ -r "$f" ] && [ ! -L "$f" ] || continue
     origin=$(basename "$f"); origin=${origin%.status}
     tokens=$(status_log_key_tokens "$f")
+    [ -n "$tokens" ] || continue
     while IFS= read -r id; do
       [ -n "$id" ] || continue
       # The keys that could name this task in THIS log: the collapsed identity
@@ -968,7 +966,7 @@ command_diverged() {
         "$origin-decision-"?*) keys="$keys"$'\n'"${id#"$origin-decision-"}" ;;
       esac
       while IFS= read -r key; do
-        [ "$key" = default ] || list_has_line "$tokens" "$key" || continue
+        list_has_line "$tokens" "$key" || continue
         [ "$(status_key_closing_verb "$f" "$key")" = "$resolve" ] || continue
         show=$(task_show "$id") || continue
         [ "$(show_field "$show" state)" != "done" ] || continue

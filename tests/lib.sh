@@ -8,18 +8,19 @@
 # It provides the boilerplate every test file used to re-roll: ok/not-ok
 # reporters, a self-cleaning temp root, fakebin/PATH-shim helpers, deterministic
 # git identity and fixture builders, state/<id>.meta writers, and the common
-# string/exit-code/file assertions. It deliberately does NOT bundle the
-# behavior-specific fake tmux/treehouse/no-mistakes mocks: those encode terminal
-# and lifecycle assumptions that differ per suite and belong with the tests that
-# own them.
+# string/exit-code/file assertions. Shared fake-toolchain and spawn-world
+# builders live in tests/fixtures.sh; wake-queue mocks in wake-helpers.sh;
+# secondmate-lifecycle mocks in secondmate-helpers.sh. Suite-specific fakes
+# that encode a single test's terminal or lifecycle assumptions still belong
+# with the tests that own them.
 #
 # ROOT is exported as the firstmate repo root (this file lives in tests/), so a
 # sourcing test can use "$ROOT/bin/..." without recomputing it.
 
 # Idempotent guard: behavior-area helper files (secondmate-helpers.sh,
-# wake-helpers.sh) source this library for ROOT/fail/pass, and the test that
-# includes them may also source it directly. Re-sourcing must not wipe the
-# registered-cleanup array or reset state.
+# wake-helpers.sh, fixtures.sh) source this library for ROOT/fail/pass, and the
+# test that includes them may also source it directly. Re-sourcing must not wipe
+# the registered-cleanup array or reset state.
 if [ -n "${FM_TEST_LIB_SOURCED:-}" ]; then
   return 0
 fi
@@ -33,13 +34,6 @@ FM_TEST_LIB_SOURCED=1
 # the boundary against the real hazard is unaffected. tests/fm-gate-refuse.test.sh
 # strips this to verify real refusal.
 export FM_GATE_REFUSE_BYPASS=1
-
-# Host commit.gpgsign must never make a fixture depend on a personal signing key.
-# Use Git's process-local config environment rather than mutating user config.
-FM_TEST_GIT_CONFIG_INDEX=${GIT_CONFIG_COUNT:-0}
-eval "export GIT_CONFIG_KEY_$FM_TEST_GIT_CONFIG_INDEX=commit.gpgsign"
-eval "export GIT_CONFIG_VALUE_$FM_TEST_GIT_CONFIG_INDEX=false"
-export GIT_CONFIG_COUNT=$((FM_TEST_GIT_CONFIG_INDEX + 1))
 
 # Resolve the repo root from this library's own location. Consumed by sourcing
 # test files, not by this library, so it reads as "unused" here.
@@ -103,8 +97,11 @@ fm_test_cleanup() {
 }
 
 fm_test_tmproot() {
-  local prefix=${1:-fm-test} root
-  root=$(mktemp -d "${TMPDIR:-/tmp}/${prefix}.XXXXXX") || return 1
+  local prefix=${1:-fm-test} root tmp_base
+  tmp_base=${TMPDIR:-/tmp}
+  tmp_base=${tmp_base%/}
+  root=$(mktemp -d "$tmp_base/${prefix}.XXXXXX") || return 1
+  root=$(cd -P -- "$root" && pwd -P) || return 1
   if ! printf '%s\n%s\n' "$$" "$FM_TEST_OWNER_IDENTITY" > "$root/.fm-test-fixture" ||
     ! printf '%s\n' "$root" >> "$FM_TEST_CLEANUP_REGISTRY"; then
     rm -rf "$root"
@@ -145,11 +142,19 @@ fm_test_reap_orphans() {
     mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null) || continue
     [ $((now - mtime)) -ge "$FM_TEST_ORPHAN_MAX_AGE_SECONDS" ] || continue
     dir=$(dirname "$marker")
+    if [ -d "$dir" ] && [ ! -L "$dir" ]; then
+      find "$dir" -type d -exec chmod u+rwx {} + 2>/dev/null || true
+    fi
     rm -rf "$dir"
   done
 }
 
-fm_test_reap_orphans
+# A parent coordinator can reap once before it starts isolated child sections.
+# Those children use their own EXIT cleanup and must not spend their bounded
+# execution window repeating the same global stale-fixture scan.
+if [ "${FM_TEST_SKIP_ORPHAN_REAP:-0}" != 1 ]; then
+  fm_test_reap_orphans
+fi
 
 # --- fakebin / PATH shims ---------------------------------------------------
 #
@@ -197,8 +202,7 @@ SH
 # --- deterministic git identity and fixtures --------------------------------
 
 # fm_git_identity [name] [email]: export a fixed author/committer identity so
-# fixture commits never depend on host identity. The library-wide process-local
-# Git config above independently disables host commit signing for every fixture.
+# fixture commits never depend on the host git config.
 fm_git_identity() {
   export GIT_AUTHOR_NAME=${1:-fmtest} GIT_AUTHOR_EMAIL=${2:-fmtest@example.invalid}
   export GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL

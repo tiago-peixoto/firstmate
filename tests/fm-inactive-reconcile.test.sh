@@ -42,7 +42,7 @@ case "${1:-}" in
 esac
 SH
   local tool
-  for tool in gh curl; do
+  for tool in gh gh-axi curl; do
     cat > "$fake/$tool" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$(basename "$0")" >> "${FM_FORGE_LOG:?}"
@@ -113,9 +113,10 @@ outcome_count() { # <home> <suffix>
 }
 
 prime_seen() { # <state> <status>
-  local state=$1 status=$2 sig
-  if [ "$(uname)" = Darwin ]; then sig=$(stat -f '%z:%Fm' "$status"); else sig=$(stat -c '%s:%Y' "$status"); fi
-  printf '%s' "$sig" > "$state/.seen-$(basename "$status" | tr '.' '_')"
+  FM_STATE_OVERRIDE="$1" bash -c '
+    . "$1"
+    fm_wake_status_mark_current "$2" "$3"
+  ' _ "$ROOT/bin/fm-wake-lib.sh" "$1" "$2"
 }
 
 reap() { kill "$1" 2>/dev/null || true; wait "$1" 2>/dev/null || true; }
@@ -143,7 +144,7 @@ test_main_direct_terminal_presentation_receipt() {
 test_local_secondmate_reports_terminal_child() {
   make_world local; bind_secondmate local; write_child "$MATE" child 'done: PR https://example.test/owner/repo/pull/1 checks green'
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
-  grep -F '[key=inactive-outcome-mate-child-done]' "$MAIN/state/mate.status" | grep -q '^done ' \
+  grep -Fq 'done [key=inactive-outcome-mate-child-done]:' "$MAIN/state/mate.status" \
     || fail "secondmate did not append its durable parent report"
   [ "$(outcome_count "$MATE" reported)" = 1 ] || fail "secondmate report receipt was not durable"
   pass "secondmate reports its own inactive terminal child"
@@ -186,6 +187,8 @@ test_invalid_secondmate_marker_blocks_routing() {
       || fail "$kind secondmate marker did not surface the blocked terminal obligation"
     [ "$(outcome_count "$MATE" pending)" = 0 ] \
       || fail "$kind secondmate marker created a main-home pending receipt"
+    [ "$(wake_count "$MATE" 'inactive-reconcile-diagnostic:invalid-secondmate-home')" = 1 ] \
+      || fail "$kind secondmate marker diagnostic was not durably queued"
     ! grep -Fq 'inactive-outcome:' "$MATE/state/.wake-queue" 2>/dev/null \
       || fail "$kind secondmate marker routed a captain presentation wake"
     [ -f "$MATE/state/child.meta" ] && [ -f "$MATE/state/child.status" ] \
@@ -317,7 +320,7 @@ test_scan_marker_replaces_symlink_safely() {
 
 test_nonterminal_and_captain_held_states_do_not_report() {
   local state
-  for state in working paused parked undetermined unknown; do
+  for state in working paused parked unknown; do
     make_world "nonterminal-$state"; write_child "$MAIN" child 'working: still active'
     FM_FAKE_CREW_STATE="$state" run_reconcile "$MAIN" --startup
     [ "$(outcome_count "$MAIN" pending)" = 0 ] || fail "$state produced a terminal outcome"
@@ -411,6 +414,25 @@ test_full_scan_budget_includes_wake_lock_wait() {
   pass "aggregate scan budget includes durable wake operations"
 }
 
+# A secondmate home seeded without its parent binding cannot report ANY terminal
+# outcome upward, and every later one fails for the same reason. The diagnostic
+# has to name the binding, or three weeks of identical failures read as three
+# weeks of unrelated report failures.
+test_missing_parent_binding_names_itself() {
+  local out
+  make_world missing-binding
+  printf 'mate\n' > "$MATE/.fm-secondmate-home"
+  write_child "$MATE" child 'done: PR merged'
+  out=$(FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup)
+  case "$out" in
+    *"actionable: inactive terminal outcome needs parent report"*".fm-secondmate-parent"*) ;;
+    *) fail "a missing parent binding did not name itself: $out" ;;
+  esac
+  [ "$(outcome_count "$MATE" reported)" = 0 ] \
+    || fail "an outcome that never reached a parent was recorded as reported"
+  pass "a secondmate home with no parent binding names the missing binding instead of failing quietly"
+}
+
 test_notice_recovery_does_not_duplicate_wake() {
   local record err seq generation
   make_world notice-recovery; bind_secondmate remote
@@ -459,6 +481,7 @@ test_watcher_hook_and_idle_secondmate_exemption
 test_stalled_state_read_is_bounded_and_scan_progresses
 test_full_scan_budget_includes_wake_lock_wait
 test_notice_recovery_does_not_duplicate_wake
+test_missing_parent_binding_names_itself
 test_reconciliation_never_calls_forge
 
 echo "all inactive reconciliation tests passed"

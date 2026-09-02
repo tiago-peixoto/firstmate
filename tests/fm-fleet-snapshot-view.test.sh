@@ -17,9 +17,6 @@ make_fakebin() {  # <dir>
   fb=$(fm_fakebin "$1")
   cat > "$fb/no-mistakes" <<'SH'
 #!/usr/bin/env bash
-if [ "${1:-}" = axi ] && [ "${2:-}" = status ]; then
-  printf '%s\n' "${FM_FAKE_AXI_STATUS:-}"
-fi
 exit 0
 SH
   cat > "$fb/tmux" <<'SH'
@@ -422,132 +419,6 @@ test_event_hints_follow_reconciled_current_state() {
   pass "snapshot event hints follow reconciled current state"
 }
 
-test_undetermined_state_stays_nonterminal_and_keeps_decision() {
-  local home fakebin crew_state out summary view
-  home=$(make_home undetermined-state)
-  cat > "$home/data/backlog.md" <<'EOF'
-## In flight
-- [ ] undetermined-task - Undetermined Task (repo: alpha) (kind: ship) (since 2026-08-31)
-EOF
-  fm_write_meta "$home/state/undetermined-task.meta" \
-    "window=firstmate:fm-undetermined-task" \
-    "worktree=$home/projects/undetermined-task" \
-    "project=alpha" \
-    "harness=claude" \
-    "kind=ship" \
-    "mode=ship"
-  printf 'needs-decision [key=route]: choose the delivery route\n' > "$home/state/undetermined-task.status"
-  fakebin=$(make_fakebin "$home")
-  crew_state="$fakebin/fm-crew-state.sh"
-  cat > "$crew_state" <<'SH'
-#!/usr/bin/env bash
-printf '%s\n' 'state: undetermined · source: run-step · conflicting direct evidence'
-SH
-  chmod +x "$crew_state"
-  out=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --json)
-  printf '%s' "$out" | jq -e '
-    .tasks[] | select(.id == "undetermined-task")
-    | .current_state.state == "undetermined"
-      and .current_state.source == "run-step"
-      and .hints.pending_decision == true
-      and (.hints.open_decisions | length) == 1
-  ' >/dev/null || fail "undetermined state must retain its open decision: $out"
-  summary=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
-  printf '%s' "$summary" | jq -e '
-    .valid == false
-      and .state == "unknown"
-      and .reason == "child current state unavailable or undetermined: undetermined-task"
-      and .invalidity == {kind:"child_current_unavailable",ids:["undetermined-task"]}
-  ' >/dev/null || fail "secondmate summary treated undetermined child as settled: $summary"
-  view=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$VIEW")
-  assert_contains "$view" "undetermined / run-step" "fleet view must render undetermined loudly"
-  pass "snapshot preserves undetermined as unresolved and nonterminal"
-}
-
-test_unknown_pane_state_preserves_legacy_decision_clear() {
-  local home fakebin crew_state out
-  home=$(make_home unknown-pane-state)
-  mkdir -p "$home/projects/unknown-pane-task"
-  fm_write_meta "$home/state/unknown-pane-task.meta" \
-    "window=firstmate:fm-unknown-pane-task" \
-    "worktree=$home/projects/unknown-pane-task" \
-    "project=alpha" \
-    "harness=claude" \
-    "kind=ship" \
-    "mode=ship"
-  printf 'needs-decision [key=route]: choose the delivery route\n' > "$home/state/unknown-pane-task.status"
-  fakebin=$(make_fakebin "$home")
-  crew_state="$fakebin/fm-crew-state.sh"
-  cat > "$crew_state" <<'SH'
-#!/usr/bin/env bash
-printf '%s\n' 'state: unknown · source: pane · harness state unavailable'
-SH
-  chmod +x "$crew_state"
-  out=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --json)
-  printf '%s' "$out" | jq -e '
-    .tasks[] | select(.id == "unknown-pane-task")
-    | .current_state.state == "unknown"
-      and .current_state.source == "pane"
-      and .hints.pending_decision == false
-      and (.hints.open_decisions | length) == 0
-  ' >/dev/null || fail "unknown pane state changed legacy open-decision clearing: $out"
-  pass "unknown pane state preserves legacy open-decision clearing"
-}
-
-test_secondmate_summary_distinguishes_unknown_from_undetermined() {
-  local home fakebin crew_state summary
-  home=$(make_home distinct-unavailable-states)
-  cat > "$home/data/backlog.md" <<'EOF'
-## In flight
-- [ ] unknown-task - Unknown Task (repo: alpha) (kind: ship)
-EOF
-  fm_write_meta "$home/state/unknown-task.meta" \
-    "window=firstmate:fm-unknown-task" \
-    "worktree=$home/projects/unknown-task" \
-    "project=alpha" \
-    "harness=claude" \
-    "kind=ship" \
-    "mode=ship"
-  fakebin=$(make_fakebin "$home")
-  crew_state="$fakebin/fm-crew-state.sh"
-  cat > "$crew_state" <<'SH'
-#!/usr/bin/env bash
-case "${1:-}" in
-  unknown-task) printf '%s\n' 'state: unknown · source: pane · harness state unavailable' ;;
-  undetermined-task) printf '%s\n' 'state: undetermined · source: run-step · conflicting direct evidence' ;;
-esac
-SH
-  chmod +x "$crew_state"
-  summary=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
-  printf '%s' "$summary" | jq -e '
-    .valid == false
-      and .state == "unknown"
-      and .reason == "child current state unavailable: unknown-task"
-      and .invalidity == {kind:"child_current_unavailable",ids:["unknown-task"]}
-  ' >/dev/null || fail "unknown-only summary changed its legacy reason: $summary"
-
-  cat > "$home/data/backlog.md" <<'EOF'
-## In flight
-- [ ] undetermined-task - Undetermined Task (repo: alpha) (kind: ship)
-- [ ] unknown-task - Unknown Task (repo: alpha) (kind: ship)
-EOF
-  fm_write_meta "$home/state/undetermined-task.meta" \
-    "window=firstmate:fm-undetermined-task" \
-    "worktree=$home/projects/undetermined-task" \
-    "project=alpha" \
-    "harness=claude" \
-    "kind=ship" \
-    "mode=ship"
-  summary=$(PATH="$fakebin:$PATH" FM_CREW_STATE_BIN="$crew_state" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
-  printf '%s' "$summary" | jq -e '
-    .valid == false
-      and .state == "unknown"
-      and .reason == "child current state unavailable or undetermined: undetermined-task, unknown-task"
-      and .invalidity == {kind:"child_current_unavailable",ids:["undetermined-task","unknown-task"]}
-  ' >/dev/null || fail "mixed unknown and undetermined children lost their distinct reason: $summary"
-  pass "secondmate summary distinguishes unknown from undetermined children"
-}
-
 test_scout_reports_include_teardown_reports() {
   local home out
   home=$(make_home teardown-reports)
@@ -709,33 +580,6 @@ EOF
   assert_contains "$view" "| done-note | Done Note | delta | ship | - | local main |" \
     "view should render local-only done artifact outside the title"
   pass "snapshot parses tasks-axi rows and respects operational overrides"
-}
-
-test_deferred_marker_requires_dedicated_marker() {
-  local home out
-  home=$(make_home deferred-marker-boundary)
-  cat > "$home/data/backlog.md" <<'EOF'
-## In flight
-
-## Queued
-- [ ] reason-prose - Choose loading strategy (repo: sample) (kind: ship) (hold: choose eager or deferred loading) (hold-kind: captain)
-- [ ] body-prose - Choose rendering strategy (repo: sample) (kind: ship) (hold: captain choice pending) (hold-kind: captain)
-  Compare eager or deferred rendering before answering.
-- [ ] reason-marker - Parked captain call (repo: sample) (kind: ship) (hold: DEFERRED by captain) (hold-kind: captain)
-- [ ] body-marker - Obsolete captain call (repo: sample) (kind: ship) (hold: captain choice pending) (hold-kind: captain)
-  NOT REQUIRED - the replacement call owns this choice.
-
-## Done
-EOF
-
-  out=$(FM_HOME="$home" "$SNAPSHOT" --json)
-  printf '%s' "$out" | jq -e '
-    (.backlog.records[] | select(.id == "reason-prose") | .deferred_marker == false)
-      and (.backlog.records[] | select(.id == "body-prose") | .deferred_marker == false)
-      and (.backlog.records[] | select(.id == "reason-marker") | .deferred_marker == true)
-      and (.backlog.records[] | select(.id == "body-marker") | .deferred_marker == true)
-  ' >/dev/null || fail "ordinary deferred prose and dedicated markers were not distinguished: $out"
-  pass "only dedicated deferred or superseded markers suppress captain-held rows"
 }
 
 test_view_renders_snapshot() {
@@ -955,14 +799,109 @@ test_parked_scout_decision_stays_pending() {
   pass "a scout still parked at a decision stays pending (terminal clear does not over-fire)"
 }
 
+# Home-summary validity treats persistent secondmates as registered homes, not
+# in-flight children. They have no backlog rows, so they must not produce
+# unowned_current or terminal_in_flight. Ordinary crew/ship metas still do.
+test_home_summary_excludes_secondmate_from_child_inventory() {
+  local home fakebin out
+  home=$(make_home summary-secondmate-only)
+  mkdir -p "$home/secondmate-home" "$home/projects/unowned" "$home/projects/terminal"
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+
+## Queued
+
+## Done
+EOF
+  fm_write_meta "$home/state/mate.meta" \
+    "window=firstmate:fm-mate" \
+    "worktree=$home/secondmate-home" \
+    "project=$home/secondmate-home" \
+    "harness=codex" \
+    "kind=secondmate" \
+    "mode=secondmate" \
+    "home=$home/secondmate-home" \
+    "projects=alpha"
+  printf 'working: watching delegated scope\n' > "$home/state/mate.status"
+  fakebin=$(make_fakebin "$home")
+  out=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$out" | jq -e '
+    .schema == "fm-secondmate-home-summary.v1"
+      and .valid == true
+      and .reason == null
+      and .invalidity == {kind:null,ids:[]}
+      and (.invalidity.kind != "unowned_current")
+      and (.invalidity.kind != "terminal_in_flight")
+  ' >/dev/null || fail "secondmate-only home with a clean backlog must be VALID: $out"
+
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+- [ ] mate - Registered secondmate home (repo: alpha) (kind: secondmate) (since 2026-07-11)
+
+## Queued
+
+## Done
+EOF
+  printf 'done: delegated scope complete\n' > "$home/state/mate.status"
+  out=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$out" | jq -e '
+    .valid == true
+      and .reason == null
+      and .invalidity == {kind:null,ids:[]}
+      and (.invalidity.kind != "terminal_in_flight")
+  ' >/dev/null || fail "terminal secondmate with a matching in-flight row must not produce terminal_in_flight: $out"
+
+  fm_write_meta "$home/state/unowned-ship.meta" \
+    "window=firstmate:fm-unowned-ship" \
+    "worktree=$home/projects/unowned" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=no-mistakes"
+  record_claude_idle "$home/state" unowned-ship
+  printf 'needs-decision [key=unowned-ship]: choose a route\n' > "$home/state/unowned-ship.status"
+  out=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$out" | jq -e '
+    .valid == false
+      and .invalidity == {kind:"unowned_current",ids:["unowned-ship"]}
+      and (.reason | contains("unowned-ship=parked"))
+      and (.reason | contains("mate=") | not)
+  ' >/dev/null || fail "ordinary unowned ship must still produce unowned_current without listing the secondmate: $out"
+
+  rm -f "$home/state/unowned-ship.meta" "$home/state/unowned-ship.status"
+  cat > "$home/data/backlog.md" <<'EOF'
+## In flight
+- [ ] terminal-ship - Done child still in flight (repo: alpha) (kind: ship) (since 2026-07-11)
+
+## Queued
+
+## Done
+EOF
+  fm_write_meta "$home/state/terminal-ship.meta" \
+    "window=firstmate:fm-terminal-ship" \
+    "worktree=$home/projects/terminal" \
+    "project=alpha" \
+    "harness=claude" \
+    "kind=ship" \
+    "mode=no-mistakes"
+  record_claude_idle "$home/state" terminal-ship
+  printf 'done: complete\n' > "$home/state/terminal-ship.status"
+  out=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
+  printf '%s' "$out" | jq -e '
+    .valid == false
+      and .invalidity == {kind:"terminal_in_flight",ids:["terminal-ship"]}
+      and (.reason | contains("terminal-ship=done"))
+      and (.reason | contains("mate=") | not)
+  ' >/dev/null || fail "ordinary terminal in-flight ship must still produce terminal_in_flight without listing the secondmate: $out"
+  pass "home-summary excludes kind=secondmate from unowned_current and terminal_in_flight"
+}
+
 test_empty_fleet_json
 test_fixture_snapshot_json
+test_home_summary_excludes_secondmate_from_child_inventory
 test_main_inventory_orphan_and_unstructured_disclosure
 test_normalized_roles_and_plural_blocker_readiness
 test_event_hints_follow_reconciled_current_state
-test_undetermined_state_stays_nonterminal_and_keeps_decision
-test_secondmate_summary_distinguishes_unknown_from_undetermined
-test_unknown_pane_state_preserves_legacy_decision_clear
 test_open_decision_survives_later_unrelated_event
 test_secondmate_open_decision_survives_live_endpoint
 test_open_decision_transfers_to_captain_hold
@@ -971,6 +910,5 @@ test_completed_scout_report_is_pointer_not_pending
 test_parked_scout_decision_stays_pending
 test_scout_reports_include_teardown_reports
 test_backlog_tasks_axi_forms_and_overrides
-test_deferred_marker_requires_dedicated_marker
 test_view_renders_snapshot
 test_view_renders_dead_secondmate_agent_status

@@ -19,7 +19,7 @@
 # standalone with unchanged default behavior - other flows (fm-bootstrap.sh
 # install <tools> after consent, /updatefirstmate, the afk daemon, existing
 # tests) still call them directly. The one seam this script needed -
-# bootstrap running its detect-only diagnostics without its seven mutating
+# bootstrap running its detect-only diagnostics without its six mutating
 # sweeps - is an opt-in FM_BOOTSTRAP_DETECT_ONLY=1 flag on fm-bootstrap.sh
 # itself (default unset/0 = unchanged behavior), not a fork.
 #
@@ -28,74 +28,33 @@
 #
 #   1. lock          - acquire the per-home session lock FIRST, before any
 #                       mutating step runs.
-#   2. bootstrap      - detect-only tool/version, worktree-tangle, harness,
-#                       crew-dispatch, and backlog-backend diagnostics always
-#                       run, with routine confirmations silent by default.
-#                       A lock-refused session gets read-only tangle advice and
-#                       no checkout-repair command. Home-local stale Herdr
-#                       projection cleanup and bootstrap's seven MUTATING sweeps
-#                       (legacy PR-check migration, fork-upstream probing,
-#                       secondmate convergence, secondmate liveness, pending
-#                       remote handoff retry, X-mode artifact writes, fleet sync)
-#                       run only when this session holds the lock; the five
-#                       network sweeps run in the deferred stage instead. The
-#                       liveness sweep accounts
-#                       deterministically for every registered secondmate,
-#                       relaunches only recovery-grade `dead` or `missing`
-#                       endpoints, preserves ambiguous, unreadable, or
-#                       unreachable targets, and reports skipped or failed
-#                       guarantees as SECONDMATE_LIVENESS lines. fm-bootstrap.sh,
-#                       fm_backend_agent_state in fm-backend.sh, and
-#                       docs/remote-secondmates.md own that classification.
-#   3. inactive outcomes + wake-drain - runs the local bounded inactive-outcome
-#                       reconciliation before presenting durable wakes and
-#                       advancing recovery handling state, so both run only
-#                       when locked. Raw queued records are this turn's first
-#                       work queue; a valid signal's clearly labeled
-#                       status-event annotation can include every status line
-#                       still unread at the presentation cursor, but never
-#                       replaces the raw record or current-state reconciliation.
-#                       A lapsed watcher chain still surfaces through the same
-#                       guard alarm. Presented records remain durable until the
-#                       printed generation-bound acknowledgement runs after
-#                       handling. The bounded fleet-wide OPEN DECISIONS section
-#                       remains actionable whenever durable decisions are open,
-#                       even with an empty queue, and must be reconciled before
-#                       continuing. The unbounded UNREAD STATUS section presents
-#                       every unseen note and pending-reply resolution since the
-#                       last presentation only once and never reprints them.
-#                       A lock-refused session leaves the queue untouched and
-#                       gets read-only tangle and watcher-liveness advice with
-#                       no drain, supervision repair, or checkout repair.
+#   2. bootstrap      - home-local stale Herdr projection cleanup runs only
+#                       when this session actually holds the lock. Detect-only
+#                       diagnostics always run. Bootstrap's six MUTATING sweeps
+#                       (same-home backlog reconciliation,
+#                       secondmate convergence, secondmate liveness, pending remote
+#                       handoff retry, X-mode artifact writes, fleet sync) also run only when
+#                       locked; the four network sweeps run in the deferred
+#                       stage rather than this synchronous bootstrap section.
+#   3. wake-drain     - presents durable wakes and advances recovery handling
+#                       state, so it only runs when locked. The local bounded
+#                       inactive-outcome startup scan runs in the deferred worker.
 #   4. supervision-instructions - the one emitted operating block for the
-#                       detected primary harness, after the wake queue and
-#                       before both digests, followed by their read-once
-#                       contract. This script never starts supervision; the
-#                       emitted protocol owns the exact wait or wake mechanism.
+#                       detected primary harness.
 #   5. read-once contract - the do-not-re-read contract covering every source
 #                       represented by the two digests below.
 #   6. fleet digest   - a compact data/backlog.md identity/metadata listing,
-#                       every state/*.meta, a bounded state/*.status tail labeled
-#                       as wake-event history with its full log path, state/.afk,
-#                       and a cheap per-task endpoint-liveness read: read-only,
-#                       always runs. That alive/dead read is only a fast presence
-#                       check; fm-crew-state.sh owns the deeper current-state
-#                       read, which this digest deliberately skips.
+#                       every state/*.meta, a bounded state/*.status tail,
+#                       state/.afk, and a cheap per-task endpoint-liveness read:
+#                       read-only, always runs.
 #   7. network checks - the result of the deferred network stage started back at
-#                       step 1, or an exact statement of what is still
-#                       unconfirmed, harvested WITHOUT waiting for it. A
-#                       read-only session runs none of these checks and says so.
-#   8. context digest - the full, clearly delimited data/projects.md,
-#                       data/secondmates.md, data/captain.md,
-#                       data/captain-shared.md, and data/learnings.md: read-only,
-#                       always safe, always runs. Each missing file prints an
-#                       explicit ABSENT marker rather than looking empty;
-#                       absence carries the defaults and rebuild meaning in
-#                       AGENTS.md section 3.
+#                       step 1, harvested WITHOUT waiting for it.
+#   8. context digest - data/projects.md, data/secondmates.md, data/captain.md,
+#                       data/captain-shared.md, data/learnings.md: read-only,
+#                       always safe, always runs.
 #   9. closing reminder - prints the context-specific watcher next step; this
 #                       script points back to the emitted harness supervision
-#                       block, preserves only lock, away-mode, Relay, and
-#                       read-once reminders, and never arms the watcher itself.
+#                       block and deliberately never arms the watcher itself.
 #
 # Those nine names are also the runtime-bound stage list below, so a truncated
 # startup can name exactly which of them never ran.
@@ -107,15 +66,17 @@
 # entire FM_SESSION_START_TIMEOUT and truncate the digest, so a slow network
 # could cost the work queue itself.
 # So no step between here and the last line below makes an external-network
-# call. All six that a session start owes - `gh auth status`, the fork-upstream
-# probe, secondmate liveness, secondmate convergence, pending remote handoff
-# delivery, and the fleet-sync fetch - are started as one detached bounded
-# worker right after the lock (step 1) and harvested at step 7 without ever
-# blocking on it. bin/fm-startup-network.sh owns that stage and its safety
-# argument; bin/fm-bootstrap.sh remains the owner of the sweeps themselves and
-# still runs every one of them.
-# The digest is therefore composed from local reads and local subprocesses only,
-# and an unreachable host now delays a reported check rather than the startup.
+# call. The five that did - `gh auth status`, secondmate liveness, secondmate
+# convergence, pending remote handoff delivery, and the fleet-sync fetch - are
+# started as one detached bounded worker right after the lock (step 1) and
+# harvested at step 7 without ever blocking on it. The bounded inactive-outcome
+# startup scan joins that worker because its local current-state reads can also
+# be slow. bin/fm-startup-network.sh owns that stage and its safety argument;
+# bin/fm-bootstrap.sh and bin/fm-inactive-reconcile.sh remain the owners of the
+# work itself and still run it.
+# The digest is therefore composed from bounded local reads and local
+# subprocesses only, while slow network or inactive-state reconciliation delays
+# a reported check rather than startup.
 # What this deliberately trades: on a slow network the digest prints "IN
 # PROGRESS" and names exactly which checks are not yet confirmed, instead of
 # waiting for them. It never reports an unconfirmed check as passed.
@@ -158,8 +119,8 @@
 # and all of which are safe to compute without verified lock ownership.
 # It deliberately skips the network-only GitHub-auth probe because a read-only
 # session has no dispatch, spawn, steer, or merge action for that verdict to gate.
-# Only projection cleanup, the seven bootstrap mutating sweeps, inactive-outcome
-# reconciliation, and wake-queue presentation are skipped.
+# Only projection cleanup, the six bootstrap mutating sweeps, and wake-queue
+# presentation are skipped.
 # The context and fleet-state digests
 # below are always read-only, so they run unconditionally in both modes.
 #
@@ -201,14 +162,16 @@
 # status log path, and AGENTS.md section 8 treats a status line as a wake EVENT
 # rather than current state - bin/fm-crew-state.sh owns current state.
 #
-# RUNTIME BOUND: the digest is now executed on a session-open hook (see
-# bin/fm-sessionstart-run.sh), which blocks session initialization while it
-# runs, so an unbounded digest is no longer merely slow - it can strand a whole
-# session behind one hung subprocess. Every remaining step is local, but local is
-# not the same as bounded: tool version probes, the backlog listing, and the
-# per-task endpoint reads are all unbounded subprocesses. So the whole digest
-# still runs as ONE bounded child of this script (FM_SESSION_START_TIMEOUT,
-# default 120s). The deferred network stage deliberately sits OUTSIDE that bound,
+# RUNTIME BOUND: the digest is now executed through a native session-open
+# adapter (see bin/fm-sessionstart-run.sh), which blocks either hook-driven
+# session initialization or Pi's first provider preflight while it runs, so an
+# unbounded digest is no longer merely slow - it can strand a whole session or
+# first turn behind one hung subprocess. Every remaining step is local, but
+# local is not the same as bounded: tool version probes, the backlog listing,
+# and the per-task endpoint reads are all unbounded subprocesses. So the whole
+# digest still runs as ONE bounded child of this script
+# (FM_SESSION_START_TIMEOUT, default 120s). The deferred network stage
+# deliberately sits OUTSIDE that bound,
 # in its own process group under its own aggregate deadline, so a truncated
 # digest neither waits for it nor orphans it unbounded. The
 # child writes the digest straight to this script's stdout, so everything it
@@ -229,11 +192,11 @@
 #   --reemit  This process ALREADY took the helm at its own startup and has
 #             only lost its context (a /clear or a compaction). Skip the
 #             mutating sweeps that startup already reconciled - the stale Herdr
-#             projection cleanup and bootstrap's seven mutating sweeps (fleet
-#             sync, fork-upstream probing, secondmate convergence and liveness,
-#             PR-check migration, pending remote handoff retry, X-mode artifact writes) - and
-#             re-emit the rest. Inactive-outcome reconciliation and wake-queue
-#             presentation are NOT skipped: queued
+#             projection cleanup and bootstrap's six mutating sweeps (fleet
+#             sync, same-home backlog reconciliation, secondmate convergence and
+#             liveness, pending remote handoff retry, X-mode
+#             artifact writes) - and
+#             re-emit the rest. Wake-queue presentation is NOT skipped: queued
 #             records are this turn's work queue, they arrived after startup,
 #             and a session that owns the lock is exactly the session that must
 #             handle and acknowledge them. Lock acquisition still runs, because
@@ -653,7 +616,7 @@ if [ "$REEMIT" -eq 1 ]; then
   printf 'This session already took the helm at its own startup and has only lost its\n'
   printf 'context. Lock ownership is re-verified and the durable records below are\n'
   printf 'reprinted, but the sweeps startup already reconciled - project clone refresh,\n'
-  printf 'secondmate convergence and liveness, PR-check migration, pending remote handoff\n'
+  printf 'secondmate convergence and liveness, pending remote handoff\n'
   printf 'retry, X-mode artifact writes, and stale Herdr child cleanup - are NOT repeated.\n'
   printf 'Queued wakes ARE still drained: they arrived after startup and are this turn work.\n'
 else
@@ -673,7 +636,7 @@ if [ "$LOCK_RC" -ne 0 ]; then
     printf '%s\n' "$BAR"
     printf '●  READ-ONLY SESSION - FLEET LOCK OWNERSHIP WAS NOT VERIFIED\n'
     printf '●  %s\n' "$LOCK_OUT"
-    printf '●  Skipping every mutating step: PR-check migration, stale Herdr child cleanup,\n'
+    printf '●  Skipping every mutating step: stale Herdr child cleanup,\n'
     printf '●  secondmate convergence, secondmate liveness, pending remote handoff retry,\n'
     printf '●  X-mode artifacts, fleet sync, and wake-queue drain. Detect-only bootstrap\n'
     printf '●  diagnostics and the rest of this read-only-safe digest still ran below.\n'
@@ -690,9 +653,16 @@ if [ "$READ_ONLY" -eq 0 ]; then
     rm -f "$COMPLETION_FILE" 2>/dev/null || true
   fi
   fm_trace_context_session_start "$CONFIG" "$STATE/.trace-context-effective"
-  # Every network call this session start owes is launched HERE, detached and
-  # bounded, so it runs concurrently with the whole digest below instead of in
-  # front of it. Step 7 harvests whatever it has finished, without ever waiting.
+  # A full locked start publishes this home's current structured summary.
+  # Publication is side-band and best-effort, so it can never change the
+  # session-start result. A context re-emit is not another session start.
+  if [ "$REEMIT" -eq 0 ]; then
+    "$SCRIPT_DIR/fm-home-summary-refresh.sh" --best-effort || true
+  fi
+  # Every network call and the potentially slow inactive-outcome startup scan
+  # are launched HERE, detached and bounded, so they run concurrently with the
+  # whole digest below instead of in front of it. Step 7 harvests whatever has
+  # finished, without ever waiting.
   # --reemit passes --locked 0 for the same reason it runs bootstrap detect-only:
   # this process already ran the mutating sweeps at its own startup, so only the
   # read-only GitHub-auth probe is owed. A read-only session starts nothing at
@@ -729,10 +699,11 @@ else
   printf '(silent - all good)\n'
 fi
 
-# --- 3. inactive outcomes + wake-drain -----------------------------------
-# The existing locked session-start path runs the same local inactive-outcome
-# reconciliation as the watcher poll before it presents the resulting durable
-# wake, without adding a daemon or external-network call.
+# --- 3. wake-drain ---------------------------------------------------------
+# The inactive-outcome startup scan runs in the deferred worker launched above,
+# where its potentially slow current-state reads cannot block this digest. It
+# publishes findings through the same durable queue drained here; the watcher's
+# separate 900-second cadence remains unchanged.
 # Presented records are this turn's first work queue and remain durable until
 # post-handling acknowledgement. The drain's separate OPEN DECISIONS section
 # remains actionable even when that queue is empty (AGENTS.md sections 3 and 8).
@@ -751,11 +722,6 @@ if [ "$READ_ONLY" -eq 1 ]; then
   GUARD_OUT=$(FM_GUARD_READ_ONLY=1 "$SCRIPT_DIR/fm-guard.sh" 2>&1)
   [ -n "$GUARD_OUT" ] && printf '%s\n' "$GUARD_OUT"
 else
-  INACTIVE_OUT=$(FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" \
-    "$SCRIPT_DIR/fm-inactive-reconcile.sh" scan --startup 2>&1) || INACTIVE_OUT=
-  if [ -n "$INACTIVE_OUT" ]; then
-    printf 'inactive outcome reconciliation: %s\n' "$INACTIVE_OUT"
-  fi
   # Pi supervision-branch recovery, locked path only: clear leases whose
   # supervising session died, and surface outcomes the branch stored durably
   # that never reached main (docs/pi-supervision-branch.md). Gated to the

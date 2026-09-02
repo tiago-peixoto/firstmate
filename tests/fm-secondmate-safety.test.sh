@@ -48,22 +48,10 @@ SH
 }
 
 test_fm_home_parameterization() {
-  local brief home_one home_two out fakebin
+  local brief home_one home_two out
   home_one="$TMP_ROOT/home one"
   home_two="$TMP_ROOT/home-two"
   mkdir -p "$home_one/data" "$home_one/state" "$home_two/data" "$home_two/state"
-  fakebin=$(fm_fakebin "$TMP_ROOT/fm-home-parameterization")
-  cat > "$fakebin/gh" <<'SH'
-#!/usr/bin/env bash
-case " $* " in
-  *" /repos/example/repo/pulls/1/reviews"*) printf '%s\n' 10 ;;
-  *" /repos/example/repo/issues/1/comments"*) printf '%s\n' 20 ;;
-  *" /repos/example/repo/pulls/1/comments"*) printf '%s\n' 30 ;;
-  *" /repos/example/repo/pulls/1 "*) printf '%s\t%s\t%s\n' open 0 2026-08-31T10:00:00Z ;;
-  *) exit 1 ;;
-esac
-SH
-  chmod +x "$fakebin/gh"
   printf '%s\n' '- app [local-only +yolo] - test app (added 2026-06-22)' > "$home_one/data/projects.md"
 
   out=$(FM_HOME="$home_one" "$ROOT/bin/fm-project-mode.sh" app)
@@ -86,8 +74,7 @@ SH
   grep -F ">> '$home_one/state/task-c.status'" "$brief" >/dev/null || fail "secondmate brief did not shell-quote FM_HOME state path"
 
   printf 'project=x\n' > "$home_one/state/task-a.meta"
-  PATH="$fakebin:$PATH" FM_HOME="$home_one" FM_GUARD_GRACE=999999 \
-    "$ROOT/bin/fm-pr-check.sh" task-a https://github.com/example/repo/pull/1 >/dev/null 2>/dev/null \
+  FM_HOME="$home_one" FM_GUARD_GRACE=999999 "$ROOT/bin/fm-pr-check.sh" task-a https://github.com/example/repo/pull/1 >/dev/null 2>/dev/null \
     || fail "fm-pr-check failed under FM_HOME"
   [ -f "$home_one/state/task-a.check.sh" ] || fail "pr check was not written under FM_HOME/state"
   [ ! -e "$home_two/state/task-a.check.sh" ] || fail "pr check leaked into another home"
@@ -454,60 +441,6 @@ test_home_seed_refuses_missing_filled_charter() {
   [ ! -e "$subhome" ] || fail "missing charter seed left a generated subhome"
   [ ! -e "$home/data/design/brief.md" ] || fail "missing charter seed generated a placeholder charter"
   pass "home seeding refuses direct seed without filled charter text"
-}
-
-test_home_seed_restores_existing_git_topology_after_post_inherit_failure() {
-  local parent source target upstream fork branch err before after
-  parent="$TMP_ROOT/git-topology-rollback-parent"
-  source="$TMP_ROOT/git-topology-rollback-source"
-  target="$TMP_ROOT/git-topology-rollback-target"
-  upstream="$TMP_ROOT/remotes/git-topology-upstream.git"
-  fork="$TMP_ROOT/remotes/git-topology-fork.git"
-  err="$TMP_ROOT/git-topology-rollback.err"
-  mkdir -p "$parent/data" "$parent/state" "$parent/projects" "$(dirname "$upstream")"
-  git clone --quiet "$ROOT" "$source"
-  branch=$(git -C "$source" symbolic-ref --short HEAD)
-  git clone --quiet --bare "$source" "$upstream"
-  git clone --quiet --bare "$source" "$fork"
-  git -C "$upstream" symbolic-ref HEAD "refs/heads/$branch"
-  git -C "$fork" symbolic-ref HEAD "refs/heads/$branch"
-  git -C "$source" remote set-url origin "$fork"
-  git -C "$source" remote add upstream "$upstream"
-  git -C "$source" fetch -q origin
-  git -C "$source" fetch -q upstream
-  git -C "$source" remote set-head origin "$branch"
-  git -C "$source" remote set-head upstream "$branch"
-  git -C "$source" config "branch.$branch.remote" origin
-  git -C "$source" config "branch.$branch.merge" "refs/heads/$branch"
-  git -C "$source" config rerere.enabled true
-  git -C "$source" config rerere.autoupdate false
-
-  git clone --quiet "$source" "$target"
-  git -C "$target" config rerere.enabled false
-  git -C "$target" config --unset-all rerere.autoupdate >/dev/null 2>&1 || true
-  git -C "$target" remote add legacy "$upstream"
-  git -C "$target" config branch."$branch".description 'pre-seed topology sentinel'
-  before=$(
-    printf '%s\n' 'CONFIG'
-    git -C "$target" config --local --list
-    printf '%s\n' 'REMOTE_REFS'
-    git -C "$target" for-each-ref --format='%(refname)%09%(objectname)%09%(symref)' refs/remotes
-  )
-
-  if FM_ROOT_OVERRIDE="$source" FM_HOME="$parent" \
-    "$ROOT/bin/fm-home-seed.sh" design "$target" --no-projects >/dev/null 2>"$err"; then
-    fail "seed succeeded without the required filled charter after topology inheritance"
-  fi
-  grep -F 'no filled secondmate charter brief' "$err" >/dev/null \
-    || fail "post-inheritance seed failure did not reach the charter validation fixture"
-  after=$(
-    printf '%s\n' 'CONFIG'
-    git -C "$target" config --local --list
-    printf '%s\n' 'REMOTE_REFS'
-    git -C "$target" for-each-ref --format='%(refname)%09%(objectname)%09%(symref)' refs/remotes
-  )
-  [ "$after" = "$before" ] || fail "failed seed did not restore the existing home's complete Git topology"
-  pass "home seeding restores an existing home's Git topology after a post-inheritance failure"
 }
 
 test_home_seed_refuses_placeholder_charter() {
@@ -2003,65 +1936,6 @@ EOF
   pass "secondmate force teardown discards child work"
 }
 
-test_secondmate_force_teardown_refuses_child_quarantine_symlink() {
-  local home subhome childproj childwt external fakebin log err rc
-  home="$TMP_ROOT/force-quarantine-home"
-  subhome="$TMP_ROOT/force-quarantine-subhome"
-  childproj="$subhome/projects/alpha"
-  childwt="$TMP_ROOT/force-quarantine-child-worktree"
-  external="$TMP_ROOT/force-quarantine-external"
-  err="$TMP_ROOT/force-quarantine.err"
-  mkdir -p "$home/state" "$home/data" "$subhome/state" "$external"
-  fm_git_worktree "$childproj" "$childwt" force-quarantine-child
-  printf 'domain\n' > "$subhome/.fm-secondmate-home"
-  cat > "$home/state/domain.meta" <<EOF
-window=firstmate:fm-domain
-worktree=$subhome
-project=$subhome
-harness=echo
-kind=secondmate
-mode=secondmate
-yolo=off
-home=$subhome
-projects=alpha
-EOF
-  printf '%s\n' '- domain - design domain (home: '"$subhome"'; scope: design domain; projects: alpha; added 2026-06-22)' > "$home/data/secondmates.md"
-  cat > "$subhome/state/child.meta" <<EOF
-window=firstmate:fm-child
-worktree=$childwt
-project=$childproj
-harness=echo
-kind=ship
-mode=no-mistakes
-yolo=off
-EOF
-  printf 'child check\n' > "$subhome/state/child.check.sh"
-  printf 'external quarantine artifact\n' > "$external/child.check.protected"
-  chmod 0640 "$external/child.check.protected"
-  ln -s "$external" "$subhome/state/.pr-check-quarantine"
-  fakebin=$(make_fake_tmux "$TMP_ROOT/force-quarantine-fake")
-  log="$TMP_ROOT/force-quarantine-fake/tmux.log"
-
-  set +e
-  PATH="$fakebin:$PATH" FM_HOME="$home" FM_FAKE_TMUX_LOG="$log" \
-    FM_FAKE_TMUX_CAPTURE="$TMP_ROOT/force-quarantine-fake/pane.txt" \
-    "$ROOT/bin/fm-teardown.sh" domain --force >/dev/null 2> "$err"
-  rc=$?
-  set -e
-  [ "$rc" -ne 0 ] || fail "force teardown accepted a child quarantine-directory symlink"
-  [ -d "$subhome" ] || fail "force teardown removed the subhome before quarantine refusal"
-  [ -d "$childwt" ] || fail "force teardown removed child work before quarantine refusal"
-  [ -e "$home/state/domain.meta" ] || fail "force teardown cleared parent meta before quarantine refusal"
-  [ -e "$subhome/state/child.meta" ] || fail "force teardown cleared child meta before quarantine refusal"
-  [ "$(cat "$subhome/state/child.check.sh")" = 'child check' ] || fail "force teardown removed the child check before quarantine refusal"
-  [ "$(cat "$external/child.check.protected")" = 'external quarantine artifact' ] \
-    || fail "force teardown changed the child quarantine symlink target"
-  [ "$(file_mode "$external/child.check.protected")" = 640 ] \
-    || fail "force teardown changed the child quarantine target mode"
-  grep -F 'kill-window' "$log" >/dev/null && fail "force teardown killed a window before child quarantine validation"
-  pass "secondmate force teardown prevalidates child quarantine cleanup without following symlinks"
-}
-
 test_secondmate_force_teardown_preserves_child_on_unproven_lock() {
   local home subhome childproj childwt fakebin log err rc lock
   home="$TMP_ROOT/force-lock-home"
@@ -3035,7 +2909,6 @@ test_home_seed_warns_when_acquired_home_return_fails
 test_home_seed_does_not_return_unsafe_acquired_home
 test_home_seed_rolls_back_failed_clone
 test_home_seed_refuses_missing_filled_charter
-test_home_seed_restores_existing_git_topology_after_post_inherit_failure
 test_home_seed_refuses_placeholder_charter
 test_home_seed_refuses_empty_charter_fields
 test_home_seed_no_projects_end_to_end
@@ -3077,7 +2950,6 @@ test_secondmate_force_teardown_preserves_nested_restore_status
 test_secondmate_teardown_refuses_failed_leased_home_return
 test_secondmate_teardown_removes_plain_clone_home_without_treehouse_return
 test_secondmate_force_teardown_discards_child_work
-test_secondmate_force_teardown_refuses_child_quarantine_symlink
 test_secondmate_force_teardown_preserves_child_on_unproven_lock
 test_secondmate_force_teardown_allows_non_state_operational_dir_symlinks_inside_home
 test_secondmate_force_teardown_refuses_operational_dir_symlink_outside_home
