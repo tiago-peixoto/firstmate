@@ -19,6 +19,9 @@ OLD_HEAD_2=4dc2291e6969de1bf204fbdb53c9e57a8353d4e2
 # the --jq program it received with the real jq, so field selection is what is
 # under test. The REST pull-request object always carries the stale
 # `mergeable: null` GitHub reports right after a push.
+# It evaluates with the local jq, while gh itself embeds gojq, whose Go RE2
+# regexes reject lookaround; tests/fm-pr-state-live-e2e.test.sh runs the real
+# engine.
 cat > "$FAKEBIN/gh" <<'SH'
 #!/usr/bin/env bash
 set -o pipefail

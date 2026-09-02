@@ -71,8 +71,8 @@ CORE=$(gh api "$ENDPOINT" --jq '
   "head=\(.head.sha)",
   "base=\(.base.ref)",
   "title=\(.title)",
-  "branch_ticket=\(([.head.ref | scan("(?<![A-Za-z0-9])ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
-  "body_ticket=\(([.body // "" | scan("(?<![A-Za-z0-9])ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
+  "branch_ticket=\(([.head.ref | scan("(^|[^A-Za-z0-9-])(ART-[0-9]+)"; "i") | .[1]][0] // "") | ascii_upcase)",
+  "body_ticket=\(([.body // "" | scan("(^|[^A-Za-z0-9-])(ART-[0-9]+)"; "i") | .[1]][0] // "") | ascii_upcase)",
   "author=\(.user.login)",
   (.requested_reviewers[]? | select(.type != "Bot") | "requested_user=\(.login)"),
   (.requested_teams[]? | "requested_team=\(.slug)")') || die "could not read $URL"
