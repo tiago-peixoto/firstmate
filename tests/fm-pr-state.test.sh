@@ -17,6 +17,11 @@ case "$*" in
   "pr view "*" --json url --jq .url")
     printf '%s\n' 'https://github.com/monalee-inc/artemis/pull/7'
     ;;
+  "pr view "*" --json mergeable,headRefOid --jq "*)
+    printf '%s\n' \
+      "mergeability=${FM_TEST_VIEW_MERGEABILITY:-mergeable}" \
+      'head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e'
+    ;;
   "api /repos/monalee-inc/artemis/pulls/7 --jq "*)
     printf '%s\n' \
       'state=open' \
@@ -26,6 +31,8 @@ case "$*" in
       'head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e' \
       'base=dev' \
       "title=${FM_TEST_TITLE:-fix(ART-7): fixture}" \
+      "branch_ticket=${FM_TEST_BRANCH_TICKET:-}" \
+      "body_ticket=${FM_TEST_BODY_TICKET:-}" \
       'author=tiago-peixoto'
     [ -z "$requested_users" ] || printf 'requested_user=%s\n' "$requested_users"
     [ -z "$requested_teams" ] || printf 'requested_team=%s\n' "$requested_teams"
@@ -84,7 +91,7 @@ test_stale_blocking_reviews_survive_a_later_review() {
   old_head_1=2710bc5efc936efb70e95b86ca3582e9da7e60f4
   old_head_2=4dc2291e6969de1bf204fbdb53c9e57a8353d4e2
   current_head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e
-  out=$(FM_TEST_REVIEWS=$'coderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_1"$'\t2026-09-01T00:15:44Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_2"$'\t2026-09-01T23:02:13Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$current_head"$'\t2026-09-02T13:53:41Z\nLipemenezes\tCOMMENTED\t'"$old_head_2"$'\t2026-09-01T23:10:00Z\nalice\tAPPROVED\t'"$old_head_2"$'\t2026-09-01T23:11:00Z' run_state) \
+  out=$(FM_TEST_REVIEWS=$'coderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_1"$'\t2026-09-01T00:15:44Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_2"$'\t2026-09-01T23:02:13Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$current_head"$'\t2026-09-02T13:53:41Z\ncoderabbitai[bot]\tAPPROVED\t'"$current_head"$'\t2026-09-02T14:05:42Z\nLipemenezes\tCOMMENTED\t'"$old_head_2"$'\t2026-09-01T23:10:00Z\nalice\tAPPROVED\t'"$old_head_2"$'\t2026-09-01T23:11:00Z' run_state) \
     || fail "voided-review fixture was refused"
   assert_contains "$out" "STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at $old_head_1; current head $current_head" \
     "the first stale changes-requested verdict was hidden by a later review"
@@ -94,6 +101,8 @@ test_stale_blocking_reviews_survive_a_later_review() {
     "a stale approval must be distinguished from a blocking verdict"
   assert_not_contains "$out" 'Lipemenezes' \
     "a stale COMMENTED review is informational noise"
+  ! printf '%s\n' "$out" | grep -q '^REVIEW: coderabbitai\[bot\]' \
+    || fail "a later current-head approval must supersede the earlier current-head changes request"
   pass "all stale blocking verdicts survive later reviews without COMMENTED noise"
 }
 
@@ -126,13 +135,31 @@ test_help_discloses_unavailable_thread_resolution() {
 
 test_unknown_mergeability_and_missing_ticket_are_blockers() {
   local out
-  out=$(FM_TEST_MERGEABILITY=unknown FM_TEST_TITLE='fix: fixture' run_state) \
+  out=$(FM_TEST_MERGEABILITY=unknown FM_TEST_VIEW_MERGEABILITY=unknown FM_TEST_TITLE='fix: fixture' FM_TEST_BODY_TICKET=ART-7 run_state) \
     || fail "unknown-mergeability fixture was refused"
   assert_contains "$out" 'MERGEABILITY: unknown' \
     "null mergeability must not be treated as clean"
   assert_contains "$out" 'TITLE: missing ticket identifier' \
     "Artemis-style title without a ticket must be reported"
   pass "unknown mergeability and missing ticket identifier block readiness"
+}
+
+test_ticketless_pr_does_not_require_title_identifier() {
+  local out
+  out=$(FM_TEST_TITLE='Require Linear IDs in linked PR titles' run_state) \
+    || fail "ticketless fixture was refused"
+  assert_not_contains "$out" 'TITLE: missing ticket identifier' \
+    "a PR with no ART reference in its body or branch is outside the title convention"
+  pass "ticketless PR does not require a title identifier"
+}
+
+test_mergeability_uses_current_pr_view_value_without_retry() {
+  local out
+  out=$(FM_TEST_MERGEABILITY=unknown FM_TEST_VIEW_MERGEABILITY=mergeable run_state) \
+    || fail "current-mergeability fixture was refused"
+  assert_not_contains "$out" 'MERGEABILITY: unknown' \
+    "a current MERGEABLE view must win over the REST object's stale null"
+  pass "mergeability uses the current pull-request view value"
 }
 
 test_refusals_exit_nonzero() {
@@ -153,4 +180,6 @@ test_current_changes_requested_review_is_a_blocker
 test_required_failure_is_a_blocker
 test_help_discloses_unavailable_thread_resolution
 test_unknown_mergeability_and_missing_ticket_are_blockers
+test_ticketless_pr_does_not_require_title_identifier
+test_mergeability_uses_current_pr_view_value_without_retry
 test_refusals_exit_nonzero

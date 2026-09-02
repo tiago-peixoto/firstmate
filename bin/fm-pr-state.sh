@@ -12,9 +12,9 @@
 # use GraphQL.
 #
 # For fleet-authored Artemis pull requests, readiness also requires at least one
-# requested user and one requested team, and the title must carry a ticket such
-# as ART-123. Those project conventions are deliberately local here rather than
-# a new configuration or policy layer.
+# requested user and one requested team. An Artemis pull request whose branch or
+# body names a ticket must carry that same identifier in its title. Those
+# project conventions are deliberately local here rather than a new policy.
 #
 # Usage: fm-pr-state.sh <pr-url-or-number>
 #   Prints one line per concrete blocker and nothing when none are found.
@@ -62,10 +62,11 @@ CORE=$(gh api "$ENDPOINT" --jq '
   "state=\(.state)",
   "merged_at=\(.merged_at // "")",
   "draft=\(.draft)",
-  "mergeability=\(if .mergeable == null then "unknown" elif .mergeable then "mergeable" else "conflicting" end)",
   "head=\(.head.sha)",
   "base=\(.base.ref)",
   "title=\(.title)",
+  "branch_ticket=\(([.head.ref | scan("ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
+  "body_ticket=\(([.body // "" | scan("ART-[0-9]+"; "i")][0] // "") | ascii_upcase)",
   "author=\(.user.login)",
   (.requested_reviewers[]? | "requested_user=\(.login)"),
   (.requested_teams[]? | "requested_team=\(.slug)")') || die "could not read $URL"
@@ -77,6 +78,8 @@ MERGEABILITY=
 HEAD=
 BASE=
 TITLE=
+BRANCH_TICKET=
+BODY_TICKET=
 AUTHOR=
 HAS_REQUESTED_USER=0
 HAS_REQUESTED_TEAM=0
@@ -89,6 +92,8 @@ while IFS= read -r row; do
     head=*) HEAD=${row#head=} ;;
     base=*) BASE=${row#base=} ;;
     title=*) TITLE=${row#title=} ;;
+    branch_ticket=*) BRANCH_TICKET=${row#branch_ticket=} ;;
+    body_ticket=*) BODY_TICKET=${row#body_ticket=} ;;
     author=*) AUTHOR=${row#author=} ;;
     requested_user=*) HAS_REQUESTED_USER=1 ;;
     requested_team=*) HAS_REQUESTED_TEAM=1 ;;
@@ -96,9 +101,26 @@ while IFS= read -r row; do
 done <<EOF
 $CORE
 EOF
-[ -n "$STATE" ] && [ -n "$DRAFT" ] && [ -n "$MERGEABILITY" ] \
-  && [ -n "$HEAD" ] && [ -n "$BASE" ] && [ -n "$TITLE" ] && [ -n "$AUTHOR" ] \
+[ -n "$STATE" ] && [ -n "$DRAFT" ] && [ -n "$HEAD" ] && [ -n "$BASE" ] \
+  && [ -n "$TITLE" ] && [ -n "$AUTHOR" ] \
   || die "GitHub returned incomplete pull-request state for $URL"
+
+MERGE_VIEW=$(gh pr view "$URL" --json mergeable,headRefOid --jq '
+  "mergeability=\(if .mergeable == null or .mergeable == "UNKNOWN" then "unknown" else (.mergeable | ascii_downcase) end)",
+  "head=\(.headRefOid)"') || die "could not read mergeability for $URL"
+MERGE_HEAD=
+while IFS= read -r row; do
+  case "$row" in
+    mergeability=*) MERGEABILITY=${row#mergeability=} ;;
+    head=*) MERGE_HEAD=${row#head=} ;;
+  esac
+done <<EOF
+$MERGE_VIEW
+EOF
+[ -n "$MERGEABILITY" ] && [ -n "$MERGE_HEAD" ] \
+  || die "GitHub returned incomplete mergeability for $URL"
+[ "$MERGE_HEAD" = "$HEAD" ] \
+  || die "pull-request head changed while reading $URL"
 
 if [ -n "$MERGED_AT" ]; then
   printf 'STATE: merged at %s\n' "$MERGED_AT"
@@ -126,8 +148,11 @@ if [ "$PATH_PART" = monalee-inc/artemis ]; then
     [ "$HAS_REQUESTED_USER" -eq 1 ] || printf 'REQUESTED USER: none\n'
     [ "$HAS_REQUESTED_TEAM" -eq 1 ] || printf 'REQUESTED TEAM: none\n'
   fi
-  [[ "$TITLE" =~ [A-Z][A-Z0-9]+-[0-9]+ ]] \
-    || printf 'TITLE: missing ticket identifier\n'
+  TICKET=$BRANCH_TICKET
+  [ -n "$TICKET" ] || TICKET=$BODY_TICKET
+  if [ -n "$TICKET" ] && ! printf '%s\n' "$TITLE" | grep -Fqi -- "$TICKET"; then
+    printf 'TITLE: missing ticket identifier %s\n' "$TICKET"
+  fi
 fi
 
 REVIEWS=$(gh api "$ENDPOINT/reviews?per_page=100" --paginate --jq '
@@ -138,22 +163,34 @@ REVIEWS=$(gh api "$ENDPOINT/reviews?per_page=100" --paginate --jq '
 if [ -n "$REVIEWS" ]; then
   while IFS=$'\t' read -r reviewer review_state review_head _submitted_at; do
     [ "$reviewer" != "$AUTHOR" ] || continue
+    [ "$review_head" != "$HEAD" ] || continue
     case "$review_state" in
       CHANGES_REQUESTED)
-        if [ "$review_head" != "$HEAD" ]; then
-          printf 'STALE BLOCKING REVIEW: %s CHANGES_REQUESTED at %s; current head %s\n' \
-            "$reviewer" "$review_head" "$HEAD"
-        else
-          printf 'REVIEW: %s CHANGES_REQUESTED at %s\n' "$reviewer" "$HEAD"
-        fi
+        printf 'STALE BLOCKING REVIEW: %s CHANGES_REQUESTED at %s; current head %s\n' \
+          "$reviewer" "$review_head" "$HEAD"
         ;;
       APPROVED)
-        [ "$review_head" = "$HEAD" ] \
-          || printf 'VOIDED APPROVAL (informational): %s at %s; current head %s\n' \
-            "$reviewer" "$review_head" "$HEAD"
+        printf 'VOIDED APPROVAL (informational): %s at %s; current head %s\n' \
+          "$reviewer" "$review_head" "$HEAD"
         ;;
     esac
   done <<EOF
 $REVIEWS
+EOF
+
+  CURRENT_LATEST=$(printf '%s\n' "$REVIEWS" | awk -F '\t' -v head="$HEAD" '
+    $3 == head && (!seen[$1] || $4 >= latest[$1]) {
+      seen[$1] = 1
+      latest[$1] = $4
+      row[$1] = $0
+    }
+    END { for (reviewer in row) print row[reviewer] }
+  ')
+  while IFS=$'\t' read -r reviewer review_state _review_head _submitted_at; do
+    [ "$reviewer" != "$AUTHOR" ] || continue
+    [ "$review_state" != CHANGES_REQUESTED ] \
+      || printf 'REVIEW: %s CHANGES_REQUESTED at %s\n' "$reviewer" "$HEAD"
+  done <<EOF
+$CURRENT_LATEST
 EOF
 fi
