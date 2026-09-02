@@ -5,11 +5,10 @@
 # required checks, submitted reviews, and review requests from GitHub at
 # invocation time. It never posts, requests, approves, or merges.
 # Advisory checks do not block and are omitted. Reviews apply only to the exact
-# head they read. Every stale CHANGES_REQUESTED verdict is reported as blocking,
-# stale approvals are labeled informational, and stale COMMENTED reviews are
-# omitted as noise. Unresolved review-thread state is not reported because
-# GitHub's REST API does not expose resolution and unattended commands may not
-# use GraphQL.
+# head they read. GitHub's reviewDecision owns whether reviews block; review
+# history is printed only to explain CHANGES_REQUESTED.
+# Unresolved review-thread state is not reported because GitHub's REST API does
+# not expose resolution and unattended commands may not use GraphQL.
 #
 # For fleet-authored Artemis pull requests, readiness also requires at least one
 # requested user and one requested team. An Artemis pull request whose branch or
@@ -105,14 +104,17 @@ EOF
   && [ -n "$TITLE" ] && [ -n "$AUTHOR" ] \
   || die "GitHub returned incomplete pull-request state for $URL"
 
-MERGE_VIEW=$(gh pr view "$URL" --json mergeable,headRefOid --jq '
+MERGE_VIEW=$(gh pr view "$URL" --json mergeable,headRefOid,reviewDecision --jq '
   "mergeability=\(if .mergeable == null or .mergeable == "UNKNOWN" then "unknown" else (.mergeable | ascii_downcase) end)",
-  "head=\(.headRefOid)"') || die "could not read mergeability for $URL"
+  "head=\(.headRefOid)",
+  "review_decision=\(.reviewDecision // "")"') || die "could not read mergeability and review decision for $URL"
 MERGE_HEAD=
+REVIEW_DECISION=
 while IFS= read -r row; do
   case "$row" in
     mergeability=*) MERGEABILITY=${row#mergeability=} ;;
     head=*) MERGE_HEAD=${row#head=} ;;
+    review_decision=*) REVIEW_DECISION=${row#review_decision=} ;;
   esac
 done <<EOF
 $MERGE_VIEW
@@ -160,17 +162,13 @@ REVIEWS=$(gh api "$ENDPOINT/reviews?per_page=100" --paginate --jq '
   | select(.user.login != null and .commit_id != null and .submitted_at != null)
   | [.user.login, .state, .commit_id, .submitted_at]
   | @tsv') || die "could not read reviews for $URL"
-if [ -n "$REVIEWS" ]; then
+if [ "$REVIEW_DECISION" = CHANGES_REQUESTED ] && [ -n "$REVIEWS" ]; then
   while IFS=$'\t' read -r reviewer review_state review_head _submitted_at; do
     [ "$reviewer" != "$AUTHOR" ] || continue
     [ "$review_head" != "$HEAD" ] || continue
     case "$review_state" in
       CHANGES_REQUESTED)
         printf 'STALE BLOCKING REVIEW: %s CHANGES_REQUESTED at %s; current head %s\n' \
-          "$reviewer" "$review_head" "$HEAD"
-        ;;
-      APPROVED)
-        printf 'VOIDED APPROVAL (informational): %s at %s; current head %s\n' \
           "$reviewer" "$review_head" "$HEAD"
         ;;
     esac

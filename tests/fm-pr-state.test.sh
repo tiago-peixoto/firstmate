@@ -17,10 +17,11 @@ case "$*" in
   "pr view "*" --json url --jq .url")
     printf '%s\n' 'https://github.com/monalee-inc/artemis/pull/7'
     ;;
-  "pr view "*" --json mergeable,headRefOid --jq "*)
+  "pr view "*" --json mergeable,headRefOid,reviewDecision --jq "*)
     printf '%s\n' \
       "mergeability=${FM_TEST_VIEW_MERGEABILITY:-mergeable}" \
-      'head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e'
+      'head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e' \
+      "review_decision=${FM_TEST_VIEW_REVIEW_DECISION:-APPROVED}"
     ;;
   "api /repos/monalee-inc/artemis/pulls/7 --jq "*)
     printf '%s\n' \
@@ -86,30 +87,39 @@ test_requested_users_and_teams_are_evaluated_separately() {
   pass "requested users and teams are separate readiness facts"
 }
 
-test_stale_blocking_reviews_survive_a_later_review() {
+test_stale_blocking_reviews_explain_a_blocking_decision() {
   local out old_head_1 old_head_2 current_head
   old_head_1=2710bc5efc936efb70e95b86ca3582e9da7e60f4
   old_head_2=4dc2291e6969de1bf204fbdb53c9e57a8353d4e2
   current_head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e
-  out=$(FM_TEST_REVIEWS=$'coderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_1"$'\t2026-09-01T00:15:44Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_2"$'\t2026-09-01T23:02:13Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$current_head"$'\t2026-09-02T13:53:41Z\ncoderabbitai[bot]\tAPPROVED\t'"$current_head"$'\t2026-09-02T14:05:42Z\nLipemenezes\tCOMMENTED\t'"$old_head_2"$'\t2026-09-01T23:10:00Z\nalice\tAPPROVED\t'"$old_head_2"$'\t2026-09-01T23:11:00Z' run_state) \
+  out=$(FM_TEST_VIEW_REVIEW_DECISION=CHANGES_REQUESTED FM_TEST_REVIEWS=$'coderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_1"$'\t2026-09-01T00:15:44Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_2"$'\t2026-09-01T23:02:13Z\nLipemenezes\tCOMMENTED\t'"$old_head_2"$'\t2026-09-01T23:10:00Z\nalice\tAPPROVED\t'"$old_head_2"$'\t2026-09-01T23:11:00Z' run_state) \
     || fail "voided-review fixture was refused"
   assert_contains "$out" "STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at $old_head_1; current head $current_head" \
     "the first stale changes-requested verdict was hidden by a later review"
   assert_contains "$out" "STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at $old_head_2; current head $current_head" \
     "the second stale changes-requested verdict was hidden by a later review"
-  assert_contains "$out" "VOIDED APPROVAL (informational): alice at $old_head_2; current head $current_head" \
-    "a stale approval must be distinguished from a blocking verdict"
   assert_not_contains "$out" 'Lipemenezes' \
     "a stale COMMENTED review is informational noise"
-  ! printf '%s\n' "$out" | grep -q '^REVIEW: coderabbitai\[bot\]' \
-    || fail "a later current-head approval must supersede the earlier current-head changes request"
-  pass "all stale blocking verdicts survive later reviews without COMMENTED noise"
+  assert_not_contains "$out" 'alice' \
+    "a stale approval is not a concrete blocker"
+  pass "stale changes-requested verdicts explain a blocking review decision"
+}
+
+test_approved_pr_with_only_stale_changes_requested_is_silent() {
+  local out old_head_1 old_head_2 current_head
+  old_head_1=2710bc5efc936efb70e95b86ca3582e9da7e60f4
+  old_head_2=4dc2291e6969de1bf204fbdb53c9e57a8353d4e2
+  current_head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e
+  out=$(FM_TEST_VIEW_REVIEW_DECISION=APPROVED FM_TEST_REVIEWS=$'coderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_1"$'\t2026-09-01T00:15:44Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$old_head_2"$'\t2026-09-01T23:02:13Z\ncoderabbitai[bot]\tCHANGES_REQUESTED\t'"$current_head"$'\t2026-09-02T13:53:41Z\ncoderabbitai[bot]\tAPPROVED\t'"$current_head"$'\t2026-09-02T14:05:42Z' run_state) \
+    || fail "approved stale-review fixture was refused"
+  [ -z "$out" ] || fail "an approved PR with only stale review history should be silent, got: $out"
+  pass "approved PR ignores stale changes-requested history"
 }
 
 test_current_changes_requested_review_is_a_blocker() {
   local out current_head
   current_head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e
-  out=$(FM_TEST_REVIEWS="coderabbitai[bot]\tCHANGES_REQUESTED\t$current_head\t2026-09-02T13:53:41Z" run_state) \
+  out=$(FM_TEST_VIEW_REVIEW_DECISION=CHANGES_REQUESTED FM_TEST_REVIEWS="coderabbitai[bot]\tCHANGES_REQUESTED\t$current_head\t2026-09-02T13:53:41Z" run_state) \
     || fail "current-review fixture was refused"
   assert_contains "$out" "REVIEW: coderabbitai[bot] CHANGES_REQUESTED at $current_head" \
     "a current changes-requested review must block readiness"
@@ -175,7 +185,8 @@ test_refusals_exit_nonzero() {
 
 test_clean_pr_is_silent_and_ignores_advisory_failures
 test_requested_users_and_teams_are_evaluated_separately
-test_stale_blocking_reviews_survive_a_later_review
+test_stale_blocking_reviews_explain_a_blocking_decision
+test_approved_pr_with_only_stale_changes_requested_is_silent
 test_current_changes_requested_review_is_a_blocker
 test_required_failure_is_a_blocker
 test_help_discloses_unavailable_thread_resolution
