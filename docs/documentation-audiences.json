@@ -31,8 +31,7 @@
     "docs/zellij-backend.md",
     "docs/orca-backend.md",
     "docs/cmux-backend.md",
-    "docs/remote-secondmates.md",
-    "docs/fork-main.md"
+    "docs/remote-secondmates.md"
   ],
   "requiredOwnerPointers": [
     {
@@ -158,11 +157,55 @@
       "audience": "agent-runtime"
     },
     {
-      "path": ".agents/skills/fork-main-integration/SKILL.md",
+      "path": ".agents/skills/harness-adapters/SKILL.md",
       "audience": "agent-runtime"
     },
     {
-      "path": ".agents/skills/harness-adapters/SKILL.md",
+      "path": ".agents/skills/harness-adapters/references/common/control-and-recovery.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/common/dispatch.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/common/model-and-effort.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/common/primary-hooks.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/claude.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/codex.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/cursor.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/grok.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/kimi.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/muse.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/opencode.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": ".agents/skills/harness-adapters/references/harness/pi.md",
       "audience": "agent-runtime"
     },
     {
@@ -266,7 +309,19 @@
       "audience": "maintainer-architecture"
     },
     {
+      "path": "docs/extension-bindings.md",
+      "audience": "maintainer-architecture"
+    },
+    {
       "path": "docs/examples/crew-dispatch.json",
+      "audience": "operator-example"
+    },
+    {
+      "path": "docs/examples/process-event-extension/file-signal.mjs",
+      "audience": "operator-example"
+    },
+    {
+      "path": "docs/examples/process-event-extension/firstmate-extension.json",
       "audience": "operator-example"
     },
     {
@@ -284,10 +339,6 @@
     {
       "path": "docs/fm-test-portable-shards.md",
       "audience": "maintainer-verification"
-    },
-    {
-      "path": "docs/fork-main.md",
-      "audience": "operator-current"
     },
     {
       "path": "docs/gitlab-merge-watch.md",
@@ -367,10 +418,6 @@
     },
     {
       "path": "docs/verification/muse.md",
-      "audience": "maintainer-verification"
-    },
-    {
-      "path": "docs/verification/pr-target-guard.md",
       "audience": "maintainer-verification"
     },
     {

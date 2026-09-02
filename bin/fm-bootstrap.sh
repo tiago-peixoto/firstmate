@@ -11,15 +11,15 @@
 #                 "STARTUP_MEMORY_BUDGET: invalid config/startup-memory-budget - <reason>",
 #                 "CREW_DISPATCH: invalid config/crew-dispatch.json - <reason>",
 #                 "FLEET_SYNC: <repo>: skipped|recovered|STUCK: <detail>",
-#                 "PR_CHECK_MIGRATION: <private remediation>",
-#                 "PR_TARGET_GUARD: <remediation>",
+#                 "HOME_SUMMARY: <ledger never published|not republished since
+#                 <stamp>>; <n> failed attempt(s) ... last: <recorded failure>",
+#                 "BACKLOG_RECONCILE: <id>: <what this home could not reconcile>",
 #                 "TANGLE: <remediation>",
 #                 "SECONDMATE_SYNC: secondmate <id>: skipped: <reason>",
 #                 "NUDGE_SECONDMATES: secondmate <id>: send failed: <reason>",
 #                 "BOOTSTRAP_INFO: nudged fm-<id> with '<message>'",
 #                 "SECONDMATE_LIVENESS: secondmate <id>: skipped: <reason>|respawn failed after <cause>: <reason>",
 #                 "SECONDMATE_HANDOFF: secondmate <id>: pending delivery: <n> item(s)",
-#                 "UPSTREAM_SYNC: required ...|fork topology is not validated: ...|check failed: ...",
 #                 "FMX: X mode on ..." or "FMX: X mode off ...".
 #          When a RUNNING local secondmate worktree is fast-forwarded to
 #          firstmate's own current default-branch commit, that update is a
@@ -53,15 +53,11 @@
 #          treehouse is also MISSING when its installed version lacks
 #          "treehouse get --lease" support.
 #          no-mistakes is also MISSING when its installed version is older than
-#          1.31.2.
-#          The AXI-family floor policy is owned beside LAVISH_AXI_MIN below;
-#          the per-tool owners point there. An installed build below its floor
-#          reports MISSING like no-mistakes, so the operator is asked to upgrade
-#          rather than silently running an older tool.
-#          The axi family carries no GitHub wrapper: GitHub work runs on the
-#          native gh binary, which is eligible for the captain's credential vault
-#          where a node-launched wrapper is not. Its absence is the expected
-#          state, never a gap to report or offer to reinstall.
+#          1.46.0 (structured pipeline attestation floor; see CONTRIBUTING.md).
+#          The AXI-family floor policy is owned beside GH_AXI_MIN and
+#          LAVISH_AXI_MIN below; the per-tool owners point there. An installed
+#          build below its floor reports MISSING like no-mistakes, so the operator
+#          is asked to upgrade rather than silently running an older tool.
 #          tasks-axi feature probes remain a separate defense-in-depth check.
 #          tasks-axi and quota-axi are required bootstrap tools (same class as
 #          lavish-axi). A compatible tasks-axi default backend is silent.
@@ -73,16 +69,6 @@
 #          guesses at malformed or unsafe existing files, and secondmate homes
 #          await the primary-authoritative inherited value instead of creating
 #          their own.
-#          A validated fork-main primary checks official upstream at most once
-#          per successful 24-hour interval during the deferred network phase;
-#          only a required integration or failed check is actionable output.
-#          A home that has an upstream remote but does not yet satisfy
-#          fm-fork-remotes.sh check is half-migrated, not classic: it reports the
-#          validator's first missing requirement on EVERY startup, skips the
-#          upstream movement probe, and writes no daily marker, so the loud line
-#          persists until the explicit migration is completed or reversed.
-#          A home with no upstream remote at all is classic single-origin and
-#          stays silent.
 #          X mode is OPTIONAL and inert unless FM_HOME/.env has a non-empty
 #          FMX_PAIRING_TOKEN. When opted in, bootstrap requires curl+jq, writes
 #          the relay poll shim and 30s cadence config, and prints an FMX line.
@@ -95,8 +81,20 @@
 #          refresh relays any completed fm-fleet-sync.sh output before the
 #          aggregate timeout skip line with timeout and elapsed seconds.
 #          Set FM_FLEET_PRUNE=0 to skip branch pruning during that refresh.
-#          Set FM_BOOTSTRAP_DETECT_ONLY=1 to skip the seven MUTATING sweeps
-#          (PR-check migration, fork_upstream_check, secondmate_sync,
+#          BACKLOG_RECONCILE lines report what backlog_record_reconcile could not
+#          settle in THIS home. Every ordinary dispatch and completion now moves
+#          the backlog row inside the script that moves the task's record
+#          (bin/fm-backlog-transition-lib.sh), so this sweep exists for the
+#          crash window inside those scripts and for drift a home was already
+#          carrying: it finishes the authoritative close an interrupted cleanup
+#          recorded, and marks In flight any item this home already owns a worker
+#          for. The worker-record sweep never starts a captain-held or closed
+#          item, and reconciliation never reads or writes another home; the fleet
+#          snapshot's classifier and
+#          bin/fm-secondmate-reconcile.sh's nudge stay as backstops. Replayed
+#          closes and restored In-flight rows print BOOTSTRAP_INFO facts.
+#          Set FM_BOOTSTRAP_DETECT_ONLY=1 to skip the six MUTATING sweeps
+#          (backlog_record_reconcile, secondmate_sync,
 #          secondmate_liveness_sweep, secondmate_handoff_resume, x_mode_setup,
 #          fleet_sync) while still
 #          printing every read-only detect line
@@ -104,7 +102,7 @@
 #          checkout command. Used by
 #          fm-session-start.sh's read-only path when another live session holds
 #          the fleet lock, so a second concurrent session never race-mutates
-#          PR-check artifacts, secondmate homes, pending handoff outboxes,
+#          secondmate homes, pending handoff outboxes,
 #          X-mode artifacts, project clones, or repair instructions.
 #          Unset/0 (the default) runs all six sweeps - this flag is purely
 #          additive.
@@ -115,12 +113,12 @@
 #                 step. Unrecognized values fall back here on purpose: a typo
 #                 must never silently skip a safety sweep.
 #            skip - every LOCAL step, and none of the network ones. Skips
-#                 `gh auth status`, fork_upstream_check,
-#                 secondmate_liveness_sweep, secondmate_sync,
+#                 `gh auth status`, secondmate_liveness_sweep, secondmate_sync,
 #                 secondmate_handoff_resume, and fleet_sync.
 #            only - ONLY those network steps and nothing else. No tool detection,
-#                 no version floors, no tangle check, no PR-check migration, no
-#                 x_mode_setup: those already ran on the local pass.
+#                 no version floors, no tangle check, no backlog
+#                 reconciliation, no x_mode_setup: those already ran on the
+#                 local pass.
 #          FM_BOOTSTRAP_DETECT_ONLY composes with it unchanged, so `only` plus
 #          detect-only is the read-only `gh auth status` probe on its own.
 #          bin/fm-startup-network.sh owns the deferral: it runs the `only` phase
@@ -156,6 +154,8 @@ STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 # shellcheck source=bin/fm-tasks-axi-lib.sh disable=SC1091
 . "$SCRIPT_DIR/fm-tasks-axi-lib.sh"
+# shellcheck source=bin/fm-backlog-transition-lib.sh disable=SC1091
+. "$SCRIPT_DIR/fm-backlog-transition-lib.sh"
 # shellcheck source=bin/fm-quota-axi-lib.sh disable=SC1091
 . "$SCRIPT_DIR/fm-quota-axi-lib.sh"
 # shellcheck source=bin/fm-tangle-lib.sh disable=SC1091
@@ -170,8 +170,6 @@ DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 . "$SCRIPT_DIR/fm-secondmate-nudge-lib.sh"
 # shellcheck source=bin/fm-startup-memory-budget-lib.sh disable=SC1091
 . "$SCRIPT_DIR/fm-startup-memory-budget-lib.sh"
-# shellcheck source=bin/fm-nm-pr-target-lib.sh disable=SC1091
-. "$SCRIPT_DIR/fm-nm-pr-target-lib.sh"
 # shellcheck source=bin/fm-x-lib.sh disable=SC1091
 . "$SCRIPT_DIR/fm-x-lib.sh"
 # shellcheck source=bin/fm-backend.sh disable=SC1091
@@ -308,53 +306,6 @@ fleet_sync_relay_all_output() {
     [ -n "$line" ] || continue
     echo "FLEET_SYNC: $line"
   done < "$tmp"
-}
-
-fork_upstream_check() {
-  local out marker now previous tmp topology
-  [ -x "$FM_ROOT/bin/fm-fork-status.sh" ] || return 0
-  [ -x "$FM_ROOT/bin/fm-fork-remotes.sh" ] || return 0
-  [ ! -f "$FM_HOME/.fm-secondmate-home" ] || return 0
-  git -C "$FM_ROOT" remote get-url upstream >/dev/null 2>&1 || return 0
-  # An upstream remote alone does not make this a fork-main primary. Probing
-  # upstream movement is only meaningful once the whole topology validates, but
-  # a home that is part-way through the explicit migration must not go quiet
-  # either: report the validator's first missing requirement, skip the probe,
-  # and leave the daily marker unwritten so this repeats until it is corrected.
-  if ! topology=$("$FM_ROOT/bin/fm-fork-remotes.sh" check "$FM_ROOT" 2>&1 >/dev/null); then
-    topology=${topology%%$'\n'*}
-    topology=${topology#fm-fork-remotes: }
-    echo "UPSTREAM_SYNC: fork topology is not validated: ${topology:-fm-fork-remotes.sh check failed}"
-    return 0
-  fi
-  marker="$STATE/.fork-upstream-check"
-  now=$(date +%s)
-  if [ -e "$marker" ] || [ -L "$marker" ]; then
-    if [ ! -f "$marker" ] || [ -L "$marker" ]; then
-      echo "UPSTREAM_SYNC: check failed: unsafe daily-check marker $marker"
-      return 0
-    fi
-    previous=$(cat "$marker" 2>/dev/null || true)
-    case "$previous" in
-      ''|*[!0-9]*) ;;
-      *)
-        if [ "$previous" -le "$now" ] && [ $((now - previous)) -lt 86400 ]; then return 0; fi
-        ;;
-    esac
-  fi
-  if out=$("$FM_ROOT/bin/fm-fork-status.sh" --repo "$FM_ROOT" --check-upstream --refresh 2>&1); then
-    tmp="$marker.tmp.$$"
-    if printf '%s\n' "$now" > "$tmp" && mv -f "$tmp" "$marker"; then
-      case "$out" in
-        'upstream-integration: required '*) echo "UPSTREAM_SYNC: ${out#upstream-integration: }" ;;
-      esac
-    else
-      rm -f "$tmp" 2>/dev/null || true
-      echo "UPSTREAM_SYNC: check failed: could not publish daily-check marker"
-    fi
-  else
-    echo "UPSTREAM_SYNC: check failed: ${out%%$'\n'*}"
-  fi
 }
 
 fleet_sync() {
@@ -903,7 +854,7 @@ install_cmd() {
     cmux) echo "brew install --cask cmux  # or see https://cmux.com" ;;
     treehouse) echo "curl -fsSL https://kunchenguid.github.io/treehouse/install.sh | sh" ;;
     no-mistakes) echo "curl -fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh | sh" ;;
-    chrome-devtools-axi|lavish-axi) echo "npm install -g $1 && $1 setup hooks" ;;
+    gh-axi|chrome-devtools-axi|lavish-axi) echo "npm install -g $1 && $1 setup hooks" ;;
     tasks-axi|quota-axi) echo "npm install -g $1" ;;
     *) return 1 ;;
   esac
@@ -931,7 +882,7 @@ missing_tool_diagnostic() {
 # fm_backend_required_tools (bin/fm-backend.sh). So a herdr/zellij/cmux home is
 # never told tmux is missing, and only orca drops treehouse. A backend value with
 # no verified dependency set is reported before the universal checks continue.
-COMMON_TOOLS="node git gh no-mistakes chrome-devtools-axi lavish-axi tasks-axi quota-axi"
+COMMON_TOOLS="node git gh no-mistakes gh-axi chrome-devtools-axi lavish-axi tasks-axi quota-axi"
 BACKEND=$(fm_backend_name)
 BACKEND_VALID=1
 if ! BACKEND_TOOLS=$(fm_backend_required_tools "$BACKEND"); then
@@ -939,7 +890,7 @@ if ! BACKEND_TOOLS=$(fm_backend_required_tools "$BACKEND"); then
   BACKEND_TOOLS=""
 fi
 TOOLS="$BACKEND_TOOLS $COMMON_TOOLS"
-NO_MISTAKES_MIN=1.31.2
+NO_MISTAKES_MIN=1.46.0
 # AXI-FAMILY FLOOR POLICY. Every axi-family floor is the CURRENT LATEST published
 # version of that tool, captain-bumped periodically to keep the whole fleet on the
 # newest axi tools. It is NOT the minimum feature-introduced version. These floors
@@ -947,6 +898,7 @@ NO_MISTAKES_MIN=1.31.2
 # earliest release that happens to satisfy some depended-on behavior. The
 # tasks-axi feature probes are an independent defense-in-depth concern, not part
 # of its floor.
+GH_AXI_MIN=0.1.29
 LAVISH_AXI_MIN=0.1.46
 
 treehouse_supports_lease() {
@@ -1231,6 +1183,117 @@ crew_dispatch_validate() {
   fi
 }
 
+# Same-home record reconciliation. Every ordinary dispatch and completion now
+# moves the backlog row inside the script that moves the task's record
+# (bin/fm-backlog-transition-lib.sh), so remaining recovery cases include a
+# process killed mid-transition and drift this home was already carrying. Heal
+# this home's OWN books on its own
+# restart rather than waiting for a parent's cross-home nudge; the fleet
+# snapshot's classifier and bin/fm-secondmate-reconcile.sh's nudge stay as
+# backstops for what this cannot see. Never reads or writes another home.
+backlog_record_reconcile() {
+  local marker meta meta_lock id row label has_record=0 gate_status
+  # A fresh home with no state directory has no physical task records to pair.
+  # Keep bootstrap diagnostics working without creating state just for a no-op.
+  [ -e "$STATE" ] || [ -L "$STATE" ] || return 0
+  if ! fm_backlog_directory_present "$STATE" "state directory"; then
+    echo "error: backlog reconciliation refused: $FM_BACKLOG_TRANSITION_ERROR" >&2
+    return 2
+  fi
+  if fm_backlog_transition_applies "$CONFIG" "$DATA" "$BOOTSTRAP_BACKLOG_GATE_KIND"; then
+    :
+  else
+    gate_status=$?
+    if [ "$gate_status" -eq 2 ]; then
+      echo "error: backlog reconciliation cannot access configured data directory $DATA ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+      return 2
+    fi
+    return 0
+  fi
+  # Keep the wake/lock library's source-time state-directory creation inside
+  # this mutating sweep, so FM_BOOTSTRAP_DETECT_ONLY remains read-only.
+  # shellcheck source=bin/fm-wake-lib.sh disable=SC1091
+  . "$SCRIPT_DIR/fm-wake-lib.sh"
+
+  # Finish any close an interrupted cleanup recorded but never landed.
+  for marker in "$STATE"/*.backlog-close; do
+    [ -e "$marker" ] || [ -L "$marker" ] || continue
+    if ! fm_backlog_record_present "$marker" "pending-close record" "$STATE"; then
+      echo "BACKLOG_RECONCILE: unsafe pending close refused: $FM_BACKLOG_TRANSITION_ERROR"
+      return 2
+    fi
+    label=$(basename "$marker" .backlog-close)
+    meta_lock=$(fm_meta_lock_path "$STATE/$label.meta") || continue
+    fm_lock_try_acquire "$meta_lock" || continue
+    if fm_backlog_close_marker_replay "$STATE" "$marker" "$DATA"; then
+      case "$FM_BACKLOG_CLOSE_REPLAY_RESULT" in
+        closed)
+          echo "BOOTSTRAP_INFO: closed the backlog item for $label that an interrupted cleanup left open"
+          ;;
+        closed_incomplete)
+          echo "BOOTSTRAP_INFO: closed the backlog item for $label after interrupted cleanup; its endpoint or local copy may remain and should be reconciled"
+          ;;
+      esac
+    else
+      echo "BACKLOG_RECONCILE: $label: recorded backlog close could not be replayed: $FM_BACKLOG_TRANSITION_ERROR"
+    fi
+    fm_lock_release "$meta_lock"
+  done
+
+  # A home that owns no records has nothing to pair, so it never pays for a
+  # backlog read. A pending close remains authoritative even when replay failed:
+  # the record sweep below must not start that item while its marker survives.
+  for meta in "$STATE"/*.meta; do
+    [ -e "$meta" ] || [ -L "$meta" ] || continue
+    if ! fm_backlog_record_present "$meta" "task record" "$STATE"; then
+      echo "BACKLOG_RECONCILE: unsafe worker record refused: $FM_BACKLOG_TRANSITION_ERROR"
+      return 2
+    fi
+    has_record=1
+    break
+  done
+  [ "$has_record" = 1 ] || return 0
+  for meta in "$STATE"/*.meta; do
+    [ -e "$meta" ] || [ -L "$meta" ] || continue
+    if ! fm_backlog_record_present "$meta" "task record" "$STATE"; then
+      echo "BACKLOG_RECONCILE: unsafe worker record refused: $FM_BACKLOG_TRANSITION_ERROR"
+      return 2
+    fi
+    id=$(basename "$meta" .meta)
+    meta_lock=$(fm_meta_lock_path "$meta") || continue
+    fm_lock_try_acquire "$meta_lock" || continue
+    if [ -e "$STATE/$id.backlog-close" ] || [ -L "$STATE/$id.backlog-close" ]; then
+      fm_lock_release "$meta_lock"
+      continue
+    fi
+    if ! fm_backlog_record_present "$meta" "task record" "$STATE"; then
+      echo "BACKLOG_RECONCILE: $id: post-lock worker record check refused: $FM_BACKLOG_TRANSITION_ERROR"
+      fm_lock_release "$meta_lock"
+      return 2
+    fi
+    if [ "$(fm_meta_get "$meta" kind)" != secondmate ] \
+       && [ "$(fm_meta_get "$meta" cleanup_recovery)" != orca ]; then
+      row=
+      if fm_backlog_row_probe "$DATA" "$id"; then
+        row=$FM_BACKLOG_ROW_STATE
+      elif [ "$FM_BACKLOG_ROW_RESULT" != not_found ]; then
+        echo "BACKLOG_RECONCILE: $id: worker record exists but its backlog item could not be read: $FM_BACKLOG_ROW_ERROR"
+      fi
+      # Heal only the unambiguous case: a queued row for a record this home
+      # already owns. A held row is the captain's to move, and a closed row is a
+      # contradiction this sweep must not resolve by resurrecting the item.
+      if [ "$row" = "queued no no" ]; then
+        if fm_backlog_start "$DATA" "$id"; then
+          echo "BOOTSTRAP_INFO: marked $id in flight to match the worker this home already owns"
+        else
+          echo "BACKLOG_RECONCILE: $id: worker record exists but its backlog item could not be moved to In flight: $FM_BACKLOG_TRANSITION_ERROR"
+        fi
+      fi
+    fi
+    fm_lock_release "$meta_lock"
+  done
+}
+
 startup_memory_budget_setup() {
   # Primary bootstrap owns default publication. A secondmate is deliberately
   # passive here because its setting must converge from the primary through the
@@ -1240,49 +1303,6 @@ startup_memory_budget_setup() {
   fi
   if ! fm_startup_memory_budget_materialize "$CONFIG"; then
     echo "STARTUP_MEMORY_BUDGET: invalid config/$FM_STARTUP_MEMORY_BUDGET_FILE - $FM_STARTUP_MEMORY_BUDGET_ERROR"
-  fi
-}
-
-# The pipeline may only open a pull request against the repository this home
-# pushes to. bin/fm-nm-pr-target-lib.sh owns that rule and why it is enforced as
-# a pre-push refusal; bootstrap's only job is to make sure the refusal is
-# actually installed in this code root, and to say so when it cannot be.
-pr_target_guard_setup() {
-  local out
-  # A code root that is not a Git worktree has no pipeline entry point to guard:
-  # there is no push that could start a run and therefore nothing to refuse.
-  git -C "$FM_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
-  if out=$("$SCRIPT_DIR/fm-nm-pr-target.sh" install "$FM_ROOT" 2>&1); then
-    case "$out" in
-      *installed*|*repaired*)
-        [ "${FM_BOOTSTRAP_VERBOSE_FACTS:-0}" = 1 ] && echo "BOOTSTRAP_INFO: $out" ;;
-    esac
-    return 0
-  fi
-  echo "PR_TARGET_GUARD: cannot install the pull-request target guard: $out"
-}
-
-# Read-only companion, safe in a detect-only or lock-refused session. Reports the
-# two states an operator has to act on: the guard is not in place, or it is in
-# place and the pipeline is currently blocked because the registered
-# pull-request base is not this home's push target. A healthy home is silent.
-pr_target_guard_report() {
-  local out
-  git -C "$FM_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
-  # Report only where a pipeline is actually registered. A code root with no gate
-  # remote runs no validation, so it has no target to be wrong and nothing an
-  # operator could act on. This scopes the REPORT only: the push-time refusal
-  # still applies to any gate push, wherever it comes from.
-  fm_nm_target_has_gate_remote "$FM_ROOT" || return 0
-  if ! "$SCRIPT_DIR/fm-nm-pr-target.sh" installed "$FM_ROOT" >/dev/null 2>&1; then
-    echo "PR_TARGET_GUARD: the pull-request target guard is not installed in $FM_ROOT; validation runs are unguarded until it is"
-  fi
-  # An absent no-mistakes is already reported by tool detection as MISSING, and
-  # the push-time refusal covers it regardless of what bootstrap prints, so do
-  # not report one cause on two lines.
-  command -v no-mistakes >/dev/null 2>&1 || return 0
-  if ! out=$("$SCRIPT_DIR/fm-nm-pr-target.sh" check "$FM_ROOT" 2>&1); then
-    echo "PR_TARGET_GUARD: validation cannot run here - ${out#pr-target: REFUSED }"
   fi
 }
 
@@ -1302,15 +1322,58 @@ if [ "${1:-}" = "install" ]; then
   exit 0
 fi
 
-# This is the first mutating sweep at a locked session boundary. It pauses an
-# identity-matched watcher, holds its lock, and neutralizes legacy PR checks
-# before any tool detection or later bootstrap mutation can leave old artifacts
-# runnable. Detect-only sessions never touch state, and the deferred network pass
-# never repeats it: the local pass that ran first already closed that window.
+# This is the first mutating sweep at a locked session boundary. Detect-only
+# sessions never touch state, and the deferred network pass never repeats it:
+# the local pass that ran first already closed that window.
 if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ] && local_phase; then
-  "$SCRIPT_DIR/fm-pr-check-migrate.sh" || true
+  BOOTSTRAP_BACKLOG_GATE_KIND=secondmate
+  if [ -e "$STATE" ] || [ -L "$STATE" ]; then
+    if ! fm_backlog_directory_present "$STATE" "state directory"; then
+      echo "error: bootstrap cannot reconcile task state ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+      exit 1
+    fi
+    for BOOTSTRAP_BACKLOG_MARKER in "$STATE"/*.backlog-close; do
+      [ -e "$BOOTSTRAP_BACKLOG_MARKER" ] || [ -L "$BOOTSTRAP_BACKLOG_MARKER" ] || continue
+      if ! fm_backlog_record_present "$BOOTSTRAP_BACKLOG_MARKER" "pending-close record" "$STATE"; then
+        echo "error: bootstrap refused unsafe pending close ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+        exit 1
+      fi
+      BOOTSTRAP_BACKLOG_GATE_KIND=ship
+      break
+    done
+    if [ "$BOOTSTRAP_BACKLOG_GATE_KIND" = secondmate ]; then
+      for BOOTSTRAP_BACKLOG_META in "$STATE"/*.meta; do
+        [ -e "$BOOTSTRAP_BACKLOG_META" ] || [ -L "$BOOTSTRAP_BACKLOG_META" ] || continue
+        if ! fm_backlog_record_present "$BOOTSTRAP_BACKLOG_META" "task record" "$STATE"; then
+          echo "error: bootstrap refused unsafe worker record ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+          exit 1
+        fi
+        if [ "$(fm_meta_get "$BOOTSTRAP_BACKLOG_META" kind)" != secondmate ] \
+           && [ "$(fm_meta_get "$BOOTSTRAP_BACKLOG_META" cleanup_recovery)" != orca ]; then
+          BOOTSTRAP_BACKLOG_GATE_KIND=ship
+          break
+        fi
+      done
+    fi
+  fi
+  if fm_backlog_transition_applies "$CONFIG" "$DATA" "$BOOTSTRAP_BACKLOG_GATE_KIND"; then
+    :
+  else
+    BOOTSTRAP_BACKLOG_GATE_STATUS=$?
+    if [ "$BOOTSTRAP_BACKLOG_GATE_STATUS" -eq 2 ]; then
+      echo "error: bootstrap cannot access configured backlog data directory $DATA ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+      exit 1
+    fi
+  fi
   startup_memory_budget_setup
-  pr_target_guard_setup
+  if backlog_record_reconcile; then
+    :
+  else
+    BOOTSTRAP_BACKLOG_RECONCILE_STATUS=$?
+    if [ "$BOOTSTRAP_BACKLOG_RECONCILE_STATUS" -eq 2 ]; then
+      exit 1
+    fi
+  fi
 fi
 
 # Local detection: presence, version floors, and configuration. Nothing here
@@ -1335,6 +1398,9 @@ detect_local_tools() {
   fi
   if command -v no-mistakes >/dev/null 2>&1 && ! tool_version_at_least no-mistakes "$NO_MISTAKES_MIN"; then
     echo "MISSING: no-mistakes (install: $(install_cmd no-mistakes))"
+  fi
+  if command -v gh-axi >/dev/null 2>&1 && ! tool_version_at_least gh-axi "$GH_AXI_MIN"; then
+    echo "MISSING: gh-axi (install: $(install_cmd gh-axi))"
   fi
   if command -v lavish-axi >/dev/null 2>&1 && ! tool_version_at_least lavish-axi "$LAVISH_AXI_MIN"; then
     echo "MISSING: lavish-axi (install: $(install_cmd lavish-axi))"
@@ -1374,10 +1440,60 @@ detect_local_config() {
     echo "MISSING_MANUAL: cursor-agent (instructions: $(manual_install_url cursor-agent))"
   fi
   crew_dispatch_validate
-  pr_target_guard_report
   if [ "${FM_BOOTSTRAP_VERBOSE_FACTS:-0}" = 1 ] \
     && ! fm_backlog_backend_manual "$CONFIG" && fm_tasks_axi_compatible; then
     echo "BOOTSTRAP_INFO: tasks-axi available"
+  fi
+  detect_home_summary_publication
+}
+
+# This home's ledger publication is deliberately best-effort: every lifecycle
+# trigger calls it with --best-effort so a failure can never change the result
+# of a session start, a spawn, a teardown, or a watcher poll. That is correct,
+# and it also means a home that never manages to publish says nothing at all -
+# the failures land only in the bounded home-local record nobody reads.
+#
+# So read that same record here, where a session start already looks, and say so
+# once when the evidence is a pattern rather than a blip: the ledger has not
+# been (re)published, and at least FM_HOME_SUMMARY_FAILURE_REPORT attempts have
+# failed since whenever it last was. No new record, no new state, no retry
+# policy - just the existing evidence, surfaced.
+detect_home_summary_publication() {
+  local log="$STATE/.home-summary-refresh.log" ledger="$STATE/home-summary.json"
+  local since='' counted failures last threshold
+  threshold=${FM_HOME_SUMMARY_FAILURE_REPORT:-2}
+  case "$threshold" in ''|*[!0-9]*|0) threshold=2 ;; esac
+  [ -f "$log" ] && [ -r "$log" ] && [ ! -L "$log" ] || return 0
+  if [ -f "$ledger" ] && [ -r "$ledger" ] && [ ! -L "$ledger" ]; then
+    since=$(LC_ALL=C sed -n 's/.*"generated"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+      "$ledger" 2>/dev/null | head -1)
+  fi
+  # Publication and failure stamps have whole-second precision, so failures in
+  # the publication's own second remain quiet until a later failure advances
+  # the record. That bounded delay avoids a precision dependency in bootstrap.
+  counted=$(LC_ALL=C awk -v since="$since" '
+    match($0, /^\[[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z\]/) {
+      stamp = substr($0, 2, RLENGTH - 2)
+      if (since == "" || stamp > since) {
+        n += 1
+        last = substr($0, RLENGTH + 2)
+      } else if (stamp == since) {
+        same_second += 1
+      }
+    }
+    END {
+      if (since != "" && n > 0) n += same_second
+      printf "%d\t%s", n + 0, last
+    }' "$log" 2>/dev/null) || return 0
+  failures=${counted%%$'\t'*}
+  last=${counted#*$'\t'}
+  case "$failures" in ''|*[!0-9]*) return 0 ;; esac
+  [ "$failures" -ge "$threshold" ] || return 0
+  last=$(printf '%s' "$last" | cut -c1-200)
+  if [ -z "$since" ]; then
+    echo "HOME_SUMMARY: this home has never published state/home-summary.json; $failures failed attempt(s) recorded in state/.home-summary-refresh.log, last: $last"
+  else
+    echo "HOME_SUMMARY: state/home-summary.json has not been republished since $since; $failures failed attempt(s) recorded in state/.home-summary-refresh.log, last: $last"
   fi
 }
 
@@ -1424,11 +1540,6 @@ if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ]; then
     fi
   fi
   if network_phase; then
-    if network_sweep_authorized 'fork upstream check'; then
-      __fm_timing_stamp=$(fm_timing_now_ms)
-      fork_upstream_check
-      fm_timing_record phase fork-upstream "$__fm_timing_stamp"
-    fi
     if network_sweep_authorized 'dead-secondmate relaunch'; then
       __fm_timing_stamp=$(fm_timing_now_ms)
       secondmate_liveness_sweep

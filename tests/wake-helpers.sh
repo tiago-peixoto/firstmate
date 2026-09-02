@@ -53,23 +53,6 @@ append_wake() {
   ' _ "$lib" "$kind" "$key" "$payload"
 }
 
-# Stop a background child without allowing a signal-handling regression in the
-# fixture itself to consume the surrounding job's entire timeout. TERM retains
-# the production cleanup path; KILL is only the bounded test-fixture fallback.
-stop_child_bounded() {  # <pid> [<tenths>]
-  local pid=$1 limit=${2:-50} i=0
-  kill -TERM "$pid" 2>/dev/null || true
-  while is_live_non_zombie "$pid" && [ "$i" -lt "$limit" ]; do
-    sleep 0.1
-    i=$((i + 1))
-  done
-  if is_live_non_zombie "$pid"; then
-    kill -KILL "$pid" 2>/dev/null || true
-  fi
-  wait "$pid" 2>/dev/null || true
-  ! is_live_non_zombie "$pid"
-}
-
 make_case() {
   local name=$1 dir fakebin
   dir="$TMP_ROOT/$name"
@@ -79,12 +62,31 @@ make_case() {
 #!/usr/bin/env bash
 set -u
 if [ "${1:-}" = "list-windows" ]; then
-  if [ -n "${FM_FAKE_TMUX_WINDOW:-}" ]; then
+  if [ -n "${FM_FAKE_TMUX_WINDOWS:-}" ]; then
+    printf '%s\n' "$FM_FAKE_TMUX_WINDOWS"
+  elif [ -n "${FM_FAKE_TMUX_WINDOW:-}" ]; then
     printf '%s\n' "${FM_FAKE_TMUX_WINDOW#*:}"
   fi
   exit 0
 fi
 if [ "${1:-}" = "capture-pane" ]; then
+  if [ -n "${FM_FAKE_TMUX_CAPTURE_COUNT_FILE:-}" ]; then
+    _capture_count=$(cat "$FM_FAKE_TMUX_CAPTURE_COUNT_FILE" 2>/dev/null || echo 0)
+    printf '%s\n' "$((_capture_count + 1))" > "$FM_FAKE_TMUX_CAPTURE_COUNT_FILE"
+    if [ -n "${FM_FAKE_TMUX_CAPTURE_FAIL_AFTER:-}" ] \
+      && [ "$_capture_count" -ge "$FM_FAKE_TMUX_CAPTURE_FAIL_AFTER" ]; then
+      exit 1
+    fi
+  fi
+  if [ -n "${FM_FAKE_TMUX_FORBIDDEN_TARGET:-}" ]; then
+    _prev=
+    for _arg in "$@"; do
+      if [ "$_prev" = -t ] && [ "$_arg" = "$FM_FAKE_TMUX_FORBIDDEN_TARGET" ]; then
+        exit 1
+      fi
+      _prev=$_arg
+    done
+  fi
   if [ -n "${FM_FAKE_TMUX_CAPTURE:-}" ]; then
     cat "$FM_FAKE_TMUX_CAPTURE"
   fi
@@ -134,9 +136,7 @@ SH
 prime_status_seen() {  # <state> <file>
   FM_STATE_OVERRIDE="$1" bash -c '
     . "$1"
-    sig=$(fm_wake_signal_sig "$3") || exit 1
-    [ -n "$sig" ] || exit 1
-    printf "%s" "$sig" > "$(fm_wake_signal_seen_path "$2" "$3")"
+    fm_wake_status_mark_current "$2" "$3"
   ' _ "$ROOT/bin/fm-wake-lib.sh" "$1" "$2"
 }
 

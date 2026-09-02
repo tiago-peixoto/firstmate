@@ -44,8 +44,8 @@ pi -p -e .pi/extensions/fm-primary-turnend-guard.ts \
 ```
 
 Observed result: `PI_SMOKE_DONE`, with one session-start execution.
-The earlier `sendUserMessage` counterfactual raced the positional prompt; the current non-triggering `pi.sendMessage` custom message did not.
-The installed pi-signed 0.82.0 wrapper repeated the Pi primary extension and session-start path on 2026-07-27.
+That cold positional-prompt check established eventual custom-message delivery, but it did not submit immediately after `/new` while native digest generation was still running, so its earlier race-free inference is superseded by the provider-prerequisite evidence below.
+The installed pi-signed 0.82.0 wrapper repeated the shared Pi primary extension and session-start path on 2026-07-27.
 [`runtime-backends.md`](runtime-backends.md#tmux) owns the shared-ancestry evidence and authoritative selection-marker boundary.
 
 ### Run-tier source vocabulary and context-reset injection
@@ -82,6 +82,30 @@ compact
 Pi disagrees with Claude and Codex on `resume`: a new Pi process continuing a session reports `startup`, and Pi's `resume` reason is reserved for an in-process session switch.
 The current adapter classification and baseline mechanics are owned by [`../sessionstart-nudge.md`](../sessionstart-nudge.md#harness-transports) and the `bin/fm-session-start.sh` header.
 Their continuation classification is covered by portable tests, not claimed as live validation in this record.
+
+### Pi `/new` provider prerequisite
+
+The real offline Pi regression ran on 2026-08-26 with Pi 0.84.0, an isolated home and session directory, a barrier-controlled native digest, and a deterministic local `streamSimple` provider.
+The provider makes no HTTP request and requires no user credential.
+Its missing-native branch deliberately requests `bin/fm-session-start.sh`, so an escaped first call reproduces the duplicate-producing manual path rather than passing vacuously.
+
+```sh
+FM_PI_SESSIONSTART_RACE_LIVE_E2E=1 \
+  tests/fm-sessionstart-hook-live-e2e.test.sh
+```
+
+Observed output:
+
+```text
+ok - Pi 0.84.0: immediate and completed-before-prompt /new paths each made one first provider call with exactly one native startup context and no manual execution
+# fm-sessionstart-hook-live-e2e.test.sh: offline Pi /new race assertions passed
+```
+
+The immediate case submitted its first prompt only after the native `clear` child published `started`, held the child behind a release barrier, and proved the provider log remained absent for 500 milliseconds before release.
+After release, the first payload reported one native context and no manual result, the session persisted one matching custom message, and the fixture recorded one native execution.
+The control case let native generation complete before prompt submission and produced the same first-payload result.
+The portable public-event regression in `tests/fm-sessionstart-nudge.test.sh` separately covers interruption, process-tree retirement, two rapid replacements, stale completion, empty output, spawn error, timeout output, truncation, ineligible stand-down, and compaction cancellation.
+Pi and pi-signed load the same tracked extension bytes; pi-signed was not installed on this host for a separate 0.84.0 live rerun.
 
 ### Post-start instruction refresh
 
@@ -158,6 +182,7 @@ tests/fm-sessionstart-nudge.test.sh
 tests/fm-session-start.test.sh
 tests/fm-startup-network.test.sh
 FM_SESSIONSTART_HOOK_LIVE_E2E=1 tests/fm-sessionstart-hook-live-e2e.test.sh
+FM_PI_SESSIONSTART_RACE_LIVE_E2E=1 tests/fm-sessionstart-hook-live-e2e.test.sh
 FM_SESSIONSTART_INSTRUCTION_REFRESH_LIVE_E2E=1 tests/fm-sessionstart-instruction-refresh-live-e2e.test.sh
 FM_PI_LIVE_E2E=1 tests/fm-pi-primary-live-e2e.test.sh
 FM_OPENCODE_LIVE_E2E=1 tests/fm-opencode-primary-live-e2e.test.sh
@@ -207,11 +232,11 @@ tests/fm-crew-state.test.sh
 
 ## Turn-end guard
 
-The blocking and bounded-follow-up mechanisms were validated across six harnesses on 2026-07-08 through 2026-08-13, with Cursor's stop-hook park validated on 2026-08-13 and Claude's replacement Stop-owned path revalidated on 2026-08-14.
+The blocking and bounded-follow-up mechanisms were validated across six harnesses on 2026-07-08 through 2026-08-13, with Claude's replacement Stop-owned path revalidated on 2026-07-24 and Cursor's stop-hook park validated on 2026-08-13.
 
 | Harness | Version verified | Mechanism | Observed result |
 | --- | --- | --- | --- |
-| Claude | 2.1.232 | Cooperative blocking `Stop` guard plus `asyncRewake` auto-arm | Two real sessions shared an isolated home: the read-only session traced the foreign live-owner gate and finished without a guard loop, then the lock-owning session restored supervision and delivered an actionable rewake without human intervention. |
+| Claude | 2.1.219 | Cooperative blocking `Stop` guard plus `asyncRewake` auto-arm | A fresh unsupervised session ran session start first, reclaimed a stale dead-owner lock, completed two tokenless rewake cycles with no model arm command or guard continuation, and left a competing live owner unchanged. |
 | Codex | 0.142.1 | Blocking `Stop` hook | Hook process root stayed anchored to the trusted checkout and one continuation ran. |
 | OpenCode | 1.17.6 | Passive `session.idle` callback | Throwing could not block, while `promptAsync` scheduled one TUI follow-up; headless remained fail-open. |
 | Pi | 0.80.5 | Passive `agent_settled` callback | Exactly one guard follow-up ran for an unhealthy cycle, with no recursion across tool turns. |
@@ -296,10 +321,7 @@ Harness identity is read from the executable path and `argv[0]` as well as the c
 The same suite ingests a keyed remote-secondmate parent reply through the real adapter, establishes the incremental OPEN DECISIONS cursor, interrupts supervision, and proves re-arm replays every unacknowledged queue row plus the still-open decision through the ordinary drain path.
 It also covers decision-only recovery, interrupted handling, handling-window generation reuse, non-fatal moved-generation acknowledgement with sequence-bounded consumption, and a persistent successor remaining live after recovery is acknowledged.
 
-The Claude product live path ran with Claude Code 2.1.232 on 2026-08-14.
-Claude's current [hooks reference](https://code.claude.com/docs/en/hooks), read the same day, states that all matching hooks run in parallel, that Stop exit 2 prevents stopping and continues the conversation, and that `asyncRewake` wakes Claude on exit 2; it documents no sibling cancellation that would support the earlier short-circuit explanation.
-The live check deliberately separated the competing session from the lock owner, which is the condition that falsified that earlier hook-order explanation: the blocked Stop produced an auto-arm entry trace naming `gate-live-session-owner`, while a lock-owning Stop delivered `asyncRewake` normally.
-An absent entry trace on the blocked Stop would have falsified the identity-gate diagnosis; a claimed owner cycle without delivered `Stop hook feedback` would have supported the discarded-rewake candidate.
+The Claude product live path ran with Claude Code 2.1.219 on 2026-07-24:
 
 ```sh
 claude --version
@@ -309,49 +331,9 @@ FM_CLAUDE_LIVE_E2E=1 tests/fm-claude-stop-autoarm-live-e2e.test.sh
 Observed output:
 
 ```text
-2.1.232 (Claude Code)
-ok - Claude 2.1.232 (Claude Code) live E2E let the read-only competing session finish, then restored supervision from the lock-owning Stop hook without human intervention
+2.1.219 (Claude Code)
+ok - Claude 2.1.219 (Claude Code) live E2E reclaimed a stale session lock through session start, completed two tokenless Stop-owned rewake cycles, and preserved the competing-live-owner boundary
 ```
-
-The two-session regression was also required to fail against its immediate unfixed parent, `fe30ee2e2ccf678bba877659e47bae71318a5fab`, on 2026-08-14.
-The portable control kept the current real-process regression and shared test helper while restoring the parent implementation.
-
-```sh
-test "$(git -C .review-unfixed-stop-guard rev-parse --show-toplevel)" = "$PWD/.review-unfixed-stop-guard" && rm -rf "$PWD/.review-unfixed-stop-guard"
-git clone -q . .review-unfixed-stop-guard
-git -C .review-unfixed-stop-guard checkout -q fe30ee2e2ccf678bba877659e47bae71318a5fab
-cp tests/fm-turnend-guard.test.sh tests/fm-claude-stop-autoarm-live-e2e.test.sh tests/lib.sh .review-unfixed-stop-guard/tests/
-(cd .review-unfixed-stop-guard && bash -o pipefail -c 'tests/fm-turnend-guard.test.sh 2>&1 | tail -8')
-```
-
-Observed output and exit status `1`:
-
-```text
-ok - tracked .claude/settings.json entries: 5 inert under grok, the documented subagent exception still armed, all live under Claude
-ok - .codex/hooks.json: Stop hook uses hook process root when payload cwd is outside
-ok - .codex/hooks.json: Stop hook ignores nested git root guard scripts
-ok - .opencode primary plugin: guard path is anchored to worktree, not directory
-ok - .pi primary extension: no-tool and multi-tool runs each inject exactly one guard follow-up
-ok - .pi primary extension: delivery failure resets the logical-run latch
-ok - fm-turnend-guard --claude: re-blocks a loop-guarded stop while unhealthy and unclaimed (incident regression)
-not ok - a read-only session must not be trapped by a guard whose matching auto-arm cannot own recovery: expected exit 0, got 2
-```
-
-The real-Claude control used the same parent fixture and the current env-gated live guard.
-The test-only gate bypass is confined to its disposable Claude processes so the live guard can execute from a no-mistakes validation worktree.
-
-```sh
-cp tests/fm-claude-stop-autoarm-live-e2e.test.sh .review-unfixed-stop-guard/tests/
-(cd .review-unfixed-stop-guard && bash -o pipefail -c "FM_CLAUDE_LIVE_E2E=1 tests/fm-claude-stop-autoarm-live-e2e.test.sh 2>&1 | grep '^not ok -'")
-```
-
-Observed output and exit status `1`:
-
-```text
-not ok - read-only Claude session was trapped by the blind-turn guard: session=fa5c402a-511c-4cf2-b323-a9a5da85b70c
-```
-
-The corresponding green live result is recorded immediately above, and the green portable suite result is recorded in the focused 2026-08-14 run below.
 
 Current entry points:
 
@@ -392,30 +374,6 @@ Observed output:
 fm-lint.sh: ShellCheck 0.11.0 (pinned 0.11.0)
 fm-doc-audience-check: ok surfaces=64 local_links=188
 FM_TEST_SUMMARY total=4 failed=0 skipped_gate=0 duration_ms=80078
-```
-
-The foreign-session Stop-loop correction, bounded entry trace, and one-shot repeated-block escalation were verified on 2026-08-14 with ShellCheck 0.11.0.
-The portable suite uses real operating-system processes without a vendor harness, while the credentialed live guard above supplies the separate Claude-dependent verdict.
-
-```sh
-bin/fm-lint.sh
-bin/fm-doc-audience-check.sh
-bin/fm-test-run.sh tests/fm-claude-stop-autoarm.test.sh tests/fm-turnend-guard.test.sh tests/fm-supervision-instructions.test.sh | tail -8
-```
-
-Observed output:
-
-```text
-fm-lint.sh: ShellCheck 0.11.0 (pinned 0.11.0)
-fm-doc-audience-check: ok surfaces=67 local_links=233
-FM_TEST_END 2026-08-14T02:34:08Z tests/fm-supervision-instructions.test.sh exit=0 duration_ms=711 gate_skip=false
-FM_TEST_SUMMARY total=3 failed=0 skipped_gate=0 duration_ms=141882
-FM_TEST_SUMMARY_FAMILY family=pure-contract-unit count=1 duration_ms=711 failed=0
-FM_TEST_SUMMARY_FAMILY family=unclassified count=1 duration_ms=63319 failed=0
-FM_TEST_SUMMARY_FAMILY family=watcher-wake-lock count=1 duration_ms=76892 failed=0
-FM_TEST_SLOWEST rank=1 script=tests/fm-turnend-guard.test.sh duration_ms=76892
-FM_TEST_SLOWEST rank=2 script=tests/fm-claude-stop-autoarm.test.sh duration_ms=63319
-FM_TEST_SLOWEST rank=3 script=tests/fm-supervision-instructions.test.sh duration_ms=711
 ```
 
 The Pi extension-model pull-guard correction (`bin/fm-guard.sh` no longer reports a false watcher-down on a Pi primary during the extension's own watcher hand-off) was verified on 2026-08-13 with the installed ShellCheck 0.11.0 and isolated behavior suites.
@@ -480,11 +438,11 @@ fm-claude-stop-autoarm: ok
 
 ## Watcher continuity
 
-The cross-harness evidence combines the 2026-07-17 live pass with Claude's replacement Stop-owned path revalidated on 2026-08-14, all against isolated project and home state.
+The cross-harness evidence combines the 2026-07-17 live pass with Claude's replacement Stop-owned path revalidated on 2026-07-24, all against isolated project and home state.
 No credential material was copied into a fixture.
 
 ```text
-Claude Code 2.1.232
+Claude Code 2.1.219
 codex-cli 0.144.4
 OpenCode 1.17.18
 Pi 0.80.10
@@ -493,7 +451,7 @@ grok 0.2.103 (89c3d36fb6f1) [stable]
 
 | Harness | Exact opt-in command | Observed guarantee |
 | --- | --- | --- |
-| Claude | `FM_CLAUDE_LIVE_E2E=1 tests/fm-claude-stop-autoarm-live-e2e.test.sh` | A read-only competing session defers without a guard loop, then the lock-owning session restores supervision and receives the actionable rewake. |
+| Claude | `FM_CLAUDE_LIVE_E2E=1 tests/fm-claude-stop-autoarm-live-e2e.test.sh` | Session start reclaimed a stale owner before two Stop-owned cycles, and a competing live owner prevented arm, rewake, epoch write, or lock replacement. |
 | Codex | `FM_CODEX_LIVE_E2E=1 tests/fm-codex-continuity-live-e2e.test.sh` | The one-second foreground checkpoint returned without switching to the arm wrapper. |
 | OpenCode | `FM_OPENCODE_LIVE_E2E=1 tests/fm-opencode-primary-live-e2e.test.sh` | A verified successor existed before prompt handling, with no model re-arm or turn-end fallback. |
 | Pi | `FM_PI_LIVE_E2E=1 tests/fm-pi-primary-live-e2e.test.sh` | One initial tool call led to extension-owned successors and clean child retirement on exit. |
@@ -501,7 +459,7 @@ grok 0.2.103 (89c3d36fb6f1) [stable]
 
 Pi 0.81.1 repeated the continuity and clean-exit lifecycle on 2026-07-23 after the Calm presentation changes.
 
-Pi same-process session-transition ownership was verified on 2026-07-27 against the tracked extension with a faithful in-process factory rebind (module cache retained, real arm children):
+Pi same-process session-transition ownership was verified on 2026-09-01 against the tracked extension with provider-free public lifecycle events, retained and fresh extension-module rebinds, and real arm children:
 
 ```sh
 pi --version
@@ -509,9 +467,14 @@ tests/fm-pi-watch-extension.test.sh
 tests/fm-pi-primary-types.test.sh
 ```
 
-Observed guarantee: after ordinary `session_shutdown` for `/new`, `/resume`, and `/fork`, plus same-instance shutdown-plus-start, the replacement generation armed again without a Pi restart and without the `watcher: not armed - Pi session is shutting down` refusal.
+Observed guarantee: after ordinary `session_shutdown` for `/new`, `/resume`, `/fork`, and reload, plus same-instance shutdown-plus-start, an owning `session_start` armed the replacement generation before any model turn and without the `watcher: not armed - Pi session is shutting down` refusal.
+A fresh module rebind also received exactly once the actionable close whose first delivery was still in flight at shutdown, while retaining one live successor.
 Stale prior-generation tool callbacks could not mutate the active child, repeated transitions kept exactly one live arm cycle, and terminal `quit` still refused late rearm.
+The strict no-emit check used the installed Pi SDK declarations to hold the lifecycle event contract.
 Plain Pi and pi-signed share the same tracked `.pi/extensions/fm-primary-pi-watch.ts` path, so both inherit the generation owner; other primary harnesses are not applicable because they do not use this Pi extension lifecycle.
+
+On 2026-09-02 the same suite, the strict typecheck, and the credential-free real-SDK guard were rerun against `@earendil-works/pi-coding-agent` 0.84.4 after the extension stopped waiting for `before_agent_start` before settling a main delivery; [`runtime-backends.md`](runtime-backends.md#2026-09-02-streaming-time-watcher-delivery) owns the exact commands and output.
+Observed guarantee: a wake delivered while main was streaming was followed by a verified successor and by delivery of the next actionable close, a replacement replayed only the follow-up Pi had not consumed, an exhausted restoration delivered its typed failure without launching an arm past the retry bound, and a verified successor that failed while a branch settlement still held its wake took the ordinary bounded retry once that delivery settled.
 
 The once-per-generation recovery bound and immediate handling-successor poll were verified on 2026-08-21 with the tracked Pi extension, real watcher processes, and an isolated home.
 The regression forced handling confirmation to fail, observed one recovery follow-up across the former repeat window, confirmed the successor remained live, and then proved a separate handling successor durably queued a crew event within the bounded poll window.

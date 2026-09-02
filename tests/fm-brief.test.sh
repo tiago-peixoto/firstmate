@@ -345,16 +345,27 @@ test_no_mistakes_dod_wording() {
     "no-mistakes DOD must keep direct requirements and exclude generic scaffold boilerplate from --intent"
   assert_grep "exclude generic operational, status, delivery, and other scaffold boilerplate unless it is task-specific" "$brief" \
     "no-mistakes DOD must exclude non-task-specific scaffold boilerplate from --intent"
-  # The apostrophe in "firstmate's authority check" is now structurally safe
-  # (no `$(...)` wrapper around the heredoc), so it renders verbatim instead of
-  # being reworded or escaped away. test_no_heredoc_in_command_substitution
-  # guards the structure that makes it safe.
-  assert_grep "firstmate's authority check" "$brief" \
+  # Apostrophe prose in the DOD is structurally safe (no `$(...)` wrapper around
+  # the heredoc), so it renders verbatim instead of being reworded or escaped
+  # away. test_no_heredoc_in_command_substitution guards the structure that makes
+  # it safe.
+  assert_grep "carrying only each requirement's current accepted form" "$brief" \
     "no-mistakes DOD lost the apostrophe prose that the structural fix makes parse-safe"
-  pass "fm-brief.sh: no-mistakes DOD keeps its apostrophe prose, now parse-safe"
+
+  # The --yes ban is a fleet-wide prohibition, not a preference, and it must not
+  # claim an enforcement the tool does not provide: this is instruction only.
+  assert_grep "NEVER pass \`--yes\` (or \`-y\`) to \`no-mistakes axi run\` or \`no-mistakes axi respond\`. It is banned fleet-wide." "$brief" \
+    "no-mistakes DOD must state the --yes ban as a prohibition"
+  assert_grep "answering your own ask-user finding is a hard rule violation" "$brief" \
+    "no-mistakes DOD must say why --yes is banned"
+  assert_no_grep "Avoid \`--yes\`" "$brief" \
+    "no-mistakes DOD still states the --yes ban as a preference"
+  assert_no_grep "no-mistakes refuses" "$brief" \
+    "no-mistakes DOD must not claim the tool itself refuses --yes"
+  pass "fm-brief.sh: no-mistakes DOD keeps its apostrophe prose and bans --yes outright"
 }
 
-test_ship_project_memory_wording_is_trimmed() {
+test_ship_project_memory_wording() {
   local home id brief
   home="$TMP_ROOT/project-memory-home"
   mkdir -p "$home/data"
@@ -362,64 +373,13 @@ test_ship_project_memory_wording_is_trimmed() {
   FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null 2>&1
   brief="$home/data/$id/brief.md"
   assert_present "$brief" "brief was not scaffolded"
-  assert_grep "If \`AGENTS.md\` or \`CLAUDE.md\` already exists, or if this task produced durable project-intrinsic knowledge" "$brief" \
-    "project-memory trim lost the trigger sentence"
-  assert_no_grep "Record only project knowledge useful to almost every future session." "$brief" \
-    "project-memory trim retained the removed durable-knowledge sentence"
-  assert_no_grep "prefer a pointer to the authoritative file, command, or doc over copying the detail" "$brief" \
-    "project-memory trim retained the removed pointer-over-copy sentence"
+  assert_grep "Record only project knowledge useful to almost every future session." "$brief" \
+    "project-memory contract lost the durable-knowledge bar"
+  assert_grep "prefer a pointer to the authoritative file, command, or doc over copying the detail" "$brief" \
+    "project-memory contract lost pointer-over-copy guidance"
   assert_grep "lacks \`## Maintaining this file\`, add that short self-governance section" "$brief" \
     "project-memory contract lost the self-governance add-in-same-pass rule"
-  assert_grep "Keep it proportionate: skip \`AGENTS.md\` edits for trivial tasks" "$brief" \
-    "project-memory trim lost the proportionality sentence"
-  pass "fm-brief.sh: ship project-memory wording keeps the trigger and proportionality only"
-}
-
-test_no_mistakes_daemon_rule_is_mode_scoped() {
-  local home id brief shape
-  home="$TMP_ROOT/daemon-rule-home"
-  mkdir -p "$home/data"
-
-  for shape in direct local scout; do
-    id="brief-daemon-$shape"
-    case "$shape" in
-      direct)
-        FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode direct-PR >/dev/null 2>&1
-        ;;
-      local)
-        FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode local-only >/dev/null 2>&1
-        ;;
-      scout)
-        FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --scout >/dev/null 2>&1
-        ;;
-    esac
-    brief="$home/data/$id/brief.md"
-    assert_no_grep "Never stop, restart, or update the shared \`no-mistakes\` daemon" "$brief" \
-      "$shape brief retained the no-mistakes-only daemon rule"
-  done
-
-  id="brief-daemon-no-mistakes"
-  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
-  assert_grep "7. Never stop, restart, or update the shared \`no-mistakes\` daemon - it is one instance serving" "$brief" \
-    "no-mistakes brief lost the daemon rule"
-  assert_grep "daemon error, append \`blocked: {the daemon error}\` and stop; only firstmate manages the daemon." "$brief" \
-    "no-mistakes brief changed the daemon rule"
-  pass "fm-brief.sh: daemon rule appears only in no-mistakes mode"
-}
-
-test_ship_status_protocol_tracks_wait_and_pushed_head() {
-  local home id brief
-  home="$TMP_ROOT/status-protocol-home"
-  mkdir -p "$home/data"
-  id="brief-status-protocol-c2"
-  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode direct-PR >/dev/null 2>&1
-  brief="$home/data/$id/brief.md"
-  assert_grep "When you enter a deliberate wait, declare it in one \`paused:\` line naming your current head, exactly what you await, and what voids the wait." "$brief" \
-    "ship status protocol omitted the deliberate-wait declaration"
-  assert_grep "The moment you push, your next status line names the new head before anything else - never advertise a head you have moved past." "$brief" \
-    "ship status protocol omitted the pushed-head declaration"
-  pass "fm-brief.sh: ship status protocol declares deliberate waits and pushed heads"
+  pass "fm-brief.sh: ship project-memory wording carries the AGENTS.md authoring bar"
 }
 
 test_herdr_lab_contract_is_explicit_and_complete() {
@@ -470,7 +430,7 @@ test_herdr_lab_contract_quotes_foreign_firstmate_path() {
   pass "fm-brief.sh: --herdr-lab uses its quoted Firstmate-owned helper path"
 }
 
-test_unguarded_briefs_omit_herdr_gate() {
+test_herdr_lab_omission_is_loud_for_ship_and_scout() {
   local home id brief
   home="$TMP_ROOT/herdr-gate-home"
   mkdir -p "$home/data"
@@ -482,22 +442,22 @@ test_unguarded_briefs_omit_herdr_gate() {
       FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" firstmate --mode no-mistakes >/dev/null 2>&1
     fi
     brief="$home/data/$id/brief.md"
-    assert_no_grep "Herdr lifecycle declaration - NOT ENABLED" "$brief" \
-      "$kind brief retained the removed Herdr declaration"
-    assert_no_grep "regenerate the brief with \`--herdr-lab\` before dispatch" "$brief" \
-      "$kind brief retained the removed Herdr gate"
+    assert_grep "# Herdr lifecycle declaration - NOT ENABLED" "$brief" \
+      "$kind brief silently omitted the Herdr declaration"
+    assert_grep "regenerate the brief with \`--herdr-lab\` before dispatch" "$brief" \
+      "$kind brief missing the fail-visible regeneration instruction"
   done
-  pass "fm-brief.sh: unguarded ship and scout scaffolds omit the Herdr gate"
+  pass "fm-brief.sh: ship and scout scaffolds make omitted Herdr intent fail-visible"
 }
 
 # Regression (issue #2575): AGENTS.md section 11 and this script's own help tell
-# firstmate to replace EVERY `{TASK}` placeholder, so a placeholder quoted
-# anywhere but the genuine fill site is spliced full of the task body. This fork
-# also drops the unguarded Herdr gate that once carried such a quote
-# (test_unguarded_briefs_omit_herdr_gate), so the surviving contract is the fill
-# site itself: exactly one placeholder, and the documented global replace puts
-# the body in exactly once.
-test_documented_global_replace_leaves_one_task_fill_site() {
+# firstmate to replace EVERY `{TASK}` placeholder. The unguarded Herdr gate used
+# to quote `{TASK}` in its own prose, so that documented global replace spliced
+# the whole task body into the middle of the gate's sentence - silently
+# destroying the one contract that exists precisely because the scaffold cannot
+# see the task text. The placeholder must exist only at the genuine fill site,
+# so the documented fill leaves the gate intact and the body appears once.
+test_documented_global_replace_leaves_the_herdr_gate_intact() {
   local home id brief kind count content filled body
   home="$TMP_ROOT/task-fill-site-home"
   mkdir -p "$home/data"
@@ -519,8 +479,10 @@ test_documented_global_replace_leaves_one_task_fill_site() {
     count=$(printf '%s\n' "$filled" | grep -c -F "$body")
     [ "$count" = 1 ] \
       || fail "$kind brief: the documented global {TASK} replace duplicated the task body $count times"
+    printf '%s\n' "$filled" | grep -qF 'this scaffold cannot inspect the task text' \
+      || fail "$kind brief: the Herdr safety gate did not survive the documented global replace"
   done
-  pass "fm-brief.sh: the documented {TASK} fill lands only at the single fill site"
+  pass "fm-brief.sh: the documented {TASK} fill cannot corrupt the Herdr safety gate"
 }
 
 test_secondmate_no_projects_charter() {
@@ -543,8 +505,8 @@ test_secondmate_no_projects_charter() {
     "project-less charter operating model lost the pooled-worktree note"
   assert_no_grep "The projects above are local clones" "$brief" \
     "project-less charter kept the with-projects operating-model line"
-  assert_grep 'working [at=...] [key=<work-slug>]' "$brief" \
-    "secondmate charter did not key and time material routed-work phases"
+  assert_grep 'working [key=<work-slug>]' "$brief" \
+    "secondmate charter did not key material routed-work phases"
   assert_grep 'resolved [key=<work-slug>]' "$brief" \
     "secondmate charter did not close a quietly ended routed-work phase"
   assert_grep 'use the same key on its later' "$brief" \
@@ -588,8 +550,8 @@ test_secondmate_marked_request_reporting_contract() {
     "secondmate charter retained the unconditional working opener"
   assert_grep 'When a routed-work phase has a supervisor-actionable material change worth reporting under the rule above' "$brief" \
     "secondmate charter did not limit keyed phases to reportable material changes"
-  assert_grep "If its first reportable event is \`working [at=...] [key=<work-slug>]: {material phase}\`" "$brief" \
-    "secondmate charter lost keyed, timed working syntax for a reportable material phase"
+  assert_grep "If its first reportable event is \`working [key=<work-slug>]: {material phase}\`" "$brief" \
+    "secondmate charter lost keyed working syntax for a reportable material phase"
   assert_grep "use the same key on its later \`paused\`, \`done\`, \`failed\`, \`needs-decision\`, or \`blocked\` event" "$brief" \
     "secondmate charter lost same-key closure for a reportable material phase"
   assert_grep 'resolved [key=<work-slug>]' "$brief" \
@@ -603,8 +565,12 @@ test_secondmate_marked_request_reporting_contract() {
     "secondmate charter lost detailed document pointers"
   assert_grep 'Report only true captain-relevant outcomes or a declared external wait' "$brief" \
     "secondmate charter lost declared external waits"
-  assert_grep 'a captain decision, a real blocker, a failure, or work ready for review' "$brief" \
-    "secondmate charter lost decisions, blockers, failures, or ready outcomes"
+  assert_grep 'a captain decision, a real blocker, a failure, work ready for review, or work you landed' "$brief" \
+    "secondmate charter lost decisions, blockers, failures, ready outcomes, or landed work"
+  # Under standing merge authority nothing is ever "ready for review", so the
+  # landed merge is the trigger a charter without this line silently omits.
+  assert_grep 'a merge you performed yourself under standing merge authority and one the captain merged on the forge' "$brief" \
+    "secondmate charter did not name a landed merge as a reporting trigger"
   assert_grep 'States: working, needs-decision, blocked, paused, done, failed.' "$brief" \
     "secondmate charter changed the preserved status vocabulary"
   pass "fm-brief.sh: marked requests avoid generic acknowledgements and preserve material reporting"
@@ -774,72 +740,6 @@ test_scout_and_secondmate_load_decision_hold_policy() {
   pass "fm-brief.sh: investigation and visual-review completions load the shared decision policy"
 }
 
-# Reachability guard for the worker-facing GitHub and merge-authority contract.
-#
-# The product here is the GENERATED brief, not the scaffold source: a worker only
-# ever obeys text that actually reaches its instructions. Four separate sites in
-# fm-brief.sh once routed workers onto a node-launched GitHub wrapper, and that
-# survived every source-level review because nobody re-read the rendered output
-# after the captain's credential vault arrived. Only a native binary is eligible
-# for that vault, so a worker on any other launcher stalls every GitHub call on a
-# prompt only the captain can answer. That wrapper is now retired fleet-wide and
-# uninstalled, which is why its name appears below: this is the one place the
-# retired name is allowed to survive, because refusing it is the check's job.
-#
-# So this asserts on real scaffolded briefs for EVERY mode the script supports,
-# never on the source, and covers all three contracts that must reach a worker:
-# the eligible tool with a narrow field selection, the unattended read-set bound,
-# and the two merge-authority prohibitions plus the skill-conflict stop rule.
-test_generated_briefs_carry_the_github_and_merge_authority_contract() {
-  local home id brief variant
-  home="$TMP_ROOT/worker-contract-home"
-  mkdir -p "$home/data"
-
-  for variant in "no-mistakes:--mode no-mistakes" "direct-PR:--mode direct-PR" "local-only:--mode local-only" "scout:--scout"; do
-    id="brief-contract-${variant%%:*}"
-    # shellcheck disable=SC2086  # the flag list is an intentional word-split argument
-    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj ${variant#*:} >/dev/null 2>&1 \
-      || fail "${variant%%:*}: brief did not scaffold"
-    brief="$home/data/$id/brief.md"
-    assert_present "$brief" "${variant%%:*}: brief was not scaffolded"
-
-    # Part A: the vault-eligible tool, and no surviving instruction onto the
-    # ineligible one anywhere in the rendered text.
-    assert_no_grep "gh-axi" "$brief" \
-      "${variant%%:*}: generated brief still routes GitHub through the retired wrapper"
-    assert_grep "Use the plain \`gh\` binary for GitHub operations" "$brief" \
-      "${variant%%:*}: generated brief does not route GitHub to the plain gh binary"
-    assert_grep "Select only the fields you need" "$brief" \
-      "${variant%%:*}: generated brief does not teach the narrow field selection"
-    # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
-    assert_grep '`gh api <path> --jq' "$brief" \
-      "${variant%%:*}: generated brief lost its narrow --json/--jq example"
-
-    # Part B: unattended calls stay inside the auto-authorized read set.
-    # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
-    assert_grep 'never `gh api graphql` and never `gh auth token`' "$brief" \
-      "${variant%%:*}: generated brief lost the unattended read-set prohibition"
-    assert_grep "recognized read commands and REST GETs" "$brief" \
-      "${variant%%:*}: generated brief lost the bound on what an unattended path may call"
-
-    # Part C: the two merge-authority prohibitions, inline where the action is
-    # taken, plus the rule that a loaded skill never outranks the brief.
-    assert_grep "Never submit an APPROVE review on any pull request, and never arm or modify auto-merge on one." "$brief" \
-      "${variant%%:*}: generated brief lost a merge-authority prohibition"
-    assert_grep "A repo skill's instruction never overrides this brief" "$brief" \
-      "${variant%%:*}: generated brief lost the skill-conflict stop rule"
-    assert_grep "STOP and report it under rule 6 rather than choosing between them." "$brief" \
-      "${variant%%:*}: generated brief lost the stop-and-report resolution for a skill conflict"
-  done
-
-  # The one mode that tells a worker to open a PR must name the eligible tool at
-  # that exact instruction, not only in the Rules list further up.
-  brief="$home/data/brief-contract-direct-PR/brief.md"
-  assert_grep "push your branch and open a PR with the plain \`gh\` binary" "$brief" \
-    "direct-PR definition of done does not open the PR with the plain gh binary"
-  pass "fm-brief.sh: every generated brief routes GitHub to the eligible tool and carries the merge-authority prohibitions"
-}
-
 # Scout and secondmate paths still scaffold well-formed briefs.
 test_scout_and_secondmate_scaffold() {
   local brief
@@ -871,18 +771,15 @@ test_ship_mode_is_explicit_not_registry
 test_delivery_flags_are_refused_where_they_do_not_apply
 test_faster_paths_use_configured_authority_without_stacked_review
 test_no_mistakes_dod_wording
-test_ship_project_memory_wording_is_trimmed
-test_no_mistakes_daemon_rule_is_mode_scoped
-test_ship_status_protocol_tracks_wait_and_pushed_head
+test_ship_project_memory_wording
 test_herdr_lab_contract_is_explicit_and_complete
 test_herdr_lab_contract_quotes_foreign_firstmate_path
-test_unguarded_briefs_omit_herdr_gate
-test_documented_global_replace_leaves_one_task_fill_site
+test_herdr_lab_omission_is_loud_for_ship_and_scout
+test_documented_global_replace_leaves_the_herdr_gate_intact
 test_herdr_lab_contract_applies_to_scouts_but_not_secondmates
 test_secondmate_no_projects_charter
 test_secondmate_marked_request_reporting_contract
 test_secondmate_directory_paths_are_absolute_and_output_is_stable
 test_pause_verb_override_renders_all_brief_scaffolds
 test_scout_and_secondmate_load_decision_hold_policy
-test_generated_briefs_carry_the_github_and_merge_authority_contract
 test_scout_and_secondmate_scaffold

@@ -8,9 +8,9 @@
 # This is an adjunct to the existing watcher poll loop and session-start path,
 # not a watcher, daemon, PR poll, or forge client of its own.
 # `scan` evaluates at most once per FM_INACTIVE_RECONCILE_SECS (default 900,
-# valid 60..1800) per home, except that --startup performs the same cheap scan
-# immediately during a locked session start. Each scan uses an aggregate
-# FM_INACTIVE_RECONCILE_BUDGET_SECS deadline (default 10, valid 1..30) and
+# valid 60..1800) per home, except that --startup performs the same scan
+# immediately in the locked session start's deferred worker. Each scan uses an
+# aggregate FM_INACTIVE_RECONCILE_BUDGET_SECS deadline (default 10, valid 1..30) and
 # resumes after its last visited child on the next scan.
 # The scan enforces that budget itself through a whole-second deadline, and the
 # first due child of every scan is always visited with at least a one-second
@@ -26,7 +26,7 @@
 # captain-held. It then uses fm-crew-state.sh as the sole current-state source.
 # Only a done or failed state is suspicious enough to create a durable terminal
 # outcome record or wake the supervisor.
-# Working, paused, parked, blocked, undetermined, unknown, persistent secondmates, and
+# Working, paused, parked, blocked, unknown, persistent secondmates, and
 # captain-held work retain their existing supervision semantics.
 #
 # A terminal-outcomes/<fingerprint>.pending record remains until its upstream
@@ -46,7 +46,7 @@
 # and its cursor records the last child visited within the aggregate budget.
 #
 # The scan reads only durable local state and fm-crew-state.sh; it never invokes
-# gh, curl, fm-pr-check.sh, fm-pr-poll.sh, or a state *.check.sh.
+# gh, gh-axi, curl, fm-pr-check.sh, fm-pr-poll.sh, or a state *.check.sh.
 set -u
 export LC_ALL=C
 
@@ -201,29 +201,27 @@ queue_key_exists() { # <key>
   printf '%s\n' "$queued" | grep -Fx -- "$key" >/dev/null 2>&1
 }
 
+publish_actionable() { # <key> <payload>
+  local key=$1 payload=$2
+  queue_key_exists "$key" && return 1
+  fm_wake_append check "$key" "$payload" || return 2
+  printf 'actionable: %s\n' "$payload"
+}
+
 queue_notice_once() { # <record> <key> <payload>
-  local record=$1 key=$2 payload=$3 notified
+  local record=$1 key=$2 payload=$3 notified rc=0
   notified=$(record_value "$record" notice_emitted)
   [ "$notified" = 1 ] && return 1
-  if queue_key_exists "$key"; then
+  publish_actionable "$key" "$payload" || rc=$?
+  if [ "$rc" -eq 0 ] || [ "$rc" -eq 1 ]; then
     record_field_set "$record" notice_emitted 1 || return 2
-    return 1
   fi
-  fm_wake_append check "$key" "$payload" || return 2
-  record_field_set "$record" notice_emitted 1 || return 2
-  printf 'actionable: %s\n' "$payload"
-  return 0
+  return "$rc"
 }
 
 queue_presentation() { # <record> <fingerprint> <payload>
-  local record=$1 fingerprint=$2 payload=$3 key
-  key="inactive-outcome:$fingerprint"
-  if queue_key_exists "$key"; then
-    return 1
-  fi
-  fm_wake_append check "$key" "$payload" || return 2
-  printf 'actionable: %s\n' "$payload"
-  return 0
+  local record=$1 fingerprint=$2 payload=$3
+  publish_actionable "inactive-outcome:$fingerprint" "$payload"
 }
 
 last_activity_age() { # <meta> <status> <turn-ended>
@@ -303,28 +301,14 @@ home_secondmate_id() {
   printf '%s\n' "$id"
 }
 
-# Append one routed report unless the same EVENT is already on the channel.
-# Deduped on the parsed verb, key and note (bin/fm-classify-lib.sh) rather than
-# on exact bytes, because the line carries the instant it was raised and two
-# reports of one outcome are never byte-identical. The report already on the
-# channel keeps the time it actually happened.
 append_once() { # <path> <line>
-  local path=$1 line=$2 verb key note stamped r_verb r_key r_note
+  local path=$1 line=$2
   [ ! -L "$path" ] || return 1
   mkdir -p "$(dirname "$path")" || return 1
-  verb=$(status_line_verb "$line")
-  key=$(_fm_decision_key "$line") || key=$FM_CLASSIFY_EVENT_NONE
-  note=$(status_line_note "$line")
-  while IFS=$'\t' read -r _ _ r_verb r_key r_note; do
-    [ "$r_verb" = "$verb" ] || continue
-    [ "$r_key" = "$key" ] || continue
-    [ "$r_note" = "$note" ] || continue
+  if grep -Fqx -- "$line" "$path" 2>/dev/null; then
     return 0
-  done <<EOF
-$(status_timed_events "$path")
-EOF
-  stamped=$(status_stamp_line "$line") || true
-  printf '%s\n' "$stamped" >> "$path"
+  fi
+  printf '%s\n' "$line" >> "$path"
 }
 
 report_to_parent() { # <self-id> <task> <state> <outcome-key> <fingerprint> <pr>
@@ -363,7 +347,6 @@ reconcile_direct_child_locked() { # <id> <meta> <secondmate-id-or-empty> <timeou
   case "$state_line" in
     'state: done '*) state='done' ;;
     'state: failed '*) state='failed' ;;
-    'state: undetermined '*) return 0 ;;
     *) return 0 ;;
   esac
   pr=$(pr_for_task "$meta" "$status")
@@ -381,6 +364,13 @@ reconcile_direct_child_locked() { # <id> <meta> <secondmate-id-or-empty> <timeou
       mark_reported "$RECORD_PENDING" || return 1
     else
       payload="inactive terminal outcome needs parent report: child=$id state=$state"
+      # A home seeded without its parent binding cannot report upward at all,
+      # and every later terminal outcome fails the same way for the same
+      # reason. Name the missing binding so the diagnostic points at the repair
+      # instead of reading as one report that happened to fail.
+      if ! fm_secondmate_parent_record_parse "$FM_HOME/.fm-secondmate-parent"; then
+        payload="$payload (missing or unreadable parent binding .fm-secondmate-parent)"
+      fi
       queue_notice_once "$RECORD_PENDING" "inactive-reconcile:$fingerprint" "$payload" || true
     fi
     return 0
@@ -453,7 +443,8 @@ scan() {
     marker_rc=$?
     self=''
     if [ "$marker_rc" -ne 1 ]; then
-      printf 'actionable: inactive terminal outcomes remain unreconciled: invalid .fm-secondmate-home marker\n'
+      publish_actionable "inactive-reconcile-diagnostic:invalid-secondmate-home" \
+        "inactive terminal outcomes remain unreconciled: invalid .fm-secondmate-home marker" || true
       return 0
     fi
   fi

@@ -32,43 +32,6 @@ set -u
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-marker-lib.sh"
-# shellcheck source=bin/fm-classify-lib.sh
-. "$ROOT/bin/fm-classify-lib.sh"
-
-# Assert <status-file> carries a closing `resolved` event for <key> whose note
-# is exactly <note>. Read through the real parsers rather than by matching raw
-# line bytes: a status line also carries the "[at=...]" event time its writer
-# stamped, and this asserts that time is present and readable too, because the
-# close's own instant is what makes the answer latency measurable at all.
-assert_closed_event() {  # <status-file> <key> <note> <label>
-  local f=$1 key=$2 note=$3 label=$4 epoch stamp verb rkey rnote
-  while IFS=$'\t' read -r epoch stamp verb rkey rnote; do
-    [ "$verb" = resolved ] || continue
-    [ "$rkey" = "$key" ] || continue
-    [ "$rnote" = "$note" ] || continue
-    if [ -z "$stamp" ] || [ -z "$epoch" ]; then
-      fail "$label: the closing line carries no readable event time:"$'\n'"$(cat "$f")"
-    fi
-    return 0
-  done <<EOF
-$(status_timed_events "$f")
-EOF
-  fail "$label:"$'\n'"$(cat "$f")"
-}
-
-# The raw last `resolved` line for <key> in <status-file>, for the cases that
-# must inspect the bytes actually written (leaked marker or corr framing).
-# Selected by parsed verb and key, since the line's leading verb is now
-# followed by its "[at=...]" event time.
-closing_line_for() {  # <status-file> <key>
-  local f=$1 key=$2 line found=''
-  while IFS= read -r line || [ -n "$line" ]; do
-    [ "$(status_line_verb "$line")" = resolved ] || continue
-    [ "$(_fm_decision_key "$line")" = "$key" ] || continue
-    found=$line
-  done < "$f"
-  printf '%s' "$found"
-}
 
 SEND="$ROOT/bin/fm-send.sh"
 DRAIN="$ROOT/bin/fm-wake-drain.sh"
@@ -166,8 +129,8 @@ test_answer_send_closes_open_decision() {
   grep -qF "go with REST" "$home/state/t1.inbox/001.msg" \
     || fail "the answer text should reach the worker's durable inbox record"
   assert_contains "$(cat "$log")" "Firstmate instruction waiting" "the doorbell should be rung for the answer"
-  assert_closed_event "$home/state/t1.status" api-shape 'answered: go with REST' \
-    "fm-send did not append the closing resolved line"
+  grep -F 'resolved [key=api-shape]: answered: go with REST' "$home/state/t1.status" >/dev/null \
+    || fail "fm-send did not append the closing resolved line:"$'\n'"$(cat "$home/state/t1.status")"
 
   out=$(drain_out "$home")
   if printf '%s' "$out" | grep -F 'OPEN DECISIONS' >/dev/null; then
@@ -189,15 +152,14 @@ test_answer_close_is_self_announced() {
   printf 'needs-decision [key=port-choice]: 8080 or 9090\n' > "$home/state/t9.status"
   FM_STATE_OVERRIDE="$home/state" bash -c '
     . "$1"
-    sig=$(fm_wake_signal_sig "$3") || exit 1
-    printf "%s" "$sig" > "$(fm_wake_signal_seen_path "$2" "$3")"
+    fm_wake_status_mark_current "$2" "$3"
   ' _ "$ROOT/bin/fm-wake-lib.sh" "$home/state" "$home/state/t9.status" \
     || fail "could not prime the announced baseline"
 
   run_send "$fb" "$home" "$log" t9 --resolve-key port-choice "use 9090"; rc=$?
   expect_code 0 "$rc" "the answer send should succeed"
-  assert_closed_event "$home/state/t9.status" port-choice 'answered: use 9090' \
-    "the closing resolved line is missing"
+  grep -F 'resolved [key=port-choice]: answered: use 9090' "$home/state/t9.status" >/dev/null \
+    || fail "the closing resolved line is missing"
   FM_STATE_OVERRIDE="$home/state" bash -c '
     . "$1"; fm_wake_signal_seen_current "$2" "$3"
   ' _ "$ROOT/bin/fm-wake-lib.sh" "$home/state" "$home/state/t9.status" \
@@ -231,8 +193,8 @@ test_colon_first_key_position_is_answerable() {
 
   run_send "$fb" "$home" "$log" t8 --resolve-key seam-max-bound "cap it at 4"; rc=$?
   expect_code 0 "$rc" "answering a colon-first stated key should succeed, not refuse as unknown"
-  assert_closed_event "$home/state/t8.status" seam-max-bound 'answered: cap it at 4' \
-    "the closing resolved line is missing"
+  grep -F 'resolved [key=seam-max-bound]: answered: cap it at 4' "$home/state/t8.status" >/dev/null \
+    || fail "the closing resolved line is missing:"$'\n'"$(cat "$home/state/t8.status")"
 
   out=$(drain_out "$home")
   if printf '%s' "$out" | grep -F 'OPEN DECISIONS' >/dev/null; then
@@ -330,9 +292,8 @@ test_failed_ring_still_closes_at_enqueue() {
   expect_code 0 "$rc" "a failed doorbell must not fail the durably enqueued answer"
   grep -qF 'token is in the vault now' "$home/state/t5.inbox/001.msg" \
     || fail "the answer must be durably recorded despite the failed ring"
-  assert_closed_event "$home/state/t5.status" creds \
-    'answered: token is in the vault now' \
-    "the enqueued answer must close the decision at answer time"
+  grep -F 'resolved [key=creds]' "$home/state/t5.status" >/dev/null \
+    || fail "the enqueued answer must close the decision at answer time: $(cat "$home/state/t5.status")"
   out=$(drain_out "$home")
   if printf '%s' "$out" | grep -F '[key=creds]' >/dev/null; then
     fail "the answered blocker still lists as open after an enqueue-time close: $out"
@@ -406,7 +367,7 @@ test_local_secondmate_answer_marked_and_closed() {
     "$FM_FROMFIRST_MARK"corr=*) : ;;
     *) fail "the secondmate answer's record lost its from-firstmate marker/corr framing: $got" ;;
   esac
-  closing=$(closing_line_for "$home/state/domain.status" fleet-split)
+  closing=$(grep -F 'resolved [key=fleet-split]' "$home/state/domain.status" || true)
   [ -n "$closing" ] || fail "the secondmate decision was not closed: $(cat "$home/state/domain.status")"
   case "$closing" in
     *corr=*) fail "the closing line leaked the corr token: $closing" ;;
@@ -462,8 +423,8 @@ test_remote_secondmate_answer_closes_locally() {
   expect_code 0 "$rc" "a remote secondmate answer send should succeed"
   assert_grep 'fm-remote-entrypoint.sh' "$ssh_log" \
     "the answer message should cross the remote transport"
-  assert_closed_event "$home/state/rsm.status" upgrade-window \
-    'answered: the weekend, freeze Friday' "the remote answer did not close the local ledger"
+  grep -F 'resolved [key=upgrade-window]: answered: the weekend, freeze Friday' "$home/state/rsm.status" >/dev/null \
+    || fail "the remote answer did not close the local ledger: $(cat "$home/state/rsm.status")"
   out=$(drain_out "$home")
   if printf '%s' "$out" | grep -F 'OPEN DECISIONS' >/dev/null; then
     fail "the answered remote-secondmate decision still lists as open: $out"
@@ -497,8 +458,8 @@ test_remote_reply_corr_tag_does_not_block_resolve_key() {
     FM_SSH_BIN="$fb/fake-ssh" FM_SSH_LOG="$ssh_log" FM_FAKE_SSH_RC=0 \
     "$SEND" rsm --resolve-key loan-installment-cadence-amount "monthly" >/dev/null 2>&1; rc=$?
   expect_code 0 "$rc" "answering a corr-tagged remote decision should succeed, not refuse as unknown"
-  assert_closed_event "$home/state/rsm.status" loan-installment-cadence-amount \
-    'answered: monthly' "the closing resolved line is missing"
+  grep -F 'resolved [key=loan-installment-cadence-amount]: answered: monthly' "$home/state/rsm.status" >/dev/null \
+    || fail "the closing resolved line is missing:"$'\n'"$(cat "$home/state/rsm.status")"
 
   out=$(drain_out "$home")
   if printf '%s' "$out" | grep -F 'OPEN DECISIONS' >/dev/null; then

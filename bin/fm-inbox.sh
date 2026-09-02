@@ -361,11 +361,8 @@ cmd_drain() {
   if [ "${1:-}" = "--ack" ]; then
     shift
     [ "$#" -gt 0 ] || die "usage: fm-inbox.sh drain --ack <id>..."
-    local id
-    for id in "$@"; do
-      [[ "$id" =~ ^[0-9]+-[A-Za-z0-9]{6}$ ]] || die "invalid note id: $id"
-    done
     mkdir -p "$INBOX/handled"
+    local id
     for id in "$@"; do
       if [ -f "$INBOX/$id.note" ]; then
         mv "$INBOX/$id.note" "$INBOX/handled/$id.note"

@@ -4,8 +4,6 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-# shellcheck source=bin/fm-classify-lib.sh
-. "$ROOT/bin/fm-classify-lib.sh"
 
 # bin/fm-harness.sh checks verified ENV markers before ancestry. A suite run
 # from inside Cursor, Claude, Pi, or Grok inherits those markers, which outrank
@@ -18,21 +16,8 @@ TEARDOWN="$ROOT/bin/fm-teardown.sh"
 KIMI_HOOK="$ROOT/bin/fm-kimi-turnend-hook.sh"
 TMP_ROOT=$(fm_test_tmproot fm-kimi-harness)
 KIMI_RUNTIME_TASK_TMP=
-find_python_with_tomllib() {
-  local candidate
-  while IFS= read -r candidate; do
-    if "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-  done < <(type -a -p python3 2>/dev/null)
-  return 1
-}
-
-PYTHON_BIN=$(find_python_with_tomllib) || fail "test needs python3 with tomllib"
+PYTHON_BIN=$(command -v python3) || fail "test needs python3"
 PYTHON_BIN_DIR=$(dirname "$PYTHON_BIN")
-PATH="$PYTHON_BIN_DIR:$PATH"
-export PATH
 JQ_BIN=$(command -v jq) || fail "test needs jq"
 BASE_PATH=${FM_TEST_BASE_PATH:-$PYTHON_BIN_DIR:/usr/bin:/bin:/usr/sbin:/sbin}
 
@@ -146,7 +131,7 @@ esac
 exit 0
 SH
   chmod +x "$fakebin/tmux"
-  fm_fake_exit0 "$fakebin" treehouse gh
+  fm_fake_exit0 "$fakebin" treehouse gh-axi gh
   fm_fake_exit0 "$fakebin" kimi
   ln -s "$JQ_BIN" "$fakebin/jq"
   printf '%s\n' "$fakebin"
@@ -494,7 +479,7 @@ test_kimi_missing_binary_refuses_before_pane_creation() {
 }
 
 test_kimi_unconfirmed_delivery_fails_loudly() {
-  local id rec out rc status_line
+  local id rec out rc
   id=kimi-drop-z2
   rec=$(make_spawn_case drop "$id")
   read_spawn_record "$rec"
@@ -504,10 +489,8 @@ test_kimi_unconfirmed_delivery_fails_loudly() {
   [ "$rc" -ne 0 ] || fail "an unconfirmed kimi delivery should fail"
   assert_contains "$out" "kimi brief pointer delivery was not confirmed" \
     "unconfirmed kimi delivery lacked a loud diagnostic"
-  status_line=$(last_status_line "$HOME_DIR/state/$id.status")
-  [ "$(status_line_verb "$status_line")" = failed ] \
-    && [ "$(status_line_note "$status_line")" = 'kimi brief pointer delivery was not confirmed' ] \
-    || fail "unconfirmed kimi delivery did not leave a supervisor-visible failure"
+  assert_grep 'failed: kimi brief pointer delivery was not confirmed' "$HOME_DIR/state/$id.status" \
+    "unconfirmed kimi delivery did not leave a supervisor-visible failure"
   pass "fm-spawn: kimi treats a silent pointer drop as a failed spawn"
 }
 
@@ -523,6 +506,9 @@ test_kimi_readiness_gate_precedes_pointer() {
   assert_contains "$out" "kimi did not show a verified ready signal" \
     "kimi readiness failure lacked a loud diagnostic"
   [ ! -s "$CASE_DIR/pointer.log" ] || fail "kimi pointer was sent before readiness"
+  jq -e --arg id "$id" 'any(.endpoints[]; .id == $id)' \
+    "$HOME_DIR/state/home-summary.json" >/dev/null \
+    || fail "kimi readiness failure omitted its durable endpoint from the home summary"
   pass "fm-spawn: kimi never sends the brief pointer before an observable ready signal"
 }
 

@@ -151,26 +151,6 @@ test_newest_copy_first_on_path_is_silent() {
   pass "no report when PATH already resolves the newest installed copy"
 }
 
-test_empty_path_entry_resolves_the_current_directory() {
-  local home current fresh out report
-  home=$(make_home empty-path)
-  current="$TMP_ROOT/empty-path/current"
-  fresh="$TMP_ROOT/empty-path/fresh/bin"
-  make_copy "$current" "$TOOL" 'herdr 0.8.0'
-  make_copy "$fresh" "$TOOL" 'herdr 0.8.2'
-  write_config "$home" "{\"tools\":[{\"name\":\"herdr\",\"command\":\"$TOOL\"}]}"
-  out="$home/out.txt"
-  (cd "$current" && run_check "$home" ":$(fixture_path "$fresh")" "$out")
-  report=$(cat "$out")
-  assert_contains "$report" "herdr update not in effect" \
-    "an empty leading PATH entry did not resolve the stale current-directory copy"
-  assert_contains "$report" "PATH resolves 0.8.0 at ./$TOOL" \
-    "the report did not name the current-directory copy selected by PATH"
-  assert_contains "$report" "0.8.2 is installed at $fresh/$TOOL" \
-    "the report did not compare the later newer copy"
-  pass "an empty PATH entry resolves the current directory in PATH order"
-}
-
 test_identical_versions_are_silent() {
   local home first second out
   home=$(make_home same-version)
@@ -356,7 +336,15 @@ SH
   chmod 0755 "$dir/no-mistakes-fixture"
   write_config "$home" '{"tools":[{"name":"no-mistakes","command":"no-mistakes-fixture","version_args":["--version"],"announce_args":["--help"],"announce_pattern":"A new version of no-mistakes is available: [^ ]+ -> [^ ]+"}]}'
   out="$home/out.txt"
-  run_check "$home" "$(fixture_path "$dir")" "$out" FM_TOOL_UPDATE_BUDGET_SECS=1
+  # The deadline is whole-second granular (real_epoch is `date +%s`), so a
+  # budget of 1 leaves headroom anywhere in (0, 1] seconds: when the sweep
+  # starts near the end of a second the very first budget check already reads
+  # as exhausted and the sweep reports "before every copy answered" instead of
+  # reaching the announcement step this case is about. A budget of 2 guarantees
+  # more than a full second of headroom for the millisecond-scale work before
+  # the copy loop, while the version probe below (bounded, then sleeping 30)
+  # still exhausts the budget before the announcement check.
+  run_check "$home" "$(fixture_path "$dir")" "$out" FM_TOOL_UPDATE_BUDGET_SECS=2
   report=$(cat "$out")
   assert_contains "$report" "no-mistakes check failed: the time budget ran out before the update announcement was checked" "an announcement source that was never asked was not reported"
   pass "an announcement source the budget could not reach is reported, not read as current"
@@ -661,12 +649,6 @@ test_malformed_registry_is_reported_not_ignored() {
   rm -f "$home/state/.tool-updates"
   run_check "$home" "$PATH" "$out"
   assert_contains "$(cat "$out")" "tool herdr announce_args needs announce_pattern" "a command to search with no pattern to search for was accepted"
-
-  write_config "$home" "{\"tools\":[{\"name\":\"firstmate\",\"git\":{\"repo\":\"$TMP_ROOT/bad-config\",\"remote\":\"--get-url\",\"branch\":\"main\"}}]}"
-  rm -f "$home/state/.tool-updates"
-  run_check "$home" "$PATH" "$out"
-  assert_contains "$(cat "$out")" "tool firstmate git.remote must be a simple remote name" \
-    "a leading-dash remote name was accepted as a git option"
   pass "a malformed registry is reported instead of quietly skipped"
 }
 
@@ -1009,9 +991,6 @@ test_armed_check_wakes_the_watcher_with_the_skew_report() {
   make_copy "$stale" "$TOOL" 'herdr 0.8.0'
   make_copy "$fresh" "$TOOL" 'herdr 0.8.2'
   write_config "$home" "{\"tools\":[{\"name\":\"herdr\",\"command\":\"$TOOL\"}]}"
-  printf '%s\n' fm-pr-check-migration-scan-v1 > "$home/state/.pr-check-migration-scan-v1"
-  printf '%s\n' fm-pr-check-migration-v1 > "$home/state/.pr-check-migration-v1"
-  chmod 0600 "$home/state/.pr-check-migration-scan-v1" "$home/state/.pr-check-migration-v1"
   FM_HOME="$home" "$CHECK" arm >/dev/null || fail "could not arm the watched tool check"
 
   out="$home/out.txt"
@@ -1028,7 +1007,6 @@ test_armed_check_wakes_the_watcher_with_the_skew_report() {
 
 test_path_skew_is_reported_from_every_copy
 test_newest_copy_first_on_path_is_silent
-test_empty_path_entry_resolves_the_current_directory
 test_identical_versions_are_silent
 test_one_copy_reached_twice_is_probed_once
 test_unreadable_version_is_a_failure_not_a_pass
