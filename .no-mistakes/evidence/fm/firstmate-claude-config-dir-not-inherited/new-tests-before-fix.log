@@ -1,0 +1,18 @@
+bin/fm-spawn.sh + bin/fm-config-inherit-lib.sh at: 9158fce64df3 / 0b3ec94f091e
+not ok - Claude config root present value should report pushed (missing: 'claude-config-dir: pushed')
+--- output ---
+config-push: $W/claude-config-inherit/home -> live secondmate homes
+secondmate sm ($W/claude-config-inherit/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  data/captain-shared.md: unchanged
+not ok - a Claude launch without an environment override did not use config/claude-config-dir (missing: 'CLAUDE_CONFIG_DIR='$W/spawn-claude-config-file/configured root'')
+--- output ---
+FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='$W/spawn-claude-config-file/home' FM_HOME='$W/spawn-claude-config-file/sm' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=autoarm env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --dangerously-skip-permissions "$('/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-basebin.SBevvP/bin/fm-operational-input.sh' encode launch-brief < '$W/spawn-claude-config-file/sm/data/charter.md')"
+not ok - a configured Claude root that is not a directory must refuse the spawn: expected exit 1, got 0
+before-fix driver exit=1

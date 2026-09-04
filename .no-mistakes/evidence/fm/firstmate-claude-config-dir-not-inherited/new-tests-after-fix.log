@@ -1,0 +1,5 @@
+bin/fm-spawn.sh + bin/fm-config-inherit-lib.sh at: bac64e62145b / 0c71b51ee6e7
+ok - config-push: Claude configuration root pushes, stays unchanged, and converges absence
+ok - spawn: Claude configuration root resolves file, environment, unset, and non-Claude cases
+ok - spawn: an invalid configured Claude root refuses with the owning file named
+after-fix driver exit=0

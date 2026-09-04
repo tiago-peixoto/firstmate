@@ -1,0 +1,137 @@
+################ 1. fm-config-push.sh: present -> pushed, again -> unchanged, removed -> absence
+
+$ cat $W/home/config/claude-config-dir   # primary home
+$W/demo/claude-account-pers
+
+$ bin/fm-config-push.sh
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 0s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair missing watcher supervision according to the session-start block for this harness; do not use shell &.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+config-push: $W/demo/home -> live secondmate homes
+secondmate sm ($W/demo/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  claude-config-dir: pushed
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  data/captain-shared.md: unchanged
+  config-reread: sent
+exit=0
+
+$ cat $W/sm/config/claude-config-dir     # secondmate home now has the inherited copy
+$W/demo/claude-account-pers
+
+$ cat <config-reread instruction delivered to secondmate sm>
+These inherited config files changed. Re-read and apply their exact contents at every future intake. They are defaults/rules and do not remove your judgment to choose differently when warranted.
+
+config/claude-config-dir
+-----BEGIN config/claude-config-dir-----
+$W/demo/claude-account-pers
+-----END config/claude-config-dir-----
+
+$ bin/fm-config-push.sh                    # second push, nothing changed
+WARNING: watcher still down (same stale episode; last beat: 3s ago, grace 300s) - full banner already printed this episode.
+config-push: $W/demo/home -> live secondmate homes
+secondmate sm ($W/demo/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  claude-config-dir: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  data/captain-shared.md: unchanged
+exit=0
+
+$ rm $W/home/config/claude-config-dir && bin/fm-config-push.sh
+WARNING: watcher still down (same stale episode; last beat: 4s ago, grace 300s) - full banner already printed this episode.
+config-push: $W/demo/home -> live secondmate homes
+secondmate sm ($W/demo/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  claude-config-dir: pushed - mirrored primary absence
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  data/captain-shared.md: unchanged
+  config-reread: sent
+exit=0
+
+$ ls $W/sm/config/claude-config-dir
+ls: $W/demo/sm/config/claude-config-dir: No such file or directory
+
+$ cat <latest config-reread instruction>
+These inherited config files changed. Re-read and apply their exact contents at every future intake. They are defaults/rules and do not remove your judgment to choose differently when warranted.
+
+config/claude-config-dir
+-----BEGIN config/claude-config-dir-----
+ABSENT
+-----END config/claude-config-dir-----
+
+################ 2. fm-spawn.sh --secondmate on claude: config file supplies the root
+
+$ fm-spawn.sh sm $W/sm --harness claude --secondmate   (no CLAUDE_CONFIG_DIR in env)
+warning: secondmate sm sync skipped before launch: primary default-branch commit cannot be resolved
+spawned sm harness=claude kind=secondmate mode=secondmate yolo=off window=firstmate:fm-sm worktree=$W/spawn-file/sm
+exit=0
+
+$ launch line sent to the tmux pane:
+FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='$W/spawn-file/home' FM_HOME='$W/spawn-file/sm' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=autoarm CLAUDE_CONFIG_DIR='$W/spawn-file/claude-account-pers' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --dangerously-skip-permissions "$('/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M1PWHX62A2F65K5CJG2PMKK0/bin/fm-operational-input.sh' encode launch-brief < '$W/spawn-file/sm/data/charter.md')"
+
+################ 3. explicit CLAUDE_CONFIG_DIR in the spawner environment wins over the file
+
+$ CLAUDE_CONFIG_DIR=$W/from-env fm-spawn.sh sm $W/sm --harness claude --secondmate
+warning: secondmate sm sync skipped before launch: primary default-branch commit cannot be resolved
+spawned sm harness=claude kind=secondmate mode=secondmate yolo=off window=firstmate:fm-sm worktree=$W/spawn-env/sm
+exit=0
+
+$ launch line:
+FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='$W/spawn-env/home' FM_HOME='$W/spawn-env/sm' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=autoarm CLAUDE_CONFIG_DIR='$W/spawn-env/from-env' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --dangerously-skip-permissions "$('/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M1PWHX62A2F65K5CJG2PMKK0/bin/fm-operational-input.sh' encode launch-brief < '$W/spawn-env/sm/data/charter.md')"
+
+################ 4. neither env nor file: no prefix (Claude default root)
+
+$ fm-spawn.sh sm $W/sm --harness claude --secondmate
+warning: secondmate sm sync skipped before launch: primary default-branch commit cannot be resolved
+spawned sm harness=claude kind=secondmate mode=secondmate yolo=off window=firstmate:fm-sm worktree=$W/spawn-unset/sm
+exit=0
+
+$ launch line:
+FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='$W/spawn-unset/home' FM_HOME='$W/spawn-unset/sm' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=autoarm env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --dangerously-skip-permissions "$('/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M1PWHX62A2F65K5CJG2PMKK0/bin/fm-operational-input.sh' encode launch-brief < '$W/spawn-unset/sm/data/charter.md')"
+
+################ 5. configured path is not an existing directory: spawn refused
+
+$ fm-spawn.sh sm $W/sm --harness claude --secondmate
+error: config/claude-config-dir does not name an existing directory: $W/spawn-invalid/does-not-exist (file: $W/spawn-invalid/home/config/claude-config-dir)
+exit=1
+
+$ launch log (should be empty):
+(end)
+
+################ 6. non-Claude harness never gets the prefix, even with file + env set
+
+$ CLAUDE_CONFIG_DIR=$W/root fm-spawn.sh sm $W/sm --harness codex --secondmate
+warning: secondmate sm sync skipped before launch: primary default-branch commit cannot be resolved
+spawned sm harness=codex kind=secondmate mode=secondmate yolo=off window=firstmate:fm-sm worktree=$W/spawn-codex/sm
+exit=0
+
+$ launch line:
+FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='$W/spawn-codex/home' FM_HOME='$W/spawn-codex/sm' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=persistent env -u CURSOR_AGENT -u CURSOR_INVOKED_AS codex --dangerously-bypass-approvals-and-sandbox "$('/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M1PWHX62A2F65K5CJG2PMKK0/bin/fm-operational-input.sh' encode launch-brief < '$W/spawn-codex/sm/data/charter.md')"
+
+################ 7. crewmate (ship) spawn from a home with the file: same prefix on the claude launch
+
+$ fm-spawn.sh ship-a1 $W/ship/project --mode no-mistakes --yolo off   (crew-harness=claude)
+warning: $W/ship/home/data/ship-a1/brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+spawned ship-a1 harness=claude kind=ship mode=no-mistakes yolo=off window=firstmate:fm-ship-a1 worktree=$W/ship/wt
+
+$ launch line:
+CLAUDE_CONFIG_DIR='$W/ship/claude-account-pers' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --dangerously-skip-permissions "$('/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M1PWHX62A2F65K5CJG2PMKK0/bin/fm-operational-input.sh' encode launch-brief < '$W/ship/home/data/ship-a1/brief.md')"
