@@ -80,10 +80,16 @@
 #                          inactive terminal outcome that still lacks its durable
 #                          upstream receipt
 #   check: secondmate wake-loop stalled: mate=<id> row=<seq> age=<seconds>s
-#                          the oldest valid row in an endpoint-recorded local
-#                          secondmate home's durable wake queue exceeded
-#                          FM_SECONDMATE_WAKE_STALL_SECS; observation is read-only
-#                          and one parent receipt suppresses repeats for that row
+#                          an idle endpoint-recorded local secondmate left its
+#                          oldest valid durable wake-queue row unacknowledged for
+#                          FM_SECONDMATE_WAKE_STALL_SECS past the later of row
+#                          arrival and the settled time bin/fm-busy-lib.sh
+#                          reports for that idle verdict's own source. An exact
+#                          busy verdict is exempt, while a dead or missing
+#                          endpoint, an unknown verdict, or an idle verdict with
+#                          no settled time waits four hours, covering the
+#                          observed 2h27m legitimate turn, before failing toward
+#                          the alarm.
 # For normal supervision, resume the session-start primary-harness protocol
 # after each printed reason. Direct duplicate invocations of this script still
 # no-op through the watcher singleton lock.
@@ -215,8 +221,9 @@ STALE_ESCALATE_SECS=${FM_STALE_ESCALATE_SECS:-240}  # idle secs before a provabl
 # between completed turns, including long tool calls, builds, or test runs.
 BUSY_TURN_MAX_SECS=${FM_BUSY_TURN_MAX_SECS:-3600}
 # A local secondmate's foreign queue is checked on every poll, but only after this
-# bounded age can it produce a parent notification.
+# bounded idle age can it produce a parent notification.
 SECONDMATE_WAKE_STALL_SECS=${FM_SECONDMATE_WAKE_STALL_SECS:-60}
+SECONDMATE_WAKE_STALL_UNKNOWN_SECS=14400
 # A crew that declared a pause is idling on a known external wait, so its stale
 # pane is absorbed rather than wedge-escalated.
 # A captain-held or paused crew whose agent has confidently exited uses the same
@@ -621,13 +628,14 @@ secondmate_oldest_queue_row() {  # <queue-path>
 }
 
 # Surface one durable parent check for one unchanged foreign row after its
-# bounded age. The primary marker and queued-key check make repeated watcher
+# bounded idle age. The primary marker and queued-key check make repeated watcher
 # cycles converge without a notification storm, while an empty queue removes
 # only this home's marker so a later row can be observed.
 secondmate_wake_stall_tick() {
-  local now=$(( $(date +%s) )) threshold=$SECONDMATE_WAKE_STALL_SECS
-  local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued age reason
-  case "$threshold" in ''|*[!0-9]*|0) threshold=60 ;; esac
+  local now=$(( $(date +%s) )) idle_threshold=$SECONDMATE_WAKE_STALL_SECS
+  local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued
+  local backend target busy_verdict settled clock_epoch threshold age reason
+  case "$idle_threshold" in ''|*[!0-9]*|0) idle_threshold=60 ;; esac
   # Endpoint metadata admits this queue-loop check; secondmate-liveness owns registered mates whose endpoint is missing or dead.
   for meta in "$STATE"/*.meta; do
     [ -e "$meta" ] || continue
@@ -659,7 +667,27 @@ $row
 EOF
     case "$epoch" in ''|*[!0-9]*) continue ;; esac
     case "$seq" in ''|*[!0-9]*) continue ;; esac
-    age=$((now - epoch))
+    backend=$(fm_backend_of_meta "$meta")
+    target=$(fm_backend_target_of_meta "$meta")
+    busy_verdict=unknown
+    case "$(fm_backend_agent_state "$backend" "$target")" in
+      dead|missing) ;;
+      *) busy_verdict=$(fm_busy_classify_meta "$meta" "$task" "$STATE") ;;
+    esac
+    clock_epoch=$epoch
+    threshold=$idle_threshold
+    case "${busy_verdict%% *}" in
+      busy) continue ;;
+      idle)
+        if settled=$(fm_busy_settled_epoch "$STATE" "$task" "${busy_verdict#* }"); then
+          [ "$settled" -le "$clock_epoch" ] || clock_epoch=$settled
+        else
+          threshold=$SECONDMATE_WAKE_STALL_UNKNOWN_SECS
+        fi
+        ;;
+      *) threshold=$SECONDMATE_WAKE_STALL_UNKNOWN_SECS ;;
+    esac
+    age=$((now - clock_epoch))
     [ "$age" -ge "$threshold" ] || continue
     row_key="$epoch-$seq"
     receipt="$receipt_dir/$row_key"
