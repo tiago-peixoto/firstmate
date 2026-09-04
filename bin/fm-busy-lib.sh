@@ -54,6 +54,10 @@
 #      temporary regex fallback classifies a grok task from its rendered tail,
 #      then unknown missing
 #   5. malformed, stale, or untrusted records -> unknown, never a fallback
+# fm_busy_settled_epoch reports when a verdict's source last wrote its
+# evidence (the record file, or a pull source's transcript or session log),
+# so a caller can age an idle verdict from the verdict's own settled time
+# without knowing which harness produced it.
 # The Grok arm is the ONLY rendered-text classification that survives the
 # redesign, because Grok's structured lifecycle was not credited-live-verified
 # in the approved audit; it is scoped to harness=grok and can never classify
@@ -972,6 +976,30 @@ fm_busy_classify_meta() {  # <meta-file> <id> <state-dir> [tail40]
     return 0
   fi
   fm_busy_classify "$backend" "$target" "$harness" "$id" "$state" "$tail40"
+}
+
+# fm_busy_settled_epoch: the epoch at which the evidence behind <source> was
+# last written - the task's own record for a push source, or the transcript
+# or session log for a pull source. Fails for a source that keeps no durable
+# evidence (grok-regex, herdr-native, the classifier-only failure sources),
+# for a record that names a different source, or when the evidence cannot be
+# resolved, so the caller can treat that idle verdict as an unavailable read
+# rather than guess a settled time.
+fm_busy_settled_epoch() {  # <state-dir> <id> <source>
+  local evidence epoch
+  case "$3" in
+    cursor-transcript) evidence=$(fm_busy_cursor_transcript "$1" "$2") || return 1 ;;
+    muse-session-log) evidence=$(fm_busy_muse_session_log "$1" "$2") || return 1 ;;
+    *)
+      evidence=$(fm_busy_record_read "$1" "$2") || return 1
+      evidence=${evidence#* }
+      [ "${evidence%% *}" = "$3" ] || return 1
+      evidence=$(fm_busy_record_path "$1" "$2")
+      ;;
+  esac
+  epoch=$(stat -c %Y "$evidence" 2>/dev/null) || epoch=$(stat -f %m "$evidence" 2>/dev/null) || return 1
+  case "$epoch" in ''|*[!0-9]*) return 1 ;; esac
+  printf '%s' "$epoch"
 }
 
 # fm_busy_is_busy: boolean view for callers that only gate on provable
