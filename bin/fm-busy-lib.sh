@@ -983,7 +983,8 @@ fm_busy_classify_meta() {  # <meta-file> <id> <state-dir> [tail40]
 # or session log for a pull source. Fails for a source that keeps no durable
 # evidence (grok-regex, herdr-native, the classifier-only failure sources),
 # for a record that names a different source, or when the evidence cannot be
-# resolved, so the caller falls back to its own clock rather than guessing.
+# resolved, so the caller can treat that idle verdict as an unavailable read
+# rather than guess a settled time.
 fm_busy_settled_epoch() {  # <state-dir> <id> <source>
   local evidence epoch
   case "$3" in

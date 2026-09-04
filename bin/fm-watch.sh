@@ -85,9 +85,11 @@
 #                          FM_SECONDMATE_WAKE_STALL_SECS past the later of row
 #                          arrival and the settled time bin/fm-busy-lib.sh
 #                          reports for that idle verdict's own source. An exact
-#                          busy verdict is exempt, and an unavailable busy read
-#                          waits four hours, covering the observed 2h27m
-#                          legitimate turn, before failing toward the alarm.
+#                          busy verdict is exempt, while a dead or missing
+#                          endpoint, an unknown verdict, or an idle verdict with
+#                          no settled time waits four hours, covering the
+#                          observed 2h27m legitimate turn, before failing toward
+#                          the alarm.
 # For normal supervision, resume the session-start primary-harness protocol
 # after each printed reason. Direct duplicate invocations of this script still
 # no-op through the watcher singleton lock.
@@ -631,7 +633,7 @@ secondmate_oldest_queue_row() {  # <queue-path>
 secondmate_wake_stall_tick() {
   local now=$(( $(date +%s) )) idle_threshold=$SECONDMATE_WAKE_STALL_SECS
   local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued
-  local backend target agent_state busy_verdict settled clock_epoch threshold age reason
+  local backend target busy_verdict settled clock_epoch threshold age reason
   case "$idle_threshold" in ''|*[!0-9]*|0) idle_threshold=60 ;; esac
   # Endpoint metadata admits this queue-loop check; secondmate-liveness owns registered mates whose endpoint is missing or dead.
   for meta in "$STATE"/*.meta; do
@@ -666,21 +668,21 @@ EOF
     case "$seq" in ''|*[!0-9]*) continue ;; esac
     backend=$(fm_backend_of_meta "$meta")
     target=$(fm_backend_target_of_meta "$meta")
-    agent_state=$(fm_backend_agent_state "$backend" "$target")
     busy_verdict=unknown
-    if [ "$agent_state" = alive ]; then
-      busy_verdict=$(fm_busy_classify_meta "$meta" "$task" "$STATE")
-    fi
+    case "$(fm_backend_agent_state "$backend" "$target")" in
+      dead|missing) ;;
+      *) busy_verdict=$(fm_busy_classify_meta "$meta" "$task" "$STATE") ;;
+    esac
     clock_epoch=$epoch
     threshold=$idle_threshold
     case "${busy_verdict%% *}" in
       busy) continue ;;
       idle)
-        settled=$(fm_busy_settled_epoch "$STATE" "$task" "${busy_verdict#* }" || true)
-        case "$settled" in
-          ''|*[!0-9]*) ;;
-          *) [ "$settled" -le "$clock_epoch" ] || clock_epoch=$settled ;;
-        esac
+        if settled=$(fm_busy_settled_epoch "$STATE" "$task" "${busy_verdict#* }"); then
+          [ "$settled" -le "$clock_epoch" ] || clock_epoch=$settled
+        else
+          threshold=$SECONDMATE_WAKE_STALL_UNKNOWN_SECS
+        fi
         ;;
       *) threshold=$SECONDMATE_WAKE_STALL_UNKNOWN_SECS ;;
     esac
