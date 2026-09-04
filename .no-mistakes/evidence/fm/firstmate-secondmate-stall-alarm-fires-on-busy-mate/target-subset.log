@@ -1,0 +1,19 @@
+tree=/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M1PHJM4XVP6S83E0SMPFGZE1
+ROOT=/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M1PHJM4XVP6S83E0SMPFGZE1
+TMP_ROOT=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-wake-tests.JAXYDE
+ok - a busy secondmate is exempt from foreign queue stall detection
+ok - an idle secondmate fires once using age since its turn ended
+ok - a secondmate row starts its stall clock when the active turn ends
+ok - a cursor secondmate row starts its stall clock when its transcript turn ends
+ok - an unavailable secondmate busy read fails toward the alarm after four hours
+ok - a grok idle verdict without a settled time fails toward the alarm only after four hours
+ok - an unverified endpoint still ages its row from the mate's own idle record
+ok - foreign secondmate queue stalls notify once, remain byte-stable, and stay quiet when empty or healthy
+ok - secondmate stall markers reject symlinks without touching their targets
+ok - stall publication acknowledgement closes the pre-marker crash window
+ok - empty prefix mate cleanup preserves another mate's stall receipt
+red=0
+
+real	0m34.385s
+user	0m7.539s
+sys	0m13.719s
