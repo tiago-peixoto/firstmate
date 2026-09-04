@@ -262,11 +262,29 @@ make_secondmate_stall_case() {  # <name> <busy|idle|unknown>
   printf '%s\n' "$dir"
 }
 
-run_secondmate_stall_checkpoint() {  # <case-dir> <idle-threshold> <output>
-  local dir=$1 threshold=$2 out=$3
+make_secondmate_cursor_stall_case() {  # <name> -> echoes <case-dir>; transcript at <case-dir>/transcript.jsonl
+  local name=$1 dir sub projects workspace project
+  dir=$(make_case "$name")
+  sub="$dir/secondmate"
+  projects="$dir/cursor-projects"
+  workspace="$dir/cursor-worktree"
+  project="$projects/opaque-slug"
+  mkdir -p "$sub/state" "$workspace" "$project/agent-transcripts/conv-mate"
+  printf 'mate\n' > "$sub/.fm-secondmate-home"
+  printf 'window=firstmate:fm-mate\nkind=secondmate\nharness=cursor\nbackend=tmux\nhome=%s\n' \
+    "$sub" > "$dir/state/mate.meta"
+  printf '{"workspacePath": "%s"}\n' "$workspace" > "$project/.workspace-trusted"
+  printf 'projects_root=%s\nworkspace_root=%s\n' "$projects" "$workspace" \
+    > "$dir/state/mate.cursor-session"
+  ln -s "$project/agent-transcripts/conv-mate/conv-mate.jsonl" "$dir/transcript.jsonl"
+  printf '%s\n' "$dir"
+}
+
+run_secondmate_stall_checkpoint() {  # <case-dir> <idle-threshold> <output> [pane-command]
+  local dir=$1 threshold=$2 out=$3 pane_command=${4:-claude}
   PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$dir/state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
-    FM_FAKE_TMUX_CURRENT_COMMAND=claude FM_SECONDMATE_WAKE_STALL_SECS="$threshold" \
+    FM_FAKE_TMUX_CURRENT_COMMAND="$pane_command" FM_SECONDMATE_WAKE_STALL_SECS="$threshold" \
     FM_POLL=1 FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
     "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$out" 2> "$out.err" || true
 }
@@ -306,9 +324,7 @@ test_secondmate_idle_turn_fires_once_from_turn_end_age() {
   turn_end=$(( $(date +%s) - 10 ))
   printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$row_epoch" > "$sub/state/.wake-queue"
   cp "$sub/state/.wake-queue" "$row_before"
-  : > "$state/mate.turn-ended"
-  set_file_mtime "$turn_end" "$state/mate.turn-ended"
-  prime_status_seen "$state" "$state/mate.turn-ended"
+  set_file_mtime "$turn_end" "$state/mate.busy-state"
 
   run_secondmate_stall_checkpoint "$dir" 5 "$out"
 
@@ -343,9 +359,6 @@ test_secondmate_row_waits_a_full_threshold_after_turn_end() {
   out="$dir/watch-before.out"
   now=$(date +%s)
   printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$((now - 120))" > "$sub/state/.wake-queue"
-  : > "$state/mate.turn-ended"
-  set_file_mtime "$now" "$state/mate.turn-ended"
-  prime_status_seen "$state" "$state/mate.turn-ended"
 
   run_secondmate_stall_checkpoint "$dir" 60 "$out"
 
@@ -355,13 +368,47 @@ test_secondmate_row_waits_a_full_threshold_after_turn_end() {
   [ "$stall_count" -eq 0 ] \
     || fail "a row was durably published before its post-turn threshold"
 
-  set_file_mtime "$(( $(date +%s) - 61 ))" "$state/mate.turn-ended"
-  prime_status_seen "$state" "$state/mate.turn-ended"
+  set_file_mtime "$(( $(date +%s) - 61 ))" "$state/mate.busy-state"
   run_secondmate_stall_checkpoint "$dir" 60 "$dir/watch-after.out"
 
   grep -F 'check: secondmate wake-loop stalled: mate=mate row=7' "$dir/watch-after.out" >/dev/null \
     || fail "an idle foreign row did not fire after its post-turn threshold"
   pass "a secondmate row starts its stall clock when the active turn ends"
+}
+
+test_secondmate_cursor_row_waits_for_transcript_turn_end() {
+  local dir state sub transcript stall_count
+  dir=$(make_secondmate_cursor_stall_case secondmate-cursor-turn)
+  state="$dir/state"
+  sub="$dir/secondmate"
+  transcript="$dir/transcript.jsonl"
+  printf '{"role":"user"}\n' > "$transcript"
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' \
+    "$(( $(date +%s) - 20000 ))" > "$sub/state/.wake-queue"
+
+  run_secondmate_stall_checkpoint "$dir" 60 "$dir/watch-busy.out" cursor-agent
+
+  ! grep -F 'secondmate wake-loop stalled' "$dir/watch-busy.out" >/dev/null \
+    || fail "a cursor mate inside a transcript turn was reported as a stalled wake loop"
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
+  [ "$stall_count" -eq 0 ] \
+    || fail "a cursor mate inside a transcript turn received a durable parent stall notification"
+
+  printf '{"type":"turn_ended","status":"success"}\n' >> "$transcript"
+  run_secondmate_stall_checkpoint "$dir" 60 "$dir/watch-settled.out" cursor-agent
+
+  ! grep -F 'secondmate wake-loop stalled' "$dir/watch-settled.out" >/dev/null \
+    || fail "a cursor row fired before a full idle threshold elapsed after its transcript settled"
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
+  [ "$stall_count" -eq 0 ] \
+    || fail "a cursor row was durably published before its post-turn threshold"
+
+  set_file_mtime "$(( $(date +%s) - 61 ))" "$transcript"
+  run_secondmate_stall_checkpoint "$dir" 60 "$dir/watch-after.out" cursor-agent
+
+  grep -F 'check: secondmate wake-loop stalled: mate=mate row=7' "$dir/watch-after.out" >/dev/null \
+    || fail "an idle cursor row did not fire after its transcript turn-end threshold"
+  pass "a cursor secondmate row starts its stall clock when its transcript turn ends"
 }
 
 test_secondmate_unknown_busy_state_uses_long_turn_threshold() {
@@ -1603,6 +1650,7 @@ test_malformed_presentation_lock_reports_acquire_failure
 test_secondmate_busy_turn_exempts_aged_foreign_row
 test_secondmate_idle_turn_fires_once_from_turn_end_age
 test_secondmate_row_waits_a_full_threshold_after_turn_end
+test_secondmate_cursor_row_waits_for_transcript_turn_end
 test_secondmate_unknown_busy_state_uses_long_turn_threshold
 test_secondmate_foreign_queue_stall_is_one_shot_and_read_only
 test_secondmate_stall_marker_rejects_symlink

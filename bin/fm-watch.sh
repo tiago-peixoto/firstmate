@@ -82,9 +82,11 @@
 #   check: secondmate wake-loop stalled: mate=<id> row=<seq> age=<seconds>s
 #                          an idle endpoint-recorded local secondmate left its
 #                          oldest valid durable wake-queue row unacknowledged for
-#                          FM_SECONDMATE_WAKE_STALL_SECS after its turn ended.
-#                          An exact busy verdict is exempt; an unavailable busy
-#                          read waits four hours, covering the observed 2h27m
+#                          FM_SECONDMATE_WAKE_STALL_SECS past the later of row
+#                          arrival and the settled time bin/fm-busy-lib.sh
+#                          reports for that idle verdict's own source. An exact
+#                          busy verdict is exempt, and an unavailable busy read
+#                          waits four hours, covering the observed 2h27m
 #                          legitimate turn, before failing toward the alarm.
 # For normal supervision, resume the session-start primary-harness protocol
 # after each printed reason. Direct duplicate invocations of this script still
@@ -629,7 +631,7 @@ secondmate_oldest_queue_row() {  # <queue-path>
 secondmate_wake_stall_tick() {
   local now=$(( $(date +%s) )) idle_threshold=$SECONDMATE_WAKE_STALL_SECS
   local meta task kind remote_host home queue row epoch seq row_key marker receipt receipt_dir notify_key queued
-  local backend target agent_state busy_verdict turn_end clock_epoch threshold age reason
+  local backend target agent_state busy_verdict settled clock_epoch threshold age reason
   case "$idle_threshold" in ''|*[!0-9]*|0) idle_threshold=60 ;; esac
   # Endpoint metadata admits this queue-loop check; secondmate-liveness owns registered mates whose endpoint is missing or dead.
   for meta in "$STATE"/*.meta; do
@@ -674,10 +676,10 @@ EOF
     case "${busy_verdict%% *}" in
       busy) continue ;;
       idle)
-        turn_end=$(stat_mtime "$STATE/$task.turn-ended" || true)
-        case "$turn_end" in
+        settled=$(fm_busy_settled_epoch "$STATE" "$task" "${busy_verdict#* }" || true)
+        case "$settled" in
           ''|*[!0-9]*) ;;
-          *) [ "$turn_end" -le "$clock_epoch" ] || clock_epoch=$turn_end ;;
+          *) [ "$settled" -le "$clock_epoch" ] || clock_epoch=$settled ;;
         esac
         ;;
       *) threshold=$SECONDMATE_WAKE_STALL_UNKNOWN_SECS ;;
