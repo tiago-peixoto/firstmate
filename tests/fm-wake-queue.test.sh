@@ -231,6 +231,165 @@ test_drain_dedupes_obvious_duplicates() {
 # plain drain-and-handle turn that runs no other supervision script. It must warn
 # when work is in flight with no live watcher, and stay silent right after a
 # normal fire from a live watcher with a fresh beacon, so it never false-alarms.
+set_file_mtime() {  # <epoch> <file>
+  local epoch=$1 file=$2 stamp
+  if stamp=$(date -r "$epoch" +%Y%m%d%H%M.%S 2>/dev/null); then
+    touch -t "$stamp" "$file"
+  else
+    stamp=$(date -d "@$epoch" +%Y%m%d%H%M.%S)
+    touch -t "$stamp" "$file"
+  fi
+}
+
+make_secondmate_stall_case() {  # <name> <busy|idle|unknown>
+  local name=$1 semantic_state=$2 dir state sub
+  dir=$(make_case "$name")
+  state="$dir/state"
+  sub="$dir/secondmate"
+  mkdir -p "$sub/state"
+  printf 'mate\n' > "$sub/.fm-secondmate-home"
+  printf 'window=firstmate:fm-mate\nkind=secondmate\nharness=claude\nbackend=tmux\nhome=%s\n' \
+    "$sub" > "$state/mate.meta"
+  case "$semantic_state" in
+    busy|idle)
+      "$ROOT/bin/fm-busy-event.sh" arm "$state" mate --state "$semantic_state" \
+        --source claude-hook --event fixture >/dev/null \
+        || fail "could not record the mate's $semantic_state turn state"
+      ;;
+    unknown) ;;
+    *) fail "invalid secondmate stall fixture state: $semantic_state" ;;
+  esac
+  printf '%s\n' "$dir"
+}
+
+run_secondmate_stall_checkpoint() {  # <case-dir> <idle-threshold> <output>
+  local dir=$1 threshold=$2 out=$3
+  PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" \
+    FM_STATE_OVERRIDE="$dir/state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' \
+    FM_FAKE_TMUX_CURRENT_COMMAND=claude FM_SECONDMATE_WAKE_STALL_SECS="$threshold" \
+    FM_POLL=1 FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
+    "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$out" 2> "$out.err" || true
+}
+
+secondmate_mate_stall_count() {  # <parent-queue>
+  [ -f "$1" ] || { printf '0\n'; return; }
+  awk '/secondmate-wake-loop-mate-/ { count++ } END { print count + 0 }' "$1"
+}
+
+test_secondmate_busy_turn_exempts_aged_foreign_row() {
+  local dir state sub out stall_count
+  dir=$(make_secondmate_stall_case secondmate-busy-turn busy)
+  state="$dir/state"
+  sub="$dir/secondmate"
+  out="$dir/watch.out"
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' \
+    "$(( $(date +%s) - 20000 ))" > "$sub/state/.wake-queue"
+
+  run_secondmate_stall_checkpoint "$dir" 1 "$out"
+
+  ! grep -F 'secondmate wake-loop stalled' "$out" >/dev/null \
+    || fail "a mate inside a turn was reported as a stalled wake loop"
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
+  [ "$stall_count" -eq 0 ] \
+    || fail "a mate inside a turn received a durable parent stall notification"
+  pass "a busy secondmate is exempt from foreign queue stall detection"
+}
+
+test_secondmate_idle_turn_fires_once_from_turn_end_age() {
+  local dir state sub out row_before row_epoch turn_end age stall_count
+  dir=$(make_secondmate_stall_case secondmate-idle-turn idle)
+  state="$dir/state"
+  sub="$dir/secondmate"
+  out="$dir/watch.out"
+  row_before="$dir/foreign-before"
+  row_epoch=$(( $(date +%s) - 100 ))
+  turn_end=$(( $(date +%s) - 10 ))
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$row_epoch" > "$sub/state/.wake-queue"
+  cp "$sub/state/.wake-queue" "$row_before"
+  : > "$state/mate.turn-ended"
+  set_file_mtime "$turn_end" "$state/mate.turn-ended"
+  prime_status_seen "$state" "$state/mate.turn-ended"
+
+  run_secondmate_stall_checkpoint "$dir" 5 "$out"
+
+  age=$(sed -n 's/.*mate=mate row=7 age=\([0-9][0-9]*\)s.*/\1/p' "$out" | head -1)
+  case "$age" in ''|*[!0-9]*) fail "idle mate stall notification omitted its age" ;; esac
+  [ "$age" -ge 5 ] && [ "$age" -le 30 ] \
+    || fail "idle mate stall age $age did not start at the later turn end"
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
+  [ "$stall_count" -eq 1 ] || fail "the idle mate did not publish exactly one stall notification"
+  cmp -s "$row_before" "$sub/state/.wake-queue" \
+    || fail "idle mate stall detection changed the foreign row"
+  FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/drain.out" 2> "$dir/drain.err" \
+    || fail "idle mate stall notification could not be drained"
+  ack_drain_err "$state" "$dir/drain.err" \
+    || fail "idle mate stall notification could not be acknowledged"
+
+  run_secondmate_stall_checkpoint "$dir" 5 "$dir/watch-second.out"
+
+  ! grep -F 'secondmate wake-loop stalled' "$dir/watch-second.out" >/dev/null \
+    || fail "the same idle mate row fired more than once"
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
+  [ "$stall_count" -eq 0 ] \
+    || fail "the same idle mate row was durably published more than once"
+  pass "an idle secondmate fires once using age since its turn ended"
+}
+
+test_secondmate_row_waits_a_full_threshold_after_turn_end() {
+  local dir state sub out now stall_count
+  dir=$(make_secondmate_stall_case secondmate-turn-end-clock idle)
+  state="$dir/state"
+  sub="$dir/secondmate"
+  out="$dir/watch-before.out"
+  now=$(date +%s)
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$((now - 120))" > "$sub/state/.wake-queue"
+  : > "$state/mate.turn-ended"
+  set_file_mtime "$now" "$state/mate.turn-ended"
+  prime_status_seen "$state" "$state/mate.turn-ended"
+
+  run_secondmate_stall_checkpoint "$dir" 60 "$out"
+
+  ! grep -F 'secondmate wake-loop stalled' "$out" >/dev/null \
+    || fail "a row fired before a full idle threshold elapsed after turn end"
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
+  [ "$stall_count" -eq 0 ] \
+    || fail "a row was durably published before its post-turn threshold"
+
+  set_file_mtime "$(( $(date +%s) - 61 ))" "$state/mate.turn-ended"
+  prime_status_seen "$state" "$state/mate.turn-ended"
+  run_secondmate_stall_checkpoint "$dir" 60 "$dir/watch-after.out"
+
+  grep -F 'check: secondmate wake-loop stalled: mate=mate row=7' "$dir/watch-after.out" >/dev/null \
+    || fail "an idle foreign row did not fire after its post-turn threshold"
+  pass "a secondmate row starts its stall clock when the active turn ends"
+}
+
+test_secondmate_unknown_busy_state_uses_long_turn_threshold() {
+  local dir state sub out now stall_count
+  dir=$(make_secondmate_stall_case secondmate-unknown-turn unknown)
+  state="$dir/state"
+  sub="$dir/secondmate"
+  out="$dir/watch-before.out"
+  now=$(date +%s)
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$((now - 600))" > "$sub/state/.wake-queue"
+
+  run_secondmate_stall_checkpoint "$dir" 1 "$out"
+
+  ! grep -F 'secondmate wake-loop stalled' "$out" >/dev/null \
+    || fail "an unavailable busy read used the short idle threshold"
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
+  [ "$stall_count" -eq 0 ] \
+    || fail "an unavailable busy read published before the long-turn threshold"
+
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' \
+    "$(( $(date +%s) - 14401 ))" > "$sub/state/.wake-queue"
+  run_secondmate_stall_checkpoint "$dir" 1 "$dir/watch-after.out"
+
+  grep -F 'check: secondmate wake-loop stalled: mate=mate row=7' "$dir/watch-after.out" >/dev/null \
+    || fail "an unavailable busy read did not fire at the four-hour threshold"
+  pass "an unavailable secondmate busy read fails toward the alarm after four hours"
+}
+
 test_secondmate_foreign_queue_stall_is_one_shot_and_read_only() {
   local dir state sub fakebin out row_before row_after stall_count
   dir=$(make_case secondmate-foreign-stall)
@@ -241,7 +400,7 @@ test_secondmate_foreign_queue_stall_is_one_shot_and_read_only() {
   printf 'mate\n' > "$sub/.fm-secondmate-home"
   printf 'window=firstmate:fm-mate\nkind=secondmate\nharness=claude\nbackend=tmux\nhome=%s\n' \
     "$sub" > "$state/mate.meta"
-  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$(( $(date +%s) - 10 ))" > "$sub/state/.wake-queue"
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$(( $(date +%s) - 20000 ))" > "$sub/state/.wake-queue"
   row_before="$dir/foreign-before"
   row_after="$dir/foreign-after"
   cp "$sub/state/.wake-queue" "$row_before"
@@ -267,7 +426,7 @@ SH
   grep -F 'check: secondmate wake-loop stalled: mate=mate row=7' "$out" >/dev/null \
     || fail "an aged foreign row did not wake the parent checkpoint: $(cat "$out"); err=$(cat "$dir/watch.err"); meta=$(cat "$state/mate.meta"); foreign=$(cat "$sub/state/.wake-queue")"
   [ -s "$state/.wake-queue" ] || fail "the parent notification was not durable"
-  stall_count=$(grep -c 'secondmate-wake-loop-mate-' "$state/.wake-queue" || true)
+  stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
   [ "$stall_count" -eq 1 ] || fail "the first parent checkpoint did not publish exactly one stall notification"
 
   cmp -s "$row_before" "$sub/state/.wake-queue" \
@@ -285,7 +444,7 @@ SH
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
     "$ROOT/bin/fm-watch-checkpoint.sh" --seconds 2 > "$dir/watch-second.out" 2> "$dir/watch-second.err" || true
   [ ! -s "$state/.wake-queue" ] || {
-    stall_count=$(grep -c 'secondmate-wake-loop-mate-' "$state/.wake-queue" || true)
+    stall_count=$(secondmate_mate_stall_count "$state/.wake-queue")
     [ "$stall_count" -eq 0 ] || fail "repeated checkpoint re-published the same stall notification"
   }
   cp "$sub/state/.wake-queue" "$row_after"
@@ -321,7 +480,7 @@ test_secondmate_stall_marker_rejects_symlink() {
   mkdir -p "$sub/state"
   printf 'mate\n' > "$sub/.fm-secondmate-home"
   printf 'window=firstmate:fm-mate\nkind=secondmate\nhome=%s\n' "$sub" > "$state/mate.meta"
-  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$(( $(date +%s) - 10 ))" > "$sub/state/.wake-queue"
+  printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$(( $(date +%s) - 20000 ))" > "$sub/state/.wake-queue"
   outside="$dir/outside"
   expected='must remain unchanged'
   printf '%s\n' "$expected" > "$outside"
@@ -359,7 +518,7 @@ test_acknowledged_stall_publication_survives_pre_marker_crash() {
   printf 'mate\n' > "$sub/.fm-secondmate-home"
   printf 'window=firstmate:fm-mate\nkind=secondmate\nharness=claude\nbackend=tmux\nhome=%s\n' \
     "$sub" > "$state/mate.meta"
-  epoch=$(( $(date +%s) - 10 ))
+  epoch=$(( $(date +%s) - 20000 ))
   printf '%s\t7\tcheck\trouted\tcheck: routed row\n' "$epoch" > "$sub/state/.wake-queue"
   row_before="$dir/foreign-before"
   cp "$sub/state/.wake-queue" "$row_before"
@@ -400,7 +559,7 @@ test_empty_prefix_mate_preserves_other_mate_receipt() {
   printf 'window=firstmate:fm-ios\nkind=secondmate\nhome=%s\n' "$empty" > "$state/ios.meta"
   printf 'window=firstmate:fm-ios-ui\nkind=secondmate\nhome=%s\n' "$stalled" > "$state/ios-ui.meta"
   : > "$empty/state/.wake-queue"
-  epoch=$(( $(date +%s) - 10 ))
+  epoch=$(( $(date +%s) - 20000 ))
   printf '%s\t9\tcheck\trouted\tcheck: routed row\n' "$epoch" > "$stalled/state/.wake-queue"
   row_before="$dir/foreign-before"
   cp "$stalled/state/.wake-queue" "$row_before"
@@ -1441,6 +1600,10 @@ test_self_held_lock_reclaims_instead_of_deadlocking
 test_bounded_lock_handoff_after_contention
 test_live_presentation_holder_is_deadlined_without_weakening_ack
 test_malformed_presentation_lock_reports_acquire_failure
+test_secondmate_busy_turn_exempts_aged_foreign_row
+test_secondmate_idle_turn_fires_once_from_turn_end_age
+test_secondmate_row_waits_a_full_threshold_after_turn_end
+test_secondmate_unknown_busy_state_uses_long_turn_threshold
 test_secondmate_foreign_queue_stall_is_one_shot_and_read_only
 test_secondmate_stall_marker_rejects_symlink
 test_acknowledged_stall_publication_survives_pre_marker_crash
