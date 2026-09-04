@@ -3016,9 +3016,10 @@ esac
 # inherit firstmate's current environment, so a bare `claude` in the pane falls
 # back to the default ~/.claude store even when firstmate itself runs under a
 # different CLAUDE_CONFIG_DIR (for example a work-vs-personal subscription split).
-# Forward firstmate's own resolved store onto the claude launch so the crewmate
-# uses the same credential/config firstmate is authenticated with. Only when set;
-# an unset value is the single-store default and needs no prefix.
+# Forward the root resolved above (spawner CLAUDE_CONFIG_DIR, then the home's
+# config/claude-config-dir) onto the claude launch so the crewmate uses the
+# captain-selected credential/config store. Only when set; an unset value is
+# the single-store default and needs no prefix.
 if [ "$HARNESS" = claude ] && [ -n "$CLAUDE_CONFIG_ROOT" ]; then
   LAUNCH="CLAUDE_CONFIG_DIR=$(shell_quote "$CLAUDE_CONFIG_ROOT") $LAUNCH"
 fi
