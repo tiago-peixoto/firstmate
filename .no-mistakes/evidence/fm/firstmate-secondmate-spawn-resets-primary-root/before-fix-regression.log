@@ -1,0 +1,31 @@
+FM_TEST_BEGIN 2026-09-05T13:21:30Z tests/fm-spawn-pool-base-freshen.test.sh family=standalone expected_gate_skip=none
+# evidence begin: linked-home spawn, returned=primary
+$ bin/fm-spawn.sh pool-linked-primary-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/secondmate --scout
+spawned pool-linked-primary-r12 harness=codex kind=scout window=firstmate:fm-pool-linked-primary-r12 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/project
+exit=0
+primary HEAD before=315c4a72275c82e78c50bb8494f04ddbff57b8c1 after=ae9873741e6371bf68e770afe3381b35622dabf6
+primary reflog before:
+315c4a7 HEAD@{0}: commit (initial): initial
+primary reflog after:
+ae98737 HEAD@{0}: reset: moving to origin/main
+315c4a7 HEAD@{1}: commit (initial): initial
+FETCH_HEAD:
+ae9873741e6371bf68e770afe3381b35622dabf6		branch 'main' of file:///Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/origin
+saved task metadata:
+window=firstmate:fm-pool-linked-primary-r12
+endpoint_task_id=pool-linked-primary-r12
+worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/project
+project=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/secondmate
+harness=codex
+kind=scout
+tasktmp=/tmp/fm-pool-linked-primary-r12
+model=default
+effort=default
+spawn_gen=s1788614494.90160.14858
+worker HEAD=ae9873741e6371bf68e770afe3381b35622dabf6 origin/main=ae9873741e6371bf68e770afe3381b35622dabf6
+# evidence end
+not ok - linked spawning home accepted primary as a disposable copy
+FM_TEST_END 2026-09-05T13:21:38Z tests/fm-spawn-pool-base-freshen.test.sh exit=1 duration_ms=7880 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=1 skipped_gate=0 duration_ms=9183
+FM_TEST_SUMMARY_FAMILY family=standalone count=1 duration_ms=7880 failed=1
+FM_TEST_SLOWEST rank=1 script=tests/fm-spawn-pool-base-freshen.test.sh duration_ms=7880

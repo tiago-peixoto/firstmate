@@ -1,0 +1,127 @@
+Issue 3741: linked-home spawn protection and relaunch preservation
+
+Method: real bin/fm-spawn.sh and bin/fm-control.sh CLI commands, real local Git origins, primary checkouts and linked worktrees. The test terminal/treehouse responses are stubbed to supply the reported cwd and model agent replacement. These transcripts show actual CLI output and persisted task/Git state; they do not exercise live fleet recovery or the upstream cwd-selection cause.
+
+BEFORE FIX: base 1820316b66ac2c68e244dd04a02512859ee8c1f4. The regression correctly fails: the primary is reset and recorded as the scout copy.
+
+# evidence begin: linked-home spawn, returned=primary
+$ bin/fm-spawn.sh pool-linked-primary-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/secondmate --scout
+spawned pool-linked-primary-r12 harness=codex kind=scout window=firstmate:fm-pool-linked-primary-r12 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/project
+exit=0
+primary HEAD before=315c4a72275c82e78c50bb8494f04ddbff57b8c1 after=ae9873741e6371bf68e770afe3381b35622dabf6
+primary reflog before:
+315c4a7 HEAD@{0}: commit (initial): initial
+primary reflog after:
+ae98737 HEAD@{0}: reset: moving to origin/main
+315c4a7 HEAD@{1}: commit (initial): initial
+FETCH_HEAD:
+ae9873741e6371bf68e770afe3381b35622dabf6		branch 'main' of file:///Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/origin
+saved task metadata:
+window=firstmate:fm-pool-linked-primary-r12
+endpoint_task_id=pool-linked-primary-r12
+worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/project
+project=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.SryJVK/linked-primary/secondmate
+harness=codex
+kind=scout
+tasktmp=/tmp/fm-pool-linked-primary-r12
+model=default
+effort=default
+spawn_gen=s1788614494.90160.14858
+worker HEAD=ae9873741e6371bf68e770afe3381b35622dabf6 origin/main=ae9873741e6371bf68e770afe3381b35622dabf6
+# evidence end
+
+TARGET: 4c68e02831d008afc9e4b9a35c7106d2667360ea. The primary, its symlink alias, and the spawning home are refused; the isolated scout is accepted.
+
+# evidence begin: linked-home spawn, returned=primary
+$ bin/fm-spawn.sh pool-linked-primary-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/secondmate --scout
+error: treehouse get did not yield an isolated worktree (resolved '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/project'; worktree root '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/project'; spawning project '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/secondmate'); refusing to launch to avoid tangling the primary checkout. Inspect target firstmate:fm-pool-linked-primary-r12
+exit=1
+primary HEAD before=730dea4bc31cbcd2cee5a6d021ad3c44e40f13fb after=730dea4bc31cbcd2cee5a6d021ad3c44e40f13fb
+primary reflog before:
+730dea4 HEAD@{0}: commit (initial): initial
+primary reflog after:
+730dea4 HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+task metadata absent
+# evidence end
+
+# evidence begin: linked-home spawn, returned=primary-alias
+$ bin/fm-spawn.sh pool-linked-primary-alias-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/secondmate --scout
+error: treehouse get did not yield an isolated worktree (resolved '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/primary-alias'; worktree root '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/project'; spawning project '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/secondmate'); refusing to launch to avoid tangling the primary checkout. Inspect target firstmate:fm-pool-linked-primary-alias-r12
+exit=1
+primary HEAD before=c8600e9072984aea50ee959ebda83ab136723157 after=c8600e9072984aea50ee959ebda83ab136723157
+primary reflog before:
+c8600e9 HEAD@{0}: commit (initial): initial
+primary reflog after:
+c8600e9 HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+task metadata absent
+# evidence end
+
+# evidence begin: linked-home spawn, returned=spawning
+$ bin/fm-spawn.sh pool-linked-spawning-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-spawning/secondmate --scout
+error: treehouse get did not enter a worktree within 60s; inspect window firstmate:fm-pool-linked-spawning-r12
+exit=1
+primary HEAD before=551d9ac7a473c9e18607b83bd650f8de464058f5 after=551d9ac7a473c9e18607b83bd650f8de464058f5
+primary reflog before:
+551d9ac HEAD@{0}: commit (initial): initial
+primary reflog after:
+551d9ac HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+task metadata absent
+# evidence end
+
+# evidence begin: linked-home spawn, returned=scout
+$ bin/fm-spawn.sh pool-linked-scout-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/secondmate --scout
+spawned pool-linked-scout-r12 harness=codex kind=scout window=firstmate:fm-pool-linked-scout-r12 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/pool
+exit=0
+primary HEAD before=6e57ec5a7d30fc36d2fcd4797b964d2781265608 after=6e57ec5a7d30fc36d2fcd4797b964d2781265608
+primary reflog before:
+6e57ec5 HEAD@{0}: commit (initial): initial
+primary reflog after:
+6e57ec5 HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+saved task metadata:
+window=firstmate:fm-pool-linked-scout-r12
+endpoint_task_id=pool-linked-scout-r12
+worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/pool
+project=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/secondmate
+harness=codex
+kind=scout
+tasktmp=/tmp/fm-pool-linked-scout-r12
+model=default
+effort=default
+spawn_gen=s1788614292.40122.11054
+worker HEAD=5ebed63afc801541bc184481218ebe4d2fd37ada origin/main=5ebed63afc801541bc184481218ebe4d2fd37ada
+# evidence end
+
+RELAUNCH: the recorded worker keeps its committed HEAD and unfinished task content, without fetching.
+
+# evidence begin: linked-home relaunch
+$ bin/fm-control.sh rl42 relaunch --note "continue from linked home"
+warning: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-control-relaunch.6ZXHfS/linked-home-30386/home/data/rl42/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+relaunched rl42 harness=claude from=claude model=default effort=default backend=tmux endpoint=fmses:fm-rl42 worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-control-relaunch.6ZXHfS/linked-home-30386/wt
+exit=0
+worker HEAD before=78eadd53b036578702b12e4e65980599c74b1fb0 after=78eadd53b036578702b12e4e65980599c74b1fb0
+saved task metadata:
+window=fmses:fm-rl42
+endpoint_task_id=rl42
+worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-control-relaunch.6ZXHfS/linked-home-30386/wt
+project=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-control-relaunch.6ZXHfS/linked-home-30386/secondmate
+harness=claude
+kind=ship
+mode=no-mistakes
+yolo=off
+tasktmp=/tmp/fm-rl42
+model=default
+effort=default
+busy_gen=g1788614649.94651.29568
+spawn_gen=s1788614649.91553.3360
+control_relaunch_tx=87832.20260905T132407Z.18115
+worker status:
+ M task.txt
+preserved task.txt:
+committed task work
+unfinished task work
+worker FETCH_HEAD absent
+# evidence end

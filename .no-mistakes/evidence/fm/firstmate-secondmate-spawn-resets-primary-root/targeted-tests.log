@@ -1,0 +1,142 @@
+FM_TEST_BEGIN 2026-09-05T13:17:46Z tests/fm-spawn-pool-base-freshen.test.sh family=standalone expected_gate_skip=none
+# evidence begin: linked-home spawn, returned=primary
+$ bin/fm-spawn.sh pool-linked-primary-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/secondmate --scout
+error: treehouse get did not yield an isolated worktree (resolved '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/project'; worktree root '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/project'; spawning project '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary/secondmate'); refusing to launch to avoid tangling the primary checkout. Inspect target firstmate:fm-pool-linked-primary-r12
+exit=1
+primary HEAD before=730dea4bc31cbcd2cee5a6d021ad3c44e40f13fb after=730dea4bc31cbcd2cee5a6d021ad3c44e40f13fb
+primary reflog before:
+730dea4 HEAD@{0}: commit (initial): initial
+primary reflog after:
+730dea4 HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+task metadata absent
+# evidence end
+ok - linked spawning home: primary preserves the primary before any refresh
+# evidence begin: linked-home spawn, returned=primary-alias
+$ bin/fm-spawn.sh pool-linked-primary-alias-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/secondmate --scout
+error: treehouse get did not yield an isolated worktree (resolved '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/primary-alias'; worktree root '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/project'; spawning project '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-primary-alias/secondmate'); refusing to launch to avoid tangling the primary checkout. Inspect target firstmate:fm-pool-linked-primary-alias-r12
+exit=1
+primary HEAD before=c8600e9072984aea50ee959ebda83ab136723157 after=c8600e9072984aea50ee959ebda83ab136723157
+primary reflog before:
+c8600e9 HEAD@{0}: commit (initial): initial
+primary reflog after:
+c8600e9 HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+task metadata absent
+# evidence end
+ok - linked spawning home: primary-alias preserves the primary before any refresh
+# evidence begin: linked-home spawn, returned=spawning
+$ bin/fm-spawn.sh pool-linked-spawning-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-spawning/secondmate --scout
+error: treehouse get did not enter a worktree within 60s; inspect window firstmate:fm-pool-linked-spawning-r12
+exit=1
+primary HEAD before=551d9ac7a473c9e18607b83bd650f8de464058f5 after=551d9ac7a473c9e18607b83bd650f8de464058f5
+primary reflog before:
+551d9ac HEAD@{0}: commit (initial): initial
+primary reflog after:
+551d9ac HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+task metadata absent
+# evidence end
+ok - linked spawning home: spawning preserves the primary before any refresh
+# evidence begin: linked-home spawn, returned=scout
+$ bin/fm-spawn.sh pool-linked-scout-r12 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/secondmate --scout
+spawned pool-linked-scout-r12 harness=codex kind=scout window=firstmate:fm-pool-linked-scout-r12 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/pool
+exit=0
+primary HEAD before=6e57ec5a7d30fc36d2fcd4797b964d2781265608 after=6e57ec5a7d30fc36d2fcd4797b964d2781265608
+primary reflog before:
+6e57ec5 HEAD@{0}: commit (initial): initial
+primary reflog after:
+6e57ec5 HEAD@{0}: commit (initial): initial
+FETCH_HEAD absent
+saved task metadata:
+window=firstmate:fm-pool-linked-scout-r12
+endpoint_task_id=pool-linked-scout-r12
+worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/pool
+project=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/linked-scout/secondmate
+harness=codex
+kind=scout
+tasktmp=/tmp/fm-pool-linked-scout-r12
+model=default
+effort=default
+spawn_gen=s1788614292.40122.11054
+worker HEAD=5ebed63afc801541bc184481218ebe4d2fd37ada origin/main=5ebed63afc801541bc184481218ebe4d2fd37ada
+# evidence end
+ok - linked spawning home: scout preserves the primary before any refresh
+# observed spawn: spawned pool-current-base-r1 harness=codex kind=ship mode=no-mistakes yolo=off window=firstmate:fm-pool-current-base-r1 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/current-base/pool
+# observed base: HEAD=becc7f68b01ad28057e0c05d11ccccec147956b9 origin/main=becc7f68b01ad28057e0c05d11ccccec147956b9 advanced-main=must survive a newly spawned branch
+ok - a stale pooled worktree refreshes to current origin/main before a crew branch is created
+ok - a stale pooled worktree resolves and refreshes a non-main default branch
+# observed direct-pr spawn: spawned pool-direct-pr-r3 harness=codex kind=ship mode=direct-PR yolo=off window=firstmate:fm-pool-direct-pr-r3 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/direct-pr/pool
+# observed scout spawn: spawned pool-scout-r3 harness=codex kind=scout window=firstmate:fm-pool-scout-r3 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/scout/pool
+ok - direct-PR ships and scouts both refresh stale pooled worktrees before launch
+# observed dirty refusal: error: pooled worktree '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/dirty-refusal/pool' is not clean; refusing to discard uncommitted work while refreshing its base; preserved=keep this local work
+ok - a dirty pooled worktree is refused without discarding its local work
+# observed unresolved-default refusal: error: could not resolve origin's current default branch for pooled worktree '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/unresolved-default/pool'; refusing to launch from a potentially stale base
+ok - an unresolved remote default branch refuses the pooled worktree
+# observed unreachable-origin refusal: error: could not fetch origin for pooled worktree '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-spawn-pool-base-freshen.0MrTSL/unreachable-origin/pool'; refusing to launch from a potentially stale base
+ok - an unreachable origin refuses a potentially stale pooled worktree
+# observed stale-pin refusal: error: submodule 'ui' is checked out at 6296cb95016997228a8d8db4ee1ade04d03ab290, but this base records f0f1e51aba1eb32718b22ee7b6fb9fcbd1763e88
+ok - two consecutive spawns across a moved submodule pin end in a refusal naming both pins and no remedy
+ok - an unpushed submodule commit keeps the uncommitted-work refusal and survives it
+ok - work inside a submodule is still refused as uncommitted work, not called stale
+ok - a stale pin carrying real work is refused conservatively, never called stale
+ok - a stale pin beside other dirt yields the conservative refusal alone, with no stale-pin line
+# all fm-spawn-pool-base-freshen tests passed
+FM_TEST_END 2026-09-05T13:20:09Z tests/fm-spawn-pool-base-freshen.test.sh exit=0 duration_ms=142859 gate_skip=false
+FM_TEST_BEGIN 2026-09-05T13:20:09Z tests/fm-control-relaunch.test.sh family=backend-dispatch expected_gate_skip=none
+ok - fm-control relaunch: a same-harness relaunch replaces the agent in the same endpoint and worktree
+# evidence begin: linked-home relaunch
+$ bin/fm-control.sh rl42 relaunch --note "continue from linked home"
+warning: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-control-relaunch.qEiJ4z/linked-home-5131/home/data/rl42/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+relaunched rl42 harness=claude from=claude model=default effort=default backend=tmux endpoint=fmses:fm-rl42 worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-control-relaunch.qEiJ4z/linked-home-5131/wt
+exit=0
+worker HEAD before=e756611921e96f917e37b5272b5de35204f7281c after=e756611921e96f917e37b5272b5de35204f7281c
+saved task metadata:
+window=fmses:fm-rl42
+endpoint_task_id=rl42
+worktree=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-control-relaunch.qEiJ4z/linked-home-5131/wt
+project=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-control-relaunch.qEiJ4z/linked-home-5131/secondmate
+harness=claude
+kind=ship
+mode=no-mistakes
+yolo=off
+tasktmp=/tmp/fm-rl42
+model=default
+effort=default
+busy_gen=g1788614423.57697.23258
+spawn_gen=s1788614423.54206.18134
+control_relaunch_tx=50811.20260905T132021Z.6932
+worker status:
+ M task.txt
+preserved task.txt:
+committed task work
+unfinished task work
+FETCH_HEAD absent
+# evidence end
+ok - fm-control relaunch: a linked spawning home preserves committed and unfinished work in the recorded copy
+ok - fm-control relaunch: durable task metadata survives replacement launch publication
+ok - fm-control relaunch: durable task metadata survives replacement launch publication
+ok - fm-control relaunch: delivery and concurrent task metadata publication serialize
+ok - fm-control relaunch: disabling tracing clears metadata and pane context
+ok - fm-control relaunch: the progress note lands in the instructions the replacement reads
+ok - fm-control relaunch: a ship task refuses without the progress note its replacement needs
+ok - fm-control relaunch: switching harness is one ordinary relaunch, and the old wiring goes with the old agent
+ok - fm-control relaunch: a harness switch resets model and effort unless they are named too
+ok - fm-control relaunch: a prefixed recorded harness can switch adapters transactionally
+ok - fm-control relaunch: a prefixed command requires an explicit replacement harness
+ok - fm-control relaunch: a same-harness relaunch keeps the profile axes it was running with
+ok - fm-control relaunch: explicit model and effort win over the recorded ones
+ok - fm-control relaunch: refuses to relaunch onto an adapter with no verified mechanics
+ok - fm-control relaunch: the retired incarnation's global turn-end token is revoked
+ok - fm-control relaunch: wiring cleanup failure refuses replacement arming
+ok - fm-control-lib: one owner resolves each harness's turn-end registry entry, and refuses a malformed token
+not ok - a configured secondmate harness should relaunch
+error: secondmate home cannot be inside the firstmate repo: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-control-relaunch.qEiJ4z/smpin-12909/smhome
+error: the replacement agent for sm3 could not be launched on codex
+error: sm3's agent was stopped but the replacement did not launch; no agent is running, and its work plus the recorded progress note are preserved at /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1RSP5DYN365G8SCYXH7V9HX/.test-validation-tmp/fm-control-relaunch.qEiJ4z/smpin-12909/smhome: expected exit 0, got 1
+FM_TEST_END 2026-09-05T13:22:09Z tests/fm-control-relaunch.test.sh exit=1 duration_ms=119029 gate_skip=false
+FM_TEST_SUMMARY total=2 failed=1 skipped_gate=0 duration_ms=263805
+FM_TEST_SUMMARY_FAMILY family=backend-dispatch count=1 duration_ms=119029 failed=1
+FM_TEST_SUMMARY_FAMILY family=standalone count=1 duration_ms=142859 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-spawn-pool-base-freshen.test.sh duration_ms=142859
+FM_TEST_SLOWEST rank=2 script=tests/fm-control-relaunch.test.sh duration_ms=119029
