@@ -11,6 +11,13 @@ HERDR_LAB_HELPER=${HERDR_LAB_HELPER:-"$ROOT/bin/fm-herdr-lab.sh"}
 HERDR_LAB_SESSION=$("$HERDR_LAB_HELPER" name firstmate-codex-busy-verdict-unmeasured-at-installed-version)
 FM_CODEX_NATIVE_LAB=$(mktemp -d /tmp/fm-native-live-XXXXXXXX)
 export HERDR_LAB_HELPER HERDR_LAB_SESSION FM_CODEX_NATIVE_LAB
-trap '"$HERDR_LAB_HELPER" teardown "$HERDR_LAB_SESSION" && rm -rf "$FM_CODEX_NATIVE_LAB"' EXIT
+cleanup() {
+  local status=$?
+  "$HERDR_LAB_HELPER" teardown "$HERDR_LAB_SESSION" && rm -rf "$FM_CODEX_NATIVE_LAB" || {
+    [ "$status" -ne 0 ] || status=1
+  }
+  exit "$status"
+}
+trap cleanup EXIT
 "$HERDR_LAB_HELPER" provision "$HERDR_LAB_SESSION"
 python3 "$ROOT/tests/fm-codex-appserver-live.py" "$ROOT"
