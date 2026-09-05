@@ -119,6 +119,8 @@ pass "remote provisioning publishes durable parent state before its completion m
 ) | (cd "$REMOTE_ROOT" && tar -xf -)
 install_remote_herdr_fixture "$REMOTE_ROOT" "$HERDR_STATE" "$HERDR_LOG" \
   "$TMP_ROOT/herdr-send-fail" "$TMP_ROOT/herdr.sock"
+printf '#!/bin/sh\nprintf "codex-cli 0.153.2\\n"\n' > "$REMOTE_ROOT/bin/codex"
+chmod +x "$REMOTE_ROOT/bin/codex"
 git -C "$REMOTE_ROOT" init -q -b main
 git -C "$REMOTE_ROOT" config user.email test@example.com
 git -C "$REMOTE_ROOT" config user.name Test
@@ -218,6 +220,10 @@ cmp -s "$REMOTE_HOME/.fm-secondmate-parent" <(
 
 remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate >/dev/null \
   || fail "real remote secondmate launch failed"
+assert_present "$REMOTE_HOME/state/parent-route/ios.meta" "remote Codex route must launch"
+assert_absent "$REMOTE_HOME/state/parent-route/ios.busy-gen" "unverified remote route must not arm native observation"
+assert_absent "$REMOTE_HOME/state/parent-route/ios.codex-appserver" "unverified remote route must not publish native observation"
+pass "remote Codex secondmate keeps the native capability gate closed"
 
 DELIVERED_LINE=$(grep -F 'FM_PUBLIC_FOLLOWUP_PRIMARY_HOME' "$HERDR_LOG" | tail -1 || true)
 DELIVERED=$(printf '%s\n' "$DELIVERED_LINE" | tr ' ' '\n' \
