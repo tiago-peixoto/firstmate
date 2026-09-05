@@ -325,6 +325,7 @@ command(['git', 'clone', '-q', '--shared', root, wt])
     "\n## Firstmate spec\nComplete this test and wait. Hooks and existing startup behavior remain enabled.\n")
 (home/'state'/f'{task}.status').write_text('done: earlier fixture turn\n')
 binding_path = home/'state'/f'{task}.codex-appserver'
+spawned = time.time()
 try:
     command([root/'bin/fm-spawn.sh', task, wt, '--secondmate', '--harness', 'codex', '--backend', 'herdr'], env)
     meta = dict(line.split('=', 1) for line in (home/'state'/f'{task}.meta').read_text().splitlines() if '=' in line)
@@ -335,6 +336,13 @@ try:
           and 'state: working' in crew())
     wait_verdict('idle codex-appserver')
     check('secondmate native turn completed', turn()['turns'][0]['status'] == 'completed')
+    # Secondmates have no notify hook: only the launcher can publish this wake.
+    turn_ended = home/'state'/f'{task}.turn-ended'
+    deadline = time.monotonic()+10
+    while not (turn_ended.exists() and turn_ended.stat().st_mtime >= spawned) and time.monotonic() < deadline:
+        time.sleep(0.2)
+    check('secondmate launcher publishes the native turn-end wake',
+          turn_ended.exists() and turn_ended.stat().st_mtime >= spawned)
     b = binding()
     os.kill(b['server_pid'], signal.SIGSTOP)
     try:
