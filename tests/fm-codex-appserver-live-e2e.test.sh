@@ -13,9 +13,15 @@ FM_CODEX_NATIVE_LAB=$(mktemp -d /tmp/fm-native-live-XXXXXXXX)
 export HERDR_LAB_HELPER HERDR_LAB_SESSION FM_CODEX_NATIVE_LAB
 cleanup() {
   local status=$?
-  "$HERDR_LAB_HELPER" teardown "$HERDR_LAB_SESSION" && rm -rf "$FM_CODEX_NATIVE_LAB" || {
+  if "$HERDR_LAB_HELPER" teardown "$HERDR_LAB_SESSION"; then
+    # Removing the scratch directory is not the teardown result. Report it and
+    # carry on, so a failed rm never turns a passing run red nor reads as a
+    # failed lab teardown.
+    rm -rf "$FM_CODEX_NATIVE_LAB" || echo 'warn: disposable lab directory not removed' >&2
+  else
+    # A failed teardown is a real failed acceptance; keep the lab for evidence.
     [ "$status" -ne 0 ] || status=1
-  }
+  fi
   exit "$status"
 }
 trap cleanup EXIT
