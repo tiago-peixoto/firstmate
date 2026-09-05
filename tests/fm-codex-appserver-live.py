@@ -198,11 +198,27 @@ try:
     wait_verdict('idle codex-appserver')
     check('observation recovery retains the exact thread', turn()['thread']['id'] == first['thread']['id'])
 
-    input_text(pane, "Run python3 -c 'import time; time.sleep(30)' in one foreground tool call; wait at least 30000 ms. Then reply NATIVE_LATER_OK.")
+    foreground = wt/'native-foreground-probe.py'
+    foreground_pid = wt/'native-foreground.pid'
+    foreground.write_text('import os, time\nfrom pathlib import Path\n'
+        'Path('+repr(str(foreground_pid))+').write_text(str(os.getpid()))\ntime.sleep(60)\n')
+    input_text(pane, 'Run '+shlex.join(['python3', str(foreground)])+
+        ' in one foreground tool call; wait at least 60000 ms. Then reply NATIVE_LATER_OK.')
     wait_verdict('busy codex-appserver')
+    deadline = time.monotonic()+90
+    while not foreground_pid.exists() and time.monotonic() < deadline:
+        time.sleep(0.2)
+    check('foreground command wrote its executing PID', foreground_pid.exists())
+    tool_pid = int(foreground_pid.read_text())
+    os.kill(tool_pid, 0)
     time.sleep(5)
+    os.kill(tool_pid, 0)
+    running = command(['ps', '-ww', '-p', str(tool_pid), '-o', 'stat=,command='])
+    check('foreground command is executing during activity check',
+          not running.lstrip().startswith('Z') and str(foreground) in running)
     check('long foreground tool remains native busy', verdict() == 'busy codex-appserver')
     check('crew-state proves later input is working', 'state: working' in crew())
+    os.kill(tool_pid, 0)
     command([root/'bin/fm-control.sh', task, 'interrupt'], env)
     wait_verdict('idle codex-appserver')
     check('interrupt is a native interrupted turn', turn()['turns'][0]['status'] == 'interrupted')

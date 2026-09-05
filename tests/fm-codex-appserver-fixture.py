@@ -26,6 +26,7 @@ if vendor_args and vendor_args[0] == '--remote':
     while True:
         time.sleep(1)
 vendor_server = bool(vendor_args)
+scenario = os.environ.get('FM_FAKE_NATIVE_SCENARIO', 'direct') if vendor_server else 'direct'
 state = lab / 'state'
 # Keep AF_UNIX paths short on macOS, even when TMPDIR is long.
 sockdir = lab / 's'
@@ -40,9 +41,12 @@ server = socket.socket(socket.AF_UNIX)
 server.bind(str(path))
 os.chmod(path, 0o600)
 server.listen()
-native = {'type': os.environ.get('FM_FAKE_NATIVE_STATUS', 'active') if vendor_server else 'active', 'activeFlags': []}
+terminal_status = os.environ.get('FM_FAKE_NATIVE_STATUS', 'active') if vendor_server else 'active'
+native = {'type': terminal_status if scenario == 'direct' else 'active', 'activeFlags': []}
 turn = {'id': 'turn-a', 'status': 'inProgress', 'completedAt': None}
 ids = ['thread-a']
+if scenario in ('title-helper', 'helper-only'):
+    ids.append('title-helper')
 requests = []
 
 def send(conn, message):
@@ -96,15 +100,27 @@ def serve(conn):
                     result = {'thread': {'id': tid, 'cwd': str(lab), 'parentThreadId': None,
                               'source': 'vscode', 'threadSource': 'system' if tid == 'title-helper' else 'user',
                               'status': native.copy(), 'turns': []}}
-                    if vendor_server:
+                    if vendor_server and scenario == 'direct':
                         send(conn, {'method': 'thread/status/changed',
                                     'params': {'threadId': tid, 'status': native.copy()}})
+                    elif tid == 'title-helper' and scenario in ('title-helper', 'helper-only'):
+                        send(conn, {'method': 'thread/status/changed',
+                                    'params': {'threadId': 'thread-a' if scenario == 'title-helper' else tid,
+                                               'status': {'type': 'systemError'}}})
                 elif method == 'thread/turns/list':
                     assert msg['params']['limit'] == 1 and msg['params']['itemsView'] == 'notLoaded'
                     result = {'data': [turn.copy()], 'nextCursor': None}
                 else:
                     raise AssertionError('observer attempted mutation: ' + method)
                 send(conn, {'id': msg['id'], 'result': result})
+                if scenario == 'reconnect' and method == 'thread/read':
+                    if (lab/'disconnect-observer').exists():
+                        (lab/'reconnected-read').touch()
+                    else:
+                        while not (lab/'disconnect-observer').exists():
+                            time.sleep(0.02)
+                        native.update(type=terminal_status)
+                        return
     except (BrokenPipeError, ConnectionResetError):
         pass
 
@@ -176,7 +192,7 @@ def consumers(expected_state, absorb):
     print('ok - ordinary/secondmate crew-state and supervision: '+expected_state, flush=True)
 
 
-def ship_runs():
+def ship_runs(expected_state, reason):
     meta_path.write_text(meta_body+'kind=ship\n')
     for run_status, outcome, run_state, detail in [
         ('completed', 'checks-passed', 'done', 'checks green: PR ready for review'),
@@ -191,31 +207,36 @@ def ship_runs():
                 (state/'worker.status').write_text(log)
                 value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'],
                                                 env=consumer_env, text=True)
-                assert value.startswith('state: failed '), value
-                assert 'Codex native turn failed' in value and 'run state: '+run_state in value, value
+                assert value.startswith('state: '+expected_state+' '), value
+                assert reason in value and 'run state: '+run_state in value, value
                 expected_detail = ('run completed' if run_state == 'done' else 'validating (background run)') if coarse else detail
                 assert expected_detail in value, value
                 value = subprocess.check_output(['bash', '-c', '. "$1/bin/fm-classify-lib.sh"; crew_absorb_class worker',
                                                 '_', str(root)], env=consumer_env, text=True)
                 assert value == 'none', value
-    native.update(type='active', activeFlags=[])
-    turn.update(status='inProgress', completedAt=None)
-    value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'], env=consumer_env, text=True)
-    assert value.startswith('state: done ') and 'run still monitoring PR' in value, value
+    if expected_state == 'failed':
+        native.update(type='active', activeFlags=[])
+        turn.update(status='inProgress', completedAt=None)
+        value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'], env=consumer_env, text=True)
+        assert value.startswith('state: done ') and 'run still monitoring PR' in value, value
     consumer_env.update(FM_FAKE_NATIVE_RUN='', FM_FAKE_NATIVE_RUNS='')
     (state/'worker.status').write_text('done: earlier turn\n')
-    print('ok - native ship failure preserves validation state and reaches supervision', flush=True)
+    print('ok - native ship '+expected_state+' preserves validation state and reaches supervision: '+reason, flush=True)
 
 
 def initial_notification():
-    for status in ['systemError', 'idle', 'active']:
+    for status, ordering in [('systemError', 'direct'), ('idle', 'direct'), ('active', 'direct'),
+                             ('systemError', 'title-helper'), ('active', 'helper-only'),
+                             ('systemError', 'reconnect'), ('idle', 'reconnect')]:
         (lab/'tui-started').unlink(missing_ok=True)
+        (lab/'disconnect-observer').unlink(missing_ok=True)
+        (lab/'reconnected-read').unlink(missing_ok=True)
         wake = state/'worker.turn-ended'
         wake.unlink(missing_ok=True)
         binding_path.unlink(missing_ok=True)
         launcher = subprocess.Popen([sys.executable, str(root/'bin/fm-codex-appserver.py'),
             'launch', str(state), 'worker', gen, '--', str(fakebin/'codex'), 'fixture prompt'], cwd=lab,
-            env={**consumer_env, 'FM_FAKE_NATIVE_STATUS': status})
+            env={**consumer_env, 'FM_FAKE_NATIVE_STATUS': status, 'FM_FAKE_NATIVE_SCENARIO': ordering})
         observed = None
         try:
             deadline = time.monotonic() + 5
@@ -223,12 +244,17 @@ def initial_notification():
                 assert launcher.poll() is None, 'launcher exited before binding'
                 if binding_path.exists():
                     observed = json.loads(binding_path.read_text())
+                    if observed['thread'] == 'thread-a' and ordering == 'reconnect' and not (lab/'disconnect-observer').exists():
+                        assert not wake.exists(), 'active turn must not wake before disconnect'
+                        (lab/'disconnect-observer').touch()
                     if observed['thread'] == 'thread-a' and (wake.exists() or status == 'active'):
                         break
                 time.sleep(0.02)
             assert observed and observed['thread'] == 'thread-a', observed
-            assert wake.exists() == (status != 'active'), (status, 'initial notification lost or spurious')
-            print('ok - initial binding notification: '+status, flush=True)
+            assert wake.exists() == (status != 'active'), (status, ordering, 'notification lost or spurious')
+            if ordering == 'reconnect':
+                assert (lab/'reconnected-read').exists(), 'bound observer must reconcile after reconnect'
+            print('ok - binding notification: '+status+' / '+ordering, flush=True)
         finally:
             launcher.terminate()
             launcher.wait(timeout=10)
@@ -257,7 +283,7 @@ try:
     turn.update(status='failed')
     classify('unknown codex-appserver-failed')
     consumers('failed', 'none')
-    ship_runs()
+    ship_runs('failed', 'Codex native turn failed')
     native = {'type': 'active', 'activeFlags': []}
     turn.update(status='inProgress', completedAt=None)
     classify('busy codex-appserver')
@@ -265,6 +291,7 @@ try:
         native['activeFlags'] = [flag]
         classify('unknown codex-appserver-waiting-' + source)
         consumers('parked', 'none')
+        ship_runs('parked', 'Codex waiting for '+('approval' if source == 'approval' else 'user input'))
     native = {'type': 'idle'}
     turn.update(status='completed', completedAt=1788557728)
     ids.append('other-root')
@@ -273,6 +300,7 @@ try:
     binding['gen'] = 'retired'
     publish()
     classify('unknown codex-appserver-binding')
+    ship_runs('unknown', 'codex-appserver-binding')
     binding['gen'] = gen
     publish()
     binding_path.chmod(0o644)
@@ -295,8 +323,10 @@ try:
     path.unlink()
     classify('unknown codex-appserver-disconnected')
     consumers('unknown', 'none')
+    ship_runs('unknown', 'codex-appserver-disconnected')
     binding_path.unlink()
     consumers('unknown', 'none')
+    ship_runs('unknown', 'codex-unverified')
     assert not any(m in requests for m in ['thread/resume', 'turn/start', 'turn/interrupt'])
     initial_notification()
 finally:

@@ -2697,7 +2697,9 @@ if [ "$RELAUNCH" -eq 1 ]; then
 fi
 BUSY_GEN=
 CODEX_LAUNCH=codex
-if [ "$HARNESS" = codex ] && [ "$RAW_LAUNCH" -eq 0 ] && fm_busy_codex_appserver_observable; then
+if [ "$HARNESS" = codex ] && [ "$RAW_LAUNCH" -eq 0 ] \
+  && { [ "$KIND" != secondmate ] || [ "$STATE_REAL" != "$WT/state/parent-route" ]; } \
+  && fm_busy_codex_appserver_observable; then
   # A pull source starts unknown, never from a seeded busy guess. Secondmates
   # need the same parent-owned generation despite their different home hooks.
   BUSY_GEN=$("$FM_ROOT/bin/fm-busy-event.sh" arm "$STATE_REAL" "$ID" --state unknown) || exit 1

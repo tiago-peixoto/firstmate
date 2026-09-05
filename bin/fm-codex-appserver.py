@@ -40,6 +40,7 @@ class NativeSocket:
         self.deadline = time.monotonic() + timeout
         self.sock = socket.socket(socket.AF_UNIX)
         self.buffer = bytearray()
+        self.terminal_threads = set()
         self.seq = 0
         try:
             self.sock.settimeout(timeout)
@@ -122,7 +123,12 @@ class NativeSocket:
             started = True
             message.extend(payload)
             if first & 128:
-                return json.loads(message)
+                event = json.loads(message)
+                params = event.get('params', {})
+                if (event.get('method') == 'thread/status/changed'
+                        and params.get('status', {}).get('type') in ('idle', 'systemError')):
+                    self.terminal_threads.add(params['threadId'])
+                return event
 
     def rpc(self, method, params=None):
         self.seq += 1
@@ -327,25 +333,27 @@ def launch(state, task, gen, argv):
             if gen_path.read_text().strip() != gen:
                 raise ValueError('launch generation retired')
             try:
-                if observer is None:
+                reconnected = observer is None
+                if reconnected:
                     observer = NativeSocket(transport)
                     observer.initialize()
                 observer.deadline = time.monotonic() + 3
-                if not binding['thread']:
+                if not binding['thread'] or reconnected:
                     current = roots(observer)
-                    if len(current) == 1 and current[0]['cwd'] == binding['worktree']:
-                        binding['thread'] = current[0]['id']
-                        publish()
+                    if (len(current) == 1 and current[0]['cwd'] == binding['worktree']
+                            and binding['thread'] in (None, current[0]['id'])):
+                        if not binding['thread']:
+                            binding['thread'] = current[0]['id']
+                            publish()
                         if current[0]['status']['type'] in ('idle', 'systemError'):
-                            (state / (task + '.turn-ended')).touch()
+                            observer.terminal_threads.add(binding['thread'])
                 elif observer.buffer or select.select([observer.sock], [], [], 0.2)[0]:
-                    event = observer.receive()
-                    params = event.get('params', {})
-                    if (event.get('method') == 'thread/status/changed' and params.get('threadId') == binding['thread']
-                            and params.get('status', {}).get('type') in ('idle', 'systemError')):
-                        (state / (task + '.turn-ended')).touch()
+                    observer.receive()
                 else:
                     continue
+                if binding['thread'] in observer.terminal_threads:
+                    (state / (task + '.turn-ended')).touch()
+                observer.terminal_threads.clear()
             except (OSError, EOFError, ValueError, KeyError):
                 # Observation is optional to execution. A new read reconnects
                 # to the same private socket; no thread/resume is ever sent.
