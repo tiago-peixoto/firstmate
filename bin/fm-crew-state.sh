@@ -536,8 +536,8 @@ if [ "$HAVE_RUN" = 1 ]; then
   if [ "$HARNESS" = codex ] && [ -n "$(meta_value busy_gen)" ]; then
     BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
     emit_codex_native_verdict "$BUSY_VERDICT" "${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL"
-    case "$BUSY_VERDICT" in
-      'busy codex-appserver'|'idle codex-appserver') ;;
+    case "$RUN_STATE:$BUSY_VERDICT" in
+      done:*|failed:*|*:'busy codex-appserver'|*:'idle codex-appserver') ;;
       *) emit unknown pane "harness state unavailable ($BUSY_VERDICT)${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
     esac
   fi

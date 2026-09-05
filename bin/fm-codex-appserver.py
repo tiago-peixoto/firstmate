@@ -144,7 +144,10 @@ class NativeSocket:
 
     def initialize(self):
         self.rpc('initialize', {'clientInfo': {'name': 'firstmate_activity', 'version': '1'},
-                               'capabilities': {'experimentalApi': True}})
+                               'capabilities': {'experimentalApi': True, 'optOutNotificationMethods': [
+                                   'item/agentMessage/delta', 'item/reasoning/textDelta',
+                                   'item/reasoning/summaryTextDelta', 'item/commandExecution/outputDelta',
+                                   'item/fileChange/outputDelta', 'item/plan/delta']}})
         self.send({'method': 'initialized', 'params': {}})
 
 
@@ -351,7 +354,9 @@ def launch(state, task, gen, argv):
                         if current[0]['status']['type'] in ('idle', 'systemError'):
                             observer.terminal_threads.add(binding['thread'])
                 elif observer.buffer or select.select([observer.sock], [], [], 0.2)[0]:
-                    observer.receive()
+                    while observer.buffer or select.select([observer.sock], [], [], 0)[0]:
+                        observer.deadline = time.monotonic() + 3
+                        observer.receive()
                 else:
                     continue
                 if binding['thread'] in observer.terminal_threads:

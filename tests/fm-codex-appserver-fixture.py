@@ -25,8 +25,9 @@ if vendor_args == ['--version']:
     sys.exit(0)
 if vendor_args and vendor_args[0] == '--remote':
     (lab/'tui-started').touch()
-    while True:
-        time.sleep(1)
+    while not (lab/'tui-exit').exists():
+        time.sleep(0.05)
+    sys.exit(0)
 vendor_server = bool(vendor_args)
 scenario = os.environ.get('FM_FAKE_NATIVE_SCENARIO', 'direct') if vendor_server else 'direct'
 state = lab / 'state'
@@ -117,6 +118,11 @@ def serve(conn):
                 else:
                     raise AssertionError('observer attempted mutation: ' + method)
                 send(conn, {'id': msg['id'], 'result': result})
+                if scenario == 'burst' and method == 'thread/read':
+                    tid = msg['params']['threadId']
+                    for _ in range(2000):
+                        send(conn, {'method': 'item/agentMessage/delta', 'params': {'threadId': tid, 'delta': 'streamed'}})
+                    send(conn, {'method': 'thread/status/changed', 'params': {'threadId': tid, 'status': {'type': terminal_status}}})
                 if scenario == 'reconnect' and method == 'thread/read':
                     if (lab/'disconnect-observer').exists():
                         (lab/'reconnected-read').touch()
@@ -198,10 +204,13 @@ def consumers(expected_state, absorb):
 
 def ship_runs(expected_state, reason):
     meta_path.write_text(meta_body+'kind=ship\n')
-    for run_status, outcome, run_state, detail in [
-        ('completed', 'checks-passed', 'done', 'checks green: PR ready for review'),
-        ('running', '', 'working', 'validating (running)'),
+    for run_status, outcome, run_state, detail, coarse_detail in [
+        ('completed', 'checks-passed', 'done', 'checks green: PR ready for review', 'run completed'),
+        ('failed', 'failed', 'failed', 'run failed', 'run failed'),
+        ('running', '', 'working', 'validating (running)', 'validating (background run)'),
     ]:
+        # A terminal run stays authoritative over unavailable observation.
+        expected = run_state if expected_state == 'unknown' and run_state != 'working' else expected_state
         for coarse in [False, True]:
             consumer_env['FM_FAKE_NATIVE_RUN'] = ('run:\n  id: fixture\n  branch: '+
                 ('other-branch' if coarse else 'native-fixture')+'\n  head: '+head+
@@ -211,10 +220,12 @@ def ship_runs(expected_state, reason):
                 (state/'worker.status').write_text(log)
                 value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'],
                                                 env=consumer_env, text=True)
-                assert value.startswith('state: '+expected_state+' '), value
-                assert reason in value and 'run state: '+run_state in value, value
-                expected_detail = ('run completed' if run_state == 'done' else 'validating (background run)') if coarse else detail
-                assert expected_detail in value, value
+                assert value.startswith('state: '+expected+' '), value
+                if expected == expected_state:
+                    assert reason in value and 'run state: '+run_state in value, value
+                else:
+                    assert reason not in value, value
+                assert (coarse_detail if coarse else detail) in value, value
                 value = subprocess.check_output(['bash', '-c', '. "$1/bin/fm-classify-lib.sh"; crew_absorb_class worker',
                                                 '_', str(root)], env=consumer_env, text=True)
                 assert value == 'none', value
@@ -232,8 +243,9 @@ def ship_runs(expected_state, reason):
 def initial_notification():
     for status, ordering in [('systemError', 'direct'), ('idle', 'direct'), ('active', 'direct'),
                              ('systemError', 'title-helper'), ('active', 'helper-only'),
-                             ('systemError', 'reconnect'), ('idle', 'reconnect')]:
+                             ('systemError', 'reconnect'), ('idle', 'reconnect'), ('idle', 'burst')]:
         (lab/'tui-started').unlink(missing_ok=True)
+        (lab/'tui-exit').unlink(missing_ok=True)
         (lab/'disconnect-observer').unlink(missing_ok=True)
         (lab/'reconnected-read').unlink(missing_ok=True)
         wake = state/'worker.turn-ended'
@@ -261,8 +273,8 @@ def initial_notification():
                 assert (lab/'reconnected-read').exists(), 'bound observer must reconcile after reconnect'
             print('ok - binding notification: '+status+' / '+ordering, flush=True)
         finally:
-            launcher.terminate()
-            launcher.wait(timeout=10)
+            (lab/'tui-exit').touch()
+            assert launcher.wait(timeout=10) == 0, 'launcher must return the exited TUI status'
         assert not binding_path.exists(), 'launcher left its binding behind'
         assert not Path(observed['socket']).parent.exists(), 'launcher left its transport behind'
         for key in ['server_pid', 'tui_pid']:
@@ -357,11 +369,10 @@ try:
     classify('unknown codex-appserver-disconnected')
     consumers('unknown', 'none')
     ship_runs('unknown', 'codex-appserver-disconnected')
-    binding_path.unlink()
+    initial_notification()
     consumers('unknown', 'none')
     ship_runs('unknown', 'codex-unverified')
     assert not any(m in requests for m in ['thread/resume', 'turn/start', 'turn/interrupt'])
-    initial_notification()
 finally:
     server.close()
     if not vendor_server:
