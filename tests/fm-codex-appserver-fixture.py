@@ -48,6 +48,7 @@ ids = ['thread-a']
 if scenario in ('title-helper', 'helper-only'):
     ids.append('title-helper')
 requests = []
+snapshot_events = []
 
 def send(conn, message):
     data = json.dumps(message).encode()
@@ -107,6 +108,9 @@ def serve(conn):
                         send(conn, {'method': 'thread/status/changed',
                                     'params': {'threadId': 'thread-a' if scenario == 'title-helper' else tid,
                                                'status': {'type': 'systemError'}}})
+                    if tid == 'title-helper':
+                        for params in snapshot_events:
+                            send(conn, {'method': 'thread/status/changed', 'params': params})
                 elif method == 'thread/turns/list':
                     assert msg['params']['limit'] == 1 and msg['params']['itemsView'] == 'notLoaded'
                     result = {'data': [turn.copy()], 'nextCursor': None}
@@ -215,6 +219,7 @@ def ship_runs(expected_state, reason):
                                                 '_', str(root)], env=consumer_env, text=True)
                 assert value == 'none', value
     if expected_state == 'failed':
+        snapshot_events.clear()
         native.update(type='active', activeFlags=[])
         turn.update(status='inProgress', completedAt=None)
         value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'], env=consumer_env, text=True)
@@ -277,6 +282,34 @@ try:
     native = {'type': 'idle'}
     turn.update(status='completed', completedAt=1788557728)
     classify('idle codex-appserver')
+    ids.append('title-helper')
+    failure = {'threadId': 'thread-a', 'status': {'type': 'systemError'}}
+    recovery = {'threadId': 'thread-a', 'status': {'type': 'active', 'activeFlags': []}}
+    for events in [[failure], [recovery, failure]]:
+        snapshot_events[:] = events
+        classify('unknown codex-appserver-failed')
+        settled = subprocess.run([sys.executable, str(root/'bin/fm-codex-appserver.py'),
+                                  'settled', str(state), 'worker'], capture_output=True, text=True)
+        assert settled.returncode == 1 and settled.stdout == '', settled
+        consumers('failed', 'none')
+    ship_runs('failed', 'Codex native turn failed')
+    classify('busy codex-appserver')
+    native = {'type': 'idle'}
+    turn.update(status='completed', completedAt=1788557728)
+    snapshot_events[:] = [failure, recovery]
+    classify('busy codex-appserver')
+    consumers('working', 'working')
+    snapshot_events[:] = [{'threadId': 'title-helper', 'status': {'type': 'systemError'}}]
+    classify('idle codex-appserver')
+    snapshot_events[:] = [failure]
+    native = {'type': 'active', 'activeFlags': []}
+    ids.reverse()
+    classify('busy codex-appserver')
+    ids.reverse()
+    ids.pop()
+    snapshot_events.clear()
+    native = {'type': 'idle'}
+    print('ok - snapshot notifications preserve failure, recovery and thread identity', flush=True)
     turn.update(status='interrupted')
     classify('idle codex-appserver')
     native = {'type': 'systemError'}

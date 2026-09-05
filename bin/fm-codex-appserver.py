@@ -41,6 +41,7 @@ class NativeSocket:
         self.sock = socket.socket(socket.AF_UNIX)
         self.buffer = bytearray()
         self.terminal_threads = set()
+        self.thread_statuses = {}
         self.seq = 0
         try:
             self.sock.settimeout(timeout)
@@ -125,9 +126,10 @@ class NativeSocket:
             if first & 128:
                 event = json.loads(message)
                 params = event.get('params', {})
-                if (event.get('method') == 'thread/status/changed'
-                        and params.get('status', {}).get('type') in ('idle', 'systemError')):
-                    self.terminal_threads.add(params['threadId'])
+                if event.get('method') == 'thread/status/changed':
+                    self.thread_statuses[params['threadId']] = params['status']
+                    if params['status'].get('type') in ('idle', 'systemError'):
+                        self.terminal_threads.add(params['threadId'])
                 return event
 
     def rpc(self, method, params=None):
@@ -175,6 +177,7 @@ def roots(client):
         thread = client.rpc('thread/read', {'threadId': tid, 'includeTurns': False})['thread']
         if thread['id'] != tid:
             raise ValueError('thread mismatch')
+        client.thread_statuses[tid] = thread['status']
         # The TUI's own title-generation thread is an independent root with
         # parentThreadId=null. Native threadSource, not ancestry alone,
         # distinguishes that system work from a visible user thread.
@@ -226,7 +229,7 @@ def snapshot(state, task):
             raise ValueError('binding changed during read')
         for key in ['owner_pid', 'server_pid', 'tui_pid']:
             alive(binding[key])
-        status = thread['status']
+        status = client.thread_statuses[thread['id']]
         last = turns[0] if len(turns) == 1 else {}
         if status['type'] == 'active':
             flags = status['activeFlags']
