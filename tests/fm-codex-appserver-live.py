@@ -221,11 +221,21 @@ try:
     os.kill(tool_pid, 0)
     command([root/'bin/fm-control.sh', task, 'interrupt'], env)
     wait_verdict('idle codex-appserver')
-    check('interrupt is a native interrupted turn', turn()['turns'][0]['status'] == 'interrupted')
+    interrupted = turn()['turns'][0]
+    check('interrupt is a native interrupted turn', interrupted['status'] == 'interrupted')
     input_text(pane, 'Reply NATIVE_RECOVERED without tools.')
-    wait_verdict('busy codex-appserver')
+    deadline = time.monotonic()+90
+    while time.monotonic() < deadline:
+        recovered = turn()['turns'][0]
+        if recovered['id'] != interrupted['id'] and recovered['status'] == 'completed':
+            break
+        time.sleep(0.4)
+    else:
+        record('pane at timeout', herdr('pane', 'read', pane, '--lines', '40'))
+        raise AssertionError('expected a distinct completed recovery turn')
     wait_verdict('idle codex-appserver')
-    check('a subsequent turn recovers after interruption', turn()['turns'][0]['status'] == 'completed')
+    check('a subsequent turn recovers after interruption',
+          recovered['id'] != interrupted['id'] and recovered['status'] == 'completed')
 
     input_text(pane, '/plan')
     input_text(pane, 'Use request_user_input to ask me to choose between Left and Right for this disposable test. Do not infer an answer; wait for my selection.')
@@ -325,24 +335,25 @@ command(['git', 'clone', '-q', '--shared', root, wt])
     "\n## Firstmate spec\nComplete this test and wait. Hooks and existing startup behavior remain enabled.\n")
 (home/'state'/f'{task}.status').write_text('done: earlier fixture turn\n')
 binding_path = home/'state'/f'{task}.codex-appserver'
-spawned = time.time()
 try:
     command([root/'bin/fm-spawn.sh', task, wt, '--secondmate', '--harness', 'codex', '--backend', 'herdr'], env)
     meta = dict(line.split('=', 1) for line in (home/'state'/f'{task}.meta').read_text().splitlines() if '=' in line)
     check('secondmate uses only the named Herdr lab', meta.get('backend') == 'herdr' and meta.get('herdr_session') == session)
     pane = meta['herdr_pane_id']
     wait_verdict('busy codex-appserver')
+    turn_ended = home/'state'/f'{task}.turn-ended'
+    marker_baseline = turn_ended.stat().st_mtime_ns if turn_ended.exists() else None
+    record('secondmate turn-end marker baseline', marker_baseline)
     check('secondmate has parent-owned generation and native activity', meta.get('busy_gen') == binding()['gen']
           and 'state: working' in crew())
     wait_verdict('idle codex-appserver')
     check('secondmate native turn completed', turn()['turns'][0]['status'] == 'completed')
     # Secondmates have no notify hook: only the launcher can publish this wake.
-    turn_ended = home/'state'/f'{task}.turn-ended'
     deadline = time.monotonic()+10
-    while not (turn_ended.exists() and turn_ended.stat().st_mtime >= spawned) and time.monotonic() < deadline:
+    while not (turn_ended.exists() and turn_ended.stat().st_mtime_ns != marker_baseline) and time.monotonic() < deadline:
         time.sleep(0.2)
     check('secondmate launcher publishes the native turn-end wake',
-          turn_ended.exists() and turn_ended.stat().st_mtime >= spawned)
+          turn_ended.exists() and turn_ended.stat().st_mtime_ns != marker_baseline)
     b = binding()
     os.kill(b['server_pid'], signal.SIGSTOP)
     try:
