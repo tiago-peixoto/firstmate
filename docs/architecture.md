@@ -160,7 +160,9 @@ Every classification returns a verdict of busy, idle, unknown, or dead together 
 
 Each converted adapter reports its own turn lifecycle through a machine-readable contract the vendor already exposes, rather than through rendered footer text: Pi and pi-signed through the Firstmate-owned extension's `agent_start` and `agent_settled` confirmed by `ctx.isIdle()`, OpenCode through its plugin's semantic `session.status`, Claude through owned `UserPromptSubmit`, `Stop`, `StopFailure`, and `SessionEnd` hooks, Muse through its session log, and Cursor through its conversation transcript.
 Kimi behind Pi inherits Pi's lifecycle.
-Codex and standalone Kimi classify unknown behind explicit probes until a semantic source is live-verified for them, and Grok keeps one clearly isolated rendered-tail fallback that can only ever classify a Grok task.
+Codex uses the private native app-server owned by a verified launch; `bin/fm-codex-appserver.py` owns its transport, exact-thread binding and read-only lifecycle queries.
+An observed native failed turn reports failed through crew-state, while lost observation stays unknown.
+Standalone Kimi remains unverified, and Grok keeps one clearly isolated rendered-tail fallback that can only ever classify a Grok task.
 
 Missing, malformed, stale, untrusted, or unverified semantic state is unknown, never idle, and unknown is never promoted to busy either.
 Ordinary task-state consumers act only on an exact busy verdict, so an unreadable worker surfaces for a closer look instead of being absorbed as still-working or written off as finished.

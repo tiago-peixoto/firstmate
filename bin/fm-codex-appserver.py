@@ -12,7 +12,7 @@ owns verdict semantics; fm-busy-event.sh still owns the incarnation token.
 The private binding includes the generation, socket inode, child PIDs, cwd and
 exact thread. Multiple root threads (including /new or /resume in the TUI)
 are unsupported and read unknown rather than guessing which one is visible.
-No credentials, model content, prompts or tool output are persisted here.
+The binding contains no credentials, prompts or tool output.
 """
 import base64
 import hashlib
@@ -155,6 +155,11 @@ def alive(pid):
     os.kill(pid, 0)
 
 
+def task_identity(state, task):
+    meta = dict(line.split('=', 1) for line in (state / (task + '.meta')).read_text().splitlines() if '=' in line)
+    return {key: meta.get(key) for key in ('harness', 'worktree', 'busy_gen', 'spawn_gen', 'window', 'backend')}
+
+
 def roots(client):
     loaded = client.rpc('thread/loaded/list', {'limit': 64})
     if loaded.get('nextCursor'):
@@ -185,12 +190,15 @@ def snapshot(state, task):
         gen = gen_path.read_text().strip()
         if binding['format'] != 1 or binding['version'] != VERIFIED_VERSION or binding['gen'] != gen:
             raise ValueError('generation or capability mismatch')
-        meta = dict(line.split('=', 1) for line in (state / (task + '.meta')).read_text().splitlines() if '=' in line)
-        if meta.get('busy_gen') != gen or meta.get('harness') != 'codex' or meta.get('worktree') != binding['worktree']:
+        meta = task_identity(state, task)
+        if (binding['task'] != task or binding['state'] != str(state.resolve()) or binding['identity'] != meta
+                or meta.get('busy_gen') != gen or meta.get('harness') != 'codex' or meta.get('worktree') != binding['worktree']):
             raise ValueError('task mismatch')
         for key in ['owner_pid', 'server_pid', 'tui_pid']:
             alive(binding[key])
         path = Path(binding['socket'])
+        if not path.is_absolute():
+            raise ValueError('relative socket')
         private(path.parent, stat.S_ISDIR)
         info = private(path, stat.S_ISSOCK)
         if (info.st_dev, info.st_ino) != (binding['socket_dev'], binding['socket_ino']):
@@ -199,15 +207,16 @@ def snapshot(state, task):
             raise ValueError('thread not yet bound')
         client = NativeSocket(path)
         client.initialize()
-        current = roots(client)
-        if len(current) != 1 or current[0]['id'] != binding['thread'] or current[0]['cwd'] != binding['worktree']:
-            raise ValueError('visible thread ambiguous')
         turns = client.rpc('thread/turns/list', {'threadId': binding['thread'], 'limit': 1,
                                                'sortDirection': 'desc', 'itemsView': 'notLoaded'})['data']
         # Read runtime status after history: an old terminal turn cannot hide
         # a new active turn. No persisted transcript or rendered text is read.
-        thread = client.rpc('thread/read', {'threadId': binding['thread'], 'includeTurns': False})['thread']
-        if thread['id'] != binding['thread'] or binding_path.read_bytes() != original or gen_path.read_text().strip() != gen:
+        current = roots(client)
+        if len(current) != 1 or current[0]['id'] != binding['thread'] or current[0]['cwd'] != binding['worktree']:
+            raise ValueError('visible thread ambiguous')
+        thread = current[0]
+        if (binding_path.read_bytes() != original or gen_path.read_text().strip() != gen
+                or task_identity(state, task) != meta):
             raise ValueError('binding changed during read')
         for key in ['owner_pid', 'server_pid', 'tui_pid']:
             alive(binding[key])
@@ -305,16 +314,13 @@ def launch(state, task, gen, argv):
         info = transport.stat()
         binding = {'format': 1, 'version': VERIFIED_VERSION, 'gen': gen, 'socket': str(transport),
                    'socket_dev': info.st_dev, 'socket_ino': info.st_ino, 'worktree': str(Path.cwd()),
-                   'owner_pid': os.getpid(), 'server_pid': server.pid, 'tui_pid': tui.pid, 'thread': None}
+                   'owner_pid': os.getpid(), 'server_pid': server.pid, 'tui_pid': tui.pid, 'thread': None,
+                   'task': task, 'state': str(state.resolve()), 'identity': task_identity(state, task)}
         def publish():
-            temporary = directory / 'binding'
-            temporary.write_text(json.dumps(binding) + '\n')
-            temporary.chmod(0o600)
             # state and /tmp may be different filesystems.
             staging = binding_path.with_name(binding_path.name + '.' + gen)
-            with staging.open('x') as out:
-                os.chmod(staging, 0o600)
-                out.write(temporary.read_text())
+            with os.fdopen(os.open(staging, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as out:
+                out.write(json.dumps(binding) + '\n')
             os.replace(staging, binding_path)
         publish()
         while tui.poll() is None and server.poll() is None:

@@ -122,22 +122,11 @@ fm_busy_kimi_verified() {
 # Launch capability gate. Keep exact-version verification and launch wiring
 # together: old standalone workers remain unknown because they lack a bound
 # native source, even when a newer installed binary passes this gate.
+# Hooks remain unsuitable as a complete source: API errors on 0.153.2 have
+# no closing hook while the TUI remains open. Native status owns failure.
 fm_busy_codex_appserver_observable() {
   command -v python3 >/dev/null 2>&1 &&
     [ "$(codex --version 2>/dev/null)" = 'codex-cli 0.153.2' ]
-}
-
-# Hooks remain unverified as a complete state source: on 0.153.2 API errors
-# have no closing hook while the TUI remains open. Native status owns failure.
-fm_busy_codex_hooks_verified() {
-  return 1
-}
-
-# fm_busy_codex_semantic_source: 0 when ANY verified Codex semantic source
-# exists. fm-spawn arms and wires Codex only behind this gate, and the
-# classifier reports unknown codex-unverified until it opens.
-fm_busy_codex_semantic_source() {
-  fm_busy_codex_appserver_observable || fm_busy_codex_hooks_verified
 }
 
 fm_busy_record_path() {  # <state-dir> <id>
