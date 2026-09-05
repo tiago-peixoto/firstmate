@@ -336,6 +336,8 @@ def launch(state, task, gen, argv):
                     if len(current) == 1 and current[0]['cwd'] == binding['worktree']:
                         binding['thread'] = current[0]['id']
                         publish()
+                        if current[0]['status']['type'] in ('idle', 'systemError'):
+                            (state / (task + '.turn-ended')).touch()
                 elif observer.buffer or select.select([observer.sock], [], [], 0.2)[0]:
                     event = observer.receive()
                     params = event.get('params', {})

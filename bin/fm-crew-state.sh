@@ -522,6 +522,10 @@ if [ "$HAVE_RUN" = 1 ]; then
     fi
   fi
 
+  if [ "$HARNESS" = codex ] && [ "$(crew_busy_verdict "$BACKEND_TARGET")" = 'unknown codex-appserver-failed' ]; then
+    emit failed pane "Codex native turn failed${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL"
+  fi
+
   if [ "$RUN_STATE" = working ] && log_reports_ci_ready; then
     if [ "$RUN_SOURCE" = coarse ]; then
       emit "done" status-log "$(status_line_note "$LOG_LINE")${SEP}run still monitoring PR"
