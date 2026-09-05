@@ -835,8 +835,6 @@ fm_busy_classify() {  # <backend> <target> <harness> <id> <state-dir> [tail40]
     codex*)
       if [ ! -f "$state/$id.codex-appserver" ]; then
         printf 'unknown codex-unverified'
-      elif ! command -v python3 >/dev/null 2>&1; then
-        printf 'unknown codex-appserver-disconnected'
       else
         python3 "$FM_BUSY_CODEX_READER" read "$state" "$id" 2>/dev/null ||
           printf 'unknown codex-appserver-disconnected'

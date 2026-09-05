@@ -228,6 +228,17 @@ crew_busy_verdict() {  # <target>
   fm_busy_classify "$TASK_BACKEND" "$1" "$HARNESS" "$ID" "$STATE" "$tail40"
 }
 
+# emit_codex_native_verdict: the states a native Codex verdict settles outright,
+# for both the run-attributed and the fallback consumer; <detail-suffix> is
+# appended to the emitted detail. Any other verdict returns to the caller.
+emit_codex_native_verdict() {  # <verdict> [detail-suffix]
+  case "$1" in
+    'unknown codex-appserver-failed') emit failed pane "Codex native turn failed${2-}" ;;
+    'unknown codex-appserver-waiting-approval') emit parked pane "Codex waiting for approval${2-}" ;;
+    'unknown codex-appserver-waiting-input') emit parked pane "Codex waiting for user input${2-}" ;;
+  esac
+}
+
 # --- no-mistakes run lookup (authoritative when a run matches this branch) --
 # trim, strip_quotes, the bounded nm_run call, nm_field's TOON parse, and the
 # attribution helpers below are thin wrappers over the ONE owner in
@@ -524,10 +535,8 @@ if [ "$HAVE_RUN" = 1 ]; then
 
   if [ "$HARNESS" = codex ] && [ -n "$(meta_value busy_gen)" ]; then
     BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
+    emit_codex_native_verdict "$BUSY_VERDICT" "${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL"
     case "$BUSY_VERDICT" in
-      'unknown codex-appserver-failed') emit failed pane "Codex native turn failed${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
-      'unknown codex-appserver-waiting-approval') emit parked pane "Codex waiting for approval${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
-      'unknown codex-appserver-waiting-input') emit parked pane "Codex waiting for user input${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
       'busy codex-appserver'|'idle codex-appserver') ;;
       *) emit unknown pane "harness state unavailable ($BUSY_VERDICT)${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
     esac
@@ -584,11 +593,7 @@ pane_readable "$BACKEND_TARGET" || emit unknown none "backend target gone: $BACK
 # unverified semantic state remains unknown.
 if [ "$KIND" != secondmate ] || { [ "$HARNESS" = codex ] && [ -n "$(meta_value busy_gen)" ]; }; then
   BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
-  case "$BUSY_VERDICT" in
-    'unknown codex-appserver-failed') emit failed pane 'Codex native turn failed' ;;
-    'unknown codex-appserver-waiting-approval') emit parked pane 'Codex waiting for approval' ;;
-    'unknown codex-appserver-waiting-input') emit parked pane 'Codex waiting for user input' ;;
-  esac
+  emit_codex_native_verdict "$BUSY_VERDICT"
   case "${BUSY_VERDICT%% *}" in
     busy) emit working pane "harness busy (${BUSY_VERDICT#* })" ;;
     idle) ;;

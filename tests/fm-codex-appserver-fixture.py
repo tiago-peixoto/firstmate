@@ -9,10 +9,12 @@ import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import socket
 import struct
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -28,15 +30,13 @@ if vendor_args and vendor_args[0] == '--remote':
 vendor_server = bool(vendor_args)
 scenario = os.environ.get('FM_FAKE_NATIVE_SCENARIO', 'direct') if vendor_server else 'direct'
 state = lab / 'state'
-# Keep AF_UNIX paths short on macOS, even when TMPDIR is long.
-sockdir = lab / 's'
 if vendor_server:
     assert vendor_args[:2] == ['app-server', '--listen']
     path = Path(vendor_args[2][len('unix://'):])
 else:
     state.mkdir()
-    sockdir.mkdir(mode=0o700)
-    path = sockdir / 'a'
+    # Keep AF_UNIX paths short on macOS, even when the lab sits under a deep TMPDIR.
+    path = Path(tempfile.mkdtemp(prefix='fm-codex-fixture-', dir='/tmp')) / 'a'
 server = socket.socket(socket.AF_UNIX)
 server.bind(str(path))
 os.chmod(path, 0o600)
@@ -364,3 +364,5 @@ try:
     initial_notification()
 finally:
     server.close()
+    if not vendor_server:
+        shutil.rmtree(path.parent, ignore_errors=True)

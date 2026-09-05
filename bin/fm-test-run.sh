@@ -1164,6 +1164,14 @@ families_for_changed_path() {
       printf '%s\n' real-herdr-gated
       printf '%s\n' backend-dispatch
       ;;
+    bin/fm-codex-appserver.py|tests/fm-codex-appserver-fixture.py)
+      printf '%s\n' "__script__:fm-codex-appserver.test.sh"
+      printf '%s\n' "__script__:fm-busy-state.test.sh"
+      printf '%s\n' "__script__:fm-crew-state.test.sh"
+      ;;
+    tests/fm-codex-appserver-live.py)
+      printf '%s\n' "__script__:fm-codex-appserver-live-e2e.test.sh"
+      ;;
     tests/*.test.sh)
       # A single test file change selects only that script via basename family
       # resolution in the caller; emit a marker family of __script__
