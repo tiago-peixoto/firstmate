@@ -123,6 +123,12 @@ init_changed_fixture_repo() {
   done
   : >"$repo/tests/lib.sh"
   : >"$repo/tests/fm-backend-herdr-eventwait.test.py"
+  for script in fm-codex-appserver fm-busy-state fm-crew-state fm-codex-appserver-live-e2e; do
+    : >"$repo/tests/$script.test.sh"
+  done
+  : >"$repo/tests/fm-codex-appserver-fixture.py"
+  : >"$repo/tests/fm-codex-appserver-live.py"
+  : >"$repo/bin/fm-codex-appserver.py"
   : >"$repo/bin/fm-supervisor-target-lib.sh"
   : >"$repo/bin/fm-control-lib.sh"
   : >"$repo/bin/fm-timeout-lib.sh"
@@ -226,6 +232,22 @@ test_changed_dependency_selection_and_unmapped_failure() {
   assert_contains "$listed" "tests/fm-backend.test.sh" "eventwait test selects backend coverage"
   git -C "$repo" add tests/fm-backend-herdr-eventwait.test.py
   git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm eventwait-change
+
+  printf '\n' >>"$repo/bin/fm-codex-appserver.py"
+  printf '\n' >>"$repo/tests/fm-codex-appserver-fixture.py"
+  listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)
+  assert_contains "$listed" "tests/fm-codex-appserver.test.sh" "native Codex reader selects its own coverage"
+  assert_contains "$listed" "tests/fm-busy-state.test.sh" "native Codex reader selects busy-state coverage"
+  assert_contains "$listed" "tests/fm-crew-state.test.sh" "native Codex reader selects crew-state coverage"
+  git -C "$repo" add bin/fm-codex-appserver.py tests/fm-codex-appserver-fixture.py
+  git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm codex-reader-change
+
+  printf '\n' >>"$repo/tests/fm-codex-appserver-live.py"
+  listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)
+  [ "$listed" = "tests/fm-codex-appserver-live-e2e.test.sh" ] \
+    || fail "native Codex live driver must select only its gated guard, got: $listed"
+  git -C "$repo" add tests/fm-codex-appserver-live.py
+  git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm codex-live-change
 
   printf '\n' >>"$repo/bin/fm-supervisor-target-lib.sh"
   listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)
