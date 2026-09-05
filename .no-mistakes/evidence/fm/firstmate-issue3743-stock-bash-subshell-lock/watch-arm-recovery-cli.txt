@@ -1,0 +1,37 @@
+$ bin/fm-test-run.sh tests/fm-watch-arm.test.sh --jobs 1
+Captured during test_rearm_resurfaces_durable_queue_and_remote_open_decision.
+
+--- arm.out (actual CLI output from the unchanged real-process test) ---
+watcher: started pid=5676 (beacon fresh)
+check: rearm-resurface
+
+--- drain.out (actual CLI output from the unchanged real-process test) ---
+1788620761	1	check	remote-reply-ios	check: process-event result captured: remote-reply-ios:7
+1788620761	2	check	startup-network	check: startup-network
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+ios [key=remote-signoff] needs-decision: remote secondmate is held for captain sign-off
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+
+--- decision-only-arm.out (actual CLI output from the unchanged real-process test) ---
+watcher: started pid=17896 (beacon fresh)
+check: rearm-resurface
+
+--- decision-only-drain.out (actual CLI output from the unchanged real-process test) ---
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+ios [key=remote-signoff] needs-decision: remote secondmate is held for captain sign-off
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+
+--- decision-only-drain.err (actual CLI output from the unchanged real-process test) ---
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 17359.1788620766.ySdjko
+
+--- interrupted-decision-arm.out (actual CLI output from the unchanged real-process test) ---
+watcher: started pid=23076 (beacon fresh)
+check: rearm-resurface
+
+--- replayed-decision-drain.out (actual CLI output from the unchanged real-process test) ---
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+ios [key=remote-signoff] needs-decision: remote secondmate is held for captain sign-off
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+
+--- replayed-decision-drain.err (actual CLI output from the unchanged real-process test) ---
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 23336.1788620769.unmg7h
