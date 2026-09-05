@@ -565,13 +565,19 @@ fi
 [ -n "$BACKEND_TARGET" ] || emit unknown none "no backend target recorded"
 pane_readable "$BACKEND_TARGET" || emit unknown none "backend target gone: $BACKEND_TARGET"
 
-# Secondmates idle on their own watcher (idle pane = healthy), so the busy
-# state is not meaningful for them; read their state from the status log only.
+# Secondmates keep their routed status-log fallback. A Codex secondmate with
+# a native binding can also prove activity, failure or an input wait; older
+# launches retain the existing summary path until safely relaunched.
 # Only an exact busy verdict reports working here, and only an exact idle
 # verdict permits the status-log fallback below. Missing, malformed, stale, or
 # unverified semantic state remains unknown.
-if [ "$KIND" != secondmate ]; then
+if [ "$KIND" != secondmate ] || { [ "$HARNESS" = codex ] && [ -f "$STATE/$ID.codex-appserver" ]; }; then
   BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
+  case "$BUSY_VERDICT" in
+    'unknown codex-appserver-failed') emit failed pane 'Codex native turn failed' ;;
+    'unknown codex-appserver-waiting-approval') emit parked pane 'Codex waiting for approval' ;;
+    'unknown codex-appserver-waiting-input') emit parked pane 'Codex waiting for user input' ;;
+  esac
   case "${BUSY_VERDICT%% *}" in
     busy) emit working pane "harness busy (${BUSY_VERDICT#* })" ;;
     idle) ;;
