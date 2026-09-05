@@ -53,7 +53,8 @@
 #      green, so a green PR is never silently read as still-validating.
 #   3. Reconcile the status log through fm-classify-lib.sh's status_current_line:
 #      open decisions survive unrelated events and continuation prose cannot
-#      hide a declaration. If it says needs-decision/blocked but
+#      hide a declaration. Ship/scout terminal declarations supersede stale log
+#      decisions. If it says needs-decision/blocked but
 #      the run-step shows the run moved on, the log is deterministically stale and
 #      is flagged superseded. A genuinely parked run plus a needs-decision log
 #      agree, and are reported as parked.
@@ -153,7 +154,7 @@ map_log_state() {  # <line>
   esac
 }
 
-LOG_LINE=$(status_current_line "$LOG")
+LOG_LINE=$(status_current_line "$LOG" "$KIND")
 LOG_VERB=$(status_line_verb "$LOG_LINE")
 
 # --- remote secondmate: the true source is the remote endpoint ---------------
