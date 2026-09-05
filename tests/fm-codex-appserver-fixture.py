@@ -100,13 +100,24 @@ st = path.stat()
 binding = {'format': 1, 'version': 'codex-cli 0.153.2', 'gen': gen,
            'socket': str(path), 'socket_dev': st.st_dev, 'socket_ino': st.st_ino,
            'worktree': str(lab), 'thread': 'thread-a', 'server_pid': os.getpid(),
-           'tui_pid': os.getpid(), 'owner_pid': os.getpid()}
+           'tui_pid': os.getpid(), 'owner_pid': os.getpid(), 'task': 'worker', 'state': str(state.resolve()),
+           'identity': {'harness': 'codex', 'worktree': str(lab), 'busy_gen': gen,
+                        'spawn_gen': 'fixture', 'window': 'mock', 'backend': None}}
 binding_path = state/'worker.codex-appserver'
 def publish():
     binding_path.write_text(json.dumps(binding))
     binding_path.chmod(0o600)
 publish()
-(state/'worker.meta').write_text('harness=codex\nbusy_gen='+gen+'\nworktree='+str(lab)+'\n')
+meta_path = state/'worker.meta'
+meta_body = 'harness=codex\nbusy_gen='+gen+'\nworktree='+str(lab)+'\nspawn_gen=fixture\nwindow=mock\n'
+meta_path.write_text(meta_body+'kind=scout\n')
+(state/'worker.status').write_text('done: earlier turn\n')
+fakebin = lab/'fakebin'
+fakebin.mkdir()
+(fakebin/'tmux').write_text('#!/bin/sh\nprintf \'%s\\n\' \'%1\'\n')
+(fakebin/'tmux').chmod(0o700)
+consumer_env = {k: v for k, v in os.environ.items() if k not in ['FM_ROOT_OVERRIDE', 'FM_DATA_OVERRIDE', 'FM_STATE_OVERRIDE']}
+consumer_env.update(FM_HOME=str(lab), FM_STATE_OVERRIDE=str(state), PATH=str(fakebin)+':'+os.environ['PATH'])
 
 def classify(want):
     actual = subprocess.check_output(['bash', '-c', '. "$1/bin/fm-busy-lib.sh"; fm_busy_classify tmux mock codex worker "$2"',
@@ -114,8 +125,20 @@ def classify(want):
     assert actual == want, (actual, want)
     print('ok - native classifier: ' + want, flush=True)
 
+def consumers(expected_state, absorb):
+    for kind in ['scout', 'secondmate']:
+        meta_path.write_text(meta_body+'kind='+kind+'\n')
+        value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'], env=consumer_env, text=True)
+        assert value.startswith('state: '+expected_state+' '), (kind, value)
+        value = subprocess.check_output(['bash', '-c', '. "$1/bin/fm-classify-lib.sh"; crew_absorb_class worker', '_', str(root)],
+                                        env=consumer_env, text=True)
+        assert value == absorb, (kind, value)
+    print('ok - ordinary/secondmate crew-state and supervision: '+expected_state, flush=True)
+
+
 try:
     classify('busy codex-appserver')
+    consumers('working', 'working')
     ids.append('title-helper')
     classify('busy codex-appserver')
     ids.pop()
@@ -127,12 +150,14 @@ try:
     native = {'type': 'systemError'}
     turn.update(status='failed')
     classify('unknown codex-appserver-failed')
+    consumers('failed', 'none')
     native = {'type': 'active', 'activeFlags': []}
     turn.update(status='inProgress', completedAt=None)
     classify('busy codex-appserver')
     for flag, source in [('waitingOnApproval', 'approval'), ('waitingOnUserInput', 'input')]:
         native['activeFlags'] = [flag]
         classify('unknown codex-appserver-waiting-' + source)
+        consumers('parked', 'none')
     native = {'type': 'idle'}
     turn.update(status='completed', completedAt=1788557728)
     ids.append('other-root')
@@ -151,8 +176,20 @@ try:
     classify('unknown codex-appserver-binding')
     binding['socket_ino'] -= 1
     publish()
+    binding['task'] = 'different-task'
+    publish()
+    classify('unknown codex-appserver-binding')
+    binding['task'] = 'worker'
+    binding['identity']['spawn_gen'] = 'old-launch'
+    publish()
+    classify('unknown codex-appserver-binding')
+    binding['identity']['spawn_gen'] = 'fixture'
+    publish()
     path.unlink()
     classify('unknown codex-appserver-disconnected')
+    consumers('unknown', 'none')
+    binding_path.unlink()
+    consumers('unknown', 'none')
     assert not any(m in requests for m in ['thread/resume', 'turn/start', 'turn/interrupt'])
 finally:
     server.close()

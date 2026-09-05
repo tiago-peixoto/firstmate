@@ -6,6 +6,40 @@ This record contains reusable version-scoped evidence for active runtime guarant
 The backend guides own current setup, safety boundaries, and limitations.
 Exact task chronology, branch names, temporary homes, local paths, process ids, thread ids, and delivery transcripts remain in private reports or PR evidence.
 
+## Codex native activity
+
+Verified on 2026-09-04 with codex-cli 0.153.2 and Herdr 0.8.2 on macOS, through real `fm-spawn.sh` ordinary-worker relaunches and a fresh secondmate launch in a named non-default Herdr lab.
+The launcher preserves the normal TUI model, effort, account, permission and approval arguments while attaching it to an owned native app-server over a private Unix WebSocket.
+The credentialed cases used the normal configuration; an additional disposable command overlay supplied a deterministic HTTP 400 and then a successful Responses API stream to exercise failure and recovery without editing that configuration.
+
+```sh
+bash tests/fm-codex-appserver.test.sh
+FM_CODEX_NATIVE_LIVE=1 bash tests/fm-codex-appserver-live-e2e.test.sh
+```
+
+The live guard records exact commands, results and native snapshots in `.no-mistakes/codex-native-live/commands.jsonl`.
+Its shell owner provisions and removes the lab through `bin/fm-herdr-lab.sh`, including the running-default-session tripwire.
+
+| Case | Observed behavior |
+| --- | --- |
+| Initial and later input, foreground tool | Native active status reports working through `fm-crew-state.sh`, overriding an older done event. |
+| Completion and interruption | Native completed/interrupted turns permit idle; a later turn returns to working. |
+| User input | Native `waitingOnUserInput` reports parked until the selection arrives. |
+| HTTP error and recovery | Native `systemError` / failed reports failed through crew-state and is not absorbed as working by supervision; a subsequent successful turn in the same thread recovers. |
+| Observation disconnect and reconnect | Lost transport reports unknown; read-only reconnection retains the exact native thread. |
+| Restart and stale binding | A new launch mints a new busy generation; an old binding is rejected. |
+| Exit and cleanup | Normal exit and server death remove the observation binding; the owned launcher, server and TUI exit, and private transport is removed. |
+| Secondmate | Parent-owned binding and generation work despite the child's different `FM_HOME`; lost observation or an exited worker cannot reuse an old done event. |
+
+The portable regression drives a real private socket with protocol-shaped responses through the production reader, busy classifier, crew-state and supervision absorb predicate.
+It additionally covers native approval waits, unexpected extra user roots, task and incarnation mismatches, socket replacement and unsafe binding permissions.
+The server may create an independent system thread for titles; native `threadSource=user` plus root ancestry selects user threads without inferring identity from its `source` label.
+Multiple user roots, including unsupported `/new` or `/resume` paths, remain unknown.
+
+Only the verified version and generated launch path enable native wiring.
+Older running workers, raw commands, unsupported versions and unavailable bindings remain unknown until a supported launch actually establishes observation.
+The version gate must be refreshed with the live guard after a Codex upgrade; this record does not activate or migrate running homes.
+
 ## tmux
 
 Foreground-process behavior was verified on 2026-07-07 with tmux 3.6a on macOS.

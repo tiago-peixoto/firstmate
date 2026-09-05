@@ -297,6 +297,23 @@ test_codex_unverified_until_a_semantic_source_exists() {
   pass "codex classifies unknown until a semantic source is verified, never idle or footer-matched"
 }
 
+test_codex_verified_launch_starts_unknown() {
+  local rec id=busy-cx-native out state gen
+  rec=$(make_spawn_case codex-native codex "$id")
+  read_case_record "$rec"
+  printf '#!/bin/sh\nprintf "codex-cli 0.153.2\\n"\n' > "$FAKEBIN_DIR/codex"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 0 $? "verified Codex spawn should succeed: $out"
+  state="$HOME_DIR/state"
+  gen=$(cat "$state/$id.busy-gen")
+  [ -n "$gen" ] || fail "native launch needs an incarnation"
+  assert_contains "$(cat "$state/$id.meta")" "busy_gen=$gen" "native incarnation must be recorded"
+  assert_absent "$state/$id.codex-appserver" "spawn alone cannot claim native observation"
+  out=$(classify codex "$id" "$state")
+  [ "$out" = "unknown codex-unverified" ] || fail "native launch must await observation, got '$out'"
+  pass "verified Codex launch arms its recorded incarnation without inventing activity"
+}
+
 # Gemini's hooks are PROJECT hooks in the worktree's own .gemini/settings.json,
 # and gemini's hook contract requires each command to print a JSON object on
 # stdout and nothing else, so these drive the real command and check both the
@@ -426,5 +443,6 @@ test_gemini_hooks_stale_incarnation_harmless
 test_raw_gemini_launch_has_no_semantic_wiring
 test_gemini_is_refused_as_a_secondmate
 test_codex_unverified_until_a_semantic_source_exists
+test_codex_verified_launch_starts_unknown
 
 echo "all fm-busy-adapter-wiring tests passed"

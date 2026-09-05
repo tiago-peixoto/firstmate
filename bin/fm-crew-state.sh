@@ -571,7 +571,7 @@ pane_readable "$BACKEND_TARGET" || emit unknown none "backend target gone: $BACK
 # Only an exact busy verdict reports working here, and only an exact idle
 # verdict permits the status-log fallback below. Missing, malformed, stale, or
 # unverified semantic state remains unknown.
-if [ "$KIND" != secondmate ] || { [ "$HARNESS" = codex ] && [ -f "$STATE/$ID.codex-appserver" ]; }; then
+if [ "$KIND" != secondmate ] || { [ "$HARNESS" = codex ] && [ -n "$(meta_value busy_gen)" ]; }; then
   BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
   case "$BUSY_VERDICT" in
     'unknown codex-appserver-failed') emit failed pane 'Codex native turn failed' ;;

@@ -6,7 +6,7 @@ Verified on 2026-06-11 with codex-cli 0.139.0 unless a fact gives a newer versio
 
 | Fact | Value |
 |---|---|
-| Busy state | Unknown until a semantic source is live-verified: the app-server turn lifecycle is unreachable for a pane worker, and project lifecycle hooks did not fire for a Firstmate-launched worker. |
+| Busy state | Verified on codex-cli 0.153.2: Firstmate launches use their private native app-server through `../../../bin/fm-busy-lib.sh`; existing standalone, unsupported-version, raw, or ambiguously bound launches remain unknown. |
 | Exit command | `/quit`; its slash popup needs about one second between text and Enter, which the shared submit path used by the control plane handles. |
 | Interrupt | Single Escape. |
 | Skill invocation | `$<skill>`, for example `$no-mistakes`; `/<skill>` is Claude-only and Codex rejects it as "Unrecognized command". |
@@ -18,6 +18,8 @@ Verified on 2026-06-11 with codex-cli 0.139.0 unless a fact gives a newer versio
 A directory trust dialog appears on the first run for a repository root: "Do you trust the contents of this directory?"
 Accept it with Enter and verify the instructions begin processing.
 The decision persists for the repository, so later worktrees of the same project skip it.
+
+Native activity verification and its version-refresh command are recorded in `../../../docs/verification/runtime-backends.md` under "Codex native activity".
 
 ## Skill popup
 
