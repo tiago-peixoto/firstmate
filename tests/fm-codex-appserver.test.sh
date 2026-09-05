@@ -62,3 +62,30 @@ teardown fm-lab-native-exit-fixture"
     pass "live guard exit: guard=$guard_status teardown=$teardown_status result=$status"
   done
 done
+
+# A failed scratch removal is not a failed lab teardown: it must warn, not go red.
+RM_FAKEBIN=$(fm_fakebin "$EXIT_ROOT/rmfail")
+cat > "$RM_FAKEBIN/rm" <<'SH'
+#!/usr/bin/env bash
+exit 1
+SH
+chmod +x "$RM_FAKEBIN/rm"
+status=0
+output=$(PATH="$RM_FAKEBIN:$FAKEBIN:$PATH" FM_CODEX_NATIVE_LIVE=1 \
+  HERDR_LAB_HELPER="$FAKEBIN/lab-helper" \
+  FM_TEST_CLEANUP_REGISTRY="$FM_TEST_CLEANUP_REGISTRY" \
+  FM_FAKE_LIVE_LAB_PATH="$EXIT_ROOT/lab-path" \
+  FM_FAKE_LIVE_GUARD_STATUS=0 \
+  FM_FAKE_LIVE_TEARDOWN_STATUS=0 \
+  bash "$ROOT/tests/fm-codex-appserver-live-e2e.test.sh" 2>&1) || status=$?
+[ "$status" -eq 0 ] \
+  || fail "a failed scratch removal after a successful teardown must not fail the guard, got $status: $output"
+case "$output" in
+  *"warn: disposable lab directory not removed"*) ;;
+  *) fail "a failed scratch removal must be reported, got: $output" ;;
+esac
+case "$output" in
+  *"teardown fm-lab-native-exit-fixture"*) ;;
+  *) fail "the guard must still run teardown before the scratch removal, got: $output" ;;
+esac
+pass "live guard exit: a failed scratch removal warns instead of reading as a failed teardown"
