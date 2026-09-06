@@ -186,6 +186,11 @@ FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 # shellcheck source=bin/fm-busy-lib.sh
 . "$FM_DAEMON_DIR/fm-busy-lib.sh"
 
+# The single owner of PR-poll artifact validation, read here only for
+# fm_pr_poll_covers_wait in the pause-recheck arm below.
+# shellcheck source=bin/fm-pr-lib.sh
+. "$FM_DAEMON_DIR/fm-pr-lib.sh"
+
 # --- tunables ---------------------------------------------------------------
 # Supervisor backends this daemon knows how to inject into today. zellij, orca,
 # and cmux are real backends elsewhere in firstmate (bin/fm-backend.sh) but this
@@ -1120,7 +1125,15 @@ housekeeping() {  # <state>
             _now > "$marker"
           fi
         elif [ -n "$last" ] && status_is_paused "$last"; then
-          if escalate_add "$state" "paused ${age}s (awaiting external, recheck whether the wait still holds): $win"; then
+          # Away mode inherits the same exemption bin/fm-watch.sh applies: a
+          # declared wait on a pull request that a live movement poll covers
+          # needs no digest asking the captain to confirm it still holds,
+          # because the poll reports every condition that would void it. The
+          # window is restarted rather than dropped, so coverage is re-proved
+          # once an hour and lapses back into the recheck by itself.
+          if fm_pr_poll_covers_wait "$state" "$task" "$FM_DAEMON_DIR/fm-pr-poll.sh" "$pause_secs"; then
+            _now > "$marker"
+          elif escalate_add "$state" "paused ${age}s (awaiting external, recheck whether the wait still holds): $win"; then
             _now > "$marker"
           fi
         else

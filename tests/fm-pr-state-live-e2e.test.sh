@@ -32,4 +32,26 @@ test_every_jq_program_runs_under_gh_engine() {
   pass "every fm-pr-state.sh jq program is accepted by gh's jq engine"
 }
 
+# bin/fm-pr-poll.sh composes its whole reading inside one gh field selector, for
+# the same reason: no JSON processor is required on the watcher's PATH. That
+# makes the selector's own syntax and output shape a live fact - a hermetic fake
+# gh can only replay a shape someone already assumed. cli/cli#1 is a merged 2019
+# pull request, so the merged verdict is stable; the counters are not, so only
+# the shape is asserted for them.
+test_poll_field_selector_runs_under_gh_engine() {
+  local line
+  line=$(gh pr view "$PR" \
+    --json state,isDraft,headRefOid,reviewDecision,reviews,comments \
+    -q '"state=\(.state) draft=\(.isDraft) head=\(.headRefOid[0:12]) reviews=\(.reviews|length) comments=\(.comments|length) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
+    2>&1) || fail "gh rejected the poll's field selector: $line"
+  [[ $line =~ ^state=(OPEN|CLOSED|MERGED)\ draft=(true|false)\ head=[0-9a-f]{12}\ reviews=[0-9]+\ comments=[0-9]+\ decision=[A-Z_]+$ ]] \
+    || fail "the poll's field selector no longer composes the shape the poll validates: $line"
+  case "$line" in
+    'state=MERGED '*) ;;
+    *) fail "the live merged pull request no longer reads as merged: $line" ;;
+  esac
+  pass "the PR poll's field selector compiles under gh's jq engine and composes the shape it validates"
+}
+
 test_every_jq_program_runs_under_gh_engine
+test_poll_field_selector_runs_under_gh_engine
