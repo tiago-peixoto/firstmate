@@ -351,6 +351,37 @@ def launch_argument_forwarding():
     print('ok - launch preserves model, effort and approval argv and mirrors only configuration', flush=True)
 
 
+# An observability capability must never veto the worker: this launcher IS the
+# pane command, so a refusal would leave the pane with no agent at all. A failed
+# launch retires BOTH halves of the arming (the sidecar/record the classifier
+# keys on and the meta busy_gen line the crew-state Codex block keys on), states
+# the reason as a plain working: fact, and becomes the plain Codex it wrapped.
+def degraded_launch():
+    stub = lab/'unstartable-codex'
+    stub.write_text('#!/bin/sh\n[ "$1" = app-server ] && exit 1\nprintf \'%s\\n\' "$@" > "$FM_FIXTURE_PROOF"\n')
+    stub.chmod(0o700)
+    proof = lab/'plain-launch-argv'
+    proof.unlink(missing_ok=True)
+    binding_path.unlink(missing_ok=True)
+    (state/'worker.status').write_text('done: earlier turn\n')
+    meta_path.write_text(meta_body+'kind=ship\n')
+    argv = ['--model', 'gpt-5-codex', 'fixture prompt']
+    launcher = subprocess.run([sys.executable, str(root/'bin/fm-codex-appserver.py'),
+        'launch', str(state), 'worker', gen, '--', str(stub)] + argv, cwd=lab, timeout=60,
+        env={**consumer_env, 'FM_FIXTURE_PROOF': str(proof)}, capture_output=True, text=True)
+    assert launcher.returncode == 0, launcher
+    assert proof.read_text().split('\n')[:-1] == argv, 'the worker did not start as plain Codex'
+    for leftover in ['worker.busy-gen', 'worker.busy-state', 'worker.codex-appserver']:
+        assert not (state/leftover).exists(), 'degraded launch left '+leftover+' behind'
+    meta = meta_path.read_text()
+    assert 'busy_gen=' not in meta and 'harness=codex\n' in meta, meta
+    log = (state/'worker.status').read_text().splitlines()
+    assert log[0] == 'done: earlier turn' and len(log) == 2, log
+    assert log[1].startswith('working: native Codex activity observation was not established (') \
+        and 'did not start' in log[1], log
+    print('ok - a failed native launch degrades to plain Codex and retires the whole arming', flush=True)
+
+
 try:
     classify('busy codex-appserver')
     consumers('working', 'working')
@@ -439,6 +470,7 @@ try:
     launch_argument_forwarding()
     consumers('unknown', 'none')
     ship_runs('unknown', 'codex-unverified')
+    degraded_launch()
     assert not any(m in requests for m in ['thread/resume', 'turn/start', 'turn/interrupt'])
 finally:
     server.close()

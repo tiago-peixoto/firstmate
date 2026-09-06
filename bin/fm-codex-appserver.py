@@ -278,9 +278,10 @@ def stop(child, group=False):
 def supported(name='codex'):
     """The sole capability gate: the resolved binary, or None when unverified.
 
-    fm_busy_codex_appserver_observable (bin/fm-busy-lib.sh) and launch() both
-    ask here, so the arming decision and the launch can never disagree about
-    which installed version has passed the native activity guard.
+    fm_busy_codex_appserver_observable (bin/fm-busy-lib.sh) is the only caller.
+    The arming decision is therefore taken exactly once, in fm-spawn's own
+    environment, and launch() runs the binary fm-spawn resolved there rather
+    than re-deriving a verdict the pane's environment could contradict.
     """
     binary = shutil.which(name)
     if not binary:
@@ -293,9 +294,7 @@ def supported(name='codex'):
 
 
 def launch(state, task, gen, argv):
-    binary = supported(argv[0])
-    if not binary:
-        raise ValueError('Codex version has not passed the native activity guard')
+    binary = argv[0]
     gen_path = state / (task + '.busy-gen')
     if gen_path.read_text().strip() != gen:
         raise ValueError('retired launch generation')
@@ -407,6 +406,26 @@ def launch(state, task, gen, argv):
             signal.signal(signum, handler)
 
 
+def degrade(state, task, gen, argv, reason):
+    """Observation is optional to execution: run the worker unobserved.
+
+    This process IS the pane command, so a failed observer that exited here
+    would leave no agent at all. Retire the arming through the shared primitive
+    that clears BOTH records, record the reason as a plain visible fact, then
+    become the plain Codex the launch was wrapping. Never returns.
+    """
+    subprocess.run([str(Path(__file__).resolve().parent / 'fm-busy-event.sh'), 'retire',
+                    str(state), task, '--gen', gen, '--clear-meta'],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    try:
+        with (state / (task + '.status')).open('a') as log:
+            log.write('working: native Codex activity observation was not established (' +
+                      reason.replace('\n', ' ') + '); this worker runs unobserved\n')
+    except OSError:
+        pass
+    os.execv(argv[0], argv)
+
+
 def main():
     if len(sys.argv) == 2 and sys.argv[1] == 'supported':
         return 0 if supported() else 1
@@ -423,7 +442,7 @@ def main():
             return launch(state, task, sys.argv[4], sys.argv[6:])
         except (OSError, ValueError, RuntimeError, EOFError) as exc:
             print('Codex native launch failed: ' + str(exc), file=sys.stderr)
-            return 1
+            degrade(state, task, sys.argv[4], sys.argv[6:], str(exc))
     verdict, epoch = snapshot(state, task)
     if command == 'read':
         print(verdict, end='')

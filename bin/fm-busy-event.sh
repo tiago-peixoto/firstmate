@@ -23,11 +23,21 @@
 #       paths (fm-recovery) may pass --current-gen to bind to the incarnation
 #       armed right now.
 #
-#   retire <state-dir> <id> (--gen G | --current-gen)
+#   retire <state-dir> <id> (--gen G | --current-gen) [--clear-meta]
 #       Remove one incarnation's sidecar and record while holding the same
 #       writer lock used by arm and apply. An exact gen prevents teardown for
 #       an old task from retiring a newly armed incarnation. A missing sidecar
 #       is already retired, so any orphan record is removed idempotently.
+#
+#       --clear-meta retires the arming COMPLETELY: it also drops the
+#       busy_gen= line from state/<id>.meta. Both records must be cleared
+#       together because two different owners key on two different halves -
+#       fm_busy_classify keys on state/<id>.codex-appserver, while the
+#       crew-state Codex block keys on the meta busy_gen line - so clearing
+#       one and not the other leaves the task claimed by that block and
+#       reporting `unknown codex-unverified` forever. Any caller retiring an
+#       arming for good (bin/fm-codex-appserver.py's degrade path today,
+#       bin/fm-control.sh's retire_busy_incarnation next) wants this form.
 #
 # Exit codes: 0 applied; 1 refused (stale gen, unarmed task, lock timeout,
 # invalid input); 2 usage. Adapter hook command lines append `|| true` so a
@@ -39,7 +49,7 @@ usage() {
 usage:
   fm-busy-event.sh arm <state-dir> <id> [--state busy|idle|unknown] [--source S] [--event E]
   fm-busy-event.sh apply <state-dir> <id> <busy|idle|unknown> (--gen G | --current-gen) --source S --event E
-  fm-busy-event.sh retire <state-dir> <id> (--gen G | --current-gen)
+  fm-busy-event.sh retire <state-dir> <id> (--gen G | --current-gen) [--clear-meta]
 See the header comment for the full contract.
 EOF
   exit 2
@@ -65,6 +75,7 @@ case "$ID" in *[!A-Za-z0-9._-]*) echo "error: invalid task id" >&2; exit 1 ;; es
 NEW_STATE=
 GEN=
 USE_CURRENT_GEN=0
+CLEAR_META=0
 SOURCE=
 EVENT=
 if [ "$CMD" = apply ]; then
@@ -80,6 +91,7 @@ while [ $# -gt 0 ]; do
     --state) NEW_STATE=${2:-}; shift 2 || usage ;;
     --gen) GEN=${2:-}; shift 2 || usage ;;
     --current-gen) USE_CURRENT_GEN=1; shift ;;
+    --clear-meta) [ "$CMD" = retire ] || usage; CLEAR_META=1; shift ;;
     --source) SOURCE=${2:-}; shift 2 || usage ;;
     --event) EVENT=${2:-}; shift 2 || usage ;;
     *) usage ;;
@@ -143,6 +155,17 @@ write_record() {  # <gen> <seq>
   mv -f "$tmp" "$REC"
 }
 
+# Drop the meta's busy_gen= line so no reader still believes this task carries
+# a live arming. See --clear-meta in the header: the two records are one fact.
+clear_meta_busy_gen() {
+  local meta="$STATE/$ID.meta" tmp
+  [ "$CLEAR_META" = 1 ] || return 0
+  [ -f "$meta" ] || return 0
+  tmp="$meta.tmp.$$"
+  grep -v '^busy_gen=' "$meta" > "$tmp" 2>/dev/null || [ $? -eq 1 ] || { rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$meta"
+}
+
 old_umask=$(umask)
 umask 077
 
@@ -174,7 +197,7 @@ fi
 lock_acquire || { umask "$old_umask"; exit 1; }
 CURRENT=$(fm_busy_current_gen "$STATE" "$ID") || {
   if [ "$CMD" = retire ] && [ ! -e "$GEN_FILE" ] && [ ! -L "$GEN_FILE" ]; then
-    rm -f "$REC" || {
+    rm -f "$REC" && clear_meta_busy_gen || {
       lock_release
       umask "$old_umask"
       echo "error: busy-state retirement failed for $ID" >&2
@@ -199,7 +222,7 @@ if [ "$GEN" != "$CURRENT" ]; then
   exit 1
 fi
 if [ "$CMD" = retire ]; then
-  rm -f "$GEN_FILE" "$REC" || {
+  rm -f "$GEN_FILE" "$REC" && clear_meta_busy_gen || {
     lock_release
     umask "$old_umask"
     echo "error: busy-state retirement failed for $ID" >&2

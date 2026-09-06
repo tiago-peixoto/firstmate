@@ -124,8 +124,11 @@ fm_busy_kimi_verified() {
 # Launch capability gate. Keep exact-version verification and launch wiring
 # together: old standalone workers remain unknown because they lack a bound
 # native source, even when a newer installed binary passes this gate. The
-# verified version is the reader's alone (its `supported` command), so arming
-# here and the launcher's own refusal can never disagree after an upgrade.
+# verified version is the reader's alone (its `supported` command), and this is
+# its only caller: the decision is taken once, here, and the launcher runs the
+# binary this gate resolved rather than re-deriving a verdict of its own. A
+# launch that then fails degrades to plain Codex and retires the arming; an
+# observability capability never vetoes a worker.
 # Hooks remain unsuitable as a complete source: API errors have no closing
 # hook while the TUI remains open. Native status owns failure.
 fm_busy_codex_appserver_observable() {
