@@ -119,8 +119,8 @@ pass "remote provisioning publishes durable parent state before its completion m
 ) | (cd "$REMOTE_ROOT" && tar -xf -)
 install_remote_herdr_fixture "$REMOTE_ROOT" "$HERDR_STATE" "$HERDR_LOG" \
   "$TMP_ROOT/herdr-send-fail" "$TMP_ROOT/herdr.sock"
-printf '#!/bin/sh\nprintf "codex-cli 0.153.2\\n"\n' > "$FAKEBIN/codex"
-chmod +x "$FAKEBIN/codex"
+printf '#!/bin/sh\nprintf "codex-cli 0.153.2\\n"\n' > "$REMOTE_ROOT/bin/codex"
+chmod +x "$REMOTE_ROOT/bin/codex"
 git -C "$REMOTE_ROOT" init -q -b main
 git -C "$REMOTE_ROOT" config user.email test@example.com
 git -C "$REMOTE_ROOT" config user.name Test
@@ -192,7 +192,6 @@ SH
 chmod +x "$FAKEBIN/fake-ssh"
 
 remote_env() {
-  PATH="$FAKEBIN:$PATH" \
   FM_HOME="$PARENT" \
   FM_ROOT_OVERRIDE="$REMOTE_ROOT" \
   FM_PROCEVENT_CLAIM_ROOT="$CLAIMS" \
@@ -219,11 +218,20 @@ cmp -s "$REMOTE_HOME/.fm-secondmate-parent" <(
   printf 'schema=fm-secondmate-parent.v1\nroute=remote\nparent_host=remote-mac\n'
 ) || fail "real remote provisioning must write the exact durable remote parent record"
 
-# Without an open gate the three assertions below hold for the wrong reason:
-# no installed Codex means no native arming regardless of the parent route.
-remote_env bash -c '. "$1/bin/fm-busy-lib.sh"; fm_busy_codex_appserver_observable' \
-  bash "$REMOTE_ROOT" \
-  || fail "fixture drift: the native capability gate is closed, so the parent-route exclusion proves nothing"
+# The fm-spawn that evaluates the parent-route exclusion is the remote leg, run
+# by the job worker under `env -i` with the composed child PATH, so the gate must
+# be proven open in THAT environment. Without it the three assertions below hold
+# for the wrong reason: no installed Codex means no native arming regardless of
+# the parent route.
+CHILD_PATH=$(
+  # shellcheck source=/dev/null
+  . "$REMOTE_ROOT/bin/fm-remote-job-lib.sh"
+  fm_remote_job_compose_operator_path "$(cd ~ && pwd -P)" >/dev/null
+  fm_remote_job_build_child_path "$REMOTE_ROOT"
+)
+/usr/bin/env -i "PATH=$CHILD_PATH" \
+  bash -c '. "$1/bin/fm-busy-lib.sh"; fm_busy_codex_appserver_observable' bash "$REMOTE_ROOT" \
+  || fail "fixture drift: the native capability gate is closed on the remote leg, so the parent-route exclusion proves nothing"
 
 remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate >/dev/null \
   || fail "real remote secondmate launch failed"
