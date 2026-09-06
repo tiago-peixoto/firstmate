@@ -123,7 +123,8 @@ init_changed_fixture_repo() {
   done
   : >"$repo/tests/lib.sh"
   : >"$repo/tests/fm-backend-herdr-eventwait.test.py"
-  for script in fm-codex-appserver fm-busy-state fm-crew-state fm-codex-appserver-live-e2e; do
+  for script in fm-codex-appserver fm-busy-state fm-crew-state fm-codex-appserver-live-e2e \
+    fm-busy-adapter-wiring fm-spawn-dispatch-profile fm-remote-secondmate-parent-binding; do
     : >"$repo/tests/$script.test.sh"
   done
   : >"$repo/tests/fm-codex-appserver-fixture.py"
@@ -247,6 +248,9 @@ test_changed_dependency_selection_and_unmapped_failure() {
   assert_contains "$listed" "tests/fm-codex-appserver.test.sh" "native Codex reader selects its own coverage"
   assert_contains "$listed" "tests/fm-busy-state.test.sh" "native Codex reader selects busy-state coverage"
   assert_contains "$listed" "tests/fm-crew-state.test.sh" "native Codex reader selects crew-state coverage"
+  assert_contains "$listed" "tests/fm-busy-adapter-wiring.test.sh" "native Codex reader selects the arming fixture that stubs its verified version"
+  assert_contains "$listed" "tests/fm-spawn-dispatch-profile.test.sh" "native Codex reader selects the launch-command fixture that stubs its verified version"
+  assert_contains "$listed" "tests/fm-remote-secondmate-parent-binding.test.sh" "native Codex reader selects the remote-leg fixture that stubs its verified version"
   git -C "$repo" add bin/fm-codex-appserver.py tests/fm-codex-appserver-fixture.py
   git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm codex-reader-change
 

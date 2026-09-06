@@ -1170,6 +1170,13 @@ families_for_changed_path() {
       printf '%s\n' "__script__:fm-codex-appserver.test.sh"
       printf '%s\n' "__script__:fm-busy-state.test.sh"
       printf '%s\n' "__script__:fm-crew-state.test.sh"
+      # The reader is the only home of VERIFIED_VERSION, and the launch-path
+      # fixtures below open the capability gate by stubbing `codex --version`
+      # with that same literal, so a version refresh breaks them without ever
+      # touching their own files.
+      printf '%s\n' "__script__:fm-busy-adapter-wiring.test.sh"
+      printf '%s\n' "__script__:fm-spawn-dispatch-profile.test.sh"
+      printf '%s\n' "__script__:fm-remote-secondmate-parent-binding.test.sh"
       ;;
     tests/fm-codex-appserver-live.py)
       printf '%s\n' "__script__:fm-codex-appserver-live-e2e.test.sh"
