@@ -127,9 +127,13 @@ _fm_verb_is_terminal() {  # <verb>
 }
 
 # The verbs that RETRACT a standing declared wait: the terminal captain verbs
-# above, plus the resolution verb. This is deliberately the same closing set
+# above, plus the resolution verb. Those are the closing verbs
 # _fm_status_open_activities_stream below already applies to an open working or
-# paused phase, so the two folds cannot disagree about when a declared wait ended.
+# paused phase, and status_standing_wait_line matches them the same key-scoped
+# way, so the two folds cannot disagree about when a declared wait ended. One
+# verb differs deliberately and is NOT listed here: `captain-held` closes a
+# routed-work phase there, but a verified hold transfer is itself a wait on the
+# captain, so here it DECLARES (see _fm_verb_is_declared_wait below).
 #
 # `resolved:` is what makes the retraction unambiguous, and it is not new
 # vocabulary: bin/fm-brief.sh already instructs a worker to append
@@ -248,6 +252,16 @@ status_is_paused_or_captain_held() {  # <status-line>
 # and everything else - working:, note:, and free-text prose - leaves the
 # declaration standing.
 #
+# Retraction is KEY-SCOPED, exactly as it is in the sibling folds: a retraction
+# clears the standing declaration only when it carries that declaration's own key
+# (an unkeyed declaration is retracted only by an unkeyed retraction, both being
+# the "default" key). This is not a refinement, it is the same masking again from
+# a different producer: firstmate answering an UNRELATED decision writes
+# `resolved [key=<other>]` straight into the worker's own status log
+# (bin/fm-send.sh --resolve-key), and bin/fm-pending-reply-lib.sh writes the same
+# close line automatically when a pending reply is consumed. Keyless retraction
+# would let answering one question silently cancel a wait on something else.
+#
 # THIS IS NOT AN UNCONDITIONAL SUPPRESSION, which matters because a real wedge
 # under a stale declaration must still be reachable. Two paths remain, both
 # pre-existing: fm-watch.sh's pause_state_class answers `none` (surface) for any
@@ -256,23 +270,31 @@ status_is_paused_or_captain_held() {  # <status-line>
 # standing declaration is therefore a wedge noticed on the hour-long recheck
 # cadence instead of the ~4-minute wedge cadence, never a wedge gone silent.
 #
-# A forward read with ONE verb extraction per line and no command substitution -
-# hence the verb-taking predicates above rather than the line-taking ones. That is
-# not a micro-optimisation: each line-taking predicate captures status_line_verb
-# through `$(...)`, which forks, and folding three of those over a several-hundred
-# line log cost seconds of CPU per gate. The watcher runs this gate for every
-# window on every poll, so a fold that forks would have replaced the wake cost
-# this change removes with a poll cost just as large.
+# A forward read with ONE verb extraction per line and no command substitution on
+# the common path - hence the verb-taking predicates above rather than the
+# line-taking ones. That is not a micro-optimisation: each line-taking predicate
+# captures status_line_verb through `$(...)`, which forks, and folding three of
+# those over a several-hundred line log cost seconds of CPU per gate. The watcher
+# runs this gate for every window on every poll, so a fold that forks would have
+# replaced the wake cost this change removes with a poll cost just as large. The
+# key read below is the one `$(...)`, and it is reached only by a line that
+# actually declares or (with a wait standing) retracts - a handful per log, not
+# the `working:` run that makes a log long.
 status_standing_wait_line() {  # <status-file> -> the standing declaration line, or empty
-  local f=$1 line verb standing=''
+  local f=$1 line verb key standing='' standing_key=''
   [ -e "$f" ] || return 0
   while IFS= read -r line || [ -n "$line" ]; do
     [ -n "$line" ] || continue
     _fm_status_line_verb_into verb "$line"
     if _fm_verb_is_declared_wait "$verb"; then
+      key=$(_fm_decision_key "$line") || continue
       standing=$line
-    elif _fm_verb_retracts_declared_wait "$verb"; then
+      standing_key=$key
+    elif [ -n "$standing" ] && _fm_verb_retracts_declared_wait "$verb"; then
+      key=$(_fm_decision_key "$line") || continue
+      [ "$key" = "$standing_key" ] || continue
       standing=''
+      standing_key=''
     fi
   done < "$f"
   printf '%s' "$standing"

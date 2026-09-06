@@ -851,7 +851,7 @@ busy_turn_over_age() {  # <task>
 # wording; a caller that reached the bounded cadence off pause tracking alone, with
 # no declaring verb left on the log, keeps the external-wait wording it always had.
 handle_paused_stale() {  # <window> <task> <hash>
-  local win=$1 task=$2 h=$3 key statusf mtime age detail reason declaration
+  local win=$1 task=$2 h=$3 key statusf mtime age detail reason declaration standing
   key=$(window_key "$win")
   printf '%s' "$h" > "$STATE/.stale-$key"
   : > "$STATE/.paused-$key"
@@ -861,7 +861,8 @@ handle_paused_stale() {  # <window> <task> <hash>
   mtime=$(stat_mtime "$statusf")
   case "$mtime" in ''|*[!0-9]*) mtime=$(date +%s) ;; esac
   age=$(( $(date +%s) - mtime ))
-  if status_is_captain_held "$(status_standing_wait_line "$statusf")"; then
+  standing=$(status_standing_wait_line "$statusf")
+  if status_is_captain_held "$standing"; then
     detail="captain-held, awaiting the captain"
     reason="captain-held ${age}s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold"
   else
@@ -883,7 +884,7 @@ handle_paused_stale() {  # <window> <task> <hash>
       return 0
     fi
   fi
-  declaration="declared:$(fm_wake_signal_sig "$statusf" || true)"
+  declaration="declared:$standing"
   resurface_absorbed "$win" "$STATE/.paused-resurfaced-$key" "$age" "stale: $win ($reason)" "$declaration"
   triage_log "absorbed stale ($detail, age ${age}s): $win"
 }
@@ -904,9 +905,10 @@ handle_paused_stale() {  # <window> <task> <hash>
 # classification, which is why the declaration is read before the afk branch
 # rather than after it.
 busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-file>
-  local win=$1 task=$2 h=$3 since_file=$4 escalation_file=$5 key statusf declared
+  local win=$1 task=$2 h=$3 since_file=$4 escalation_file=$5 key statusf declared standing
   statusf="$STATE/$task.status"
-  if status_is_paused_or_captain_held "$(status_standing_wait_line "$statusf")"; then
+  standing=$(status_standing_wait_line "$statusf")
+  if status_is_paused_or_captain_held "$standing"; then
     if afk_present; then
       # Away mode is daemon-owned, so this bound hands off the PLAIN wake identity
       # and lets the daemon classify the declaration itself - the undecorated
@@ -915,13 +917,16 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
       # decoration overrides the daemon's own pause verdict for the pane: the
       # ladder then climbs on every re-arm, escalating a crew that declared the
       # wait itself once per FM_STALE_ESCALATE_SECS for as long as the wait lasts.
-      # The one-shot is keyed on the DECLARATION (the status log's signature),
-      # never on the pane hash: a busy pane's harness footer ticks on every
-      # capture, so a hash-keyed one-shot would re-fire on every poll and the
-      # daemon, which relaunches the watcher after each handled wake, would be
-      # woken in a loop for the whole declared wait. The suppressor therefore
-      # advances to the declaration rather than the hash, and the daemon is woken
-      # once per distinct declaration. The wedge timer, escalation count and
+      # The one-shot is keyed on the DECLARATION LINE itself, never on the pane
+      # hash and never on the status file's signature: a busy pane's harness
+      # footer ticks on every capture, so a hash-keyed one-shot would re-fire on
+      # every poll and the daemon, which relaunches the watcher after each handled
+      # wake, would be woken in a loop for the whole declared wait - and a
+      # signature-keyed one has the same hole one step further out, because the
+      # signature carries the file's SIZE, so any append by any producer (the
+      # worker's own armed step reporter, in the incident) voids it just the same.
+      # The standing line changes only when the crew declares something else, so
+      # the suppressor advances once per distinct declaration. The wedge timer, escalation count and
       # write-deferral chain are cleared exactly as handle_paused_stale clears
       # them, so an undeclared busy phase that had already started the timer does
       # not resume its count the moment the declaration is lifted. Normal-mode
@@ -930,7 +935,7 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
       key=$(window_key "$win")
       rm -f "$since_file" "$escalation_file"
       clear_write_tracking "$key"
-      declared="declared:$(fm_wake_signal_sig "$statusf" || true)"
+      declared="declared:$standing"
       if [ "$(cat "$STATE/.stale-$key" 2>/dev/null || true)" != "$declared" ]; then
         fm_wake_append stale "$win" "stale: $win" || exit 1
         printf '%s' "$declared" > "$STATE/.stale-$key"
@@ -1049,7 +1054,7 @@ surface_nonterminal_stale() {  # <window> <hash>
   standing=$(status_standing_wait_line "$STATE/$task.status")
   if status_is_paused_or_captain_held "$standing"; then
     declared=0
-    declaration="declared:$(fm_wake_signal_sig "$STATE/$task.status" || true)"
+    declaration="declared:$standing"
     if [ "$(cat "$STATE/.paused-resurfaced-$key" 2>/dev/null || true)" = "$declaration" ] \
       && [ "$(age_of "$STATE/.paused-resurfaced-$key")" -lt "$PAUSE_RESURFACE_SECS" ]; then
       throttled=0

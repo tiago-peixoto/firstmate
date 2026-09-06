@@ -147,8 +147,13 @@ test_the_resolution_verb_retracts_without_ending_the_task() {
   assert_no_standing "$f" "a 'resolved:' line did not retract the declared wait"
 
   # Keyed too, since that is the form a worker answering its own blocker writes.
-  f=$(status_log retract-resolved-keyed "$PAUSE" 'resolved [key=release]: access arrived')
-  assert_no_standing "$f" "a keyed 'resolved:' line did not retract the declared wait"
+  # Retraction is key-scoped, so the keyed form clears the declaration that
+  # states the SAME key; test_retraction_is_scoped_to_the_declarations_own_key
+  # below owns the other half.
+  f=$(status_log retract-resolved-keyed \
+    'paused [key=release]: waiting on the vendor release' \
+    'resolved [key=release]: access arrived')
+  assert_no_standing "$f" "a keyed 'resolved:' line did not retract its own declared wait"
 
   # And the worker can then keep working without re-declaring anything.
   f=$(status_log retract-resolved-resume "$PAUSE" 'resolved: access arrived' 'working: resumed the sweep')
@@ -166,6 +171,59 @@ test_the_resolution_verb_retracts_without_ending_the_task() {
     *) fail "status_open_activities still holds a phase 'resolved:' closed, so the two folds disagree" ;;
   esac
   pass "the resolution verb retracts a wait without ending the task, a bare working: line still does not, and the two folds agree"
+}
+
+# The masking defect, reached by a producer the `working:` rule does not cover.
+# Firstmate answering an UNRELATED decision writes `resolved [key=<other>]`
+# straight into the WORKER's own status log (bin/fm-send.sh --resolve-key), and
+# bin/fm-pending-reply-lib.sh writes the same close line automatically when a
+# pending reply is consumed. A keyless retraction rule would let either one cancel
+# a wait about something else and restart the possible-wedge ladder - the same
+# masking this fold exists to stop, one producer over. So retraction carries a key
+# and must match the declaration's, exactly as the sibling folds already require.
+test_retraction_is_scoped_to_the_declarations_own_key() {
+  local f
+  # The live shape: an open keyed decision, a separate unkeyed wait, firstmate
+  # answering the decision.
+  f=$(status_log key-scope-foreign-resolve \
+    'needs-decision [key=route]: north or south?' \
+    "$PAUSE" \
+    'resolved [key=route]: north')
+  assert_standing "$f" "$PAUSE" \
+    "answering an unrelated keyed decision cancelled a live declared wait"
+
+  # A terminal verb is no different: it must carry the declaration's key too.
+  f=$(status_log key-scope-foreign-terminal \
+    "$PAUSE" \
+    'blocked [key=route]: the routing call is stuck')
+  assert_standing "$f" "$PAUSE" \
+    "a keyed terminal line for another decision cancelled an unkeyed declared wait"
+
+  # And the reverse direction: an unkeyed retraction cannot clear a KEYED wait,
+  # because a bare `resolved:` states the "default" key, not "every key".
+  f=$(status_log key-scope-bare-vs-keyed \
+    'paused [key=vendor]: waiting on the vendor rate-limit reset' \
+    'resolved: some other thing cleared')
+  assert_standing "$f" 'paused [key=vendor]: waiting on the vendor rate-limit reset' \
+    "a bare 'resolved:' cancelled a keyed declared wait it does not name"
+
+  # The retractions that DO hold, so the scoping did not turn into a mute: same
+  # key both sides, and unkeyed both sides (both being the "default" key).
+  f=$(status_log key-scope-matching-key \
+    'paused [key=vendor]: waiting on the vendor rate-limit reset' \
+    'resolved [key=vendor]: the vendor window opened')
+  assert_no_standing "$f" "a retraction carrying the declaration's own key did not retract it"
+
+  f=$(status_log key-scope-both-unkeyed "$PAUSE" 'resolved: the upstream release landed')
+  assert_no_standing "$f" "an unkeyed retraction did not retract an unkeyed declaration"
+
+  # The stated key may sit in either documented position (_fm_decision_key owns
+  # that grammar), so the two positions must scope identically.
+  f=$(status_log key-scope-note-head-position \
+    'paused: [key=vendor] waiting on the vendor rate-limit reset' \
+    'resolved [key=vendor]: the vendor window opened')
+  assert_no_standing "$f" "a note-head key position did not scope the retraction the same way"
+  pass "retraction is scoped to the declaration's own key, so answering another decision cannot cancel a live wait"
 }
 
 # A retracted declaration stays retracted through later non-declaring lines: the
@@ -344,6 +402,7 @@ test_the_reported_masking_sequence_keeps_the_declaration
 test_non_declaring_producers_never_retract
 test_every_terminal_verb_retracts
 test_the_resolution_verb_retracts_without_ending_the_task
+test_retraction_is_scoped_to_the_declarations_own_key
 test_a_retracted_declaration_stays_retracted
 test_a_new_declaration_after_a_retraction_stands
 test_a_later_declaration_replaces_an_earlier_one

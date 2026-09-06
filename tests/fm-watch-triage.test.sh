@@ -2546,6 +2546,24 @@ test_live_declared_wait_churn_honors_the_resurface_throttle() {
       round=$((round + 1))
     done
 
+    # The incident's own masking append, now against the THROTTLE rather than the
+    # declaration: the worker's armed step reporter keeps writing `working:` lines
+    # into the same log for the whole wait. Each append changes the status file's
+    # size, so a throttle scoped on the file signature is voided by every one of
+    # them and the next distinct pane hash alarms again - one supervision wake per
+    # reporter append across eighteen hours. The declaration has not changed, so
+    # the throttle must still hold.
+    printf 'working: run 01M1T9RF188DHFWHN5YRQVXZ8Q step ci,failed\n' >> "$statusf"
+    sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-parked_status"
+    printf 'parked, elapsed 5s' > "$capture_file"
+    parked_watch_round "$state" "$fakebin" "$out" "$capture_file" "$window" absorb \
+      || fail "[$name] a foreign status append re-alarmed a parked worker inside its re-surface window"
+    wakes=$(awk -F '\t' -v w="$window" '$3 == "stale" && $4 == w { n++ } END { print n + 0 }' \
+      "$state/.wake-queue" 2>/dev/null || echo 0)
+    [ "$wakes" -eq 0 ] \
+      || fail "[$name] a foreign status append re-alarmed a parked worker $wakes time(s) inside the re-surface window"
+    [ -e "$throttle" ] || fail "[$name] a foreign status append cleared the re-surface throttle"
+
     # A direct wait-to-wait transition starts a NEW declaration even though the
     # same window remains parked. Its first sight must not inherit the previous
     # declaration's throttle, or an unrelated replacement wait can stay silent
