@@ -1,0 +1,30 @@
+End-user surface: bin/fm-crew-state.sh on real Codex workers, host codex-cli 0.153.4,
+with the refreshed pin. Verbatim outputs recorded by the credentialed live guard,
+in execution order (consecutive repeats collapsed).
+
+Reported symptom before this change, on every Codex worker on this host:
+  state: unknown - source: pane - harness state unavailable (unknown codex-unverified)
+
+$ bin/fm-crew-state.sh codex-native-live
+  state: working · source: pane · harness busy (codex-appserver)
+$ bin/fm-crew-state.sh codex-native-live
+  state: done · source: status-log · earlier fixture turn
+$ bin/fm-crew-state.sh codex-native-live
+  state: working · source: pane · harness busy (codex-appserver)
+$ bin/fm-crew-state.sh codex-native-live
+  state: parked · source: pane · Codex waiting for user input
+$ bin/fm-crew-state.sh codex-native-live
+  state: failed · source: pane · Codex native turn failed
+$ bin/fm-crew-state.sh codex-native-mate
+  state: working · source: pane · harness busy (codex-appserver)
+$ bin/fm-crew-state.sh codex-native-mate
+  state: unknown · source: pane · harness state unavailable (unknown codex-appserver-disconnected)
+$ bin/fm-crew-state.sh codex-native-mate
+  state: done · source: status-log · earlier fixture turn
+$ bin/fm-crew-state.sh codex-native-mate
+  state: unknown · source: pane · harness state unavailable (unknown codex-unverified)
+
+Note: the trailing "unknown" lines are asserted-correct outcomes, not the old symptom -
+one is the SIGSTOP observation-loss case ("secondmate observation loss is unknown") and
+the last follows fm-control.sh exit ("secondmate exit loses activity instead of trusting
+old done"). A live, observable worker never reports codex-unverified with this pin.

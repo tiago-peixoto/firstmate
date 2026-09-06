@@ -1,0 +1,12 @@
+host: macOS 26.6.2   date: 2026-09-06T21:00:04Z
+installed codex: codex-cli 0.153.4  (/Users/tiago/.local/bin/codex)
+
+$ grep VERIFIED_VERSION <base bb0359d5 bin/fm-codex-appserver.py>
+33:VERIFIED_VERSION = 'codex-cli 0.153.2'
+$ python3 <base pin> supported   # capability gate
+  exit=1  -> gate CLOSED (no app-server armed)
+
+$ grep VERIFIED_VERSION bin/fm-codex-appserver.py   # this change
+33:VERIFIED_VERSION = 'codex-cli 0.153.4'
+$ python3 bin/fm-codex-appserver.py supported   # capability gate
+  exit=0  -> gate OPEN (native app-server armed on launch)

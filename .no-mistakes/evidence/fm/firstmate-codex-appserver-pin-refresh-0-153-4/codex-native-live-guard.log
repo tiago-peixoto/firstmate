@@ -1,0 +1,77 @@
+FM_TEST_BEGIN 2026-09-06T20:59:46Z tests/fm-codex-appserver-live-e2e.test.sh family=live-harness-optin expected_gate_skip=optin-env
+ok - installed Codex version codex-cli 0.153.4
+native: unknown codex-unverified
+native: unknown codex-appserver-binding
+native: busy codex-appserver
+ok - crew-state proves initial activity over an old done event
+native: busy codex-appserver
+native: idle codex-appserver
+ok - native initial turn completed
+ok - exact user thread and cwd
+ok - crew-state permits the status log only after native completion
+ok - private directory and socket
+ok - read-only observer reconnect
+ok - observation loss is unknown, not idle or failure
+native: idle codex-appserver
+ok - observation recovery retains the exact thread
+native: busy codex-appserver
+ok - foreground command wrote its executing PID
+ok - foreground command is executing during activity check
+ok - long foreground tool remains native busy
+ok - crew-state proves later input is working
+native: idle codex-appserver
+ok - interrupt is a native interrupted turn
+native: idle codex-appserver
+ok - a subsequent turn recovers after interruption
+native: busy codex-appserver
+native: unknown codex-appserver-waiting-input
+ok - native input wait is parked in crew-state
+native: busy codex-appserver
+native: idle codex-appserver
+ok - normal exit removes the binding
+ok - normal exit removes private transport
+ok - owned launcher, server and TUI all exited
+native: unknown codex-unverified
+native: unknown codex-appserver-binding
+native: busy codex-appserver
+ok - restart mints a fresh task incarnation
+ok - stale launch binding cannot classify replacement
+native: busy codex-appserver
+native: idle codex-appserver
+ok - replacement activity resumes after stale-binding rejection
+native: unknown codex-unverified
+native: unknown codex-appserver-binding
+native: busy codex-appserver
+native: unknown codex-appserver-failed
+ok - fault injection uses only the disposable provider
+ok - HTTP failure is native failed/systemError
+ok - crew-state preserves failure over prior done
+ok - supervision does not absorb the native failure as working
+native: unknown codex-appserver
+native: idle codex-appserver
+ok - same thread recovers after API error
+ok - server process exit removes the observation binding
+ok - process exit cannot report historical success
+ok - final cleanup removes binding
+ok - secondmate uses only the named Herdr lab
+native: unknown codex-unverified
+native: unknown codex-appserver-binding
+native: busy codex-appserver
+ok - secondmate has parent-owned generation and native activity
+native: busy codex-appserver
+native: unknown codex-appserver
+native: idle codex-appserver
+ok - secondmate native turn completed
+ok - secondmate launcher publishes the native turn-end wake
+ok - secondmate observation loss is unknown
+native: idle codex-appserver
+ok - secondmate still permits its routed reply after settling
+ok - secondmate exit loses activity instead of trusting old done
+ok - secondmate cleanup removes native transport
+ok - secondmate final cleanup removes binding
+credentialed native lifecycle guard passed: codex-cli 0.153.4
+FM_TEST_END 2026-09-06T21:02:48Z tests/fm-codex-appserver-live-e2e.test.sh exit=0 duration_ms=182600 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=182908
+FM_TEST_SUMMARY_FAMILY family=live-harness-optin count=1 duration_ms=182600 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-codex-appserver-live-e2e.test.sh duration_ms=182600
+GUARD_EXIT=
