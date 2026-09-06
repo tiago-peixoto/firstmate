@@ -2145,6 +2145,131 @@ test_paused_recheck_returns_when_the_covering_pr_is_closed() {
     || fail "the recheck for a closed pull request was not the paused/awaiting-external one: $(cat "$out")"
   [ -e "$state/.paused-resurfaced-$key" ] || fail "the recheck recorded no throttle marker"
   pass "a declared wait on a closed-unmerged pull request keeps re-surfacing, because a live poll is not a live wait"
+# THE MASKING REGRESSION, end to end through the real watcher.
+#
+# A declared wait used to be cancelled by the NEXT line in the status log, from
+# any producer. Confirmed live in state/firstmate-attest-upstream-pr3753.status: a
+# `paused:` declaration, then an automatic `working: run ... step ci,failed` append
+# from a step reporter the worker had armed itself, and the possible-wedge ladder
+# restarted against a worker that was still waiting on an upstream maintainer. In
+# the Artemis lane, 73% of possible-wedge wakes named an already-declared worker.
+#
+# The declaration is now folded as a standing intent (fm-classify-lib.sh's
+# status_standing_wait_line owns which later line retracts one). This case is the
+# same absorb-then-re-surface contract as the pause test above, with the masking
+# append present - so it pins BOTH halves at once: the wait is still absorbed
+# instead of wedge-escalated, and it is still BOUNDED, re-surfacing for a recheck
+# past PAUSE_RESURFACE_SECS. That bound is the answer to "can a worker that
+# declared a wait and then genuinely wedged still be reached": yes, on the long
+# recheck cadence rather than the wedge cadence.
+test_declared_pause_masked_by_a_foreign_append_is_still_absorbed_and_resurfaced() {
+  local dir state fakebin out drain_out capture_file window key pane_hash sig pid back statusf
+  dir=$(make_case masked-pause-stale); state="$dir/state"; fakebin="$dir/fakebin"
+  out="$dir/watch.out"; drain_out="$dir/drain.out"; capture_file="$dir/pane.txt"
+  window="test:fm-masked"
+  printf 'idle, holding for upstream' > "$capture_file"
+  printf 'window=%s\nkind=ship\n' "$window" > "$state/masked.meta"
+  statusf="$state/masked.status"
+  {
+    printf 'paused: waiting on the upstream maintainer\n'
+    printf 'working: run 01M1T9RF188DHFWHN5YRQVXZ8Q step ci,failed\n'
+  } > "$statusf"
+  sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-masked_status"
+  key=$(printf '%s' "$window" | tr ':/.' '___')
+  pane_hash=$(hash_text "idle, holding for upstream")
+  printf '%s' "$pane_hash" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+  # The authoritative verdict a fixed fm-crew-state.sh returns for this log;
+  # tests/fm-crew-state.test.sh proves it returns exactly this under the same
+  # masked log rather than assuming it here.
+  export FM_FAKE_CREW_STATE='state: paused · source: status-log · waiting on the upstream maintainer'
+
+  # Phase A: absorbed. No wake, no wedge timer - the append must not have
+  # restarted the ladder.
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  if ! wait_poll_cycle "$state" "$pid"; then
+    reap "$pid"; fail "watcher exited for a masked declared pause (should absorb): $(cat "$out")"
+  fi
+  [ ! -s "$out" ] || fail "a declared pause masked by a later append printed a wake reason: $(cat "$out")"
+  [ ! -s "$state/.wake-queue" ] || fail "a declared pause masked by a later append enqueued a wake"
+  [ -e "$state/.paused-$key" ] || fail "the masked declaration did not take the bounded pause cadence"
+  [ ! -e "$state/.stale-since-$key" ] || fail "the masking append restarted the possible-wedge timer"
+  reap "$pid"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the intentional masked-pause phase-A stop"
+
+  # Phase B: still bounded. Age the declaration past the threshold and confirm it
+  # re-surfaces as a recheck naming the external wait - never as a wedge.
+  back=$(( $(date +%s) - 500 ))
+  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$statusf"
+  else touch -m -d "@$back" "$statusf"; fi
+  sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-masked_status"
+  : > "$out"
+  printf 'idle, holding for upstream (token 2)' > "$capture_file"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || fail "a masked declared pause was never re-surfaced past the threshold"
+  grep -F "stale: $window" "$out" >/dev/null || fail "the re-surface did not print a stale wake: $(cat "$out")"
+  grep -F "awaiting external" "$out" >/dev/null || fail "the re-surface was not labeled an external-wait recheck: $(cat "$out")"
+  grep -F "possible wedge" "$out" >/dev/null && fail "a masked declared pause was mislabeled a possible wedge"
+  [ -e "$state/.paused-resurfaced-$key" ] || fail "the re-surface throttle was not recorded, so the wait would re-alarm every poll"
+  [ ! -e "$state/.stale-since-$key" ] || fail "the re-surface used the wedge timer"
+  FM_STATE_OVERRIDE="$state" "$DRAIN" > "$drain_out" 2>/dev/null || fail "drain after the masked-pause re-surface failed"
+  grep "$(printf '\tstale\t')" "$drain_out" | grep -F "$window" >/dev/null || fail "the masked-pause re-surface was not queued"
+  unset FM_FAKE_CREW_STATE
+  pass "a declared pause survives a later append from another producer: absorbed, never wedge-escalated, still re-surfaced on its bounded cadence"
+}
+
+# The disconfirming half, and the one that matters most: the SAME log without the
+# declaration must still escalate as a possible wedge. If the fold ever widened to
+# suppress this, every undeclared wedge in the fleet would go quiet.
+test_the_same_log_without_a_declaration_still_wedge_escalates() {
+  local dir state fakebin out capture_file window key pane_hash sig pid
+  dir=$(make_case unmasked-no-declaration); state="$dir/state"; fakebin="$dir/fakebin"
+  out="$dir/watch.out"; capture_file="$dir/pane.txt"
+  window="test:fm-undeclared"
+  printf 'idle, holding for upstream' > "$capture_file"
+  printf 'window=%s\nkind=ship\n' "$window" > "$state/undeclared.meta"
+  # Byte-for-byte the masked case's log with the declaration line removed.
+  printf 'working: run 01M1T9RF188DHFWHN5YRQVXZ8Q step ci,failed\n' > "$state/undeclared.status"
+  sig=$(seen_sig "$state/undeclared.status"); printf '%s' "$sig" > "$state/.seen-undeclared_status"
+  key=$(printf '%s' "$window" | tr ':/.' '___')
+  pane_hash=$(hash_text "idle, holding for upstream")
+  printf '%s' "$pane_hash" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+  export FM_FAKE_CREW_STATE='state: unknown · source: none · no current-state source available'
+
+  # Priming round: first sight of this stale hash starts the wedge timer.
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_STALE_ESCALATE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || reap "$pid"
+  ack_stopped_cycle "$state" >/dev/null 2>&1 || true
+  [ ! -e "$state/.paused-$key" ] || fail "an undeclared idle pane was given the bounded pause cadence"
+
+  # Past the wedge threshold it must escalate, and say so as a possible wedge.
+  echo $(( $(date +%s) - 500 )) > "$state/.stale-since-$key"
+  printf '%s' "$pane_hash" > "$state/.stale-$key"
+  : > "$out"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_STALE_ESCALATE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || fail "an undeclared idle pane was not wedge-escalated: $(cat "$out")"
+  grep -F "possible wedge" "$out" >/dev/null || fail "the undeclared idle pane's escalation was not reported as a possible wedge: $(cat "$out")"
+  grep -F "awaiting external" "$out" >/dev/null && fail "an undeclared idle pane was absorbed as a declared external wait"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the undeclared wedge escalation"
+  unset FM_FAKE_CREW_STATE
+  pass "the same log with no declaration still escalates as a possible wedge, so the fold widened suppression no further than the declaration itself"
 }
 
 # A captain-held crew can leave a stable backend endpoint after its agent exits.
@@ -4280,6 +4405,8 @@ test_nonterminal_stale_not_working_surfaced
 test_nonterminal_stale_paused_absorbed_then_resurfaced
 test_paused_recheck_is_suppressed_only_while_a_poll_covers_it
 test_paused_recheck_returns_when_the_covering_pr_is_closed
+test_declared_pause_masked_by_a_foreign_append_is_still_absorbed_and_resurfaced
+test_the_same_log_without_a_declaration_still_wedge_escalates
 test_exited_declared_pause_is_bounded_but_live_gate_surfaces
 test_absorbed_replacement_wait_does_not_inherit_the_old_throttle
 test_live_declared_wait_churn_honors_the_resurface_throttle

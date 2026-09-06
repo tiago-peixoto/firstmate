@@ -116,14 +116,21 @@ last_status_line() {
 # 0 if the given (last) status line's leading verb is a real terminal captain verb
 # (done, needs-decision, blocked, failed). Free-text tokens alone never count here;
 # callers that need legacy free-text matching use status_is_captain_relevant.
-status_is_terminal_verb() {
-  local line=$1 verb
-  [ -n "$line" ] || return 1
-  verb=$(status_line_verb "$line")
-  case "$verb" in
+# The terminal captain verbs, as a set, taking an already-extracted VERB. Split
+# out so status_standing_wait_line can fold a whole log with ONE verb extraction
+# per line while this list keeps exactly one owner.
+_fm_verb_is_terminal() {  # <verb>
+  case "$1" in
     done|needs-decision|blocked|failed) return 0 ;;
     *) return 1 ;;
   esac
+}
+
+status_is_terminal_verb() {
+  local line=$1 verb
+  [ -n "$line" ] || return 1
+  _fm_status_line_verb_into verb "$line"
+  _fm_verb_is_terminal "$verb"
 }
 
 # 0 if the given (last) status line matches a captain-relevant verb.
@@ -156,7 +163,7 @@ status_is_captain_relevant() {
 status_is_paused() {  # <status-line>
   local line=$1 verb
   [ -n "$line" ] || return 1
-  verb=$(status_line_verb "$line")
+  _fm_status_line_verb_into verb "$line"
   [ "$verb" = "${FM_CLASSIFY_PAUSED_VERB:-$FM_CLASSIFY_PAUSED_VERB_DEFAULT}" ]
 }
 
@@ -169,7 +176,7 @@ status_is_paused() {  # <status-line>
 status_is_captain_held() {  # <status-line>
   local line=$1 verb
   [ -n "$line" ] || return 1
-  verb=$(status_line_verb "$line")
+  _fm_status_line_verb_into verb "$line"
   [ "$verb" = "${FM_CLASSIFY_CAPTAIN_HELD_VERB:-$FM_CLASSIFY_CAPTAIN_HELD_VERB_DEFAULT}" ]
 }
 
@@ -180,9 +187,76 @@ status_is_captain_held() {  # <status-line>
 # ages a pause marker instead, and the watcher applies its bounded pause cadence
 # once pause_state_class has admitted the wait (fm-watch.sh owns which liveness
 # evidence each kind of crew must supply for that).
+# The two declaring verbs, as a set, taking an already-extracted VERB - the same
+# split, and for the same reason, as _fm_verb_is_terminal above. Both read the
+# configurable constants rather than the literals, so a home that renames a verb
+# renames it everywhere.
+_fm_verb_is_declared_wait() {  # <verb>
+  case "$1" in
+    "${FM_CLASSIFY_PAUSED_VERB:-$FM_CLASSIFY_PAUSED_VERB_DEFAULT}") return 0 ;;
+    "${FM_CLASSIFY_CAPTAIN_HELD_VERB:-$FM_CLASSIFY_CAPTAIN_HELD_VERB_DEFAULT}") return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 status_is_paused_or_captain_held() {  # <status-line>
-  local line=$1
-  status_is_paused "$line" || status_is_captain_held "$line"
+  local line=$1 verb
+  [ -n "$line" ] || return 1
+  _fm_status_line_verb_into verb "$line"
+  _fm_verb_is_declared_wait "$verb"
+}
+
+# The STANDING declaration a status file currently carries, or the empty string.
+#
+# A declared wait is an INTENT, not an event. Reading it last-event-wins (via
+# last_status_line above) makes any later append from any producer cancel it: the
+# crew's own automatic reporter, a pipeline step notice, a firstmate note. Current
+# state then flips away from the declaration, the possible-wedge ladder restarts
+# from zero, and nothing reports that the suppression was voided. Measured in the
+# live fleet, 73% of possible-wedge wakes named a crew that had already declared a
+# wait, one of them 30 times over four days.
+#
+# So the declaration is folded over the log instead, the same shape
+# status_open_decisions below already uses for keyed decisions: a paused: or
+# captain-held: line DECLARES the wait, and only a later line the crew writes to
+# say its situation CHANGED retracts it. Retraction is exactly the terminal
+# captain verbs (status_is_terminal_verb: done, needs-decision, blocked, failed) -
+# every one of which is captain-relevant and therefore surfaces on its own merits,
+# so retracting on them costs no wedge coverage. A later declaration replaces the
+# earlier one. Everything else - working:, note:, resolved:, and free-text prose -
+# leaves the declaration standing, because none of them states that the external
+# wait ended, and working: in particular is the repo's nonterminal progress verb
+# (status_is_captain_relevant explicitly excludes it) and the exact line an armed
+# background reporter emits.
+#
+# THIS IS NOT AN UNCONDITIONAL SUPPRESSION, which matters because a real wedge
+# under a stale declaration must still be reachable. Two paths remain, both
+# pre-existing: fm-watch.sh's pause_state_class answers `none` (surface) for any
+# declared wait whose agent is not confirmed dead, and every absorbed declared
+# wait re-surfaces for a recheck once per FM_PAUSE_RESURFACE_SECS. The cost of a
+# standing declaration is therefore a wedge noticed on the hour-long recheck
+# cadence instead of the ~4-minute wedge cadence, never a wedge gone silent.
+#
+# A forward read with ONE verb extraction per line and no command substitution -
+# hence the verb-taking predicates above rather than the line-taking ones. That is
+# not a micro-optimisation: each line-taking predicate captures status_line_verb
+# through `$(...)`, which forks, and folding three of those over a several-hundred
+# line log cost seconds of CPU per gate. The watcher runs this gate for every
+# window on every poll, so a fold that forks would have replaced the wake cost
+# this change removes with a poll cost just as large.
+status_standing_wait_line() {  # <status-file> -> the standing declaration line, or empty
+  local f=$1 line verb standing=''
+  [ -e "$f" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    [ -n "$line" ] || continue
+    _fm_status_line_verb_into verb "$line"
+    if _fm_verb_is_declared_wait "$verb"; then
+      standing=$line
+    elif _fm_verb_is_terminal "$verb"; then
+      standing=''
+    fi
+  done < "$f"
+  printf '%s' "$standing"
 }
 
 # --- durable keyed decisions ------------------------------------------------
@@ -273,32 +347,44 @@ _fm_classify_is_corr_token() {  # <word>
   return 1
 }
 
-status_line_verb() {  # <status-line> -> leading verb word
-  local v=${1%%:*} out='' word
-  v=${v%%\[*}
-  v=${v#"${v%%[![:space:]]*}"}
-  v=${v%"${v##*[![:space:]]}"}
+# The parse itself, writing into <output-var> instead of stdout. Every predicate
+# below reads a verb through this form rather than through a `$(...)` capture of
+# status_line_verb: a command substitution forks, and status_standing_wait_line
+# folds over a whole status log, so a fork per predicate per line turned a
+# 500-line log into seconds of CPU per gate. Locals are prefixed so a caller's
+# own variable name cannot be shadowed by one of them.
+_fm_status_line_verb_into() {  # <output-var> <status-line>
+  local _fm_slv_out=$1 _fm_slv_v=${2%%:*} _fm_slv_acc='' _fm_slv_word
+  _fm_slv_v=${_fm_slv_v%%\[*}
+  _fm_slv_v=${_fm_slv_v#"${_fm_slv_v%%[![:space:]]*}"}
+  _fm_slv_v=${_fm_slv_v%"${_fm_slv_v##*[![:space:]]}"}
   # Fast path, and the whole no-regression guarantee: a prefix that cannot
   # contain a correlation token is returned byte-for-byte as before, so every
   # line without one keeps its exact historical verb, spacing included.
-  case "$v" in
+  case "$_fm_slv_v" in
     *corr=*) ;;
-    *) printf '%s' "$v"; return 0 ;;
+    *) printf -v "$_fm_slv_out" '%s' "$_fm_slv_v"; return 0 ;;
   esac
   # Retain the first word, then drop only recognised tokens from the remaining
   # whole words. Anything unrecognised stays, so prose still matches no verb.
-  word=${v%%[[:space:]]*}
-  out=$word
-  v=${v#"$word"}
-  v=${v#"${v%%[![:space:]]*}"}
-  while [ -n "$v" ]; do
-    word=${v%%[[:space:]]*}
-    v=${v#"$word"}
-    v=${v#"${v%%[![:space:]]*}"}
-    _fm_classify_is_corr_token "$word" && continue
-    out="$out $word"
+  _fm_slv_word=${_fm_slv_v%%[[:space:]]*}
+  _fm_slv_acc=$_fm_slv_word
+  _fm_slv_v=${_fm_slv_v#"$_fm_slv_word"}
+  _fm_slv_v=${_fm_slv_v#"${_fm_slv_v%%[![:space:]]*}"}
+  while [ -n "$_fm_slv_v" ]; do
+    _fm_slv_word=${_fm_slv_v%%[[:space:]]*}
+    _fm_slv_v=${_fm_slv_v#"$_fm_slv_word"}
+    _fm_slv_v=${_fm_slv_v#"${_fm_slv_v%%[![:space:]]*}"}
+    _fm_classify_is_corr_token "$_fm_slv_word" && continue
+    _fm_slv_acc="$_fm_slv_acc $_fm_slv_word"
   done
-  printf '%s' "$out"
+  printf -v "$_fm_slv_out" '%s' "$_fm_slv_acc"
+}
+
+status_line_verb() {  # <status-line> -> leading verb word
+  local _fm_slv_result
+  _fm_status_line_verb_into _fm_slv_result "$1"
+  printf '%s' "$_fm_slv_result"
 }
 # 0 when a complete "[key=...]" token sits in the documented position before
 # the line's first colon (or anywhere on a line that has no colon at all).

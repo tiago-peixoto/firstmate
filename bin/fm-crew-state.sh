@@ -183,7 +183,25 @@ map_log_state() {  # <line>
   esac
 }
 
-LOG_LINE=$(log_last_line || true)
+# A declared wait (paused:/captain-held:) is a STANDING declaration, not the log's
+# last event. fm-classify-lib.sh's status_standing_wait_line owns which later line
+# retracts one and why; read that header before changing this. Without it, any
+# later append by any producer - the crew's own armed reporter, a pipeline step
+# notice, a firstmate note - became the newest event, the reads below reported
+# THAT verb, and every consumer of this script's line (crew_absorb_class above
+# all) lost the declaration and restarted the possible-wedge ladder against a crew
+# that had said it was waiting on something external.
+#
+# Substituting it HERE, at the one place the log is read, fixes every consumer at
+# once instead of at each of them. It cannot disturb the terminal arms below: the
+# retraction set IS the terminal captain verbs, so a standing wait exists only
+# while the log's last line is non-terminal, and a log whose last line is done:,
+# blocked:, needs-decision: or failed: still yields exactly that line. Source
+# precedence is likewise untouched, because the log is only ever consulted after
+# the run-step and pane sources have declined: a crew that declared a wait and
+# then STARTED a run still reports working, never paused.
+LOG_LINE=$(status_standing_wait_line "$LOG")
+[ -n "$LOG_LINE" ] || LOG_LINE=$(log_last_line || true)
 LOG_VERB=$(status_line_verb "$LOG_LINE")
 
 # --- remote secondmate: the true source is the remote endpoint ---------------
