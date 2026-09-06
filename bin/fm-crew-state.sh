@@ -55,10 +55,12 @@
 #      state/<id>.codex-appserver) is read live here too, because the run step
 #      cannot see a wedged or failing worker: an observed native failure reports
 #      failed and an approval or user-input wait reports parked, ahead of the
-#      run state. Otherwise a TERMINAL run state (done or failed) stays
-#      authoritative - a finished crew whose observation already ended is never
-#      masked as unknown - while under a non-terminal one any verdict but an
-#      exact busy/idle codex-appserver reports unknown. That unknown alone never
+#      run state. Otherwise a run state the pipeline itself settled - done,
+#      failed, or parked at a gate - stays authoritative, because that record is
+#      evidence independent of the pane: a finished crew whose observation
+#      already ended, or a gate waiting on the captain, is never masked as
+#      unknown. Only under a still-working run does any verdict but an exact
+#      busy/idle codex-appserver report unknown. That unknown alone never
 #      swallows the daemon-socket-down rule of step 3: a refused or missing
 #      socket is positive evidence about the shared pipeline the whole fleet
 #      depends on, and one worker's failure to observe itself is no evidence at
@@ -625,7 +627,7 @@ if [ "$HAVE_RUN" = 1 ]; then
     BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
     emit_codex_native_verdict "$BUSY_VERDICT" "${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL"
     case "$RUN_STATE:$BUSY_VERDICT" in
-      done:*|failed:*|*:'busy codex-appserver'|*:'idle codex-appserver') ;;
+      done:*|failed:*|parked:*|*:'busy codex-appserver'|*:'idle codex-appserver') ;;
       *) log_reports_daemon_down_event \
            || emit unknown pane "harness state unavailable ($BUSY_VERDICT)${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
     esac
