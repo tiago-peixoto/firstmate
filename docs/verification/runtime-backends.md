@@ -32,13 +32,13 @@ Its shell owner provisions and removes the lab through `bin/fm-herdr-lab.sh`, in
 | Secondmate | Parent-owned binding and generation work despite the child's different `FM_HOME`; lost observation or an exited worker cannot reuse an old done event. |
 
 The portable regression drives a real private socket with protocol-shaped responses through the production reader, busy classifier, crew-state and supervision absorb predicate.
-It additionally covers native approval waits, unexpected extra user roots, task and incarnation mismatches, socket replacement and unsafe binding permissions.
+It additionally covers native approval waits, unexpected extra user roots, task and incarnation mismatches, socket replacement, unsafe binding permissions, and a launch whose server refuses to start degrading to plain Codex with the arming retired.
 The server may create an independent system thread for titles; native `threadSource=user` plus root ancestry selects user threads without inferring identity from its `source` label.
 Multiple user roots, including unsupported `/new` or `/resume` paths, remain unknown.
 
 Only the verified version and generated launch path enable native wiring.
 Older running workers, raw commands, unsupported versions and unavailable bindings remain unknown until a supported launch actually establishes observation.
-The version gate must be refreshed with the live guard after a Codex upgrade; this record does not activate or migrate running homes.
+The version gate is `VERIFIED_VERSION` in `bin/fm-codex-appserver.py`, its only production copy, and must be refreshed with the live guard after a Codex upgrade; this record does not activate or migrate running homes.
 
 ## tmux
 

@@ -165,6 +165,7 @@ Each converted adapter reports its own turn lifecycle through a machine-readable
 Kimi behind Pi inherits Pi's lifecycle.
 Codex uses the private native app-server owned by a verified launch; `bin/fm-codex-appserver.py` owns its transport, exact-thread binding and read-only lifecycle queries.
 An observed native failed turn reports failed through crew-state, while lost observation stays unknown.
+A launch that cannot establish that observation retires its whole arming and runs plain Codex, which classifies unknown like any unbound launch: an observability capability never keeps a worker from starting.
 Standalone Kimi remains unverified, and Grok keeps one clearly isolated rendered-tail fallback that can only ever classify a Grok task.
 
 Missing, malformed, stale, untrusted, or unverified semantic state is unknown, never idle, and unknown is never promoted to busy either.
