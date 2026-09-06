@@ -206,8 +206,8 @@ def consumers(expected_state, absorb):
 
 def ship_runs(expected_state, reason):
     meta_path.write_text(meta_body+'kind=ship\n')
-    # A gate record is the pipeline's own evidence, independent of the pane, so it
-    # outranks a live read that observed nothing and yields to one that observed a turn.
+    # A gate record has no evidence of its own that the worker is still there, so an
+    # unavailable live read masks it, carrying the gate detail through.
     consumer_env['FM_FAKE_NATIVE_RUN'] = ('run:\n  id: fixture\n  branch: native-fixture\n  head: '+
                                           head+'\n  status: awaiting_approval\n  outcome: \n  gate: review\n')
     consumer_env['FM_FAKE_NATIVE_RUNS'] = 'running native-fixture '+head+' 2026-09-04 12:00\n'
@@ -215,7 +215,7 @@ def ship_runs(expected_state, reason):
     value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'],
                                     env=consumer_env, text=True)
     if expected_state == 'unknown':
-        assert value.startswith('state: parked ') and 'parked at review' in value, value
+        assert value.startswith('state: unknown ') and 'parked at review' in value, value
     else:
         assert value.startswith('state: '+expected_state+' ') and reason in value, value
     # A refused daemon socket is evidence about the shared pipeline, so it outranks
@@ -236,8 +236,10 @@ def ship_runs(expected_state, reason):
         ('failed', 'failed', 'failed', 'run failed', 'run failed'),
         ('running', '', 'working', 'validating (running)', 'validating (background run)'),
     ]:
-        # A terminal run stays authoritative over unavailable observation.
+        # A terminal run stays authoritative over unavailable observation, and so does
+        # a ci-green status log: neither depends on reading the pane.
         expected = run_state if expected_state == 'unknown' and run_state != 'working' else expected_state
+        ci_green_wins = expected_state == 'unknown' and run_state == 'working'
         for coarse in [False, True]:
             consumer_env['FM_FAKE_NATIVE_RUN'] = ('run:\n  id: fixture\n  branch: '+
                 ('other-branch' if coarse else 'native-fixture')+'\n  head: '+head+
@@ -247,12 +249,15 @@ def ship_runs(expected_state, reason):
                 (state/'worker.status').write_text(log)
                 value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'],
                                                 env=consumer_env, text=True)
-                assert value.startswith('state: '+expected+' '), value
-                if expected == expected_state:
-                    assert reason in value and 'run state: '+run_state in value, value
+                if ci_green_wins and 'checks green' in log:
+                    assert value.startswith('state: done ') and 'run still monitoring PR' in value, value
                 else:
-                    assert reason not in value, value
-                assert (coarse_detail if coarse else detail) in value, value
+                    assert value.startswith('state: '+expected+' '), value
+                    if expected == expected_state:
+                        assert reason in value and 'run state: '+run_state in value, value
+                    else:
+                        assert reason not in value, value
+                    assert (coarse_detail if coarse else detail) in value, value
                 value = subprocess.check_output(['bash', '-c', '. "$1/bin/fm-classify-lib.sh"; crew_absorb_class worker',
                                                 '_', str(root)], env=consumer_env, text=True)
                 assert value == 'none', value
