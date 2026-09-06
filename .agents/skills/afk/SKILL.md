@@ -144,7 +144,7 @@ Classify each wake this way:
   A nonterminal progress verb remains nonterminal even when its prose contains a legacy free-text token such as `PR ready`, `checks green`, `ready in branch`, or `merged`; only a bare legacy line with such a token escalates.
   Other signals with no captain-relevant event in the span -> self-handle.
 - `signal` or `stale` whose status carries a standing declared wait, either a `paused:` external wait or a verified `captain-held` transfer, tracks the pause rather than a wedge whether its pane reads idle or busy.
-  The declaration stands until the crew's own terminal line retracts it, so a later append from another producer does not turn a declared wait back into a wedge suspect.
+  The declaration stands until the crew retracts it with `resolved:` or a terminal line, so a later progress append from another producer does not turn a declared wait back into a wedge suspect.
   An unreported captain-relevant event in the newly classified span still escalates immediately while the current declaration independently keeps the pause cadence.
   With no unreported actionable event, the wake self-handles, and the current declaration outranks an enriched possible-wedge reason so it never escalates on the `FM_STALE_ESCALATE_SECS` cadence.
   If it is still declared past `FM_PAUSE_RESURFACE_SECS` (default 3600s), housekeeping sends one recheck and resets the pause window.

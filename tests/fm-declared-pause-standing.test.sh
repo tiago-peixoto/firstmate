@@ -99,8 +99,13 @@ test_non_declaring_producers_never_retract() {
   f=$(status_log producer-note "$PAUSE" 'note: firstmate confirmed the upstream ticket')
   assert_standing "$f" "$PAUSE" "a firstmate note cancelled the declared wait"
 
-  f=$(status_log producer-resolved "$PAUSE" 'resolved [key=route]: captain answered')
-  assert_standing "$f" "$PAUSE" "a decision-closing line cancelled the declared wait"
+  # A worker's own progress line. This is THE masking line, and the one case where
+  # the ambiguity is real: a status log carries no producer attribution, so this is
+  # byte-identical whether the worker wrote it or a reporter it armed did.
+  # test_the_resolution_verb_retracts_without_ending_the_task owns the other half -
+  # the explicit verb a worker uses to say the wait is over.
+  f=$(status_log producer-working "$PAUSE" 'working: still churning through the audit')
+  assert_standing "$f" "$PAUSE" "a progress line cancelled the declared wait"
 
   # Legacy bare prose with no leading verb. It matches no verb at all, so it can
   # neither declare nor retract.
@@ -111,14 +116,14 @@ test_non_declaring_producers_never_retract() {
   # The fold reads the verb, exactly as status_is_terminal_verb does.
   f=$(status_log producer-prose-terminal "$PAUSE" 'working: the upstream build is blocked')
   assert_standing "$f" "$PAUSE" "prose mentioning a terminal word cancelled the declared wait"
-  pass "notes, resolutions, and free-text prose leave a declaration standing"
+  pass "notes, progress lines, and free-text prose leave a declaration standing"
 }
 
 # --- retraction, the direction that must not get quieter ---------------------
 
-# The retraction set is exactly the terminal captain verbs. That choice is what
-# keeps this from costing wedge coverage: each of them is captain-relevant on its
-# own, so the event surfaces whether or not it also retracts.
+# The retraction set is the terminal captain verbs plus `resolved:`. The terminal
+# ones cost no wedge coverage because each is captain-relevant on its own, so the
+# event surfaces whether or not it also retracts.
 test_every_terminal_verb_retracts() {
   local verb f
   for verb in 'done' failed blocked needs-decision; do
@@ -127,7 +132,40 @@ test_every_terminal_verb_retracts() {
     status_is_terminal_verb "$verb: the wait is over" \
       || fail "'$verb:' is not in status_is_terminal_verb, so the two verb sets have drifted"
   done
-  pass "every terminal captain verb retracts a standing declaration, and the retraction set is that same set"
+  pass "every terminal captain verb retracts a standing declaration, and the retraction set contains that same set"
+}
+
+# `resolved:` is the retraction that matters most, because it is the only one that
+# lifts a wait WITHOUT ending the task - and bin/fm-brief.sh already tells a worker
+# to append it when a blocker or wait clears with no firstmate reply. Without it a
+# worker still waiting and a worker that resumed would be indistinguishable, since
+# `working:` cannot be told apart from the same line emitted by a reporter the
+# worker armed.
+test_the_resolution_verb_retracts_without_ending_the_task() {
+  local f
+  f=$(status_log retract-resolved "$PAUSE" 'resolved: the upstream release landed')
+  assert_no_standing "$f" "a 'resolved:' line did not retract the declared wait"
+
+  # Keyed too, since that is the form a worker answering its own blocker writes.
+  f=$(status_log retract-resolved-keyed "$PAUSE" 'resolved [key=release]: access arrived')
+  assert_no_standing "$f" "a keyed 'resolved:' line did not retract the declared wait"
+
+  # And the worker can then keep working without re-declaring anything.
+  f=$(status_log retract-resolved-resume "$PAUSE" 'resolved: access arrived' 'working: resumed the sweep')
+  assert_no_standing "$f" "a retracted wait came back when the worker resumed"
+
+  # The boundary this pins in the other direction: `working:` ALONE never retracts.
+  # If this ever flips, the masking defect is back.
+  f=$(status_log retract-working-alone "$PAUSE" 'working: resumed after access arrived')
+  assert_standing "$f" "$PAUSE" "a bare 'working:' line retracted the declared wait - the masking defect is back"
+
+  # The two folds must agree on what closes a declared phase, or a supervisor and
+  # the fleet snapshot would disagree about whether the same wait ended.
+  case "$(printf '%s\n' "$PAUSE" 'resolved: the upstream release landed' | status_open_activities -)" in
+    '') : ;;
+    *) fail "status_open_activities still holds a phase 'resolved:' closed, so the two folds disagree" ;;
+  esac
+  pass "the resolution verb retracts a wait without ending the task, a bare working: line still does not, and the two folds agree"
 }
 
 # A retracted declaration stays retracted through later non-declaring lines: the
@@ -305,6 +343,7 @@ test_the_fold_stays_cheap_over_a_long_log() {
 test_the_reported_masking_sequence_keeps_the_declaration
 test_non_declaring_producers_never_retract
 test_every_terminal_verb_retracts
+test_the_resolution_verb_retracts_without_ending_the_task
 test_a_retracted_declaration_stays_retracted
 test_a_new_declaration_after_a_retraction_stands
 test_a_later_declaration_replaces_an_earlier_one

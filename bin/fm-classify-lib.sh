@@ -126,6 +126,30 @@ _fm_verb_is_terminal() {  # <verb>
   esac
 }
 
+# The verbs that RETRACT a standing declared wait: the terminal captain verbs
+# above, plus the resolution verb. This is deliberately the same closing set
+# _fm_status_open_activities_stream below already applies to an open working or
+# paused phase, so the two folds cannot disagree about when a declared wait ended.
+#
+# `resolved:` is what makes the retraction unambiguous, and it is not new
+# vocabulary: bin/fm-brief.sh already instructs a worker to append
+# `resolved: {how it cleared}` when a blocker or wait clears without a firstmate
+# reply. It is the ONLY way a worker says "the thing I declared is over" without
+# also ending its task, which is exactly what lifting an external wait is.
+#
+# `working:` deliberately does NOT retract, and that is the whole fix. It is this
+# repo's nonterminal progress verb - status_is_captain_relevant excludes it, and a
+# brief tells the worker not to end a turn on it - and a status log carries no
+# producer attribution, so a `working:` line from a worker's own armed background
+# reporter is indistinguishable from one the worker wrote itself. Letting it
+# retract is what cancelled live declarations and restarted the possible-wedge
+# ladder against workers that were still waiting. Giving the worker `resolved:`
+# resolves that ambiguity rather than guessing at it.
+_fm_verb_retracts_declared_wait() {  # <verb>
+  _fm_verb_is_terminal "$1" && return 0
+  [ "$1" = "${FM_CLASSIFY_RESOLVE_VERB:-$FM_CLASSIFY_RESOLVE_VERB_DEFAULT}" ]
+}
+
 status_is_terminal_verb() {
   local line=$1 verb
   [ -n "$line" ] || return 1
@@ -219,15 +243,10 @@ status_is_paused_or_captain_held() {  # <status-line>
 # So the declaration is folded over the log instead, the same shape
 # status_open_decisions below already uses for keyed decisions: a paused: or
 # captain-held: line DECLARES the wait, and only a later line the crew writes to
-# say its situation CHANGED retracts it. Retraction is exactly the terminal
-# captain verbs (status_is_terminal_verb: done, needs-decision, blocked, failed) -
-# every one of which is captain-relevant and therefore surfaces on its own merits,
-# so retracting on them costs no wedge coverage. A later declaration replaces the
-# earlier one. Everything else - working:, note:, resolved:, and free-text prose -
-# leaves the declaration standing, because none of them states that the external
-# wait ended, and working: in particular is the repo's nonterminal progress verb
-# (status_is_captain_relevant explicitly excludes it) and the exact line an armed
-# background reporter emits.
+# say its situation CHANGED retracts it. _fm_verb_retracts_declared_wait above
+# owns which verbs those are and why. A later declaration replaces an earlier one,
+# and everything else - working:, note:, and free-text prose - leaves the
+# declaration standing.
 #
 # THIS IS NOT AN UNCONDITIONAL SUPPRESSION, which matters because a real wedge
 # under a stale declaration must still be reachable. Two paths remain, both
@@ -252,7 +271,7 @@ status_standing_wait_line() {  # <status-file> -> the standing declaration line,
     _fm_status_line_verb_into verb "$line"
     if _fm_verb_is_declared_wait "$verb"; then
       standing=$line
-    elif _fm_verb_is_terminal "$verb"; then
+    elif _fm_verb_retracts_declared_wait "$verb"; then
       standing=''
     fi
   done < "$f"

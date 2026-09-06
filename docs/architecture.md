@@ -127,7 +127,8 @@ The guard covers the main primary and genuinely marked secondmate homes, exempts
 
 A presence-gated sub-supervisor (`bin/fm-supervise-daemon.sh`) extends this for walk-away supervision: the `/afk` skill starts it through the tracked foreground helper `bin/fm-afk-start.sh`, after which the watcher reverts to daemon-managed one-shot mode and the daemon self-handles routine wakes in bash.
 The watcher and daemon share `bin/fm-classify-lib.sh` for captain-relevant status verbs, declared-wait vocabulary (a `paused:` external wait and a verified `captain-held` transfer alike, through one combined predicate), and status-scan primitives.
-A declared wait is read as a standing declaration folded over the whole log rather than as the log's newest event: only a later terminal captain verb from the crew retracts one, and a later declaration replaces it.
+A declared wait is read as a standing declaration folded over the whole log rather than as the log's newest event: only a later `resolved:` or terminal captain verb from the crew retracts one, and a later declaration replaces it.
+`resolved:` is what a crew appends to lift a wait without ending its task, and it is the same closing set the routed-work activity fold already applies, so the two cannot disagree about when a wait ended.
 So an append from any other producer - the crew's own armed reporter, a pipeline step notice, a firstmate note - can no longer cancel a live declaration and restart the possible-wedge ladder against a crew that is still waiting.
 The suppression stays bounded rather than becoming unconditional, because a still-live agent under a declared wait surfaces anyway and every absorbed wait re-surfaces once per `FM_PAUSE_RESURFACE_SECS`.
 Terminal verbs remain captain-relevant, while a nonterminal progress verb cannot become terminal merely because its prose contains a legacy free-text token such as `merged`; bare legacy free-text lines remain compatible.
