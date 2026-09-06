@@ -8,7 +8,7 @@ Exact task chronology, branch names, temporary homes, local paths, process ids, 
 
 ## Codex native activity
 
-Verified on 2026-09-04 with codex-cli 0.153.2 and Herdr 0.8.2 on macOS, through real `fm-spawn.sh` ordinary-worker relaunches and a fresh secondmate launch in a named non-default Herdr lab.
+Verified on 2026-09-06 with codex-cli 0.153.4 and Herdr 0.8.2 on macOS, through real `fm-spawn.sh` ordinary-worker relaunches and a fresh secondmate launch in a named non-default Herdr lab.
 The launcher preserves the normal TUI model, effort, account, permission and approval arguments while attaching it to an owned native app-server over a private Unix WebSocket.
 The credentialed cases used the normal configuration; an additional disposable command overlay supplied a deterministic HTTP 400 and then a successful Responses API stream to exercise failure and recovery without editing that configuration.
 

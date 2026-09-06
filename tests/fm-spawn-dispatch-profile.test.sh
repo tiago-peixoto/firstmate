@@ -33,7 +33,7 @@ SH
 make_spawn_fakebin() {
   local dir=$1 fakebin
   fakebin=$(fm_test_make_spawn_fakebin "$dir")
-  fm_fake_version_tool "$fakebin" codex FM_FAKE_CODEX_VERSION 'codex-cli 0.153.2'
+  fm_fake_version_tool "$fakebin" codex FM_FAKE_CODEX_VERSION 'codex-cli 0.153.4'
   cat > "$fakebin/timeout" <<'SH'
 #!/usr/bin/env bash
 shift

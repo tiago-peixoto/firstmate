@@ -95,7 +95,7 @@ class ResponsesFixture(http.server.BaseHTTPRequestHandler):
 
 
 version = command(['codex', '--version']).strip()
-check('installed Codex version ' + version, version == 'codex-cli 0.153.2')
+check('installed Codex version ' + version, version == 'codex-cli 0.153.4')
 lab = Path(os.environ['FM_CODEX_NATIVE_LAB']).resolve()
 home = lab/'parent'
 for p in ['config', 'state', 'data', 'projects']:

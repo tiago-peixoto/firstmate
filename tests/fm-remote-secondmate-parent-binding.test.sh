@@ -119,7 +119,7 @@ pass "remote provisioning publishes durable parent state before its completion m
 ) | (cd "$REMOTE_ROOT" && tar -xf -)
 install_remote_herdr_fixture "$REMOTE_ROOT" "$HERDR_STATE" "$HERDR_LOG" \
   "$TMP_ROOT/herdr-send-fail" "$TMP_ROOT/herdr.sock"
-printf '#!/bin/sh\nprintf "codex-cli 0.153.2\\n"\n' > "$REMOTE_ROOT/bin/codex"
+printf '#!/bin/sh\nprintf "codex-cli 0.153.4\\n"\n' > "$REMOTE_ROOT/bin/codex"
 chmod +x "$REMOTE_ROOT/bin/codex"
 git -C "$REMOTE_ROOT" init -q -b main
 git -C "$REMOTE_ROOT" config user.email test@example.com
