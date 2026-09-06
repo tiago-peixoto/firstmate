@@ -229,6 +229,8 @@ CHILD_PATH=$(
   fm_remote_job_compose_operator_path "$(cd ~ && pwd -P)" >/dev/null
   fm_remote_job_build_child_path "$REMOTE_ROOT"
 )
+# $1 is expanded by the inner scrubbed-environment bash, not by this shell.
+# shellcheck disable=SC2016
 /usr/bin/env -i "PATH=$CHILD_PATH" \
   bash -c '. "$1/bin/fm-busy-lib.sh"; fm_busy_codex_appserver_observable' bash "$REMOTE_ROOT" \
   || fail "fixture drift: the native capability gate is closed on the remote leg, so the parent-route exclusion proves nothing"
