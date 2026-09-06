@@ -317,10 +317,10 @@ def launch(state, task, gen, argv):
     index = 1
     while index < len(argv) - 1:
         arg = argv[index]
-        if arg in ('-c', '--config'):
+        if arg == '-c':
             server_args += ['-c', argv[index + 1]]
             index += 2
-        elif arg in ('-m', '--model'):
+        elif arg == '--model':
             server_args += ['-c', 'model=' + json.dumps(argv[index + 1])]
             index += 2
         else:

@@ -24,6 +24,7 @@ if vendor_args == ['--version']:
     print('codex-cli 0.153.2')
     sys.exit(0)
 if vendor_args and vendor_args[0] == '--remote':
+    (lab/'tui-args.json').write_text(json.dumps(vendor_args))
     (lab/'tui-started').touch()
     while not (lab/'tui-exit').exists():
         time.sleep(0.05)
@@ -33,6 +34,7 @@ scenario = os.environ.get('FM_FAKE_NATIVE_SCENARIO', 'direct') if vendor_server 
 state = lab / 'state'
 if vendor_server:
     assert vendor_args[:2] == ['app-server', '--listen']
+    (lab/'server-args.json').write_text(json.dumps(vendor_args))
     path = Path(vendor_args[2][len('unix://'):])
 else:
     state.mkdir()
@@ -285,6 +287,39 @@ def initial_notification():
             raise AssertionError('launcher orphaned '+key)
 
 
+# The exact launch argv bin/fm-spawn.sh builds for codex: --model from
+# model_flag_for_harness, -c from effort_flag_for_harness, the approval flag and
+# the -c notify hook, then the encoded brief. The TUI must receive all of it
+# verbatim, and the private app-server must mirror only the configuration.
+def launch_argument_forwarding():
+    (lab/'tui-started').unlink(missing_ok=True)
+    (lab/'tui-exit').unlink(missing_ok=True)
+    (lab/'tui-args.json').unlink(missing_ok=True)
+    (lab/'server-args.json').unlink(missing_ok=True)
+    argv = ['--model', 'gpt-5-codex', '-c', 'model_reasoning_effort="high"',
+            '--dangerously-bypass-approvals-and-sandbox',
+            '-c', 'notify=["bash","-c","touch /dev/null"]',
+            'fixture prompt']
+    launcher = subprocess.Popen([sys.executable, str(root/'bin/fm-codex-appserver.py'),
+        'launch', str(state), 'worker', gen, '--', str(fakebin/'codex')] + argv, cwd=lab,
+        env={**consumer_env, 'FM_FAKE_NATIVE_STATUS': 'active', 'FM_FAKE_NATIVE_SCENARIO': 'direct'})
+    try:
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and not (lab/'tui-started').exists():
+            assert launcher.poll() is None, 'launcher exited before starting the TUI'
+            time.sleep(0.02)
+        assert (lab/'tui-started').exists(), 'TUI never started'
+        forwarded = json.loads((lab/'server-args.json').read_text())[3:]
+        assert forwarded == ['-c', 'model="gpt-5-codex"',
+                             '-c', 'model_reasoning_effort="high"',
+                             '-c', argv[6]], forwarded
+        assert json.loads((lab/'tui-args.json').read_text())[2:] == argv, 'TUI argv was not passed through verbatim'
+    finally:
+        (lab/'tui-exit').touch()
+        assert launcher.wait(timeout=10) == 0, 'launcher must return the exited TUI status'
+    print('ok - launch preserves model, effort and approval argv and mirrors only configuration', flush=True)
+
+
 try:
     classify('busy codex-appserver')
     consumers('working', 'working')
@@ -370,6 +405,7 @@ try:
     consumers('unknown', 'none')
     ship_runs('unknown', 'codex-appserver-disconnected')
     initial_notification()
+    launch_argument_forwarding()
     consumers('unknown', 'none')
     ship_runs('unknown', 'codex-unverified')
     assert not any(m in requests for m in ['thread/resume', 'turn/start', 'turn/interrupt'])
