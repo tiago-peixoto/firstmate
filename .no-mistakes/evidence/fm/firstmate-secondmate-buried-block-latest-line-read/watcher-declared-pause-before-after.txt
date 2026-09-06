@@ -1,0 +1,26 @@
+fm-watch.sh: what the captain sees for a worker whose declared wait is multi-line
+================================================================================
+base 702004ed   vs   HEAD 2d6f5ca
+
+The real bin/fm-watch.sh from each tree polls one secondmate whose endpoint has
+been quiet for 500s. Its status log is a legitimate multi-line paused record:
+
+    | paused: holding for the upstream tool release
+    | The upstream maintainer said the window opens tomorrow morning.
+    | I will resume the release branch as soon as it lands.
+    |
+
+Authoritative crew state cannot name a state here (no run, idle endpoint), so
+the watcher's staleness triage is decided entirely by its own read of that log.
+Lines below are the watcher's stdout, i.e. the wake the captain receives.
+
+BEFORE  (base 702004ed)
+  (nothing: the prose last line reads as no declared wait, so the mate's
+   stale poll is skipped entirely and its wait is never re-surfaced)
+
+AFTER   (HEAD 2d6f5ca)
+  stale: test:fm-releaser (paused 502s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+
+Bookkeeping the watcher persisted for that window:
+  BEFORE: 0 paused-cadence markers
+   AFTER: .paused-rechecked-test_fm-releaser .paused-resurfaced-test_fm-releaser .paused-test_fm-releaser 

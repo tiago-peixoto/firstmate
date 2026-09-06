@@ -1,0 +1,49 @@
+fm-crew-state.sh: what the captain's state reader reports for multi-line status records
+=======================================================================================
+base 702004ed590df594b22a4fcd214b950cf941851d   vs   HEAD 2d6f5ca6e97fc870e299d97766dc4090dcb97a5a
+
+Setup for every row below: no no-mistakes run is attributed to the crew and its
+endpoint is idle, so the crew's own status log is the only source of its current
+state -- the exact situation in which the 2026-08-27 incident misread a worker.
+The real bin/fm-crew-state.sh from each tree is invoked; only the tree changes.
+
+Status logs used (written by the worker, verbatim):
+
+  state/releaser.status   (scout)
+    | working: preparing the 4.2 release branch
+    | paused: holding for the upstream tool release
+    | The upstream maintainer said the window opens tomorrow morning.
+    | I will resume the release branch as soon as it lands.
+    |
+
+  state/docs.status       (secondmate; each row appends the next line)
+    | blocked [key=access]: need release access to publish the docs
+    | note: drafted the changelog while I wait
+    | working: rewriting the install guide
+    | done: install guide finished
+    | resolved [key=access]: access granted
+
+  state/builder.status    (ship)
+    | needs-decision [key=route]: ship via the CDN or the mirror?
+    | done: shipped via the CDN after the captain answered in chat
+    | Artifacts are in dist/ and the mirror was left untouched.
+
+$ bin/fm-crew-state.sh <id>
+
+BEFORE  (base 702004ed)
+  multi-line paused record + trailing blank line             state: unknown · source: none · no current-state source available
+  secondmate: open keyed blocker                             state: blocked · source: status-log · need release access to publish the docs
+    + unrelated note appended                                state: unknown · source: none · no current-state source available
+    + unrelated working event appended                       state: working · source: status-log · rewriting the install guide
+    + terminal event for OTHER work on the same mate         state: done · source: status-log · install guide finished
+    + matching resolution for key=access                     state: unknown · source: none · no current-state source available
+  ship: terminal declaration over a stale open decision      state: unknown · source: none · no current-state source available
+
+AFTER   (HEAD 2d6f5ca)
+  multi-line paused record + trailing blank line             state: paused · source: status-log · holding for the upstream tool release
+  secondmate: open keyed blocker                             state: blocked · source: status-log · need release access to publish the docs
+    + unrelated note appended                                state: blocked · source: status-log · need release access to publish the docs
+    + unrelated working event appended                       state: blocked · source: status-log · need release access to publish the docs
+    + terminal event for OTHER work on the same mate         state: blocked · source: status-log · need release access to publish the docs
+    + matching resolution for key=access                     state: unknown · source: none · no current-state source available
+  ship: terminal declaration over a stale open decision      state: done · source: status-log · shipped via the CDN after the captain answered in chat
