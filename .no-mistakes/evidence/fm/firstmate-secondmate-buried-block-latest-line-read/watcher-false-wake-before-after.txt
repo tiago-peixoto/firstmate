@@ -1,0 +1,92 @@
+Second reader named in the intent: the watcher staleness triage (bin/fm-watch.sh
++ bin/fm-classify-lib.sh), driven as a real subprocess against a real durable
+wake queue and a real bin/fm-wake-drain.sh ack cycle.
+
+Scenario = the 2026-08-27 incident: a quiet worker that HAS declared its wait,
+as a multi-line paused record. Its idle pane churns (an elapsed counter), so
+the stale path re-enters on each new pane hash; the captain drains and acks
+after every round. Four rounds observed.
+
+════════════════════════════════════════════════════════════════════
+ fm-watch.sh — quiet ship with a declared wait — BASE a913539 — before the fix
+════════════════════════════════════════════════════════════════════
+state/tools.status:
+  │ paused: holding for the upstream tool release
+  │ The release window opens tomorrow; I will resume the moment it lands.
+  │ 
+
+pane churns each round (elapsed counter), 4 stale rounds observed.
+
+captain wakes across the 4 rounds (queue read after each round, then acked):
+  → round 1: stale: test:fm-tools
+  → round 2: stale: test:fm-tools
+  → round 3: stale: test:fm-tools
+  → round 4: stale: test:fm-tools
+
+total wakes: 4
+declared-wait cadence engaged (.paused-test_fm-tools): no
+
+════════════════════════════════════════════════════════════════════
+ fm-watch.sh — quiet ship with a declared wait — BRANCH 319d95c — after the fix
+════════════════════════════════════════════════════════════════════
+state/tools.status:
+  │ paused: holding for the upstream tool release
+  │ The release window opens tomorrow; I will resume the moment it lands.
+  │ 
+
+pane churns each round (elapsed counter), 4 stale rounds observed.
+
+captain wakes across the 4 rounds (queue read after each round, then acked):
+  → round 1: stale: test:fm-tools
+
+total wakes: 1
+declared-wait cadence engaged (.paused-test_fm-tools): yes
+
+────────────────────────────────────────────────────────────────────
+Raw wake records delivered to fm-wake-drain.sh over the four rounds
+────────────────────────────────────────────────────────────────────
+BASE:
+  1788709396	1	stale	test:fm-tools	stale: test:fm-tools
+  1788709400	2	stale	test:fm-tools	stale: test:fm-tools
+  1788709405	3	stale	test:fm-tools	stale: test:fm-tools
+  1788709409	4	stale	test:fm-tools	stale: test:fm-tools
+BRANCH:
+  1788709414	1	stale	test:fm-tools	stale: test:fm-tools
+
+
+────────────────────────────────────────────────────────────────────
+Same declaration on a persistent secondmate (the crew kind from the
+incident). fm-watch.sh admits a mate to the pane-stale path ONLY when a
+declared wait is readable, so on BASE the buried pause makes the mate skip
+the path entirely and its wait is never rechecked at all.
+────────────────────────────────────────────────────────────────────
+════════════════════════════════════════════════════════════════════
+ fm-watch.sh  —  BASE a913539 — before the fix
+════════════════════════════════════════════════════════════════════
+state/mate.status (kind=secondmate, pane quiet for 500s):
+  │ paused: holding for the upstream tool release
+  │ The release window opens tomorrow; I will resume the moment it lands.
+  │ 
+
+what the captain is woken with (durable wake queue payload):
+  → (no wake)
+
+watcher triage output:
+
+bounded declared-wait cadence engaged (.paused-test_fm-mate marker): no
+
+════════════════════════════════════════════════════════════════════
+ fm-watch.sh  —  BRANCH 319d95c — after the fix
+════════════════════════════════════════════════════════════════════
+state/mate.status (kind=secondmate, pane quiet for 500s):
+  │ paused: holding for the upstream tool release
+  │ The release window opens tomorrow; I will resume the moment it lands.
+  │ 
+
+what the captain is woken with (durable wake queue payload):
+  → stale: test:fm-mate (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+
+watcher triage output:
+  │ stale: test:fm-mate (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+
+bounded declared-wait cadence engaged (.paused-test_fm-mate marker): yes

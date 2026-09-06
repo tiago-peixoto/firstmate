@@ -1,0 +1,66 @@
+Reader named in the intent: bin/fm-crew-state.sh
+Same throwaway firstmate home, same status logs, same fake `no-mistakes`
+(no attributed run) and fake `tmux` (idle pane). Only the bin/ tree differs.
+
+════════════════════════════════════════════════════════════════════
+ fm-crew-state.sh  —  BASE a913539 — before the fix
+════════════════════════════════════════════════════════════════════
+
+1) worker declared its wait as a MULTI-LINE paused record
+   $ cat state/tools.status
+   │ paused: holding for the upstream tool release
+   │ The release window opens tomorrow; I will resume the moment it lands.
+   │ 
+   $ fm-crew-state.sh tools
+   → state: unknown · source: none · no current-state source available
+
+2) open blocker followed by an unrelated note
+   $ cat state/mate.status
+   │ blocked [key=access]: need release access to the signing key
+   │ note: meanwhile I tidied the changelog
+   $ fm-crew-state.sh mate
+   → state: unknown · source: none · no current-state source available
+
+   …then the captain answers that exact key:
+   $ fm-crew-state.sh mate
+   → state: unknown · source: none · no current-state source available
+
+3) ship finished past an old decision, then wrote continuation prose
+   $ cat state/ship.status
+   │ needs-decision [key=route]: ship via canary or all at once?
+   │ done: shipped via canary, PR merged
+   │ Rollout dashboard: https://example.invalid/d/1
+   $ fm-crew-state.sh ship
+   → state: unknown · source: none · no current-state source available
+
+
+════════════════════════════════════════════════════════════════════
+ fm-crew-state.sh  —  BRANCH 319d95c — after the fix
+════════════════════════════════════════════════════════════════════
+
+1) worker declared its wait as a MULTI-LINE paused record
+   $ cat state/tools.status
+   │ paused: holding for the upstream tool release
+   │ The release window opens tomorrow; I will resume the moment it lands.
+   │ 
+   $ fm-crew-state.sh tools
+   → state: paused · source: status-log · holding for the upstream tool release
+
+2) open blocker followed by an unrelated note
+   $ cat state/mate.status
+   │ blocked [key=access]: need release access to the signing key
+   │ note: meanwhile I tidied the changelog
+   $ fm-crew-state.sh mate
+   → state: blocked · source: status-log · need release access to the signing key
+
+   …then the captain answers that exact key:
+   $ fm-crew-state.sh mate
+   → state: unknown · source: none · no current-state source available
+
+3) ship finished past an old decision, then wrote continuation prose
+   $ cat state/ship.status
+   │ needs-decision [key=route]: ship via canary or all at once?
+   │ done: shipped via canary, PR merged
+   │ Rollout dashboard: https://example.invalid/d/1
+   $ fm-crew-state.sh ship
+   → state: done · source: status-log · shipped via canary, PR merged
