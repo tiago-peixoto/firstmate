@@ -119,6 +119,8 @@ pass "remote provisioning publishes durable parent state before its completion m
 ) | (cd "$REMOTE_ROOT" && tar -xf -)
 install_remote_herdr_fixture "$REMOTE_ROOT" "$HERDR_STATE" "$HERDR_LOG" \
   "$TMP_ROOT/herdr-send-fail" "$TMP_ROOT/herdr.sock"
+printf '#!/bin/sh\nprintf "codex-cli 0.153.2\\n"\n' > "$REMOTE_ROOT/bin/codex"
+chmod +x "$REMOTE_ROOT/bin/codex"
 git -C "$REMOTE_ROOT" init -q -b main
 git -C "$REMOTE_ROOT" config user.email test@example.com
 git -C "$REMOTE_ROOT" config user.name Test
@@ -216,8 +218,29 @@ cmp -s "$REMOTE_HOME/.fm-secondmate-parent" <(
   printf 'schema=fm-secondmate-parent.v1\nroute=remote\nparent_host=remote-mac\n'
 ) || fail "real remote provisioning must write the exact durable remote parent record"
 
+# The fm-spawn that evaluates the parent-route exclusion is the remote leg, run
+# by the job worker under `env -i` with the composed child PATH, so the gate must
+# be proven open in THAT environment. Without it the three assertions below hold
+# for the wrong reason: no installed Codex means no native arming regardless of
+# the parent route.
+CHILD_PATH=$(
+  # shellcheck source=/dev/null
+  . "$REMOTE_ROOT/bin/fm-remote-job-lib.sh"
+  fm_remote_job_compose_operator_path "$(cd ~ && pwd -P)" >/dev/null
+  fm_remote_job_build_child_path "$REMOTE_ROOT"
+)
+# $1 is expanded by the inner scrubbed-environment bash, not by this shell.
+# shellcheck disable=SC2016
+/usr/bin/env -i "PATH=$CHILD_PATH" \
+  bash -c '. "$1/bin/fm-busy-lib.sh"; fm_busy_codex_appserver_observable' bash "$REMOTE_ROOT" \
+  || fail "fixture drift: the native capability gate is closed on the remote leg, so the parent-route exclusion proves nothing"
+
 remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate >/dev/null \
   || fail "real remote secondmate launch failed"
+assert_present "$REMOTE_HOME/state/parent-route/ios.meta" "remote Codex route must launch"
+assert_absent "$REMOTE_HOME/state/parent-route/ios.busy-gen" "unverified remote route must not arm native observation"
+assert_absent "$REMOTE_HOME/state/parent-route/ios.codex-appserver" "unverified remote route must not publish native observation"
+pass "remote Codex secondmate keeps the native capability gate closed"
 
 DELIVERED_LINE=$(grep -F 'FM_PUBLIC_FOLLOWUP_PRIMARY_HOME' "$HERDR_LOG" | tail -1 || true)
 DELIVERED=$(printf '%s\n' "$DELIVERED_LINE" | tr ' ' '\n' \

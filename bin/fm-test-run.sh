@@ -276,7 +276,7 @@ family_for_basename() {
     fm-claude-stop-autoarm-live-e2e.test.sh|\
     fm-cmux-claude-composer-live-e2e.test.sh|\
     fm-composer-matrix-live-e2e.test.sh|\
-    fm-codex-continuity-live-e2e.test.sh|fm-grok-continuity-live-e2e.test.sh|\
+    fm-codex-continuity-live-e2e.test.sh|fm-codex-appserver-live-e2e.test.sh|fm-grok-continuity-live-e2e.test.sh|\
     fm-cursor-primary-live-e2e.test.sh|\
     fm-grok-stop-live-e2e.test.sh|fm-harness-adapter-instructions-live-e2e.test.sh|\
     fm-harness-liveness-drift-live-e2e.test.sh|\
@@ -324,7 +324,7 @@ family_for_basename() {
       printf '%s\n' orca
       ;;
     fm-branch-supervision.test.sh|fm-busy-adapter-wiring.test.sh|\
-    fm-busy-state.test.sh|fm-classify-corr-token.test.sh|\
+    fm-busy-state.test.sh|fm-codex-appserver.test.sh|fm-classify-corr-token.test.sh|\
     fm-claude-stop-autoarm.test.sh|fm-cursor-harness.test.sh|\
     fm-extension-binding.test.sh|fm-gitignore-config.test.sh|\
     fm-no-mistakes-required.test.sh|fm-peek-remote.test.sh|\
@@ -1166,6 +1166,35 @@ families_for_changed_path() {
       printf '%s\n' real-herdr-gated
       printf '%s\n' backend-dispatch
       ;;
+    bin/fm-codex-appserver.py|tests/fm-codex-appserver-fixture.py)
+      printf '%s\n' "__script__:fm-codex-appserver.test.sh"
+      printf '%s\n' "__script__:fm-busy-state.test.sh"
+      printf '%s\n' "__script__:fm-crew-state.test.sh"
+      # The reader is the only home of VERIFIED_VERSION, and the launch-path
+      # fixtures below open the capability gate by stubbing `codex --version`
+      # with that same literal, so a version refresh breaks them without ever
+      # touching their own files.
+      printf '%s\n' "__script__:fm-busy-adapter-wiring.test.sh"
+      printf '%s\n' "__script__:fm-spawn-dispatch-profile.test.sh"
+      printf '%s\n' "__script__:fm-remote-secondmate-parent-binding.test.sh"
+      ;;
+    tests/fm-codex-appserver-live.py)
+      printf '%s\n' "__script__:fm-codex-appserver-live-e2e.test.sh"
+      ;;
+    bin/fm-crew-state.sh)
+      # The reverse edge of the arm above. fm-codex-appserver.test.sh is the
+      # only behavioural coverage of the native Codex crew-state mapping, and
+      # it names this owner through its Python driver, which the reference scan
+      # (tests/*.test.sh only) cannot see. Keeps its curated family too.
+      printf '%s\n' pure-contract-unit
+      printf '%s\n' "__script__:fm-codex-appserver.test.sh"
+      ;;
+    bin/fm-busy-lib.sh)
+      # Same reverse edge for the classifier's codex arm, on top of the
+      # reference-derived blast radius this unmapped owner already resolves to.
+      printf '%s\n' "__script__:fm-codex-appserver.test.sh"
+      families_for_unmapped_bin "$path" || true
+      ;;
     tests/*.test.sh)
       # A single test file change selects only that script via basename family
       # resolution in the caller; emit a marker family of __script__
@@ -1349,7 +1378,7 @@ families_for_changed_path() {
       ;;
     bin/fm-lint.sh|bin/fm-lint-workflows.sh|bin/fm-install-shellcheck.sh|\
     bin/fm-install-actionlint.sh|\
-    bin/fm-brief.sh|bin/fm-ensure-agents-md.sh|bin/fm-crew-state.sh|\
+    bin/fm-brief.sh|bin/fm-ensure-agents-md.sh|\
     bin/fm-captain-hold.sh|bin/fm-decision-hold.sh|bin/fm-supervision*|bin/fm-transition-lib.sh|\
     bin/fm-tmux-lib.sh|bin/fm-marker-lib.sh|bin/fm-operational-input.sh|bin/fm-tasks-axi-lib.sh|\
     bin/fm-vendor-auth-probe.sh|\

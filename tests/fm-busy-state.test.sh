@@ -318,6 +318,16 @@ test_codex_unverified_gate() {
   pass "codex classifies unknown until a semantic source passes its verification gate"
 }
 
+test_codex_reader_unavailable_unknown() {
+  local state out
+  state=$(new_state_dir codex-no-python)
+  : > "$state/t1.codex-appserver"
+  out=$(PATH=/nonexistent fm_busy_classify tmux w1 codex t1 "$state")
+  [ "$out" = "unknown codex-appserver-disconnected" ] \
+    || fail "codex without python3 must classify 'unknown codex-appserver-disconnected', got '$out'"
+  pass "codex classifies unknown disconnected when the native reader cannot run"
+}
+
 test_kimi_unverified_gate() {
   local state gen out
   state=$(new_state_dir kimi-gate)
@@ -455,6 +465,7 @@ test_source_mismatch_cross_adapter
 test_converted_adapters_ignore_footer_text
 test_grok_regex_isolated
 test_codex_unverified_gate
+test_codex_reader_unavailable_unknown
 test_kimi_unverified_gate
 test_cursor_ignores_rendered_and_native_signals
 test_dead_endpoint_overrides

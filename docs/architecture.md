@@ -77,6 +77,8 @@ A run head the task copy cannot resolve locally is attributed only when the pipe
 During no-mistakes' `ci` monitor phase, it also reads the ci step log tail because `axi status` reports both "still waiting on checks" and "checks green, waiting on merge" as `ci,running`.
 The most recent recognized ci log marker wins, so checks-green monitoring reports done while a later re-arm, failed-check, or issue marker returns the crew to working.
 Only when no matching run exists does it consult semantic busy state; exact busy reports working, exact idle permits fallback to a status-log event whose verb maps to a recognized run-state, and unknown or a dead pane stays unknown instead of trusting a stale log.
+A Codex worker with a native binding is the one adapter also read live while a run is attributed: an observed native failure reports failed and an approval or user-input wait reports parked, ahead of the run step.
+Otherwise a run state the pipeline recorded itself — done, failed, or parked at a gate — stays authoritative, and any other verdict is applied last, after the ci-log override and the status-log reconciliation, so a verdict that is not exactly busy or idle reports unknown only for a run state no pane-independent source supports.
 Decision-only events such as `resolved` never become current state or leak their prose into the current-state detail.
 In that status-log fallback, a declared external wait reports the distinct `paused` state with its reason.
 The semantic branch reports working only on an exact busy verdict and names the source that produced it; an unknown verdict never becomes working, never permits the status-log fallback, and never becomes a silent idle.
@@ -161,7 +163,10 @@ Every classification returns a verdict of busy, idle, unknown, or dead together 
 
 Each converted adapter reports its own turn lifecycle through a machine-readable contract the vendor already exposes, rather than through rendered footer text: Pi and pi-signed through the Firstmate-owned extension's `agent_start` and `agent_settled` confirmed by `ctx.isIdle()`, OpenCode through its plugin's semantic `session.status`, Claude through owned `UserPromptSubmit`, `Stop`, `StopFailure`, and `SessionEnd` hooks, Muse through its session log, and Cursor through its conversation transcript.
 Kimi behind Pi inherits Pi's lifecycle.
-Codex and standalone Kimi classify unknown behind explicit probes until a semantic source is live-verified for them, and Grok keeps one clearly isolated rendered-tail fallback that can only ever classify a Grok task.
+Codex uses the private native app-server owned by a verified launch; `bin/fm-codex-appserver.py` owns its transport, exact-thread binding and read-only lifecycle queries.
+An observed native failed turn reports failed through crew-state, while lost observation stays unknown.
+A launch that cannot establish that observation retires its whole arming and runs plain Codex, which classifies unknown like any unbound launch: an observability capability never keeps a worker from starting.
+Standalone Kimi remains unverified, and Grok keeps one clearly isolated rendered-tail fallback that can only ever classify a Grok task.
 
 Missing, malformed, stale, untrusted, or unverified semantic state is unknown, never idle, and unknown is never promoted to busy either.
 Ordinary task-state consumers act only on an exact busy verdict, so an unreadable worker surfaces for a closer look instead of being absorbed as still-working or written off as finished.
