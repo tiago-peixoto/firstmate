@@ -129,6 +129,14 @@ init_changed_fixture_repo() {
   : >"$repo/tests/fm-codex-appserver-fixture.py"
   : >"$repo/tests/fm-codex-appserver-live.py"
   : >"$repo/bin/fm-codex-appserver.py"
+  # The two shell owners of the native Codex verdict. Their only behavioural
+  # coverage names them from the Python driver above, never from a .test.sh,
+  # so the reference scan alone cannot reach it. fm-daemon.test.sh names the
+  # classifier the ordinary way, so the reference-derived selection stays
+  # provable alongside the curated one.
+  : >"$repo/bin/fm-crew-state.sh"
+  : >"$repo/bin/fm-busy-lib.sh"
+  printf '# fm-busy-lib.sh\n' >>"$repo/tests/fm-daemon.test.sh"
   : >"$repo/bin/fm-supervisor-target-lib.sh"
   : >"$repo/bin/fm-control-lib.sh"
   : >"$repo/bin/fm-timeout-lib.sh"
@@ -248,6 +256,20 @@ test_changed_dependency_selection_and_unmapped_failure() {
     || fail "native Codex live driver must select only its gated guard, got: $listed"
   git -C "$repo" add tests/fm-codex-appserver-live.py
   git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm codex-live-change
+
+  printf '\n' >>"$repo/bin/fm-crew-state.sh"
+  listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)
+  assert_contains "$listed" "tests/fm-codex-appserver.test.sh" "crew-state selects native Codex coverage"
+  assert_contains "$listed" "tests/fm-crew-state.test.sh" "crew-state keeps its curated family"
+  git -C "$repo" add bin/fm-crew-state.sh
+  git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm crew-state-change
+
+  printf '\n' >>"$repo/bin/fm-busy-lib.sh"
+  listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)
+  assert_contains "$listed" "tests/fm-codex-appserver.test.sh" "classifier selects native Codex coverage"
+  assert_contains "$listed" "tests/fm-daemon.test.sh" "classifier keeps its reference-derived coverage"
+  git -C "$repo" add bin/fm-busy-lib.sh
+  git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm busy-lib-change
 
   printf '\n' >>"$repo/bin/fm-supervisor-target-lib.sh"
   listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)

@@ -275,9 +275,26 @@ def stop(child, group=False):
         pass
 
 
+def supported(name='codex'):
+    """The sole capability gate: the resolved binary, or None when unverified.
+
+    fm_busy_codex_appserver_observable (bin/fm-busy-lib.sh) and launch() both
+    ask here, so the arming decision and the launch can never disagree about
+    which installed version has passed the native activity guard.
+    """
+    binary = shutil.which(name)
+    if not binary:
+        return None
+    try:
+        version = subprocess.check_output([binary, '--version'], text=True).strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return binary if version == VERIFIED_VERSION else None
+
+
 def launch(state, task, gen, argv):
-    binary = shutil.which(argv[0])
-    if not binary or subprocess.check_output([binary, '--version'], text=True).strip() != VERIFIED_VERSION:
+    binary = supported(argv[0])
+    if not binary:
         raise ValueError('Codex version has not passed the native activity guard')
     gen_path = state / (task + '.busy-gen')
     if gen_path.read_text().strip() != gen:
@@ -387,8 +404,11 @@ def launch(state, task, gen, argv):
 
 
 def main():
+    if len(sys.argv) == 2 and sys.argv[1] == 'supported':
+        return 0 if supported() else 1
     if len(sys.argv) < 4 or sys.argv[1] not in ('read', 'settled', 'launch'):
-        raise SystemExit('usage: fm-codex-appserver.py read|settled STATE ID | launch STATE ID GEN -- CODEX ARGS')
+        raise SystemExit('usage: fm-codex-appserver.py supported | read|settled STATE ID'
+                         ' | launch STATE ID GEN -- CODEX ARGS')
     command, state, task = sys.argv[1], Path(sys.argv[2]), sys.argv[3]
     if not task or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-' for c in task):
         raise SystemExit('invalid task id')

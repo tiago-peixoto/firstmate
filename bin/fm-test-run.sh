@@ -1174,6 +1174,20 @@ families_for_changed_path() {
     tests/fm-codex-appserver-live.py)
       printf '%s\n' "__script__:fm-codex-appserver-live-e2e.test.sh"
       ;;
+    bin/fm-crew-state.sh)
+      # The reverse edge of the arm above. fm-codex-appserver.test.sh is the
+      # only behavioural coverage of the native Codex crew-state mapping, and
+      # it names this owner through its Python driver, which the reference scan
+      # (tests/*.test.sh only) cannot see. Keeps its curated family too.
+      printf '%s\n' pure-contract-unit
+      printf '%s\n' "__script__:fm-codex-appserver.test.sh"
+      ;;
+    bin/fm-busy-lib.sh)
+      # Same reverse edge for the classifier's codex arm, on top of the
+      # reference-derived blast radius this unmapped owner already resolves to.
+      printf '%s\n' "__script__:fm-codex-appserver.test.sh"
+      families_for_unmapped_bin "$path" || true
+      ;;
     tests/*.test.sh)
       # A single test file change selects only that script via basename family
       # resolution in the caller; emit a marker family of __script__

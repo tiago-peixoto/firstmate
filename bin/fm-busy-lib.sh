@@ -121,12 +121,13 @@ fm_busy_kimi_verified() {
 
 # Launch capability gate. Keep exact-version verification and launch wiring
 # together: old standalone workers remain unknown because they lack a bound
-# native source, even when a newer installed binary passes this gate.
-# Hooks remain unsuitable as a complete source: API errors on 0.153.2 have
-# no closing hook while the TUI remains open. Native status owns failure.
+# native source, even when a newer installed binary passes this gate. The
+# verified version is the reader's alone (its `supported` command), so arming
+# here and the launcher's own refusal can never disagree after an upgrade.
+# Hooks remain unsuitable as a complete source: API errors have no closing
+# hook while the TUI remains open. Native status owns failure.
 fm_busy_codex_appserver_observable() {
-  command -v python3 >/dev/null 2>&1 &&
-    [ "$(codex --version 2>/dev/null)" = 'codex-cli 0.153.2' ]
+  python3 "$FM_BUSY_CODEX_READER" supported >/dev/null 2>&1
 }
 
 fm_busy_record_path() {  # <state-dir> <id>
