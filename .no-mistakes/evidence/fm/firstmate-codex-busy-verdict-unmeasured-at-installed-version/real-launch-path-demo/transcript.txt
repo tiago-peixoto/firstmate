@@ -1,0 +1,85 @@
+installed Codex: codex-cli 0.153.2
+
+== 1. before the native launch: the defect this change fixes ==
+  no arming yet                      native=unknown codex-unverified               state: unknown · source: pane · harness state unavailable (unknown codex-unverified)
+
+== 2. real fm-spawn.sh launch, then live activity ==
+  turn running                       native=busy codex-appserver                   state: working · source: pane · harness busy (codex-appserver)
+  binding: gen=g1788701627.40902.29681 thread=01a076ec-dce4-7171-aac7- cwd=/private/tmp/fm-native-demo-Lru6502U/worker
+  transport: dir mode 0700 socket mode 0600
+  turn completed                     native=idle codex-appserver                   state: done · source: status-log · earlier fixture turn
+  native turn status=completed thread=01a076ec-dce4-7171-aac7- provider=firstmate_demo
+
+== 3. observation loss reports unknown, never idle or success ==
+  observer stopped                   native=unknown codex-appserver-disconnected   state: unknown · source: pane · harness state unavailable (unknown codex-appserver-disconnected)
+  observer recovered                 native=idle codex-appserver                   state: done · source: status-log · earlier fixture turn
+
+== 4. an API failure is a native failure, distinct from a disconnect ==
+  API error                          native=unknown codex-appserver-failed         state: failed · source: pane · Codex native turn failed
+  native thread status=systemError last turn status=failed
+  supervision crew_absorb_class -> none (a failure is never absorbed as working)
+
+== 5. a later turn recovers on the same thread ==
+  recovery turn                      native=idle codex-appserver                   state: done · source: status-log · earlier fixture turn
+  same thread=True recovery turn status=completed
+
+== 6. operator pane (the actual end-user surface) ==
+  | ⚠ Skill descriptions were shortened to fit the skills context budget. Codex can still see
+  |   every skill, but some descriptions are shorter. Disable unused skills or plugins to leave
+  |   more room for the rest.
+  | 
+  | ⚠ MCP startup incomplete (failed: node_repl)
+  | 
+  | ↳ Hook · PONYTAIL:FULL
+  | 
+  | • NATIVE_DEMO_OK
+  | 
+  | 
+  | › Reply DEMO_FAIL.
+  | 
+  | 
+  | ■ {"error":{"message":"FIRSTMATE_DEMO_HTTP_ERROR","type":"invalid_request_error"}}
+  | 
+  | 
+  | › Reply DEMO_RECOVERED.
+  | 
+  | 
+  | • NATIVE_DEMO_OK
+  | 
+  | 
+  | › Ask Codex to do anything
+  | 
+  |   firstmate-fixture xhigh · /private/tmp/fm-native-demo-Lru6502U/worker
+
+== 7. exit: cleanup with no orphaned processes ==
+  binding removed: True
+  private transport dir removed: True
+  orphaned launcher/server/TUI processes: none
+  after exit                         native=unknown codex-unverified               state: unknown · source: pane · harness state unavailable (unknown codex-unverified)
+
+== 8. an observability failure never vetoes the worker (this round) ==
+  fm-spawn armed the incarnation: busy_gen=True
+  the pane started plain Codex anyway: True
+  pane argv: --dangerously-bypass-approvals-and-sandbox -c notify=["bash","-c","touch '/private/tmp/fm-native-demo-Lru6502U/parent/state/codex-degrade-demo.turn-ended'"] ⁣FIRSTMATE_OP: v1 launch-brief: # Task
+## Captain's intent
+Degrade demo.
+
+## Firstmate spec
+Wait.
+  arming retired from meta: True
+  arming sidecars left behind: none
+  status log:
+    | working: native Codex activity observation was not established (Codex private app-server did not start); this worker runs unobserved
+  degraded worker                    native=unknown codex-unverified               state: unknown · source: pane · harness state unavailable (unknown codex-unverified)
+
+  operator pane after degrade:
+  |   Do you trust the contents of this directory? Working with untrusted contents comes with
+  |   higher risk of prompt injection. Trusting the directory allows project-local config, hooks,
+  |   and exec policies to load.
+  | 
+  | › 1. Yes, continue
+  |   2. No, quit
+  | 
+  |   Press enter to continue
+
+demo complete: codex-cli 0.153.2

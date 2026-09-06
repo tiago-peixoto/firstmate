@@ -1,0 +1,16 @@
+=== BEFORE (84d2796^) — observer failure vetoes the worker ===
+launcher exit code: 1
+launcher stderr   : Codex native launch failed: Codex private app-server did not start
+worker started    : NO WORKER — pane is empty
+meta busy_gen     : 1 line(s) left
+captain sees      : unknown missing
+status log        : 
+
+=== AFTER  (HEAD)     — observer failure degrades to plain Codex ===
+launcher exit code: 0
+launcher stderr   : Codex native launch failed: Codex private app-server did not start
+worker started    : WORKER STARTED: codex --model gpt-5-codex resume the task
+meta busy_gen     : 0 line(s) left
+captain sees      : unknown missing
+status log        : working: native Codex activity observation was not established (Codex private app-server did not start); this worker runs unobserved
+

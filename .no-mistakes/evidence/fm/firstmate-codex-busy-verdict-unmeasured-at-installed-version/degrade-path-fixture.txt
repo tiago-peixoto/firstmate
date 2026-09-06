@@ -1,0 +1,58 @@
+FM_TEST_BEGIN 2026-09-06T18:06:41Z tests/fm-codex-appserver.test.sh family=standalone expected_gate_skip=none
+ok - native classifier: busy codex-appserver
+ok - ordinary/secondmate crew-state and supervision: working
+ok - native classifier: busy codex-appserver
+ok - native classifier: idle codex-appserver
+ok - native classifier: unknown codex-appserver-failed
+ok - ordinary/secondmate crew-state and supervision: failed
+ok - native classifier: unknown codex-appserver-failed
+ok - ordinary/secondmate crew-state and supervision: failed
+ok - native ship failed preserves validation state and reaches supervision: Codex native turn failed
+ok - native classifier: busy codex-appserver
+ok - native classifier: busy codex-appserver
+ok - ordinary/secondmate crew-state and supervision: working
+ok - native classifier: idle codex-appserver
+ok - native classifier: busy codex-appserver
+ok - snapshot notifications preserve failure, recovery and thread identity
+ok - native classifier: idle codex-appserver
+ok - native classifier: unknown codex-appserver-failed
+ok - ordinary/secondmate crew-state and supervision: failed
+ok - native ship failed preserves validation state and reaches supervision: Codex native turn failed
+ok - native classifier: busy codex-appserver
+ok - native classifier: unknown codex-appserver-waiting-approval
+ok - ordinary/secondmate crew-state and supervision: parked
+ok - native ship parked preserves validation state and reaches supervision: Codex waiting for approval
+ok - native classifier: unknown codex-appserver-waiting-input
+ok - ordinary/secondmate crew-state and supervision: parked
+ok - native ship parked preserves validation state and reaches supervision: Codex waiting for user input
+ok - native classifier: unknown codex-appserver-binding
+ok - native classifier: unknown codex-appserver-binding
+ok - native ship unknown preserves validation state and reaches supervision: codex-appserver-binding
+ok - native classifier: unknown codex-appserver-binding
+ok - native classifier: unknown codex-appserver-binding
+ok - native classifier: unknown codex-appserver-binding
+ok - native classifier: unknown codex-appserver-binding
+ok - native classifier: unknown codex-appserver-disconnected
+ok - ordinary/secondmate crew-state and supervision: unknown
+ok - native ship unknown preserves validation state and reaches supervision: codex-appserver-disconnected
+ok - binding notification: systemError / direct
+ok - binding notification: idle / direct
+ok - binding notification: active / direct
+ok - binding notification: systemError / title-helper
+ok - binding notification: active / helper-only
+ok - binding notification: systemError / reconnect
+ok - binding notification: idle / reconnect
+ok - binding notification: idle / burst
+ok - launch preserves model, effort and approval argv and mirrors only configuration
+ok - ordinary/secondmate crew-state and supervision: unknown
+ok - native ship unknown preserves validation state and reaches supervision: codex-unverified
+ok - a failed native launch degrades to plain Codex and retires the whole arming
+ok - live guard exit: guard=0 teardown=0 result=0
+ok - live guard exit: guard=0 teardown=29 result=1
+ok - live guard exit: guard=23 teardown=0 result=23
+ok - live guard exit: guard=23 teardown=29 result=23
+ok - live guard exit: a failed scratch removal warns instead of reading as a failed teardown
+FM_TEST_END 2026-09-06T18:07:29Z tests/fm-codex-appserver.test.sh exit=0 duration_ms=47589 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=47885
+FM_TEST_SUMMARY_FAMILY family=standalone count=1 duration_ms=47589 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-codex-appserver.test.sh duration_ms=47589

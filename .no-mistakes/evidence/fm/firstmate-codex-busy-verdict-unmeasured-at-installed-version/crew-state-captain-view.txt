@@ -1,0 +1,32 @@
+What the captain actually sees for a Codex worker, taken from the live
+credentialed run (bin/fm-crew-state.sh output, in lifecycle order).
+Before this change every one of these lines read:
+  state: unknown . source: pane . harness state unavailable (unknown codex-unverified)
+
+[installed Codex version codex-cli 0.153.2]
+  state: working · source: pane · harness busy (codex-appserver)
+
+[exact user thread and cwd]
+  state: done · source: status-log · earlier fixture turn
+
+[long foreground tool remains native busy]
+  state: working · source: pane · harness busy (codex-appserver)
+
+[a subsequent turn recovers after interruption]
+  state: parked · source: pane · Codex waiting for user input
+
+[HTTP failure is native failed/systemError]
+  state: failed · source: pane · Codex native turn failed
+
+[secondmate uses only the named Herdr lab]
+  state: working · source: pane · harness busy (codex-appserver)
+
+[secondmate launcher publishes the native turn-end wake]
+  state: unknown · source: pane · harness state unavailable (unknown codex-appserver-disconnected)
+
+[secondmate observation loss is unknown]
+  state: done · source: status-log · earlier fixture turn
+
+[secondmate still permits its routed reply after settling]
+  state: unknown · source: pane · harness state unavailable (unknown codex-unverified)
+

@@ -1,0 +1,2 @@
+{"at": 1788717803.960269, "command": ["codex", "--version"], "result": {"exit": 0, "output": "codex-cli 0.153.4\n"}}
+{"at": 1788717803.9603798, "command": "installed Codex version codex-cli 0.153.4", "result": false}
