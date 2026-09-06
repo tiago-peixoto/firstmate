@@ -1,0 +1,54 @@
+
+================ A. ship worker whose task copy IS a Firstmate checkout ================
+--- brief as scaffolded, first identity line ---
+You are a crewmate: an autonomous worker agent managed by firstmate. Work on your own; do not wait for a human.
+
+--- spawn ---
+spawned acme-1 harness=codex kind=ship mode=no-mistakes yolo=off window=firstmate:fm-acme-1 worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-role-demo.H4BrtR/firstmate-ship/wt
+--- delivered prompt: identity line still present ---
+4:⁣FIRSTMATE_OP: v1 launch-brief: You are a crewmate: an autonomous worker agent managed by firstmate. Work on your own; do not wait for a human.
+--- delivered prompt: worker role contract (tail) ---
+# Current worker role contract
+When this task works on Firstmate itself, this section supersedes every earlier brief instruction about your role and identity.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is the primary/secondmate supervisor's contract: follow this brief instead of that supervisor contract.
+For that Firstmate task, do the assigned work yourself and report to firstmate; do not adopt the supervisor identity, delegate the task, run fleet supervision, or address the captain.
+This exception preserves this brief's safety and authority boundaries and applicable contributor guidance, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+Other projects retain their own instructions unchanged.
+
+# Current no-mistakes intent contract
+This section supersedes every earlier brief instruction about constructing `--intent`, but not later clarifications actually supplied by the captain.
+Use the serialized captain intent below plus any later words the captain actually supplied as `--intent`; never include Firstmate specification or other mixed Task content.
+
+## Captain intent authorized for --intent
+Fix the flaky retry in the launcher.
+
+Firstmate-authored constraints, acceptance criteria, implementation details, decisions, and tradeoffs are specification, not captain intent.
+The Definition of done's rule that `--intent` must be self-sufficient still governs the string you pass: resolve any report, decision, or PR the intent above refers to into its substance rather than passing the pointer.
+--- the project checkout the worker will read ---
+project AGENTS.md unchanged by the launch: yes
+project AGENTS.md line 4 (supervisor identity the worker must NOT adopt): You are the first mate.
+
+================ B. scout worker on an unrelated project (acme-web) ================
+spawned acme-2 harness=codex kind=scout window=firstmate:fm-acme-2 worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-role-demo.H4BrtR/unrelated-scout/wt
+--- delivered prompt: crewmate identity NOT revoked ---
+4:⁣FIRSTMATE_OP: v1 launch-brief: You are a crewmate: an autonomous worker agent managed by firstmate. Work on your own; do not wait for a human.
+--- delivered prompt: every supersession clause is Firstmate-gated ---
+64:When this task works on Firstmate itself, this section supersedes every earlier brief instruction about your role and identity.
+68:Other projects retain their own instructions unchanged.
+--- unrelated project instructions untouched ---
+project AGENTS.md unchanged: yes
+Use two-space indent and run make check.
+
+================ C. persistent secondmate launch (supervisor contract preserved) ================
+warning: secondmate sm-1 sync skipped before launch: primary default-branch commit cannot be resolved
+spawned sm-1 harness=codex kind=secondmate mode=secondmate yolo=off window=firstmate:fm-sm-1 worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-role-demo.H4BrtR/secondmate/secondmate-home
+--- launch command reads the charter directly ---
+FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-role-demo.H4BrtR/secondmate/home' FM_HOME='/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-role-demo.H4BrtR/secondmate/secondmate-home' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=persistent env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI codex --dangerously-bypass-approvals-and-sandbox "$('/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1T0HV62W1JW72D1ZD2FYZS3/bin/fm-operational-input.sh' encode launch-brief < '/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-role-demo.H4BrtR/secondmate/secondmate-home/data/charter.md')"
+--- no worker overlay was created for the secondmate ---
+(no task data dir)
+launch-brief.md absent: yes
+--- secondmate supervisor AGENTS.md byte-identical after launch: yes
+--- charter byte-identical: yes
+
+================ D. repository primary contract ================
+worktree AGENTS.md modified by any of the above: no

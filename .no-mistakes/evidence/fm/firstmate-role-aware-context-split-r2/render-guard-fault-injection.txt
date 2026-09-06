@@ -1,0 +1,26 @@
+Render-guard reachability for a non-no-mistakes launch (scout), by fault injection.
+A PATH stub makes the single 'cat <brief>' that renders launch-brief.md fail with an
+I/O error after emitting partial output; every other cat use passes through.
+
+=== PRE-FIX (30a8593) ===
+cat: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-guard2.yZshn2/c/home/data/guard-1/brief.md: Input/output error
+spawned guard-1 harness=codex kind=scout window=firstmate:fm-guard-1 worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-guard2.yZshn2/c/wt
+spawn exit=0
+launch-brief.md published: yes
+--- truncated brief a worker would have received ---
+partial 
+# Current worker role contract
+This section supersedes every earlier brief instruction about your role and identity.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is the primary/secondmate supervisor's contract: follow this brief instead of that supervisor contract.
+For that Firstmate task, do the assigned work yourself and report to firstmate; do not adopt the supervisor identity, delegate the task, run fleet supervision, or address the captain.
+This exception preserves this brief's safety and authority boundaries and applicable contributor guidance, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+Other projects retain their own instructions unchanged.
+--- end ---
+launch command issued to a harness: yes
+
+=== TARGET (694e87f) ===
+cat: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-guard2.fFHVtw/c/home/data/guard-1/brief.md: Input/output error
+error: could not render current launch contract for /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-guard2.fFHVtw/c/home/data/guard-1/brief.md
+spawn exit=1
+launch-brief.md published: no
+launch command issued to a harness: no

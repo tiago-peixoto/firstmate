@@ -1,0 +1,13 @@
+Regression proof: the new assertions fail on the pre-fix source and pass on the target.
+
+== tests/fm-task-delivery.test.sh (target test file) run against bin/ from 30a8593 ==
+$ git archive 30a8593 | tar -x -C /tmp/nm-prefix && cp tests/fm-task-delivery.test.sh /tmp/nm-prefix/tests/
+$ (cd /tmp/nm-prefix && bash tests/fm-task-delivery.test.sh)
+not ok - firstmate no-mistakes revoked the brief's own role for a task that is not Firstmate
+exit=
+
+== same test file on the target commit 694e87f ==
+$ bash tests/fm-task-delivery.test.sh
+ok - fm-project-mode: the conditional policy is accepted, mapped for mechanical callers, and readable raw
+ok - fm-spawn/fm-promote: leftover Task placeholders are refused until both subsections are filled
+# all fm-task-delivery tests passed
