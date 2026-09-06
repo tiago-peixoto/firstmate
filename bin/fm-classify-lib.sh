@@ -126,34 +126,6 @@ _fm_verb_is_terminal() {  # <verb>
   esac
 }
 
-# The verbs that RETRACT a standing declared wait: the terminal captain verbs
-# above, plus the resolution verb. Those are the closing verbs
-# _fm_status_open_activities_stream below already applies to an open working or
-# paused phase, and status_standing_wait_line matches them the same key-scoped
-# way, so the two folds cannot disagree about when a declared wait ended. One
-# verb differs deliberately and is NOT listed here: `captain-held` closes a
-# routed-work phase there, but a verified hold transfer is itself a wait on the
-# captain, so here it DECLARES (see _fm_verb_is_declared_wait below).
-#
-# `resolved:` is what makes the retraction unambiguous, and it is not new
-# vocabulary: bin/fm-brief.sh already instructs a worker to append
-# `resolved: {how it cleared}` when a blocker or wait clears without a firstmate
-# reply. It is the ONLY way a worker says "the thing I declared is over" without
-# also ending its task, which is exactly what lifting an external wait is.
-#
-# `working:` deliberately does NOT retract, and that is the whole fix. It is this
-# repo's nonterminal progress verb - status_is_captain_relevant excludes it, and a
-# brief tells the worker not to end a turn on it - and a status log carries no
-# producer attribution, so a `working:` line from a worker's own armed background
-# reporter is indistinguishable from one the worker wrote itself. Letting it
-# retract is what cancelled live declarations and restarted the possible-wedge
-# ladder against workers that were still waiting. Giving the worker `resolved:`
-# resolves that ambiguity rather than guessing at it.
-_fm_verb_retracts_declared_wait() {  # <verb>
-  _fm_verb_is_terminal "$1" && return 0
-  [ "$1" = "${FM_CLASSIFY_RESOLVE_VERB:-$FM_CLASSIFY_RESOLVE_VERB_DEFAULT}" ]
-}
-
 status_is_terminal_verb() {
   local line=$1 verb
   [ -n "$line" ] || return 1
@@ -247,20 +219,43 @@ status_is_paused_or_captain_held() {  # <status-line>
 # So the declaration is folded over the log instead, the same shape
 # status_open_decisions below already uses for keyed decisions: a paused: or
 # captain-held: line DECLARES the wait, and only a later line the crew writes to
-# say its situation CHANGED retracts it. _fm_verb_retracts_declared_wait above
-# owns which verbs those are and why. A later declaration replaces an earlier one,
-# and everything else - working:, note:, and free-text prose - leaves the
+# say its situation CHANGED retracts it. A later declaration replaces an earlier
+# one, and everything else - working:, note:, and free-text prose - leaves the
 # declaration standing.
 #
-# Retraction is KEY-SCOPED, exactly as it is in the sibling folds: a retraction
-# clears the standing declaration only when it carries that declaration's own key
-# (an unkeyed declaration is retracted only by an unkeyed retraction, both being
-# the "default" key). This is not a refinement, it is the same masking again from
-# a different producer: firstmate answering an UNRELATED decision writes
-# `resolved [key=<other>]` straight into the worker's own status log
-# (bin/fm-send.sh --resolve-key), and bin/fm-pending-reply-lib.sh writes the same
-# close line automatically when a pending reply is consumed. Keyless retraction
-# would let answering one question silently cancel a wait on something else.
+# `working:` deliberately does NOT retract, and that is the whole fix. It is this
+# repo's nonterminal progress verb - status_is_captain_relevant excludes it, and a
+# brief tells the worker not to end a turn on it - and a status log carries no
+# producer attribution, so a `working:` line from a worker's own armed background
+# reporter is indistinguishable from one the worker wrote itself. Letting it
+# retract is what cancelled live declarations and restarted the possible-wedge
+# ladder against workers that were still waiting.
+#
+# TWO RETRACTION RULES, because two different things can end a wait.
+#
+# A TERMINAL captain verb (done, failed, blocked, needs-decision - the set
+# _fm_verb_is_terminal above owns) retracts UNCONDITIONALLY, whatever key it
+# carries. Each states that the crew is no longer in an external wait at all, and
+# each is captain-relevant on its own, so the event surfaces whether or not it
+# also retracts. This must not depend on a busy worker keying its terminal line
+# to match its earlier pause: a crew that declared itself blocked reading back as
+# paused would misreport current state to bin/fm-crew-state.sh and let the
+# daemon's stale classifier self-handle it on the hour cadence.
+#
+# `resolved:` retracts only when its key matches the standing declaration's (an
+# unkeyed declaration is retracted only by an unkeyed resolution, both being the
+# "default" key). It is the ONLY way a worker says "the thing I declared is over"
+# without also ending its task - bin/fm-brief.sh already instructs one to append
+# `resolved: {how it cleared}` when a blocker or wait clears without a firstmate
+# reply - but it is also the one retraction verb OTHER producers write into the
+# worker's own log: firstmate answering an unrelated decision through
+# bin/fm-send.sh --resolve-key, and bin/fm-pending-reply-lib.sh closing a
+# consumed pending reply. Keyless, that would let answering one question silently
+# cancel a wait on something else, which is this defect one producer over. The
+# key is read from the declaration only when a resolution actually arrives, and
+# an unparsable slug falls back to the shared "default" bucket on both sides: a
+# malformed key must never be able to drop a declaration, because losing the
+# declaration is the failure this whole fold exists to remove.
 #
 # THIS IS NOT AN UNCONDITIONAL SUPPRESSION, which matters because a real wedge
 # under a stale declaration must still be reachable. Two paths remain, both
@@ -277,24 +272,24 @@ status_is_paused_or_captain_held() {  # <status-line>
 # those over a several-hundred line log cost seconds of CPU per gate. The watcher
 # runs this gate for every window on every poll, so a fold that forks would have
 # replaced the wake cost this change removes with a poll cost just as large. The
-# key read below is the one `$(...)`, and it is reached only by a line that
-# actually declares or (with a wait standing) retracts - a handful per log, not
-# the `working:` run that makes a log long.
+# key reads are the only `$(...)`, and they are reached only by a `resolved:` line
+# arriving while a wait actually stands - not by the `working:` run that makes a
+# log long, and not by the declaration itself.
 status_standing_wait_line() {  # <status-file> -> the standing declaration line, or empty
-  local f=$1 line verb key standing='' standing_key=''
+  local f=$1 line verb resolve standing=''
+  resolve=${FM_CLASSIFY_RESOLVE_VERB:-$FM_CLASSIFY_RESOLVE_VERB_DEFAULT}
   [ -e "$f" ] || return 0
   while IFS= read -r line || [ -n "$line" ]; do
     [ -n "$line" ] || continue
     _fm_status_line_verb_into verb "$line"
     if _fm_verb_is_declared_wait "$verb"; then
-      key=$(_fm_decision_key "$line") || continue
       standing=$line
-      standing_key=$key
-    elif [ -n "$standing" ] && _fm_verb_retracts_declared_wait "$verb"; then
-      key=$(_fm_decision_key "$line") || continue
-      [ "$key" = "$standing_key" ] || continue
+    elif _fm_verb_is_terminal "$verb"; then
       standing=''
-      standing_key=''
+    elif [ -n "$standing" ] && [ "$verb" = "$resolve" ] \
+      && [ "$(_fm_decision_key "$line" || printf 'default')" \
+         = "$(_fm_decision_key "$standing" || printf 'default')" ]; then
+      standing=''
     fi
   done < "$f"
   printf '%s' "$standing"

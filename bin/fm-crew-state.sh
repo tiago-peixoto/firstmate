@@ -173,6 +173,10 @@ map_log_state() {  # <line>
     echo paused
     return
   fi
+  if status_is_captain_held "$1"; then
+    echo parked
+    return
+  fi
   case "$(status_line_verb "$1")" in
     working)        echo working ;;
     needs-decision) echo parked ;;

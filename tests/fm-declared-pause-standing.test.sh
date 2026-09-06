@@ -131,8 +131,27 @@ test_every_terminal_verb_retracts() {
     assert_no_standing "$f" "a '$verb:' line did not retract the declared wait"
     status_is_terminal_verb "$verb: the wait is over" \
       || fail "'$verb:' is not in status_is_terminal_verb, so the two verb sets have drifted"
+
+    # UNCONDITIONALLY, whatever key the terminal line carries. Each of these verbs
+    # says the crew is no longer in an external wait at all, so retraction here
+    # must not depend on a busy worker keying its terminal line to match the pause
+    # it wrote hours earlier. If it did, a crew that declared itself BLOCKED would
+    # keep reading back as `paused` to bin/fm-crew-state.sh and the daemon's stale
+    # classifier would self-handle it on the hour cadence.
+    f=$(status_log "retract-$verb-keyed-over-unkeyed" "$PAUSE" "$verb [key=route]: the wait is over")
+    assert_no_standing "$f" "a keyed '$verb:' line did not retract an unkeyed declared wait"
+
+    f=$(status_log "retract-$verb-unkeyed-over-keyed" \
+      'paused [key=vendor]: waiting on the vendor rate-limit reset' \
+      "$verb: the wait is over")
+    assert_no_standing "$f" "an unkeyed '$verb:' line did not retract a keyed declared wait"
+
+    f=$(status_log "retract-$verb-other-key" \
+      'paused [key=vendor]: waiting on the vendor rate-limit reset' \
+      "$verb [key=route]: the wait is over")
+    assert_no_standing "$f" "a differently-keyed '$verb:' line did not retract the declared wait"
   done
-  pass "every terminal captain verb retracts a standing declaration, and the retraction set contains that same set"
+  pass "every terminal captain verb retracts a standing declaration whatever key it carries, and the retraction set contains that same set"
 }
 
 # `resolved:` is the retraction that matters most, because it is the only one that
@@ -147,9 +166,9 @@ test_the_resolution_verb_retracts_without_ending_the_task() {
   assert_no_standing "$f" "a 'resolved:' line did not retract the declared wait"
 
   # Keyed too, since that is the form a worker answering its own blocker writes.
-  # Retraction is key-scoped, so the keyed form clears the declaration that
-  # states the SAME key; test_retraction_is_scoped_to_the_declarations_own_key
-  # below owns the other half.
+  # Resolution is key-scoped, so the keyed form clears the declaration that
+  # states the SAME key; test_only_the_resolution_verb_is_key_scoped below owns
+  # the other half.
   f=$(status_log retract-resolved-keyed \
     'paused [key=release]: waiting on the vendor release' \
     'resolved [key=release]: access arrived')
@@ -179,12 +198,14 @@ test_the_resolution_verb_retracts_without_ending_the_task() {
 # bin/fm-pending-reply-lib.sh writes the same close line automatically when a
 # pending reply is consumed. A keyless retraction rule would let either one cancel
 # a wait about something else and restart the possible-wedge ladder - the same
-# masking this fold exists to stop, one producer over. So retraction carries a key
-# and must match the declaration's, exactly as the sibling folds already require.
-test_retraction_is_scoped_to_the_declarations_own_key() {
+# masking this fold exists to stop, one producer over. So `resolved:` - and ONLY
+# `resolved:`, the one retraction verb another producer writes into this log -
+# must carry the declaration's own key to retract it. The terminal captain verbs
+# stay unconditional; test_every_terminal_verb_retracts above owns that half.
+test_only_the_resolution_verb_is_key_scoped() {
   local f
   # The live shape: an open keyed decision, a separate unkeyed wait, firstmate
-  # answering the decision.
+  # answering the decision through fm-send --resolve-key.
   f=$(status_log key-scope-foreign-resolve \
     'needs-decision [key=route]: north or south?' \
     "$PAUSE" \
@@ -192,14 +213,7 @@ test_retraction_is_scoped_to_the_declarations_own_key() {
   assert_standing "$f" "$PAUSE" \
     "answering an unrelated keyed decision cancelled a live declared wait"
 
-  # A terminal verb is no different: it must carry the declaration's key too.
-  f=$(status_log key-scope-foreign-terminal \
-    "$PAUSE" \
-    'blocked [key=route]: the routing call is stuck')
-  assert_standing "$f" "$PAUSE" \
-    "a keyed terminal line for another decision cancelled an unkeyed declared wait"
-
-  # And the reverse direction: an unkeyed retraction cannot clear a KEYED wait,
+  # And the reverse direction: an unkeyed resolution cannot clear a KEYED wait,
   # because a bare `resolved:` states the "default" key, not "every key".
   f=$(status_log key-scope-bare-vs-keyed \
     'paused [key=vendor]: waiting on the vendor rate-limit reset' \
@@ -207,23 +221,48 @@ test_retraction_is_scoped_to_the_declarations_own_key() {
   assert_standing "$f" 'paused [key=vendor]: waiting on the vendor rate-limit reset' \
     "a bare 'resolved:' cancelled a keyed declared wait it does not name"
 
-  # The retractions that DO hold, so the scoping did not turn into a mute: same
+  # The resolutions that DO hold, so the scoping did not turn into a mute: same
   # key both sides, and unkeyed both sides (both being the "default" key).
   f=$(status_log key-scope-matching-key \
     'paused [key=vendor]: waiting on the vendor rate-limit reset' \
     'resolved [key=vendor]: the vendor window opened')
-  assert_no_standing "$f" "a retraction carrying the declaration's own key did not retract it"
+  assert_no_standing "$f" "a resolution carrying the declaration's own key did not retract it"
 
   f=$(status_log key-scope-both-unkeyed "$PAUSE" 'resolved: the upstream release landed')
-  assert_no_standing "$f" "an unkeyed retraction did not retract an unkeyed declaration"
+  assert_no_standing "$f" "an unkeyed resolution did not retract an unkeyed declaration"
 
   # The stated key may sit in either documented position (_fm_decision_key owns
   # that grammar), so the two positions must scope identically.
   f=$(status_log key-scope-note-head-position \
     'paused: [key=vendor] waiting on the vendor rate-limit reset' \
     'resolved [key=vendor]: the vendor window opened')
-  assert_no_standing "$f" "a note-head key position did not scope the retraction the same way"
-  pass "retraction is scoped to the declaration's own key, so answering another decision cannot cancel a live wait"
+  assert_no_standing "$f" "a note-head key position did not scope the resolution the same way"
+  pass "only the resolution verb is key-scoped, so answering another decision cannot cancel a live wait"
+}
+
+# A key the crew chose that is not a strict slug - a branch-shaped `fm/feat-x`,
+# or one with a space - must never cost the crew its suppression. bin/fm-brief.sh
+# tells crews to carry `[key=<work-slug>]` across their paused/done/blocked lines,
+# so unparsable keys are realistic worker output, and a declaration that silently
+# vanishes because of one is exactly the failure this whole fold exists to remove.
+test_an_unparsable_key_never_drops_the_declaration() {
+  local f decl
+  for decl in \
+    'paused [key=fm/feat-x]: waiting on the upstream maintainer' \
+    'paused [key=two words]: waiting on the upstream maintainer' \
+    'captain-held [key=fm/feat-x]: awaiting the captain on the routing call'
+  do
+    f=$(status_log "unparsable-key-$RANDOM" "$decl" 'working: reporter tick')
+    assert_standing "$f" "$decl" "an unparsable key dropped the declaration entirely"
+  done
+
+  # Both sides falling back to the shared `default` bucket, so a resolution
+  # naming the same unparsable key still retracts rather than sticking forever.
+  f=$(status_log unparsable-key-resolved \
+    'paused [key=fm/feat-x]: waiting on the upstream maintainer' \
+    'resolved [key=fm/feat-x]: the upstream release landed')
+  assert_no_standing "$f" "a resolution naming the declaration's own unparsable key did not retract it"
+  pass "an unparsable key leaves the declaration standing instead of silently dropping it"
 }
 
 # A retracted declaration stays retracted through later non-declaring lines: the
@@ -402,7 +441,8 @@ test_the_reported_masking_sequence_keeps_the_declaration
 test_non_declaring_producers_never_retract
 test_every_terminal_verb_retracts
 test_the_resolution_verb_retracts_without_ending_the_task
-test_retraction_is_scoped_to_the_declarations_own_key
+test_only_the_resolution_verb_is_key_scoped
+test_an_unparsable_key_never_drops_the_declaration
 test_a_retracted_declaration_stays_retracted
 test_a_new_declaration_after_a_retraction_stands
 test_a_later_declaration_replaces_an_earlier_one

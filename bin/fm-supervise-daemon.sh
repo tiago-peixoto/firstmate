@@ -1320,7 +1320,7 @@ is_wake_reason() {  # <reason>
 # --- dispatch one wake reason to self-handle or escalate --------------------
 # Side effects: logging, marker records, escalation buffer appends.
 handle_wake() {  # <reason> <state>
-  local reason=$1 state=$2 decision action distilled task stale_detail
+  local reason=$1 state=$2 decision action distilled task stale_detail last
   local capture="$state/.subsuper-classified-end.$$" span_record='' span_rc='' endpoint ident rest sig marker
   local kind="" arg="" classification_failed=0 span_failure_repeat=0
   : > "$capture" || return 1
