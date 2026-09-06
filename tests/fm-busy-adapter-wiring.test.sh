@@ -301,7 +301,7 @@ test_codex_verified_launch_starts_unknown() {
   local rec id=busy-cx-native out state gen
   rec=$(make_spawn_case codex-native codex "$id")
   read_case_record "$rec"
-  printf '#!/bin/sh\nprintf "codex-cli 0.153.2\\n"\n' > "$FAKEBIN_DIR/codex"
+  printf '#!/bin/sh\nprintf "codex-cli 0.153.4\\n"\n' > "$FAKEBIN_DIR/codex"
   out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
   expect_code 0 $? "verified Codex spawn should succeed: $out"
   state="$HOME_DIR/state"

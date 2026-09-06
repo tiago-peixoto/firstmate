@@ -21,7 +21,7 @@ import time
 root, lab = map(Path, sys.argv[1:3])
 vendor_args = sys.argv[3:]
 if vendor_args == ['--version']:
-    print('codex-cli 0.153.2')
+    print('codex-cli 0.153.4')
     sys.exit(0)
 if vendor_args and vendor_args[0] == '--remote':
     (lab/'tui-args.json').write_text(json.dumps(vendor_args))
@@ -151,7 +151,7 @@ if vendor_server:
 threading.Thread(target=accept_loop, daemon=True).start()
 gen = subprocess.check_output([str(root/'bin/fm-busy-event.sh'), 'arm', str(state), 'worker'], text=True).strip()
 st = path.stat()
-binding = {'format': 1, 'version': 'codex-cli 0.153.2', 'gen': gen,
+binding = {'format': 1, 'version': 'codex-cli 0.153.4', 'gen': gen,
            'socket': str(path), 'socket_dev': st.st_dev, 'socket_ino': st.st_ino,
            'worktree': str(lab), 'thread': 'thread-a', 'server_pid': os.getpid(),
            'tui_pid': os.getpid(), 'owner_pid': os.getpid(), 'task': 'worker', 'state': str(state.resolve()),

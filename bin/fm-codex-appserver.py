@@ -30,7 +30,7 @@ import sys
 import tempfile
 import time
 
-VERIFIED_VERSION = 'codex-cli 0.153.2'
+VERIFIED_VERSION = 'codex-cli 0.153.4'
 MAX_MESSAGE = 2 * 1024 * 1024
 
 
