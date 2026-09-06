@@ -2713,7 +2713,10 @@ if [ "$HARNESS" = codex ] && [ "$RAW_LAUNCH" -eq 0 ] \
   && { [ "$KIND" != secondmate ] || [ "$STATE_REAL" != "$WT/state/parent-route" ]; } \
   && fm_busy_codex_appserver_observable; then
   # A pull source starts unknown, never from a seeded busy guess. Secondmates
-  # need the same parent-owned generation despite their different home hooks.
+  # need the same parent-owned generation despite their different home hooks,
+  # except a remote secondmate's parent-route record: that agent, its binding
+  # and its observation all live on the remote host's own spawn leg, and
+  # fm-crew-state routes the read there (docs/remote-secondmates.md).
   BUSY_GEN=$("$FM_ROOT/bin/fm-busy-event.sh" arm "$STATE_REAL" "$ID" --state unknown) || exit 1
   [ "$RELAUNCH" -ne 1 ] || RELAUNCH_REPLACEMENT_BUSY_GEN=$BUSY_GEN
   CODEX_LAUNCH="python3 $(shell_quote "$FM_ROOT/bin/fm-codex-appserver.py") launch $(shell_quote "$STATE_REAL") $(shell_quote "$ID") $(shell_quote "$BUSY_GEN") -- $(shell_quote "$(command -v codex)")"

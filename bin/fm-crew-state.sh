@@ -51,6 +51,14 @@
 #      checks" from "checks green, waiting on merge" (see nm_ci_checks_state) -
 #      a ci-step log-tail check overrides working -> done once checks read
 #      green, so a green PR is never silently read as still-validating.
+#      ALSO EXCEPT: a Codex crew with a native binding (meta busy_gen plus
+#      state/<id>.codex-appserver) is read live here too, because the run step
+#      cannot see a wedged or failing worker: an observed native failure reports
+#      failed and an approval or user-input wait reports parked, ahead of the
+#      run state. Otherwise a TERMINAL run state (done or failed) stays
+#      authoritative - a finished crew whose observation already ended is never
+#      masked as unknown - while under a non-terminal one any verdict but an
+#      exact busy/idle codex-appserver reports unknown.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
 #      the run-step shows the run moved on, the log is deterministically stale and
 #      is flagged superseded. A genuinely parked run plus a needs-decision log

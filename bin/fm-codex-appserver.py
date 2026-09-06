@@ -377,6 +377,10 @@ def launch(state, task, gen, argv):
                 else:
                     continue
                 if binding['thread'] in observer.terminal_threads:
+                    # Watcher wake NOTIFICATION, never state. An ordinary
+                    # worker's launch also touches it through Codex's own
+                    # notify=; a secondmate launch carries no notify, so this
+                    # is the only turn-end signal it has.
                     (state / (task + '.turn-ended')).touch()
                 observer.terminal_threads.clear()
             except (OSError, EOFError, ValueError, KeyError):
