@@ -206,8 +206,9 @@ def consumers(expected_state, absorb):
 
 def ship_runs(expected_state, reason):
     meta_path.write_text(meta_body+'kind=ship\n')
-    # A gate record has no evidence of its own that the worker is still there, so an
-    # unavailable live read masks it, carrying the gate detail through.
+    # A gate record is the pipeline's own evidence, as independent of the pane as a
+    # terminal one: an unavailable live read must not turn it into unknown, which
+    # would invalidate the fleet snapshot and drop the crew's open decisions.
     consumer_env['FM_FAKE_NATIVE_RUN'] = ('run:\n  id: fixture\n  branch: native-fixture\n  head: '+
                                           head+'\n  status: awaiting_approval\n  outcome: \n  gate: review\n')
     consumer_env['FM_FAKE_NATIVE_RUNS'] = 'running native-fixture '+head+' 2026-09-04 12:00\n'
@@ -215,7 +216,7 @@ def ship_runs(expected_state, reason):
     value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'],
                                     env=consumer_env, text=True)
     if expected_state == 'unknown':
-        assert value.startswith('state: unknown ') and 'parked at review' in value, value
+        assert value.startswith('state: parked ') and 'parked at review' in value, value
     else:
         assert value.startswith('state: '+expected_state+' ') and reason in value, value
     # A refused daemon socket is evidence about the shared pipeline, so it outranks

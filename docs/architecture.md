@@ -78,7 +78,7 @@ During no-mistakes' `ci` monitor phase, it also reads the ci step log tail becau
 The most recent recognized ci log marker wins, so checks-green monitoring reports done while a later re-arm, failed-check, or issue marker returns the crew to working.
 Only when no matching run exists does it consult semantic busy state; exact busy reports working, exact idle permits fallback to a status-log event whose verb maps to a recognized run-state, and unknown or a dead pane stays unknown instead of trusting a stale log.
 A Codex worker with a native binding is the one adapter also read live while a run is attributed: an observed native failure reports failed and an approval or user-input wait reports parked, ahead of the run step.
-Otherwise a terminal run state stays authoritative, and any other verdict is applied last, after the ci-log override and the status-log reconciliation, so a verdict that is not exactly busy or idle reports unknown only for a run state no pane-independent source supports.
+Otherwise a run state the pipeline recorded itself — done, failed, or parked at a gate — stays authoritative, and any other verdict is applied last, after the ci-log override and the status-log reconciliation, so a verdict that is not exactly busy or idle reports unknown only for a run state no pane-independent source supports.
 Decision-only events such as `resolved` never become current state or leak their prose into the current-state detail.
 In that status-log fallback, a declared external wait reports the distinct `paused` state with its reason.
 The semantic branch reports working only on an exact busy verdict and names the source that produced it; an unknown verdict never becomes working, never permits the status-log fallback, and never becomes a silent idle.

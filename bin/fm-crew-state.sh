@@ -59,9 +59,13 @@
 #      LAST, after the ci-ready override and step 3's reconciliation: a failure
 #      to observe the pane is no evidence about anything the pane does not own,
 #      so it may mask only a run state nothing else supports, and never a green
-#      PR or a daemon-down status log. A TERMINAL run state (done or failed) is
-#      its own evidence and stays authoritative there - a finished crew whose
-#      observation already ended is never masked as unknown.
+#      PR or a daemon-down status log. A run state the pipeline itself recorded
+#      - done, failed, or parked at a gate - is equally pane-independent and
+#      stays authoritative there: a finished crew whose observation already
+#      ended, and a gate still waiting on the captain, are never masked as
+#      unknown. Masking them would also cost the fleet more than the crew's own
+#      headline, since bin/fm-fleet-snapshot.sh reads an unknown child as an
+#      invalid snapshot and drops that crew's open decisions.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
 #      the run-step shows the run moved on, the log is deterministically stale and
 #      is flagged superseded. A genuinely parked run plus a needs-decision log
@@ -668,9 +672,10 @@ if [ "$HAVE_RUN" = 1 ]; then
 
   # Last, once every source that does not depend on the pane has had its say: a
   # Codex crew whose live read settled nothing keeps only a run state something
-  # else supports. A terminal run record is its own evidence and stands.
+  # else supports. A run record the pipeline settled itself - done, failed, or
+  # parked at a gate - is its own evidence and stands.
   case "$RUN_STATE:${BUSY_VERDICT:-}" in
-    *:|done:*|failed:*|*:'busy codex-appserver'|*:'idle codex-appserver') ;;
+    *:|done:*|failed:*|parked:*|*:'busy codex-appserver'|*:'idle codex-appserver') ;;
     *) emit unknown pane "harness state unavailable ($BUSY_VERDICT)${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
   esac
 
