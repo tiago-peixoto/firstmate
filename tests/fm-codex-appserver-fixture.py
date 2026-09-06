@@ -206,6 +206,19 @@ def consumers(expected_state, absorb):
 
 def ship_runs(expected_state, reason):
     meta_path.write_text(meta_body+'kind=ship\n')
+    # A refused daemon socket is evidence about the shared pipeline, so it outranks
+    # a live read that observed nothing and yields to one that observed a turn. The
+    # loop below rewrites both the run record and the status log every iteration.
+    consumer_env['FM_FAKE_NATIVE_RUN'] = ('run:\n  id: fixture\n  branch: native-fixture\n  head: '+
+                                          head+'\n  status: running\n  outcome: \n')
+    consumer_env['FM_FAKE_NATIVE_RUNS'] = 'running native-fixture '+head+' 2026-09-04 12:00\n'
+    (state/'worker.status').write_text('blocked: no-mistakes daemon socket connection refused\n')
+    value = subprocess.check_output([str(root/'bin/fm-crew-state.sh'), 'worker'],
+                                    env=consumer_env, text=True)
+    if expected_state == 'unknown':
+        assert value.startswith('state: blocked ') and 'daemon socket down' in value, value
+    else:
+        assert value.startswith('state: '+expected_state+' ') and reason in value, value
     for run_status, outcome, run_state, detail, coarse_detail in [
         ('completed', 'checks-passed', 'done', 'checks green: PR ready for review', 'run completed'),
         ('failed', 'failed', 'failed', 'run failed', 'run failed'),

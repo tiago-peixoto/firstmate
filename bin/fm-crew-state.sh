@@ -58,7 +58,12 @@
 #      run state. Otherwise a TERMINAL run state (done or failed) stays
 #      authoritative - a finished crew whose observation already ended is never
 #      masked as unknown - while under a non-terminal one any verdict but an
-#      exact busy/idle codex-appserver reports unknown.
+#      exact busy/idle codex-appserver reports unknown. That unknown alone never
+#      swallows the daemon-socket-down rule of step 3: a refused or missing
+#      socket is positive evidence about the shared pipeline the whole fleet
+#      depends on, and one worker's failure to observe itself is no evidence at
+#      all, so the live read stands aside and step 3 reports blocked. A positive
+#      native verdict (failed, or an approval/input wait) keeps its precedence.
 #   3. Reconcile the status log: if its last line says needs-decision/blocked but
 #      the run-step shows the run moved on, the log is deterministically stale and
 #      is flagged superseded. A genuinely parked run plus a needs-decision log
@@ -355,6 +360,14 @@ log_reports_daemon_socket_down() {  # <line>
   return 1
 }
 
+# 0 when the LATEST recognised status-log event is that daemon-down evidence,
+# which is the exact condition under which the reconciliation below emits
+# blocked. Everything that would otherwise pre-empt that reconciliation asks
+# here, so the two can never disagree about which event is current.
+log_reports_daemon_down_event() {
+  [ "$LOG_VERB" = blocked ] && log_reports_daemon_socket_down "$LOG_LINE"
+}
+
 # 0 when a status-log line blames the pipeline's transport rather than the work.
 # None of these claims alone is evidence the daemon died: a drive call is only
 # waiting for a read while the fix round runs in the background.
@@ -613,7 +626,8 @@ if [ "$HAVE_RUN" = 1 ]; then
     emit_codex_native_verdict "$BUSY_VERDICT" "${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL"
     case "$RUN_STATE:$BUSY_VERDICT" in
       done:*|failed:*|*:'busy codex-appserver'|*:'idle codex-appserver') ;;
-      *) emit unknown pane "harness state unavailable ($BUSY_VERDICT)${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
+      *) log_reports_daemon_down_event \
+           || emit unknown pane "harness state unavailable ($BUSY_VERDICT)${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
     esac
   fi
 
@@ -646,8 +660,7 @@ if [ "$HAVE_RUN" = 1 ]; then
   # the shared daemon.
   case "$LOG_VERB" in
     needs-decision|blocked)
-      if [ "$LOG_VERB" = blocked ] \
-        && log_reports_daemon_socket_down "$LOG_LINE"; then
+      if log_reports_daemon_down_event; then
         emit blocked status-log "$(status_line_note "$LOG_LINE")${SEP}daemon socket down despite attributed run record"
       fi
       if [ "$RUN_STATE" != parked ]; then
