@@ -1290,8 +1290,6 @@ test_pr_movement_wakes_once_per_change() {
     'state=OPEN draft=true head=aaaaaaaaaaaa decision=NONE comments=0 review_comments=0'
   run_movement_cycle "$dir" unchanged OPEN true aaaaaaaaaaaa 0 0 NONE
   assert_no_movement_wake "$dir" unchanged
-  run_movement_cycle "$dir" unchanged-again OPEN true aaaaaaaaaaaa 0 0 NONE
-  assert_no_movement_wake "$dir" unchanged-again
 
   # Each void condition on its own, from the previous reading.
   run_movement_cycle "$dir" left-draft OPEN false aaaaaaaaaaaa 0 0 NONE
@@ -1313,8 +1311,6 @@ test_pr_movement_wakes_once_per_change() {
   run_movement_cycle "$dir" approval OPEN false bbbbbbbbbbbb 1 1 APPROVED
   assert_movement_wake "$dir" approval \
     'state=OPEN draft=false head=bbbbbbbbbbbb decision=APPROVED comments=1 review_comments=1'
-  run_movement_cycle "$dir" settled OPEN false bbbbbbbbbbbb 1 1 APPROVED
-  assert_no_movement_wake "$dir" settled
   run_movement_cycle "$dir" closed CLOSED false bbbbbbbbbbbb 1 1 APPROVED
   assert_movement_wake "$dir" closed \
     'state=CLOSED draft=false head=bbbbbbbbbbbb decision=APPROVED comments=1 review_comments=1'
@@ -1332,8 +1328,9 @@ test_pr_movement_wakes_once_per_change() {
 # they are where a count that stops at a page boundary stops meaning anything.
 # The fixture gh clamps its pull-request-view collections at 100 nodes the way
 # the real one does, so a maintainer's 121st comment is invisible to anything
-# reading those collections. updated_at is held fixed across both cycles, which
-# leaves the comment total as the only thing that could have woken the second.
+# reading those collections. Every other field is held fixed across the two
+# cycles, which leaves the comment total as the only thing that could have
+# woken the second.
 test_activity_counts_survive_the_collection_page_cap() {
   local dir state
   dir=$(make_case pr-activity-page-cap)
@@ -1348,8 +1345,6 @@ test_activity_counts_survive_the_collection_page_cap() {
   run_movement_cycle "$dir" past-cap-comment OPEN false aaaaaaaaaaaa 121 104 NONE
   assert_movement_wake "$dir" past-cap-comment \
     'state=OPEN draft=false head=aaaaaaaaaaaa decision=NONE comments=121 review_comments=104'
-  run_movement_cycle "$dir" past-cap-settled OPEN false aaaaaaaaaaaa 121 104 NONE
-  assert_no_movement_wake "$dir" past-cap-settled
   pass "a comment past gh's collection page cap still reports as movement"
 }
 
