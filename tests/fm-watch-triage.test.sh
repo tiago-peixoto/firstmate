@@ -2467,6 +2467,144 @@ test_declared_pause_resurfaces_once_across_busy_polls() {
   pass "a declared pause whose pane alternates busy and idle re-surfaces once its own window elapses, and only once per window"
 }
 
+# The other half of the same rule, on the authoritative-state axis rather than the
+# pane one: a busy poll drops the stale suppressor, so the next idle poll re-reads
+# crew state as a FIRST sight, and that one read can legitimately answer `working`
+# (an active run step, or the pane caught busy between the two captures). A
+# momentary `working` verdict is an activity signal, not a retraction - if it
+# erases the re-surface throttle, every working/idle flap buys the wait another
+# out-of-cadence recheck while its window start survives, which is the supervision
+# cost this whole change exists to remove.
+test_declared_pause_keeps_its_window_across_a_working_verdict() {
+  local dir state fakebin out capture_file statusf window key sig pid wakes
+  dir=$(make_case working-flap-pause); state="$dir/state"; fakebin="$dir/fakebin"
+  out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/working-flap.status"
+  window="test:fm-working-flap"
+  printf 'idle, holding for upstream' > "$capture_file"
+  printf 'window=%s\nkind=ship\nharness=pi\n' "$window" > "$state/working-flap.meta"
+  record_pi_busy "$state" working-flap
+  printf 'paused: waiting on the upstream maintainer\n' > "$statusf"
+  sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-working-flap_status"
+  key=$(printf '%s' "$window" | tr ':/.' '___')
+  printf '%s' "$(hash_text "idle, holding for upstream")" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+  export FM_FAKE_CREW_STATE='state: paused · source: status-log · waiting on the upstream maintainer'
+
+  # Round 1: the declaration is absorbed and opens its re-surface window.
+  record_pi_state "$state" working-flap idle
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_BUSY_TURN_MAX_SECS=999 FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  if ! wait_poll_cycle "$state" "$pid"; then
+    reap "$pid"; fail "watcher exited for a fresh declared pause on an idle pane: $(cat "$out")"
+  fi
+  reap "$pid"
+  [ -e "$state/.paused-since-$key" ] || fail "the declared pause never opened a re-surface window"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the intentional working-flap round-1 stop"
+  backdate "$state/.paused-since-$key" 500
+
+  # Round 2: the window has elapsed, so the wait re-surfaces once and takes its throttle.
+  : > "$out"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_WATCH_HANDLING_SUCCESSOR=1 \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_BUSY_TURN_MAX_SECS=999 FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 150 \
+    || { reap "$pid"; fail "the declared pause never re-surfaced once its window elapsed: $(cat "$out")"; }
+  grep -F "awaiting external" "$out" >/dev/null \
+    || fail "the re-surface was not labeled an external-wait recheck: $(cat "$out")"
+  [ -e "$state/.paused-resurfaced-$key" ] || fail "the re-surface throttle was not recorded"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the working-flap re-surface"
+
+  # Round 3: a busy poll drops the stale suppressor, so the next idle poll is a
+  # first sight again and pays for a fresh authoritative read.
+  record_pi_state "$state" working-flap busy
+  : > "$out"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_WATCH_HANDLING_SUCCESSOR=1 \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_BUSY_TURN_MAX_SECS=999 FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  if ! wait_poll_cycle "$state" "$pid"; then
+    reap "$pid"; fail "a busy poll under a declared pause surfaced something: $(cat "$out")"
+  fi
+  reap "$pid"
+  [ ! -e "$state/.stale-$key" ] || fail "the busy poll did not reset the per-hash stale suppressor"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the intentional working-flap round-3 stop"
+
+  # Round 4: that first-sight read answers `working`. Ageing the recheck stamp past
+  # FM_STALE_ESCALATE_SECS is what forces pause_state_class to pay for the real
+  # authoritative read instead of reusing its recent verdict - without it the arm
+  # under test is never reached. The declaration still stands, so only the per-hash
+  # half may reset: the window start and the throttle are the declaration's own.
+  record_pi_state "$state" working-flap idle
+  backdate "$state/.paused-rechecked-$key" 500
+  FM_FAKE_CREW_STATE='state: working · source: run-step · validating (running)'
+  : > "$out"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_WATCH_HANDLING_SUCCESSOR=1 \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_BUSY_TURN_MAX_SECS=999 FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  if ! wait_poll_cycle "$state" "$pid"; then
+    reap "$pid"; fail "a working verdict under a declared pause surfaced something: $(cat "$out")"
+  fi
+  reap "$pid"
+  [ -s "$state/.stale-since-$key" ] \
+    || fail "the first-sight read did not answer working, so this round proves nothing"
+  [ -e "$state/.paused-resurfaced-$key" ] \
+    || fail "a working verdict erased the declared wait's re-surface throttle"
+  [ -e "$state/.paused-since-$key" ] \
+    || fail "a working verdict erased the declared wait's re-surface window start"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the intentional working-flap round-4 stop"
+
+  # Round 5: back to the declared wait, still inside the window the round-2 recheck
+  # opened. It must stay silent rather than re-alarm off the erased throttle.
+  FM_FAKE_CREW_STATE='state: paused · source: status-log · waiting on the upstream maintainer'
+  : > "$out"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_WATCH_HANDLING_SUCCESSOR=1 \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_BUSY_TURN_MAX_SECS=999 FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  if ! wait_poll_cycle "$state" "$pid"; then
+    reap "$pid"; fail "the declared pause re-alarmed inside its window after a working verdict: $(cat "$out")"
+  fi
+  reap "$pid"
+  wakes=$(awk -F '\t' -v w="$window" '$3 == "stale" && $4 == w { n++ } END { print n + 0 }' \
+    "$state/.wake-queue" 2>/dev/null || echo 0)
+  [ "$wakes" -eq 0 ] || fail "a working/idle flap bought the declared pause $wakes out-of-cadence recheck(s)"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the intentional working-flap round-5 stop"
+
+  # Round 6: and the bound still matures - once the window elapses it re-surfaces, once.
+  backdate "$state/.paused-resurfaced-$key" 500
+  : > "$out"
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_WATCH_HANDLING_SUCCESSOR=1 \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" \
+    FM_BUSY_TURN_MAX_SECS=999 FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 150 \
+    || { reap "$pid"; fail "the declared wait never re-surfaced again after a working verdict: $(cat "$out")"; }
+  grep -F "possible wedge" "$out" >/dev/null \
+    && fail "a declared pause that once read working was mislabeled a possible wedge: $(cat "$out")"
+  wakes=$(awk -F '\t' -v w="$window" '$3 == "stale" && $4 == w { n++ } END { print n + 0 }' \
+    "$state/.wake-queue" 2>/dev/null || echo 0)
+  [ "$wakes" -eq 1 ] || fail "the next window's recheck queued $wakes stale wakes instead of one"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the working-flap next-window recheck"
+  unset FM_FAKE_CREW_STATE
+  pass "a declared wait whose authoritative state momentarily reads working keeps its window and throttle, and re-surfaces only once the window elapses"
+}
+
 # The disconfirming half, and the one that matters most: the SAME log without the
 # declaration must still escalate as a possible wedge. If the fold ever widened to
 # suppress this, every undeclared wedge in the fleet would go quiet.
@@ -3043,8 +3181,11 @@ test_nonterminal_paused_rechecks_authoritative_state() {
   if ! wait_poll_cycle "$state" "$pid"; then
     reap "$pid"; fail "an active run behind a declared pause surfaced instead of resuming wedge tracking: $(cat "$out")"
   fi
-  [ ! -e "$state/.paused-$key" ] || { reap "$pid"; fail "authoritative active run retained paused mode"; }
   [ -s "$state/.stale-since-$key" ] || { reap "$pid"; fail "authoritative active run did not resume wedge tracking"; }
+  # The recheck moves this poll onto the wedge timer, but the crew has not
+  # retracted anything: the declaration-scoped bookkeeping is the retraction
+  # sweep's to drop, so a momentary working verdict must leave it standing.
+  [ -e "$state/.paused-$key" ] || { reap "$pid"; fail "a working verdict retracted the crew's standing declaration"; }
   reap "$pid"
   unset FM_FAKE_CREW_STATE
   pass "a declared pause is periodically rechecked against authoritative active-run state"
@@ -4666,6 +4807,7 @@ test_paused_recheck_returns_when_the_covering_pr_is_closed
 test_declared_pause_masked_by_a_foreign_append_is_still_absorbed_and_resurfaced
 test_declared_pause_resurfaces_though_its_log_keeps_churning
 test_declared_pause_resurfaces_once_across_busy_polls
+test_declared_pause_keeps_its_window_across_a_working_verdict
 test_the_same_log_without_a_declaration_still_wedge_escalates
 test_exited_declared_pause_is_bounded_but_live_gate_surfaces
 test_absorbed_replacement_wait_does_not_inherit_the_old_throttle

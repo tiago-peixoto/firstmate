@@ -957,23 +957,26 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
   return 1
 }
 
-# Every piece of a window's pause bookkeeping EXCEPT its re-surface window start.
-# .paused-since-<key> is scoped to the DECLARATION, not to any pane hash, busy
-# verdict, or reclassification of that same declaration, so it outlives all of
-# them and is dropped in exactly one place: the retraction sweep at the top of the
-# poll loop, which fires when the declaration itself is gone. handle_paused_stale
-# rewrites it when the crew declares something else, so a replacement wait still
-# opens its own window.
+# The DECLARATION-scoped half of a window's pause bookkeeping: the bounded-cadence
+# flag, the recheck stamp, the re-surface window start and the re-surface throttle.
+# None of it is scoped to a pane hash, a busy verdict, or a reclassification of the
+# same declaration - a standing declaration is trusted until the crew retracts it,
+# and a busy pane, a pane-hash change and a momentarily `working` authoritative
+# state are all activity signals, not retractions. So it is dropped in exactly one
+# place: the retraction sweep at the top of the poll loop, which fires when the
+# declaration itself is gone. handle_paused_stale rewrites the window start when
+# the crew declares something else, so a replacement wait still opens its own
+# window.
 clear_pause_state() {  # <window-key>
   local key=$1
-  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" "$STATE/.paused-resurfaced-$key"
+  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" \
+    "$STATE/.paused-since-$key" "$STATE/.paused-resurfaced-$key"
 }
 
 # The hash-scoped half of clear_pause_tracking: the stale suppressor, its wedge
-# timer and escalation count, and the write-deferral chain. Split out so a caller
-# that must keep a window's DECLARATION-scoped pause state - its .paused-* flag,
-# recheck, re-surface window start, and re-surface throttle - can still reset the
-# per-hash half alone.
+# timer and escalation count, and the write-deferral chain. Split out because
+# every in-loop caller must keep the declaration-scoped half above and reset only
+# this one.
 clear_stale_hash_tracking() {  # <window-key>
   local key=$1
   clear_write_tracking "$key"
@@ -1926,9 +1929,8 @@ EOF
     [ -z "$task" ] || inbox_steer_check "$w" "$task"
     key=$(window_key "$w")
     standing=$(status_standing_wait_line "$STATE/$task.status")
-    if ! status_is_paused_or_captain_held "$standing"; then
-      [ ! -e "$STATE/.paused-since-$key" ] || rm -f "$STATE/.paused-since-$key"
-      [ ! -e "$STATE/.paused-$key" ] || clear_pause_tracking "$key"
+    if ! status_is_paused_or_captain_held "$standing" && [ -e "$STATE/.paused-$key" ]; then
+      clear_pause_tracking "$key"
     fi
     # An idle secondmate endpoint is healthy by design, so a mate is admitted to
     # the pane-stale path ONLY to serve a declared wait's bounded re-surface -
@@ -1964,7 +1966,7 @@ EOF
         if [ "$kind" = secondmate ]; then
           case "$(pause_state_class "$w" "$task" "$standing")" in
             paused) handle_paused_stale "$w" "$task" "$h" "$standing" ;;
-            *)      clear_pause_tracking "$key" ;;
+            *)      clear_stale_hash_tracking "$key" ;;
           esac
         elif afk_present; then
           # Daemon owns triage: one-shot per distinct stale hash, as before.
@@ -2036,7 +2038,7 @@ EOF
           if [ "$(cat "$sf" 2>/dev/null || true)" != "$h" ]; then
             case "$(pause_state_class "$w" "$task" "$standing")" in
               working)
-                clear_pause_tracking "$key"
+                clear_stale_hash_tracking "$key"
                 printf '%s' "$h" > "$sf"
                 date +%s > "$ssf"
                 triage_log "absorbed non-terminal stale (provably working): $w"
@@ -2052,8 +2054,7 @@ EOF
             if [ -e "$pf" ] || status_is_paused_or_captain_held "$standing"; then
               case "$(pause_state_class "$w" "$task" "$standing")" in
                 paused)  handle_paused_stale "$w" "$task" "$h" "$standing" ;;
-                working) clear_pause_state "$key"
-                         printf '%s' "$h" > "$sf"
+                working) printf '%s' "$h" > "$sf"
                          wedge_timer_check "$w" "$ssf" "non-terminal stale (provably working after a declared pause)" "$ewf" "$task"
                          triage_log "absorbed non-terminal stale (provably working): $w" ;;
                 *)       handle_paused_stale "$w" "$task" "$h" "$standing" ;;
@@ -2112,19 +2113,18 @@ EOF
           # is being waited on, and clearing the throttle here would hand that
           # same wait a fresh window on every tick - the first sight of each new
           # hash reaches surface_nonterminal_stale below, so the whole declared
-          # wait would re-alarm far inside PAUSE_RESURFACE_SECS.
-          none)   clear_stale_hash_tracking "$key" ;;
-          *)      clear_pause_tracking "$key" ;;
+          # wait would re-alarm far inside PAUSE_RESURFACE_SECS. A `working`
+          # verdict is no different: an authoritative state that momentarily
+          # reads working is an activity signal, not a retraction.
+          *)      clear_stale_hash_tracking "$key" ;;
         esac
       elif [ "$paused_bound" -ne 0 ] && [ -e "$pf" ]; then
-        # Same rule as the stable-hash branch: a standing declaration keeps its
-        # own bookkeeping and only the per-hash half resets. Away mode is
-        # daemon-owned, so a declaration seen under afk still clears in full.
-        if ! afk_present && status_is_paused_or_captain_held "$standing"; then
-          clear_stale_hash_tracking "$key"
-        else
-          clear_pause_tracking "$key"
-        fi
+        # Same rule as the stable-hash branch: only the per-hash half resets
+        # here. .paused-<key> exists only while the declaration stands, because
+        # the retraction sweep at the top of the loop drops it the poll the
+        # declaration goes away - including under afk, which the sweep runs
+        # before any mode branch.
+        clear_stale_hash_tracking "$key"
       fi
     fi
   done < <(recorded_windows)
