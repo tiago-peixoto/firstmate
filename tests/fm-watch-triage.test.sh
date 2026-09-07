@@ -2167,6 +2167,8 @@ test_paused_recheck_returns_when_the_covering_pr_is_closed() {
     || fail "the recheck for a closed pull request was not the paused/awaiting-external one: $(cat "$out")"
   [ -e "$state/.paused-resurfaced-$key" ] || fail "the recheck recorded no throttle marker"
   pass "a declared wait on a closed-unmerged pull request keeps re-surfacing, because a live poll is not a live wait"
+}
+
 # THE MASKING REGRESSION, end to end through the real watcher.
 #
 # A declared wait used to be cancelled by the NEXT line in the status log, from
