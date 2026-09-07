@@ -86,13 +86,17 @@ case "$provider" in
     # anything the merge verdict depends on has to be readable in that bound on
     # a pull request with hundreds of reviews and comments. gh's own field
     # selector composes each line, so this needs no JSON processor on PATH.
-    state_read=$(gh pr view "$url" --json state,isDraft,headRefOid \
-      -q '"state=\(.state) draft=\(.isDraft) head=\(.headRefOid[0:12])"' \
+    # reviewDecision rides here too: it is a scalar in the same selector, so it
+    # costs no extra round trip, and it is the only field that reports an
+    # approve or a changes-requested review that left no comment of its own -
+    # the maintainer signal a declared wait is most often waiting on.
+    state_read=$(gh pr view "$url" --json state,isDraft,headRefOid,reviewDecision \
+      -q '"state=\(.state) draft=\(.isDraft) head=\(.headRefOid[0:12]) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
       2>/dev/null) || exit 0
     # Revalidated against the exact shape this program promises, before either
     # token is printed. A truncated, reformatted, or partially-resolved reading
     # is silence, so no degraded output can be read as a merge or as movement.
-    gh_state_shape='^state=(OPEN|CLOSED|MERGED) draft=(true|false) head=[0-9a-f]{12}$'
+    gh_state_shape='^state=(OPEN|CLOSED|MERGED) draft=(true|false) head=[0-9a-f]{12} decision=[A-Z_]+$'
     [[ $state_read =~ $gh_state_shape ]] || exit 0
     case "$state_read" in
       'state=MERGED '*) printf '%s\n' merged; exit 0 ;;
@@ -103,19 +107,22 @@ case "$provider" in
     # node count saturates at 100 and a pull request past that would report a
     # constant, meaning a maintainer acting on the busiest pull requests would
     # never wake anyone. /repos/<path>/pulls/<number> answers the same question
-    # with .comments, .review_comments and .updated_at, which are scalars no
-    # page size bounds, in the same single round trip bin/fm-pr-state.sh already
-    # makes. updated_at is what carries a submitted review that left no comment
-    # of its own. Best-effort all the same - a failed, malformed, or timed-out
+    # with .comments and .review_comments, which are scalars no page size
+    # bounds, in the same single round trip bin/fm-pr-state.sh already makes.
+    # updated_at is deliberately NOT part of the fingerprint: it is the
+    # underlying issue's timestamp, bumped by a label, an assignee, a milestone
+    # or a bot edit, none of which void a wait on a maintainer, and waking on
+    # those would reintroduce the very cost this poll exists to remove.
+    # Best-effort all the same - a failed, malformed, or timed-out
     # read prints nothing at all, so the whole cost is fewer movement wakes,
     # never a lost merge and never a fingerprint that flaps between two widths
     # and wakes on its own width. tests/fm-pr-state-live-e2e.test.sh is what
     # proves this program composes against a real pull request, since a
     # hermetic fake gh can only replay an assumption.
     activity_read=$(gh api "/repos/$owner/$repo/pulls/$number" \
-      --jq '"comments=\(.comments) review_comments=\(.review_comments) updated=\(.updated_at)"' \
+      --jq '"comments=\(.comments) review_comments=\(.review_comments)"' \
       2>/dev/null) || exit 0
-    gh_activity_shape='^comments=[0-9]+ review_comments=[0-9]+ updated=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$'
+    gh_activity_shape='^comments=[0-9]+ review_comments=[0-9]+$'
     [[ $activity_read =~ $gh_activity_shape ]] || exit 0
     printf 'moved %s %s\n' "$state_read" "$activity_read"
     ;;

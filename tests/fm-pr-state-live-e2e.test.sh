@@ -57,13 +57,28 @@ test_poll_merge_terminal_runs_under_gh_engine() {
 test_poll_activity_selector_runs_under_gh_engine() {
   local line
   line=$(gh api /repos/cli/cli/pulls/1 \
-    --jq '"comments=\(.comments) review_comments=\(.review_comments) updated=\(.updated_at)"' \
+    --jq '"comments=\(.comments) review_comments=\(.review_comments)"' \
     2>&1) || fail "gh rejected the poll's activity jq program: $line"
-  [[ $line =~ ^comments=[0-9]+\ review_comments=[0-9]+\ updated=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] \
+  [[ $line =~ ^comments=[0-9]+\ review_comments=[0-9]+$ ]] \
     || fail "the poll's activity read no longer composes the shape the poll validates: $line"
   pass "the PR poll's activity read compiles under gh's jq engine and composes the shape it validates"
 }
 
+# reviewDecision rides the same scalar selector as the merge terminal, so it
+# costs no extra round trip; it is asserted separately because the merge
+# terminal returns before printing it, and it is the only field that reports a
+# review that left no comment behind.
+test_poll_decision_selector_runs_under_gh_engine() {
+  local line
+  line=$(gh pr view "$PR" --json state,isDraft,headRefOid,reviewDecision \
+    -q '"state=\(.state) draft=\(.isDraft) head=\(.headRefOid[0:12]) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
+    2>&1) || fail "gh rejected the poll's scalar jq program: $line"
+  [[ $line =~ ^state=(OPEN|CLOSED|MERGED)\ draft=(true|false)\ head=[0-9a-f]{12}\ decision=[A-Z_]+$ ]] \
+    || fail "the poll's scalar read no longer composes the shape the poll validates: $line"
+  pass "the PR poll's scalar read, reviewDecision included, compiles under gh's jq engine"
+}
+
 test_every_jq_program_runs_under_gh_engine
 test_poll_merge_terminal_runs_under_gh_engine
+test_poll_decision_selector_runs_under_gh_engine
 test_poll_activity_selector_runs_under_gh_engine
