@@ -1,0 +1,61 @@
+==============================================================================
+AFTER - target 160fdc3, suppression did NOT widen   [scenario: undeclared]
+==============================================================================
+$ cat state/attest-upstream-pr3753.status
+    working: run 01M1T9RF188DHFWHN5YRQVXZ8Q step ci,failed
+
+--- 1. authoritative crew state, the reader every pause gate consults -------
+$ bin/fm-crew-state.sh attest-upstream-pr3753
+    state: working · source: status-log · run 01M1T9RF188DHFWHN5YRQVXZ8Q step ci,failed
+
+--- 2. the supervisor's absorb decision for that crew -----------------------
+$ crew_absorb_class attest-upstream-pr3753   (paused/working = absorb, none = possible-wedge ladder)
+    none
+
+--- 3. the watcher itself, one re-arm over that idle pane -------------------
+$ bin/fm-watch.sh   (exits only to wake firstmate; a wake costs a supervision turn)
+    watcher EXITED to wake firstmate. Its wake reason:
+      stale: fm:fm-attest-upstream-pr3753 (idle 501s, possible wedge, escalation 1)
+
+$ bin/fm-wake-drain.sh   (what firstmate is handed)
+      1788753480	1	stale	fm:fm-attest-upstream-pr3753	stale: fm:fm-attest-upstream-pr3753 (idle 501s, possible wedge, escalation 1)
+
+--- 4. pause bookkeeping written for this crew ------------------------------
+    .paused-<win>            absent   -> no bounded cadence
+    .wedge-escalations-<win> 1        -> possible-wedge ladder climbing
+
+==============================================================================
+AFTER - target 160fdc3, suppression is BOUNDED   [scenario: bounded]
+==============================================================================
+$ cat state/attest-upstream-pr3753.status
+    paused: waiting on the upstream maintainer to review PR 3753
+    working: run 01M1T9RF188DHFWHN5YRQVXZ8Q step ci,failed
+
+--- 1. authoritative crew state, the reader every pause gate consults -------
+$ bin/fm-crew-state.sh attest-upstream-pr3753
+    state: paused · source: status-log · waiting on the upstream maintainer to review PR 3753
+
+--- 2. the supervisor's absorb decision for that crew -----------------------
+$ crew_absorb_class attest-upstream-pr3753   (paused/working = absorb, none = possible-wedge ladder)
+    paused
+
+--- 3. the watcher itself, one re-arm over that idle pane -------------------
+$ bin/fm-watch.sh   (exits only to wake firstmate; a wake costs a supervision turn)
+    watcher still running after 10s: NO WAKE - the crew was left alone
+
+$ bin/fm-wake-drain.sh   (what firstmate is handed)
+      (empty: nothing queued)
+
+--- 4. pause bookkeeping written for this crew ------------------------------
+    .paused-<win>            present  -> bounded external-wait cadence
+    .wedge-escalations-<win> absent   -> possible-wedge ladder not climbing
+
+--- 5. the same crew, now past FM_PAUSE_RESURFACE_SECS ----------------------
+    (the declared wait is aged 500s and the recheck cadence set to 240s)
+$ bin/fm-watch.sh
+    watcher EXITED to wake firstmate. Its wake reason:
+      stale: fm:fm-attest-upstream-pr3753 (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+
+$ bin/fm-wake-drain.sh
+      1788753507	1	stale	fm:fm-attest-upstream-pr3753	stale: fm:fm-attest-upstream-pr3753 (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+
