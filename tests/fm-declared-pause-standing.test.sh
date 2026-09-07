@@ -365,14 +365,11 @@ test_a_captain_held_transfer_stands_the_same_way() {
 # cannot drift. The fold must read that override rather than the literal, or a
 # home that renamed the verb would silently lose every declaration.
 test_the_configured_pause_verb_is_honored() {
-  local f custom='holding: waiting on the upstream maintainer'
+  local f got custom='holding: waiting on the upstream maintainer'
   f=$(status_log custom-verb "$custom" 'working: reporter tick')
   assert_no_standing "$f" "an unconfigured verb was read as a declaration"
-  (
-    FM_CLASSIFY_PAUSED_VERB=holding
-    got=$(status_standing_wait_line "$f")
-    [ "$got" = "$custom" ] || fail "the configured pause verb was not honored (standing=[$got])"
-  ) || exit 1
+  got=$(FM_CLASSIFY_PAUSED_VERB=holding status_standing_wait_line "$f")
+  [ "$got" = "$custom" ] || fail "the configured pause verb was not honored (standing=[$got])"
   pass "the fold reads the configured pause verb, so the vocabulary keeps one owner"
 }
 
