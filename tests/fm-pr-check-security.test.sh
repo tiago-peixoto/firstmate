@@ -1384,6 +1384,20 @@ test_pr_poll_coverage_requires_live_evidence() {
   fm_pr_poll_covers_wait "$state" task-a "$POLL" 3600 \
     || fail "an armed poll with a fresh reading was not treated as covered"
 
+  # A poll can be perfectly alive while the wait it covers is provably dead: a
+  # closed-unmerged pull request keeps its poll armed on purpose, and its
+  # unchanged CLOSED reading refreshes this marker on every cycle forever.
+  fm_pr_poll_observed_record "$state" task-a github github.com o/r 1 \
+    'moved state=CLOSED draft=false head=aaaaaaaaaaaa reviews=1 comments=2 decision=NONE' \
+    || fail "could not record a closed reading"
+  fm_pr_poll_covers_wait "$state" task-a "$POLL" 3600 \
+    && fail "a wait on a closed-unmerged pull request was treated as covered"
+  fm_pr_poll_observed_record "$state" task-a github github.com o/r 1 \
+    'moved state=OPEN draft=false head=aaaaaaaaaaaa reviews=0 comments=0 decision=NONE' \
+    || fail "could not restore the open reading"
+  fm_pr_poll_covers_wait "$state" task-a "$POLL" 3600 \
+    || fail "an open reading stopped counting as coverage"
+
   backdate_file "$state/task-a.pr-poll-observed" 4000
   fm_pr_poll_covers_wait "$state" task-a "$POLL" 3600 \
     && fail "a reading older than the recheck window was treated as coverage"

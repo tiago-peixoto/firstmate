@@ -1048,10 +1048,18 @@ fm_pr_poll_observed_record() {  # <state> <id> <provider> <host> <path> <number>
 # answer: the poll must still be armed and transactionally registered against
 # this exact pull request, it must be a provider whose poll reports every void
 # condition rather than the merge alone, it must have a reading on record for
-# that same pull request, and that reading must be no older than the window the
-# recheck would have covered. Anything else - a retired poll, a tampered
-# registration, a GitLab merge request, an expired credential, a wedged watcher
-# - returns 1 and the recheck happens.
+# that same pull request, that reading must still be of an OPEN pull request,
+# and it must be no older than the window the recheck would have covered.
+# Anything else - a retired poll, a tampered registration, a GitLab merge
+# request, an expired credential, a wedged watcher - returns 1 and the recheck
+# happens.
+#
+# The open clause is what keeps a live poll from standing in for a live wait. A
+# closed-unmerged pull request deliberately keeps its poll armed, and its
+# unchanged CLOSED reading would go on refreshing the marker forever, so
+# liveness alone would silence the recheck permanently on exactly the wait that
+# most needs it: one nobody can be waiting on any more. Matched positively, so
+# any other reading a future poll might record is a recheck rather than silence.
 fm_pr_poll_covers_wait() {  # <state> <id> <template> <max-age-secs>
   local state=$1 id=$2 template=$3 max_age=$4 mtime now
   case "$max_age" in
@@ -1061,6 +1069,10 @@ fm_pr_poll_covers_wait() {  # <state> <id> <template> <max-age-secs>
   [ "$FM_PR_DATA_PROVIDER" = github ] || return 1
   fm_pr_poll_observed_read "$state" "$id" \
     "$FM_PR_DATA_PROVIDER" "$FM_PR_DATA_HOST" "$FM_PR_DATA_PATH" "$FM_PR_DATA_NUMBER" || return 1
+  case "$FM_PR_POLL_OBSERVED_FINGERPRINT" in
+    'moved state=OPEN '*) ;;
+    *) return 1 ;;
+  esac
   mtime=$(fm_pr_file_mtime "$state/$id.pr-poll-observed") || return 1
   case "$mtime" in
     ''|*[!0-9]*) return 1 ;;
