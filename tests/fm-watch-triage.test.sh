@@ -2080,7 +2080,7 @@ test_paused_recheck_is_suppressed_only_while_a_poll_covers_it() {
   out="$dir/watch.out"; capture_file="$dir/pane.txt"
   window="test:fm-held"; key=$(printf '%s' "$window" | tr ':/.' '___')
   arm_paused_pr_wait "$dir" "$window" "$capture_file" \
-    'moved state=OPEN draft=false head=0123456789ab reviews=0 comments=0 decision=NONE'
+    'moved state=OPEN draft=false head=0123456789ab comments=0 review_comments=0 updated=2026-01-01T00:00:00Z'
 
   # Phase A: the wait is past the recheck threshold, and would have re-surfaced
   # without the poll (that is exactly what the preceding test asserts). The live
@@ -2133,7 +2133,7 @@ test_paused_recheck_returns_when_the_covering_pr_is_closed() {
   out="$dir/watch.out"; capture_file="$dir/pane.txt"
   window="test:fm-held"; key=$(printf '%s' "$window" | tr ':/.' '___')
   arm_paused_pr_wait "$dir" "$window" "$capture_file" \
-    'moved state=CLOSED draft=false head=0123456789ab reviews=1 comments=2 decision=NONE'
+    'moved state=CLOSED draft=false head=0123456789ab comments=2 review_comments=1 updated=2026-01-01T00:00:00Z'
 
   FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
     FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_PAUSE_RESURFACE_SECS=240 \

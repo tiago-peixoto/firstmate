@@ -48,20 +48,20 @@ test_poll_merge_terminal_runs_under_gh_engine() {
   pass "the PR poll's merge terminal compiles under gh's jq engine against a live merged pull request"
 }
 
-# The collection reading is unreachable through a merged pull request, because
-# the merge terminal returns before it, so this selector is asserted directly.
-# reviewDecision is the empty string rather than null on a pull request nobody
-# has reviewed, which is what the NONE branch is for and what only a live read
-# can confirm; the counters themselves are not stable, so only the shape the
-# poll validates is asserted.
+# The activity reading is unreachable through a merged pull request, because the
+# merge terminal returns before it, so this program is asserted directly. It is
+# the REST pull-request object rather than gh's pull-request view because
+# .comments and .review_comments there are totals rather than the length of a
+# single collection page; the totals themselves are not stable, so only the
+# shape the poll validates is asserted.
 test_poll_activity_selector_runs_under_gh_engine() {
   local line
-  line=$(gh pr view "$PR" --json reviewDecision,reviews,comments \
-    -q '"reviews=\(.reviews|length) comments=\(.comments|length) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
-    2>&1) || fail "gh rejected the poll's activity field selector: $line"
-  [[ $line =~ ^reviews=[0-9]+\ comments=[0-9]+\ decision=[A-Z_]+$ ]] \
-    || fail "the poll's activity selector no longer composes the shape the poll validates: $line"
-  pass "the PR poll's activity field selector compiles under gh's jq engine and composes the shape it validates"
+  line=$(gh api /repos/cli/cli/pulls/1 \
+    --jq '"comments=\(.comments) review_comments=\(.review_comments) updated=\(.updated_at)"' \
+    2>&1) || fail "gh rejected the poll's activity jq program: $line"
+  [[ $line =~ ^comments=[0-9]+\ review_comments=[0-9]+\ updated=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] \
+    || fail "the poll's activity read no longer composes the shape the poll validates: $line"
+  pass "the PR poll's activity read compiles under gh's jq engine and composes the shape it validates"
 }
 
 test_every_jq_program_runs_under_gh_engine

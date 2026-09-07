@@ -97,21 +97,25 @@ case "$provider" in
     case "$state_read" in
       'state=MERGED '*) printf '%s\n' merged; exit 0 ;;
     esac
-    # The maintainer-activity half, and the half gh has to page through: it
-    # reads the submitted-review and issue-comment collections. Best-effort by
-    # construction, because it is the slow one - a failed, malformed, or
-    # timed-out read prints nothing at all, so the whole cost is fewer movement
-    # wakes for as long as it stays slow, never a lost merge and never a
-    # fingerprint that flaps between two widths and wakes on its own width.
-    # reviewDecision is the empty string, not null, on a pull request nobody has
-    # reviewed, so `//` alone would leave the field blank and every such reading
-    # would fail validation below and go silent;
-    # tests/fm-pr-state-live-e2e.test.sh is what proves that against a real pull
-    # request, since a hermetic fake gh can only replay an assumption.
-    activity_read=$(gh pr view "$url" --json reviewDecision,reviews,comments \
-      -q '"reviews=\(.reviews|length) comments=\(.comments|length) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
+    # The maintainer-activity half, read as REST totals rather than as
+    # collection lengths. gh's pull-request view compiles comments(first: 100)
+    # and reviews(first: 100) - one un-paginated page of the OLDEST items - so a
+    # node count saturates at 100 and a pull request past that would report a
+    # constant, meaning a maintainer acting on the busiest pull requests would
+    # never wake anyone. /repos/<path>/pulls/<number> answers the same question
+    # with .comments, .review_comments and .updated_at, which are scalars no
+    # page size bounds, in the same single round trip bin/fm-pr-state.sh already
+    # makes. updated_at is what carries a submitted review that left no comment
+    # of its own. Best-effort all the same - a failed, malformed, or timed-out
+    # read prints nothing at all, so the whole cost is fewer movement wakes,
+    # never a lost merge and never a fingerprint that flaps between two widths
+    # and wakes on its own width. tests/fm-pr-state-live-e2e.test.sh is what
+    # proves this program composes against a real pull request, since a
+    # hermetic fake gh can only replay an assumption.
+    activity_read=$(gh api "/repos/$owner/$repo/pulls/$number" \
+      --jq '"comments=\(.comments) review_comments=\(.review_comments) updated=\(.updated_at)"' \
       2>/dev/null) || exit 0
-    gh_activity_shape='^reviews=[0-9]+ comments=[0-9]+ decision=[A-Z_]+$'
+    gh_activity_shape='^comments=[0-9]+ review_comments=[0-9]+ updated=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$'
     [[ $activity_read =~ $gh_activity_shape ]] || exit 0
     printf 'moved %s %s\n' "$state_read" "$activity_read"
     ;;
