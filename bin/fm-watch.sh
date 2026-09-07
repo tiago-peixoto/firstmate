@@ -850,8 +850,8 @@ busy_turn_over_age() {  # <task>
 # captain themself for a verified hold. Only the captain-held verb takes the second
 # wording; a caller that reached the bounded cadence off pause tracking alone, with
 # no declaring verb left on the log, keeps the external-wait wording it always had.
-handle_paused_stale() {  # <window> <task> <hash>
-  local win=$1 task=$2 h=$3 key statusf mtime age detail reason declaration standing
+handle_paused_stale() {  # <window> <task> <hash> <standing>
+  local win=$1 task=$2 h=$3 standing=$4 key statusf mtime age detail reason declaration
   key=$(window_key "$win")
   printf '%s' "$h" > "$STATE/.stale-$key"
   : > "$STATE/.paused-$key"
@@ -861,7 +861,6 @@ handle_paused_stale() {  # <window> <task> <hash>
   mtime=$(stat_mtime "$statusf")
   case "$mtime" in ''|*[!0-9]*) mtime=$(date +%s) ;; esac
   age=$(( $(date +%s) - mtime ))
-  standing=$(status_standing_wait_line "$statusf")
   if status_is_captain_held "$standing"; then
     detail="captain-held, awaiting the captain"
     reason="captain-held ${age}s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold"
@@ -904,10 +903,8 @@ handle_paused_stale() {  # <window> <task> <hash>
 # remains daemon-owned and receives the undecorated wake identity for its own
 # classification, which is why the declaration is read before the afk branch
 # rather than after it.
-busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-file>
-  local win=$1 task=$2 h=$3 since_file=$4 escalation_file=$5 key statusf declared standing
-  statusf="$STATE/$task.status"
-  standing=$(status_standing_wait_line "$statusf")
+busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-file> <standing>
+  local win=$1 task=$2 h=$3 since_file=$4 escalation_file=$5 standing=$6 key declared
   if status_is_paused_or_captain_held "$standing"; then
     if afk_present; then
       # Away mode is daemon-owned, so this bound hands off the PLAIN wake identity
@@ -943,7 +940,7 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
       fi
       return 0
     fi
-    handle_paused_stale "$win" "$task" "$h"
+    handle_paused_stale "$win" "$task" "$h" "$standing"
     return 0
   fi
   wedge_timer_check "$win" "$since_file" "busy (no completed turn)" "$escalation_file" "$task"
@@ -975,10 +972,9 @@ clear_pause_tracking() {  # <window-key>
 # After fm-crew-state has fallen back to stopped or unknown, paused classification is
 # recovered only for a confidently dead ordinary crew, or for a secondmate, whose
 # endpoint liveness this function deliberately never reads.
-pause_state_class() {  # <window> <task>
-  local win=$1 task=$2 key standing recheck_file class agent_alive kind
+pause_state_class() {  # <window> <task> <standing>
+  local win=$1 task=$2 standing=$3 key recheck_file class agent_alive kind
   key=$(window_key "$win")
-  standing=$(status_standing_wait_line "$STATE/$task.status")
   recheck_file="$STATE/.paused-rechecked-$key"
   if ! status_is_paused_or_captain_held "$standing"; then
     rm -f "$recheck_file"
@@ -1047,11 +1043,9 @@ pause_state_class() {  # <window> <task>
 # and the throttle is read BEFORE anything is queued and advanced only by a wake
 # that really fires - a throttle written by the wake it should have prevented, or
 # read after that wake was already appended, bounds nothing.
-surface_nonterminal_stale() {  # <window> <hash>
-  local win=$1 h=$2 key task standing declaration='' declared=1 throttled=1
+surface_nonterminal_stale() {  # <window> <hash> <standing>
+  local win=$1 h=$2 standing=$3 key declaration='' declared=1 throttled=1
   key=$(window_key "$win")
-  task=$(window_to_task "$win" "$STATE")
-  standing=$(status_standing_wait_line "$STATE/$task.status")
   if status_is_paused_or_captain_held "$standing"; then
     declared=0
     declaration="declared:$standing"
@@ -1949,8 +1943,8 @@ EOF
         # The pane is idle/stale at hash $h. Triage decides whether this wakes
         # firstmate. Detection itself is unchanged from above.
         if [ "$kind" = secondmate ]; then
-          case "$(pause_state_class "$w" "$task")" in
-            paused) handle_paused_stale "$w" "$task" "$h" ;;
+          case "$(pause_state_class "$w" "$task" "$standing")" in
+            paused) handle_paused_stale "$w" "$task" "$h" "$standing" ;;
             *)      clear_pause_tracking "$key" ;;
           esac
         elif afk_present; then
@@ -2021,8 +2015,7 @@ EOF
           #     waiting on a decision, or wedged) instead of leaving the finish to
           #     wait out the timer.
           if [ "$(cat "$sf" 2>/dev/null || true)" != "$h" ]; then
-            task=$(window_to_task "$w" "$STATE")
-            case "$(pause_state_class "$w" "$task")" in
+            case "$(pause_state_class "$w" "$task" "$standing")" in
               working)
                 clear_pause_tracking "$key"
                 printf '%s' "$h" > "$sf"
@@ -2030,22 +2023,21 @@ EOF
                 triage_log "absorbed non-terminal stale (provably working): $w"
                 ;;
               paused)
-                handle_paused_stale "$w" "$task" "$h"
+                handle_paused_stale "$w" "$task" "$h" "$standing"
                 ;;
               *)
-                surface_nonterminal_stale "$w" "$h"
+                surface_nonterminal_stale "$w" "$h" "$standing"
                 ;;
             esac
           else
-            task=$(window_to_task "$w" "$STATE")
-            if [ -e "$pf" ] || status_is_paused_or_captain_held "$(status_standing_wait_line "$STATE/$task.status")"; then
-              case "$(pause_state_class "$w" "$task")" in
-                paused)  handle_paused_stale "$w" "$task" "$h" ;;
+            if [ -e "$pf" ] || status_is_paused_or_captain_held "$standing"; then
+              case "$(pause_state_class "$w" "$task" "$standing")" in
+                paused)  handle_paused_stale "$w" "$task" "$h" "$standing" ;;
                 working) clear_pause_state "$key"
                          printf '%s' "$h" > "$sf"
                          wedge_timer_check "$w" "$ssf" "non-terminal stale (provably working after a declared pause)" "$ewf" "$task"
                          triage_log "absorbed non-terminal stale (provably working): $w" ;;
-                *)       handle_paused_stale "$w" "$task" "$h" ;;
+                *)       handle_paused_stale "$w" "$task" "$h" "$standing" ;;
               esac
             else
               wedge_timer_check "$w" "$ssf" "non-terminal stale" "$ewf" "$task"
@@ -2059,7 +2051,7 @@ EOF
         # bound to the same wedge timer unless the crew declared the wait itself.
         paused_bound=1
         if [ "$busy_now" -eq 0 ] && busy_turn_over_age "$task"; then
-          busy_turn_bound_check "$w" "$task" "$h" "$ssf" "$ewf" && paused_bound=0
+          busy_turn_bound_check "$w" "$task" "$h" "$ssf" "$ewf" "$standing" && paused_bound=0
         else
           rm -f "$ssf" "$ewf"
           clear_write_tracking "$key"
@@ -2068,7 +2060,7 @@ EOF
         # is cleared - but not in the same poll the declared-pause cadence just
         # recorded it, or the re-surface throttle it depends on would be erased and
         # the pause would re-surface every poll instead of once per long cadence.
-        if [ "$paused_bound" -ne 0 ] && [ -e "$pf" ] && { [ "$n" -ge 2 ] || ! status_is_paused_or_captain_held "$(status_standing_wait_line "$STATE/$(window_to_task "$w" "$STATE").status")"; }; then
+        if [ "$paused_bound" -ne 0 ] && [ -e "$pf" ] && { [ "$n" -ge 2 ] || ! status_is_paused_or_captain_held "$standing"; }; then
           clear_pause_tracking "$key"
         fi
       fi
@@ -2077,15 +2069,14 @@ EOF
       echo 0 > "$cf"
       paused_bound=1
       if [ "$busy_now" -eq 0 ] && busy_turn_over_age "$task"; then
-        busy_turn_bound_check "$w" "$task" "$h" "$ssf" "$ewf" && paused_bound=0
+        busy_turn_bound_check "$w" "$task" "$h" "$ssf" "$ewf" "$standing" && paused_bound=0
       else
         rm -f "$ssf" "$ewf"
         clear_write_tracking "$key"
       fi
-      task=$(window_to_task "$w" "$STATE")
-      if ! afk_present && status_is_paused_or_captain_held "$(status_standing_wait_line "$STATE/$task.status")" && [ "$busy_now" -ne 0 ]; then
-        case "$(pause_state_class "$w" "$task")" in
-          paused) handle_paused_stale "$w" "$task" "$h" ;;
+      if ! afk_present && status_is_paused_or_captain_held "$standing" && [ "$busy_now" -ne 0 ]; then
+        case "$(pause_state_class "$w" "$task" "$standing")" in
+          paused) handle_paused_stale "$w" "$task" "$h" "$standing" ;;
           # Inconclusive, but the declared wait itself still stands, so only the
           # per-hash bookkeeping resets. The re-surface throttle bounds the
           # DECLARATION, not the pane hash: an idle parked pane whose display
