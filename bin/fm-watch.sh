@@ -838,12 +838,20 @@ busy_turn_over_age() {  # <task>
 # dead-agent captain-held transfer, and re-surface it once every
 # PAUSE_RESURFACE_SECS for a recheck so it cannot rot invisibly. Called on any
 # stale poll once pause_state_class permits the bounded cadence, so it must be
-# cheap: it NEVER re-reads crew state. The re-surface age is anchored on the
-# status file mtime, not a per-hash marker, so a churny idle pane (a ticking
-# clock, a token counter) cannot keep resetting the cadence the way a hash-tied
-# timer would. The bounded re-surface itself is the shared resurface_absorbed
-# above, throttled by this window's own .paused-resurfaced-<key> marker. Advances
-# the stale suppressor to <hash> and flags the key paused.
+# cheap: it NEVER re-reads crew state. The re-surface age is anchored on THIS
+# DECLARATION's own .paused-since-<key> marker: neither a churny idle pane (a
+# ticking clock, a token counter) nor a churny status LOG may reset the cadence.
+# The status file's mtime cannot serve as that anchor - the incident's own worker
+# had a self-armed reporter appending every few minutes for 17h58m, and an anchor
+# every append resets never matures into the recheck this bound promises, so the
+# declared wait would suppress supervision with no bound at all. The marker is
+# created when a declaration first reaches the bounded cadence, seeded from the
+# log's mtime so a wait declared long before the watcher saw it is not handed a
+# fresh window of silence, and rewritten only when the crew declares something
+# else, so a replacement wait starts its own window. The bounded re-surface
+# itself is the shared resurface_absorbed above, throttled by this window's own
+# .paused-resurfaced-<key> marker. Advances the stale suppressor to <hash> and
+# flags the key paused.
 #
 # The recheck names WHICH human the declared wait is on, because that is the whole
 # point of a recheck the captain reads: an external dependency for paused:, and the
@@ -851,16 +859,19 @@ busy_turn_over_age() {  # <task>
 # wording; a caller that reached the bounded cadence off pause tracking alone, with
 # no declaring verb left on the log, keeps the external-wait wording it always had.
 handle_paused_stale() {  # <window> <task> <hash> <standing>
-  local win=$1 task=$2 h=$3 standing=$4 key statusf mtime age detail reason declaration
+  local win=$1 task=$2 h=$3 standing=$4 key sincef age detail reason declaration
   key=$(window_key "$win")
   printf '%s' "$h" > "$STATE/.stale-$key"
   : > "$STATE/.paused-$key"
   rm -f "$STATE/.stale-since-$key" "$STATE/.wedge-escalations-$key"
   clear_write_tracking "$key"
-  statusf="$STATE/$task.status"
-  mtime=$(stat_mtime "$statusf")
-  case "$mtime" in ''|*[!0-9]*) mtime=$(date +%s) ;; esac
-  age=$(( $(date +%s) - mtime ))
+  declaration="declared:$standing"
+  sincef="$STATE/.paused-since-$key"
+  if [ "$(cat "$sincef" 2>/dev/null || true)" != "$declaration" ]; then
+    printf '%s' "$declaration" > "$sincef"
+    touch -r "$STATE/$task.status" "$sincef" 2>/dev/null || true
+  fi
+  age=$(age_of "$sincef")
   if status_is_captain_held "$standing"; then
     detail="captain-held, awaiting the captain"
     reason="captain-held ${age}s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold"
@@ -883,7 +894,6 @@ handle_paused_stale() {  # <window> <task> <hash> <standing>
       return 0
     fi
   fi
-  declaration="declared:$standing"
   resurface_absorbed "$win" "$STATE/.paused-resurfaced-$key" "$age" "stale: $win ($reason)" "$declaration"
   triage_log "absorbed stale ($detail, age ${age}s): $win"
 }
@@ -949,13 +959,15 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
 
 clear_pause_state() {  # <window-key>
   local key=$1
-  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" "$STATE/.paused-resurfaced-$key"
+  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" \
+    "$STATE/.paused-since-$key" "$STATE/.paused-resurfaced-$key"
 }
 
 # The hash-scoped half of clear_pause_tracking: the stale suppressor, its wedge
 # timer and escalation count, and the write-deferral chain. Split out so a caller
 # that must keep a window's DECLARATION-scoped pause state - its .paused-* flag,
-# recheck, and re-surface throttle - can still reset the per-hash half alone.
+# recheck, re-surface window start, and re-surface throttle - can still reset the
+# per-hash half alone.
 clear_stale_hash_tracking() {  # <window-key>
   local key=$1
   clear_write_tracking "$key"
