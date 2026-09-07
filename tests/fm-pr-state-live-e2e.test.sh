@@ -32,26 +32,38 @@ test_every_jq_program_runs_under_gh_engine() {
   pass "every fm-pr-state.sh jq program is accepted by gh's jq engine"
 }
 
-# bin/fm-pr-poll.sh composes its whole reading inside one gh field selector, for
-# the same reason: no JSON processor is required on the watcher's PATH. That
-# makes the selector's own syntax and output shape a live fact - a hermetic fake
-# gh can only replay a shape someone already assumed. cli/cli#1 is a merged 2019
-# pull request, so the merged verdict is stable; the counters are not, so only
-# the shape is asserted for them.
-test_poll_field_selector_runs_under_gh_engine() {
+# bin/fm-pr-poll.sh composes each of its two readings inside a gh field selector,
+# for the same reason: no JSON processor is required on the watcher's PATH. That
+# makes each selector's syntax and output shape a live fact - a hermetic fake gh
+# can only replay a shape someone already assumed.
+#
+# The scalar reading is proven through the program that owns it: cli/cli#1 is a
+# merged 2019 pull request, and the poll prints the merged token only once its
+# own selector compiled and its own shape validation accepted the result.
+test_poll_merge_terminal_runs_under_gh_engine() {
+  local out
+  out=$("$ROOT/bin/fm-pr-poll.sh" --validated github "$PR" github.com cli/cli 1 2>&1)
+  [ "$out" = merged ] \
+    || fail "the PR poll no longer reports the live merged pull request as merged: $out"
+  pass "the PR poll's merge terminal compiles under gh's jq engine against a live merged pull request"
+}
+
+# The collection reading is unreachable through a merged pull request, because
+# the merge terminal returns before it, so this selector is asserted directly.
+# reviewDecision is the empty string rather than null on a pull request nobody
+# has reviewed, which is what the NONE branch is for and what only a live read
+# can confirm; the counters themselves are not stable, so only the shape the
+# poll validates is asserted.
+test_poll_activity_selector_runs_under_gh_engine() {
   local line
-  line=$(gh pr view "$PR" \
-    --json state,isDraft,headRefOid,reviewDecision,reviews,comments \
-    -q '"state=\(.state) draft=\(.isDraft) head=\(.headRefOid[0:12]) reviews=\(.reviews|length) comments=\(.comments|length) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
-    2>&1) || fail "gh rejected the poll's field selector: $line"
-  [[ $line =~ ^state=(OPEN|CLOSED|MERGED)\ draft=(true|false)\ head=[0-9a-f]{12}\ reviews=[0-9]+\ comments=[0-9]+\ decision=[A-Z_]+$ ]] \
-    || fail "the poll's field selector no longer composes the shape the poll validates: $line"
-  case "$line" in
-    'state=MERGED '*) ;;
-    *) fail "the live merged pull request no longer reads as merged: $line" ;;
-  esac
-  pass "the PR poll's field selector compiles under gh's jq engine and composes the shape it validates"
+  line=$(gh pr view "$PR" --json reviewDecision,reviews,comments \
+    -q '"reviews=\(.reviews|length) comments=\(.comments|length) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
+    2>&1) || fail "gh rejected the poll's activity field selector: $line"
+  [[ $line =~ ^reviews=[0-9]+\ comments=[0-9]+\ decision=[A-Z_]+$ ]] \
+    || fail "the poll's activity selector no longer composes the shape the poll validates: $line"
+  pass "the PR poll's activity field selector compiles under gh's jq engine and composes the shape it validates"
 }
 
 test_every_jq_program_runs_under_gh_engine
-test_poll_field_selector_runs_under_gh_engine
+test_poll_merge_terminal_runs_under_gh_engine
+test_poll_activity_selector_runs_under_gh_engine

@@ -147,21 +147,38 @@ case "${1:-} ${2:-}" in
 esac
 case " $* " in
   *" headRefOid "*) printf '%s\n' "${FM_TEST_GH_HEAD:-0123456789abcdef0123456789abcdef01234567}" ;;
-  *" state,isDraft,headRefOid,reviewDecision,reviews,comments "*)
-    # Stands in for gh's own field selector, which is gojq inside the binary and
-    # so cannot be reproduced here; tests/fm-pr-state-live-e2e.test.sh proves the
-    # real selector compiles and composes this exact shape. FM_TEST_GH_LINE
+  *" state,isDraft,headRefOid "*)
+    # The poll's scalar read: no collection, so nothing here can be slow, and it
+    # is the only read the merged verdict comes from. Stands in for gh's own
+    # field selector, which is gojq inside the binary and so cannot be
+    # reproduced here; tests/fm-pr-state-live-e2e.test.sh proves the real
+    # selectors compile and compose these exact shapes. FM_TEST_GH_STATE_LINE
     # overrides the whole line for the malformed-output cases.
     [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
     [ "${FM_TEST_GH_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_SLEEP"
-    if [ -n "${FM_TEST_GH_LINE+x}" ]; then
-      printf '%s\n' "$FM_TEST_GH_LINE"
+    if [ -n "${FM_TEST_GH_STATE_LINE+x}" ]; then
+      printf '%s\n' "$FM_TEST_GH_STATE_LINE"
       exit 0
     fi
-    printf 'state=%s draft=%s head=%s reviews=%s comments=%s decision=%s\n' \
+    printf 'state=%s draft=%s head=%s\n' \
       "${FM_TEST_GH_STATE:-OPEN}" "${FM_TEST_GH_DRAFT:-false}" \
-      "${FM_TEST_GH_SHORT_HEAD:-0123456789ab}" "${FM_TEST_GH_REVIEWS:-0}" \
-      "${FM_TEST_GH_COMMENTS:-0}" "${FM_TEST_GH_DECISION:-NONE}"
+      "${FM_TEST_GH_SHORT_HEAD:-0123456789ab}"
+    ;;
+  *" reviewDecision,reviews,comments "*)
+    # The poll's collection read, which real gh paginates. Its own failure,
+    # slowness, and malformed-output knobs are separate on purpose: that is the
+    # difference this fixture has to be able to express.
+    [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
+    [ "${FM_TEST_GH_ACTIVITY_FAIL:-0}" = 0 ] || exit 1
+    [ "${FM_TEST_GH_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_SLEEP"
+    [ "${FM_TEST_GH_ACTIVITY_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_ACTIVITY_SLEEP"
+    if [ -n "${FM_TEST_GH_ACTIVITY_LINE+x}" ]; then
+      printf '%s\n' "$FM_TEST_GH_ACTIVITY_LINE"
+      exit 0
+    fi
+    printf 'reviews=%s comments=%s decision=%s\n' \
+      "${FM_TEST_GH_REVIEWS:-0}" "${FM_TEST_GH_COMMENTS:-0}" \
+      "${FM_TEST_GH_DECISION:-NONE}"
     ;;
 esac
 SH
@@ -711,18 +728,47 @@ test_static_poll_contract() {
     '' \
     'not-a-state' \
     'state=OPEN' \
-    'state=open draft=false head=0123456789ab reviews=0 comments=0 decision=NONE' \
+    'state=open draft=false head=0123456789ab' \
     'state=MERGED' \
-    'state=MERGED draft=false head=0123456789ab reviews=0 comments=0' \
-    'state=OPEN draft=maybe head=0123456789ab reviews=0 comments=0 decision=NONE' \
-    'state=OPEN draft=false head=zzzzzzzzzzzz reviews=0 comments=0 decision=NONE' \
-    'state=OPEN draft=false head=0123456789ab reviews=x comments=0 decision=NONE' \
-    'state=OPEN draft=false head=0123456789ab reviews=0 comments=0 decision=NONE trailing=1'; do
-    out=$(FM_TEST_GH_LINE="$line" run_poll "$dir")
-    [ -z "$out" ] || fail "static poll emitted for a malformed gh reading: $line"
+    'state=MERGED draft=false' \
+    'state=OPEN draft=maybe head=0123456789ab' \
+    'state=OPEN draft=false head=zzzzzzzzzzzz' \
+    'state=OPEN draft=false head=0123456789ab trailing=1'; do
+    out=$(FM_TEST_GH_STATE_LINE="$line" run_poll "$dir")
+    [ -z "$out" ] || fail "static poll emitted for a malformed gh state reading: $line"
+  done
+  for line in \
+    '' \
+    'reviews=0' \
+    'reviews=0 comments=0' \
+    'reviews=x comments=0 decision=NONE' \
+    'reviews=0 comments=0 decision=none' \
+    'reviews=0 comments=0 decision=NONE trailing=1'; do
+    out=$(FM_TEST_GH_ACTIVITY_LINE="$line" run_poll "$dir")
+    [ -z "$out" ] || fail "static poll emitted for a malformed gh activity reading: $line"
   done
   out=$(FM_TEST_GH_FAIL=1 run_poll "$dir")
   [ -z "$out" ] || fail "static poll emitted after gh failure"
+
+  # The merge terminal must not ride on the read that pages through the review
+  # and comment collections, because on a heavily reviewed pull request - the
+  # exact population a movement poll is for - that is the read that can outrun
+  # the watcher's FM_CHECK_TIMEOUT budget and be killed with nothing printed.
+  # The merge is reported anyway; only the movement half is lost, and it is lost
+  # as silence rather than as a narrower fingerprint that would itself look like
+  # movement.
+  out=$(FM_TEST_GH_STATE=MERGED FM_TEST_GH_ACTIVITY_FAIL=1 run_poll "$dir")
+  [ "$out" = merged ] || fail "a merge was lost when the collection read failed"
+  out=$(FM_TEST_GH_STATE=OPEN FM_TEST_GH_ACTIVITY_FAIL=1 run_poll "$dir")
+  [ -z "$out" ] || fail "static poll emitted a partial reading when the collection read failed"
+  set +e
+  out=$(FM_STATE_OVERRIDE="$dir/home/state" FM_CHECK_TIMEOUT=1 FM_TEST_GH_LOG="$dir/gh.log" \
+    FM_TEST_GH_STATE=MERGED FM_TEST_GH_ACTIVITY_SLEEP=3 PATH="$dir/fakebin:$BASE_PATH" \
+    bash -c '. "$1"; run_check "$2"' bash "$WATCH" "$dir/home/state/task-a.check.sh")
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || fail "watcher run_check timeout wrapper failed"
+  [ "$out" = merged ] || fail "a merge was lost to the collection read exceeding the check timeout"
 
   mv "$dir/home/state/task-a.pr-poll" "$dir/home/state/task-a.pr-poll.missing"
   out=$(run_poll "$dir")

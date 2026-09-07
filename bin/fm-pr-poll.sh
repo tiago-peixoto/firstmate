@@ -78,29 +78,42 @@ case "$provider" in
       .|..|*[!A-Za-z0-9._-]*) exit 0 ;;
     esac
     [ "$url" = "https://github.com/$owner/$repo/pull/$number" ] || exit 0
-    # One authenticated read covers every condition that voids a declared wait
-    # on a pull request: both terminals through state, leaving draft through
-    # isDraft, a rewritten or advanced branch through headRefOid, and a
-    # maintainer acting on it through the submitted-review, issue-comment, and
-    # review-decision counters. gh's own field selector composes the line, so
-    # this needs no JSON processor on PATH. reviewDecision is the empty string,
-    # not null, on a pull request nobody has reviewed, so `//` alone would leave
-    # the field blank and every such reading would fail validation below and go
-    # silent; tests/fm-pr-state-live-e2e.test.sh is what proves that against a
-    # real pull request, since a hermetic fake gh can only replay an assumption.
-    fingerprint=$(gh pr view "$url" \
-      --json state,isDraft,headRefOid,reviewDecision,reviews,comments \
-      -q '"state=\(.state) draft=\(.isDraft) head=\(.headRefOid[0:12]) reviews=\(.reviews|length) comments=\(.comments|length) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
+    # Two reads, and the split is the reason a merge cannot be lost. The first
+    # asks only for scalar fields, so it is one round trip that no collection
+    # can lengthen, and both terminals through state, leaving draft through
+    # isDraft, and a rewritten or advanced branch through headRefOid all come
+    # from it. The watcher bounds this whole program at FM_CHECK_TIMEOUT, so
+    # anything the merge verdict depends on has to be readable in that bound on
+    # a pull request with hundreds of reviews and comments. gh's own field
+    # selector composes each line, so this needs no JSON processor on PATH.
+    state_read=$(gh pr view "$url" --json state,isDraft,headRefOid \
+      -q '"state=\(.state) draft=\(.isDraft) head=\(.headRefOid[0:12])"' \
       2>/dev/null) || exit 0
     # Revalidated against the exact shape this program promises, before either
     # token is printed. A truncated, reformatted, or partially-resolved reading
     # is silence, so no degraded output can be read as a merge or as movement.
-    gh_shape='^state=(OPEN|CLOSED|MERGED) draft=(true|false) head=[0-9a-f]{12} reviews=[0-9]+ comments=[0-9]+ decision=[A-Z_]+$'
-    [[ $fingerprint =~ $gh_shape ]] || exit 0
-    case "$fingerprint" in
-      'state=MERGED '*) printf '%s\n' merged ;;
-      *) printf 'moved %s\n' "$fingerprint" ;;
+    gh_state_shape='^state=(OPEN|CLOSED|MERGED) draft=(true|false) head=[0-9a-f]{12}$'
+    [[ $state_read =~ $gh_state_shape ]] || exit 0
+    case "$state_read" in
+      'state=MERGED '*) printf '%s\n' merged; exit 0 ;;
     esac
+    # The maintainer-activity half, and the half gh has to page through: it
+    # reads the submitted-review and issue-comment collections. Best-effort by
+    # construction, because it is the slow one - a failed, malformed, or
+    # timed-out read prints nothing at all, so the whole cost is fewer movement
+    # wakes for as long as it stays slow, never a lost merge and never a
+    # fingerprint that flaps between two widths and wakes on its own width.
+    # reviewDecision is the empty string, not null, on a pull request nobody has
+    # reviewed, so `//` alone would leave the field blank and every such reading
+    # would fail validation below and go silent;
+    # tests/fm-pr-state-live-e2e.test.sh is what proves that against a real pull
+    # request, since a hermetic fake gh can only replay an assumption.
+    activity_read=$(gh pr view "$url" --json reviewDecision,reviews,comments \
+      -q '"reviews=\(.reviews|length) comments=\(.comments|length) decision=\(if (.reviewDecision // "") == "" then "NONE" else .reviewDecision end)"' \
+      2>/dev/null) || exit 0
+    gh_activity_shape='^reviews=[0-9]+ comments=[0-9]+ decision=[A-Z_]+$'
+    [[ $activity_read =~ $gh_activity_shape ]] || exit 0
+    printf 'moved %s %s\n' "$state_read" "$activity_read"
     ;;
   gitlab)
     [ "${#host}" -ge 1 ] && [ "${#host}" -le 253 ] || exit 0
