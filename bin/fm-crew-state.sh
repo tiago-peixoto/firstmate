@@ -76,9 +76,10 @@
 #      call is not daemon death, so that claim is answered by steering the crew
 #      to reattach, not by escalating.
 #   4. No run for this crew (pre-validation, or kind=scout): fall back to the
-#      recorded backend's pane busy state, then the status log's last line only
-#      when its verb maps to a recognized run-state. Decision-only events such as
-#      `resolved` never become current state or detail.
+#      recorded backend's pane busy state, then the status log - the standing
+#      declared wait it carries, else its last line - only when that verb maps
+#      to a recognized run-state. Decision-only events such as `resolved` never
+#      become current state or detail.
 #   5. Missing meta or torn-down worktree: report unknown · none. If no run is
 #      attributed to this crew, a dead endpoint also reports unknown · none rather
 #      than trusting a stale status log. On tmux and herdr, which own a
@@ -174,6 +175,10 @@ map_log_state() {  # <line>
     echo paused
     return
   fi
+  if status_is_captain_held "$1"; then
+    echo parked
+    return
+  fi
   case "$(status_line_verb "$1")" in
     working)        echo working ;;
     needs-decision) echo parked ;;
@@ -184,7 +189,25 @@ map_log_state() {  # <line>
   esac
 }
 
-LOG_LINE=$(log_last_line || true)
+# A declared wait (paused:/captain-held:) is a STANDING declaration, not the log's
+# last event. fm-classify-lib.sh's status_standing_wait_line owns which later line
+# retracts one and why; read that header before changing this. Without it, any
+# later append by any producer - the crew's own armed reporter, a pipeline step
+# notice, a firstmate note - became the newest event, the reads below reported
+# THAT verb, and every consumer of this script's line (crew_absorb_class above
+# all) lost the declaration and restarted the possible-wedge ladder against a crew
+# that had said it was waiting on something external.
+#
+# Substituting it HERE, at the one place the log is read, fixes every consumer at
+# once instead of at each of them. It cannot disturb the terminal arms below: the
+# retraction set IS the terminal captain verbs, so a standing wait exists only
+# while the log's last line is non-terminal, and a log whose last line is done:,
+# blocked:, needs-decision: or failed: still yields exactly that line. Source
+# precedence is likewise untouched, because the log is only ever consulted after
+# the run-step and pane sources have declined: a crew that declared a wait and
+# then STARTED a run still reports working, never paused.
+LOG_LINE=$(status_standing_wait_line "$LOG")
+[ -n "$LOG_LINE" ] || LOG_LINE=$(log_last_line || true)
 LOG_VERB=$(status_line_verb "$LOG_LINE")
 
 # --- remote secondmate: the true source is the remote endpoint ---------------
