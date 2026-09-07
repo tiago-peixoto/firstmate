@@ -957,10 +957,16 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
   return 1
 }
 
+# Every piece of a window's pause bookkeeping EXCEPT its re-surface window start.
+# .paused-since-<key> is scoped to the DECLARATION, not to any pane hash, busy
+# verdict, or reclassification of that same declaration, so it outlives all of
+# them and is dropped in exactly one place: the retraction sweep at the top of the
+# poll loop, which fires when the declaration itself is gone. handle_paused_stale
+# rewrites it when the crew declares something else, so a replacement wait still
+# opens its own window.
 clear_pause_state() {  # <window-key>
   local key=$1
-  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" \
-    "$STATE/.paused-since-$key" "$STATE/.paused-resurfaced-$key"
+  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" "$STATE/.paused-resurfaced-$key"
 }
 
 # The hash-scoped half of clear_pause_tracking: the stale suppressor, its wedge
@@ -1920,8 +1926,9 @@ EOF
     [ -z "$task" ] || inbox_steer_check "$w" "$task"
     key=$(window_key "$w")
     standing=$(status_standing_wait_line "$STATE/$task.status")
-    if ! status_is_paused_or_captain_held "$standing" && [ -e "$STATE/.paused-$key" ]; then
-      clear_pause_tracking "$key"
+    if ! status_is_paused_or_captain_held "$standing"; then
+      [ ! -e "$STATE/.paused-since-$key" ] || rm -f "$STATE/.paused-since-$key"
+      [ ! -e "$STATE/.paused-$key" ] || clear_pause_tracking "$key"
     fi
     # An idle secondmate endpoint is healthy by design, so a mate is admitted to
     # the pane-stale path ONLY to serve a declared wait's bounded re-surface -
@@ -2069,11 +2076,20 @@ EOF
           clear_write_tracking "$key"
         fi
         # A busy pane normally means real work resumed, so stale pause bookkeeping
-        # is cleared - but not in the same poll the declared-pause cadence just
-        # recorded it, or the re-surface throttle it depends on would be erased and
-        # the pause would re-surface every poll instead of once per long cadence.
-        if [ "$paused_bound" -ne 0 ] && [ -e "$pf" ] && { [ "$n" -ge 2 ] || ! status_is_paused_or_captain_held "$standing"; }; then
-          clear_pause_tracking "$key"
+        # is cleared - but only the per-hash half while the crew's declaration is
+        # still standing. A worker waiting on something external still submits
+        # turns (a reporter, a poll loop), so its pane alternates busy and idle
+        # for the whole wait; clearing the declaration-scoped half on those busy
+        # polls would restart the re-surface window and erase the throttle, and
+        # the wait would re-alarm on every busy-to-idle transition instead of once
+        # per long cadence. The retraction sweep at the top of the loop owns the
+        # declaration-scoped clear.
+        if [ "$paused_bound" -ne 0 ] && [ -e "$pf" ]; then
+          if ! status_is_paused_or_captain_held "$standing"; then
+            clear_pause_tracking "$key"
+          elif [ "$n" -ge 2 ]; then
+            clear_stale_hash_tracking "$key"
+          fi
         fi
       fi
     else
@@ -2101,9 +2117,14 @@ EOF
           *)      clear_pause_tracking "$key" ;;
         esac
       elif [ "$paused_bound" -ne 0 ] && [ -e "$pf" ]; then
-        # Same rule as the stable-hash branch: never clear pause bookkeeping the
-        # declared-pause cadence recorded on this very poll.
-        clear_pause_tracking "$key"
+        # Same rule as the stable-hash branch: a standing declaration keeps its
+        # own bookkeeping and only the per-hash half resets. Away mode is
+        # daemon-owned, so a declaration seen under afk still clears in full.
+        if ! afk_present && status_is_paused_or_captain_held "$standing"; then
+          clear_stale_hash_tracking "$key"
+        else
+          clear_pause_tracking "$key"
+        fi
       fi
     fi
   done < <(recorded_windows)
