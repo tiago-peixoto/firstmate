@@ -1,0 +1,117 @@
+Git fixture isolation demonstration
+HEAD: 68c44f7744e9bcdfb5b8dd325a19b4d79131ddd2
+Base: b84e0e362face25f3dd8945297a3df1320d7668c
+git version 2.50.1 (Apple Git-155)
+gpg (GnuPG) 2.5.21
+Global/system files and empty GPG home are disposable worktree-local fixtures.
+
+BEFORE: execute the base shared fixture helper with global signing enabled.
+
+$ bash -eu -c .\ \"\$1\"\;\ fm_git_init_commit\ \"\$2\" _ /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/baseline/tests/lib.sh /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/baseline-repo
+error: gpg failed to sign the data:
+gpg: keybox '/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/gnupg/pubring.kbx' created
+gpg: skipped "Firstmate Tests <tests@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Firstmate Tests <tests@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+exit=128 (expected signing failure)
+
+AFTER: global signing=true, execute current tests/lib.sh and its child Git process.
+child | fmtest <fmtest@example.invalid> | signature=N
+initial | Firstmate Tests <tests@example.invalid> | signature=N
+
+OUTSIDE: caller global config is still active, and outside-fixture commits still attempt signing.
+file:/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global	true
+
+$ git -C /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global-outside -c user.name=Outside -c user.email=outside@example.invalid commit -q --allow-empty -m outside
+error: gpg failed to sign the data:
+gpg: skipped "Outside <outside@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Outside <outside@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+exit=128 (expected signing failure)
+
+RUNNER: execute a helper-free Git fixture under inherited global signing.
+FM_TEST_BEGIN 2026-09-08T14:45:47Z /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/probe.test.sh family=unclassified expected_gate_skip=none
+runner-fixture | Runner <runner@example.invalid> | signature=N
+FM_TEST_END 2026-09-08T14:45:48Z /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/probe.test.sh exit=0 duration_ms=189 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=478
+FM_TEST_SUMMARY_FAMILY family=unclassified count=1 duration_ms=189 failed=0
+FM_TEST_SLOWEST rank=1 script=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/probe.test.sh duration_ms=189
+
+DIRECT SUITE: tests/fm-gitignore-config.test.sh with global signing enabled.
+ok - config/ is ignored as a directory, covering unlisted and nested paths
+ok - an unrelated path outside config/ remains visible to git
+ok - names starting with scratchpad are gitignored
+ok - no currently tracked path starts with scratchpad
+ok - scratchpad2/ does not make git status --porcelain dirty
+
+EXPLICIT CONFIGURATION: local and inline signing remain effective; explicit opt-outs allow commits.
+
+$ git -C /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global-fixture commit -q --allow-empty -m local-signing
+error: gpg failed to sign the data:
+gpg: skipped "Fixture <fixture@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Fixture <fixture@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+exit=128 (expected signing failure)
+
+$ git -C /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global-fixture -c commit.gpgsign=true commit -q --allow-empty -m inline-signing
+error: gpg failed to sign the data:
+gpg: skipped "Fixture <fixture@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Fixture <fixture@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+exit=128 (expected signing failure)
+
+$ env GIT_CONFIG_GLOBAL=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global git -C /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global-fixture commit -q --allow-empty -m explicit-global
+error: gpg failed to sign the data:
+gpg: skipped "Fixture <fixture@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Fixture <fixture@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+exit=128 (expected signing failure)
+
+$ env GIT_CONFIG_NOSYSTEM=0 GIT_CONFIG_SYSTEM=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global git -C /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/global-fixture commit -q --allow-empty -m explicit-system
+error: gpg failed to sign the data:
+gpg: skipped "Fixture <fixture@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Fixture <fixture@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+exit=128 (expected signing failure)
+parameters-opt-out | Fixture <fixture@example.invalid> | signature=N
+environment-opt-out | Fixture <fixture@example.invalid> | signature=N
+inline-opt-out | Fixture <fixture@example.invalid> | signature=N
+
+After runner and explicit-config checks, caller signing remains: true
+
+AFTER: system signing=true, execute current tests/lib.sh and its child Git process.
+child | fmtest <fmtest@example.invalid> | signature=N
+initial | Firstmate Tests <tests@example.invalid> | signature=N
+
+OUTSIDE: caller system config is still active, and outside-fixture commits still attempt signing.
+file:/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/system	true
+
+$ git -C /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M20PAN6ARPPBQGVQZPK3MWGF/scratchpad-git-config-validation/e2e.rHGT4w/system-outside -c user.name=Outside -c user.email=outside@example.invalid commit -q --allow-empty -m outside
+error: gpg failed to sign the data:
+gpg: skipped "Outside <outside@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Outside <outside@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+exit=128 (expected signing failure)
+
+Both isolated config files are unchanged by the fixture processes; no project or host Git configuration was edited.
