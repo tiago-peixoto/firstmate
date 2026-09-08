@@ -1,0 +1,88 @@
+Firstmate presentation availability: executable-interface verification
+Target: 1c8edb848340d3e6a86d35bc9d44f9507199d9a2
+Isolation: temporary Git homes; fixture external CLIs and harness identity; real bootstrap, session-start, and fleet-view scripts. No live agents, installs, or network services.
+
+$ bin/fm-bootstrap.sh  # lavish-axi=absent
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0]
+
+$ bin/fm-session-start.sh
+[Full emitted digest: session-start-absent.txt; lock acquired; startup completion persisted]
+$ bin/fm-fleet-view.sh
+# Fleet View
+
+Schema: fm-fleet-snapshot.v1
+Home: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1ZJ3BDSRDTHW4T68HRKSZ3Z/.test-tmp/fm-presentation-evidence.o2Voez/absent
+
+## Under Way
+No live task metadata found.
+
+## Queued
+| ID | Title | Repo | Kind | Blocked By | Artifact |
+| --- | --- | --- | --- | --- | --- |
+| - | - Implement ordinary code change | - | - | - | - |
+| - | - Prepare plain-text status report | - | - | - | - |
+
+## Done
+No done backlog records found.
+
+## Secondmates
+For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority.
+[exit 0]
+
+$ bin/fm-bootstrap.sh  # lavish-axi=0.1.45
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0]
+
+$ bin/fm-session-start.sh
+[Full emitted digest: session-start-0.1.45.txt; lock acquired; startup completion persisted]
+$ bin/fm-fleet-view.sh
+# Fleet View
+
+Schema: fm-fleet-snapshot.v1
+Home: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1ZJ3BDSRDTHW4T68HRKSZ3Z/.test-tmp/fm-presentation-evidence.o2Voez/0.1.45
+
+## Under Way
+No live task metadata found.
+
+## Queued
+| ID | Title | Repo | Kind | Blocked By | Artifact |
+| --- | --- | --- | --- | --- | --- |
+| - | - Implement ordinary code change | - | - | - | - |
+| - | - Prepare plain-text status report | - | - | - | - |
+
+## Done
+No done backlog records found.
+
+## Secondmates
+For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority.
+[exit 0]
+
+$ bin/fm-bootstrap.sh  # lavish-axi=0.1.46
+(silent)
+[exit 0]
+
+$ bin/fm-bootstrap.sh  # lavish-axi=0.1.47
+(silent)
+[exit 0]
+
+$ bin/fm-bootstrap.sh  # lavish-axi=development
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0]
+
+$ bin/fm-bootstrap.sh  # lavish-axi=failed-probe
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0]
+
+$ bin/fm-bootstrap.sh  # both gh-axi and lavish-axi absent
+MISSING: gh-axi (install: npm install -g gh-axi && gh-axi setup hooks)
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0; diagnostics, not exit status, distinguish blocking prerequisites]
+
+$ base-891dc517:bin/fm-bootstrap.sh  # lavish-axi=absent
+MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup hooks)
+[exit 0; old blocking MISSING classification reproduced]
+
+$ base-891dc517:bin/fm-bootstrap.sh  # lavish-axi=0.1.45
+MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup hooks)
+[exit 0; old blocking MISSING classification reproduced]
