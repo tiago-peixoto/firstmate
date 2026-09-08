@@ -1,0 +1,4 @@
+ok - fm-spawn: rovo launches bare, waits for readiness, and delivers its brief pointer
+ok - fm-spawn: rovo omits efficiencyLevel for xhigh but keeps its allowedExternalPaths grant, recording xhigh in task metadata
+ok - fm-spawn: rovo's supported effort values merge into the same --config-override as its allowedExternalPaths grant
+not ok - new rovo spawn failure has unknown emission time: failed: rovo did not show a verified ready signal before brief delivery in window firstmate:fm-rovo-not-ready-z3-99689

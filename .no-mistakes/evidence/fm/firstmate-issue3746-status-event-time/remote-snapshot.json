@@ -1,0 +1,1113 @@
+{
+  "schema": "fm-fleet-snapshot.v1",
+  "generated": "2026-09-08T00:47:44Z",
+  "fm_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent",
+  "roots": {
+    "fm_root": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4",
+    "state": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state",
+    "data": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data",
+    "config": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/config",
+    "projects": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/projects"
+  },
+  "backlog": {
+    "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/backlog.md",
+    "present": false,
+    "records": []
+  },
+  "tasks": [
+    {
+      "id": "duplicate",
+      "kind": "secondmate",
+      "harness": "codex",
+      "mode": "secondmate",
+      "yolo": "",
+      "project": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-duplicate",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/duplicate.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/duplicate.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "failed",
+            "note": "duplicate time stays unknown",
+            "raw": "failed [at=1] [at=2]: duplicate time stays unknown",
+            "emitted_at_epoch": null,
+            "age_seconds": null
+          }
+        },
+        "worktree": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-duplicate",
+          "present": false
+        },
+        "home": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-duplicate",
+          "present": false
+        },
+        "report": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/duplicate/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "worktree gone (torn down?)",
+        "raw": "state: unknown · source: none · worktree gone (torn down?)",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-duplicate",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent"
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "failed [at=1] [at=2]: duplicate time stays unknown"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-duplicate '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "future",
+      "kind": "secondmate",
+      "harness": "codex",
+      "mode": "secondmate",
+      "yolo": "",
+      "project": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-future",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/future.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/future.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "working",
+            "note": "future clock",
+            "raw": "working [at=1788828776]: future clock",
+            "emitted_at_epoch": 1788828776,
+            "age_seconds": null
+          }
+        },
+        "worktree": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-future",
+          "present": false
+        },
+        "home": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-future",
+          "present": false
+        },
+        "report": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/future/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "worktree gone (torn down?)",
+        "raw": "state: unknown · source: none · worktree gone (torn down?)",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-future",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent"
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "working [at=1788828776]: future clock"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-future '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "legacy",
+      "kind": "secondmate",
+      "harness": "codex",
+      "mode": "secondmate",
+      "yolo": "",
+      "project": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-legacy",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/legacy.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/legacy.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "done",
+            "note": "imported historical report",
+            "raw": "done: imported historical report",
+            "emitted_at_epoch": null,
+            "age_seconds": null
+          }
+        },
+        "worktree": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-legacy",
+          "present": false
+        },
+        "home": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-legacy",
+          "present": false
+        },
+        "report": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/legacy/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "worktree gone (torn down?)",
+        "raw": "state: unknown · source: none · worktree gone (torn down?)",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-legacy",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent"
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "done: imported historical report"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-legacy '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "literal",
+      "kind": "secondmate",
+      "harness": "codex",
+      "mode": "secondmate",
+      "yolo": "",
+      "project": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-literal",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/literal.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/literal.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "needs-decision",
+            "note": "choose the release branch",
+            "raw": "needs-decision [at=$(date +%s)]: choose the release branch",
+            "emitted_at_epoch": null,
+            "age_seconds": null
+          }
+        },
+        "worktree": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-literal",
+          "present": false
+        },
+        "home": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-literal",
+          "present": false
+        },
+        "report": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/literal/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "worktree gone (torn down?)",
+        "raw": "state: unknown · source: none · worktree gone (torn down?)",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-literal",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent"
+      },
+      "hints": {
+        "pending_decision": true,
+        "blocked_event": false,
+        "open_decisions": [
+          {
+            "key": "default",
+            "verb": "needs-decision",
+            "summary": "choose the release branch"
+          }
+        ],
+        "scout_report_present": false,
+        "last_event_text": "needs-decision [at=$(date +%s)]: choose the release branch"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-literal '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "local-mate",
+      "kind": "secondmate",
+      "harness": "codex",
+      "mode": "secondmate",
+      "yolo": "",
+      "project": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-local-mate",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/local-mate.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/local-mate.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "done",
+            "note": "audit delivered (via-helper)",
+            "raw": "done [corr=0123456789abcdef] [at=1788828456]: audit delivered (via-helper)",
+            "emitted_at_epoch": 1788828456,
+            "age_seconds": null
+          }
+        },
+        "worktree": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-local-mate",
+          "present": false
+        },
+        "home": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-local-mate",
+          "present": false
+        },
+        "report": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/local-mate/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "worktree gone (torn down?)",
+        "raw": "state: unknown · source: none · worktree gone (torn down?)",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-local-mate",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent"
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "done [corr=0123456789abcdef] [at=1788828456]: audit delivered (via-helper)"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-local-mate '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "malformed",
+      "kind": "secondmate",
+      "harness": "codex",
+      "mode": "secondmate",
+      "yolo": "",
+      "project": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-malformed",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/malformed.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/malformed.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "done",
+            "note": "terminal notification",
+            "raw": "done [at=bad]: terminal notification",
+            "emitted_at_epoch": null,
+            "age_seconds": null
+          }
+        },
+        "worktree": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-malformed",
+          "present": false
+        },
+        "home": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-malformed",
+          "present": false
+        },
+        "report": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/malformed/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "worktree gone (torn down?)",
+        "raw": "state: unknown · source: none · worktree gone (torn down?)",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-malformed",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent"
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "done [at=bad]: terminal notification"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-malformed '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "remote-mate",
+      "kind": "secondmate",
+      "harness": "codex",
+      "mode": "secondmate",
+      "yolo": "",
+      "project": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-remote-mate",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/remote-mate.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/remote-mate.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "needs-decision",
+            "note": "which base branch?",
+            "raw": "needs-decision [at=1700086400]: which base branch?",
+            "emitted_at_epoch": 1700086400,
+            "age_seconds": 100
+          }
+        },
+        "worktree": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-remote-mate",
+          "present": false
+        },
+        "home": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-remote-mate",
+          "present": false
+        },
+        "report": {
+          "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/remote-mate/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "worktree gone (torn down?)",
+        "raw": "state: unknown · source: none · worktree gone (torn down?)",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-remote-mate",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-09-08T00:47:44Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent"
+      },
+      "hints": {
+        "pending_decision": true,
+        "blocked_event": false,
+        "open_decisions": [
+          {
+            "key": "default",
+            "verb": "needs-decision",
+            "summary": "which base branch?"
+          }
+        ],
+        "scout_report_present": false,
+        "last_event_text": "needs-decision [at=1700086400]: which base branch?"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-remote-mate '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    }
+  ],
+  "main_inventory": {
+    "valid": true,
+    "reason": null,
+    "orphan_in_flight": [],
+    "unstructured_current_count": 0
+  },
+  "scout_reports": [],
+  "secondmate_current": {
+    "registry": {
+      "present": false,
+      "available": true,
+      "complete": true,
+      "reason": null,
+      "provenance": "registered-table",
+      "path": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/secondmates.md",
+      "freshness": {
+        "status": "fresh",
+        "observed_at": "2026-09-08T00:47:44Z"
+      },
+      "records": [],
+      "input_truncated": false,
+      "records_truncated": false,
+      "reasons": [],
+      "lines_in_window": 0,
+      "records_in_window": 0
+    },
+    "records": [
+      {
+        "id": "duplicate",
+        "home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-duplicate",
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-duplicate",
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-08T00:47:44Z",
+          "age_seconds": null
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "failed [at=1] [at=2]: duplicate time stays unknown",
+          "note": "duplicate time stays unknown",
+          "emitted_at_epoch": null,
+          "age_seconds": null,
+          "open_activities": [],
+          "open_decisions": [],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 1,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": false,
+          "observed_at": "2026-09-08T00:47:44Z",
+          "freshness": "unknown",
+          "reason": "terminal capture unavailable",
+          "lines": 0,
+          "bytes": 0,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      },
+      {
+        "id": "future",
+        "home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-future",
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-future",
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-08T00:47:44Z",
+          "age_seconds": null
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "working [at=1788828776]: future clock",
+          "note": "future clock",
+          "emitted_at_epoch": 1788828776,
+          "age_seconds": null,
+          "open_activities": [
+            {
+              "key": "default",
+              "verb": "working",
+              "summary": "future clock"
+            }
+          ],
+          "open_decisions": [],
+          "activity_scan": {
+            "records": [
+              {
+                "key": "default",
+                "verb": "working",
+                "summary": "future clock"
+              }
+            ],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 1,
+            "records_in_window": 1
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": false,
+          "observed_at": "2026-09-08T00:47:44Z",
+          "freshness": "unknown",
+          "reason": "terminal capture unavailable",
+          "lines": 0,
+          "bytes": 0,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      },
+      {
+        "id": "legacy",
+        "home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-legacy",
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-legacy",
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-08T00:47:44Z",
+          "age_seconds": null
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "done: imported historical report",
+          "note": "imported historical report",
+          "emitted_at_epoch": null,
+          "age_seconds": null,
+          "open_activities": [],
+          "open_decisions": [],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 1,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": false,
+          "observed_at": "2026-09-08T00:47:44Z",
+          "freshness": "unknown",
+          "reason": "terminal capture unavailable",
+          "lines": 0,
+          "bytes": 0,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      },
+      {
+        "id": "literal",
+        "home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-literal",
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-literal",
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-08T00:47:44Z",
+          "age_seconds": null
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "needs-decision [at=$(date +%s)]: choose the release branch",
+          "note": "choose the release branch",
+          "emitted_at_epoch": null,
+          "age_seconds": null,
+          "open_activities": [],
+          "open_decisions": [
+            {
+              "key": "default",
+              "verb": "needs-decision",
+              "summary": "choose the release branch"
+            }
+          ],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 1,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": false,
+          "observed_at": "2026-09-08T00:47:44Z",
+          "freshness": "unknown",
+          "reason": "terminal capture unavailable",
+          "lines": 0,
+          "bytes": 0,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      },
+      {
+        "id": "local-mate",
+        "home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-local-mate",
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-local-mate",
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-08T00:47:44Z",
+          "age_seconds": null
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "done [corr=0123456789abcdef] [at=1788828456]: audit delivered (via-helper)",
+          "note": "audit delivered (via-helper)",
+          "emitted_at_epoch": 1788828456,
+          "age_seconds": null,
+          "open_activities": [],
+          "open_decisions": [],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 1,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": false,
+          "observed_at": "2026-09-08T00:47:44Z",
+          "freshness": "unknown",
+          "reason": "terminal capture unavailable",
+          "lines": 0,
+          "bytes": 0,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      },
+      {
+        "id": "malformed",
+        "home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-malformed",
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-malformed",
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-08T00:47:44Z",
+          "age_seconds": null
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "done [at=bad]: terminal notification",
+          "note": "terminal notification",
+          "emitted_at_epoch": null,
+          "age_seconds": null,
+          "open_activities": [],
+          "open_decisions": [],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 1,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": false,
+          "observed_at": "2026-09-08T00:47:44Z",
+          "freshness": "unknown",
+          "reason": "terminal capture unavailable",
+          "lines": 0,
+          "bytes": 0,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      },
+      {
+        "id": "remote-mate",
+        "home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-remote-mate",
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-remote-mate",
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-08T00:47:44Z",
+          "age_seconds": 100
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "needs-decision [at=1700086400]: which base branch?",
+          "note": "which base branch?",
+          "emitted_at_epoch": 1700086400,
+          "age_seconds": 100,
+          "open_activities": [],
+          "open_decisions": [
+            {
+              "key": "default",
+              "verb": "needs-decision",
+              "summary": "which base branch?"
+            }
+          ],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 3,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": false,
+          "observed_at": "2026-09-08T00:47:44Z",
+          "freshness": "unknown",
+          "reason": "terminal capture unavailable",
+          "lines": 0,
+          "bytes": 0,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      }
+    ],
+    "total_registered": 0,
+    "total": 7,
+    "shown": 7,
+    "truncated": 0
+  },
+  "secondmate_landed": {
+    "records": [],
+    "truncated": [],
+    "unreadable": [
+      "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-duplicate",
+      "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-future",
+      "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-legacy",
+      "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-literal",
+      "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-local-mate",
+      "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-malformed",
+      "/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/unavailable-remote-mate"
+    ],
+    "partial": []
+  },
+  "secondmate_guidance": {
+    "note": "For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority."
+  }
+}

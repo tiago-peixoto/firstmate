@@ -1,0 +1,4 @@
+timed-secondmate: done [corr=0123456789abcdef] [at=1788827821]: build verified (via-helper)
+legacy-secondmate: done: legacy report
+historical-secondmate: done [at=1700000000]: historical report
+malformed-secondmate: done [at=bad]: malformed time, preserved event

@@ -1,0 +1,7 @@
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+duplicate failed [at=1] [at=2]: duplicate time stays unknown
+legacy done: imported historical report
+malformed done [at=bad]: terminal notification
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+literal needs-decision: choose the release branch
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'

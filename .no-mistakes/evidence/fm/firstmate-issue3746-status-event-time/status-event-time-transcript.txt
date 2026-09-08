@@ -1,0 +1,186 @@
+$ FM_HOME=<mate> bin/fm-secondmate-report.sh done 0123456789abcdef "build verified"
+done [corr=0123456789abcdef] [at=1788827821]: build verified (via-helper)
+
+$ FM_HOME=<parent> FM_SNAPSHOT_NOW_EPOCH=1788827941 bin/fm-fleet-snapshot.sh --json
+All status files have mtime=1577836800 (old-mtime). Output projected to event-time fields:
+{
+  "tasks": [
+    {
+      "id": "historical-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "historical report",
+        "raw": "done [at=1700000000]: historical report",
+        "emitted_at_epoch": 1700000000,
+        "age_seconds": 88827941
+      }
+    },
+    {
+      "id": "legacy-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "legacy report",
+        "raw": "done: legacy report",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "malformed-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "malformed time, preserved event",
+        "raw": "done [at=bad]: malformed time, preserved event",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "timed-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "build verified (via-helper)",
+        "raw": "done [corr=0123456789abcdef] [at=1788827821]: build verified (via-helper)",
+        "emitted_at_epoch": 1788827821,
+        "age_seconds": 120
+      }
+    }
+  ],
+  "secondmates": [
+    {
+      "id": "historical-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": 1700000000,
+        "age_seconds": 88827941
+      }
+    },
+    {
+      "id": "legacy-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "malformed-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "timed-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": 1788827821,
+        "age_seconds": 120
+      }
+    }
+  ]
+}
+
+$ FM_HOME=<parent> FM_SNAPSHOT_NOW_EPOCH=1788827941 bin/fm-fleet-snapshot.sh --json
+All status files have mtime=1788914341 (future-mtime). Output projected to event-time fields:
+{
+  "tasks": [
+    {
+      "id": "historical-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "historical report",
+        "raw": "done [at=1700000000]: historical report",
+        "emitted_at_epoch": 1700000000,
+        "age_seconds": 88827941
+      }
+    },
+    {
+      "id": "legacy-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "legacy report",
+        "raw": "done: legacy report",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "malformed-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "malformed time, preserved event",
+        "raw": "done [at=bad]: malformed time, preserved event",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "timed-secondmate",
+      "last_event": {
+        "state": "done",
+        "note": "build verified (via-helper)",
+        "raw": "done [corr=0123456789abcdef] [at=1788827821]: build verified (via-helper)",
+        "emitted_at_epoch": 1788827821,
+        "age_seconds": 120
+      }
+    }
+  ],
+  "secondmates": [
+    {
+      "id": "historical-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": 1700000000,
+        "age_seconds": 88827941
+      }
+    },
+    {
+      "id": "legacy-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "malformed-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "timed-secondmate",
+      "current": "unknown",
+      "parent_event": {
+        "emitted_at_epoch": 1788827821,
+        "age_seconds": 120
+      }
+    }
+  ]
+}
+
+Event fields are identical after changing file mtime from 2020 to the future.
+
+Parent relay output after publishing each source event twice:
+done [at=1700000000]: historical report
+done: legacy report
+
+Captain relevance with FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed:
+stored: done: build verified
+selected notification: done: build verified
+stored: done [at=1700000000]: build verified
+selected notification: done [at=1700000000]: build verified
+stored: done [at=]: build verified
+selected notification: <none>
+stored: done [at=bad]: build verified
+selected notification: <none>
+stored: done [at=$(date +%s)]: build verified
+selected notification: <none>
+stored: done [at=1] [at=2]: build verified
+selected notification: done [at=1] [at=2]: build verified
+
+Missed terminal notifications: 3

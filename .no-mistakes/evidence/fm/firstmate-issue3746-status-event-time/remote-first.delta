@@ -1,0 +1,13 @@
+schema=fm-remote-delta.v1
+status=delta
+path=state/parent-replies.status
+from_offset=0
+to_offset=74
+from_prefix_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+to_prefix_sha256=fbd3eb738d009fe50d1cffae7b075eb743ed1c0f2e3f79fe69d0fc96b8565254
+payload_sha256=fbd3eb738d009fe50d1cffae7b075eb743ed1c0f2e3f79fe69d0fc96b8565254
+payload_bytes=74
+reason=
+
+needs-decision [at=1700000000]: which base branch?
+done: historical audit

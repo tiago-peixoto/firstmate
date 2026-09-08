@@ -1,0 +1,262 @@
+$ touch -t 202001010000 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age/state/secondmate-task.status
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age FM_SNAPSHOT_NOW_EPOCH=1788829367 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "done",
+    "note": "audit complete (via-helper)",
+    "raw": "done [corr=0123456789abcdef] [at=1788829267]: audit complete (via-helper)",
+    "emitted_at_epoch": 1788829267,
+    "age_seconds": 100
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "done [corr=0123456789abcdef] [at=1788829267]: audit complete (via-helper)",
+      "note": "audit complete (via-helper)",
+      "emitted_at_epoch": 1788829267,
+      "age_seconds": 100,
+      "open_activities": [],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 0
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-08T01:01:07Z",
+      "age_seconds": 100
+    }
+  }
+}
+$ touch -t 202001010000 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age/state/secondmate-task.status
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "legacy",
+    "raw": "working: legacy",
+    "emitted_at_epoch": null,
+    "age_seconds": null
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working: legacy",
+      "note": "legacy",
+      "emitted_at_epoch": null,
+      "age_seconds": null,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "legacy"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "legacy"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-08T01:01:09Z",
+      "age_seconds": null
+    }
+  }
+}
+$ touch -t 202001010000 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age/state/secondmate-task.status
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "timed",
+    "raw": "working [at=1700000000]: timed",
+    "emitted_at_epoch": 1700000000,
+    "age_seconds": 100
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working [at=1700000000]: timed",
+      "note": "timed",
+      "emitted_at_epoch": 1700000000,
+      "age_seconds": 100,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "timed"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "timed"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-08T01:01:10Z",
+      "age_seconds": 100
+    }
+  }
+}
+$ touch -t 202001010000 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age/state/secondmate-task.status
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "future",
+    "raw": "working [at=1700000200]: future",
+    "emitted_at_epoch": 1700000200,
+    "age_seconds": null
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working [at=1700000200]: future",
+      "note": "future",
+      "emitted_at_epoch": 1700000200,
+      "age_seconds": null,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "future"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "future"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-08T01:01:12Z",
+      "age_seconds": null
+    }
+  }
+}
+$ touch -t 202001010000 /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age/state/secondmate-task.status
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-fleet-snapshot.fatjci/event-age FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "malformed",
+    "raw": "working [at=oops]: malformed",
+    "emitted_at_epoch": null,
+    "age_seconds": null
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working [at=oops]: malformed",
+      "note": "malformed",
+      "emitted_at_epoch": null,
+      "age_seconds": null,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "malformed"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "malformed"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-08T01:01:13Z",
+      "age_seconds": null
+    }
+  }
+}
+ok - snapshot exposes emission time and unknown-safe event age independently of file age and current state
+ok - empty fleet snapshot and view use explicit absence markers
+ok - fixture snapshot covers task rows, backlog rows, pointers, and stable ordering
+ok - home-summary excludes kind=secondmate from unowned_current and terminal_in_flight
+ok - undated captain holds age after a configurable threshold, decided only from structured fields
+ok - captain-hold buckets are total, mutually exclusive, and never decided by prose
+ok - main_inventory discloses orphan/unstructured and clears when inventory is consistent
+ok - backlog normalization preserves strict roles and resolves every blocker compatibly
+ok - snapshot event hints follow reconciled current state
+ok - durable fold keeps an open decision past a later unrelated event
+ok - a live secondmate endpoint preserves unrelated open decisions
+ok - durable captain-held transfer closes the duplicate live status decision
+ok - durable fold clears a decision only on a keyed resolution
+ok - a completed scout's stale decision surfaces as a report pointer, not pending
+ok - a scout still parked at a decision stays pending (terminal clear does not over-fire)
+ok - snapshot includes durable scout reports after teardown
+ok - snapshot parses tasks-axi rows and respects operational overrides
+ok - fleet view renders the snapshot without secondmate peek guidance
+ok - fleet view renders secondmate agent liveness

@@ -1,0 +1,215 @@
+Emission-time CLI verification. Real report, brief, delta-read, ingest, snapshot, and drain commands; isolated homes; endpoint and gate lookups stubbed. Stock macOS Bash is first on PATH. Snapshot time is explicitly fixed for deterministic ages.
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-remote-entrypoint.sh 1 L1VzZXJzL3RpYWdvLy5uby1taXN0YWtlcy93b3JrdHJlZXMvNWRmYzNlMmY4ZjdhLzAxTTFaNjdNTkZGQk5CMk42MkpRM1hWREo0 L1VzZXJzL3RpYWdvLy5uby1taXN0YWtlcy93b3JrdHJlZXMvNWRmYzNlMmY4ZjdhLzAxTTFaNjdNTkZGQk5CMk42MkpRM1hWREo0Ly50ZXN0LXBoYXNlLXRtcC9ldmVudC10aW1lLWRlbW8vcmVtb3Rl Zm0tcmVtb3RlLWRlbHRhLXJlYWQuc2gA
+
+error: remote root and home must be separate, non-overlapping directories
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/mate /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-secondmate-report.sh done 0123456789abcdef 'audit delivered'
+
+Fixture: local event file mtime=1577836800, later turn-ended marker present; other mtimes=1788828576; snapshot now=1788828576.
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-fleet-snapshot.sh --json
+[stdout saved as event-time-snapshot.json]
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent jq '{tasks: [.tasks[] | {id, event: .paths.status_log.last_event}], secondmates: [.secondmate_current.records[] | {id, current, parent_event: (.parent_event | {emitted_at_epoch, age_seconds})}]}' /Users/tiago/.no-mistakes/evidence/01M1Z67MNFFBNB2N62JQ3XVDJ4/event-time-snapshot.json
+{
+  "tasks": [
+    {
+      "id": "duplicate",
+      "event": {
+        "state": "failed",
+        "note": "duplicate time stays unknown",
+        "raw": "failed [at=1] [at=2]: duplicate time stays unknown",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "future",
+      "event": {
+        "state": "working",
+        "note": "future clock",
+        "raw": "working [at=1788828776]: future clock",
+        "emitted_at_epoch": 1788828776,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "legacy",
+      "event": {
+        "state": "done",
+        "note": "imported historical report",
+        "raw": "done: imported historical report",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "literal",
+      "event": {
+        "state": "needs-decision",
+        "note": "choose the release branch",
+        "raw": "needs-decision [at=$(date +%s)]: choose the release branch",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "local-mate",
+      "event": {
+        "state": "done",
+        "note": "audit delivered (via-helper)",
+        "raw": "done [corr=0123456789abcdef] [at=1788828456]: audit delivered (via-helper)",
+        "emitted_at_epoch": 1788828456,
+        "age_seconds": 120
+      }
+    },
+    {
+      "id": "malformed",
+      "event": {
+        "state": "done",
+        "note": "terminal notification",
+        "raw": "done [at=bad]: terminal notification",
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    }
+  ],
+  "secondmates": [
+    {
+      "id": "duplicate",
+      "current": {
+        "state": "unknown",
+        "reason": "secondmate metadata is not registered"
+      },
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "future",
+      "current": {
+        "state": "unknown",
+        "reason": "secondmate metadata is not registered"
+      },
+      "parent_event": {
+        "emitted_at_epoch": 1788828776,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "legacy",
+      "current": {
+        "state": "unknown",
+        "reason": "secondmate metadata is not registered"
+      },
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "literal",
+      "current": {
+        "state": "unknown",
+        "reason": "secondmate metadata is not registered"
+      },
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    },
+    {
+      "id": "local-mate",
+      "current": {
+        "state": "unknown",
+        "reason": "secondmate metadata is not registered"
+      },
+      "parent_event": {
+        "emitted_at_epoch": 1788828456,
+        "age_seconds": 120
+      }
+    },
+    {
+      "id": "malformed",
+      "current": {
+        "state": "unknown",
+        "reason": "secondmate metadata is not registered"
+      },
+      "parent_event": {
+        "emitted_at_epoch": null,
+        "age_seconds": null
+      }
+    }
+  ]
+}
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-wake-drain.sh
+[stdout saved as event-time-drain.txt]
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  6 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-brief.sh brief-ship firstmate --mode no-mistakes
+scaffolded: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/brief-ship/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /bin/bash -c 'echo "done [at=$(date +%s)]: generated command executed" >> '"'"'/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/brief-ship.status'"'"''
+
+done [at=1788828460]: generated command executed
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-brief.sh brief-scout firstmate --scout
+scaffolded: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/brief-scout/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /bin/bash -c 'echo "done [at=$(date +%s)]: generated command executed" >> '"'"'/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/brief-scout.status'"'"''
+
+done [at=1788828462]: generated command executed
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-brief.sh brief-secondmate --secondmate --no-projects
+scaffolded: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/data/brief-secondmate/brief.md (secondmate charter; replace {TASK})
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /bin/bash -c 'echo "done [at=$(date +%s)]: generated command executed" >> '"'"'/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/brief-secondmate.status'"'"''
+
+done [at=1788828463]: generated command executed
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/remote /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-remote-delta-read.sh state/parent-replies.status 0 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0
+[stdout saved as remote-first.delta]
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-procevent-remote-reply.sh ingest remote-mate /Users/tiago/.no-mistakes/evidence/01M1Z67MNFFBNB2N62JQ3XVDJ4/remote-first.delta
+ingested: remote-mate appended=2 offset=74
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/remote /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-remote-delta-read.sh state/parent-replies.status 74 fbd3eb738d009fe50d1cffae7b075eb743ed1c0f2e3f79fe69d0fc96b8565254 0
+[stdout saved as remote-second.delta]
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-procevent-remote-reply.sh ingest remote-mate /Users/tiago/.no-mistakes/evidence/01M1Z67MNFFBNB2N62JQ3XVDJ4/remote-second.delta
+ingested: remote-mate appended=1 offset=125
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-procevent-remote-reply.sh ingest remote-mate /Users/tiago/.no-mistakes/evidence/01M1Z67MNFFBNB2N62JQ3XVDJ4/remote-second.delta
+ingested: remote-mate appended=0 offset=125
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent cat /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/remote-mate.status
+needs-decision [at=1700000000]: which base branch?
+done: historical audit
+needs-decision [at=1700086400]: which base branch?
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-fleet-snapshot.sh --json
+[stdout saved as remote-snapshot.json]
+{
+  "state": "needs-decision",
+  "note": "which base branch?",
+  "raw": "needs-decision [at=1700086400]: which base branch?",
+  "emitted_at_epoch": 1700086400,
+  "age_seconds": 100
+}
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /bin/bash -c '. "$1"; FM_CAPTAIN_RE="done:|needs-decision:|blocked:|failed:"; status_span_first_actionable "$2" 0' _ /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/classify-before.sh /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/malformed.status
+
+
+$ FM_HOME=/Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent /bin/bash -c '. "$1"; FM_CAPTAIN_RE="done:|needs-decision:|blocked:|failed:"; status_span_first_actionable "$2" 0' _ /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/bin/fm-classify-lib.sh /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-phase-tmp/event-time-demo/parent/state/malformed.status
+done [at=bad]: terminal notification
+
+Verified: append-time stamping, mtime-independent ages, unknown legacy/malformed/duplicate age, future-time preservation, unchanged current-state fallback, actionable malformed tags, byte-preserving relay, distinct repeated events, and quiet replay.

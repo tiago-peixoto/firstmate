@@ -1,0 +1,16 @@
+ok - fm-spawn: rovo launches bare, waits for readiness, and delivers its brief pointer
+ok - fm-spawn: rovo omits efficiencyLevel for xhigh but keeps its allowedExternalPaths grant, recording xhigh in task metadata
+ok - fm-spawn: rovo's supported effort values merge into the same --config-override as its allowedExternalPaths grant
+Rovo readiness failure CLI output:
+warning: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M1Z67MNFFBNB2N62JQ3XVDJ4/.test-status-event-time/tmp/fm-rovo-harness.HKEiWb/not-ready/home/data/rovo-not-ready-z3-72646/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: rovo did not show a verified ready signal before brief delivery in window firstmate:fm-rovo-not-ready-z3-72646; inspect window firstmate:fm-rovo-not-ready-z3-72646
+Persisted status:
+failed [at=1788829282]: rovo did not show a verified ready signal before brief delivery in window firstmate:fm-rovo-not-ready-z3-72646
+ok - fm-spawn: rovo never sends the brief pointer before an observable ready signal, and tears down the created endpoint on failure
+ok - fm-spawn: rovo treats a silent pointer drop as a failed spawn, and tears down the created endpoint
+ok - fm-spawn: missing rovo executable refuses before pane creation
+ok - fm-spawn: rovo cannot be launched as a secondmate
+ok - fm-harness: rovo's markers outrank an inherited CLAUDECODE, and markerless ancestry still resolves rovo
+ok - fm-control-lib: rovo's lifecycle table matches its verified facts
+ok - busy detection: rovo's rendered busy line classifies through its own isolated fallback
+ok - busy detection: a rovo busy marker scrolled out of the tail classifies unknown, never idle

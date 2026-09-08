@@ -1,0 +1,12 @@
+schema=fm-remote-delta.v1
+status=delta
+path=state/parent-replies.status
+from_offset=74
+to_offset=125
+from_prefix_sha256=fbd3eb738d009fe50d1cffae7b075eb743ed1c0f2e3f79fe69d0fc96b8565254
+to_prefix_sha256=0fbab81f99f7b61603538e1b72e0a61c27b811d15c3c0c0fcf25d7447a652e37
+payload_sha256=6d0d7884374c7815e6abd991d0b6cc827389c453085d93b7bef9faf24056033c
+payload_bytes=51
+reason=
+
+needs-decision [at=1700086400]: which base branch?
