@@ -1144,9 +1144,35 @@ SH
   pass "absent Pi pin preserves both default and destination ambient behavior"
 }
 
+test_pi_raw_launch_command_receives_pin() {
+  local rec id out status launch result pin
+  id=root-raw-pi
+  rec=$(make_spawn_case "$id" pi "$id")
+  read_case_record "$rec"
+  pin="$CASE_DIR/work root"
+  mkdir -p "$pin"
+  printf '%s\n' "$pin" > "$HOME_DIR/config/pi-agent-dir"
+  cat > "$FAKEBIN_DIR/pi" <<'SH'
+#!/bin/sh
+printf '%s\n' "${PI_CODING_AGENT_DIR:-unset}"
+SH
+  chmod +x "$FAKEBIN_DIR/pi"
+  # The pin follows the resolved harness, and a raw command's harness is its
+  # executable basename, so a raw `pi ...` launch is pinned like any other.
+  out=$(PI_CODING_AGENT_DIR="$CASE_DIR/parent" run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
+    "$id" "$PROJ_DIR" --scout "pi --print"); status=$?
+  expect_code 0 "$status" "raw Pi launch failed: $out"
+  launch=$(cat "$LAUNCH_LOG")
+  result=$(env -i HOME="$CASE_DIR" PATH="$FAKEBIN_DIR:$PATH" \
+    PI_CODING_AGENT_DIR="$CASE_DIR/parent" /bin/sh -c "$launch") || fail "raw Pi launch did not run"
+  [ "$result" = "$pin" ] || fail "raw Pi launch did not receive the home pin: $result"
+  pass "raw pi launch command receives the home account pin"
+}
+
 test_pi_home_account_selection
 test_pi_home_account_invalid_refuses
 test_pi_absent_account_pin_preserves_ambient
+test_pi_raw_launch_command_receives_pin
 
 test_launch_environment_allowlist
 test_launch_environment_invalid_config_refuses

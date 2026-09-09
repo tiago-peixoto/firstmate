@@ -145,8 +145,10 @@
 #   home-local, never inherited. It overrides both caller and destination-shell
 #   PI_CODING_AGENT_DIR, including inside a filtered launch environment. Invalid
 #   or unreadable configuration refuses before endpoint creation. Absence leaves
-#   the existing ambient launch behavior unchanged; raw commands and other
-#   harnesses are unaffected. No credential files are read or transferred.
+#   the existing ambient launch behavior unchanged. The pin follows the resolved
+#   harness, so a raw launch command whose executable is pi or pi-signed receives
+#   it too; other harnesses are unaffected. No credential files are read or
+#   transferred.
 #   --scout records kind=scout in the task's meta (report deliverable, scratch worktree;
 #   see AGENTS.md task lifecycle); --secondmate records kind=secondmate and launches in a
 #   provisioned firstmate home; the default is kind=ship.

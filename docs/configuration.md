@@ -317,7 +317,8 @@ The pin beats both the spawning process's and the destination shell's `PI_CODING
 Relaunch and startup recovery use the same selection; config push and secondmate convergence leave this home-local file untouched.
 Remote secondmates resolve it on the destination host, where the selected directory must exist; account directories are never transferred over SSH.
 A missing file preserves the previous ambient behavior, including the destination shell's account selection, so removing a pin is not a safe way to require a particular account.
-Other harnesses and raw launch commands are unchanged.
+The pin follows the resolved harness, so a raw launch command whose executable is `pi` or `pi-signed` receives it too;
+other harnesses are unchanged.
 [`bin/fm-spawn.sh --help`](../bin/fm-spawn.sh) owns launch validation and executable mechanics.
 
 Changing the file affects future launches, not an already-running Pi process.
