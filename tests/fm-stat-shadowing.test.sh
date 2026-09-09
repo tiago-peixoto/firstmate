@@ -122,7 +122,16 @@ if [ -z "$HELPER_SIZE" ] || [ "$HELPER_SIZE" != "$RESULT_SIZE" ]; then
 fi
 pass "_fm_status_file_size returns correct byte size under GNU stat shadowing"
 
-# 4. stat_mtime from bin/fm-watch.sh
+# 4. fm_pr_file_mtime from bin/fm-pr-lib.sh
+. "$ROOT/bin/fm-pr-lib.sh"
+RESULT_PR_MTIME=$(fm_pr_file_mtime "$TESTFILE") || true
+if [ -z "$RESULT_PR_MTIME" ] || [ "$RESULT_PR_MTIME" != "$EXPECTED_MTIME" ]; then
+  PATH="$ORIGINAL_PATH"
+  fail "fm_pr_file_mtime: expected $EXPECTED_MTIME, got '$RESULT_PR_MTIME'"
+fi
+pass "fm_pr_file_mtime returns correct epoch mtime under GNU stat shadowing"
+
+# 5. stat_mtime from bin/fm-watch.sh
 # fm-watch.sh runs a top-level `mkdir -p` on its state dir when sourced; pin it
 # to the temp root via FM_STATE_OVERRIDE so no artifact escapes into the repo's
 # git-ignored state/ directory.
