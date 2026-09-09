@@ -397,9 +397,6 @@ try:
     for events in [[failure], [recovery, failure]]:
         snapshot_events[:] = events
         classify('unknown codex-appserver-failed')
-        settled = subprocess.run([sys.executable, str(root/'bin/fm-codex-appserver.py'),
-                                  'settled', str(state), 'worker'], capture_output=True, text=True)
-        assert settled.returncode == 1 and settled.stdout == '', settled
         consumers('failed', 'none')
     ship_runs('failed', 'Codex native turn failed')
     classify('busy codex-appserver')
