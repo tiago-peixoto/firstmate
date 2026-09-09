@@ -192,7 +192,7 @@ def roots(client):
 def snapshot(state, task):
     binding_path = state / (task + '.codex-appserver')
     if not binding_path.exists():
-        return 'unknown codex-unverified', None
+        return 'unknown codex-unverified'
     client = None
     try:
         private(binding_path, stat.S_ISREG)
@@ -237,20 +237,19 @@ def snapshot(state, task):
         if status['type'] == 'active':
             flags = status['activeFlags']
             if 'waitingOnApproval' in flags:
-                return 'unknown codex-appserver-waiting-approval', None
+                return 'unknown codex-appserver-waiting-approval'
             if 'waitingOnUserInput' in flags:
-                return 'unknown codex-appserver-waiting-input', None
-            return 'busy codex-appserver', None
+                return 'unknown codex-appserver-waiting-input'
+            return 'busy codex-appserver'
         if status['type'] == 'systemError' or last.get('status') == 'failed':
-            return 'unknown codex-appserver-failed', None
+            return 'unknown codex-appserver-failed'
         if status['type'] == 'idle' and last.get('status') in ('completed', 'interrupted'):
-            epoch = last.get('completedAt')
-            return 'idle codex-appserver', epoch if isinstance(epoch, int) and epoch > 0 else None
-        return 'unknown codex-appserver', None
+            return 'idle codex-appserver'
+        return 'unknown codex-appserver'
     except (OSError, EOFError, TimeoutError):
-        return 'unknown codex-appserver-disconnected', None
+        return 'unknown codex-appserver-disconnected'
     except (ValueError, KeyError, TypeError, IndexError):
-        return 'unknown codex-appserver-binding', None
+        return 'unknown codex-appserver-binding'
     finally:
         if client:
             client.close()
@@ -443,7 +442,7 @@ def main():
         except (OSError, ValueError, RuntimeError, EOFError) as exc:
             print('Codex native launch failed: ' + str(exc), file=sys.stderr)
             degrade(state, task, sys.argv[4], sys.argv[6:], str(exc))
-    verdict, _ = snapshot(state, task)
+    verdict = snapshot(state, task)
     print(verdict, end='')
     return 0
 

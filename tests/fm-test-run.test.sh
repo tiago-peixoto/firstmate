@@ -453,6 +453,45 @@ test_changed_dependency_selection_and_unmapped_failure() {
 # every real-Herdr E2E, including scripts with no dependency on it at all.
 # Consumer bin/ scripts must still resolve through the curated map, so recorded
 # family-level coupling is not lost along the way.
+test_changed_shared_fixture_selects_consumers_and_survives_retirement() {
+  local tmp repo listed rc
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/fm-test-run-fixture.XXXXXX")
+  repo="$tmp/repo"
+  init_changed_fixture_repo "$repo"
+
+  : >"$repo/tests/shared-pair-fixture.sh"
+  printf '# shared-pair-fixture.sh\n' >>"$repo/tests/fm-backend.test.sh"
+  git -C "$repo" add -A
+  git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm fixture-baseline
+
+  printf '\n' >>"$repo/tests/shared-pair-fixture.sh"
+  listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)
+  assert_contains "$listed" "tests/fm-backend.test.sh" \
+    "a shared fixture must select the suite that names it"
+  git -C "$repo" add -A
+  git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm fixture-change
+
+  # Retirement: the fixture and its only consumer's reference leave together,
+  # the shape an upstream sync lands. The fixture has no consuming suite left,
+  # so it must select nothing rather than refuse the whole selection.
+  rm -f "$repo/tests/shared-pair-fixture.sh"
+  printf '#!/usr/bin/env bash\n# tests/lib.sh\n' >"$repo/tests/fm-backend.test.sh"
+  set +e
+  (cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD) >"$tmp/out" 2>"$tmp/err"
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] \
+    || fail "a retired shared fixture broke selection with exit $rc: $(cat "$tmp/err")"
+  case "$(cat "$tmp/err")" in
+    *shared-pair-fixture.sh*)
+      fail "a retired shared fixture was refused: $(cat "$tmp/err")"
+      ;;
+  esac
+
+  rm -rf "$tmp"
+  pass "a shared fixture selects its consuming suites and a retired one selects nothing"
+}
+
 test_changed_bin_reference_selects_per_script_not_per_family() {
   local tmp repo listed
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/fm-test-run-changed-scope.XXXXXX")
@@ -1636,6 +1675,7 @@ test_task_marker_refuses_the_primary_checkout
 test_changed_runner_surfaces_select_their_family
 test_shell_line_ending_policy_selects_runner_contract
 test_changed_dependency_selection_and_unmapped_failure
+test_changed_shared_fixture_selects_consumers_and_survives_retirement
 test_changed_bin_reference_selects_per_script_not_per_family
 test_changed_uses_bounded_automatic_concurrency
 test_windows_posix_mode_emulation_does_not_fail_parallel_runs
