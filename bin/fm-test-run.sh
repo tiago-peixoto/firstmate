@@ -1461,7 +1461,12 @@ families_for_changed_path() {
     docs/configuration.md|docs/supervision-protocols/*)
       printf '%s\n' pure-contract-unit
       ;;
-    tests/lib.sh|tests/*-helpers.sh|tests/fixtures.sh)
+    tests/lib.sh|tests/*-helpers.sh|tests/*-fixture.sh|tests/fixtures.sh)
+      # A tests/*-fixture.sh file is shared test support with no suite of its
+      # own, so it resolves the same way the helpers above do: by finding the
+      # suites that name it. Without this the refusing tests/* catch-all below
+      # claims every such fixture and one new upstream fixture stops --changed
+      # from selecting any test at all.
       families_for_test_reference "$(basename "$path")" \
         || printf '%s\n' "__unmapped__:$path"
       ;;
