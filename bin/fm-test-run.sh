@@ -1461,22 +1461,14 @@ families_for_changed_path() {
     docs/configuration.md|docs/supervision-protocols/*)
       printf '%s\n' pure-contract-unit
       ;;
-    tests/*-fixture.sh)
-      # Shared test support with no suite of its own, so it resolves the way
-      # the helpers below do: by finding the suites that name it. Without this
-      # the refusing tests/* catch-all claims every such fixture and one new
-      # upstream fixture stops --changed from selecting any test at all. A
-      # removed fixture has no consuming suite left to select, the same rule
-      # the bin/* case applies, so an absent path selects nothing rather than
-      # refusing. Carried against open upstream issue
+    tests/lib.sh|tests/*-helpers.sh|tests/*-fixture.sh|tests/fixtures.sh)
+      # A tests/*-fixture.sh file is shared test support with no suite of its
+      # own, so it resolves the same way the helpers above do: by finding the
+      # suites that name it. Without this the refusing tests/* catch-all below
+      # claims every such fixture and one new upstream fixture stops --changed
+      # from selecting any test at all. Carried against open upstream issue
       # https://github.com/kunchenguid/firstmate/issues/4100 and dropped when
       # upstream lands its own fix.
-      if [ -e "$path" ]; then
-        families_for_test_reference "$(basename "$path")" \
-          || printf '%s\n' "__unmapped__:$path"
-      fi
-      ;;
-    tests/lib.sh|tests/*-helpers.sh|tests/fixtures.sh)
       families_for_test_reference "$(basename "$path")" \
         || printf '%s\n' "__unmapped__:$path"
       ;;
