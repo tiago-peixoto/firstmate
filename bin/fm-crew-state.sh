@@ -51,21 +51,6 @@
 #      checks" from "checks green, waiting on merge" (see nm_ci_checks_state) -
 #      a ci-step log-tail check overrides working -> done once checks read
 #      green, so a green PR is never silently read as still-validating.
-#      ALSO EXCEPT: a Codex crew with a native binding (meta busy_gen plus
-#      state/<id>.codex-appserver) is read live here too, because the run step
-#      cannot see a wedged or failing worker: an observed native failure reports
-#      failed and an approval or user-input wait reports parked, ahead of the
-#      run state. Any other verdict settles nothing and is therefore applied
-#      LAST, after the ci-ready override and step 3's reconciliation: a failure
-#      to observe the pane is no evidence about anything the pane does not own,
-#      so it may mask only a run state nothing else supports, and never a green
-#      PR or a daemon-down status log. A run state the pipeline itself recorded
-#      - done, failed, or parked at a gate - is equally pane-independent and
-#      stays authoritative there: a finished crew whose observation already
-#      ended, and a gate still waiting on the captain, are never masked as
-#      unknown. Masking them would also cost the fleet more than the crew's own
-#      headline, since bin/fm-fleet-snapshot.sh reads an unknown child as an
-#      invalid snapshot and drops that crew's open decisions.
 #      A terminal FAILED run whose only failure is the ci monitor step, after
 #      every substantive step completed and the ci log's last marker reads
 #      checks green, also reads done (held-for-merge), never failed: a monitor
@@ -286,17 +271,6 @@ crew_busy_verdict() {  # <target>
     grok*) tail40=$(fm_backend_capture "$TASK_BACKEND" "$1" 40 "$EXPECTED_LABEL" 2>/dev/null) || tail40='' ;;
   esac
   fm_busy_classify "$TASK_BACKEND" "$1" "$HARNESS" "$ID" "$STATE" "$tail40"
-}
-
-# emit_codex_native_verdict: the states a native Codex verdict settles outright,
-# for both the run-attributed and the fallback consumer; <detail-suffix> is
-# appended to the emitted detail. Any other verdict returns to the caller.
-emit_codex_native_verdict() {  # <verdict> [detail-suffix]
-  case "$1" in
-    'unknown codex-appserver-failed') emit failed pane "Codex native turn failed${2-}" ;;
-    'unknown codex-appserver-waiting-approval') emit parked pane "Codex waiting for approval${2-}" ;;
-    'unknown codex-appserver-waiting-input') emit parked pane "Codex waiting for user input${2-}" ;;
-  esac
 }
 
 # --- no-mistakes run lookup (authoritative when a run matches this branch) --
@@ -742,11 +716,6 @@ if [ "$HAVE_RUN" = 1 ]; then
     fi
   fi
 
-  if [ "$HARNESS" = codex ] && [ -n "$(meta_value busy_gen)" ]; then
-    BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
-    emit_codex_native_verdict "$BUSY_VERDICT" "${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL"
-  fi
-
   if [ "$RUN_STATE" = working ] && log_reports_ci_ready; then
     if [ "$RUN_SOURCE" = coarse ]; then
       emit "done" status-log "$(status_line_note "$LOG_LINE")${SEP}run still monitoring PR"
@@ -795,15 +764,6 @@ if [ "$HAVE_RUN" = 1 ]; then
         fi
       fi
       ;;
-  esac
-
-  # Last, once every source that does not depend on the pane has had its say: a
-  # Codex crew whose live read settled nothing keeps only a run state something
-  # else supports. A run record the pipeline settled itself - done, failed, or
-  # parked at a gate - is its own evidence and stands.
-  case "$RUN_STATE:${BUSY_VERDICT:-}" in
-    *:|done:*|failed:*|parked:*|*:'busy codex-appserver'|*:'idle codex-appserver') ;;
-    *) emit unknown pane "harness state unavailable ($BUSY_VERDICT)${SEP}run state: $RUN_STATE${SEP}$RUN_DETAIL" ;;
   esac
 
   emit "$RUN_STATE" run-step "$RUN_DETAIL"
@@ -865,15 +825,13 @@ if ! pane_readable "$BACKEND_TARGET"; then
   esac
 fi
 
-# Secondmates keep their routed status-log fallback. A Codex secondmate with
-# a native binding can also prove activity, failure or an input wait; older
-# launches retain the existing summary path until safely relaunched.
+# Secondmates idle on their own watcher (idle pane = healthy), so the busy
+# state is not meaningful for them; read their state from the status log only.
 # Only an exact busy verdict reports working here, and only an exact idle
 # verdict permits the status-log fallback below. Missing, malformed, stale, or
 # unverified semantic state remains unknown.
-if [ "$KIND" != secondmate ] || { [ "$HARNESS" = codex ] && [ -n "$(meta_value busy_gen)" ]; }; then
+if [ "$KIND" != secondmate ]; then
   BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
-  emit_codex_native_verdict "$BUSY_VERDICT"
   case "${BUSY_VERDICT%% *}" in
     busy) emit working pane "harness busy (${BUSY_VERDICT#* })" ;;
     idle) ;;
