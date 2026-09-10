@@ -5,19 +5,17 @@
 # over a real shell-only endpoint, and relaunches through the same public verb.
 set -u
 
+# shellcheck source=tests/lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+fm_live_gate opt-in FM_HERDR_PI_EXIT_LIVE herdr jq pi treehouse git
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAB_HELPER="$ROOT/bin/fm-herdr-lab.sh"
 
 fail() { printf 'not ok - %s\n' "$1" >&2; exit 1; }
 pass() { printf 'ok - %s\n' "$1"; }
 
-if [ "${FM_HERDR_PI_EXIT_LIVE:-0}" != 1 ]; then
-  echo "skip: set FM_HERDR_PI_EXIT_LIVE=1 to run the real Herdr/Pi exit-and-relaunch guard"
-  exit 0
-fi
-for tool in herdr jq pi treehouse git; do
-  command -v "$tool" >/dev/null 2>&1 || fail "FM_HERDR_PI_EXIT_LIVE=1 but $tool is not installed"
-done
 [ -x "$LAB_HELPER" ] || fail "the Herdr lab helper is not executable at $LAB_HELPER"
 
 MODEL=${FM_HERDR_PI_EXIT_MODEL:-gpt-5.6-sol}
