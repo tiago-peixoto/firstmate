@@ -872,75 +872,6 @@ FAIL_CLOSED_PANES=$(sed -n "$((FAIL_START + 1)),\$p" "$HERDR_CALL_LOG" | awk -F 
 assert_no_ordering_lifecycle_calls_since "$FAIL_START" "failed presentation ordering"
 pass "real Herdr lab: forced workspace.move failure leaves a successful worker in default order with a warning and no cleanup"
 
-mkdir -p "$POST_CREATE_ABORT_CONTROL"
-git -C "$PROJECT_DIR" worktree add --quiet --detach "$POST_CREATE_ABORT_CONTROL/wt"
-ABORT_START=$(log_line_count)
-ABORT_FOCUS_START=$(focus_audit_line_count)
-FM_SPAWN_SEAT_POLLS=3 FM_SPAWN_SEAT_INTERVAL=0.1 \
-  spawn_task abort-a "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-a.out" 2> "$TMP_ROOT/abort-a.err" &
-ABORT_A_PID=$!
-FM_SPAWN_SEAT_POLLS=3 FM_SPAWN_SEAT_INTERVAL=0.1 \
-  spawn_task abort-b "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-b.out" 2> "$TMP_ROOT/abort-b.err" &
-ABORT_B_PID=$!
-if wait "$ABORT_A_PID"; then ABORT_A_STATUS=0; else ABORT_A_STATUS=$?; fi
-if wait "$ABORT_B_PID"; then ABORT_B_STATUS=0; else ABORT_B_STATUS=$?; fi
-finish_concurrent_expected_abort abort-a "$ABORT_A_STATUS" "$TMP_ROOT/abort-a.out" "$TMP_ROOT/abort-a.err"
-finish_concurrent_expected_abort abort-b "$ABORT_B_STATUS" "$TMP_ROOT/abort-b.out" "$TMP_ROOT/abort-b.err"
-# Seating sees the planted non-git cwd after Herdr create, so the abort is
-# post-create. Keep the wait short so the presentation lock serializes
-# create-then-cleanup instead of timing out the sibling spawn.
-grep -F "did not enter leased worktree" "$TMP_ROOT/abort-a.err" >/dev/null 2>&1 \
-  || fail "post-create abort fixture A did not reach the armed validation failure"
-grep -F "did not enter leased worktree" "$TMP_ROOT/abort-b.err" >/dev/null 2>&1 \
-  || fail "post-create abort fixture B did not reach the armed validation failure"
-ABORT_A_PANE=$(cat "$POST_CREATE_ABORT_CONTROL/abort-a/task-pane")
-ABORT_B_PANE=$(cat "$POST_CREATE_ABORT_CONTROL/abort-b/task-pane")
-ABORT_SEQUENCE=$(sed -n "$((ABORT_FOCUS_START + 1)),\$p" "$FOCUS_AUDIT_LOG" | awk -F '\t' -v a="$ABORT_A_PANE" -v b="$ABORT_B_PANE" '
-  $1 == "workspace-create" && $4 ~ /^└ abort-a · p:/ { print "create-a" }
-  $1 == "workspace-create" && $4 ~ /^└ abort-b · p:/ { print "create-b" }
-  $1 == "pane-close" && $4 == a { print "close-a" }
-  $1 == "pane-close" && $4 == b { print "close-b" }
-')
-case "$ABORT_SEQUENCE" in
-  $'create-a\nclose-a\ncreate-b\nclose-b'|$'create-b\nclose-b\ncreate-a\nclose-a') ;;
-  $'create-a\ncreate-b'|$'create-b\ncreate-a')
-    # A leased pane is an idle shell, so abort cleanup uses pane-death
-    # rather than `pane close`. Both projected creates must still appear.
-    ;;
-  *) fail "concurrent post-create abort cleanup interleaved outside the presentation lock: $ABORT_SEQUENCE" ;;
-esac
-ABORT_UNRESTORED=$(sed -n "$((ABORT_FOCUS_START + 1)),\$p" "$FOCUS_AUDIT_LOG" | awk -F '\t' -v a="$ABORT_A_PANE" -v b="$ABORT_B_PANE" '
-  ($1 == "workspace-create" || $1 == "tab-create" || $1 == "workspace-move" || ($1 == "pane-close" && $4 != a && $4 != b)) && $2 != $3 { print }
-')
-[ -z "$ABORT_UNRESTORED" ] \
-  || fail "post-create abort create, prune, or move changed exact focus: $ABORT_UNRESTORED"
-assert_focus_is "$CAPTAIN_FOCUS" "concurrent post-create abort cleanup"
-assert_cleanup_focus_preserved "$ABORT_FOCUS_START" "$ABORT_A_PANE" "$CAPTAIN_FOCUS"
-assert_cleanup_focus_preserved "$ABORT_FOCUS_START" "$ABORT_B_PANE" "$CAPTAIN_FOCUS"
-assert_no_ordering_lifecycle_calls_since "$ABORT_START" "concurrent post-create abort cleanup"
-for ABORT_PANE in "$ABORT_A_PANE" "$ABORT_B_PANE"; do
-  if lab pane get "$ABORT_PANE" >/dev/null 2>&1; then
-    fail "serialized post-create abort cleanup left exact task pane $ABORT_PANE alive"
-  fi
-done
-[ ! -e "$HOME_DIR/state/abort-a.meta" ] && [ ! -e "$HOME_DIR/state/abort-b.meta" ] \
-  || fail "post-create abort fixtures published task metadata before launch"
-for task in abort-a abort-b; do
-  ws=$(cat "$POST_CREATE_ABORT_CONTROL/$task/workspace" 2>/dev/null || true)
-  [ -n "$ws" ] || continue
-  if lab workspace get "$ws" >/dev/null 2>&1; then
-    fail "abort leftover workspace $ws still exists after pane death"
-  fi
-done
-lab tab focus "$SECOND_TWO_TAB" >/dev/null \
-  || fail "could not restore the captured captain tab after the abort fixtures"
-CAPTAIN_FOCUS=$(focus_snapshot) \
-  || fail "could not recapture captain focus after abort pane-death"
-assert_focus_is "$CAPTAIN_FOCUS" "abort fixture restoration"
-rm -rf "$POST_CREATE_ABORT_CONTROL"
-rm -f "$HOME_DIR/state/abort-a.herdr-presentation" "$HOME_DIR/state/abort-b.herdr-presentation"
-pass "real Herdr lab: concurrent post-create abort cleanup stays serialized with exact focus restoration"
-
 SHAPE_CLEANUP_AUDIT_START=$(focus_audit_line_count)
 teardown_task shape "$HOME_DIR" > "$TMP_ROOT/on-teardown.out" 2> "$TMP_ROOT/on-teardown.err" \
   || fail "projected teardown failed: $(cat "$TMP_ROOT/on-teardown.err")"
@@ -1485,6 +1416,81 @@ assert_no_projection_mutation_since "$START" "live duplicate-token recovery"
 lab workspace get "$DUP1_WSID" >/dev/null 2>&1 || fail "live duplicate refusal removed the first workspace"
 lab workspace get "$DUP2_WSID" >/dev/null 2>&1 || fail "live duplicate refusal removed the second workspace"
 pass "real Herdr lab: missing, renamed, and duplicate tokens trigger zero destructive or adoptive calls, and live duplicate risk refuses launch"
+
+# Abort fixtures are the last Herdr mutation. On 0.7.4, pane-death of an
+# idle leased pane can leave a neighbor workspace that a later projected
+# teardown inherits as focus. Keep that hazard after every teardown whose
+# exact-focus assertion is the thing under test.
+mkdir -p "$POST_CREATE_ABORT_CONTROL"
+git -C "$PROJECT_DIR" worktree add --quiet --detach "$POST_CREATE_ABORT_CONTROL/wt"
+ABORT_FOCUS=$(focus_snapshot) \
+  || fail "could not capture focus before abort fixtures"
+ABORT_START=$(log_line_count)
+ABORT_FOCUS_START=$(focus_audit_line_count)
+FM_SPAWN_SEAT_POLLS=3 FM_SPAWN_SEAT_INTERVAL=0.1 \
+  spawn_task abort-a "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-a.out" 2> "$TMP_ROOT/abort-a.err" &
+ABORT_A_PID=$!
+FM_SPAWN_SEAT_POLLS=3 FM_SPAWN_SEAT_INTERVAL=0.1 \
+  spawn_task abort-b "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-b.out" 2> "$TMP_ROOT/abort-b.err" &
+ABORT_B_PID=$!
+if wait "$ABORT_A_PID"; then ABORT_A_STATUS=0; else ABORT_A_STATUS=$?; fi
+if wait "$ABORT_B_PID"; then ABORT_B_STATUS=0; else ABORT_B_STATUS=$?; fi
+finish_concurrent_expected_abort abort-a "$ABORT_A_STATUS" "$TMP_ROOT/abort-a.out" "$TMP_ROOT/abort-a.err"
+finish_concurrent_expected_abort abort-b "$ABORT_B_STATUS" "$TMP_ROOT/abort-b.out" "$TMP_ROOT/abort-b.err"
+# Seating sees the planted non-git cwd after Herdr create, so the abort is
+# post-create. Keep the wait short so the presentation lock serializes
+# create-then-cleanup instead of timing out the sibling spawn.
+grep -F "did not enter leased worktree" "$TMP_ROOT/abort-a.err" >/dev/null 2>&1 \
+  || fail "post-create abort fixture A did not reach the armed validation failure"
+grep -F "did not enter leased worktree" "$TMP_ROOT/abort-b.err" >/dev/null 2>&1 \
+  || fail "post-create abort fixture B did not reach the armed validation failure"
+ABORT_A_PANE=$(cat "$POST_CREATE_ABORT_CONTROL/abort-a/task-pane")
+ABORT_B_PANE=$(cat "$POST_CREATE_ABORT_CONTROL/abort-b/task-pane")
+ABORT_SEQUENCE=$(sed -n "$((ABORT_FOCUS_START + 1)),\$p" "$FOCUS_AUDIT_LOG" | awk -F '\t' -v a="$ABORT_A_PANE" -v b="$ABORT_B_PANE" '
+  $1 == "workspace-create" && $4 ~ /^└ abort-a · p:/ { print "create-a" }
+  $1 == "workspace-create" && $4 ~ /^└ abort-b · p:/ { print "create-b" }
+  $1 == "pane-close" && $4 == a { print "close-a" }
+  $1 == "pane-close" && $4 == b { print "close-b" }
+')
+case "$ABORT_SEQUENCE" in
+  $'create-a\nclose-a\ncreate-b\nclose-b'|$'create-b\nclose-b\ncreate-a\nclose-a') ;;
+  $'create-a\ncreate-b'|$'create-b\ncreate-a')
+    # A leased pane is an idle shell, so abort cleanup uses pane-death
+    # rather than `pane close`. Both projected creates must still appear.
+    ;;
+  *) fail "concurrent post-create abort cleanup interleaved outside the presentation lock: $ABORT_SEQUENCE" ;;
+esac
+ABORT_UNRESTORED=$(sed -n "$((ABORT_FOCUS_START + 1)),\$p" "$FOCUS_AUDIT_LOG" | awk -F '\t' -v a="$ABORT_A_PANE" -v b="$ABORT_B_PANE" '
+  ($1 == "workspace-create" || $1 == "tab-create" || $1 == "workspace-move" || ($1 == "pane-close" && $4 != a && $4 != b)) && $2 != $3 { print }
+')
+[ -z "$ABORT_UNRESTORED" ] \
+  || fail "post-create abort create, prune, or move changed exact focus: $ABORT_UNRESTORED"
+assert_focus_is "$ABORT_FOCUS" "concurrent post-create abort cleanup"
+assert_cleanup_focus_preserved "$ABORT_FOCUS_START" "$ABORT_A_PANE" "$ABORT_FOCUS"
+assert_cleanup_focus_preserved "$ABORT_FOCUS_START" "$ABORT_B_PANE" "$ABORT_FOCUS"
+assert_no_ordering_lifecycle_calls_since "$ABORT_START" "concurrent post-create abort cleanup"
+for ABORT_PANE in "$ABORT_A_PANE" "$ABORT_B_PANE"; do
+  if lab pane get "$ABORT_PANE" >/dev/null 2>&1; then
+    fail "serialized post-create abort cleanup left exact task pane $ABORT_PANE alive"
+  fi
+done
+[ ! -e "$HOME_DIR/state/abort-a.meta" ] && [ ! -e "$HOME_DIR/state/abort-b.meta" ] \
+  || fail "post-create abort fixtures published task metadata before launch"
+for task in abort-a abort-b; do
+  ws=$(cat "$POST_CREATE_ABORT_CONTROL/$task/workspace" 2>/dev/null || true)
+  [ -n "$ws" ] || continue
+  if lab workspace get "$ws" >/dev/null 2>&1; then
+    fail "abort leftover workspace $ws still exists after pane death"
+  fi
+done
+if lab tab get "${ABORT_FOCUS#*/}" >/dev/null 2>&1; then
+  lab tab focus "${ABORT_FOCUS#*/}" >/dev/null \
+    || fail "could not restore abort-time tab after the abort fixtures"
+  assert_focus_is "$ABORT_FOCUS" "abort fixture restoration"
+fi
+rm -rf "$POST_CREATE_ABORT_CONTROL"
+rm -f "$HOME_DIR/state/abort-a.herdr-presentation" "$HOME_DIR/state/abort-b.herdr-presentation"
+pass "real Herdr lab: concurrent post-create abort cleanup stays serialized with exact focus restoration"
 
 STATUS_JSON=$(lab status --json)
 HERDR_VERSION=$(printf '%s' "$STATUS_JSON" | jq -r '.client.version // "unknown"')
