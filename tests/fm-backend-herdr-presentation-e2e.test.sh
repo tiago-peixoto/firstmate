@@ -934,6 +934,8 @@ for task in abort-a abort-b; do
 done
 lab tab focus "$SECOND_TWO_TAB" >/dev/null \
   || fail "could not restore the captured captain tab after the abort fixtures"
+CAPTAIN_FOCUS=$(focus_snapshot) \
+  || fail "could not recapture captain focus after abort pane-death"
 assert_focus_is "$CAPTAIN_FOCUS" "abort fixture restoration"
 rm -rf "$POST_CREATE_ABORT_CONTROL"
 rm -f "$HOME_DIR/state/abort-a.herdr-presentation" "$HOME_DIR/state/abort-b.herdr-presentation"
