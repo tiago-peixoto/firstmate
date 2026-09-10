@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Opt-in native lifecycle guard; only an isolated named Herdr lab is touched.
 set -eu
-if [ "${FM_CODEX_NATIVE_LIVE:-0}" != 1 ]; then
-  echo 'skip: set FM_CODEX_NATIVE_LIVE=1 for the credentialed Codex native lifecycle guard'
-  exit 0
-fi
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-command -v codex >/dev/null || { echo 'not ok - Codex is not installed' >&2; exit 1; }
+# shellcheck source=tests/lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+# The shared gate is the live-harness family's one on/off contract: it is what
+# lets FM_LIVE=0 turn every live guard off together, and tests/fm-live-gate.test.sh
+# sweeps the whole family for it. lib.sh exports ROOT, so this drops the local
+# recomputation, and the trailing tool list replaces the hand-rolled codex check.
+fm_live_gate opt-in FM_CODEX_NATIVE_LIVE codex
+
 HERDR_LAB_HELPER=${HERDR_LAB_HELPER:-"$ROOT/bin/fm-herdr-lab.sh"}
 HERDR_LAB_SESSION=$("$HERDR_LAB_HELPER" name firstmate-codex-busy-verdict-unmeasured-at-installed-version)
 FM_CODEX_NATIVE_LAB=$(mktemp -d /tmp/fm-native-live-XXXXXXXX)
