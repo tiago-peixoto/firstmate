@@ -1455,8 +1455,8 @@ ABORT_SEQUENCE=$(sed -n "$((ABORT_FOCUS_START + 1)),\$p" "$FOCUS_AUDIT_LOG" | aw
 case "$ABORT_SEQUENCE" in
   $'create-a\nclose-a\ncreate-b\nclose-b'|$'create-b\nclose-b\ncreate-a\nclose-a') ;;
   $'create-a\ncreate-b'|$'create-b\ncreate-a')
-    # A leased pane is an idle shell, so abort cleanup uses pane-death
-    # rather than `pane close`. Both projected creates must still appear.
+    # Both projected creates must still appear when cleanup is not logged
+    # as pane-close.
     ;;
   *) fail "concurrent post-create abort cleanup interleaved outside the presentation lock: $ABORT_SEQUENCE" ;;
 esac

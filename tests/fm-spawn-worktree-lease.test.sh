@@ -170,9 +170,110 @@ test_spawn_retries_after_protecting_an_occupied_copy() {
   pass "fm-spawn leaves an occupied copy leased and launches in an unrecorded slot"
 }
 
+test_spawn_prepublish_failure_returns_the_lease() {
+  local rec id out status log
+  id=lease-prepub-d4
+  rec=$(make_lease_case prepublish "$id")
+  read_lease_record "$rec"
+  log="$CASE_DIR/treehouse.log"
+  : > "$log"
+
+  out=$(FM_FAKE_TREEHOUSE_LOG="$log" FM_FAKE_TREEHOUSE_PATH="$WT_DIR" \
+    FM_SPAWN_SEAT_POLLS=2 FM_SPAWN_SEAT_INTERVAL=0.01 \
+    fm_test_run_spawn "$HOME_DIR" "$PROJ_DIR" "$FAKEBIN_DIR" \
+      "$id" "$PROJ_DIR" --scout)
+  status=$?
+  [ "$status" -ne 0 ] || fail "pre-publish seating failure should abort"$'\n'"$out"
+  assert_contains "$out" "did not enter leased worktree" \
+    "pre-publish seating failure lacked a loud diagnostic"
+  assert_absent "$HOME_DIR/state/$id.meta" "pre-publish abort must not leave a task record"
+  grep -F "get --lease --lease-holder $id" "$log" >/dev/null \
+    || fail "pre-publish abort never acquired a lease"$'\n'"$(cat "$log")"
+  grep -F "return --force $WT_DIR" "$log" >/dev/null \
+    || fail "pre-publish abort did not return the leased path"$'\n'"$(cat "$log")"
+  pass "a seating failure before publish returns the leased copy"
+}
+
+test_spawn_postpublish_failure_returns_the_lease() {
+  local rec id out status log spawn_home
+  id=lease-postpub-e5
+  rec=$(make_lease_case postpublish "$id")
+  read_lease_record "$rec"
+  log="$CASE_DIR/treehouse.log"
+  : > "$log"
+  spawn_home="$HOME_DIR/user-home"
+  mkdir -p "$spawn_home/.kimi-code"
+  printf 'default_model = "test"\n' > "$spawn_home/.kimi-code/config.toml"
+  fm_fake_exit0 "$FAKEBIN_DIR" kimi
+  cat > "$FAKEBIN_DIR/tmux.capture" <<'SH'
+#!/usr/bin/env bash
+set -u
+if [ "${1:-}" = capture-pane ]; then
+  printf 'shell starting\n$ \n'
+  exit 0
+fi
+exec "$(dirname "$0")/tmux.real" "$@"
+SH
+  mv "$FAKEBIN_DIR/tmux" "$FAKEBIN_DIR/tmux.real"
+  mv "$FAKEBIN_DIR/tmux.capture" "$FAKEBIN_DIR/tmux"
+  chmod +x "$FAKEBIN_DIR/tmux"
+
+  out=$(FM_FAKE_TREEHOUSE_LOG="$log" FM_KIMI_READY_POLLS=1 FM_KIMI_POLL_INTERVAL=0 \
+    run_lease_spawn "$id" --harness kimi --mode no-mistakes --yolo off)
+  status=$?
+  [ "$status" -ne 0 ] || fail "post-publish kimi readiness failure should abort"$'\n'"$out"
+  assert_contains "$out" "kimi did not show a verified ready signal" \
+    "post-publish kimi readiness failure lacked a loud diagnostic"
+  assert_absent "$HOME_DIR/state/$id.meta" "post-publish abort must remove the published record"
+  grep -F "get --lease --lease-holder $id" "$log" >/dev/null \
+    || fail "post-publish abort never acquired a lease"$'\n'"$(cat "$log")"
+  grep -F "return --force $WT_DIR" "$log" >/dev/null \
+    || fail "post-publish abort did not return the leased path"$'\n'"$(cat "$log")"
+  pass "a launch failure after publish returns the leased copy"
+}
+
+test_spawn_refuses_a_copy_another_local_home_records() {
+  local rec id out status log other root mate_abs root_abs
+  id=lease-crosshome-f6
+  other=live-owner-f6
+  rec=$(make_lease_case crosshome "$id")
+  read_lease_record "$rec"
+  log="$CASE_DIR/treehouse.log"
+  : > "$log"
+  root="$CASE_DIR/root"
+  mkdir -p "$root/state" "$root/data"
+  touch "$root/state/.last-watcher-beat"
+  mate_abs=$(CDPATH='' cd -- "$HOME_DIR" && pwd -P)
+  root_abs=$(CDPATH='' cd -- "$root" && pwd -P)
+  printf 'schema=fm-secondmate-parent.v1\nroute=local\nparent_home=%s\n' "$root_abs" \
+    > "$HOME_DIR/.fm-secondmate-parent"
+  printf -- '- mate - fixture (home: %s; scope: fixture; projects: sample; added 2026-09-10)\n' \
+    "$mate_abs" > "$root/data/secondmates.md"
+  fm_write_meta "$root/state/$other.meta" \
+    "window=firstmate:fm-$other" \
+    "endpoint_task_id=$other" \
+    "worktree=$WT_DIR" \
+    "project=$PROJ_DIR" \
+    "harness=codex" \
+    "kind=scout"
+
+  out=$(FM_FAKE_TREEHOUSE_LOG="$log" run_lease_spawn "$id" --scout)
+  status=$?
+  [ "$status" -ne 0 ] || fail "spawn used a copy another local home already records"$'\n'"$out"
+  assert_contains "$out" "$other" "the refusal did not name the live task that owns the copy"
+  assert_contains "$out" "$WT_DIR" "the refusal did not name the occupied copy"
+  assert_absent "$HOME_DIR/state/$id.meta" "cross-home occupied spawn must not publish a task record"
+  grep -F "return --force $WT_DIR" "$log" >/dev/null \
+    && fail "spawn released the occupied copy instead of leaving it leased"$'\n'"$(cat "$log")"
+  pass "fm-spawn refuses a copy another local home already records"
+}
+
 test_plain_treehouse_get_reuses_a_processless_copy
 test_spawn_acquires_with_task_lifetime_lease
 test_spawn_refuses_a_copy_another_live_task_records
 test_spawn_retries_after_protecting_an_occupied_copy
+test_spawn_prepublish_failure_returns_the_lease
+test_spawn_postpublish_failure_returns_the_lease
+test_spawn_refuses_a_copy_another_local_home_records
 
 echo "# all fm-spawn-worktree-lease tests passed"

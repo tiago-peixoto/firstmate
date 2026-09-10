@@ -206,12 +206,15 @@
 #   lease only after the landed-work test passes. Relaunch and recovery reuse
 #   the recorded copy and seat the pane there; they never call get.
 #   After acquire, spawn refuses to use a copy that another live task in this
-#   home already records as its worktree or home, including pre-lease tasks
-#   whose process-bound hold has lapsed. The occupied copy is left leased so a
-#   later get cannot take it, and acquire retries until it receives an
-#   unrecorded slot or refuses. Then the pane is seated with a top-level `cd`
-#   into the leased path and polled until two consecutive cwd reads agree on
-#   that exact copy.
+#   home or any locally registered Firstmate home already records as its
+#   worktree or home, including pre-lease tasks whose process-bound hold has
+#   lapsed. Homes share origin-keyed pools, so the occupancy walk is the same
+#   local-home set teardown already uses for slot exclusivity
+#   (collect_local_firstmate_states in bin/fm-wake-lib.sh). The occupied copy
+#   is left leased so a later get cannot take it, and acquire retries until it
+#   receives an unrecorded slot or refuses. Then the pane is seated with a
+#   top-level `cd` into the leased path and polled until two consecutive cwd
+#   reads agree on that exact copy.
 #   Ship/scout spawns refuse to launch unless the resolved task path is a real
 #   git worktree root distinct from both the spawning project and its repository's
 #   primary checkout, including when the spawning project is a linked worktree.
@@ -915,6 +918,7 @@ SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
 SPAWN_LEASE_RETURN_ON_ABORT=
 SPAWN_LEASE_RETURN_CD=
 SPAWN_LAST_PROTECTED=
+TREEHOUSE_OWNER_STATES=()
 RELAUNCH_REPLACEMENT_PENDING=0
 RELAUNCH_REPLACEMENT_BUSY_GEN=
 RELAUNCH_REPLACEMENT_HARNESS=
@@ -951,7 +955,7 @@ parse_orca_worktree_result() {
 }
 
 spawn_abort_cleanup() {
-  local status=$? spawn_lease_abort_path spawn_lease_abort_cd
+  local status=$?
   if [ "$RELAUNCH_REPLACEMENT_PENDING" = 1 ] \
      && [ "$SPAWN_META_PUBLISH_STARTED" = 1 ] \
      && [ -n "$SPAWN_META_TMP" ] \
@@ -1038,23 +1042,17 @@ spawn_abort_cleanup() {
     fm_lock_release "$SPAWN_TASK_LOCK" || true
   fi
   if [ "$SPAWN_FRESH_COMMIT_PENDING" = 1 ]; then
-    if ! spawn_fresh_commit_rollback; then
+    if spawn_fresh_commit_rollback; then
+      spawn_return_abort_lease || true
+    else
       status=1
     fi
+  else
+    spawn_return_abort_lease || true
   fi
   if [ "$SPAWN_META_LOCK_HELD" = 1 ]; then
     SPAWN_META_LOCK_HELD=0
     fm_lock_release "$SPAWN_META_LOCK" || true
-  fi
-  if [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ]; then
-    spawn_lease_abort_path=$SPAWN_LEASE_RETURN_ON_ABORT
-    spawn_lease_abort_cd=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
-    SPAWN_LEASE_RETURN_ON_ABORT=
-    if [ -n "$spawn_lease_abort_cd" ] && [ -d "$spawn_lease_abort_cd" ]; then
-      if ! ( CDPATH='' cd -- "$spawn_lease_abort_cd" && treehouse return --force "$spawn_lease_abort_path" ); then
-        echo "warning: could not release treehouse lease for $spawn_lease_abort_path after aborted spawn of $ID" >&2
-      fi
-    fi
   fi
   if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ]; then
     SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
@@ -2957,24 +2955,28 @@ spawn_send_key() {  # <target> <key>
   esac
 }
 
-# Print the id of a live task in this home whose recorded worktree= or home=
-# is the same physical path as <path>, or return 1 when none does. Pre-lease
-# copies whose process-bound hold has lapsed stay recorded here, so a later
-# get cannot be allowed to treat them as free.
+# Print the id of a live task in any local home whose recorded worktree= or
+# home= is the same physical path as <path>, or return 1 when none does.
+# Pre-lease copies whose process-bound hold has lapsed stay recorded there,
+# so a later get cannot be allowed to treat them as free. Skips only this
+# spawn's own meta file, not a same-named id in another home.
 spawn_live_slot_owner() {  # <path>
-  local want=$1 other other_id field other_path other_real
+  local want=$1 state_dir other other_id field other_path other_real own
   want=$(real_path_or_raw "$want")
-  for other in "$STATE"/*.meta; do
-    [ -f "$other" ] && [ ! -L "$other" ] || continue
-    other_id=$(basename "$other" .meta)
-    [ "$other_id" != "$ID" ] || continue
-    for field in worktree home; do
-      other_path=$(fm_meta_get "$other" "$field")
-      [ -n "$other_path" ] || continue
-      other_real=$(real_path_or_raw "$other_path")
-      [ "$other_real" = "$want" ] || continue
-      printf '%s\n' "$other_id"
-      return 0
+  own=$(real_path_or_raw "$STATE/$ID.meta")
+  for state_dir in "${TREEHOUSE_OWNER_STATES[@]}"; do
+    for other in "$state_dir"/*.meta; do
+      [ -f "$other" ] && [ ! -L "$other" ] || continue
+      [ "$(real_path_or_raw "$other")" != "$own" ] || continue
+      other_id=$(basename "$other" .meta)
+      for field in worktree home; do
+        other_path=$(fm_meta_get "$other" "$field")
+        [ -n "$other_path" ] || continue
+        other_real=$(real_path_or_raw "$other_path")
+        [ "$other_real" = "$want" ] || continue
+        printf '%s\n' "$other_id"
+        return 0
+      done
     done
   done
   return 1
@@ -2986,12 +2988,31 @@ spawn_release_treehouse_lease() {  # <path> <cd-dir>
   ( CDPATH='' cd -- "$cd_dir" && treehouse return --force "$path" )
 }
 
+# Return the unpublished unique lease armed for abort, then disarm so EXIT
+# cannot return it twice. Occupied collision copies are never stored here.
+# Warn and return non-zero when the return itself fails.
+spawn_return_abort_lease() {
+  local path cd_dir
+  [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] || return 0
+  path=$SPAWN_LEASE_RETURN_ON_ABORT
+  cd_dir=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
+  SPAWN_LEASE_RETURN_ON_ABORT=
+  if ! spawn_release_treehouse_lease "$path" "$cd_dir"; then
+    echo "warning: could not release treehouse lease for $path after aborted spawn of $ID" >&2
+    return 1
+  fi
+}
+
 # Durably lease a pool copy for this task's lifetime. Occupied copies that a
 # live record already owns are left leased (so a later get cannot take them)
 # rather than returned. A unique isolated copy is stored in WT and marked for
-# abort-time return until the task record is published.
+# abort-time return until the fresh commit is final.
 spawn_acquire_treehouse_worktree() {
   local path owner attempts=0
+  collect_local_firstmate_states "$STATE" || {
+    echo "error: could not enumerate local Firstmate homes for worktree occupancy" >&2
+    return 1
+  }
   while [ "$attempts" -lt 32 ]; do
     attempts=$((attempts + 1))
     path=$(CDPATH='' cd -- "$PROJ_ABS" && treehouse get --lease --lease-holder "$ID") || {
@@ -3030,15 +3051,14 @@ spawn_acquire_treehouse_worktree() {
     SPAWN_LEASE_RETURN_CD=$PROJ_ABS
     return 0
   done
-  echo "error: could not acquire a worktree that no live task in this home already records" >&2
+  echo "error: could not acquire a worktree that no live task in any local home already records" >&2
   return 1
 }
 
 # Seat the pane in <path> with a top-level cd, then wait until two consecutive
 # cwd reads agree on that exact copy. A pane still on the project or primary
 # checkout is a transient; a pane that never reaches <path> refuses.
-# Optional <polls> and <interval> keep relaunch's wait as short as the old
-# already-seated check (10 x 0.5s) while fresh seating keeps the 60s window.
+# Optional <polls> and <interval> default to 60 x 1s; relaunch passes 10 x 0.5s.
 # FM_SPAWN_SEAT_POLLS and FM_SPAWN_SEAT_INTERVAL override those defaults when
 # the caller does not pass explicit values.
 spawn_seat_worktree() {  # <path> <label> [polls] [interval]
@@ -3790,7 +3810,6 @@ if [ "$RELAUNCH" -eq 0 ]; then
     exit 1
   fi
   SPAWN_META_TMP=
-  SPAWN_LEASE_RETURN_ON_ABORT=
 fi
 
 # Fuse the backlog In-flight transition into the publication that just created
@@ -3858,7 +3877,6 @@ fi
 # between its state check and `tasks-axi start`, and a delivery failure cannot
 # follow a committed In-flight transition.
 if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ]; then
-  SPAWN_LEASE_RETURN_ON_ABORT=
   SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
   fm_lock_release "$SPAWN_TREEHOUSE_PROJECT_LOCK"
 fi
@@ -4119,17 +4137,20 @@ SPAWN_BACKLOG_COMMIT_STATUS=0
 FM_TASKS_AXI_TIMEOUT=${FM_TASKS_AXI_TIMEOUT:-30}
 if spawn_commit_backlog_transition; then
   SPAWN_FRESH_COMMIT_PENDING=0
+  SPAWN_LEASE_RETURN_ON_ABORT=
 else
   SPAWN_BACKLOG_COMMIT_STATUS=$?
   if spawn_commit_backlog_transition; then
     SPAWN_BACKLOG_COMMIT_STATUS=0
     SPAWN_FRESH_COMMIT_PENDING=0
+    SPAWN_LEASE_RETURN_ON_ABORT=
   fi
 fi
 if [ "$SPAWN_BACKLOG_COMMIT_STATUS" -ne 0 ]; then
   if [ "$RELAUNCH" -eq 0 ]; then
     if spawn_fresh_commit_rollback; then
-      echo "error: task $ID's backlog item could not be moved to In flight ($FM_BACKLOG_TRANSITION_ERROR); its record was removed so no worker is left that the backlog does not own - close out endpoint $T and local copy $WT by hand, then re-run the spawn" >&2
+      spawn_return_abort_lease || true
+      echo "error: task $ID's backlog item could not be moved to In flight ($FM_BACKLOG_TRANSITION_ERROR); its record was removed so no worker is left that the backlog does not own - treehouse return released $WT; close out endpoint $T by hand, then re-run the spawn" >&2
     else
       echo "error: task $ID's backlog item could not be moved to In flight ($FM_BACKLOG_TRANSITION_ERROR), and failed-dispatch cleanup is incomplete; the provisional record may remain at $STATE/$ID.meta - close out endpoint $T and local copy $WT by hand, then remove the record and busy state before retrying" >&2
     fi

@@ -1293,9 +1293,7 @@ fm_backend_herdr_pid_is_bare_shell() {  # <ps-bin> <pid>
 }
 
 # fm_backend_herdr_pane_shell_pid: print the pane's shell pid from process-info
-# without the idle-shell proof. Teardown uses this to keep that pid out of the
-# worktree-process reap so a seated pane shell is not killed as a leaked
-# descendant (that unplanned pane-death steals focus on Herdr 0.7.4).
+# without the idle-shell proof.
 fm_backend_herdr_pane_shell_pid() {  # <session> <pane-id>
   local session=$1 pane=$2 info shell_pid
   info=$(fm_backend_herdr_cli "$session" pane process-info --pane "$pane" 2>/dev/null) || return 1
