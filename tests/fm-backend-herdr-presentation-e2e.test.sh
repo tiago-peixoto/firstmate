@@ -209,18 +209,14 @@ set -u
   printf '\n'
 } >> "$TREEHOUSE_CALL_LOG"
 if [ -d "$POST_CREATE_ABORT_CONTROL" ] && [ "${1:-}" = get ]; then
-  # Fresh spawns acquire with --lease and take the path from stdout.
-  # Hand back the same non-git directory the pane-get fixture plants so
-  # isolation still fails after the Herdr workspace and tab exist.
+  lease=0
   for arg in "$@"; do
-    case "$arg" in
-      --lease)
-        printf '%s\n' "$POST_CREATE_ABORT_CONTROL/not-a-worktree"
-        exit 0
-        ;;
-    esac
+    case "$arg" in --lease) lease=1 ;; esac
   done
-  exit 0
+  # A process-bound get is unused on this path. A lease still has to return a
+  # real isolated copy so Herdr create finishes; seating then fails because
+  # pane get plants a non-git cwd.
+  [ "$lease" -eq 1 ] || exit 0
 fi
 # Treehouse's pool allocator is outside the Herdr concurrency contract under
 # test. Serialize its calls so simultaneous recovery spawns cannot race for
@@ -876,19 +872,22 @@ pass "real Herdr lab: forced workspace.move failure leaves a successful worker i
 mkdir -p "$POST_CREATE_ABORT_CONTROL"
 ABORT_START=$(log_line_count)
 ABORT_FOCUS_START=$(focus_audit_line_count)
-spawn_task abort-a "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-a.out" 2> "$TMP_ROOT/abort-a.err" &
+FM_SPAWN_SEAT_POLLS=3 FM_SPAWN_SEAT_INTERVAL=0.1 \
+  spawn_task abort-a "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-a.out" 2> "$TMP_ROOT/abort-a.err" &
 ABORT_A_PID=$!
-spawn_task abort-b "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-b.out" 2> "$TMP_ROOT/abort-b.err" &
+FM_SPAWN_SEAT_POLLS=3 FM_SPAWN_SEAT_INTERVAL=0.1 \
+  spawn_task abort-b "$HOME_DIR" "$PROJECT_DIR" > "$TMP_ROOT/abort-b.out" 2> "$TMP_ROOT/abort-b.err" &
 ABORT_B_PID=$!
 if wait "$ABORT_A_PID"; then ABORT_A_STATUS=0; else ABORT_A_STATUS=$?; fi
 if wait "$ABORT_B_PID"; then ABORT_B_STATUS=0; else ABORT_B_STATUS=$?; fi
 finish_concurrent_expected_abort abort-a "$ABORT_A_STATUS" "$TMP_ROOT/abort-a.out" "$TMP_ROOT/abort-a.err"
 finish_concurrent_expected_abort abort-b "$ABORT_B_STATUS" "$TMP_ROOT/abort-b.out" "$TMP_ROOT/abort-b.err"
-# The abort fixture hands get --lease a plain non-git directory, so isolation
-# fails after the Herdr workspace and tab exist.
-grep -F "did not yield an isolated worktree" "$TMP_ROOT/abort-a.err" >/dev/null 2>&1 \
+# Seating sees the planted non-git cwd after Herdr create, so the abort is
+# post-create. Keep the wait short so the presentation lock serializes
+# create-then-cleanup instead of timing out the sibling spawn.
+grep -F "did not enter leased worktree" "$TMP_ROOT/abort-a.err" >/dev/null 2>&1 \
   || fail "post-create abort fixture A did not reach the armed validation failure"
-grep -F "did not yield an isolated worktree" "$TMP_ROOT/abort-b.err" >/dev/null 2>&1 \
+grep -F "did not enter leased worktree" "$TMP_ROOT/abort-b.err" >/dev/null 2>&1 \
   || fail "post-create abort fixture B did not reach the armed validation failure"
 ABORT_A_PANE=$(cat "$POST_CREATE_ABORT_CONTROL/abort-a/task-pane")
 ABORT_B_PANE=$(cat "$POST_CREATE_ABORT_CONTROL/abort-b/task-pane")

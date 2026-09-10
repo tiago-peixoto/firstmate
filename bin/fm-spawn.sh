@@ -3039,8 +3039,10 @@ spawn_acquire_treehouse_worktree() {
 # checkout is a transient; a pane that never reaches <path> refuses.
 # Optional <polls> and <interval> keep relaunch's wait as short as the old
 # already-seated check (10 x 0.5s) while fresh seating keeps the 60s window.
+# FM_SPAWN_SEAT_POLLS and FM_SPAWN_SEAT_INTERVAL override those defaults when
+# the caller does not pass explicit values.
 spawn_seat_worktree() {  # <path> <label> [polls] [interval]
-  local want=$1 label=$2 polls=${3:-60} interval=${4:-1} p p_real candidate last_seen last_reason
+  local want=$1 label=$2 polls=${3:-${FM_SPAWN_SEAT_POLLS:-60}} interval=${4:-${FM_SPAWN_SEAT_INTERVAL:-1}} p p_real candidate last_seen last_reason
   want=$(real_path_or_raw "$want")
   spawn_send_text_line "$WT_TARGET" "cd -- $(shell_quote "$1")"
   candidate=""
