@@ -1465,7 +1465,12 @@ families_for_changed_path() {
       fi
       ;;
     tests/*)
-      printf '%s\n' "__unmapped__:$path"
+      # A retired test-support file has no suite left to select, the same rule
+      # the bin/* and fixture arms above apply. Refusing on it would make every
+      # branch that deletes such a file unable to select its changed tests.
+      if [ -e "$path" ]; then
+        printf '%s\n' "__unmapped__:$path"
+      fi
       ;;
     README.md|LICENSE|assets/*|docs/*|.gitignore)
       ;;
