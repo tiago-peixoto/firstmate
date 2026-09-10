@@ -8,18 +8,18 @@
 # merged 2019 pull request, so its verdict is stable.
 set -u
 
-if [ "${FM_PR_STATE_LIVE_E2E:-0}" != 1 ]; then
-  echo "skip: set FM_PR_STATE_LIVE_E2E=1 to run the credentialed gh jq-engine regression"
-  exit 0
-fi
-
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+# The shared gate is the live-harness family's one on/off contract: it is what
+# lets FM_LIVE=0 turn every live guard off together, and tests/fm-live-gate.test.sh
+# sweeps the whole family for it. The trailing tool list replaces the hand-rolled
+# gh presence check; authentication is not a tool check and stays below.
+fm_live_gate opt-in FM_PR_STATE_LIVE_E2E gh
 
 SCRIPT="$ROOT/bin/fm-pr-state.sh"
 PR=https://github.com/cli/cli/pull/1
 
-command -v gh >/dev/null 2>&1 || fail "gh not found"
 gh auth status >/dev/null 2>&1 || fail "gh is not authenticated"
 
 test_every_jq_program_runs_under_gh_engine() {
