@@ -1292,6 +1292,22 @@ fm_backend_herdr_pid_is_bare_shell() {  # <ps-bin> <pid>
   return 1
 }
 
+# fm_backend_herdr_pane_shell_pid: print the pane's shell pid from process-info
+# without the idle-shell proof. Teardown uses this to keep that pid out of the
+# worktree-process reap so a seated pane shell is not killed as a leaked
+# descendant (that unplanned pane-death steals focus on Herdr 0.7.4).
+fm_backend_herdr_pane_shell_pid() {  # <session> <pane-id>
+  local session=$1 pane=$2 info shell_pid
+  info=$(fm_backend_herdr_cli "$session" pane process-info --pane "$pane" 2>/dev/null) || return 1
+  printf '%s' "$info" | jq -e --arg pane "$pane" '
+    .result.type == "pane_process_info"
+    and .result.process_info.pane_id == $pane
+  ' >/dev/null 2>&1 || return 1
+  shell_pid=$(printf '%s' "$info" | jq -er \
+    '.result.process_info.shell_pid | select(type == "number" and . > 1) | floor' 2>/dev/null) || return 1
+  printf '%s\n' "$shell_pid"
+}
+
 # fm_backend_herdr_pane_idle_shell_pid: print the shell pid of <pane-id> only
 # when the exact pane provably holds one lone idle recognized shell: pane
 # process-info agrees on the pane id, the shell pid is both the foreground
