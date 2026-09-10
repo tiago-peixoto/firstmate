@@ -1,0 +1,60 @@
+bash '/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-nd-shim.3QJFVb/supervisor-loop.sh' '/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-nd-live.Hv4MT7/submitted.log'
+tiago@Tiagos-MBP 01M263CKW1B1H9FH3A4RFJQJ79 % bash '/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-nd-shim.3QJFVb/supervisor-loop.sh' '/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-nd-live.Hv4MT7/submitted.log'
+FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): decision-task.status: needs-decision [key=release]: pick A or B (catch-all scan) (pre-read; re-arm not needed — watcher daemon-managed)
+FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): decision-task.status: needs-decision [key=release]: pick A, C, or D (catch-all scan) (pre-read; re-arm not needed — watcher daemon-managed)
+FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): done-task.status: done: PR https://example.test/pull/1 (catch-all scan) (pre-read; re-arm not needed — watcher daemon-managed)
+❯ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

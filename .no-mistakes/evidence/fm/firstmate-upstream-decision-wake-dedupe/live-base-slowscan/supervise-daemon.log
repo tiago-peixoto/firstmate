@@ -1,0 +1,12 @@
+[2026-09-10T14:33:18-0300] daemon starting (pid 18734); target=%0; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=999999s; batch=0s
+[2026-09-10T14:33:24-0300] wake: signal: decision-task.status
+[2026-09-10T14:33:25-0300] escalate: needs-decision: decision-task.status -> unknown wake: needs-decision: decision-task.status
+[2026-09-10T14:34:05-0300] wake: signal: decision-task.status
+[2026-09-10T14:34:06-0300] escalate: needs-decision: decision-task.status -> unknown wake: needs-decision: decision-task.status
+[2026-09-10T14:34:56-0300] wake: signal: held-task.status
+[2026-09-10T14:34:58-0300] escalate: needs-decision: held-task.status -> unknown wake: needs-decision: held-task.status
+[2026-09-10T14:35:27-0300] wake: signal: routine-task.status
+[2026-09-10T14:35:29-0300] self-handle: signal: routine-task.status -> routine signal: routine-task.status: working: still going
+[2026-09-10T14:35:39-0300] wake: signal: done-task.status
+[2026-09-10T14:35:44-0300] escalate: signal: done-task.status -> done-task.status: done: PR https://example.test/pull/1
+[2026-09-10T14:36:12-0300] daemon shutting down

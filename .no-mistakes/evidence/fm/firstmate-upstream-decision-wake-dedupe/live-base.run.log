@@ -1,0 +1,40 @@
+== [base] real daemon pid 29795 up; afk on; catch-all scan every 3s, watcher poll 1s
+
+== A. crewmate writes a keyed needs-decision; status then stays unchanged for 30s
+  queued rows handled as needs-decision:    1
+  supervisor submissions naming the task:   2
+  ...labelled 'unknown wake:':              1
+  ...carrying the decision text:            1
+
+== B. crewmate appends a changed decision; then unchanged for 20s
+  new submissions naming the task:          2
+  ...carrying the changed decision text:    1
+  ...labelled 'unknown wake:' (all time):   2
+
+== C. a task's only new line is a captain-held [key=...] transfer; watch 25s
+  queued rows handled as needs-decision:    1
+  daemon self-handled those rows:           0
+  supervisor submissions naming held-task:  1
+
+== D. ordinary signals: a routine working: note, then a done: line
+  routine rows handled as signal:           2
+  supervisor submissions naming routine:    0
+  supervisor submissions naming done-task:  1
+  ...carrying the done line:                1
+  ...labelled 'unknown wake:':              0
+
+== E. daemon stopped; a locked fm-wake-drain.sh run over the same state
+  drain exit: 0
+  OPEN DECISIONS lines naming decision-task: 1
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    decision-task [key=release] needs-decision: pick A, C, or D
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+
+== supervisor submissions (verbatim text, classification):
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): decision-task.status: needs-decision [key=release]: pick A or B (catch-all scan) (pre-read; re-arm not needed — watcher daemon-managed)	injection
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): unknown wake: needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-nd-live.f9040K/decision-task.status (pre-read; re-arm not needed — watcher daemon-managed)	injection
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): decision-task.status: needs-decision [key=release]: pick A, C, or D (catch-all scan) (pre-read; re-arm not needed — watcher daemon-managed)	injection
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): unknown wake: needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-nd-live.f9040K/decision-task.status (pre-read; re-arm not needed — watcher daemon-managed)	injection
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): unknown wake: needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-nd-live.f9040K/held-task.status (pre-read; re-arm not needed — watcher daemon-managed)	injection
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): done-task.status: done: PR https://example.test/pull/1 (catch-all scan) (pre-read; re-arm not needed — watcher daemon-managed)	injection
+exit=0

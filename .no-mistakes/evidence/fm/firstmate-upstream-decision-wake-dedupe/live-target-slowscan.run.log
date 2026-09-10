@@ -1,0 +1,44 @@
+== [target] captain hold placed on backlog row decision-task: exit 0
+   hold open before the daemon starts: exit 0 (0 = open)
+== [target] real daemon pid 13067 up; afk on; catch-all scan every 20s, watcher poll 1s
+
+== A. crewmate writes a keyed needs-decision; status then stays unchanged for 35s
+  queued rows handled as needs-decision:    1
+  escalated by the queued row itself:       1
+  supervisor submissions naming the task:   1
+  ...tagged (catch-all scan):               0
+  ...labelled 'unknown wake:':              0
+  ...carrying the decision text:            1
+
+== B. crewmate appends a changed decision; then unchanged for 30s
+  new submissions naming the task:          1
+  ...carrying the changed decision text:    1
+  ...labelled 'unknown wake:' (all time):   0
+  escalated by the queued row (all time):   2
+
+== C. a task's only new line is a captain-held [key=...] transfer; watch 30s
+  queued rows handled as needs-decision:    1
+  daemon self-handled those rows:           1
+  supervisor submissions naming held-task:  0
+
+== D. ordinary signals: a routine working: note, then a done: line
+  routine rows handled as signal:           2
+  supervisor submissions naming routine:    0
+  escalated by the queued signal row:       1
+  supervisor submissions naming done-task:  1
+  ...carrying the done line:                1
+  ...labelled 'unknown wake:':              0
+
+== E. daemon stopped; a locked fm-wake-drain.sh run over the same state, and the backlog hold
+  drain exit: 0
+  OPEN DECISIONS lines naming decision-task: 1
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    decision-task [key=release] needs-decision: pick A, C, or D
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  backlog captain hold on decision-task still open after the run: exit 0 (0 = open)
+
+== supervisor submissions (verbatim text, classification):
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): decision-task.status: needs-decision [key=release]: pick A or B (pre-read; re-arm not needed — watcher daemon-managed)	injection
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): decision-task.status: needs-decision [key=release]: pick A, C, or D (pre-read; re-arm not needed — watcher daemon-managed)	injection
+    ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (       1 event(s)): done-task.status: done: PR https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)	injection
+exit=0
