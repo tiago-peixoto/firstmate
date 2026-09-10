@@ -1,0 +1,7 @@
+# Before/after: scout brief Lavish line with real lavish-axi 0.1.45 (below floor)
+
+## base (exit 0)
+66:If your deliverable is a visual artifact the captain will review and iterate on, you may host the Lavish review loop yourself (poll, revise, re-serve, staying alive) instead of handing it back to firstmate.
+
+## target (exit 0)
+66:Lavish is unavailable (lavish-axi is missing or below its supported version floor), so deliver your findings as a text report without Lavish, even for a visual deliverable.

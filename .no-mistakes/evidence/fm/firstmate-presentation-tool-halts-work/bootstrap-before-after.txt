@@ -1,0 +1,17 @@
+# Before/after: base 527aa7c vs target bb57ee3 bin/fm-bootstrap.sh, same isolated home + real toolchain
+
+## base, lavish-axi below
+MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup hooks)
+[exit 0]
+
+## target, lavish-axi below
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0]
+
+## base, lavish-axi absent
+MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup hooks)
+[exit 0]
+
+## target, lavish-axi absent
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0]

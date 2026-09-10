@@ -1,0 +1,13 @@
+# Adversarial: essential tools still gate dispatch. lavish-axi real 0.1.45 (below floor) AND gh-axi reports 0.1.28 (< GH_AXI_MIN 0.1.29) AND tasks-axi absent.
+
+## base
+MISSING: tasks-axi (install: npm install -g tasks-axi)
+MISSING: gh-axi (install: npm install -g gh-axi && gh-axi setup hooks)
+MISSING: lavish-axi (install: npm install -g lavish-axi && lavish-axi setup hooks)
+[exit 0]
+
+## target
+MISSING: tasks-axi (install: npm install -g tasks-axi)
+MISSING: gh-axi (install: npm install -g gh-axi && gh-axi setup hooks)
+PRESENTATION_UNAVAILABLE: lavish-axi (requires >=0.1.46; install: npm install -g lavish-axi && lavish-axi setup hooks) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish
+[exit 0]

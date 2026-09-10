@@ -1,0 +1,8 @@
+# Upgrade path after PRESENTATION_UNAVAILABLE: bin/fm-bootstrap.sh install lavish-axi (lavish-axi is no longer in COMMON_TOOLS).
+# npm and lavish-axi are recorder stubs on PATH so no global install or hook setup happens on this machine.
+$ bin/fm-bootstrap.sh install lavish-axi
+installing lavish-axi: npm install -g lavish-axi && lavish-axi setup hooks
+[exit 0]
+recorded invocations:
+npm install -g lavish-axi
+lavish-axi setup hooks

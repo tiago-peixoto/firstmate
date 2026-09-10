@@ -1,0 +1,29 @@
+# bin/fm-test-run.sh --list --changed selection when a change touches only bin/fm-bootstrap.sh
+# (git-archive snapshot of each revision, re-initialised as a throwaway repo, then a one-line comment appended to bin/fm-bootstrap.sh and committed)
+
+## revision 527aa7c: changed paths = bin/fm-bootstrap.sh 
+tests/fm-backlog-atomicity.test.sh
+tests/fm-bootstrap-network-parallel.test.sh
+tests/fm-bootstrap.test.sh
+tests/fm-fleet-sync.test.sh
+tests/fm-gate-refuse.test.sh
+tests/fm-gotmp.test.sh
+tests/fm-session-start.test.sh
+tests/fm-sessionstart-nudge.test.sh
+tests/fm-startup-network.test.sh
+tests/fm-tangle-guard.test.sh
+tests/fm-update.test.sh
+
+## revision bb57ee3: changed paths = bin/fm-bootstrap.sh 
+tests/fm-backlog-atomicity.test.sh
+tests/fm-bootstrap-network-parallel.test.sh
+tests/fm-bootstrap.test.sh
+tests/fm-fleet-sync.test.sh
+tests/fm-gate-refuse.test.sh
+tests/fm-gotmp.test.sh
+tests/fm-session-start.test.sh
+tests/fm-sessionstart-nudge.test.sh
+tests/fm-startup-network.test.sh
+tests/fm-tangle-guard.test.sh
+tests/fm-update.test.sh
+tests/fm-brief.test.sh
