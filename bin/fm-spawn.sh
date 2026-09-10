@@ -168,21 +168,22 @@
 #   secondmate receives the primary's read-only shared captain-preference file
 #   (fm-config-inherit-lib.sh). A successful launch clears pending inherited
 #   config reread generations because the new agent reads the converged files.
-#   Every Claude spawn resolves its configuration root once: a non-empty
-#   CLAUDE_CONFIG_DIR from the spawning environment wins, then the active home's
-#   readable config/claude-config-dir supplies one absolute existing directory,
-#   and otherwise Claude receives no prefix and uses its default configuration.
-#   Pi and Pi-signed optionally use config/pi-agent-dir: one absolute path plus
-#   one newline naming a readable, searchable existing directory. A ship/scout
-#   reads the active home's config; a secondmate reads its OWN home's config,
-#   including on relaunch and the host-local leg of a remote launch. This pin is
-#   home-local, never inherited. It overrides both caller and destination-shell
-#   PI_CODING_AGENT_DIR, including inside a filtered launch environment. Invalid
-#   or unreadable configuration refuses before endpoint creation. Absence leaves
-#   the existing ambient launch behavior unchanged. The pin follows the resolved
-#   harness, so a raw launch command whose executable is pi or pi-signed receives
-#   it too; other harnesses are unaffected. No credential files are read or
-#   transferred.
+#   Claude, Pi, and Pi-signed launches require an account pin
+#   (bin/fm-account-pin-lib.sh owns resolution, validation, and the preflight).
+#   Claude's root is a non-empty CLAUDE_CONFIG_DIR from the spawning environment,
+#   else the active home's config/claude-config-dir. Pi's root is
+#   config/pi-agent-dir: a ship/scout reads the active home's file; a secondmate
+#   reads its OWN home's file, including on relaunch and the host-local leg of a
+#   remote launch. The Pi pin is home-local, never inherited, and overrides both
+#   caller and destination-shell PI_CODING_AGENT_DIR, including inside a
+#   filtered launch environment. A missing, invalid, or unreadable pin, or a
+#   pinned root the runner's own non-interactive auth check cannot confirm,
+#   refuses before endpoint creation; nothing falls back to ~/.claude or
+#   ~/.pi/agent. A pinned Claude launch also sheds the environment credentials
+#   Claude ranks above its stored login. The pin follows the resolved harness,
+#   so a raw launch command whose executable is claude, pi, or pi-signed
+#   receives it too; other harnesses are unaffected. No credential files are
+#   read or transferred.
 #   --scout records kind=scout in the task's meta (report deliverable, scratch worktree;
 #   see AGENTS.md task lifecycle); --secondmate records kind=secondmate and launches in a
 #   provisioned firstmate home; the default is kind=ship.
@@ -396,6 +397,8 @@ PROJECTS="${FM_PROJECTS_OVERRIDE:-$FM_HOME/projects}"
 CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 # shellcheck source=bin/fm-config-inherit-lib.sh
 . "$SCRIPT_DIR/fm-config-inherit-lib.sh"
+# shellcheck source=bin/fm-account-pin-lib.sh
+. "$SCRIPT_DIR/fm-account-pin-lib.sh"
 if ! LAUNCH_ENV_ENABLED=$(fm_config_source_present "$CONFIG/launch-env-allowlist"); then
   exit 1
 fi
@@ -1640,35 +1643,7 @@ esac
 
 CLAUDE_CONFIG_ROOT=
 if [ "$HARNESS" = claude ]; then
-  CLAUDE_CONFIG_FILE="$CONFIG/claude-config-dir"
-  if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
-    CLAUDE_CONFIG_ROOT=$CLAUDE_CONFIG_DIR
-  elif [ -r "$CLAUDE_CONFIG_FILE" ]; then
-    if ! CLAUDE_CONFIG_ROOT=$(
-      {
-        IFS= read -r root || exit 1
-        extra=
-        if IFS= read -r extra || [ -n "$extra" ]; then
-          exit 1
-        fi
-        printf '%s' "$root"
-      } < "$CLAUDE_CONFIG_FILE"
-    ); then
-      echo "error: config/claude-config-dir must contain one absolute path followed by one newline (file: $CLAUDE_CONFIG_FILE)" >&2
-      exit 1
-    fi
-    case "$CLAUDE_CONFIG_ROOT" in
-      /*) ;;
-      *)
-        echo "error: config/claude-config-dir must contain one absolute path followed by one newline (file: $CLAUDE_CONFIG_FILE)" >&2
-        exit 1
-        ;;
-    esac
-    if [ ! -d "$CLAUDE_CONFIG_ROOT" ]; then
-      echo "error: config/claude-config-dir does not name an existing directory: $CLAUDE_CONFIG_ROOT (file: $CLAUDE_CONFIG_FILE)" >&2
-      exit 1
-    fi
-  fi
+  CLAUDE_CONFIG_ROOT=$(fm_account_pin_resolve claude "$CONFIG" "$FM_HOME") || exit 1
 fi
 
 # muse and gemini are verified as CREWMATE/SCOUT adapters only. A secondmate is
@@ -2234,30 +2209,18 @@ fi
 PI_AGENT_ROOT=
 case "$HARNESS" in
   pi|pi-signed)
-    PI_AGENT_CONFIG="$CONFIG/pi-agent-dir"
-    [ "$KIND" != secondmate ] || PI_AGENT_CONFIG="$PROJ_ABS/config/pi-agent-dir"
-    PI_AGENT_CONFIG_PRESENT=$(fm_config_source_present "$PI_AGENT_CONFIG") || exit 1
-    if [ "$PI_AGENT_CONFIG_PRESENT" = 1 ]; then
-      if [ ! -f "$PI_AGENT_CONFIG" ] || [ ! -r "$PI_AGENT_CONFIG" ]; then
-        echo "error: config/pi-agent-dir must be a readable regular file: $PI_AGENT_CONFIG" >&2
-        exit 1
-      fi
-      # Parse bytes before the shell can drop NULs or trailing newlines. Paths
-      # are literal, not shell expressions; spaces and quotes are valid.
-      if ! PI_AGENT_ROOT=$(perl -0777 -e '
-        my $body = <> // "";
-        $body =~ /\A(\/[^\x00-\x1f\x7f]*)\n\z/ or exit 1;
-        print $1;
-      ' -- "$PI_AGENT_CONFIG"); then
-        echo "error: config/pi-agent-dir must contain one absolute path followed by one newline: $PI_AGENT_CONFIG" >&2
-        exit 1
-      fi
-      if [ ! -d "$PI_AGENT_ROOT" ] || [ ! -r "$PI_AGENT_ROOT" ] || [ ! -x "$PI_AGENT_ROOT" ]; then
-        echo "error: config/pi-agent-dir must name a readable, searchable existing directory: $PI_AGENT_CONFIG" >&2
-        exit 1
-      fi
+    if [ "$KIND" = secondmate ]; then
+      PI_AGENT_ROOT=$(fm_account_pin_resolve "$HARNESS" "$PROJ_ABS/config" "$PROJ_ABS") || exit 1
+    else
+      PI_AGENT_ROOT=$(fm_account_pin_resolve "$HARNESS" "$CONFIG" "$FM_HOME") || exit 1
     fi
     ;;
+esac
+# An unauthenticated interactive Pi does not exit: it parks a live-looking pane
+# behind a /login hint. Ask the runner's own check first, under the pin.
+case "$HARNESS" in
+  claude) fm_account_pin_preflight claude "$CLAUDE_CONFIG_ROOT" claude "$MODEL" || exit 1 ;;
+  pi|pi-signed) fm_account_pin_preflight "$HARNESS" "$PI_AGENT_ROOT" "$PI_BIN" "$MODEL" || exit 1 ;;
 esac
 if [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
   SPAWN_TREEHOUSE_PROJECT_LOCK=$(fm_treehouse_project_lock_path "$PROJ_ABS") || {
@@ -3195,14 +3158,15 @@ fi
 # without it. bin/fm-claude-trust.sh owns the structural scope test and refuses
 # any path that is not this project's own isolated worktree; a refusal blocks the
 # spawn rather than launching a worker that would wedge on a dialog firstmate
-# cannot answer. Refusing here rather than beside the arm keeps this in the same
+# cannot answer. It writes the pinned store the launch below names, never the
+# ambient one. Refusing here rather than beside the arm keeps this in the same
 # class as the two worktree refusals just above: no temp root, no retired
 # relaunch wiring and no busy record exists yet to strand, so the refusal names
 # the endpoint the same way they do and leaves nothing else behind.
 if [ "$KIND" != secondmate ]; then
   case "$HARNESS" in
     claude*)
-      if ! "$FM_ROOT/bin/fm-claude-trust.sh" "$WT" "$PROJ_ABS" >/dev/null; then
+      if ! CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG_ROOT" "$FM_ROOT/bin/fm-claude-trust.sh" "$WT" "$PROJ_ABS" >/dev/null; then
         echo "error: could not pre-register Claude workspace trust for $WT; refusing to launch a claude worker that would wedge on the trust dialog; inspect window $T" >&2
         exit 1
       fi
@@ -3866,10 +3830,10 @@ esac
 # different CLAUDE_CONFIG_DIR (for example a work-vs-personal subscription split).
 # Forward the root resolved above (spawner CLAUDE_CONFIG_DIR, then the home's
 # config/claude-config-dir) onto the claude launch so the crewmate uses the
-# captain-selected credential/config store. Only when set; an unset value is
-# the single-store default and needs no prefix.
-if [ "$HARNESS" = claude ] && [ -n "$CLAUDE_CONFIG_ROOT" ]; then
-  LAUNCH="CLAUDE_CONFIG_DIR=$(shell_quote "$CLAUDE_CONFIG_ROOT") $LAUNCH"
+# captain-selected credential/config store, and shed the environment
+# credentials Claude would otherwise rank above that store's login.
+if [ "$HARNESS" = claude ]; then
+  LAUNCH="$(fm_account_pin_shed_prefix claude) CLAUDE_CONFIG_DIR=$(shell_quote "$CLAUDE_CONFIG_ROOT") $LAUNCH"
 fi
 if [ -n "$PI_AGENT_ROOT" ]; then
   LAUNCH="PI_CODING_AGENT_DIR=$(shell_quote "$PI_AGENT_ROOT") $LAUNCH"

@@ -19,8 +19,8 @@
 #      agent exited.
 set -u
 
-# shellcheck source=tests/lib.sh
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=tests/fixtures.sh
+. "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-control-lib.sh"
 # shellcheck source=/dev/null
@@ -133,6 +133,8 @@ new_case() {
   printf 'claude' > "$dir/fake/becomes"
   printf '%s\n' "fm-$id" > "$dir/fake/windows"
   make_tmux_stub "$dir"
+  fm_test_account_pins "$dir/home"
+  fm_test_fake_account_auth "$dir/fakebin"
   printf '%s\n' "$dir"
 }
 
@@ -320,8 +322,10 @@ test_pi_relaunch_keeps_home_account() {
         { cat "$dir/prior.meta"; printf 'kind=secondmate\nmode=secondmate\nhome=%s\n' "$dir/wt"; } > "$dir/home/state/root1.meta"
       fi
       printf 'PI_CODING_AGENT_DIR\n' > "$dir/home/config/launch-env-allowlist"
+      printf '{"defaultProvider":"fake"}\n' > "$pin/settings.json"
       cat > "$dir/fakebin/$harness" <<'SH'
 #!/bin/sh
+[ "${1:-} ${2:-}" != "auth check" ] || exec fm-fake-pi-auth "$@"
 [ "${1:-}" != --help ] || { printf '%s\n' '--tui-mode'; exit; }
 printf '%s|%s\n' "$PI_CODING_AGENT_DIR" "$FM_PI_HARNESS"
 SH
@@ -667,7 +671,11 @@ test_native_ultra_relaunch_preserves_profile_and_rejects_before_stop() {
   add_ship_task "$dir" "$id" pi
   printf pi > "$dir/fake/command"
   printf pi > "$dir/fake/becomes"
-  printf '#!/usr/bin/env bash\nprintf "Options: --tui-mode\\n"\n' > "$dir/fakebin/pi"
+  cat > "$dir/fakebin/pi" <<'SH'
+#!/usr/bin/env bash
+[ "${1:-} ${2:-}" != "auth check" ] || exec fm-fake-pi-auth "$@"
+printf "Options: --tui-mode\n"
+SH
   chmod +x "$dir/fakebin/pi"
   sed 's|^model=default$|model=codex-native/gpt-6-astra|; s/^effort=default$/effort=ultra/' \
     "$dir/home/state/$id.meta" > "$dir/home/state/$id.meta.tmp"

@@ -44,8 +44,8 @@
 #      flags still win.
 set -u
 
-# shellcheck source=tests/lib.sh
-. "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=tests/fixtures.sh
+. "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-ff-lib.sh"
 # shellcheck source=/dev/null
@@ -422,6 +422,7 @@ test_propagate_lib() {
 make_noop_tmux() {
   local dir=$1 fakebin="$1/fakebin"
   mkdir -p "$fakebin"
+  fm_test_fake_account_auth "$fakebin"
   cat > "$fakebin/tmux" <<'SH'
 #!/usr/bin/env bash
 exit 0
@@ -441,6 +442,21 @@ make_seeded_home() {
   printf 'charter\n' > "$home/data/charter.md"
 }
 
+# fm-spawn refuses a claude or Pi launch without an account pin, so each world
+# gets throwaway roots: Claude's in the primary home's config, and Pi's in the
+# secondmate home's own, which is where a secondmate's Pi pin is read. An
+# existing file is left alone, and FM_TEST_ACCOUNT_PINS=0 skips this for a case
+# about a missing pin.
+seed_account_pins() {  # <world> <secondmate-home>
+  local world=$1 home=$2
+  [ "${FM_TEST_ACCOUNT_PINS:-1}" = 1 ] || return 0
+  mkdir -p "$world/accounts/claude" "$world/accounts/pi" "$world/home/config" "$home/config"
+  printf '{"defaultProvider":"fake"}\n' > "$world/accounts/pi/settings.json"
+  [ -e "$world/home/config/claude-config-dir" ] \
+    || printf '%s\n' "$world/accounts/claude" > "$world/home/config/claude-config-dir"
+  [ -e "$home/config/pi-agent-dir" ] || printf '%s\n' "$world/accounts/pi" > "$home/config/pi-agent-dir"
+}
+
 # spawn_secondmate <world> <id> <home> [explicit-harness]
 # Runs fm-spawn.sh in secondmate mode. FM_ROOT is the real repo (so fm-harness.sh
 # resolves), the primary config dir is <world>/home/config, and CLAUDECODE pins
@@ -449,6 +465,7 @@ make_seeded_home() {
 spawn_secondmate() {
   local world=$1 id=$2 home=$3 harness=${4:-} fakebin
   mkdir -p "$world/home/state" "$world/home/data"
+  seed_account_pins "$world" "$home"
   fakebin=$(make_noop_tmux "$world/tmux-$id")
   # An empty harness must contribute zero args, not an empty positional; build the
   # arg list explicitly so the optional harness is omitted cleanly.
@@ -661,7 +678,12 @@ esac
 exit 0
 SH
   chmod +x "$fakebin/tmux"
-  fm_fake_exit0 "$fakebin" pi
+  fm_test_fake_account_auth "$fakebin"
+  cat > "$fakebin/pi" <<'SH'
+#!/bin/sh
+[ "${1:-} ${2:-}" != "auth check" ] || exec fm-fake-pi-auth "$@"
+SH
+  chmod +x "$fakebin/pi"
   printf '%s\n' "$fakebin"
 }
 
@@ -672,6 +694,7 @@ spawn_secondmate_capture() {
   local world=$1 id=$2 home=$3 launchlog=$4 fakebin
   shift 4
   mkdir -p "$world/home/state" "$world/home/data"
+  seed_account_pins "$world" "$home"
   fakebin=$(make_launch_capturing_tmux "$world/tmux-$id")
   : > "$launchlog"
   PATH="$fakebin:$BASE_PATH" TMUX='' CLAUDECODE=1 \
@@ -2562,7 +2585,7 @@ SH
 }
 
 test_spawn_claude_config_dir_precedence() {
-  local w sm launchlog launch configured env_root
+  local w sm launchlog launch configured env_root out status
 
   w="$TMP_ROOT/spawn-claude-config-file"
   sm="$w/sm"
@@ -2597,9 +2620,11 @@ test_spawn_claude_config_dir_precedence() {
   launchlog="$w/launch.log"
   mkdir -p "$w/home/config"
   make_seeded_home "$sm" sm
-  spawn_secondmate_capture "$w" sm "$sm" "$launchlog" --harness claude >/dev/null 2>&1
-  assert_not_contains "$(cat "$launchlog")" "CLAUDE_CONFIG_DIR=" \
-    "a Claude launch gained a config prefix when neither source was set"
+  out=$(FM_TEST_ACCOUNT_PINS=0 spawn_secondmate_capture "$w" sm "$sm" "$launchlog" --harness claude 2>&1); status=$?
+  expect_code 1 "$status" "a Claude launch with neither pin source set must refuse: $out"
+  assert_contains "$out" "require an account pin: create $w/home/config/claude-config-dir" \
+    "a Claude launch with neither pin source set did not name the file to create"
+  [ ! -s "$launchlog" ] || fail "a Claude launch with neither pin source set was delivered"
 
   w="$TMP_ROOT/spawn-non-claude-config"
   sm="$w/sm"
@@ -2612,7 +2637,7 @@ test_spawn_claude_config_dir_precedence() {
     spawn_secondmate_capture "$w" sm "$sm" "$launchlog" --harness codex >/dev/null 2>&1
   assert_not_contains "$(cat "$launchlog")" "CLAUDE_CONFIG_DIR=" \
     "a non-Claude launch gained the Claude configuration prefix"
-  pass "spawn: Claude configuration root resolves file, environment, unset, and non-Claude cases"
+  pass "spawn: Claude configuration root resolves file, environment, missing, and non-Claude cases"
 }
 
 test_spawn_refuses_invalid_claude_config_dir() {

@@ -92,6 +92,22 @@ wait_for_lines() {
   return 1
 }
 
+# <source-id> [tries]: wait until the source's claim names a live runner, then
+# print that runner's pid. reconcile starts the runner detached, so on a loaded
+# machine its claim can appear well after reconcile has returned.
+wait_for_runner() {
+  local src=$1 n=${2:-100} pid
+  for _ in $(seq 1 "$n"); do
+    pid=$(sed -n '2p' "$FM_PROCEVENT_CLAIM_ROOT/$src.claim" 2>/dev/null)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      printf '%s\n' "$pid"
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
 hold_source_lock() {  # <source-id> <ready-file> <release-file>
   local id=$1 ready=$2 release=$3 parent=$$
   FM_HOME="$TMP_ROOT/lock-helper-home" bash -c '
@@ -993,7 +1009,7 @@ TRIG2="$TMP_ROOT/trigger-two"
 pe_register "$HA" lavish shared-src -- "$BLOCKER" "$TRIG2" "shared" >/dev/null
 pe_register "$HB" lavish shared-src -- "$BLOCKER" "$TRIG2" "shared" >/dev/null
 pe "$HA" reconcile >/dev/null
-sleep 0.5
+wait_for_runner shared-src >/dev/null || fail "the first home's runner never claimed the shared source"
 out=$(pe "$HB" start shared-src)
 assert_contains "$out" "already owned" "a second home cannot own a source another home already owns"
 [ -z "$(wake_payloads "$HB")" ] || fail "the losing home published an event"
@@ -1016,11 +1032,7 @@ TRIG4="$TMP_ROOT/trigger-four"
 HZ="$TMP_ROOT/hz"; new_home "$HZ"
 pe_register "$HZ" lavish orphan-src -- "$BLOCKER" "$TRIG4" "orphan" >/dev/null
 pe "$HZ" reconcile >/dev/null
-sleep 0.5
-orphan_pid=$(sed -n '2p' "$FM_PROCEVENT_CLAIM_ROOT/orphan-src.claim" 2>/dev/null)
-if [ -z "$orphan_pid" ] || ! kill -0 "$orphan_pid" 2>/dev/null; then
-  fail "orphan fixture runner did not start"
-fi
+orphan_pid=$(wait_for_runner orphan-src) || fail "orphan fixture runner did not start"
 rm -f "$HZ/state/procevent/orphan-src.source"
 out=$(pe "$HZ" reconcile)
 assert_contains "$out" "stopped=1" "reconcile stops a runner whose registration was removed"
