@@ -12,7 +12,6 @@ set -u
 # shellcheck source=tests/fixtures.sh
 . "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 
-SPAWN="$ROOT/bin/fm-spawn.sh"
 TMP_ROOT=$(fm_test_tmproot fm-spawn-worktree-lease)
 
 make_lease_case() {
@@ -45,7 +44,7 @@ run_lease_spawn() {
 # The installed tool still hands out a process-less copy on a plain get, and
 # a durable lease is the thing that makes the same copy unreachable.
 test_plain_treehouse_get_reuses_a_processless_copy() {
-  local repo pool shell first second leased leased2
+  local repo pool first second leased leased2
   command -v treehouse >/dev/null 2>&1 || {
     pass "skipped: treehouse is not installed"
     return 0
