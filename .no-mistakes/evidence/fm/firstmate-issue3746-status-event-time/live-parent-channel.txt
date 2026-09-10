@@ -1,0 +1,51 @@
+
+### C1. Secondmate answers a marked request with the report helper
+$ env FM_HOME=/private/tmp/fm-live.3djwqQ/mate /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M26GG2J3W9EF8H268QPXN3HF/bin/fm-secondmate-report.sh done 0123456789abcdef audit clean
+parent state/mate.status tail: done [corr=0123456789abcdef] [at=1789075778]: audit clean (via-helper)
+PASS: report helper stamps the new parent event at append time
+
+### C2. Parent snapshot projects the mate's event time into secondmate_current
+{
+  "last_event": {
+    "state": "done",
+    "note": "audit clean (via-helper)",
+    "raw": "done [corr=0123456789abcdef] [at=1789075778]: audit clean (via-helper)",
+    "emitted_at_epoch": 1789075778,
+    "age_seconds": 0
+  },
+  "parent_event": {
+    "raw": "done [corr=0123456789abcdef] [at=1789075778]: audit clean (via-helper)",
+    "emitted_at_epoch": 1789075778,
+    "age_seconds": 0
+  }
+}
+PASS: task last_event carries the stamp
+PASS: secondmate parent_event uses the same event time and age
+
+### C3. Legacy parent event: backdated mtime must not become parent_event age
+{"raw":"working: legacy line from before the change","emitted_at_epoch":null,"age_seconds":null}
+PASS: legacy parent event keeps unknown time and age
+
+### C4. Ledger-first child delivery is stamped once; a retry adds nothing
+$ fm-inactive-reconcile.sh report child   # attempt 1
+rc=0
+$ fm-inactive-reconcile.sh report child   # attempt 2
+rc=0
+$ fm-inactive-reconcile.sh report child   # attempt 3
+rc=0
+parent state/mate.status:
+working: delegated scope
+done [corr=0123456789abcdef] [at=1789075778]: audit clean (via-helper)
+working: legacy line from before the change
+done [key=child-outcome-child-done-d3536f07] [at=1789075780]: child child done: PR https://example.test/owner/repo/pull/1 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off
+PASS: exactly one delivered child outcome after 3 attempts (got 1)
+PASS: delivered child outcome carries an emission time
+PASS: stamp sits in the head, key and note intact
+
+### C5. Crash after append, before receipt: retry must not re-publish (dedup ignores the time tag)
+d3536f07eab77f10ce9346d684c31958.reported
+rc=0
+done [key=child-outcome-child-done-d3536f07] [at=1789075780]: child child done: PR https://example.test/owner/repo/pull/1 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off
+PASS: receipt-less retry a second later still leaves one line, original time kept (got 1)
+
+FAILS=0

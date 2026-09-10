@@ -1,0 +1,44 @@
+
+### D1. Worker raises a decision the way its brief now tells it to
+needs-decision [key=api-shape] [at=1789076059]: pick REST or RPC
+working [at=1789076059]: unrelated progress
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=api-shape] needs-decision: pick REST or RPC
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS: stamped decision is listed as open under its key
+
+### D2. Captain answers through fm-send --resolve-key (real tmux pane)
+$ fm-send.sh t1 --resolve-key api-shape "go with REST"
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+rc=0
+inbox record: schema=fm-task-inbox.v1
+at=2026-09-10T21:34:20Z
+--
+
+pane shows:
+: Firstmate instruction waiting: list '/private/tmp/fm-live.b3rTMj/resolve/state
+/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handl
+ed file to '/private/tmp/fm-live.b3rTMj/resolve/state/t1.inbox'/handled/.
+state/t1.status:
+needs-decision [key=api-shape] [at=1789076059]: pick REST or RPC
+working [at=1789076059]: unrelated progress
+resolved [key=api-shape] [at=1789076060]: answered: go with REST
+PASS: close record is stamped with its emission time
+PASS: close record keeps key=api-shape and answered: go with REST
+drain after answer:
+
+PASS: decision no longer listed as open
+
+### D3. Adversarial: a mistyped key still refuses before anything is sent
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --resolve-key 'api-shap': no open decision or blocker with that key in /private/tmp/fm-live.b3rTMj/resolve/state/t1.status, and no captain-held task 'api-shap' or 't1-decision-api-shap' still open (already closed or mistyped). Re-check the OPEN DECISIONS listing, then resend without that key or with the right one; nothing was sent.
+PASS: no status line added by the refused send
+PASS: no second inbox record
+
+### D4. Adversarial: a stamped working line cannot close a stamped decision
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=port] needs-decision: 8080 or 9090
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS: keyed decision stays open after a stamped working line
+
+FAILS=0

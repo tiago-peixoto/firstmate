@@ -1,0 +1,24 @@
+
+### G. Idle crew: crew-state for unstamped vs stamped (fresh and 2h-old) last events
+'done: PR ready'                             -> state: done · source: status-log · PR ready
+'done [at=1789076042]: PR ready'             -> state: done · source: status-log · PR ready
+'done [at=1789068842]: PR ready'             -> state: done · source: status-log · PR ready
+PASS: same state/source for 'done: PR ready' legacy vs stamped fresh vs stamped 2h-old
+'needs-decision [key=k] : pick A or B'       -> state: parked · source: status-log · pick A or B
+'needs-decision [key=k] [at=1789076042]: pick A or B' -> state: parked · source: status-log · pick A or B
+'needs-decision [key=k] [at=1789068842]: pick A or B' -> state: parked · source: status-log · pick A or B
+PASS: same state/source for 'needs-decision [key=k] : pick A or B' legacy vs stamped fresh vs stamped 2h-old
+'blocked: need creds'                        -> state: blocked · source: status-log · need creds
+'blocked [at=1789076042]: need creds'        -> state: blocked · source: status-log · need creds
+'blocked [at=1789068842]: need creds'        -> state: blocked · source: status-log · need creds
+PASS: same state/source for 'blocked: need creds' legacy vs stamped fresh vs stamped 2h-old
+'failed: build broke'                        -> state: failed · source: status-log · build broke
+'failed [at=1789076042]: build broke'        -> state: failed · source: status-log · build broke
+'failed [at=1789068842]: build broke'        -> state: failed · source: status-log · build broke
+PASS: same state/source for 'failed: build broke' legacy vs stamped fresh vs stamped 2h-old
+'working: still going'                       -> state: working · source: status-log · still going
+'working [at=1789076042]: still going'       -> state: working · source: status-log · still going
+'working [at=1789068842]: still going'       -> state: working · source: status-log · still going
+PASS: same state/source for 'working: still going' legacy vs stamped fresh vs stamped 2h-old
+
+FAILS=0

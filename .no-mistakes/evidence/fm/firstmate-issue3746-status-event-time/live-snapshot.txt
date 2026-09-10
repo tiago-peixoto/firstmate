@@ -1,0 +1,38 @@
+
+### A. A crewmate follows the generated brief's status-append instruction
+   `echo "{state} [at=$(date +%s)]: {one short line}" >> '/private/tmp/fm-live.CFiaeE/snap/state/ship-task.status'`
+$ echo "done [at=$(date +%s)]: PR ready for review" >> '/private/tmp/fm-live.CFiaeE/snap/state/ship-task.status'   # as the crewmate would run it
+state/ship-task.status now:
+done [at=1789075694]: PR ready for review
+snapshot last_event: {"state":"done","note":"PR ready for review","raw":"done [at=1789075694]: PR ready for review","emitted_at_epoch":1789075694,"age_seconds":0}
+PASS: stamp is the append time
+PASS: verb and note unchanged by the stamp
+PASS: age derived from emission time (0..5s)
+
+### B. Unknown time stays unknown regardless of file mtime
+line='done: legacy line with no time'                   mtime=202001010000 -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime 202001010000)
+line='done: legacy line with no time'                   mtime=now          -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime now)
+line='done [at=bad]: malformed time'                    mtime=202001010000 -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime 202001010000)
+line='done [at=bad]: malformed time'                    mtime=now          -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime now)
+line='done [at=17:00]: malformed with colon'            mtime=202001010000 -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime 202001010000)
+line='done [at=17:00]: malformed with colon'            mtime=now          -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime now)
+line='done [at=1] [at=2]: duplicate time fields'        mtime=202001010000 -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime 202001010000)
+line='done [at=1] [at=2]: duplicate time fields'        mtime=now          -> emitted_at_epoch=null age_seconds=null
+PASS: unknown time -> null epoch and null age (mtime now)
+line='done [at=1789162095]: future time'                mtime=202001010000 -> emitted_at_epoch=1789162095 age_seconds=null
+PASS: future time kept, age unknown (mtime 202001010000)
+line='done [at=1789162095]: future time'                mtime=now          -> emitted_at_epoch=1789162095 age_seconds=null
+PASS: future time kept, age unknown (mtime now)
+line='done [at=1789072095]: emitted an hour ago'        mtime=202001010000 -> emitted_at_epoch=1789072095 age_seconds=3609
+PASS: age is from emission time, not mtime (mtime 202001010000)
+line='done [at=1789072095]: emitted an hour ago'        mtime=now          -> emitted_at_epoch=1789072095 age_seconds=3610
+PASS: age is from emission time, not mtime (mtime now)
+
+FAILS=0

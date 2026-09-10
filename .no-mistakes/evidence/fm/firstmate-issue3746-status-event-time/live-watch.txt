@@ -1,0 +1,43 @@
+crew-state: state: working · source: pane · harness busy (claude-hook)
+
+### E1. Default classification: stamped lines behave like their unstamped twins
+'working: done: mentioned in passing'                        (default FM_CAPTAIN_RE) -> absorbed  watcher stdout: 
+PASS: absorbed: working: done: mentioned in passing 
+'working [at=1789075889]: done: mentioned in passing'        (default FM_CAPTAIN_RE) -> absorbed  watcher stdout: 
+PASS: absorbed: working [at=1789075889]: done: mentioned in passing 
+'done: PR ready'                                             (default FM_CAPTAIN_RE) -> surfaced  watcher stdout: signal: /private/tmp/fm-live.Dol9M2/watch/state/t1.status 
+PASS: surfaced: done: PR ready 
+'done [at=1789075889]: PR ready'                             (default FM_CAPTAIN_RE) -> surfaced  watcher stdout: signal: /private/tmp/fm-live.Dol9M2/watch/state/t1.status 
+PASS: surfaced: done [at=1789075889]: PR ready 
+'needs-decision [key=k1] [at=1789075889]: A or B'            (default FM_CAPTAIN_RE) -> surfaced  watcher stdout: signal: /private/tmp/fm-live.Dol9M2/watch/state/t1.status 
+PASS: surfaced: needs-decision [key=k1] [at=1789075889]: A or B 
+
+### E2. FM_CAPTAIN_RE override: time tags (even malformed) never hide an actionable verb
+'done: audit complete'                                       FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed: -> surfaced  watcher stdout: signal: /private/tmp/fm-live.Dol9M2/watch/state/t1.status 
+PASS: surfaced: done: audit complete FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed:
+'done [at=1789075889]: audit complete'                       FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed: -> surfaced  watcher stdout: signal: /private/tmp/fm-live.Dol9M2/watch/state/t1.status 
+PASS: surfaced: done [at=1789075889]: audit complete FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed:
+'failed [at=17:00]: malformed colon tag'                     FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed: -> surfaced  watcher stdout: signal: /private/tmp/fm-live.Dol9M2/watch/state/t1.status 
+PASS: surfaced: failed [at=17:00]: malformed colon tag FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed:
+'blocked [at=bad] [at=17:00]: duplicate malformed tags'      FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed: -> surfaced  watcher stdout: signal: /private/tmp/fm-live.Dol9M2/watch/state/t1.status 
+PASS: surfaced: blocked [at=bad] [at=17:00]: duplicate malformed tags FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed:
+'working [at=1789075889]: done: mentioned'                   FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed: -> absorbed  watcher stdout: 
+PASS: absorbed: working [at=1789075889]: done: mentioned FM_CAPTAIN_RE=done:|needs-decision:|blocked:|failed:
+'blocked [at=1789075889]: waiting'                           FM_CAPTAIN_RE=done: -> absorbed  watcher stdout: 
+PASS: absorbed: blocked [at=1789075889]: waiting FM_CAPTAIN_RE=done:
+
+stored status bytes (never rewritten by classification):
+working: started
+working: done: mentioned in passing
+working [at=1789075889]: done: mentioned in passing
+done: PR ready
+done [at=1789075889]: PR ready
+needs-decision [key=k1] [at=1789075889]: A or B
+done: audit complete
+done [at=1789075889]: audit complete
+failed [at=17:00]: malformed colon tag
+blocked [at=bad] [at=17:00]: duplicate malformed tags
+working [at=1789075889]: done: mentioned
+blocked [at=1789075889]: waiting
+
+FAILS=0
