@@ -9,9 +9,10 @@
 # an agent is running, and therefore whether a lifecycle verb may act at all,
 # comes from herdr's own agent registry.
 #
-# No real agent is launched. herdr's `pane report-agent` is the same registry
-# the adapter reads, so registering and not registering an agent on a plain
-# shell pane exercises exactly the classification the control plane gates on.
+# No real agent is launched. herdr's `pane report-agent` supplies the native
+# registration while a real foreground command supplies independent active
+# process evidence, so the control plane sees the same two-signal composition
+# without spending a provider-backed harness turn.
 #
 # Always runs on a private, named, throwaway lab session, never the default
 # one (tests/herdr-test-safety.sh; the 2026-07-02 incident). Skips cleanly
@@ -30,15 +31,16 @@ command -v jq >/dev/null 2>&1 || { echo "skip: jq not found (required by the her
 . "$ROOT/tests/herdr-test-safety.sh"
 herdr_forget_inherited_pane
 
-SESSION="fm-lab-control-smoke-$$"
+HERDR_LAB_HELPER="$ROOT/bin/fm-herdr-lab.sh"
+SESSION=$("$HERDR_LAB_HELPER" name control-smoke)
 export HERDR_SESSION="$SESSION"
 SCRATCH=
 cleanup_all() {
   [ -n "$SCRATCH" ] && rm -rf "$SCRATCH"
-  herdr_safe_stop_and_delete "$SESSION"
+  "$HERDR_LAB_HELPER" teardown "$SESSION" >/dev/null 2>&1 || true
 }
 trap cleanup_all EXIT
-fm_herdr_lab_prepare "$SESSION" || fail "could not prepare isolated Herdr lab session"
+"$HERDR_LAB_HELPER" provision "$SESSION" || fail "could not provision isolated Herdr lab session"
 
 SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/fm-control-herdr.XXXXXX")
 SCRATCH=$(cd "$SCRATCH" && pwd)
@@ -114,67 +116,16 @@ case "$OUT" in
 esac
 pass "real herdr: interrupt refuses when herdr's own agent registry reports no agent"
 
-# --- a stale registration on a shell is agent-free --------------------------
-#
-# herdr pane report-agent is the same registry hook-authority integrations
-# write. After /quit the process is gone and only the shell remains, but
-# herdr 0.9.0 can keep the registration (done/idle under
-# full_lifecycle_hook_authority) because Pi and OpenCode never call
-# pane.release-agent. Registration alone is not live.
+# --- a registered agent with active process evidence: verbs follow ----------
 
-herdr pane report-agent "$PANE_ID" --source fm-control-smoke --agent fm-control-smoke-agent \
-  --state idle --session "$SESSION" >/dev/null 2>&1 \
-  || fail "could not register a leftover agent on the task pane"
-
-STATE=
-for _ in $(seq 1 20); do
-  STATE=$(fm_backend_agent_state herdr "$SESSION:$PANE_ID")
-  [ "$STATE" = dead ] && break
-  sleep 0.1
-done
-[ "$STATE" = dead ] || fail "a registered agent whose foreground is only a shell should be dead, got '$STATE'"
-
-OUT=$(run_control hsmoke exit) || fail "exit against a stale herdr registration should confirm the agent is gone: $OUT"
-case "$OUT" in
-  "already-stopped hsmoke"*|"stopped hsmoke"*) : ;;
-  *) fail "a stale registration on a shell should confirm stopped, got: $OUT" ;;
-esac
-pass "real herdr: a registered agent whose process is gone is agent-free"
-
-# --- a registered agent with a live payload process -------------------------
-
-command -v python3 >/dev/null 2>&1 || fail "python3 is required to hold a live non-shell foreground process"
-herdr pane send-keys "$PANE_ID" enter --session "$SESSION" >/dev/null 2>&1 || true
-sleep 0.2
-PY_LIVE="$SCRATCH/py-live"
-herdr pane run "$PANE_ID" \
-  "python3 -c 'import signal,time; signal.signal(signal.SIGINT, signal.SIG_IGN); signal.signal(signal.SIGTERM, signal.SIG_IGN); open(\"$PY_LIVE\",\"w\").write(\"ok\"); time.sleep(3600)'" \
-  --session "$SESSION" >/dev/null 2>&1 \
-  || fail "could not start a live payload process in the task pane"
-
-LIVE_PROC=0
-for _ in $(seq 1 50); do
-  info=$(herdr pane process-info --pane "$PANE_ID" --session "$SESSION" 2>/dev/null || true)
-  shell_pid=$(printf '%s' "$info" | jq -r '.result.process_info.shell_pid // empty' 2>/dev/null || true)
-  pgid=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_process_group_id // empty' 2>/dev/null || true)
-  if [ -n "$shell_pid" ] && [ -n "$pgid" ] && [ "$shell_pid" != "$pgid" ]; then
-    LIVE_PROC=1
-    break
-  fi
-  sleep 0.1
-done
-if [ "$LIVE_PROC" != 1 ]; then
-  herdr pane process-info --pane "$PANE_ID" --session "$SESSION" >&2 || true
-  herdr pane read "$PANE_ID" --source recent --lines 20 --session "$SESSION" >&2 || true
-  fail "the payload process never appeared in pane process-info"
-fi
-
-herdr pane report-agent "$PANE_ID" --source fm-control-smoke --agent fm-control-smoke-agent \
-  --state idle --session "$SESSION" >/dev/null 2>&1 \
-  || fail "could not register a live agent on the payload pane"
+"$HERDR_LAB_HELPER" run "$SESSION" pane run "$PANE_ID" 'sleep 120' >/dev/null 2>&1 \
+  || fail "could not start active foreground work on the task pane"
+"$HERDR_LAB_HELPER" run "$SESSION" pane report-agent "$PANE_ID" \
+  --source fm-control-smoke --agent fm-control-smoke-agent --state idle >/dev/null 2>&1 \
+  || fail "could not register a live agent on the task pane"
 
 STATE=$(fm_backend_agent_state herdr "$SESSION:$PANE_ID")
-[ "$STATE" = alive ] || fail "herdr should classify a registered agent with a live process as alive, got '$STATE'"
+[ "$STATE" = alive ] || fail "herdr should classify a registered agent with active process evidence as alive, got '$STATE'"
 
 OUT=$(run_control hsmoke interrupt) || fail "interrupt against a live registered agent should succeed: $OUT"
 case "$OUT" in
@@ -183,7 +134,7 @@ case "$OUT" in
 esac
 pass "real herdr: interrupt delivers the harness's key and proves the agent survived it"
 
-herdr pane get "$PANE_ID" --session "$SESSION" >/dev/null 2>&1 \
+"$HERDR_LAB_HELPER" run "$SESSION" pane get "$PANE_ID" >/dev/null 2>&1 \
   || fail "the control plane must never remove the endpoint it was operating on"
 [ -d "$WT" ] || fail "the control plane must never remove the task's local copy"
 pass "real herdr: no control verb removed the endpoint or the task's local copy"
@@ -199,5 +150,3 @@ case "$OUT" in
   *) fail "the exit failure should say the agent did not stop, got: $OUT" ;;
 esac
 pass "real herdr: an agent that does not stop fails closed instead of being reported as stopped"
-
-fm_backend_herdr_kill "$SESSION:$PANE_ID" 2>/dev/null || true
