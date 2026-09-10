@@ -1984,28 +1984,36 @@ fm_backend_herdr_explicit_close_pane_confirmed() {  # <session> <pane_id>
 # process-info`, never from process exit status.
 #
 #   live    - the payload names this pane and the foreground process group
-#             is not the pane's shell. A still-running agent owns that
-#             group: live Pi on herdr 0.9.0 reports shell_pid of zsh and
-#             foreground_process_group_id of the node/pi worker.
+#             is not a recognized shell nested under the pane shell. A
+#             still-running agent owns that group: live Pi on herdr 0.9.0
+#             reports shell_pid of zsh and foreground_process_group_id of
+#             the node/pi worker. An agent that has put a child shell in
+#             the foreground stays live because the parent walk hits that
+#             non-shell before the pane shell.
 #   gone    - the payload names this pane, the foreground list is a
 #             non-empty array, and the foreground process group is the
-#             shell. The agent process has left. Prompt helpers such as
-#             starship stay in the shell's group, so they do not look live.
-#             This is the stale-registration case after /quit when
-#             lifecycle-hook authority never called pane.release-agent
-#             (herdr 0.9.0 docs/integrations.mdx; Pi integration v8 and
-#             OpenCode v11 have no release call).
-#   unknown - missing, unparseable, pane-id mismatch, non-numeric pids, or
-#             an empty foreground list. The caller must fail safe toward
-#             refusal.
+#             pane's shell or a chain of recognized shells whose parent
+#             walk reaches that pane shell. The agent process has left.
+#             Prompt helpers such as starship stay in the shell's group,
+#             so they do not look live. A leftover nested zsh after
+#             `treehouse get` is the same case. This is the stale-
+#             registration case after /quit when lifecycle-hook authority
+#             never called pane.release-agent (herdr 0.9.0
+#             docs/integrations.mdx; Pi integration v8 and OpenCode v11
+#             have no release call).
+#   unknown - missing, unparseable, pane-id mismatch, non-numeric pids, an
+#             empty foreground list, or a parent walk that does not reach
+#             the pane shell. The caller must fail safe toward refusal.
 #
 # This is deliberately weaker than fm_backend_herdr_pane_idle_shell_pid:
 # that proof requires a lone sleeping shell with no children and is owned
 # by pane-death close. Liveness here only asks who owns the foreground
-# process group, a kernel fact, and does not guess a harness from an
+# process group and whether that group is a shell nested under the pane
+# shell, both kernel facts, and does not guess a harness from an
 # interpreter name.
 fm_backend_herdr_pane_agent_process_liveness_sample() {  # <session> <pane_id>
   local session=$1 pane_id=$2 info shell_pid foreground_pgid count
+  local ps_bin pid parent seen steps
   info=$(fm_backend_herdr_cli "$session" pane process-info --pane "$pane_id" 2>&1)
   printf '%s' "$info" | jq -e --arg pane "$pane_id" '
     .result.type == "pane_process_info"
@@ -2033,9 +2041,40 @@ fm_backend_herdr_pane_agent_process_liveness_sample() {  # <session> <pane_id>
   }
   if [ "$foreground_pgid" = "$shell_pid" ]; then
     printf 'gone'
-  else
-    printf 'live'
+    return 0
   fi
+  # A pooled spawn leaves the agent inside `treehouse get`'s nested
+  # interactive shell. After that agent exits, the foreground process
+  # group is the nested shell, not the pane shell. Walk parents from the
+  # group to the pane shell: only recognized shells means gone, a
+  # non-shell in the chain is a live agent (including one running a
+  # shell command), and a walk that never arrives is inconclusive.
+  ps_bin=${FM_HERDR_PS_BIN:-ps}
+  pid=$foreground_pgid
+  seen=
+  steps=0
+  while [ "$pid" != "$shell_pid" ]; do
+    steps=$((steps + 1))
+    [ "$steps" -le 32 ] || { printf 'unknown'; return 0; }
+    case " $seen " in
+      *" $pid "*) printf 'unknown'; return 0 ;;
+    esac
+    seen="$seen $pid"
+    if ! fm_backend_herdr_pid_is_bare_shell "$ps_bin" "$pid"; then
+      printf 'live'
+      return 0
+    fi
+    parent=$("$ps_bin" -p "$pid" -o ppid= 2>/dev/null | tr -d '[:space:]') || {
+      printf 'unknown'
+      return 0
+    }
+    case "$parent" in
+      ''|*[!0-9]*) printf 'unknown'; return 0 ;;
+    esac
+    [ "$parent" -gt 1 ] || { printf 'unknown'; return 0; }
+    pid=$parent
+  done
+  printf 'gone'
 }
 
 # Retry unknown samples only: a pane that just lost its agent can briefly
@@ -2070,19 +2109,19 @@ fm_backend_herdr_pane_agent_process_liveness() {  # <session> <pane_id>
 #              `agent get` responds with error code agent_not_found, or a
 #              registered agent_status (working, idle, done, blocked) is
 #              paired with process-info whose foreground process group is
-#              the pane's shell. The first is a restored husk
-#              (docs/herdr-backend.md "ID stability across a server
-#              restart"). The second is a stale registration whose process
-#              has exited: herdr 0.9.0 keeps hook-authority registrations
-#              until pane.release-agent, which the Pi and OpenCode
-#              integrations never send, and maps every leftover status
-#              including done to a still-listed agent. A registered-but-
-#              process-gone pane is agent-free for exit, relaunch, and husk
-#              replacement. An idle or blocked agent that still owns the
-#              foreground process group is live, not this state.
+#              the pane's shell or a nested shell under it. The first is a
+#              restored husk (docs/herdr-backend.md "ID stability across a
+#              server restart"). The second is a stale registration whose
+#              process has exited: herdr 0.9.0 keeps hook-authority
+#              registrations until pane.release-agent, which the Pi and
+#              OpenCode integrations never send, and maps every leftover
+#              status including done to a still-listed agent. A registered-
+#              but-process-gone pane is agent-free for exit, relaunch, and
+#              husk replacement. An idle or blocked agent that still owns
+#              the foreground process group is live, not this state.
 #   live     - `agent get` reports a real agent_status and process-info
-#              shows a foreground process group that is not the shell.
-#              Registration alone is not live.
+#              shows a foreground process group that is not a shell nested
+#              under the pane shell. Registration alone is not live.
 #   unknown  - anything else: an unparseable/unexpected response from any
 #              call, a pane get whose echoed pane_id does not round-trip,
 #              or a registered agent whose process-info cannot be read.

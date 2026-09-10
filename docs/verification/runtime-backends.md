@@ -698,6 +698,33 @@ foreground_processes=[{name:zsh, argv0:zsh}]
 The previous classifier mapped every registered status, including `done`, to live, so `fm-control exit` waited for dead and reported unconfirmed, and relaunch rolled back.
 The classifier now treats a registered agent whose foreground process group is the pane's shell as `no-agent` (recovery-grade `dead`), and fails safe to `unknown` when process-info is missing, empty, pane-mismatched, or has no numeric pids.
 
+Measured 2026-09-10 against the same Herdr 0.9.0 / Pi 0.85.1 lab: a pooled spawn's leftover nested zsh is a second gone case.
+
+`herdr pane process-info` reports `shell_pid` of the pane shell and `foreground_process_group_id` of the nested `/bin/zsh` after the agent exits (`foreground_processes=[{name:zsh, argv0:zsh}]`).
+`ps` shows that nested pid's parent is the pane shell, with no agent process remaining.
+The pgid-equals-shell-pid rule still classified that pane `live`, so a leftover `agent get` registration (`agent=pi`, `idle`) made `fm-control exit` report unconfirmed.
+
+The classifier now walks parents from the foreground process group to the pane shell.
+A walk of only recognized shells is `gone`.
+A non-shell in the chain, including a live agent that has put a child shell in the foreground, stays `live`.
+A walk that never reaches the pane shell stays inconclusive.
+
+Isolated lab evidence (never the fleet default), nested interactive `zsh` plus leftover `pane report-agent` registration:
+
+```text
+shell_pid=34790 foreground_process_group_id=37406
+foreground_processes=[{name:zsh, argv0:zsh, pid:37406}]
+ps: 34790 -zsh; 37406 zsh parent 34790
+agent=pi agent_status=idle
+before the parent walk: liveness=live pane_agent_state=live agent_state=alive
+fm-control exit: agent-state=alive exit=unconfirmed
+after the parent walk: agent_state=dead; fm-control exit: already-stopped
+```
+
+A live Pi started inside that nested shell reported `foreground_process_group_id` of `node`/`pi` and classified live.
+After `/quit`, process-info returned to the nested zsh group with no Pi process.
+A live non-shell payload that spawned a child `zsh` stayed `alive`; `fm-control exit` still failed closed when that payload ignored `/quit`.
+
 Refresh with:
 
 ```sh
