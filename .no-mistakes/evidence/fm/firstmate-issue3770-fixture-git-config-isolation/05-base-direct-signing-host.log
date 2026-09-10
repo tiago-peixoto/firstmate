@@ -1,0 +1,14 @@
+# host signing layer: GIT_CONFIG_GLOBAL=<scratch: commit.gpgsign=true gpg.program=gpg>, GNUPGHOME=<empty keyring>
+$ (base 527aa7c) bash tests/fm-project-origin.test.sh
+error: gpg failed to sign the data:
+gpg: skipped "Firstmate Tests <tests@example.invalid>": No secret key
+[GNUPG:] INV_SGNR 9 Firstmate Tests <tests@example.invalid>
+[GNUPG:] FAILURE sign 17
+gpg: signing failed: No secret key
+
+fatal: failed to write commit object
+warning: You appear to have cloned an empty repository.
+warning: You appear to have cloned an empty repository.
+warning: You appear to have cloned an empty repository.
+not ok - the file:// clone produced no worktree
+exit=1

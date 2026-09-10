@@ -1,0 +1,13 @@
+# MUTATION A: remove the runner's per-suite isolation line from run_script_bounded
+diff --git a/bin/fm-test-run.sh b/bin/fm-test-run.sh
+index 8817717..c24f277 100755
+--- a/bin/fm-test-run.sh
++++ b/bin/fm-test-run.sh
+@@ -2207,3 +2207,2 @@ run_script_bounded() {  # <script> <out> <stream> <id>
+   # shellcheck source=tests/git-config-helpers.sh
+-  . "$ROOT/tests/git-config-helpers.sh" || return
+   local rc
+$ (mutated copy) bash tests/fm-test-fixtures.test.sh
+not ok - runner inherited global config (jobs=1, timeout=0): FM_TEST_BEGIN 2026-09-10T19:50:39Z tests/fm-test-run.test.sh family=pure-contract-unit expected_gate_skip=none
+not ok - Git fixture config isolation
+exit=1

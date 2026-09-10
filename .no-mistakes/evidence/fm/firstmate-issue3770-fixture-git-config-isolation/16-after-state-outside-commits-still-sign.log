@@ -1,0 +1,16 @@
+# After all fixture runs: developer config untouched, outside commits still sign
+~/.gitconfig sha256 before: 1bcacaf1dd91c6be66ae03674991a8f7075e938767ca6197abb21ef9fbd86d43
+~/.gitconfig sha256 after:  1bcacaf1dd91c6be66ae03674991a8f7075e938767ca6197abb21ef9fbd86d43
+real host global commit.gpgsign still: true
+scratch host global layer after runs:
+[commit]
+	gpgsign = true
+[gpg]
+	program = gpg
+$ git commit outside any fixture (scratch host layer, no helper sourced)
+error: gpg failed to sign the data:
+gpg: skipped "dev <dev@example.invalid>": No secret key
+gpg: signing failed: No secret key
+exit=128  (non-zero = signing was still attempted outside fixtures)
+$ git -C <worktree> status --porcelain
+(end status)

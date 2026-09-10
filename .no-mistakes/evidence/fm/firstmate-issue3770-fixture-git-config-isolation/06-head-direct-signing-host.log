@@ -1,0 +1,6 @@
+# host signing layer: GIT_CONFIG_GLOBAL=<scratch: commit.gpgsign=true gpg.program=gpg>, GNUPGHOME=<empty keyring>
+$ (head 1246f09) bash tests/fm-project-origin.test.sh
+ok - ordinary clone URLs are accepted and clone with the command the remote host runs
+ok - executable transports, option-shaped values, and unusable spellings are refused
+ALL TESTS PASSED
+exit=0

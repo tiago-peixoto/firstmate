@@ -1,0 +1,20 @@
+# MUTATION B: remove tests/lib.sh's isolation line
+diff --git a/tests/lib.sh b/tests/lib.sh
+index c10f87f..2d6d77f 100644
+--- a/tests/lib.sh
++++ b/tests/lib.sh
+@@ -38,3 +38,2 @@ umask 022
+ # shellcheck source=tests/git-config-helpers.sh
+-. "$(dirname "${BASH_SOURCE[0]}")/git-config-helpers.sh"
+ 
+$ (mutated copy) bash tests/fm-test-fixtures.test.sh
+error: gpg failed to sign the data:
+not ok - Git fixture config isolation
+exit=1
+
+# host signing layer (scratch global commit.gpgsign=true, empty GNUPGHOME)
+$ (mutated copy) bash tests/fm-project-origin.test.sh
+gpg: skipped "Firstmate Tests <tests@example.invalid>": No secret key
+gpg: signing failed: No secret key
+not ok - the file:// clone produced no worktree
+exit=1

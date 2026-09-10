@@ -1,0 +1,19 @@
+# host signing layer as above; stock macOS bash via PATH=/bin:$PATH -> GNU bash, version 3.2.57(1)-release (arm64-apple-darwin25)
+$ (head 1246f09) PATH=/bin:$PATH bin/fm-test-run.sh tests/fm-project-origin.test.sh tests/fm-gitignore-config.test.sh
+FM_TEST_BEGIN 2026-09-10T19:45:08Z tests/fm-project-origin.test.sh family=standalone expected_gate_skip=none
+FM_TEST_BEGIN 2026-09-10T19:45:08Z tests/fm-gitignore-config.test.sh family=standalone expected_gate_skip=none
+ok - config/ is ignored as a directory, covering unlisted and nested paths
+ok - an unrelated path outside config/ remains visible to git
+ok - names starting with scratchpad are gitignored
+ok - no currently tracked path starts with scratchpad
+ok - scratchpad2/ does not make git status --porcelain dirty
+FM_TEST_END 2026-09-10T19:45:08Z tests/fm-gitignore-config.test.sh exit=0 duration_ms=591 gate_skip=false
+ok - ordinary clone URLs are accepted and clone with the command the remote host runs
+ok - executable transports, option-shaped values, and unusable spellings are refused
+ALL TESTS PASSED
+FM_TEST_END 2026-09-10T19:45:09Z tests/fm-project-origin.test.sh exit=0 duration_ms=1026 gate_skip=false
+FM_TEST_SUMMARY total=2 failed=0 skipped_gate=0 duration_ms=1726
+FM_TEST_SUMMARY_FAMILY family=standalone count=2 duration_ms=1617 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-project-origin.test.sh duration_ms=1026
+FM_TEST_SLOWEST rank=2 script=tests/fm-gitignore-config.test.sh duration_ms=591
+exit=0

@@ -1,0 +1,28 @@
+# Changed-file selection via the real CLI: bin/fm-test-run.sh --list --changed --base HEAD (scratch git copy of 1246f09)
+== changed: bin/fm-test-run.sh -> 36 scripts selected
+   selected     tests/fm-test-fixtures.test.sh
+   selected     tests/fm-test-run.test.sh
+   selected     tests/fm-ask-user-authority.test.sh
+   not selected tests/fm-project-origin.test.sh
+   not selected tests/fm-pr-merge.test.sh
+   not selected tests/fm-secondmate-safety.test.sh
+   not selected tests/fm-gitignore-config.test.sh
+   not selected tests/fm-afk-launch.test.sh
+== changed: bin/fm-test-isolation-proof.sh -> 35 scripts selected
+   not selected tests/fm-test-fixtures.test.sh
+   selected     tests/fm-test-run.test.sh
+   selected     tests/fm-ask-user-authority.test.sh
+   not selected tests/fm-project-origin.test.sh
+   not selected tests/fm-pr-merge.test.sh
+   not selected tests/fm-secondmate-safety.test.sh
+   not selected tests/fm-gitignore-config.test.sh
+   not selected tests/fm-afk-launch.test.sh
+== changed: tests/git-config-helpers.sh -> 195 scripts selected
+   selected     tests/fm-test-fixtures.test.sh
+   selected     tests/fm-test-run.test.sh
+   selected     tests/fm-ask-user-authority.test.sh
+   selected     tests/fm-project-origin.test.sh
+   selected     tests/fm-pr-merge.test.sh
+   selected     tests/fm-secondmate-safety.test.sh
+   selected     tests/fm-gitignore-config.test.sh
+   selected     tests/fm-afk-launch.test.sh
