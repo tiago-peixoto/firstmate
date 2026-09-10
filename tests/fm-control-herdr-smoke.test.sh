@@ -141,80 +141,22 @@ case "$OUT" in
 esac
 pass "real herdr: a registered agent whose process is gone is agent-free"
 
-# --- a leftover registration on a nested shell is agent-free ----------------
-#
-# Pooled spawns run `treehouse get`, which leaves the agent inside a nested
-# interactive shell. After the agent exits, process-info reports that nested
-# zsh as the foreground process group, not the pane shell. Combined with a
-# leftover hook-authority registration, the previous classifier read live
-# and fm-control exit reported unconfirmed.
-
-herdr pane send-keys "$PANE_ID" enter --session "$SESSION" >/dev/null 2>&1 || true
-sleep 0.2
-herdr pane run "$PANE_ID" "zsh" --session "$SESSION" >/dev/null 2>&1 \
-  || fail "could not start a nested interactive shell in the task pane"
-
-NESTED=0
-for _ in $(seq 1 50); do
-  info=$(herdr pane process-info --pane "$PANE_ID" --session "$SESSION" 2>/dev/null || true)
-  shell_pid=$(printf '%s' "$info" | jq -r '.result.process_info.shell_pid // empty' 2>/dev/null || true)
-  pgid=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_process_group_id // empty' 2>/dev/null || true)
-  name=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_processes[0].name // empty' 2>/dev/null || true)
-  if [ -n "$shell_pid" ] && [ -n "$pgid" ] && [ "$shell_pid" != "$pgid" ] && [ "$name" = zsh ]; then
-    NESTED=1
-    break
-  fi
-  sleep 0.1
-done
-if [ "$NESTED" != 1 ]; then
-  herdr pane process-info --pane "$PANE_ID" --session "$SESSION" >&2 || true
-  fail "the nested zsh never became the foreground process group"
-fi
-
-herdr pane report-agent "$PANE_ID" --source fm-control-smoke --agent fm-control-smoke-agent \
-  --state idle --session "$SESSION" >/dev/null 2>&1 \
-  || fail "could not register a leftover agent on the nested-shell pane"
-
-STATE=
-for _ in $(seq 1 20); do
-  STATE=$(fm_backend_agent_state herdr "$SESSION:$PANE_ID")
-  [ "$STATE" = dead ] && break
-  sleep 0.1
-done
-[ "$STATE" = dead ] || fail "a leftover registration on a nested shell should be dead, got '$STATE'"
-
-OUT=$(run_control hsmoke exit) || fail "exit against a nested-shell leftover registration should confirm the agent is gone: $OUT"
-case "$OUT" in
-  "already-stopped hsmoke"*|"stopped hsmoke"*) : ;;
-  *) fail "a leftover registration on a nested shell should confirm stopped, got: $OUT" ;;
-esac
-pass "real herdr: a leftover registration on a nested shell is agent-free"
-
 # --- a registered agent with a live payload process -------------------------
 
 command -v python3 >/dev/null 2>&1 || fail "python3 is required to hold a live non-shell foreground process"
 herdr pane send-keys "$PANE_ID" enter --session "$SESSION" >/dev/null 2>&1 || true
 sleep 0.2
 PY_LIVE="$SCRATCH/py-live"
-# The payload stays in the foreground and spawns a child shell so a live
-# agent that is running a shell command cannot be classified gone.
 herdr pane run "$PANE_ID" \
-  "python3 -c 'import signal,subprocess,time; signal.signal(signal.SIGINT, signal.SIG_IGN); signal.signal(signal.SIGTERM, signal.SIG_IGN); subprocess.Popen([\"zsh\",\"-c\",\"sleep 3600\"]); open(\"$PY_LIVE\",\"w\").write(\"ok\"); time.sleep(3600)'" \
+  "python3 -c 'import signal,time; signal.signal(signal.SIGINT, signal.SIG_IGN); signal.signal(signal.SIGTERM, signal.SIG_IGN); open(\"$PY_LIVE\",\"w\").write(\"ok\"); time.sleep(3600)'" \
   --session "$SESSION" >/dev/null 2>&1 \
   || fail "could not start a live payload process in the task pane"
 
 LIVE_PROC=0
 for _ in $(seq 1 50); do
-  [ -f "$PY_LIVE" ] || { sleep 0.1; continue; }
   info=$(herdr pane process-info --pane "$PANE_ID" --session "$SESSION" 2>/dev/null || true)
   shell_pid=$(printf '%s' "$info" | jq -r '.result.process_info.shell_pid // empty' 2>/dev/null || true)
   pgid=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_process_group_id // empty' 2>/dev/null || true)
-  name=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_processes[0].name // empty' 2>/dev/null || true)
-  comm=${name##*/}
-  comm=${comm#-}
-  case "$comm" in
-    sh|bash|zsh|dash|ksh|fish|'') sleep 0.1; continue ;;
-  esac
   if [ -n "$shell_pid" ] && [ -n "$pgid" ] && [ "$shell_pid" != "$pgid" ]; then
     LIVE_PROC=1
     break

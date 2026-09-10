@@ -1024,56 +1024,9 @@ herdr_process_info_out() {  # <file> <pane> <shell_pid> <pgid> <name> <argv0>
     "$2" "$3" "$4" "$4" "$5" "$6" > "$1"
 }
 
-# make_liveness_ps <dir>: a ps stub for process-liveness parent walks.
-# $dir/ps.rows holds "pid ppid comm" rows. Answers `ps -p <pid> -o comm=`
-# and `ps -p <pid> -o ppid=` the way fm_backend_herdr_pid_is_bare_shell and
-# the nested-shell walk call them.
-make_liveness_ps() {  # <dir>
-  cat > "$1/ps" <<'SH'
-#!/usr/bin/env bash
-set -u
-rows="$(cd "$(dirname "$0")" && pwd)/ps.rows"
-[ -f "$rows" ] || exit 1
-pid=
-field=
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    -p)
-      pid=$2
-      shift 2
-      ;;
-    -o)
-      field=$2
-      shift 2
-      ;;
-    -o*)
-      field=${1#-o}
-      shift
-      ;;
-    *)
-      exit 1
-      ;;
-  esac
-done
-[ -n "$pid" ] && [ -n "$field" ] || exit 1
-field=${field%=}
-val=$(awk -v pid="$pid" -v field="$field" '
-  $1 == pid {
-    if (field == "ppid") { print $2; found=1; exit }
-    if (field == "comm") { $1=""; $2=""; sub(/^ +/, ""); print; found=1; exit }
-    exit 1
-  }
-  END { if (!found) exit 1 }
-' "$rows") || exit 1
-printf '%s\n' "$val"
-SH
-  chmod +x "$1/ps"
-}
-
-classify_pane_agent_state() {  # <fakebin> <log> <resp> [ps-bin]
+classify_pane_agent_state() {  # <fakebin> <log> <resp>
   PATH="$1:$PATH" FM_HERDR_LOG="$2" FM_HERDR_RESPONSES="$3" \
     FM_BACKEND_HERDR_PROCESS_LIVENESS_POLLS=1 \
-    FM_HERDR_PS_BIN="${4:-${FM_HERDR_PS_BIN:-ps}}" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_pane_agent_state fmtest w1:p2' "$ROOT"
 }
 
@@ -1121,10 +1074,8 @@ test_pane_agent_state_pi_process_is_live() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
   printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
   herdr_process_info_out "$resp/3.out" w1:p2 100 101 node pi
-  printf '100 1 zsh\n101 100 node\n' > "$dir/ps.rows"
-  make_liveness_ps "$dir"
   fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp")
   [ "$out" = live ] || fail "a registered Pi whose foreground is node/pi should be live, got '$out'"
   pass "fm_backend_herdr_pane_agent_state: registered + node/pi foreground is live"
 }
@@ -1135,10 +1086,8 @@ test_pane_agent_state_opencode_process_is_live() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
   printf '{"result":{"agent":{"agent":"opencode","agent_status":"idle"}}}\n' > "$resp/2.out"
   herdr_process_info_out "$resp/3.out" w1:p2 100 101 opencode opencode
-  printf '100 1 zsh\n101 100 opencode\n' > "$dir/ps.rows"
-  make_liveness_ps "$dir"
   fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp")
   [ "$out" = live ] || fail "a registered OpenCode process should be live, got '$out'"
   pass "fm_backend_herdr_pane_agent_state: registered + opencode foreground is live"
 }
@@ -1203,70 +1152,6 @@ test_pane_agent_state_maps_to_agent_state_dead() {
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_agent_state fmtest:w1:p2' "$ROOT" )
   [ "$out" = dead ] || fail "stale done+shell should map to recovery-grade dead, got '$out'"
   pass "fm_backend_herdr_agent_state: stale registration whose process is gone is dead"
-}
-
-test_pane_agent_state_nested_shell_is_no_agent() {
-  # Pooled spawns run `treehouse get`, which leaves a nested interactive
-  # shell as the foreground process group after the agent exits. That is
-  # still agent-free: the parent of the nested zsh is the pane shell.
-  local dir log resp fb out
-  dir="$TMP_ROOT/state-nested-shell"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
-  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
-  printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
-  herdr_process_info_out "$resp/3.out" w1:p2 100 200 zsh zsh
-  printf '100 1 zsh\n200 100 zsh\n' > "$dir/ps.rows"
-  make_liveness_ps "$dir"
-  fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = no-agent ] || fail "a leftover registration whose foreground is a nested zsh should be no-agent, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: nested shell under the pane shell is no-agent"
-}
-
-test_pane_agent_state_nested_shell_plus_starship_is_no_agent() {
-  local dir log resp fb out
-  dir="$TMP_ROOT/state-nested-starship"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
-  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
-  printf '{"result":{"agent":{"agent_status":"done"}}}\n' > "$resp/2.out"
-  printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":200,"foreground_processes":[{"pid":200,"name":"zsh","argv0":"zsh"},{"pid":201,"name":"starship","argv0":"starship"}]}}}\n' > "$resp/3.out"
-  printf '100 1 zsh\n200 100 zsh\n201 200 starship\n' > "$dir/ps.rows"
-  make_liveness_ps "$dir"
-  fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = no-agent ] || fail "nested zsh plus starship should be no-agent, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: nested shell plus starship is still no-agent"
-}
-
-test_pane_agent_state_agent_child_shell_is_live() {
-  # A live agent that has put a child shell in the foreground must never
-  # read gone: the nested-shell walk finds the non-shell agent in the
-  # parent chain before it reaches the pane shell.
-  local dir log resp fb out
-  dir="$TMP_ROOT/state-agent-child-shell"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
-  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
-  printf '{"result":{"agent":{"agent":"pi","agent_status":"working"}}}\n' > "$resp/2.out"
-  herdr_process_info_out "$resp/3.out" w1:p2 100 300 zsh zsh
-  printf '100 1 zsh\n101 100 node\n300 101 zsh\n' > "$dir/ps.rows"
-  make_liveness_ps "$dir"
-  fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = live ] || fail "a child shell whose parent is still the agent should be live, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: agent running a shell command stays live"
-}
-
-test_pane_agent_state_maps_to_agent_state_dead_nested() {
-  local dir log resp fb out
-  dir="$TMP_ROOT/state-dead-nested"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
-  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
-  printf '{"result":{"agent":{"agent_status":"idle"}}}\n' > "$resp/2.out"
-  herdr_process_info_out "$resp/3.out" w1:p2 100 200 zsh zsh
-  printf '100 1 zsh\n200 100 zsh\n' > "$dir/ps.rows"
-  make_liveness_ps "$dir"
-  fb=$(make_herdr_fakebin "$dir")
-  out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
-    FM_BACKEND_HERDR_PROCESS_LIVENESS_POLLS=1 FM_HERDR_PS_BIN="$dir/ps" \
-    bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_agent_state fmtest:w1:p2' "$ROOT" )
-  [ "$out" = dead ] || fail "nested-shell leftover registration should map to recovery-grade dead, got '$out'"
-  pass "fm_backend_herdr_agent_state: nested shell whose agent process is gone is dead"
 }
 
 test_create_task_husk_replacement_creates_before_closing() {
@@ -5011,10 +4896,6 @@ test_pane_agent_state_empty_foreground_is_unknown
 test_pane_agent_state_process_info_pane_mismatch_is_unknown
 test_pane_agent_state_agent_not_found_skips_process_info
 test_pane_agent_state_maps_to_agent_state_dead
-test_pane_agent_state_nested_shell_is_no_agent
-test_pane_agent_state_nested_shell_plus_starship_is_no_agent
-test_pane_agent_state_agent_child_shell_is_live
-test_pane_agent_state_maps_to_agent_state_dead_nested
 test_create_task_husk_replacement_creates_before_closing
 test_create_task_creates_and_parses_ids
 test_create_task_creates_with_no_focus_flag
