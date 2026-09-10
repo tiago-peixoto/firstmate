@@ -324,6 +324,7 @@ new_world() {
   mkdir -p "$w/home/state" "$w/home/config"
   touch "$w/home/state/.last-watcher-beat"
   printf 'codex\n' > "$w/home/config/crew-harness"
+  fm_test_account_pins "$w/home"
   printf '%s\n' "$w"
 }
 
@@ -338,7 +339,6 @@ add_sm_home() {
   printf '%s\n' "$id" > "$home/.fm-secondmate-home"
   printf '# Firstmate\n' > "$home/AGENTS.md"
   printf 'charter\n' > "$home/data/charter.md"
-  fm_test_pi_account_pin "$home"
   {
     printf 'window=%s\n' "$window"
     printf 'kind=secondmate\n'

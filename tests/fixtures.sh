@@ -240,23 +240,16 @@ fm_test_spawn_home() {
 # fm_test_account_pins <home>
 # Pins Claude and Pi launches from <home> to throwaway account roots under it,
 # because bin/fm-spawn.sh refuses a claude, pi, or pi-signed launch without a
-# pin (bin/fm-account-pin-lib.sh). A test that exercises a missing or invalid
-# pin removes or rewrites the file afterwards.
+# pin (bin/fm-account-pin-lib.sh). Pins are home-local: a worker reads its own
+# home's, and a secondmate launch reads the launching home's. The Pi root names
+# a default provider so a launch without --model has something to preflight. A
+# test that exercises a missing or invalid pin removes or rewrites the file
+# afterwards.
 fm_test_account_pins() {
   local home=$1
-  mkdir -p "$home/config" "$home/accounts/claude"
-  printf '%s\n' "$home/accounts/claude" > "$home/config/claude-config-dir"
-  fm_test_pi_account_pin "$home"
-}
-
-# fm_test_pi_account_pin <home>
-# Pins only Pi, as a secondmate home needs: its Claude pin is inherited from
-# the primary, while its Pi pin is its own. The Pi root names a default
-# provider so a launch without --model has something to preflight.
-fm_test_pi_account_pin() {
-  local home=$1
-  mkdir -p "$home/config" "$home/accounts/pi"
+  mkdir -p "$home/config" "$home/accounts/claude" "$home/accounts/pi"
   printf '{"defaultProvider":"fake"}\n' > "$home/accounts/pi/settings.json"
+  printf '%s\n' "$home/accounts/claude" > "$home/config/claude-config-dir"
   printf '%s\n' "$home/accounts/pi" > "$home/config/pi-agent-dir"
 }
 
@@ -348,11 +341,11 @@ fm_test_run_spawn() {
   shift 3
   # Every spawn here runs against a throwaway HOME, so nothing a spawn touches
   # outside its pinned account root can reach the developer's real one.
-  # CLAUDE_CONFIG_DIR is pinned EMPTY: an ambient value outranks the home's
-  # config/claude-config-dir (fm_test_account_pins), so a value inherited from
-  # the developer's shell would point the launch and its trust pre-registration
-  # at the developer's real Claude store. A test that needs the ambient case
-  # opts in through FM_TEST_CLAUDE_CONFIG_DIR.
+  # CLAUDE_CONFIG_DIR is pinned EMPTY: a secondmate launch ranks an ambient
+  # value above the launching home's config/claude-config-dir
+  # (fm_test_account_pins), so a value inherited from the developer's shell
+  # would point that launch at the developer's real Claude store. A test that
+  # needs the ambient case opts in through FM_TEST_CLAUDE_CONFIG_DIR.
   local spawn_home=$home/user-home
   mkdir -p "$spawn_home"
   FM_ROOT_OVERRIDE='' FM_HOME="$home" HOME="$spawn_home" \

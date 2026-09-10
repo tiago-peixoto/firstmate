@@ -80,7 +80,8 @@ enable_dispatch_profile() {
 make_seeded_secondmate_home() {
   local home=$1 id=$2
   mkdir -p "$home/bin" "$home/data"
-  # A secondmate's Pi pin is its own home's (fm_test_account_pins).
+  # The secondmate home's own pins are its workers' accounts, which its
+  # supervisor launch must never use (fm_test_account_pins).
   fm_test_account_pins "$home"
   printf '# Firstmate\n' > "$home/AGENTS.md"
   printf '%s\n' "$id" > "$home/.fm-secondmate-home"
@@ -809,23 +810,25 @@ test_batch_forwards_shared_profile_flags() {
   pass "batch dispatch forwards shared --harness, --model, and --effort to every pair"
 }
 
-test_claude_forwards_firstmate_config_dir_when_set() {
+test_claude_worker_ignores_spawning_config_dir() {
   local rec id out status launch
   id=profile-claude-cfgdir-z17
   rec=$(make_spawn_case profile-claude-cfgdir claude "$id")
   read_case_record "$rec"
 
-  # The ambient root must exist: fm-spawn validates it as the account pin and
-  # pre-registers workspace trust in it (bin/fm-claude-trust.sh).
-  mkdir -p "$CASE_DIR/claude-work"
-  out=$(FM_TEST_CLAUDE_CONFIG_DIR="$CASE_DIR/claude-work" \
+  # Inside a secondmate the spawning CLAUDE_CONFIG_DIR is the supervisor's own
+  # account, so a worker must still launch on its home's pin.
+  mkdir -p "$CASE_DIR/supervisor-account"
+  out=$(FM_TEST_CLAUDE_CONFIG_DIR="$CASE_DIR/supervisor-account" \
     run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id" "$PROJ_DIR")
   status=$?
-  expect_code 0 "$status" "claude spawn with CLAUDE_CONFIG_DIR set should succeed"
+  expect_code 0 "$status" "claude spawn beside another CLAUDE_CONFIG_DIR should succeed: $out"
   launch=$(cat "$LAUNCH_LOG")
-  assert_contains "$launch" "CLAUDE_CONFIG_DIR='$CASE_DIR/claude-work' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-permissions --settings '{\"feedbackDrafts\":\"off\",\"attribution\":{\"commit\":\"\",\"pr\":\"\",\"sessionUrl\":false}}'" \
-    "claude launch did not forward firstmate's CLAUDE_CONFIG_DIR to the crewmate pane"
-  pass "claude forwards firstmate's CLAUDE_CONFIG_DIR so the crewmate uses the same credential store"
+  assert_contains "$launch" "CLAUDE_CONFIG_DIR='$HOME_DIR/accounts/claude' env -u CURSOR_AGENT" \
+    "a claude worker did not launch on its home's pin"
+  assert_not_contains "$launch" "$CASE_DIR/supervisor-account" \
+    "a claude worker launched on the spawning CLAUDE_CONFIG_DIR"
+  pass "a claude worker launches on its home's pin even when the spawning CLAUDE_CONFIG_DIR names another account"
 }
 
 # A Claude launch runs with its pin and without the environment credentials
@@ -1173,11 +1176,10 @@ test_pi_home_account_selection() {
           sm="$CASE_DIR/secondmate"
           make_seeded_secondmate_home "$sm" "$id"
           mkdir -p "$sm/config" "$sm/state"
-          printf '%s\n' "$pin" > "$sm/config/pi-agent-dir"
-          printf '%s\n' "$parent" > "$HOME_DIR/config/pi-agent-dir"
+          printf '%s\n' "$parent" > "$sm/config/pi-agent-dir"
           out=$(PI_CODING_AGENT_DIR="$parent" run_spawn "$HOME_DIR" "$sm" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
             "$id" "$sm" --secondmate --harness "$harness" --model sentinel/model --effort medium); status=$?
-          [ "$(cat "$sm/config/pi-agent-dir")" = "$pin" ] || fail "inheritance overwrote secondmate Pi pin"
+          [ "$(cat "$sm/config/pi-agent-dir")" = "$parent" ] || fail "inheritance overwrote secondmate Pi pin"
         elif [ "$kind" = ship ]; then
           out=$(PI_CODING_AGENT_DIR="$parent" run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
             "$id" "$PROJ_DIR" --harness "$harness" --model sentinel/model --effort xhigh); status=$?
@@ -1208,7 +1210,7 @@ SH
           [ "$kind" != secondmate ] || expected="$pin|$harness|sentinel/model|medium"
           [ "$result" = "$expected" ] || fail "Pi launch selected the wrong root/identity: $result"
         done
-        pass "$harness $kind $filter: home pin beats caller and destination roots in actual shell execution"
+        pass "$harness $kind $filter: the launching home's pin beats caller, destination, and secondmate-home roots in actual shell execution"
       done
     done
   done
@@ -1225,7 +1227,6 @@ test_pi_home_account_invalid_refuses() {
       if [ "$kind" = secondmate ]; then
         make_seeded_secondmate_home "$CASE_DIR/sm" "$id"
         mkdir -p "$CASE_DIR/sm/config" "$CASE_DIR/sm/state"
-        cfg="$CASE_DIR/sm/config/pi-agent-dir"
       fi
       pin="$CASE_DIR/work-root"
       mkdir -p "$pin"
@@ -1475,7 +1476,7 @@ test_pi_signed_threads_shared_pi_profile_and_preserves_identity
 test_pi_signed_missing_binary_refuses_before_endpoint_or_metadata
 test_pi_signed_persistent_secondmate_uses_pi_extensions_and_identity
 test_batch_forwards_shared_profile_flags
-test_claude_forwards_firstmate_config_dir_when_set
+test_claude_worker_ignores_spawning_config_dir
 test_claude_launch_sheds_environment_credentials
 test_non_claude_harness_ignores_config_dir
 test_claude_crewmate_launch_carries_the_attribution_policy

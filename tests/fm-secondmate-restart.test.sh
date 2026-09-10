@@ -150,7 +150,6 @@ add_local_mate() {
   local home="$dir/home" smhome="$dir/$id-home"
   fm_git_worktree "$dir/$id-repo" "$smhome" "sm-$id"
   mkdir -p "$smhome/state" "$smhome/data" "$smhome/bin" "$smhome/config" "$home/data/$id"
-  printf '%s\n' "$home/accounts/pi" > "$smhome/config/pi-agent-dir"
   printf '%s\n' "$id" > "$smhome/.fm-secondmate-home"
   printf '# agents\n' > "$smhome/AGENTS.md"
   printf '# charter\n' > "$home/data/$id/brief.md"

@@ -170,19 +170,25 @@
 #   config reread generations because the new agent reads the converged files.
 #   Claude, Pi, and Pi-signed launches require an account pin
 #   (bin/fm-account-pin-lib.sh owns resolution, validation, and the preflight).
-#   Claude's root is a non-empty CLAUDE_CONFIG_DIR from the spawning environment,
-#   else the active home's config/claude-config-dir. Pi's root is
-#   config/pi-agent-dir: a ship/scout reads the active home's file; a secondmate
-#   reads its OWN home's file, including on relaunch and the host-local leg of a
-#   remote launch. The Pi pin is home-local, never inherited, and overrides both
-#   caller and destination-shell PI_CODING_AGENT_DIR, including inside a
-#   filtered launch environment. A missing, invalid, or unreadable pin, or a
-#   pinned root the runner's own non-interactive auth check cannot confirm,
-#   refuses before endpoint creation; nothing falls back to ~/.claude or
-#   ~/.pi/agent. A pinned Claude launch also sheds the environment credentials
-#   Claude ranks above its stored login. The pin follows the resolved harness,
-#   so a raw launch command whose executable is claude, pi, or pi-signed
-#   receives it too; other harnesses are unaffected. No credential files are
+#   Both pins are home-local, never inherited, and name the accounts that
+#   home's workers use: a ship/scout reads only the active home's
+#   config/claude-config-dir or config/pi-agent-dir, never the spawning
+#   CLAUDE_CONFIG_DIR, which inside a secondmate is the supervisor's account. A
+#   secondmate is a supervisor and runs on the launching home's account, never
+#   its own home's worker pins: Claude from a non-empty spawning
+#   CLAUDE_CONFIG_DIR, else the launching home's config/claude-config-dir, and
+#   Pi from the launching home's config/pi-agent-dir. Relaunch and startup
+#   recovery launch from that same home, and a remote launch reads them from
+#   the host's Firstmate code root that launches it (FM_HOME), never from the
+#   remote home's own config. The Pi pin overrides both caller and
+#   destination-shell PI_CODING_AGENT_DIR, including inside a filtered launch
+#   environment. A missing, invalid, or unreadable pin, or a pinned root the
+#   runner's own non-interactive auth check cannot confirm, refuses before
+#   endpoint creation; nothing falls back to ~/.claude or ~/.pi/agent. A pinned
+#   Claude launch also sheds the environment credentials Claude ranks above
+#   its stored login. The pin follows the resolved harness, so a raw launch
+#   command whose executable is claude, pi, or pi-signed receives it too;
+#   other harnesses are unaffected. No credential files are
 #   read or transferred.
 #   --scout records kind=scout in the task's meta (report deliverable, scratch worktree;
 #   see AGENTS.md task lifecycle); --secondmate records kind=secondmate and launches in a
@@ -1641,10 +1647,20 @@ case "$ARG3" in
     ;;
 esac
 
+# A home's pins are its workers' accounts. A secondmate is a supervisor, so it
+# launches on the launching home's account, never on its own home's worker
+# pins: that is $FM_HOME's own config even when FM_CONFIG_OVERRIDE points
+# $CONFIG at the second mate's home, as the remote legs do, where $FM_HOME is
+# the host's Firstmate copy that launches it. Resolve before the secondmate
+# home is touched or any endpoint or task record exists.
+PIN_CONFIG=$CONFIG
+[ "$KIND" != secondmate ] || PIN_CONFIG="$FM_HOME/config"
 CLAUDE_CONFIG_ROOT=
-if [ "$HARNESS" = claude ]; then
-  CLAUDE_CONFIG_ROOT=$(fm_account_pin_resolve claude "$CONFIG" "$FM_HOME") || exit 1
-fi
+PI_AGENT_ROOT=
+case "$HARNESS" in
+  claude) CLAUDE_CONFIG_ROOT=$(fm_account_pin_resolve claude "$PIN_CONFIG" "$FM_HOME" "$KIND") || exit 1 ;;
+  pi|pi-signed) PI_AGENT_ROOT=$(fm_account_pin_resolve "$HARNESS" "$PIN_CONFIG" "$FM_HOME") || exit 1 ;;
+esac
 
 # muse and gemini are verified as CREWMATE/SCOUT adapters only. A secondmate is
 # a firstmate instance, so it needs a primary supervision protocol.
@@ -2202,20 +2218,6 @@ else
   WT=""
   BRIEF="$DATA/$ID/brief.md"
 fi
-# Account selection belongs to the home running Pi, not to the parent launching
-# that home's supervisor. Resolve after the secondmate home is validated, but
-# before an endpoint or task record can be created. Inheritance deliberately
-# excludes this file, so convergence cannot overwrite a lane's account choice.
-PI_AGENT_ROOT=
-case "$HARNESS" in
-  pi|pi-signed)
-    if [ "$KIND" = secondmate ]; then
-      PI_AGENT_ROOT=$(fm_account_pin_resolve "$HARNESS" "$PROJ_ABS/config" "$PROJ_ABS") || exit 1
-    else
-      PI_AGENT_ROOT=$(fm_account_pin_resolve "$HARNESS" "$CONFIG" "$FM_HOME") || exit 1
-    fi
-    ;;
-esac
 # An unauthenticated interactive Pi does not exit: it parks a live-looking pane
 # behind a /login hint. Ask the runner's own check first, under the pin.
 case "$HARNESS" in
@@ -3828,9 +3830,9 @@ esac
 # inherit firstmate's current environment, so a bare `claude` in the pane falls
 # back to the default ~/.claude store even when firstmate itself runs under a
 # different CLAUDE_CONFIG_DIR (for example a work-vs-personal subscription split).
-# Forward the root resolved above (spawner CLAUDE_CONFIG_DIR, then the home's
-# config/claude-config-dir) onto the claude launch so the crewmate uses the
-# captain-selected credential/config store, and shed the environment
+# Forward the root resolved above (the home's worker pin, or for a secondmate
+# the launching home's supervisor account) onto the claude launch so the agent
+# uses the captain-selected credential/config store, and shed the environment
 # credentials Claude would otherwise rank above that store's login.
 if [ "$HARNESS" = claude ]; then
   LAUNCH="$(fm_account_pin_shed_prefix claude) CLAUDE_CONFIG_DIR=$(shell_quote "$CLAUDE_CONFIG_ROOT") $LAUNCH"

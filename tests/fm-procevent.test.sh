@@ -1028,10 +1028,15 @@ assert_absent "$FM_PROCEVENT_CLAIM_ROOT/shared-src.claim" "retire releases the c
 pass "retiring a never-completing source stops its runner and its blocked child"
 
 # reconcile must also stop a runner whose registration was removed out from under it.
+# Wait for the source command itself, not just the claim: a claimed runner has
+# not yet passed its launch gate, and a registration removed before that gate
+# makes the runner retire on its own, leaving reconcile nothing to stop.
 TRIG4="$TMP_ROOT/trigger-four"
+STARTED4="$TMP_ROOT/started-four"
 HZ="$TMP_ROOT/hz"; new_home "$HZ"
-pe_register "$HZ" lavish orphan-src -- "$BLOCKER" "$TRIG4" "orphan" >/dev/null
+pe_register "$HZ" lavish orphan-src -- "$REPLACE_BLOCKER" "$STARTED4" "$BLOCKER" "$TRIG4" "orphan" >/dev/null
 pe "$HZ" reconcile >/dev/null
+wait_for "$STARTED4" || fail "orphan fixture source never started"
 orphan_pid=$(wait_for_runner orphan-src) || fail "orphan fixture runner did not start"
 rm -f "$HZ/state/procevent/orphan-src.source"
 out=$(pe "$HZ" reconcile)

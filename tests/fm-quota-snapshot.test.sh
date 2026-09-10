@@ -21,7 +21,7 @@ SH
 chmod +x "$FAKEBIN/quota-axi"
 
 run_snapshot() {
-  env FM_HOME="$HOME_DIR" FM_CONFIG_OVERRIDE='' CLAUDE_CONFIG_DIR='' PI_CODING_AGENT_DIR=ambient-pi \
+  env FM_HOME="$HOME_DIR" FM_CONFIG_OVERRIDE='' CLAUDE_CONFIG_DIR=ambient-claude PI_CODING_AGENT_DIR=ambient-pi \
     PATH="$FAKEBIN:$PATH" "$SNAPSHOT" "$@" 2>&1
 }
 
@@ -32,16 +32,16 @@ test_pinned_runners_read_under_their_pin() {
     || fail "claude snapshot did not run under the Claude pin: $out"
   for harness in pi pi-signed; do
     out=$(run_snapshot "$harness" auth --json) || fail "$harness snapshot failed: $out"
-    [ "$out" = "unset|$HOME_DIR/accounts/pi|auth --json" ] \
+    [ "$out" = "ambient-claude|$HOME_DIR/accounts/pi|auth --json" ] \
       || fail "$harness snapshot did not run under the Pi pin: $out"
   done
-  pass "claude, pi, and pi-signed snapshots run quota-axi under the home's pin, arguments unchanged"
+  pass "claude, pi, and pi-signed snapshots run quota-axi under the home's pin, never an ambient root, arguments unchanged"
 }
 
 test_unpinned_runner_reads_ambient() {
   local out
   out=$(run_snapshot codex) || fail "codex snapshot failed: $out"
-  [ "$out" = "unset|ambient-pi|" ] || fail "an unpinned runner's snapshot changed the environment: $out"
+  [ "$out" = "ambient-claude|ambient-pi|" ] || fail "an unpinned runner's snapshot changed the environment: $out"
   pass "an unpinned runner's snapshot runs quota-axi in the ambient environment"
 }
 

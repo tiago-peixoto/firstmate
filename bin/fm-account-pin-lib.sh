@@ -13,10 +13,14 @@
 #   claude          CLAUDE_CONFIG_DIR     config/claude-config-dir
 #   pi, pi-signed   PI_CODING_AGENT_DIR   config/pi-agent-dir
 #
-# Resolution: for Claude a non-empty ambient CLAUDE_CONFIG_DIR still wins, then
-# the home's file; Pi reads only the file. The root must be an absolute,
-# existing, readable, searchable directory. A missing pin refuses; nothing
-# falls back to ~/.claude or ~/.pi/agent.
+# Resolution: both pins are home-local, never inherited, and name the accounts
+# the home's workers use, so a worker or scout launch reads only the home's
+# file: inside a secondmate the ambient CLAUDE_CONFIG_DIR is the supervisor's
+# account. A secondmate is a supervisor and is resolved against the launching
+# home instead, where a non-empty ambient CLAUDE_CONFIG_DIR still wins for
+# Claude. The root must be an absolute, existing, readable, searchable
+# directory. A missing pin refuses; nothing falls back to ~/.claude or
+# ~/.pi/agent.
 #
 # Preflight: the runner's own non-interactive check, run with only HOME, PATH,
 # TMPDIR, and the pin in its environment, so a provider key left in the caller
@@ -49,11 +53,13 @@ fm_account_pin_var() {
   esac
 }
 
-# fm_account_pin_resolve <harness> <config-dir> <home>
+# fm_account_pin_resolve <harness> <config-dir> <home> [<kind>]
 # Prints the validated root. On refusal prints one error naming the runner,
-# the home, and the file, and returns 1.
+# the home, and the file, and returns 1. For kind "secondmate" a non-empty
+# ambient CLAUDE_CONFIG_DIR wins over the file; any other launch reads only
+# the file.
 fm_account_pin_resolve() {
-  local harness=$1 config=$2 home=$3 runner file fallback cfg root rc
+  local harness=$1 config=$2 home=$3 kind=${4:-} runner file fallback cfg root rc
   # shellcheck disable=SC2088  # The fallbacks are literal text for the refusal.
   case "$harness" in
     claude) runner=Claude file=claude-config-dir fallback='~/.claude' ;;
@@ -61,7 +67,7 @@ fm_account_pin_resolve() {
     *) return 1 ;;
   esac
   cfg="$config/$file"
-  if [ "$runner" = Claude ] && [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
+  if [ "$runner" = Claude ] && [ "$kind" = secondmate ] && [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
     root=$CLAUDE_CONFIG_DIR
     case "$root" in
       /*) ;;

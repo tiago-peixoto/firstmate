@@ -209,6 +209,8 @@ run_two_level() {
   printf '# Firstmate\n' > "$sm/AGENTS.md"
   printf 'sm-%s\n' "$name" > "$sm/.fm-secondmate-home"
   printf 'charter\n' > "$sm/data/charter.md"
+  # Its nested worker launches on this home's own pin, which is never inherited.
+  fm_test_account_pins "$sm"
 
   # Spawn 1: the primary launches the secondmate; capture what it injects.
   sm_id="sm-$name"
@@ -380,6 +382,7 @@ test_duplicate_secondmate_spawn_does_not_converge_trace_context() {
   id=sm-duplicate
   log="$base/launch.log"
   mkdir -p "$prim/config" "$prim/data/$id" "$prim/state" "$prim/projects"
+  fm_test_account_pins "$prim"
   : > "$prim/config/trace-context"
   printf 'charter brief\n' > "$prim/data/$id/brief.md"
   touch "$prim/state/.last-watcher-beat"
@@ -390,7 +393,7 @@ test_duplicate_secondmate_spawn_does_not_converge_trace_context() {
   printf 'charter\n' > "$sm/data/charter.md"
   fake=$(make_spawn_fakebin "$base/fake")
 
-  out=$(env -u FM_TRACE_CONTEXT \
+  out=$(env -u FM_TRACE_CONTEXT CLAUDE_CONFIG_DIR= \
     FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$prim" \
     FM_STATE_OVERRIDE="$prim/state" FM_DATA_OVERRIDE="$prim/data" \
     FM_PROJECTS_OVERRIDE="$prim/projects" FM_CONFIG_OVERRIDE="$prim/config" \

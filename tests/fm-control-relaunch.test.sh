@@ -315,8 +315,9 @@ test_pi_relaunch_keeps_home_account() {
         mkdir -p "$dir/wt/state" "$dir/wt/data" "$dir/wt/bin" "$dir/wt/config"
         printf 'root1\n' > "$dir/wt/.fm-secondmate-home"
         printf '# Synthetic Firstmate\n' > "$dir/wt/AGENTS.md"
-        printf '%s\n' "$pin" > "$dir/wt/config/pi-agent-dir"
-        printf '%s\n' "$dir/default root" > "$cfg"
+        # The secondmate home's own pin is for its workers; the supervisor
+        # relaunch must stay on the launching home's pin.
+        printf '%s\n' "$dir/default root" > "$dir/wt/config/pi-agent-dir"
         printf '%s sentinel/model medium\n' "$harness" > "$dir/home/config/secondmate-harness"
         awk '!/^(kind|mode|home)=/' "$dir/home/state/root1.meta" > "$dir/prior.meta"
         { cat "$dir/prior.meta"; printf 'kind=secondmate\nmode=secondmate\nhome=%s\n' "$dir/wt"; } > "$dir/home/state/root1.meta"
@@ -336,9 +337,9 @@ SH
       expect_code 0 "$rc" "Pi $kind relaunch failed: $out"
       launch=$(tail -1 "$dir/fake/literal")
       result=$(env -i HOME="$dir" PATH="$PATH" PI_CODING_AGENT_DIR="$dir/default root" /bin/sh -c "$launch")
-      [ "$result" = "$pin|$harness" ] || fail "Pi relaunch lost the lane root or executable identity: $result"
+      [ "$result" = "$pin|$harness" ] || fail "Pi relaunch lost the home's account root or executable identity: $result"
       [ "$(meta_field "$dir" root1 worktree)" = "$dir/wt" ] || fail "Pi root relaunch changed the worktree"
-      pass "$harness $kind relaunch reads the correct home pin despite caller and destination roots"
+      pass "$harness $kind relaunch reads the launching home's pin despite caller, destination, and secondmate-home roots"
     done
   done
 }

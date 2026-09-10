@@ -301,7 +301,7 @@ The full cmux home label also includes a short hash of the resolved `FM_ROOT` pa
 
 ## Account pins
 
-An account pin is one file per operational home naming the account root a runner launches from, the way `AWS_PROFILE` names a profile.
+An account pin is one file per operational home naming the account root that home's workers launch from, the way `AWS_PROFILE` names a profile.
 Claude, Pi, and Pi-signed launches require one, because each of those runners keeps its login in a root the launching process can select:
 
 | Runner | Pin file | Variable the launch receives |
@@ -309,6 +309,9 @@ Claude, Pi, and Pi-signed launches require one, because each of those runners ke
 | `claude` | `config/claude-config-dir` | `CLAUDE_CONFIG_DIR` |
 | `pi`, `pi-signed` | `config/pi-agent-dir` | `PI_CODING_AGENT_DIR` |
 
+Pins are home-local and never inherited, and a home's pins name the accounts its own workers and scouts launch on.
+A worker or scout reads only its home's file, never the spawning `CLAUDE_CONFIG_DIR`, because inside a second mate that variable holds the supervisor's account.
+A second mate is a supervisor, so its own launch resolves against the launching home instead, never against the pins in the second mate's home; the sections below give each runner's order.
 A missing pin refuses the spawn with a message naming the runner, the home, and the file to create.
 Firstmate never falls back to `~/.claude` or `~/.pi/agent`, because a forgotten pin would otherwise spend whichever account the default root holds.
 A pin is one literal absolute path followed by exactly one newline, naming an existing directory that is readable and searchable.
@@ -353,22 +356,23 @@ On its own the tripwire does not refuse an interactive Pi, which waits at the `/
 
 ### Claude configuration root (config/claude-config-dir / CLAUDE_CONFIG_DIR)
 
-`config/claude-config-dir` is local, gitignored, primary-authoritative, and inherited by secondmate homes.
-For a Claude spawn, a non-empty `CLAUDE_CONFIG_DIR` in the spawning environment wins and is validated the same way, then the file supplies the pin.
-The spawn pre-registers workspace trust in that same root, and non-Claude spawns never receive the prefix.
-The file is materialized by hand because bootstrap cannot choose an account: run `mkdir -p config && printf '%s\n' "$CLAUDE_CONFIG_DIR" > config/claude-config-dir`, then run `bin/fm-config-push.sh` to converge already-running secondmate homes.
-The inherited-local-material contract in [`secondmate-provisioning`](../.agents/skills/secondmate-provisioning/SKILL.md) propagates the literal file and converges primary absence, so each secondmate's own Claude spawns resolve the same root from its local copy.
-Because the pin is inherited, every home in a fleet spends one Claude account; giving one home another Claude account would need a home-local Claude pin, which this contract does not offer.
+`config/claude-config-dir` is local, gitignored, and deliberately **not inherited**: it names the account this home's Claude workers and scouts launch on, so configure it in every home whose workers use Claude, including a secondmate home.
+A ship or scout Claude spawn reads only the active home's file and ignores a `CLAUDE_CONFIG_DIR` in the spawning environment, because inside a second mate that variable is the supervisor's account.
+A second mate's own Claude launch runs on the supervisor account instead: a non-empty `CLAUDE_CONFIG_DIR` in the launching environment wins and is validated the same way, then the launching home's file supplies the pin, and the second mate home's own file is never read for it.
+Relaunch and startup recovery launch from that same home, and config push and secondmate convergence leave this home-local file untouched.
+A remote second mate resolves the same way on its host, where the launching home is the Firstmate code root that launches it there, so its supervisor pin lives in that code root's `config/claude-config-dir` and never in the remote home's own file.
+The spawn pre-registers workspace trust in the resolved root, and ship and scout launches on other runners receive neither the pin nor the credential-shedding prefix.
+The file is materialized by hand in each home because bootstrap cannot choose an account: run `mkdir -p config && printf '%s\n' "$CLAUDE_CONFIG_DIR" > config/claude-config-dir` with `CLAUDE_CONFIG_DIR` naming the account root that home's workers should launch on.
 
 ### Pi configuration root (config/pi-agent-dir / PI_CODING_AGENT_DIR)
 
-`config/pi-agent-dir` is local, gitignored, and deliberately **not inherited**: configure every home that launches Pi, including a secondmate home before its first launch.
+`config/pi-agent-dir` is local, gitignored, and deliberately **not inherited**: it names the account this home's Pi workers and scouts launch on, so configure it in every home whose workers use Pi, including a secondmate home.
 Paths are not shell-expanded; spaces and quotes are literal, while control bytes, empty files, extra lines, missing directories, and unreadable configuration are refused.
 
-For standard Pi and Pi-signed launches, a ship or scout reads the active home's file, while a secondmate reads the destination home's own file, not its parent's account choice.
+For standard Pi and Pi-signed launches, a ship or scout reads the active home's file, while a second mate's own launch reads the launching home's file and never the second mate home's, because a second mate is a supervisor and runs on the supervisor account.
 The pin beats both the spawning process's and the destination shell's `PI_CODING_AGENT_DIR`, including when the [launch environment filter](#worker-launch-environment-configlaunch-env-allowlist) is enabled.
-Relaunch and startup recovery use the same selection; config push and secondmate convergence leave this home-local file untouched.
-Remote secondmates resolve it on the destination host, where the selected directory must exist; account directories are never transferred over SSH.
+Relaunch and startup recovery launch from that same home; config push and secondmate convergence leave this home-local file untouched.
+A remote second mate's supervisor pin lives on its host, in `config/pi-agent-dir` under the Firstmate code root that launches it there and never in the remote home's own file, and the selected directory must exist on that host; account directories are never transferred over SSH.
 The pin follows the resolved harness, so a raw launch command whose executable is `pi` or `pi-signed` receives it too;
 other harnesses are unchanged.
 [`bin/fm-spawn.sh --help`](../bin/fm-spawn.sh) owns launch validation and executable mechanics.

@@ -7,7 +7,8 @@
 # Dispatch intake reads capacity per account pin, never ambient
 # (.agents/skills/quota-array-dispatch/SKILL.md). For a pinned runner (claude,
 # pi, pi-signed) this resolves the active home's pin exactly as bin/fm-spawn.sh
-# does, refuses exactly as spawn refuses when it is missing or invalid, and
+# does for a worker, so an ambient CLAUDE_CONFIG_DIR never answers for it,
+# refuses exactly as spawn refuses when it is missing or invalid, and
 # runs quota-axi with that pin exported, so the rows quota-axi reads from that
 # root describe the pinned account. Any other runner has no pin and runs
 # quota-axi in the ambient environment. Arguments pass through unchanged, so
