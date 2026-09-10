@@ -925,6 +925,16 @@ for ABORT_PANE in "$ABORT_A_PANE" "$ABORT_B_PANE"; do
 done
 [ ! -e "$HOME_DIR/state/abort-a.meta" ] && [ ! -e "$HOME_DIR/state/abort-b.meta" ] \
   || fail "post-create abort fixtures published task metadata before launch"
+for task in abort-a abort-b; do
+  ws=$(cat "$POST_CREATE_ABORT_CONTROL/$task/workspace" 2>/dev/null || true)
+  [ -n "$ws" ] || continue
+  if lab workspace get "$ws" >/dev/null 2>&1; then
+    fail "abort leftover workspace $ws still exists after pane death"
+  fi
+done
+lab tab focus "$SECOND_TWO_TAB" >/dev/null \
+  || fail "could not restore the captured captain tab after the abort fixtures"
+assert_focus_is "$CAPTAIN_FOCUS" "abort fixture restoration"
 rm -rf "$POST_CREATE_ABORT_CONTROL"
 rm -f "$HOME_DIR/state/abort-a.herdr-presentation" "$HOME_DIR/state/abort-b.herdr-presentation"
 pass "real Herdr lab: concurrent post-create abort cleanup stays serialized with exact focus restoration"
