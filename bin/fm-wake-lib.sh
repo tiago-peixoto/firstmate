@@ -1174,15 +1174,15 @@ fm_firstmate_root_home() {
 
 # Every local Firstmate state directory that can name a live Treehouse slot
 # on this machine: this home, the local root, and each locally registered
-# descendant. Homes share origin-keyed pools, so spawn occupancy and teardown
-# slot-exclusivity both walk this set. Remote registry entries are skipped:
+# descendant. Homes share origin-keyed pools, so every local home that can
+# draw from the same pool is included. Remote registry entries are skipped:
 # their slots are not on this filesystem.
 collect_local_firstmate_states() {
   local record_state=$1 root home reg line child known existing i=0
   local -a homes
   TREEHOUSE_OWNER_STATES=("$record_state")
   root=$(fm_firstmate_root_home "$FM_HOME") || {
-    echo "REFUSED: cannot resolve the root Firstmate home; nothing was changed" >&2
+    echo "REFUSED: cannot resolve the root Firstmate home" >&2
     return 1
   }
   homes=("$root")
@@ -1201,19 +1201,19 @@ collect_local_firstmate_states() {
     reg="$home/data/secondmates.md"
     [ ! -e "$reg" ] && [ ! -L "$reg" ] && continue
     [ -f "$reg" ] && [ ! -L "$reg" ] || {
-      echo "REFUSED: local Firstmate registry is unsafe at $reg; nothing was changed" >&2
+      echo "REFUSED: local Firstmate registry is unsafe at $reg" >&2
       return 1
     }
     while IFS= read -r line || [ -n "$line" ]; do
       case "$line" in
         "- "*)
           secondmate_registry_parse_line "$line" || {
-            echo "REFUSED: malformed local Firstmate registry entry in $reg; nothing was changed" >&2
+            echo "REFUSED: malformed local Firstmate registry entry in $reg" >&2
             return 1
           }
           [ "$SECONDMATE_REGISTRY_REMOTE" -eq 0 ] || continue
           child=$(CDPATH='' cd -- "$SECONDMATE_REGISTRY_HOME" 2>/dev/null && pwd -P) || {
-            echo "REFUSED: registered local Firstmate home is unavailable: $SECONDMATE_REGISTRY_HOME; nothing was changed" >&2
+            echo "REFUSED: registered local Firstmate home is unavailable: $SECONDMATE_REGISTRY_HOME" >&2
             return 1
           }
           known=0

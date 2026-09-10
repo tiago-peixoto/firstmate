@@ -104,6 +104,8 @@ test_spawn_acquires_with_task_lifetime_lease() {
     || fail "spawn did not acquire with treehouse get --lease --lease-holder $id"$'\n'"$(cat "$log")"
   grep -E '(^| )get( |$)' "$log" | grep -v -- '--lease' >/dev/null \
     && fail "spawn still invoked a process-bound treehouse get"$'\n'"$(cat "$log")"
+  grep -E '(^|[[:space:]])return([[:space:]]|$)' "$log" >/dev/null \
+    && fail "successful spawn returned its own lease"$'\n'"$(cat "$log")"
   pass "fm-spawn acquires a ship/scout copy with a task-lifetime treehouse lease"
 }
 

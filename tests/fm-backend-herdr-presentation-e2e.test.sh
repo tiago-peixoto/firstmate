@@ -1417,10 +1417,7 @@ lab workspace get "$DUP1_WSID" >/dev/null 2>&1 || fail "live duplicate refusal r
 lab workspace get "$DUP2_WSID" >/dev/null 2>&1 || fail "live duplicate refusal removed the second workspace"
 pass "real Herdr lab: missing, renamed, and duplicate tokens trigger zero destructive or adoptive calls, and live duplicate risk refuses launch"
 
-# Abort fixtures are the last Herdr mutation. On 0.7.4, pane-death of an
-# idle leased pane can leave a neighbor workspace that a later projected
-# teardown inherits as focus. Keep that hazard after every teardown whose
-# exact-focus assertion is the thing under test.
+# Abort fixtures run after every exact-focus teardown in this file.
 mkdir -p "$POST_CREATE_ABORT_CONTROL"
 git -C "$PROJECT_DIR" worktree add --quiet --detach "$POST_CREATE_ABORT_CONTROL/wt"
 ABORT_FOCUS=$(focus_snapshot) \

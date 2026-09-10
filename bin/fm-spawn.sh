@@ -2663,6 +2663,12 @@ if [ -e "$STATE/$ID.backlog-close" ] || [ -L "$STATE/$ID.backlog-close" ]; then
   echo "error: task $ID has a pending authoritative backlog close at $STATE/$ID.backlog-close; finish or repair that close before dispatching a new worker" >&2
   exit 1
 fi
+if [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] && [ "${BACKEND:-}" != orca ]; then
+  collect_local_firstmate_states "$STATE" || {
+    echo "error: could not enumerate local Firstmate homes for worktree occupancy" >&2
+    exit 1
+  }
+fi
 
 W="fm-$ID"
 if [ "$RELAUNCH" -eq 1 ]; then
@@ -2988,15 +2994,25 @@ spawn_release_treehouse_lease() {  # <path> <cd-dir>
   ( CDPATH='' cd -- "$cd_dir" && treehouse return --force "$path" )
 }
 
-# Return the unpublished unique lease armed for abort, then disarm so EXIT
-# cannot return it twice. Occupied collision copies are never stored here.
-# Warn and return non-zero when the return itself fails.
+# Close the task endpoint, then return the unique lease armed for abort,
+# then disarm so EXIT cannot return it twice. Warn and return non-zero
+# when the return itself fails.
+spawn_close_abort_endpoint() {
+  local tab_id=
+  [ -n "${T:-}" ] || return 0
+  [ -n "${BACKEND:-}" ] || return 0
+  [ "$BACKEND" = orca ] && return 0
+  [ "$BACKEND" = zellij ] && tab_id=$ZELLIJ_TAB_ID
+  fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null || true
+}
+
 spawn_return_abort_lease() {
   local path cd_dir
   [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] || return 0
   path=$SPAWN_LEASE_RETURN_ON_ABORT
   cd_dir=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
   SPAWN_LEASE_RETURN_ON_ABORT=
+  spawn_close_abort_endpoint
   if ! spawn_release_treehouse_lease "$path" "$cd_dir"; then
     echo "warning: could not release treehouse lease for $path after aborted spawn of $ID" >&2
     return 1
@@ -3058,7 +3074,7 @@ spawn_acquire_treehouse_worktree() {
 # Seat the pane in <path> with a top-level cd, then wait until two consecutive
 # cwd reads agree on that exact copy. A pane still on the project or primary
 # checkout is a transient; a pane that never reaches <path> refuses.
-# Optional <polls> and <interval> default to 60 x 1s; relaunch passes 10 x 0.5s.
+# Optional <polls> and <interval> default to 60 x 1s.
 # FM_SPAWN_SEAT_POLLS and FM_SPAWN_SEAT_INTERVAL override those defaults when
 # the caller does not pass explicit values.
 spawn_seat_worktree() {  # <path> <label> [polls] [interval]
@@ -3093,7 +3109,7 @@ spawn_seat_worktree() {  # <path> <label> [polls] [interval]
   if [ "$label" = recorded ]; then
     echo "error: task $ID's endpoint is in '${last_seen:-unknown}', not its recorded worktree '$want'; refusing to relaunch an agent outside the copy holding its work" >&2
   else
-    echo "error: pane did not enter leased worktree '$want' (last seen '${last_seen:-none}': $last_reason; spawning project '$PROJ_ABS'); inspect window $T" >&2
+    echo "error: pane did not enter leased worktree '$want' (last seen '${last_seen:-none}': $last_reason; spawning project '$PROJ_ABS'); the window $T was closed" >&2
   fi
   return 1
 }
@@ -3153,7 +3169,7 @@ kimi_wait_for_delivery() {
 
 kimi_spawn_fail() {  # <detail>
   printf 'failed: %s\n' "$1" >> "$STATE/$ID.status"
-  echo "error: $1; inspect window $T" >&2
+  echo "error: $1; the window $T was closed" >&2
 }
 
 # rovo mirrors kimi's launch-then-send shape exactly: a positional brief is
@@ -3221,7 +3237,7 @@ rovo_wait_for_delivery() {
 
 rovo_spawn_fail() {  # <detail>
   printf 'failed: %s\n' "$1" >> "$STATE/$ID.status"
-  echo "error: $1; inspect window $T" >&2
+  echo "error: $1; the window $T was closed" >&2
   rovo_endpoint_cleanup
 }
 
@@ -4149,8 +4165,7 @@ fi
 if [ "$SPAWN_BACKLOG_COMMIT_STATUS" -ne 0 ]; then
   if [ "$RELAUNCH" -eq 0 ]; then
     if spawn_fresh_commit_rollback; then
-      spawn_return_abort_lease || true
-      echo "error: task $ID's backlog item could not be moved to In flight ($FM_BACKLOG_TRANSITION_ERROR); its record was removed so no worker is left that the backlog does not own - treehouse return released $WT; close out endpoint $T by hand, then re-run the spawn" >&2
+      echo "error: task $ID's backlog item could not be moved to In flight ($FM_BACKLOG_TRANSITION_ERROR); its record was removed so no worker is left that the backlog does not own; re-run the spawn" >&2
     else
       echo "error: task $ID's backlog item could not be moved to In flight ($FM_BACKLOG_TRANSITION_ERROR), and failed-dispatch cleanup is incomplete; the provisional record may remain at $STATE/$ID.meta - close out endpoint $T and local copy $WT by hand, then remove the record and busy state before retrying" >&2
     fi
