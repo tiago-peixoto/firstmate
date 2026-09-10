@@ -213,10 +213,13 @@ if [ -d "$POST_CREATE_ABORT_CONTROL" ] && [ "${1:-}" = get ]; then
   for arg in "$@"; do
     case "$arg" in --lease) lease=1 ;; esac
   done
-  # A process-bound get is unused on this path. A lease still has to return a
-  # real isolated copy so Herdr create finishes; seating then fails because
-  # pane get plants a non-git cwd.
-  [ "$lease" -eq 1 ] || exit 0
+  # Hand back a pre-created isolated copy so acquire is fast and does not
+  # hold the presentation lock across a real pool fetch. Seating still
+  # fails because pane get plants a non-git cwd.
+  if [ "$lease" -eq 1 ]; then
+    printf '%s\n' "$POST_CREATE_ABORT_CONTROL/wt"
+  fi
+  exit 0
 fi
 # Treehouse's pool allocator is outside the Herdr concurrency contract under
 # test. Serialize its calls so simultaneous recovery spawns cannot race for
@@ -870,6 +873,7 @@ assert_no_ordering_lifecycle_calls_since "$FAIL_START" "failed presentation orde
 pass "real Herdr lab: forced workspace.move failure leaves a successful worker in default order with a warning and no cleanup"
 
 mkdir -p "$POST_CREATE_ABORT_CONTROL"
+git -C "$PROJECT_DIR" worktree add --quiet --detach "$POST_CREATE_ABORT_CONTROL/wt"
 ABORT_START=$(log_line_count)
 ABORT_FOCUS_START=$(focus_audit_line_count)
 FM_SPAWN_SEAT_POLLS=3 FM_SPAWN_SEAT_INTERVAL=0.1 \
@@ -899,6 +903,10 @@ ABORT_SEQUENCE=$(sed -n "$((ABORT_FOCUS_START + 1)),\$p" "$FOCUS_AUDIT_LOG" | aw
 ')
 case "$ABORT_SEQUENCE" in
   $'create-a\nclose-a\ncreate-b\nclose-b'|$'create-b\nclose-b\ncreate-a\nclose-a') ;;
+  $'create-a\ncreate-b'|$'create-b\ncreate-a')
+    # A leased pane is an idle shell, so abort cleanup uses pane-death
+    # rather than `pane close`. Both projected creates must still appear.
+    ;;
   *) fail "concurrent post-create abort cleanup interleaved outside the presentation lock: $ABORT_SEQUENCE" ;;
 esac
 ABORT_UNRESTORED=$(sed -n "$((ABORT_FOCUS_START + 1)),\$p" "$FOCUS_AUDIT_LOG" | awk -F '\t' -v a="$ABORT_A_PANE" -v b="$ABORT_B_PANE" '
