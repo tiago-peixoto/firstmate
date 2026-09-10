@@ -1151,7 +1151,7 @@ SH
 
 test_pi_raw_launch_command_receives_pin() {
   local rec id out status launch result pin
-  id=root-raw-pi
+  id="root-raw-pi"
   rec=$(make_spawn_case "$id" pi "$id")
   read_case_record "$rec"
   pin="$CASE_DIR/work root"
