@@ -668,6 +668,46 @@ HERDR_LAB_HELPER=bin/fm-herdr-lab.sh \
 
 Observed guarantee: a restored no-agent tab was replaced create-before-close, while a registered live agent caused refusal.
 
+### Exited-agent liveness
+
+Measured 2026-09-10 against Herdr 0.9.0 (protocol 22) and Pi 0.85.1 with integration v8 in an isolated `fm-lab-` session.
+
+Herdr's 0.9.0 CLI and socket schema expose process liveness separately from agent registration:
+
+- `herdr agent get <pane>` returns `AgentInfo.agent_status` (`idle|working|blocked|done|unknown`) and can keep listing `agent=pi` after the process has exited.
+- `herdr agent explain --json` reports `screen_detection_skipped: true` with `screen_detection_skip_reason: full_lifecycle_hook_authority` while that integration is authoritative.
+- `herdr pane process-info --pane <pane>` returns `PaneProcessInfo` (`shell_pid`, `foreground_process_group_id`, `foreground_processes[]` with `pid`, `name`, `argv0`).
+- `herdr pane release-agent` exists but requires the integration's `--source` and `--agent`; `herdr agent` has no clear-registration command.
+- Official 0.9.0 integrations docs require the hook to call `pane.release-agent` on exit. The installed Pi v8 extension and OpenCode v11 plugin contain no `release_agent` call.
+
+Live Pi in the lab:
+
+```text
+agent=pi agent_status=idle screen_detection_skipped=true
+foreground_processes=[{name:node, argv0:pi}]
+fm_backend_herdr_pane_agent_state=live
+```
+
+Immediately after SIGKILL of that Pi pid, before Herdr dropped the listing:
+
+```text
+agent_status=idle screen_detection_skipped=true
+foreground_processes=[{name:zsh, argv0:zsh}]
+```
+
+The previous classifier mapped every registered status, including `done`, to live, so `fm-control exit` waited for dead and reported unconfirmed, and relaunch rolled back.
+The classifier now treats a registered agent whose foreground process group is the pane's shell as `no-agent` (recovery-grade `dead`), and fails safe to `unknown` when process-info is missing, empty, pane-mismatched, or has no numeric pids.
+
+Refresh with:
+
+```sh
+HERDR_LAB_HELPER=bin/fm-herdr-lab.sh \
+  tests/fm-control-herdr-smoke.test.sh
+tests/fm-backend-herdr.test.sh
+```
+
+`firstmate-relaunch-blocked-by-pane-cwd` is a separate relaunch-guard precondition and was not changed.
+
 ### Launcher workspace placement
 
 Herdr exports its pane identity into every process it manages, checked on 2026-07-30 against Herdr 0.7.5 protocol 17 inside a guarded lab pane:
