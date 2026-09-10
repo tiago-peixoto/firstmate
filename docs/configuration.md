@@ -326,6 +326,9 @@ For a manually launched primary outside `fm-spawn`, explicitly set Pi's document
 Pi's SDK-backed [supervision branch](pi-supervision-branch.md) resolves credentials and resources under the supervisor process's Pi directory, independently of its model and effort pins.
 The installed Pi `docs/environment-variables.md`, `docs/sdk.md`, and `docs/providers.md` own directory, resource, and credential precedence: selecting a root does not disable provider environment keys, runtime overrides, custom providers, or trusted extensions.
 This is account-root routing, not a credential sandbox or an account-identity check.
+A pinned root is not reflected in quota evidence either.
+`quota-axi` reports one row per provider family, so two homes on different Pi accounts are scored against the same `pi` row;
+quota-driven dispatch must not read that row as lane-specific, because a pinned lane's remaining runway is not what that row measures.
 
 Review and validation agents started by a separate service do not pass through `fm-spawn`.
 In particular, no-mistakes owns its daemon environment, agent executable, and model/effort configuration; its agents do not inherit the submitting worker's Pi root merely because that worker started validation.
