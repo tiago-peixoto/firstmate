@@ -2082,8 +2082,9 @@ case "$HARNESS" in
       fi
       # Parse bytes before the shell can drop NULs or trailing newlines. Paths
       # are literal, not shell expressions; spaces and quotes are valid.
-      if ! PI_AGENT_ROOT=$(perl -0777 -ne '
-        /\A(\/[^\x00-\x1f\x7f]*)\n\z/ or exit 1;
+      if ! PI_AGENT_ROOT=$(perl -0777 -e '
+        my $body = <> // "";
+        $body =~ /\A(\/[^\x00-\x1f\x7f]*)\n\z/ or exit 1;
         print $1;
       ' -- "$PI_AGENT_CONFIG"); then
         echo "error: config/pi-agent-dir must contain one absolute path followed by one newline: $PI_AGENT_CONFIG" >&2

@@ -1075,7 +1075,7 @@ SH
 }
 
 test_pi_home_account_invalid_refuses() {
-  local kind bad rec id out status cfg pin
+  local kind bad rec id out status cfg pin reason
   for kind in scout secondmate; do
     for bad in empty relative no-newline extra-line nul missing-root file-root unreadable-root unsearchable-root unreadable-config dangling-link directory-config; do
       id="invalid-root-$kind-$bad"
@@ -1114,7 +1114,12 @@ test_pi_home_account_invalid_refuses() {
       chmod 700 "$pin" 2>/dev/null || true
       [ "$bad" != unreadable-config ] || chmod 600 "$cfg"
       expect_code 1 "$status" "invalid $kind Pi config ($bad) must refuse: $out"
-      assert_contains "$out" config/pi-agent-dir "Pi config refusal must name its owner"
+      case "$bad" in
+        unreadable-config|dangling-link|directory-config) reason="must be a readable regular file" ;;
+        empty|relative|no-newline|extra-line|nul) reason="must contain one absolute path followed by one newline" ;;
+        *) reason="must name a readable, searchable existing directory" ;;
+      esac
+      assert_contains "$out" "config/pi-agent-dir $reason" "Pi config refusal ($bad) must name its owner and its reason"
       [ ! -s "$LAUNCH_LOG" ] || fail "invalid Pi config delivered a launch"
       assert_absent "$HOME_DIR/state/$id.meta" "invalid Pi config published a task"
     done

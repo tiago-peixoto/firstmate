@@ -332,13 +332,13 @@ writeFileSync(`${home}/state/live-error-probe.meta`, `project=${approvedProject}
 writeFileSync(`${home}/state/.wake-queue`, "1\t1\tsignal\tlive-error-probe.status\tsignal: c1 429 probe\n");
 let providerRequests = 0;
 globalThis.fetch = async (input, init) => {
-  const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
-  if (headers.get("authorization") !== "Bearer work-placeholder") {
-    throw new Error("branch did not use the selected root's stored sentinel credential");
-  }
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
   if (!url.startsWith("https://fm-provider-error.invalid/")) {
     throw new Error(`unexpected network request in provider-free guard: ${url}`);
+  }
+  const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+  if (headers.get("authorization") !== "Bearer work-placeholder") {
+    throw new Error("branch did not use the selected root's stored sentinel credential");
   }
   providerRequests += 1;
   return new Response(
