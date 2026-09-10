@@ -4,10 +4,10 @@
 launch STATE ID GEN -- CODEX ARGS starts an owned app-server and the unchanged
 TUI arguments against its private Unix WebSocket. The launcher binds the sole
 root thread and owns both children and its 0700 temporary socket directory.
-read STATE ID prints the semantic verdict; settled STATE ID prints the native
-terminal turn's epoch. Both are bounded, read-only protocol clients. They never
-resume, subscribe to, interrupt or otherwise modify a thread. fm-busy-lib.sh
-owns verdict semantics; fm-busy-event.sh still owns the incarnation token.
+read STATE ID prints the semantic verdict. It is a bounded, read-only protocol
+client that never resumes, subscribes to, interrupts or otherwise modifies a
+thread. fm-busy-lib.sh owns verdict semantics; fm-busy-event.sh still owns the
+incarnation token.
 
 The private binding includes the generation, socket inode, child PIDs, cwd and
 exact thread. Multiple root threads (including /new or /resume in the TUI)
@@ -192,7 +192,7 @@ def roots(client):
 def snapshot(state, task):
     binding_path = state / (task + '.codex-appserver')
     if not binding_path.exists():
-        return 'unknown codex-unverified', None
+        return 'unknown codex-unverified'
     client = None
     try:
         private(binding_path, stat.S_ISREG)
@@ -237,20 +237,19 @@ def snapshot(state, task):
         if status['type'] == 'active':
             flags = status['activeFlags']
             if 'waitingOnApproval' in flags:
-                return 'unknown codex-appserver-waiting-approval', None
+                return 'unknown codex-appserver-waiting-approval'
             if 'waitingOnUserInput' in flags:
-                return 'unknown codex-appserver-waiting-input', None
-            return 'busy codex-appserver', None
+                return 'unknown codex-appserver-waiting-input'
+            return 'busy codex-appserver'
         if status['type'] == 'systemError' or last.get('status') == 'failed':
-            return 'unknown codex-appserver-failed', None
+            return 'unknown codex-appserver-failed'
         if status['type'] == 'idle' and last.get('status') in ('completed', 'interrupted'):
-            epoch = last.get('completedAt')
-            return 'idle codex-appserver', epoch if isinstance(epoch, int) and epoch > 0 else None
-        return 'unknown codex-appserver', None
+            return 'idle codex-appserver'
+        return 'unknown codex-appserver'
     except (OSError, EOFError, TimeoutError):
-        return 'unknown codex-appserver-disconnected', None
+        return 'unknown codex-appserver-disconnected'
     except (ValueError, KeyError, TypeError, IndexError):
-        return 'unknown codex-appserver-binding', None
+        return 'unknown codex-appserver-binding'
     finally:
         if client:
             client.close()
@@ -429,8 +428,8 @@ def degrade(state, task, gen, argv, reason):
 def main():
     if len(sys.argv) == 2 and sys.argv[1] == 'supported':
         return 0 if supported() else 1
-    if len(sys.argv) < 4 or sys.argv[1] not in ('read', 'settled', 'launch'):
-        raise SystemExit('usage: fm-codex-appserver.py supported | read|settled STATE ID'
+    if len(sys.argv) < 4 or sys.argv[1] not in ('read', 'launch'):
+        raise SystemExit('usage: fm-codex-appserver.py supported | read STATE ID'
                          ' | launch STATE ID GEN -- CODEX ARGS')
     command, state, task = sys.argv[1], Path(sys.argv[2]), sys.argv[3]
     if not task or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-' for c in task):
@@ -443,13 +442,8 @@ def main():
         except (OSError, ValueError, RuntimeError, EOFError) as exc:
             print('Codex native launch failed: ' + str(exc), file=sys.stderr)
             degrade(state, task, sys.argv[4], sys.argv[6:], str(exc))
-    verdict, epoch = snapshot(state, task)
-    if command == 'read':
-        print(verdict, end='')
-    elif epoch:
-        print(epoch, end='')
-    else:
-        return 1
+    verdict = snapshot(state, task)
+    print(verdict, end='')
     return 0
 
 
