@@ -34,13 +34,14 @@
 #   claude-hook      Claude lifecycle hooks (UserPromptSubmit/Stop/StopFailure/SessionEnd)
 #   gemini-hook      Gemini agent hooks (BeforeAgent opens; AfterAgent and
 #                    SessionEnd close)
+#   codex-hook, codex-appserver  reserved: Codex, gated by
+#                    fm_busy_codex_semantic_source
 #   kimi-wire, kimi-hook  reserved: standalone Kimi, gated by fm_busy_kimi_verified
 # Firstmate-owned sources accepted for every converted adapter:
 #   fm-spawn         the launch-brief turn seeded at spawn
 #   fm-interrupt     the legacy Claude fm-send --key Escape idle event
 #   fm-recovery      a documented recovery reset after relaunch
 # Classifier-only sources (never written into a record):
-#   codex-appserver (and its unknown reason suffixes),
 #   endpoint-gone, herdr-native, grok-regex, rovo-regex, muse-session-log,
 #   cursor-transcript, missing, malformed, gen-mismatch, source-mismatch,
 #   kimi-unverified, codex-unverified, capture-failed, no-target
@@ -80,19 +81,17 @@
 # cleared. See fm_busy_cursor_turn_state for the fold. Cursor's rendered
 # `ctrl+c to stop` footer is deliberately not a state source here.
 #
-# Codex's pull source uses the private app-server socket owned by its launch,
-# bound to the busy generation, process, socket inode and sole user thread.
-# A native failure is unknown codex-appserver-failed (crew-state reports
-# failed); approval/input waits have their own unknown source (parked there).
-# Transport loss and unsupported launches stay unknown. No stored Codex hook
-# record or Herdr title can substitute for a live read. The bounded reader and
-# private transport lifetime are owned by fm-codex-appserver.py; the live guard
-# tests/fm-codex-appserver-live-e2e.test.sh refreshes the capability evidence.
+# Codex negotiation (fm_busy_codex_appserver_observable,
+# fm_busy_codex_hooks_verified): the approved contract prefers Codex's
+# app-server turn lifecycle with capability negotiation, and sanctions its
+# stable lifecycle hooks as the intermediate. Neither is usable on the
+# installed binary, so Codex classifies unknown codex-unverified rather than
+# falling back to idle, and fm-spawn installs no Codex busy wiring.
+# docs/verification/supervision.md owns the evidence for both probes.
 #
 # Sourcing: set -u and set -e safe; no subshell-unfriendly globals.
 
 FM_BUSY_LIB_VERSION=v1
-FM_BUSY_CODEX_READER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-codex-appserver.py"
 
 # Standalone-Kimi verification gate. Empty means no installed Kimi version
 # has passed live verification, so every standalone Kimi task classifies
@@ -118,18 +117,38 @@ fm_busy_kimi_verified() {
   [ -n "$FM_BUSY_KIMI_VERIFIED_VERSIONS" ]
 }
 
-# Launch capability gate. Keep exact-version verification and launch wiring
-# together: old standalone workers remain unknown because they lack a bound
-# native source, even when a newer installed binary passes this gate. The
-# verified version is the reader's alone (its `supported` command), and this is
-# its only caller: the decision is taken once, here, and the launcher runs the
-# binary this gate resolved rather than re-deriving a verdict of its own. A
-# launch that then fails degrades to plain Codex and retires the arming; an
-# observability capability never vetoes a worker.
-# Hooks remain unsuitable as a complete source: API errors have no closing
-# hook while the TUI remains open. Native status owns failure.
+# fm_busy_codex_appserver_observable: capability/version negotiation for the
+# Codex app-server turn lifecycle. Returns 0 only when a pane worker's turns
+# are observable through the app-server protocol on the installed binary.
+# codex-cli 0.145.0 verdict (live, 2026-07-28): NOT observable. The v2
+# protocol does define the needed turn lifecycle (turn/started plus a
+# turn/completed status of completed, interrupted, failed, or inProgress),
+# but an interactive TUI worker neither starts nor attaches to the
+# app-server daemon, and `codex app-server daemon start` refuses outside the
+# managed standalone install, so no client can observe a pane worker's turns.
 fm_busy_codex_appserver_observable() {
-  python3 "$FM_BUSY_CODEX_READER" supported >/dev/null 2>&1
+  return 1
+}
+
+# fm_busy_codex_hooks_verified: the sanctioned intermediate - Codex's stable
+# hooks engine (UserPromptSubmit to open a turn, Stop and SessionEnd to close
+# it). Returns 0 only once those hooks are live-verified to fire for a
+# firstmate-launched worker. codex-cli 0.145.0 verdict (live, 2026-07-28):
+# NOT verified. Firstmate-written project hooks under <worktree>/.codex/
+# never fired in an interactive pane whose directory trust was granted, nor
+# under `codex exec`, in either case with --dangerously-bypass-hook-trust,
+# while global hooks fired in the same runs. Codex additionally exposes no
+# StopFailure hook, so an API-error turn end would need separate coverage
+# even after the discovery problem is solved.
+fm_busy_codex_hooks_verified() {
+  return 1
+}
+
+# fm_busy_codex_semantic_source: 0 when ANY verified Codex semantic source
+# exists. fm-spawn arms and wires Codex only behind this gate, and the
+# classifier reports unknown codex-unverified until it opens.
+fm_busy_codex_semantic_source() {
+  fm_busy_codex_appserver_observable || fm_busy_codex_hooks_verified
 }
 
 fm_busy_record_path() {  # <state-dir> <id>
@@ -173,9 +192,8 @@ fm_busy_sources_for_harness() {  # <harness>
   case "${1:-}" in
     claude*) adapter=claude-hook ;;
     codex*)
-      # Native pull source: stored hook records never establish observation.
-      printf ''
-      return 0
+      fm_busy_codex_semantic_source || { printf ''; return 0; }
+      adapter='codex-hook codex-appserver'
       ;;
     opencode*) adapter=opencode-plugin ;;
     gemini*) adapter=gemini-hook ;;
@@ -850,13 +868,10 @@ fm_busy_classify() {  # <backend> <target> <harness> <id> <state-dir> [tail40]
       fi
       ;;
     codex*)
-      if [ ! -f "$state/$id.codex-appserver" ]; then
+      if ! fm_busy_codex_semantic_source; then
         printf 'unknown codex-unverified'
-      else
-        python3 "$FM_BUSY_CODEX_READER" read "$state" "$id" 2>/dev/null ||
-          printf 'unknown codex-appserver-disconnected'
+        return 0
       fi
-      return 0
       ;;
     cursor*)
       # Semantic, on demand: fold this task's bound conversation transcript. A
