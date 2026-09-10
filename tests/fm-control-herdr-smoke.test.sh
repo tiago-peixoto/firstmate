@@ -145,15 +145,13 @@ pass "real herdr: a registered agent whose process is gone is agent-free"
 #
 # Pooled spawns run `treehouse get`, which leaves the agent inside a nested
 # interactive shell. After the agent exits, process-info reports that nested
-# shell as the foreground process group, not the pane shell. Combined with a
+# zsh as the foreground process group, not the pane shell. Combined with a
 # leftover hook-authority registration, the previous classifier read live
 # and fm-control exit reported unconfirmed.
-# Use bash: GitHub Herdr CI panes are bash and may not have zsh. The
-# classifier treats every recognized shell the same.
 
 herdr pane send-keys "$PANE_ID" enter --session "$SESSION" >/dev/null 2>&1 || true
 sleep 0.2
-herdr pane run "$PANE_ID" "bash" --session "$SESSION" >/dev/null 2>&1 \
+herdr pane run "$PANE_ID" "zsh" --session "$SESSION" >/dev/null 2>&1 \
   || fail "could not start a nested interactive shell in the task pane"
 
 NESTED=0
@@ -162,21 +160,15 @@ for _ in $(seq 1 50); do
   shell_pid=$(printf '%s' "$info" | jq -r '.result.process_info.shell_pid // empty' 2>/dev/null || true)
   pgid=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_process_group_id // empty' 2>/dev/null || true)
   name=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_processes[0].name // empty' 2>/dev/null || true)
-  comm=${name##*/}
-  comm=${comm#-}
-  case "$comm" in
-    sh|bash|zsh|dash|ksh|fish)
-      if [ -n "$shell_pid" ] && [ -n "$pgid" ] && [ "$shell_pid" != "$pgid" ]; then
-        NESTED=1
-        break
-      fi
-      ;;
-  esac
+  if [ -n "$shell_pid" ] && [ -n "$pgid" ] && [ "$shell_pid" != "$pgid" ] && [ "$name" = zsh ]; then
+    NESTED=1
+    break
+  fi
   sleep 0.1
 done
 if [ "$NESTED" != 1 ]; then
   herdr pane process-info --pane "$PANE_ID" --session "$SESSION" >&2 || true
-  fail "the nested shell never became the foreground process group"
+  fail "the nested zsh never became the foreground process group"
 fi
 
 herdr pane report-agent "$PANE_ID" --source fm-control-smoke --agent fm-control-smoke-agent \
@@ -207,7 +199,7 @@ PY_LIVE="$SCRATCH/py-live"
 # The payload stays in the foreground and spawns a child shell so a live
 # agent that is running a shell command cannot be classified gone.
 herdr pane run "$PANE_ID" \
-  "python3 -c 'import signal,subprocess,time; signal.signal(signal.SIGINT, signal.SIG_IGN); signal.signal(signal.SIGTERM, signal.SIG_IGN); subprocess.Popen([\"bash\",\"-c\",\"sleep 3600\"]); open(\"$PY_LIVE\",\"w\").write(\"ok\"); time.sleep(3600)'" \
+  "python3 -c 'import signal,subprocess,time; signal.signal(signal.SIGINT, signal.SIG_IGN); signal.signal(signal.SIGTERM, signal.SIG_IGN); subprocess.Popen([\"zsh\",\"-c\",\"sleep 3600\"]); open(\"$PY_LIVE\",\"w\").write(\"ok\"); time.sleep(3600)'" \
   --session "$SESSION" >/dev/null 2>&1 \
   || fail "could not start a live payload process in the task pane"
 
