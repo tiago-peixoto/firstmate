@@ -52,6 +52,8 @@ SH
     fi ;;
   "agent get")
     printf '{"id":"cli:agent:get","result":{"agent":{"agent":"claude","agent_status":"idle","pane_id":"wCY:p2"},"type":"agent_info"}}\n' ;;
+  "pane process-info")
+    printf '{"id":"cli:pane:process_info","result":{"type":"pane_process_info","process_info":{"pane_id":"wCY:p2","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"claude"}]}}}\n' ;;
   *) : ;;
 esac
 exit 0

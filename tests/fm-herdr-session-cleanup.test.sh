@@ -168,6 +168,16 @@ fm_backend_herdr_cli() {
         unknown) printf '%s\n' '{"error":{"code":"internal_error"}}' >&2; return 1 ;;
       esac
       ;;
+    "pane process-info")
+      case "$(cat "$FIXTURE_DIR/agent")" in
+        live)
+          printf '%s\n' '{"result":{"type":"pane_process_info","process_info":{"pane_id":"'"$PANE"'","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"pi"}]}}}'
+          ;;
+        *)
+          printf '%s\n' '{"result":{"type":"pane_process_info","process_info":{"pane_id":"'"$PANE"'","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"}]}}}'
+          ;;
+      esac
+      ;;
     "api snapshot")
       : > "$FIXTURE_DIR/snapshotted"
       printf '{"result":{"snapshot":{"focused_workspace_id":"w1","focused_tab_id":"%s","focused_pane_id":"w1:p1","workspaces":' "$(cat "$FIXTURE_DIR/active-tab")"

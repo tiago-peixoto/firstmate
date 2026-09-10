@@ -469,6 +469,15 @@ case "${1:-} ${2:-}" in
       exit 1
     fi
     ;;
+  "pane process-info")
+    pane=${3:-}
+    [ "$pane" = --pane ] && pane=${4:-}
+    if [ "$pane" = p-new ] && [ -e "$spawned" ]; then
+      printf '%s\n' '{"result":{"type":"pane_process_info","process_info":{"pane_id":"p-new","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"pi"}]}}}'
+    else
+      printf '%s\n' '{"result":{"type":"pane_process_info","process_info":{"pane_id":"'"$pane"'","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"}]}}}'
+    fi
+    ;;
   "pane close")
     [ "${3:-}" = p-old ] && : > "$killed"
     ;;

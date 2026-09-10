@@ -33,6 +33,24 @@ herdr_forget_inherited_pane() {
   unset HERDR_ENV HERDR_PANE_ID HERDR_TAB_ID HERDR_WORKSPACE_ID HERDR_SOCKET_PATH HERDR_SESSION
 }
 
+# herdr_hold_live_foreground: run a long-lived payload in <pane> of <session>
+# and wait until pane process-info shows a foreground process group that is
+# not the shell. Registration via pane report-agent is not live on its own.
+herdr_hold_live_foreground() { # <session> <pane>
+  local session=$1 pane=$2 info shell_pid pgid
+  herdr pane run "$pane" "sleep 3600" --session "$session" >/dev/null 2>&1 || return 1
+  for _ in $(seq 1 50); do
+    info=$(herdr pane process-info --pane "$pane" --session "$session" 2>/dev/null || true)
+    shell_pid=$(printf '%s' "$info" | jq -r '.result.process_info.shell_pid // empty' 2>/dev/null || true)
+    pgid=$(printf '%s' "$info" | jq -r '.result.process_info.foreground_process_group_id // empty' 2>/dev/null || true)
+    if [ -n "$shell_pid" ] && [ -n "$pgid" ] && [ "$shell_pid" != "$pgid" ]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
 herdr_refuse_if_default() { # <session>
   fm_herdr_lab_refuse_if_default "$1"
 }

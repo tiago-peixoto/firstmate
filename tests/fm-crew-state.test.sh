@@ -149,6 +149,19 @@ case "${1:-}" in
         fi
         printf '{"result":{"pane":{"pane_id":"%s"}}}\n' "${3:-}"
         exit 0 ;;
+      process-info)
+        pane=${4:-}
+        [ "${3:-}" = --pane ] || pane=${3:-}
+        if [ "${FM_FAKE_HERDR_MISSING:-0}" = 1 ]; then
+          printf '{"error":{"code":"pane_not_found","message":"no such pane"}}\n'
+          exit 1
+        fi
+        if [ "${FM_FAKE_HERDR_HUSK:-0}" = 1 ] || [ -z "${FM_FAKE_HERDR_AGENT_STATUS:-}" ]; then
+          printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"%s","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"}]}}}\n' "$pane"
+        else
+          printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"%s","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"claude"}]}}}\n' "$pane"
+        fi
+        exit 0 ;;
     esac ;;
   agent)
     case "${2:-}" in

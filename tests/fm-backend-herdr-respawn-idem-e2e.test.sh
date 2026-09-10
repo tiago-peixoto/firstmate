@@ -164,6 +164,8 @@ pass "fixed: the workspace holds exactly the 2 replacement tabs after both respa
 # attempt refuses exactly as before - the husk fix must never touch a pane
 # that actually has something registered in it.
 
+herdr_hold_live_foreground "$SESSION" "$NEW_CREW_PANE_ID" \
+  || fail "could not start a live payload on the respawned crewmate-shaped pane"
 herdr pane report-agent "$NEW_CREW_PANE_ID" --source fm-respawn-e2e --agent fm-respawn-live-agent --state idle --session "$SESSION" >/dev/null 2>&1 \
   || fail "could not register a live agent on the respawned crewmate-shaped pane"
 
