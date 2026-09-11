@@ -1445,6 +1445,54 @@ fm_backend_herdr_pane_process_state() {  # <session> <pane-id>
   fi
 }
 
+# fm_backend_herdr_fork_pane_terminal_members_on_idle_path:
+# Fork-owned extra after the idle-shell proof. Guarantees that every
+# process whose controlling terminal is the pane root shell's terminal
+# is one of the proven idle-path pids (the root shell, the treehouse
+# wrapper when present, and the idle task shell). An extra process on
+# that terminal, or any failure to read it, keeps the pane live.
+fm_backend_herdr_fork_pane_terminal_members_on_idle_path() {  # <session> <pane-id>
+  local session=$1 pane=$2 info shell_pid process_pid ps_bin tty wrapper member_rows
+  info=$(fm_backend_herdr_cli "$session" pane process-info --pane "$pane" 2>/dev/null) || return 1
+  shell_pid=$(printf '%s' "$info" | jq -er \
+    '.result.process_info.shell_pid | select(type == "number" and . > 1) | floor' 2>/dev/null) || return 1
+  process_pid=$(printf '%s' "$info" | jq -er \
+    '.result.process_info.foreground_processes[0].pid | select(type == "number" and . > 1) | floor' 2>/dev/null) || return 1
+  ps_bin=${FM_HERDR_PS_BIN:-ps}
+  command -v "$ps_bin" >/dev/null 2>&1 || return 1
+  tty=$(LC_ALL=C "$ps_bin" -o tty= -p "$shell_pid" 2>/dev/null | tr -d '[:space:]') || return 1
+  [ -n "$tty" ] || return 1
+  case "$tty" in
+    \?*|'') return 1 ;;
+  esac
+  tty=${tty#/dev/}
+  wrapper=
+  if [ "$process_pid" != "$shell_pid" ]; then
+    wrapper=$(LC_ALL=C "$ps_bin" -p "$process_pid" -o ppid= 2>/dev/null | tr -d '[:space:]') || return 1
+    case "$wrapper" in
+      ''|*[!0-9]*) return 1 ;;
+    esac
+    [ "$wrapper" -gt 1 ] || return 1
+  fi
+  member_rows=$(LC_ALL=C "$ps_bin" -t "$tty" -o pid= 2>/dev/null) || return 1
+  [ -n "$member_rows" ] || return 1
+  printf '%s\n' "$member_rows" | awk -v root="$shell_pid" -v foreground="$process_pid" -v wrapper="$wrapper" '
+    BEGIN {
+      path[root] = 1
+      path[foreground] = 1
+      if (wrapper != "") path[wrapper] = 1
+      seen = 0
+    }
+    {
+      pid = $1
+      if (pid == "" || pid + 0 != pid || pid <= 1) next
+      seen = 1
+      if (!(pid in path)) exit 1
+    }
+    END { if (!seen) exit 1 }
+  '
+}
+
 # fm_backend_herdr_projection_order_best_effort: place the exact workspace id
 # returned by THIS projected create immediately after its owning parent's
 # contiguous child block and before the next parent.
@@ -2115,7 +2163,13 @@ fm_backend_herdr_pane_agent_state() {  # <session> <pane_id>
   esac
   process_state=$(fm_backend_herdr_pane_process_state "$session" "$pane_id")
   case "$process_state" in
-    idle-shell) printf 'no-agent' ;;
+    idle-shell)
+      if fm_backend_herdr_fork_pane_terminal_members_on_idle_path "$session" "$pane_id"; then
+        printf 'no-agent'
+      else
+        printf 'live'
+      fi
+      ;;
     active) printf 'live' ;;
     *) printf 'unknown' ;;
   esac

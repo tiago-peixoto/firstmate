@@ -1001,8 +1001,9 @@ test_create_task_closes_and_replaces_stale_registered_shell() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/3.out"
   printf '{"result":{"agent":{"agent":"pi","agent_status":"done"}}}\n' > "$resp/4.out"
   printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"}]}}}\n' > "$resp/5.out"
-  printf '{"result":{"tab":{"tab_id":"w1:t3"},"root_pane":{"pane_id":"w1:p3"}}}\n' > "$resp/6.out"
-  printf '{"result":{"tabs":[{"tab_id":"w1:t3","label":"fm-stale-done","workspace_id":"w1"}]}}\n' > "$resp/8.out"
+  cp "$resp/5.out" "$resp/6.out"
+  printf '{"result":{"tab":{"tab_id":"w1:t3"},"root_pane":{"pane_id":"w1:p3"}}}\n' > "$resp/7.out"
+  printf '{"result":{"tabs":[{"tab_id":"w1:t3","label":"fm-stale-done","workspace_id":"w1"}]}}\n' > "$resp/9.out"
   make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
@@ -1026,17 +1027,59 @@ herdr_process_info_out() {  # <file> <pane> <shell_pid> <pgid> <name> <argv0>
     "$2" "$3" "$4" "$4" "$5" "$6" > "$1"
 }
 
-# make_idle_root_ps <dir> <pid>: a ps stub for the idle-shell proof when
-# the canned process-info names a root-only childless sleeping shell.
-make_idle_root_ps() {  # <dir> <pid>
+# make_idle_root_ps <dir> <pid> [extra-tty-pid]: a ps stub for the idle-shell
+# proof when the canned process-info names a root-only childless sleeping
+# shell. The optional extra pid appears on the pane terminal.
+make_idle_root_ps() {  # <dir> <pid> [extra-tty-pid]
+  extra=${3:-}
   cat > "$1/ps" <<SH
 #!/usr/bin/env bash
 set -u
 pid=$2
+extra='$extra'
 case "\$*" in
   "-axo pid=,ppid=,comm=") printf '%s 1 zsh\\n' "\$pid" ;;
   "-p \$pid -o stat=") printf 'Ss\\n' ;;
   "-p \$pid -o comm=") printf 'zsh\\n' ;;
+  "-p \$pid -o ppid=") printf '1\\n' ;;
+  "-o tty= -p \$pid") printf 'ttys001\\n' ;;
+  "-t ttys001 -o pid=")
+    printf '%s\\n' "\$pid"
+    if [ -n "\$extra" ]; then printf '%s\\n' "\$extra"; fi
+    ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$1/ps"
+}
+
+# make_idle_nested_ps <dir> <root> <treehouse> <leaf> [extra-tty-pid]
+make_idle_nested_ps() {
+  extra=${5:-}
+  cat > "$1/ps" <<SH
+#!/usr/bin/env bash
+set -u
+root=$2
+wrap=$3
+leaf=$4
+extra='$extra'
+case "\$*" in
+  "-axo pid=,ppid=,comm=")
+    printf '%s 1 zsh\\n' "\$root"
+    printf '%s %s treehouse\\n' "\$wrap" "\$root"
+    printf '%s %s zsh\\n' "\$leaf" "\$wrap"
+    ;;
+  "-p \$root -o stat="|"-p \$leaf -o stat=") printf 'Ss\\n' ;;
+  "-p \$root -o comm="|"-p \$leaf -o comm=") printf 'zsh\\n' ;;
+  "-p \$wrap -o comm=") printf 'treehouse\\n' ;;
+  "-p \$leaf -o ppid=") printf '%s\\n' "\$wrap" ;;
+  "-o tty= -p \$root") printf 'ttys001\\n' ;;
+  "-t ttys001 -o pid=")
+    printf '%s\\n' "\$root"
+    printf '%s\\n' "\$wrap"
+    printf '%s\\n' "\$leaf"
+    if [ -n "\$extra" ]; then printf '%s\\n' "\$extra"; fi
+    ;;
   *) exit 1 ;;
 esac
 SH
@@ -1044,6 +1087,8 @@ SH
 }
 
 classify_pane_agent_state() {  # <fakebin> <log> <resp> [ps-bin]
+  # The fork terminal-membership check re-reads process-info.
+  [ -f "$3/3.out" ] && [ ! -f "$3/4.out" ] && cp "$3/3.out" "$3/4.out"
   PATH="$1:$PATH" FM_HERDR_LOG="$2" FM_HERDR_RESPONSES="$3" \
     FM_HERDR_PS_BIN="${4:-${FM_HERDR_PS_BIN:-ps}}" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_pane_agent_state fmtest w1:p2' "$ROOT"
@@ -1075,6 +1120,57 @@ test_pane_agent_state_idle_shell_is_no_agent() {
   out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
   [ "$out" = no-agent ] || fail "an idle registration whose process is gone should be no-agent, got '$out'"
   pass "fm_backend_herdr_pane_agent_state: idle + shell-only foreground is no-agent"
+}
+
+test_pane_agent_state_nested_idle_shell_is_no_agent() {
+  local dir log resp fb out
+  dir="$TMP_ROOT/state-nested-idle"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
+  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
+  printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
+  herdr_process_info_out "$resp/3.out" w1:p2 100 300 zsh zsh
+  make_idle_nested_ps "$dir" 100 200 300
+  fb=$(make_herdr_fakebin "$dir")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  [ "$out" = no-agent ] || fail "an idle nested treehouse shell should be no-agent, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: idle nested treehouse chain is no-agent"
+}
+
+test_pane_agent_state_orphaned_agent_on_terminal_is_live() {
+  local dir log resp fb out
+  dir="$TMP_ROOT/state-orphan-tty"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
+  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
+  printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
+  herdr_process_info_out "$resp/3.out" w1:p2 100 300 zsh zsh
+  make_idle_nested_ps "$dir" 100 200 300 999
+  fb=$(make_herdr_fakebin "$dir")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  [ "$out" = live ] || fail "an orphaned agent still on the pane terminal should be live, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: orphaned agent on the pane terminal stays live"
+}
+
+test_pane_agent_state_terminal_read_failure_is_live() {
+  local dir log resp fb out
+  dir="$TMP_ROOT/state-tty-fail"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
+  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
+  printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
+  herdr_process_info_out "$resp/3.out" w1:p2 100 100 zsh zsh
+  make_idle_root_ps "$dir" 100
+  cat > "$dir/ps" <<'SH'
+#!/usr/bin/env bash
+set -u
+case "$*" in
+  "-axo pid=,ppid=,comm=") printf '100 1 zsh\n' ;;
+  "-p 100 -o stat=") printf 'Ss\n' ;;
+  "-p 100 -o comm=") printf 'zsh\n' ;;
+  "-o tty= -p 100") exit 1 ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$dir/ps"
+  fb=$(make_herdr_fakebin "$dir")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  [ "$out" = live ] || fail "a terminal read failure should keep the pane live, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: terminal read failure stays live"
 }
 
 test_pane_agent_state_shell_plus_starship_is_no_agent() {
@@ -1167,6 +1263,7 @@ test_pane_agent_state_maps_to_agent_state_dead() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
   printf '{"result":{"agent":{"agent_status":"done"}}}\n' > "$resp/2.out"
   herdr_process_info_out "$resp/3.out" w1:p2 100 100 zsh zsh
+  cp "$resp/3.out" "$resp/4.out"
   make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
@@ -4910,6 +5007,9 @@ test_create_task_refuses_when_agent_state_ambiguous
 test_create_task_closes_and_replaces_stale_registered_shell
 test_pane_agent_state_stale_done_shell_is_no_agent
 test_pane_agent_state_idle_shell_is_no_agent
+test_pane_agent_state_nested_idle_shell_is_no_agent
+test_pane_agent_state_orphaned_agent_on_terminal_is_live
+test_pane_agent_state_terminal_read_failure_is_live
 test_pane_agent_state_shell_plus_starship_is_no_agent
 test_pane_agent_state_pi_process_is_live
 test_pane_agent_state_opencode_process_is_live

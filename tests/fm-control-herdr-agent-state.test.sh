@@ -154,6 +154,29 @@ esac
 SH
 chmod +x "$FAKEBIN/herdr"
 
+# The test's own session processes share a terminal. Stub only the tty
+# membership listing so those extras do not fail the fork check.
+TREEHOUSE_PID=$(ps -p "$LEAF_PID" -o ppid= | tr -d '[:space:]')
+printf '%s\n' "$ROOT_PID" "$TREEHOUSE_PID" "$LEAF_PID" > "$TMP_ROOT/tty-pids"
+cat > "$FAKEBIN/ps" <<'SH'
+#!/usr/bin/env bash
+set -u
+real_ps=/bin/ps
+args="$*"
+case "$args" in
+  "-o tty= -p "*|"-o tty= -p"*)
+    printf 'testdev\n'
+    exit 0
+    ;;
+  "-t testdev -o pid="|"-t testdev -o pid="*)
+    cat "${FM_HERDR_TTY_PIDS:?}"
+    exit 0
+    ;;
+esac
+exec "$real_ps" "$@"
+SH
+chmod +x "$FAKEBIN/ps"
+
 cat > "$HOME_DIR/state/hs.meta" <<EOF
 window=fmtest:w1:p2
 endpoint_task_id=hs
@@ -179,6 +202,7 @@ run_control() {
     FM_HERDR_ACTIVE_ROOT_PID="$ACTIVE_ROOT_PID" FM_HERDR_ACTIVE_PID="$ACTIVE_PID" \
     FM_HERDR_LIVE_ROOT_PID="$LIVE_ROOT_PID" FM_HERDR_AGENT_PID="$AGENT_PID" \
     FM_HERDR_LIVE_LEAF_PID="$LIVE_LEAF_PID" \
+    FM_HERDR_PS_BIN="$FAKEBIN/ps" FM_HERDR_TTY_PIDS="$TMP_ROOT/tty-pids" \
     FM_CONTROL_POLL=0.01 FM_CONTROL_SETTLE_WAIT=0.01 \
     "$ROOT/bin/fm-control.sh" "$@" 2>&1
 }
@@ -189,6 +213,15 @@ out=$(run_control hs exit) || fail "a stale Pi registration over a real idle she
 assert_contains "$out" "already-stopped hs" "the public exit command did not recognize the post-Pi idle shell"
 assert_not_contains "$(cat "$TMP_ROOT/herdr.log")" "pane send-keys" "an agent-free shell must receive no lifecycle input"
 pass "fm-control herdr: a stale Pi registration over a real idle-shell process tree is already stopped"
+
+printf 'stale\n' > "$TMP_ROOT/mode"
+: > "$TMP_ROOT/herdr.log"
+printf '%s\n' "$ROOT_PID" "$TREEHOUSE_PID" "$LEAF_PID" 99999 > "$TMP_ROOT/tty-pids"
+out=$(run_control hs interrupt) || fail "an orphaned agent still on the pane terminal should remain live: $out"
+assert_contains "$out" "interrupt-delivered hs" "the orphaned-agent terminal member was mistaken for a stale registration"
+assert_contains "$(cat "$TMP_ROOT/herdr.log")" "pane send-keys w1:p2 escape" "the orphaned agent did not receive its interrupt key"
+pass "fm-control herdr: an extra process on the pane terminal keeps a leftover registration live"
+printf '%s\n' "$ROOT_PID" "$TREEHOUSE_PID" "$LEAF_PID" > "$TMP_ROOT/tty-pids"
 
 printf 'alive\n' > "$TMP_ROOT/mode"
 : > "$TMP_ROOT/herdr.log"
