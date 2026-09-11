@@ -1027,26 +1027,19 @@ herdr_process_info_out() {  # <file> <pane> <shell_pid> <pgid> <name> <argv0>
     "$2" "$3" "$4" "$4" "$5" "$6" > "$1"
 }
 
-# make_idle_root_ps <dir> <pid> [extra-tty-pid]: a ps stub for the idle-shell
-# proof when the canned process-info names a root-only childless sleeping
-# shell. The optional extra pid appears on the pane terminal.
-make_idle_root_ps() {  # <dir> <pid> [extra-tty-pid]
-  extra=${3:-}
+# make_idle_root_ps <dir> <pid>: a ps stub for the idle-shell proof when
+# the canned process-info names a root-only childless sleeping shell.
+make_idle_root_ps() {  # <dir> <pid>
   cat > "$1/ps" <<SH
 #!/usr/bin/env bash
 set -u
 pid=$2
-extra='$extra'
 case "\$*" in
   "-axo pid=,ppid=,comm=") printf '%s 1 zsh\\n' "\$pid" ;;
   "-p \$pid -o stat=") printf 'Ss\\n' ;;
   "-p \$pid -o comm=") printf 'zsh\\n' ;;
-  "-p \$pid -o ppid=") printf '1\\n' ;;
   "-o tty= -p \$pid") printf 'ttys001\\n' ;;
-  "-t ttys001 -o pid=")
-    printf '%s\\n' "\$pid"
-    if [ -n "\$extra" ]; then printf '%s\\n' "\$extra"; fi
-    ;;
+  "-t ttys001 -o pid=") printf '%s\\n' "\$pid" ;;
   *) exit 1 ;;
 esac
 SH
@@ -1087,7 +1080,6 @@ SH
 }
 
 classify_pane_agent_state() {  # <fakebin> <log> <resp> [ps-bin]
-  # The fork terminal-membership check re-reads process-info.
   [ -f "$3/3.out" ] && [ ! -f "$3/4.out" ] && cp "$3/3.out" "$3/4.out"
   PATH="$1:$PATH" FM_HERDR_LOG="$2" FM_HERDR_RESPONSES="$3" \
     FM_HERDR_PS_BIN="${4:-${FM_HERDR_PS_BIN:-ps}}" \
@@ -1154,7 +1146,6 @@ test_pane_agent_state_terminal_read_failure_is_live() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
   printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
   herdr_process_info_out "$resp/3.out" w1:p2 100 100 zsh zsh
-  make_idle_root_ps "$dir" 100
   cat > "$dir/ps" <<'SH'
 #!/usr/bin/env bash
 set -u

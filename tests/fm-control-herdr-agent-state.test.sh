@@ -154,8 +154,8 @@ esac
 SH
 chmod +x "$FAKEBIN/herdr"
 
-# The test's own session processes share a terminal. Stub only the tty
-# membership listing so those extras do not fail the fork check.
+# The test's own session processes share a terminal. Stub the terminal
+# read and listing so those extras do not fail the fork check.
 TREEHOUSE_PID=$(ps -p "$LEAF_PID" -o ppid= | tr -d '[:space:]')
 printf '%s\n' "$ROOT_PID" "$TREEHOUSE_PID" "$LEAF_PID" > "$TMP_ROOT/tty-pids"
 cat > "$FAKEBIN/ps" <<'SH'
@@ -164,11 +164,11 @@ set -u
 real_ps=/bin/ps
 args="$*"
 case "$args" in
-  "-o tty= -p "*|"-o tty= -p"*)
+  "-o tty= -p "*)
     printf 'testdev\n'
     exit 0
     ;;
-  "-t testdev -o pid="|"-t testdev -o pid="*)
+  "-t testdev -o pid=")
     cat "${FM_HERDR_TTY_PIDS:?}"
     exit 0
     ;;

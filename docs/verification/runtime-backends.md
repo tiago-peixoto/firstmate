@@ -644,8 +644,9 @@ The installed Pi v8 extension and OpenCode v11 plugin contain no `release_agent`
 The public exit command delivered Pi's `/quit`, after which `herdr agent get` still reported the old Pi registration as idle while `pane process-info` reported one foreground `/bin/zsh` and the real process table showed the pane root shell, `treehouse get`, and that childless sleeping task shell as one unbranched chain.
 The previous process-group classifier treated that leftover nested `treehouse` shell as live, so public relaunch delivered a second exit command into the shell and refused.
 The idle-shell proof returns dead for the same stale registration, while a registered non-shell foreground process remains alive and malformed process evidence becomes unreadable.
-A fork-owned extra then requires every process on the pane root shell's controlling terminal to lie on that proven path, so an orphaned agent whose launch wrapper died still reads live.
 The public relaunch then reused the exact endpoint and launched a new Pi agent successfully.
+
+Measured 2026-09-11 against Herdr 0.9.0 in an isolated `fm-lab-` session: after `treehouse get`, Pi launched as `/bin/sh -c 'unset TRACEPARENT; pi'`, then SIGTERM of that `/bin/sh` left Pi re-parented to pid 1 still on the pane tty (`idle-shell` / `live` / `alive`).
 
 Portable public-interface coverage uses real shell processes and a scripted Herdr protocol surface:
 
