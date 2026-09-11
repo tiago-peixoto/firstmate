@@ -106,7 +106,9 @@
 #                          an actionable row in an endpoint-recorded local
 #                          secondmate home's durable wake queue did not advance
 #                          between observations for FM_SECONDMATE_WAKE_STALL_SECS
-#                          while the mate was not in an active turn; declared
+#                          while the mate was not in an active turn (a busy mate
+#                          is exempt only until the queue has been frozen for
+#                          BUSY_TURN_MAX_SECS); declared
 #                          external-wait pause rows do not feed this escalation,
 #                          observation is read-only, and one parent notification
 #                          covers each no-progress episode
@@ -734,13 +736,16 @@ secondmate_oldest_queue_row() {  # <queue-path>
 # by the same BUSY_TURN_MAX_SECS that stops a busy pane from proving liveness
 # forever. A mate mid-turn has not stopped draining its queue - it simply drains
 # between turns - so this gate, not the elapsed interval, is what separates a
-# healthy mate from a frozen wake loop. Any absence of proof (no window, a failed
-# capture, an idle or unknown verdict, a busy pane past the bound) is NOT an
-# active turn, so a frozen queue still escalates.
-secondmate_in_active_turn() {  # <task> <window>
-  local task=$1 w=$2 tail40
+# healthy mate from a frozen wake loop. The bound is measured on <idle>, how long
+# the queue's drain position has not moved, because a mate's turns end in its own
+# home and this home holds no completed-turn evidence to age them by
+# (busy_turn_over_age). Any absence of proof (no window, a failed capture, an
+# idle or unknown verdict, a queue frozen past the bound) is NOT an active turn,
+# so a frozen queue still escalates.
+secondmate_in_active_turn() {  # <task> <window> <idle>
+  local task=$1 w=$2 idle=$3 tail40
   [ -n "$w" ] || return 1
-  ! busy_turn_over_age "$task" || return 1
+  [ "$idle" -lt "$BUSY_TURN_MAX_SECS" ] || return 1
   tail40=$(fm_backend_capture "$(window_backend "$w")" "$w" 40 "$(window_label "$w")" 2>/dev/null) || return 1
   window_is_busy "$w" "$tail40"
 }
@@ -819,7 +824,7 @@ EOF
     [ "$episode_alerted" -eq 0 ] || continue
     idle=$((now - observed_at))
     [ "$idle" -ge "$threshold" ] || continue
-    ! secondmate_in_active_turn "$task" "$(fm_backend_target_of_meta "$meta")" || continue
+    ! secondmate_in_active_turn "$task" "$(fm_backend_target_of_meta "$meta")" "$idle" || continue
     receipt="$receipt_dir/$row_key"
     if [ "$(cat "$receipt" 2>/dev/null || true)" = "$row_key" ]; then
       fm_wake_secondmate_stall_marker_write "$task" "$row_key" || return 1
@@ -957,9 +962,13 @@ wedge_timer_check() {  # <window> <since-file> <triage-label> <escalation-count-
 # progress is at least BUSY_TURN_MAX_SECS old. Progress is actual observed model
 # or tool activity, never a timer or a busy footer. It does not emit a wake or
 # change semantic busy state. Before either marker exists, age the spawn record.
+# A secondmate's turns end in its own home, so neither marker ever lands here and
+# its spawn record ages only its last launch; with no evidence that its turn is
+# young, a secondmate is always over age.
 # The caller checks busy state and routes a crossed bound through inspection.
 busy_turn_over_age() {  # <task>
   local task=$1 f progress
+  [ "$(fm_meta_get "$STATE/$task.meta" kind)" != secondmate ] || return 0
   f="$STATE/$task.turn-ended"
   [ -e "$f" ] || f="$STATE/$task.meta"
   progress="$STATE/$task.progress"
