@@ -221,6 +221,16 @@ The third answer is why the check runs with a scrubbed environment: Pi counts `A
 Against real logged-in roots, each check answered in under one second.
 `tests/fm-account-pin-preflight-live-e2e.test.sh` re-runs these checks through the library on any host with pi, quota-axi, and jq, and fails naming the version whose answer changed.
 
+### quota-axi keychain reporting on 0.1.41
+
+Observed on 2026-09-11 with quota-axi 0.1.41 on macOS.
+The `keychain` answers recorded above were taken on 0.1.30 and no longer hold, so the Claude half of the live guard fails on this version.
+A root with a real login still answers determinately: one account root reports `{"source":"keychain","status":"available"}` and another `{"source":"keychain","status":"expired"}`.
+Two other roots answer `{"source":"keychain","status":"skipped","error":"keychain_prompt_required","credentialPresent":true}` and `{"source":"keychain","status":"skipped","error":"keychain_presence_check_failed","credentialPresent":true}`.
+A throwaway root holding nothing at all gets that same `keychain_presence_check_failed` answer, so on this version `credentialPresent` is not evidence when the presence check did not complete, and an empty Claude root passes the preflight.
+The library's Claude branch is deliberately unchanged: the two cases are indistinguishable in this output, so tightening the rule would also refuse a root whose only credential lives in the keychain.
+What should count as ready when the presence check cannot run is its own call.
+
 ### Extension-registered Pi providers
 
 Verified on 2026-09-11 with Pi 0.85.1 on macOS.

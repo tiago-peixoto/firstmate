@@ -19,6 +19,7 @@ make_spawn_pi_probe() {
 #!/usr/bin/env bash
 set -u
 [ "${1:-} ${2:-}" != "auth check" ] || exec fm-fake-pi-auth "$@"
+[ "${1:-}" != "--list-models" ] || exec fm-fake-pi-list-models "${2:-}"
 if [ "${1:-}" = --help ]; then
   if [ "${FM_FAKE_PI_VERSION:-0.84.0}" = 0.82.0 ]; then
     printf '%s\n' 'Pi 0.82.0' 'Options: --help'
@@ -722,7 +723,7 @@ test_pi_tui_mode_probe_is_safe_for_old_and_new_pi() {
 
       out=$(FM_TEST_PI_VERSION="$version" \
         run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
-        "$id" "$PROJ_DIR")
+        "$id" "$PROJ_DIR" --model fake/model)
       status=$?
       expect_code 0 "$status" "$harness $version spawn should succeed"
       launch=$(cat "$LAUNCH_LOG")
@@ -777,18 +778,19 @@ test_pi_signed_persistent_secondmate_uses_pi_extensions_and_identity() {
   cp "$ROOT/AGENTS.md" "$sm/AGENTS.md"
   cp "$sm/data/charter.md" "$CASE_DIR/charter-before"
 
-  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id" "$sm" --secondmate)
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id" "$sm" --secondmate \
+    --model fake/model)
   status=$?
   expect_code 0 "$status" "pi-signed persistent secondmate spawn should succeed"
   assert_contains "$out" "spawned $id harness=pi-signed kind=secondmate" \
     "pi-signed secondmate spawn did not preserve its runtime identity"
-  assert_meta_profile "$HOME_DIR/state/$id.meta" pi-signed default default
+  assert_meta_profile "$HOME_DIR/state/$id.meta" pi-signed fake/model default
   cmp -s "$ROOT/AGENTS.md" "$sm/AGENTS.md" || fail "secondmate launch rewrote the supervisor contract"
   cmp -s "$CASE_DIR/charter-before" "$sm/data/charter.md" || fail "secondmate launch rewrote the charter"
   assert_absent "$HOME_DIR/data/$id/launch-brief.md" "secondmate launch received a worker overlay"
   launch=$(cat "$LAUNCH_LOG")
   assert_contains "$launch" "< '$sm/data/charter.md'" "secondmate launch lost its original charter"
-  assert_contains "$launch" "FM_PI_HARNESS=pi-signed '$FAKEBIN_DIR/pi-signed' --tui-mode regular -e '$sm/.pi/extensions/fm-primary-turnend-guard.ts' -e '$sm/.pi/extensions/fm-primary-pi-watch.ts'" \
+  assert_contains "$launch" "FM_PI_HARNESS=pi-signed '$FAKEBIN_DIR/pi-signed' --tui-mode regular --model 'fake/model' -e '$sm/.pi/extensions/fm-primary-turnend-guard.ts' -e '$sm/.pi/extensions/fm-primary-pi-watch.ts'" \
     "pi-signed secondmate did not force the regular TUI with Pi's primary extension launch shape"
   if [ "${FM_TEST_EVIDENCE:-0}" = 1 ]; then
     printf '# evidence begin: persistent secondmate\n%s\n' "$out"
@@ -1524,6 +1526,47 @@ EOF
   pass "config/pi-account-side keeps work and personal apart on every Pi launch, and an unqualified model is a refusal"
 }
 
+# A secondmate is a supervisor launched on the launching home's own pin, so it
+# spends that home's account and is held to the same side as any worker.
+test_pi_account_side_guard_covers_secondmate_launches() {
+  local spec decl model expect rec id out status n=0
+  # <config bytes, "-" for absent>|<model>|<allowed?>
+  for spec in \
+    'work|openai-codex-work/gpt-6-astra|yes' \
+    'work|other/m|no' \
+    '-|openai-codex-work/gpt-6-astra|no' \
+    '-||no' \
+  ; do
+    IFS='|' read -r decl model expect <<EOF
+$spec
+EOF
+    n=$((n + 1))
+    id="side-sm-$n"
+    rec=$(make_spawn_case "$id" pi "$id")
+    read_case_record "$rec"
+    [ "$decl" = - ] || printf '%s\n' "$decl" > "$HOME_DIR/config/pi-account-side"
+    printf 'openai-codex-work gpt-6-astra\nother m\n' > "$HOME_DIR/accounts/pi/.fake-models"
+    make_seeded_secondmate_home "$CASE_DIR/sm" "$id"
+    if [ -n "$model" ]; then
+      out=$(run_spawn "$HOME_DIR" "$CASE_DIR/sm" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
+        "$id" "$CASE_DIR/sm" --secondmate --harness pi --model "$model"); status=$?
+    else
+      out=$(run_spawn "$HOME_DIR" "$CASE_DIR/sm" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
+        "$id" "$CASE_DIR/sm" --secondmate --harness pi); status=$?
+    fi
+    if [ "$expect" = yes ]; then
+      expect_code 0 "$status" "a secondmate launch on '$model' must succeed under declaration '$decl': $out"
+      continue
+    fi
+    expect_code 1 "$status" "a secondmate launch on '${model:-none}' must refuse under declaration '$decl': $out"
+    [ ! -s "$LAUNCH_LOG" ] || fail "a refused secondmate launch ('${model:-none}') was still delivered"
+    assert_absent "$HOME_DIR/state/$id.meta" "a refused secondmate launch ('${model:-none}') published a task"
+    assert_contains "$out" "config/pi-account-side" \
+      "a refused secondmate launch ('${model:-none}') must name the file that declares the side"
+  done
+  pass "a Pi secondmate launch is held to the launching home's declared account side"
+}
+
 # A raw launch command is passed through verbatim, so fm-spawn's own --model
 # never reaches the agent. The guard must judge the model inside that command,
 # or a raw `pi --model openai-codex-work/...` would walk past a personal home.
@@ -1736,6 +1779,7 @@ test_claude_crewmate_launch_carries_the_attribution_policy
 test_claude_secondmate_launch_carries_the_attribution_policy
 test_active_dispatch_profile_does_not_block_secondmate_launch
 test_pi_account_side_guard
+test_pi_account_side_guard_covers_secondmate_launches
 test_pi_account_side_guard_reads_raw_launch_command
 test_pi_preflight_confirms_extension_provider
 test_pi_mcp_config_overlay
