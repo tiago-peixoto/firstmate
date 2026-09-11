@@ -1026,7 +1026,7 @@ herdr_process_info_out() {  # <file> <pane> <shell_pid> <pgid> <name> <argv0>
     "$2" "$3" "$4" "$4" "$5" "$6" > "$1"
 }
 
-# make_idle_root_ps <dir> <pid>: a ps stub for 3717's idle-shell proof when
+# make_idle_root_ps <dir> <pid>: a ps stub for the idle-shell proof when
 # the canned process-info names a root-only childless sleeping shell.
 make_idle_root_ps() {  # <dir> <pid>
   cat > "$1/ps" <<SH
@@ -1045,7 +1045,6 @@ SH
 
 classify_pane_agent_state() {  # <fakebin> <log> <resp> [ps-bin]
   PATH="$1:$PATH" FM_HERDR_LOG="$2" FM_HERDR_RESPONSES="$3" \
-    FM_BACKEND_HERDR_PROCESS_LIVENESS_POLLS=1 \
     FM_HERDR_PS_BIN="${4:-${FM_HERDR_PS_BIN:-ps}}" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_pane_agent_state fmtest w1:p2' "$ROOT"
 }
@@ -1086,7 +1085,7 @@ test_pane_agent_state_shell_plus_starship_is_no_agent() {
   printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"},{"pid":102,"name":"starship","argv0":"starship"}]}}}\n' > "$resp/3.out"
   fb=$(make_herdr_fakebin "$dir")
   out=$(classify_pane_agent_state "$fb" "$log" "$resp")
-  [ "$out" = live ] || fail "zsh+starship is an extra foreground job, so 3717 keeps it live, got '$out'"
+  [ "$out" = live ] || fail "zsh+starship is an extra foreground job, so it stays live, got '$out'"
   pass "fm_backend_herdr_pane_agent_state: shell plus starship stays live under the idle-shell proof"
 }
 
@@ -1171,7 +1170,7 @@ test_pane_agent_state_maps_to_agent_state_dead() {
   make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
-    FM_BACKEND_HERDR_PROCESS_LIVENESS_POLLS=1 FM_HERDR_PS_BIN="$dir/ps" \
+    FM_HERDR_PS_BIN="$dir/ps" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_agent_state fmtest:w1:p2' "$ROOT" )
   [ "$out" = dead ] || fail "stale done+shell should map to recovery-grade dead, got '$out'"
   pass "fm_backend_herdr_agent_state: stale registration whose process is gone is dead"

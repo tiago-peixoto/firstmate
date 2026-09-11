@@ -47,6 +47,16 @@ trap cleanup EXIT
 mkdir -p "$HOME_DIR/state" "$HOME_DIR/data/$TASK" "$HOME_DIR/config"
 printf 'manual\n' > "$HOME_DIR/config/backlog-backend"
 printf 'off\n' > "$HOME_DIR/config/herdr-presentation-spaces"
+# Fork spawn requires a Pi account pin. Same file shape as
+# tests/fm-account-pin-preflight-live-e2e.test.sh: one absolute path and a
+# newline. Prefer a credentialed host root so an opted-in run can launch.
+PI_PIN=${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}
+if [ ! -d "$PI_PIN" ]; then
+  PI_PIN="$SCRATCH/pi-account"
+  mkdir -p "$PI_PIN"
+  printf '{"defaultProvider":"anthropic"}\n' > "$PI_PIN/settings.json"
+fi
+printf '%s\n' "$PI_PIN" > "$HOME_DIR/config/pi-agent-dir"
 git init --bare -q "$REMOTE"
 git clone -q "$REMOTE" "$PROJECT"
 git -C "$PROJECT" config user.name 'Firstmate Tests'

@@ -116,6 +116,33 @@ case "$OUT" in
 esac
 pass "real herdr: interrupt refuses when herdr's own agent registry reports no agent"
 
+# --- a stale registration on a shell is agent-free --------------------------
+#
+# herdr pane report-agent is the same registry hook-authority integrations
+# write. After /quit the process is gone and only the shell remains, but
+# herdr 0.9.0 can keep the registration (done/idle under
+# full_lifecycle_hook_authority) because Pi and OpenCode never call
+# pane.release-agent. Registration alone is not live.
+
+"$HERDR_LAB_HELPER" run "$SESSION" pane report-agent "$PANE_ID" \
+  --source fm-control-smoke --agent fm-control-smoke-agent --state idle >/dev/null 2>&1 \
+  || fail "could not register a leftover agent on the task pane"
+
+STATE=
+for _ in $(seq 1 20); do
+  STATE=$(fm_backend_agent_state herdr "$SESSION:$PANE_ID")
+  [ "$STATE" = dead ] && break
+  sleep 0.1
+done
+[ "$STATE" = dead ] || fail "a registered agent whose foreground is only a shell should be dead, got '$STATE'"
+
+OUT=$(run_control hsmoke exit) || fail "exit against a stale herdr registration should confirm the agent is gone: $OUT"
+case "$OUT" in
+  "already-stopped hsmoke"*|"stopped hsmoke"*) : ;;
+  *) fail "a stale registration on a shell should confirm stopped, got: $OUT" ;;
+esac
+pass "real herdr: a registered agent whose process is gone is agent-free"
+
 # --- a registered agent with active process evidence: verbs follow ----------
 
 "$HERDR_LAB_HELPER" run "$SESSION" pane run "$PANE_ID" 'sleep 120' >/dev/null 2>&1 \
