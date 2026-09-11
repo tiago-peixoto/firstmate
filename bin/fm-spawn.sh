@@ -171,6 +171,12 @@
 #   config reread generations because the new agent reads the converged files.
 #   Claude, Pi, and Pi-signed launches require an account pin
 #   (bin/fm-account-pin-lib.sh owns resolution, validation, and the preflight).
+#   A Pi root can hold several accounts, so a pi/pi-signed launch must also name
+#   its model as <provider>/<id> and match the side config/pi-account-side
+#   declares; an unqualified model, or a provider the side forbids, refuses
+#   before any endpoint exists. config/pi-mcp-config, resolved from the same
+#   config directory, overlays those launches with --mcp-config and refuses when
+#   the file it names is missing rather than falling back to Pi's own discovery.
 #   Both pins are home-local, never inherited, and name the accounts that
 #   home's workers use: a ship/scout reads only the active home's
 #   config/claude-config-dir or config/pi-agent-dir, never the spawning
@@ -288,6 +294,7 @@
 #                  turn-end signal rides the launch command, e.g. codex -c notify=[...])
 #     __PIEXT__    absolute path to state/<task-id>.pi-ext.ts (pi turn-end extension,
 #                  written by this script; outside the worktree to avoid pi's trust gate)
+#     __PIMCPFLAG__ optional `--mcp-config <path> ` from config/pi-mcp-config
 #     __PITURNEND__ absolute path to .pi/extensions/fm-primary-turnend-guard.ts in a pi secondmate home
 #     __PIWATCH__   absolute path to .pi/extensions/fm-primary-pi-watch.ts in a pi secondmate home
 #     __OMPBIN__   quoted concrete omp executable path resolved from PATH
@@ -1074,6 +1081,27 @@ spawn_abort_cleanup() {
   fi
   return "$status"
 }
+
+# Close the task endpoint, then return the unique lease armed for abort,
+# then disarm so EXIT cannot return it twice. Warn and return non-zero
+# when the return itself fails. Defined ahead of the trap below, which calls it:
+# a refusal before the definition would otherwise print "command not found" on
+# the way out. The functions it calls are resolved when it runs, not here.
+spawn_return_abort_lease() {
+  local path cd_dir
+  [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] || return 0
+  path=$SPAWN_LEASE_RETURN_ON_ABORT
+  cd_dir=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
+  SPAWN_LEASE_RETURN_ON_ABORT=
+  spawn_close_abort_endpoint
+  if spawn_release_treehouse_lease "$path" "$cd_dir"; then
+    echo "returned copy $path" >&2
+  else
+    echo "warning: could not release treehouse lease for $path after aborted spawn of $ID" >&2
+    return 1
+  fi
+}
+
 trap spawn_abort_cleanup EXIT
 
 # One bounded lock per live Herdr session/socket, shared across all homes.
@@ -1498,9 +1526,9 @@ launch_template() {
     pi|pi-signed)
       printf '%s' '__PIBIN____PITUIMODE__'
       if [ "$kind" = secondmate ]; then
-        printf '%s' ' __MODELFLAG____EFFORTFLAG__-e __PITURNEND__ -e __PIWATCH__ "$(__OPINPUT__ encode launch-brief < __BRIEF__)"'
+        printf '%s' ' __MODELFLAG____EFFORTFLAG____PIMCPFLAG__-e __PITURNEND__ -e __PIWATCH__ "$(__OPINPUT__ encode launch-brief < __BRIEF__)"'
       else
-        printf '%s' ' __MODELFLAG____EFFORTFLAG__-e __PIEXT__ "$(__OPINPUT__ encode launch-brief < __BRIEF__)"'
+        printf '%s' ' __MODELFLAG____EFFORTFLAG____PIMCPFLAG__-e __PIEXT__ "$(__OPINPUT__ encode launch-brief < __BRIEF__)"'
       fi
       ;;
     # omp (Oh My Pi), a Pi fork. Same one-positional-brief, --model, --thinking,
@@ -1710,6 +1738,32 @@ case "$HARNESS" in
   claude) CLAUDE_CONFIG_ROOT=$(fm_account_pin_resolve claude "$PIN_CONFIG" "$FM_HOME" "$KIND") || exit 1 ;;
   pi|pi-signed) PI_AGENT_ROOT=$(fm_account_pin_resolve "$HARNESS" "$PIN_CONFIG" "$FM_HOME") || exit 1 ;;
 esac
+
+# config/pi-mcp-config names an MCP config file this home's Pi launches overlay
+# with `--mcp-config`, which occupies the same precedence slot a Pi root's own
+# mcp.json would. It is resolved beside the account pin and from the same config
+# directory, because the servers a launch may reach belong with the account it
+# spends. Absent means no flag and Pi's ordinary discovery. A named file that is
+# missing REFUSES: silently dropping the overlay would re-enable the project's
+# own default servers, which is the opposite of what naming it asked for.
+PI_MCP_FLAG=
+if [ "$HARNESS" = pi ] || [ "$HARNESS" = pi-signed ]; then
+  pi_mcp_cfg="$PIN_CONFIG/pi-mcp-config"
+  pi_mcp_path=$(fm_account_pin_read_path "$pi_mcp_cfg")
+  case "$?" in
+    0)
+      if [ ! -f "$pi_mcp_path" ] || [ ! -r "$pi_mcp_path" ]; then
+        echo "error: config/pi-mcp-config names an MCP config file that is missing or unreadable: $pi_mcp_path (from $pi_mcp_cfg); refusing rather than launching with the project's own default servers instead" >&2
+        exit 1
+      fi
+      PI_MCP_FLAG="--mcp-config $(shell_quote "$pi_mcp_path") "
+      ;;
+    3) ;;  # absent: no overlay, Pi discovers its own configuration
+    4) exit 1 ;;
+    5) echo "error: config/pi-mcp-config must be a readable regular file: $pi_mcp_cfg" >&2; exit 1 ;;
+    *) echo "error: config/pi-mcp-config must contain one absolute path followed by one newline: $pi_mcp_cfg" >&2; exit 1 ;;
+  esac
+fi
 
 # muse and gemini are verified as CREWMATE/SCOUT adapters only. A secondmate is
 # a firstmate instance, so it needs a primary supervision protocol.
@@ -3040,24 +3094,6 @@ spawn_close_abort_endpoint() {
   fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null || true
 }
 
-# Close the task endpoint, then return the unique lease armed for abort,
-# then disarm so EXIT cannot return it twice. Warn and return non-zero
-# when the return itself fails.
-spawn_return_abort_lease() {
-  local path cd_dir
-  [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] || return 0
-  path=$SPAWN_LEASE_RETURN_ON_ABORT
-  cd_dir=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
-  SPAWN_LEASE_RETURN_ON_ABORT=
-  spawn_close_abort_endpoint
-  if spawn_release_treehouse_lease "$path" "$cd_dir"; then
-    echo "returned copy $path" >&2
-  else
-    echo "warning: could not release treehouse lease for $path after aborted spawn of $ID" >&2
-    return 1
-  fi
-}
-
 # Durably lease a pool copy for this task's lifetime. Occupied copies that a
 # live record already owns are left leased (so a later get cannot take them)
 # rather than returned. A unique isolated copy is stored in WT and marked for
@@ -3956,6 +3992,7 @@ fi
 LAUNCH=${LAUNCH//__BRIEF__/$sq_brief}
 LAUNCH=${LAUNCH//__TURNEND__/$sq_turnend}
 LAUNCH=${LAUNCH//__PIEXT__/$sq_piext}
+LAUNCH=${LAUNCH//__PIMCPFLAG__/$PI_MCP_FLAG}
 LAUNCH=${LAUNCH//__PITURNEND__/$sq_piturnend}
 LAUNCH=${LAUNCH//__PIWATCH__/$sq_piwatch}
 LAUNCH=${LAUNCH//__OMPEXT__/$sq_ompext}

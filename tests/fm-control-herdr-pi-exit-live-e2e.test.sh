@@ -18,7 +18,10 @@ pass() { printf 'ok - %s\n' "$1"; }
 
 [ -x "$LAB_HELPER" ] || fail "the Herdr lab helper is not executable at $LAB_HELPER"
 
-MODEL=${FM_HERDR_PI_EXIT_MODEL:-gpt-5.6-sol}
+# A Pi launch must name its model as <provider>/<id>: one Pi root can hold
+# several accounts, so the provider is what picks the one this spawn spends
+# (bin/fm-account-pin-lib.sh).
+MODEL=${FM_HERDR_PI_EXIT_MODEL:-openai-codex/gpt-5.6-sol}
 case "$(printf '%s' "$MODEL" | tr '[:upper:]' '[:lower:]')" in
   *claude*|*anthropic*) fail "the live guard requires a non-Claude model" ;;
 esac

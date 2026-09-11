@@ -66,6 +66,30 @@ fm_account_pin_var() {
   esac
 }
 
+# fm_account_pin_read_path <file>
+# Prints the one absolute path <file> holds. Parses bytes before the shell can
+# drop NULs or trailing newlines; paths are literal, not shell expressions, so
+# spaces and quotes are valid. Returns 0 on success, 3 when the file does not
+# exist, 4 when it cannot be inspected (one error already printed), 5 when it is
+# not a readable regular file, and 6 when its contents are not one absolute path
+# followed by exactly one newline. Callers own the message for each refusal,
+# because the file they name differs.
+fm_account_pin_read_path() {
+  perl -MErrno=ENOENT -e '
+    my $f = $ARGV[0];
+    unless (lstat $f) {
+      exit 3 if $! == ENOENT;
+      print STDERR "error: cannot inspect configuration source at $f: $!\n";
+      exit 4;
+    }
+    (-f $f && -r _) or exit 5;
+    open(my $fh, "<", $f) or exit 5;
+    my $body = do { local $/; <$fh> } // "";
+    $body =~ /\A(\/[^\x00-\x1f\x7f]*)\n\z/ or exit 6;
+    print $1;
+  ' -- "$1"
+}
+
 # fm_account_pin_resolve <harness> <config-dir> <home> [<kind>]
 # Prints the validated root. On refusal prints one error naming the runner,
 # the home, and the file, and returns 1. For kind "secondmate" a non-empty
@@ -93,21 +117,7 @@ fm_account_pin_resolve() {
     printf '%s\n' "$root"
     return 0
   fi
-  # Parse bytes before the shell can drop NULs or trailing newlines. Paths are
-  # literal, not shell expressions; spaces and quotes are valid.
-  root=$(perl -MErrno=ENOENT -e '
-    my $f = $ARGV[0];
-    unless (lstat $f) {
-      exit 3 if $! == ENOENT;
-      print STDERR "error: cannot inspect configuration source at $f: $!\n";
-      exit 4;
-    }
-    (-f $f && -r _) or exit 5;
-    open(my $fh, "<", $f) or exit 5;
-    my $body = do { local $/; <$fh> } // "";
-    $body =~ /\A(\/[^\x00-\x1f\x7f]*)\n\z/ or exit 6;
-    print $1;
-  ' -- "$cfg")
+  root=$(fm_account_pin_read_path "$cfg")
   rc=$?
   case "$rc" in
     0) ;;
