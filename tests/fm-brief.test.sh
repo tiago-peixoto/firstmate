@@ -391,7 +391,7 @@ test_ask_user_escalation_format() {
   assert_grep "write only the ask-user findings, verbatim and unparaphrased (id, severity, file, line, description, authority)" "$brief" \
     "ship rule 6 must limit the verbatim axi slice to ask-user findings"
   # shellcheck disable=SC2016  # single quotes are deliberate: backticks and the key/findings/file tokens must stay literal
-  assert_grep 'needs-decision [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file='"$home/data/$id/nm-<run>-findings.txt" "$brief" \
+  assert_grep 'needs-decision [key=nm-<run>-<step>] [at=$(date +%s)]: ask-user findings=<id1>,<id2>,... file='"$home/data/$id/nm-<run>-findings.txt" "$brief" \
     "ship rule 6 must render the exact needs-decision ask-user status line"
   assert_grep "$home/data/$id/nm-<run>-findings.txt" "$brief" \
     "ship rule 6 must point the snapshot file under this task's own data directory"
@@ -884,9 +884,12 @@ test_worker_role_scope() {
   pass "fm-brief: scaffolds leave the worker role scope to the launch boundary and keep the secondmate contract"
 }
 
-# Every terminal ready signal the Definition of done instructs must carry the
-# scaffolds' emission stamp, and that stamp must still be a live substitution
-# when the worker appends it rather than an epoch frozen at scaffold time.
+# Every status line a scaffold spells out for the worker to append - the
+# Definition of done's terminal signal and every escalation instruction in the
+# Rules - must carry the scaffolds' emission stamp, and that stamp must still be
+# a live substitution when the worker appends it rather than an epoch frozen at
+# scaffold time. Bare verb references (`blocked:`) and the pause-verb choice
+# sentence spell no note, so they are not append targets and are not scanned.
 test_dod_ready_signals_carry_append_time_stamp() {
   local home id args count brief signals signal status before after epoch verb note
   home="$TMP_ROOT/dod-ready-stamp"
@@ -898,16 +901,15 @@ test_dod_ready_signals_carry_append_time_stamp() {
       "$ROOT/bin/fm-brief.sh" "$id" $args >/dev/null \
       || fail "$id: scaffold failed for $args"
     brief="$home/data/$id/brief.md"
-    signals=$(sed -n '/^# Definition of done$/,$p' "$brief" \
-      | grep -oE '`(done|failed|blocked|needs-decision|resolved)[^`]*: [^`]*`' | tr -d '`')
+    signals=$(grep -oE '`(done|failed|blocked|needs-decision|resolved)[^`]*: [^`]*`' "$brief" | tr -d '`')
     [ "$(printf '%s\n' "$signals" | grep -c .)" = "$count" ] \
-      || fail "$id: Definition of done did not instruct $count terminal signals (got: $signals)"
+      || fail "$id: brief did not instruct $count appendable status signals (got: $signals)"
     status="$home/state/$id.status"
     while IFS= read -r signal; do
       [ -n "$signal" ] || continue
       case "$signal" in
         *' [at=$(date +%s)]: '*) ;;
-        *) fail "$id: Definition of done instructs an unstamped terminal signal: $signal" ;;
+        *) fail "$id: brief instructs an unstamped status signal: $signal" ;;
       esac
       : > "$status"
       before=$(date +%s)
@@ -927,13 +929,13 @@ test_dod_ready_signals_carry_append_time_stamp() {
 $signals
 SIGNALS
   done <<SCAFFOLDS
-dod-ready-nomistakes|some-proj --mode no-mistakes|2
-dod-ready-directpr|some-proj --mode direct-PR|1
-dod-ready-localonly|some-proj --mode local-only|1
-dod-ready-scout|some-proj --scout|1
-dod-ready-secondmate|--secondmate --no-projects|2
+dod-ready-nomistakes|some-proj --mode no-mistakes|8
+dod-ready-directpr|some-proj --mode direct-PR|6
+dod-ready-localonly|some-proj --mode local-only|6
+dod-ready-scout|some-proj --scout|5
+dod-ready-secondmate|--secondmate --no-projects|4
 SCAFFOLDS
-  pass "fm-brief.sh: every scaffold's Definition of done stamps its terminal signal's append time"
+  pass "fm-brief.sh: every status signal a scaffold tells the worker to append stamps its own time"
 }
 
 test_worker_role_scope
