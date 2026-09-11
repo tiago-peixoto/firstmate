@@ -364,6 +364,30 @@ Two findings from the run shaped the shipped behavior: an OpenCode vendor update
 Kimi was not installed on the verification machine; its receive path is the same one-line-plus-shell contract, and the portable ladder and enqueue regressions in `tests/fm-task-inbox.test.sh` and `tests/fm-send-inbox.test.sh` cover every harness-independent half.
 This guard is the refresh command after any harness upgrade; it spends a small number of real tokens per installed harness, reports an absent harness explicitly, and refuses a run that verified nothing.
 
+## Waiting-worker command ceilings
+
+The `# Waiting` section of the ship and scout briefs (`bin/fm-brief.sh`) has a worker hold every external wait inside one blocking shell command, bounded by what its harness lets one command run.
+Those bounds were read from the installed vendor code on 2026-09-11, macOS arm64, with Pi 0.85.1, codex-cli 0.154.0, and Claude Code 2.1.268.
+
+```sh
+grep -n "Timeout in seconds" "$(npm root -g)/@earendil-works/pi-coding-agent/dist/core/tools/bash.js"
+strings -n 20 "$(readlink -f "$(command -v codex)")" | grep -o "Non-empty writes default to [^.]*; empty polls wait [^.]*\."
+strings -n 8 "$(readlink -f "$(command -v claude)")" | grep -oE '=120000,[A-Za-z0-9_$]+=600000;' | head -1
+```
+
+Observed output:
+
+```text
+28:    timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
+Non-empty writes default to 250 ms and cap at 30000 ms; empty polls wait 5000-300000 ms by default.
+=120000,ARo=600000;
+```
+
+Pi's bash tool runs a command with no time limit unless the call passes `timeout`, so the brief asks for at most 2700 seconds, which stays under the watcher's 3600-second busy-turn bound.
+Codex yields a still-running command back to the model, and one empty `write_stdin` poll then waits up to 300000 ms.
+Claude Code's Bash tool defaults to 120000 ms and accepts at most 600000 ms; `BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS` override those two values.
+The brief's portable regression is `tests/fm-brief.test.sh`; rerun these commands after upgrading any of the three harnesses and update the numbers in the brief when they move.
+
 ## Gemini
 
 The Gemini crewmate adapter was verified on 2026-09-04 with gemini-cli 0.58.0 on Linux, Node v24.20.0, tmux 3.4.
