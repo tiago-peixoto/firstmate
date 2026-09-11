@@ -1,0 +1,21 @@
+### Scenario 4 (adversarial, regression from review round 1): a nested
+### tests/fixtures/<dir>/<name>-fixture.sh whose reader names only the DIRECTORY
+### must keep the directory-scan selection, not fall into the new basename arm.
+
+--- base (7d14fc1 fix(teardown): leave a Treehouse) ---
+reader tests/fm-brief.test.sh names: tests/fixtures/demo
+$ bin/fm-test-run.sh --list --changed --base HEAD
+tests/fm-arm-pretool-check.test.sh
+tests/fm-ask-user-authority.test.sh
+tests/fm-bearings-board.test.sh
+tests/fm-brief.test.sh
+exit=0
+
+--- target (0f647e2 no-mistakes(review): drop vacuou) ---
+reader tests/fm-brief.test.sh names: tests/fixtures/demo
+$ bin/fm-test-run.sh --list --changed --base HEAD
+tests/fm-arm-pretool-check.test.sh
+tests/fm-ask-user-authority.test.sh
+tests/fm-bearings-board.test.sh
+tests/fm-brief.test.sh
+exit=0

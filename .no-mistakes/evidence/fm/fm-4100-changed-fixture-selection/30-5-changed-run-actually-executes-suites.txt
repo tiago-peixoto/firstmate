@@ -1,0 +1,27 @@
+### Scenario 5: the end-user payoff - a pipeline running 'fm-test-run.sh --changed'
+### after a shared-fixture edit must actually EXECUTE the affected suites, not abort with zero tests run.
+### Real runner binary, real suite execution (no --list); synthetic repo so the selected suites are cheap.
+
+--- runner from base (7d14fc1 fix(teardown): leave a T) ---
+changed: tests/remote-herdr-probe-fixture.sh
+$ bin/fm-test-run.sh --changed --base HEAD
+fm-test-run: no changed-test mapping for source path: tests/remote-herdr-probe-fixture.sh
+exit=2
+suites that really ran: 0
+
+--- runner from target (0f647e2 no-mistakes(review): dro) ---
+changed: tests/remote-herdr-probe-fixture.sh
+$ bin/fm-test-run.sh --changed --base HEAD
+FM_TEST_BEGIN 2026-09-11T23:42:07Z tests/fm-pr-merge.test.sh family=pr-forge expected_gate_skip=none
+ok - fm-pr-merge.test.sh really executed
+FM_TEST_END 2026-09-11T23:42:07Z tests/fm-pr-merge.test.sh exit=0 duration_ms=220 gate_skip=false
+FM_TEST_BEGIN 2026-09-11T23:42:07Z tests/fm-secondmate-safety.test.sh family=secondmate expected_gate_skip=none
+ok - fm-secondmate-safety.test.sh really executed
+FM_TEST_END 2026-09-11T23:42:08Z tests/fm-secondmate-safety.test.sh exit=0 duration_ms=256 gate_skip=false
+FM_TEST_SUMMARY total=2 failed=0 skipped_gate=0 duration_ms=1507
+FM_TEST_SUMMARY_FAMILY family=pr-forge count=1 duration_ms=220 failed=0
+FM_TEST_SUMMARY_FAMILY family=secondmate count=1 duration_ms=256 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-secondmate-safety.test.sh duration_ms=256
+FM_TEST_SLOWEST rank=2 script=tests/fm-pr-merge.test.sh duration_ms=220
+exit=0
+suites that really ran: 2

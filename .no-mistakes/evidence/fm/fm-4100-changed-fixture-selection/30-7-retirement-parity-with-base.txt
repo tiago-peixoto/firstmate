@@ -1,0 +1,7 @@
+### Scenario 7 (adversarial, parity): retiring tests/remote-herdr-fixture.sh and its four
+### references. Known pre-existing gap the maintainer routed separately; checked here only
+### to confirm the change introduces NO NEW abort - base and target must behave identically.
+base: exit=2 first line: fm-test-run: no changed-test mapping for source path: tests/remote-herdr-fixture.sh
+target: exit=2 first line: fm-test-run: no changed-test mapping for source path: tests/remote-herdr-fixture.sh
+
+IDENTICAL output on base and target: the change adds no new refusal for the retirement shape.

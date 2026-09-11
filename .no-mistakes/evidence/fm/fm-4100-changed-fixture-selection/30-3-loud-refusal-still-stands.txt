@@ -1,0 +1,29 @@
+### Scenario 3 (adversarial): the loud refusal for a genuinely unmapped tests/ path must survive the new arm
+
+--- 3a: a NEW tests/*-fixture.sh that no suite reads ---
+ A tests/nobody-reads-me-fixture.sh
+$ bin/fm-test-run.sh --list --changed --base HEAD
+fm-test-run: no changed-test mapping for source path: tests/nobody-reads-me-fixture.sh
+exit=2
+
+--- 3b: a tests/*-fixture.sh referenced only by a bin/ script, never by a suite ---
+$ bin/fm-test-run.sh --list --changed --base HEAD
+fm-test-run: no changed-test mapping for source path: tests/binonly-fixture.sh
+exit=2
+
+--- 3c: an unrelated unmapped tests/ file (the pre-existing catch-all) ---
+$ bin/fm-test-run.sh --list --changed --base HEAD
+fm-test-run: no changed-test mapping for source path: tests/unread-thing.sh
+exit=2
+
+--- 3d: a suite that DOES read it flips 3a from refusal to selection ---
+$ bin/fm-test-run.sh --list --changed --base HEAD
+tests/fm-arm-pretool-check.test.sh
+tests/fm-ask-user-authority.test.sh
+tests/fm-bearings-board.test.sh
+tests/fm-brief.test.sh
+tests/fm-calm-pi-extension.test.sh
+tests/fm-captain-hold-lifecycle.test.sh
+exit=0
+
+worktree clean: 0 modified paths

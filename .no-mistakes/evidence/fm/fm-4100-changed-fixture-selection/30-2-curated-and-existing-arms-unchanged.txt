@@ -1,0 +1,11 @@
+### Scenario 2: files that already mapped before the fix keep byte-identical selection
+### (tests/herdr-client-pair-fixture.sh resolves through the curated herdr arm at bin/fm-test-run.sh:1333,
+###  which sits ABOVE the new tests/*-fixture.sh arm; the rest are the pre-existing shared-file arms)
+IDENTICAL  tests/herdr-client-pair-fixture.sh   exit=0  suites=67
+IDENTICAL  tests/lib.sh                         exit=0  suites=198
+IDENTICAL  tests/wake-helpers.sh                exit=0  suites=76
+IDENTICAL  tests/secondmate-helpers.sh          exit=0  suites=22
+IDENTICAL  tests/fixtures.sh                    exit=0  suites=95
+IDENTICAL  tests/git-config-helpers.sh          exit=0  suites=198
+IDENTICAL  tests/fm-brief.test.sh               exit=0  suites=1
+IDENTICAL  bin/fm-lint.sh                       exit=0  suites=35
