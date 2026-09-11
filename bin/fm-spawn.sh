@@ -919,7 +919,8 @@ SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
 SPAWN_LEASE_RETURN_ON_ABORT=
 SPAWN_LEASE_RETURN_CD=
 SPAWN_LAST_PROTECTED=
-TREEHOUSE_OWNER_STATES=()RELAUNCH_REPLACEMENT_PENDING=0
+TREEHOUSE_OWNER_STATES=()
+RELAUNCH_REPLACEMENT_PENDING=0
 RELAUNCH_REPLACEMENT_BUSY_GEN=
 RELAUNCH_REPLACEMENT_HARNESS=
 RELAUNCH_REPLACEMENT_STATE=
@@ -2384,7 +2385,8 @@ real_path_or_raw() {  # <path>
 # primary checkout as its own cwd. That path differs from a linked spawning
 # project, so a poll comparing only against the project accepted it, and the
 # guard then refused a launch whose slot treehouse went on to create normally.
-# A read like that is a transient, not a destination: the poll keeps waiting.SPAWN_WT_TOP=
+# A read like that is a transient, not a destination: the poll keeps waiting.
+SPAWN_WT_TOP=
 SPAWN_WT_REASON=
 spawn_worktree_isolated() {  # <path>
   local path=$1 wt_real wt_top_real wt_git_dir proj_common
@@ -3253,10 +3255,39 @@ rovo_spawn_fail() {  # <detail>
 }
 
 if [ "$RELAUNCH" -eq 1 ]; then
-  # No worktree is acquired: the recorded one is reused as-is. Seat the adopted
-  # endpoint in that copy so the replacement starts where the work is rather
-  # than wherever the pane happened to drift.
-  spawn_seat_worktree "$WT" recorded 10 0.5 || exit 1
+  # No worktree is acquired: the recorded one is reused as-is. What must be
+  # proven instead is that the adopted endpoint's shell is actually sitting in
+  # that worktree, so the replacement agent starts where the work is rather
+  # than wherever the pane happened to drift. tmux refuses without sending
+  # anything; herdr may tell the pane once to return, and only a shell that
+  # will not go refuses.
+  relaunch_wt_real=$(real_path_or_raw "$WT")
+  relaunch_seen=
+  for _ in $(seq 1 10); do
+    relaunch_seen=$(spawn_current_path "$WT_TARGET" || true)
+    [ -z "$relaunch_seen" ] || [ "$(real_path_or_raw "$relaunch_seen")" != "$relaunch_wt_real" ] || break
+    sleep 0.5
+  done
+  if [ -z "$relaunch_seen" ] || [ "$(real_path_or_raw "$relaunch_seen")" != "$relaunch_wt_real" ]; then
+    if [ "$BACKEND" != herdr ]; then
+      echo "error: task $ID's endpoint is in '${relaunch_seen:-unknown}', not its recorded worktree '$WT'; refusing to relaunch an agent outside the copy holding its work" >&2
+      exit 1
+    fi
+    relaunch_cd_path=${WT//\'/\'\\\'\'}
+    spawn_send_text_line "$WT_TARGET" "cd -- '$relaunch_cd_path'" || {
+      echo "error: task $ID's endpoint is in '${relaunch_seen:-unknown}' and could not be told to return to its recorded worktree '$WT'; refusing to relaunch an agent outside the copy holding its work" >&2
+      exit 1
+    }
+    for _ in $(seq 1 10); do
+      relaunch_seen=$(spawn_current_path "$WT_TARGET" || true)
+      [ -z "$relaunch_seen" ] || [ "$(real_path_or_raw "$relaunch_seen")" != "$relaunch_wt_real" ] || break
+      sleep 0.5
+    done
+    if [ -z "$relaunch_seen" ] || [ "$(real_path_or_raw "$relaunch_seen")" != "$relaunch_wt_real" ]; then
+      echo "error: task $ID's endpoint is in '${relaunch_seen:-unknown}' and did not return to its recorded worktree '$WT' when told to; refusing to relaunch an agent outside the copy holding its work" >&2
+      exit 1
+    fi
+  fi
   [ "$KIND" = secondmate ] || validate_spawn_worktree "relaunch" "$T"
 elif [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
   # Target the stable window id, not the name: if the name is ever lost (e.g. an

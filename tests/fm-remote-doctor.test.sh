@@ -60,6 +60,7 @@ hold FM_REMOTE_JOB_ACTIVE=1
 WORKER_HOLDER_PID=$HOLDER_PID
 hold SSH_CONNECTION='100.102.217.78 51234 100.100.1.2 22' SSH_CLIENT='100.102.217.78 51234 22'
 SSH_HOLDER_PID=$HOLDER_PID
+
 # new_case <Darwin|Linux> [with-herdr] [gui] [login-shell]
 # Builds one isolated account fixture and points the module-level CASE_*
 # variables at it. "with-herdr" installs the fake herdr CLI; "gui" makes the
@@ -160,7 +161,8 @@ arguments = {
 	$FM_FAKE_LOGIN_SHELL
 	-l
 	-c
-	exec '$FM_FAKE_GUARD' '$FM_FAKE_HERDR_BIN' 'fm-remote'}
+	exec '$FM_FAKE_GUARD' '$FM_FAKE_HERDR_BIN' 'fm-remote'
+}
 stdout path = $FM_FAKE_LAUNCH_AGENT_LOG
 stderr path = $FM_FAKE_LAUNCH_AGENT_LOG
 semaphores = {
@@ -219,6 +221,7 @@ printf 'p%s\n' "$pid"
 printf 'n%s\n' "$FM_FAKE_HERDR_SOCKET"
 SH
   chmod +x "$CASE_BIN/lsof"
+
   cat > "$CASE_BIN/dscl" <<'SH'
 #!/usr/bin/env bash
 set -u
@@ -335,7 +338,8 @@ arguments = {
 	$CASE_LOGIN_SHELL
 	-l
 	-c
-	$exec_cmd}
+	$exec_cmd
+}
 stdout path = $CASE_HOME/Library/Logs/$LABEL.log
 stderr path = $CASE_HOME/Library/Logs/$LABEL.log
 semaphores = {
@@ -368,14 +372,16 @@ assert_herdr_launch_agent_contract() { # <plist> <herdr-bin> [login-shell]
   [ "$argv1" = -l ] || fail "ProgramArguments[1] is $argv1, not -l"
   [ "$argv2" = -c ] || fail "ProgramArguments[2] is $argv2, not -c"
   [ "$cmd" = "exec '$GUARD' '$herdr_bin' 'fm-remote'" ] \
-    || fail "ProgramArguments[3] is not exec of the guard with $herdr_bin for session fm-remote: $cmd"  [ "$(printf '%s' "$json" | jq -r '.LimitLoadToSessionType')" = Aqua ] \
+    || fail "ProgramArguments[3] is not exec of the guard with $herdr_bin for session fm-remote: $cmd"
+  [ "$(printf '%s' "$json" | jq -r '.LimitLoadToSessionType')" = Aqua ] \
     || fail "LimitLoadToSessionType is not Aqua"
   [ "$(printf '%s' "$json" | jq -r '.RunAtLoad')" = true ] \
     || fail "RunAtLoad is not true"
   [ "$(printf '%s' "$json" | jq -r '.KeepAlive.SuccessfulExit')" = false ] \
     || fail "KeepAlive is not {SuccessfulExit=false}: $(printf '%s' "$json" | jq -c '.KeepAlive')"
   [ "$(printf '%s' "$json" | jq -r '.ThrottleInterval')" = 10 ] \
-    || fail "ThrottleInterval is not 10"  [ "$(printf '%s' "$json" | jq -r '.Label')" = "$LABEL" ] \
+    || fail "ThrottleInterval is not 10"
+  [ "$(printf '%s' "$json" | jq -r '.Label')" = "$LABEL" ] \
     || fail "Label is not $LABEL"
 }
 

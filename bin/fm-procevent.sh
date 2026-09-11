@@ -1126,7 +1126,8 @@ start_owner_guard() {  # <source-id>
 
 # The runner's owner guard, which bounds an accidentally orphaned detached
 # runner after its home ends. It revalidates the recorded physical state root
-# and its lease on a bounded cadence and, after two consecutive reads cannot prove# both, invokes the identity-gated stop for the runner's whole process group -
+# and its lease on a bounded cadence and, after two consecutive reads cannot prove
+# both, invokes the identity-gated stop for the runner's whole process group -
 # which is what reaches the blocking child and everything that child spawned,
 # exactly as retirement does. A failed verified stop stays on the retry cadence;
 # an absent leader ends the guard without signalling an ambiguous group.
@@ -1142,7 +1143,8 @@ start_owner_guard() {  # <source-id>
 # proves its own owner through that home's own lease.
 cmd_owner_watchdog() {  # <source-id> <runner-pid> <runner-identity> <ready-file> <state-device> <state-inode>
   local id=${1-} pid=${2-} identity=${3-} ready=${4-} state_device=${5-} state_inode=${6-}
-  local lease tick half misses=0 pid_state state_identity current_device current_inode  [ "$#" -eq 6 ] || usage
+  local lease tick half misses=0 pid_state state_identity current_device current_inode
+  [ "$#" -eq 6 ] || usage
   fm_procevent_source_id_valid "$id" || die "source id must be path-safe: $id"
   case "$pid" in ''|*[!0-9]*) die "runner pid must be a positive integer: $pid" ;; esac
   [ -n "$identity" ] || die "runner identity is required"
@@ -1165,7 +1167,8 @@ cmd_owner_watchdog() {  # <source-id> <runner-pid> <runner-identity> <ready-file
   # Half the configured interval, kept exact for an odd interval so the smallest
   # configurable interval still yields two reads rather than collapsing to one.
   half=$((tick / 2))
-  [ $((tick % 2)) -eq 0 ] || half="$half.5"  fm_procevent_pid_state "$pid" "$identity"
+  [ $((tick % 2)) -eq 0 ] || half="$half.5"
+  fm_procevent_pid_state "$pid" "$identity"
   pid_state=$?
   [ "$pid_state" -eq 0 ] || die "runner identity changed before owner guard initialization"
   state_identity=$(fm_procevent_claim_state_root_identity "$STATE") \
@@ -1178,7 +1181,8 @@ cmd_owner_watchdog() {  # <source-id> <runner-pid> <runner-identity> <ready-file
   printf 'ready\n' > "$ready" || die "cannot confirm owner guard initialization"
   trap - EXIT
   while :; do
-    sleep "$half"    fm_procevent_pid_state "$pid" "$identity"
+    sleep "$half"
+    fm_procevent_pid_state "$pid" "$identity"
     pid_state=$?
     case "$pid_state" in
       1|3) exit 0 ;;
@@ -1198,7 +1202,8 @@ cmd_owner_watchdog() {  # <source-id> <runner-pid> <runner-identity> <ready-file
     fi
     # Two consecutive misses, so one unreadable read cannot end a live runner.
     # They are half an interval apart, so requiring the second costs detection
-    # time inside the interval already budgeted rather than a second interval.    misses=$((misses + 1))
+    # time inside the interval already budgeted rather than a second interval.
+    misses=$((misses + 1))
     [ "$misses" -ge 2 ] || continue
     if stop_runner_pid "$pid" "$identity"; then
       exit 0
@@ -1314,7 +1319,8 @@ cmd_reconcile() {
   # cannot use makes every launch unconfirmable, so validating it later would
   # report a fleet of perfectly healthy runners as `failed=` and blame nothing.
   fm_procevent_launch_confirm_seconds >/dev/null \
-    || die "FM_PROCEVENT_LAUNCH_CONFIRM_SECONDS must be whole seconds from $FM_PROCEVENT_LAUNCH_CONFIRM_MIN_SECONDS to $FM_PROCEVENT_LAUNCH_CONFIRM_MAX_SECONDS"  owner_lease_refresh
+    || die "FM_PROCEVENT_LAUNCH_CONFIRM_SECONDS must be whole seconds from $FM_PROCEVENT_LAUNCH_CONFIRM_MIN_SECONDS to $FM_PROCEVENT_LAUNCH_CONFIRM_MAX_SECONDS"
+  owner_lease_refresh
   published=$(publish_pending)
 
   # Stop a runner this home owns whose source is no longer registered. Without
@@ -1420,7 +1426,8 @@ cmd_reconcile() {
           # so preserve its claim without signalling or starting a replacement.
           # This is the ordinary crash shape, and `start` cannot clear it
           # either, so it is announced the same way as the reused-pid strand
-          # above but naming what a human should check rather than a command.          uncertain=$((uncertain + 1))
+          # above but naming what a human should check rather than a command.
+          uncertain=$((uncertain + 1))
           report_stranded_source "$id" "$FM_PROCEVENT_CLAIM_TOKEN" \
             "$(stranded_leaderless_detail "$id")" || true
         elif [ "$claim_state" -eq 2 ]; then
@@ -1897,7 +1904,8 @@ cmd_sweep_home() {
 }
 
 cmd_list() {
-  local rec id adapter owner pending claim_state  owner_lease_refresh
+  local rec id adapter owner pending claim_state
+  owner_lease_refresh
   if ! fm_procevent_any_registered "$STATE"; then
     printf 'no sources registered\n'
     return 0

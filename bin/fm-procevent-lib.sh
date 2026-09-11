@@ -178,7 +178,8 @@ fm_procevent_owner_lease_seconds() {
   printf '%s\n' "$value"
 }
 
-# Detection-interval semantics: docs/configuration.md, Process-to-event sources.FM_PROCEVENT_OWNER_CHECK_DEFAULT_SECONDS=15
+# Detection-interval semantics: docs/configuration.md, Process-to-event sources.
+FM_PROCEVENT_OWNER_CHECK_DEFAULT_SECONDS=15
 FM_PROCEVENT_OWNER_CHECK_MIN_SECONDS=1
 FM_PROCEVENT_OWNER_CHECK_MAX_SECONDS=3600
 
@@ -264,7 +265,8 @@ fm_procevent_launch_floor_prune_locked() {  # <state-root> <source-id> <registra
 fm_procevent_launch_floor_wait() {  # <state-root> <source-id> <registration-identity> <seconds>
   local state=$1 id=$2 expected=$3 floor=$4 reg stamp registration current_identity status=0
   stamp=$(fm_procevent_launch_floor_stamp_path "$state" "$id" "$expected") || return 1
-  reg=$(fm_procevent_registry_dir "$state") || return 1  [ ! -L "$stamp" ] || return 1
+  reg=$(fm_procevent_registry_dir "$state") || return 1
+  [ ! -L "$stamp" ] || return 1
   [ ! -e "$stamp" ] || [ -f "$stamp" ] || return 1
   perl -MTime::HiRes=clock_gettime,sleep,CLOCK_MONOTONIC -e '
     use strict;

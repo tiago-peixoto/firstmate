@@ -1047,7 +1047,8 @@ _oldest_line_age() {  # <buf> -> seconds since the oldest buffered item first ar
 #  3) heartbeat scan: every HEARTBEAT_SCAN_SECS, grep state/*.status for a
 #     captain-relevant line the per-wake classifier missed and escalate it.
 housekeeping() {  # <state>
-  local state=$1 now due f key task win marker age last max_defer oldest pause_secs marker_epoch until bounded_until pause_reason  now=$(_now)
+  local state=$1 now due f key task win marker age last max_defer oldest pause_secs marker_epoch until bounded_until pause_reason
+  now=$(_now)
   migrate_watcher_pause_markers "$state"
 
   # (1) batch flush
@@ -1146,10 +1147,12 @@ housekeeping() {  # <state>
     due="$state/.subsuper-pause-until-due-$key"
     until=
     bounded_until=0
+    last=$standing
     if status_is_captain_held "$last" && fm_afk_contract_present "$state"; then
       continue
     fi
-    if until=$(status_paused_until "$last"); then      if [ "$now" -lt "$until" ] && [ "$age" -lt "$pause_secs" ]; then
+    if until=$(status_paused_until "$last"); then
+      if [ "$now" -lt "$until" ] && [ "$age" -lt "$pause_secs" ]; then
         continue
       elif [ "$now" -lt "$until" ]; then
         bounded_until=1
@@ -1174,7 +1177,8 @@ housekeeping() {  # <state>
           if escalate_add "$state" "captain-held ${age}s (awaiting the captain, answer the held decision or release the hold): $win" "pause recheck"; then
             _now > "$marker"
           fi
-        elif [ -n "$last" ] && status_is_paused "$last"; then          if [ "$bounded_until" -eq 1 ]; then
+        elif [ -n "$last" ] && status_is_paused "$last"; then
+          if [ "$bounded_until" -eq 1 ]; then
             pause_reason="paused ${age}s (awaiting external, the declared time is beyond the recheck cadence; confirm the wait still holds): $win"
           else
             pause_reason="paused ${age}s (awaiting external, recheck whether the wait still holds): $win"

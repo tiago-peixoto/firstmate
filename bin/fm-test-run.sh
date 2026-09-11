@@ -647,7 +647,8 @@ list_portable_serial() {
 # balance rather than coverage. That doc owns the refresh procedure.
 portable_serial_weight_hints() {
   cat <<'EOF'
-tests/fm-account-pin-preflight-live-e2e.test.sh 30tests/fm-afk-contract.test.sh 3000
+tests/fm-account-pin-preflight-live-e2e.test.sh 30
+tests/fm-afk-contract.test.sh 3000
 tests/fm-afk-inject-e2e.test.sh 35792
 tests/fm-afk-inject-prefix-live-e2e.test.sh 23
 tests/fm-afk-pi-herdr-return-e2e.test.sh 100

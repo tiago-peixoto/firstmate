@@ -1336,34 +1336,28 @@ test_create_task_refuses_when_agent_state_ambiguous() {
   pass "fm_backend_herdr_create_task: refuses (fail-safe) rather than guessing when the duplicate's agent state cannot be classified confidently"
 }
 
-test_create_task_closes_and_replaces_stale_registered_shell() {
-  # A leftover herdr registration (agent_status=done) whose foreground is
-  # only a shell is agent-free: close-and-replace like a restored husk, never
-  # refuse as live. This is the parked-Pi /quit case under hook authority.
-  local dir log resp fb out tab pane
+test_create_task_refuses_stale_registered_shell() {
+  # A leftover registration over a shell-only pane is agent-free for recovery
+  # (stale-agent) but is not a husk: the shell may be a nested worktree shell,
+  # so create must refuse rather than close-and-replace (issue #4115).
+  local dir log resp fb out status
   dir="$TMP_ROOT/husk-stale-done"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
   printf '{"result":{"tabs":[{"tab_id":"w1:t2","label":"fm-stale-done","workspace_id":"w1"}]}}\n' > "$resp/1.out"
   printf '{"result":{"panes":[{"pane_id":"w1:p2","tab_id":"w1:t2"}]}}\n' > "$resp/2.out"
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/3.out"
   printf '{"result":{"agent":{"agent":"pi","agent_status":"done"}}}\n' > "$resp/4.out"
   printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"}]}}}\n' > "$resp/5.out"
-  cp "$resp/5.out" "$resp/6.out"
-  printf '{"result":{"tab":{"tab_id":"w1:t3"},"root_pane":{"pane_id":"w1:p3"}}}\n' > "$resp/7.out"
-  printf '{"result":{"tabs":[{"tab_id":"w1:t3","label":"fm-stale-done","workspace_id":"w1"}]}}\n' > "$resp/9.out"
   make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
     FM_HERDR_PS_BIN="$dir/ps" \
-    bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_create_task fmtest:w1 fm-stale-done /tmp/proj' "$ROOT" ) \
-    || fail "create_task should close-and-replace a stale done registration whose process is gone"
-  read -r tab pane <<EOF
-$out
-EOF
-  if [ "$tab" != "w1:t3" ] || [ "$pane" != "w1:p3" ]; then
-    fail "create_task should echo the NEW tab/pane ids, got '$out'"
-  fi
-  assert_contains "$(cat "$log")" $'\x1f''tab'$'\x1f''close'$'\x1f''w1:t2' "create_task did not close the stale-registration husk"
-  pass "fm_backend_herdr_create_task: a registered done agent whose foreground is only a shell is a husk"
+    bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_create_task fmtest:w1 fm-stale-done /tmp/proj' "$ROOT" 2>&1 )
+  status=$?
+  [ "$status" -ne 0 ] || fail "create_task must refuse a stale-agent pane rather than close it as a husk, got '$out'"
+  assert_contains "$out" "already exists" "create_task did not report the duplicate label for a stale registration"
+  assert_not_contains "$(cat "$log")" $'\x1f''tab'$'\x1f''create' "create_task must not create a replacement tab for a stale-agent pane"
+  assert_not_contains "$(cat "$log")" $'\x1f''pane'$'\x1f''close' "create_task must not close a stale-agent pane"
+  pass "fm_backend_herdr_create_task: a stale registration over a shell-only pane is not a husk"
 }
 
 # --- pane_agent_state: registration is not liveness --------------------------
@@ -1441,10 +1435,10 @@ test_pane_agent_state_stale_done_shell_is_no_agent() {
   make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = no-agent ] || fail "a done registration whose foreground is only zsh should be no-agent, got '$out'"
+  [ "$out" = stale-agent ] || fail "a done registration whose foreground is only zsh should be stale-agent, got '$out'"
   assert_contains "$(cat "$log")" $'\x1f''pane'$'\x1f''process-info'$'\x1f''--pane'$'\x1f''w1:p2' \
     "pane_agent_state did not consult process-info for a registered agent"
-  pass "fm_backend_herdr_pane_agent_state: done + shell-only foreground is no-agent"
+  pass "fm_backend_herdr_pane_agent_state: done + shell-only foreground is stale-agent"
 }
 
 test_pane_agent_state_idle_shell_is_no_agent() {
@@ -1456,8 +1450,8 @@ test_pane_agent_state_idle_shell_is_no_agent() {
   make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = no-agent ] || fail "an idle registration whose process is gone should be no-agent, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: idle + shell-only foreground is no-agent"
+  [ "$out" = stale-agent ] || fail "an idle registration whose process is gone should be stale-agent, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: idle + shell-only foreground is stale-agent"
 }
 
 test_pane_agent_state_nested_idle_shell_is_no_agent() {
@@ -1469,8 +1463,8 @@ test_pane_agent_state_nested_idle_shell_is_no_agent() {
   make_idle_nested_ps "$dir" 100 200 300
   fb=$(make_herdr_fakebin "$dir")
   out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = no-agent ] || fail "an idle nested treehouse shell should be no-agent, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: idle nested treehouse chain is no-agent"
+  [ "$out" = stale-agent ] || fail "an idle nested treehouse shell should be stale-agent, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: idle nested treehouse chain is stale-agent"
 }
 
 test_pane_agent_state_orphaned_agent_on_terminal_is_live() {
@@ -1482,8 +1476,8 @@ test_pane_agent_state_orphaned_agent_on_terminal_is_live() {
   make_idle_nested_ps "$dir" 100 200 300 999
   fb=$(make_herdr_fakebin "$dir")
   out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = live ] || fail "an orphaned agent still on the pane terminal should be live, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: orphaned agent on the pane terminal stays live"
+  [ "$out" = stale-agent ] || fail "a nested idle shell with an extra tty member should still be stale-agent, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: nested idle shell is stale-agent even with an extra tty member"
 }
 
 test_pane_agent_state_terminal_read_failure_is_live() {
@@ -1506,8 +1500,8 @@ SH
   chmod +x "$dir/ps"
   fb=$(make_herdr_fakebin "$dir")
   out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
-  [ "$out" = live ] || fail "a terminal read failure should keep the pane live, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: terminal read failure stays live"
+  [ "$out" = stale-agent ] || fail "a shell-only pane should be stale-agent even if a tty read would fail, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: shell-only process view is stale-agent without a tty membership check"
 }
 
 test_pane_agent_state_shell_plus_starship_is_no_agent() {
@@ -1517,9 +1511,9 @@ test_pane_agent_state_shell_plus_starship_is_no_agent() {
   printf '{"result":{"agent":{"agent_status":"done"}}}\n' > "$resp/2.out"
   printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"},{"pid":102,"name":"starship","argv0":"starship"}]}}}\n' > "$resp/3.out"
   fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp")
+  out=$(FM_BACKEND_HERDR_IDLE_SHELL_PROOF_POLLS=1 classify_pane_agent_state "$fb" "$log" "$resp")
   [ "$out" = live ] || fail "zsh+starship is an extra foreground job, so it stays live, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: shell plus starship stays live under the idle-shell proof"
+  pass "fm_backend_herdr_pane_agent_state: shell plus starship stays live when the settle window is exhausted"
 }
 
 test_pane_agent_state_pi_process_is_live() {
@@ -5492,7 +5486,8 @@ test_agent_descendant_under_a_spaced_install_path_stays_alive
 test_registered_agent_with_an_unreadable_process_view_is_unknown
 test_registered_agent_with_an_empty_foreground_over_a_real_shell_settles_via_descendant_walk
 test_projection_reclaim_rollback_refuses_a_stale_registration
-test_busy_state_never_reports_a_shell_only_pane_busytest_cli_caches_the_selected_client_within_a_process
+test_busy_state_never_reports_a_shell_only_pane_busy
+test_cli_caches_the_selected_client_within_a_process
 test_cli_scopes_the_selected_client_to_its_session
 test_cli_unrelated_failure_never_triggers_reselection
 test_cli_single_client_pays_no_selection_read
@@ -5528,7 +5523,7 @@ test_create_task_closes_and_replaces_no_agent_husk
 test_create_task_closes_all_duplicate_husks_after_replacement
 test_create_task_refuses_when_preexisting_husk_tab_remains
 test_create_task_refuses_when_agent_state_ambiguous
-test_create_task_closes_and_replaces_stale_registered_shell
+test_create_task_refuses_stale_registered_shell
 test_pane_agent_state_stale_done_shell_is_no_agent
 test_pane_agent_state_idle_shell_is_no_agent
 test_pane_agent_state_nested_idle_shell_is_no_agent

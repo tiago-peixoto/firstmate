@@ -279,7 +279,8 @@ fm_afk_contract_validate_iso() {  # <ts>
 # CLAUSE_ACTIONS CLAUSE_OBJECTS CLAUSE_WHENS CLAUSE_STOPS, EXPECTED_RETURN,
 # SPEND, MERGE_GRANTS.
 fm_afk_contract_render_body() {  # <entered-iso> <entered-epoch>
-  local entered=$1 entered_epoch=$2 ordinal=0 i as_given grant  local accepted_block="" refused_block=""
+  local entered=$1 entered_epoch=$2 ordinal=0 i as_given grant
+  local accepted_block="" refused_block=""
   i=0
   while [ "$i" -lt "${#CLAUSE_ACTIONS[@]}" ]; do
     ordinal=$((ordinal + 1))
@@ -603,11 +604,13 @@ fm_afk_contract_render_readback() {  # <path> <title>
     grant_list="${grant_list:+$grant_list, }$id"
   done <<EOF
 $grants
-EOF  printf '%s\n' "$title"
+EOF
+  printf '%s\n' "$title"
   printf '  entered: %s\n' "$(fm_afk_contract_read_field "$path" entered)"
   printf '  expected return: %s\n' "$( [ "$expected" = - ] && printf 'not given' || printf '%s' "$expected")"
   printf '  spend cap: %s concurrent workers\n' "$spend"
-  printf '  merge when green (task ids): %s\n' "${grant_list:-(none)}"  printf '  reach: hold-for-return only. %s\n' "$(fm_afk_contract_read_field "$path" reach_announced)"
+  printf '  merge when green (task ids): %s\n' "${grant_list:-(none)}"
+  printf '  reach: hold-for-return only. %s\n' "$(fm_afk_contract_read_field "$path" reach_announced)"
   words=$(fm_afk_contract_read_words "$path"; printf x)
   words=${words%x}
   if [ -n "$words" ]; then

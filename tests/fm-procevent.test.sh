@@ -1227,7 +1227,8 @@ assert_contains "$orphan_again" "uncertain=1" \
 [ "$(wc -l < "$ORPHAN_LOG" | tr -d ' ')" = 1 ] \
   || fail "the second cycle started a source beside an ambiguous leaderless group"
 kill -0 -"$orphan_leader" 2>/dev/null \
-  || fail "announcing the strand signalled the leaderless process group"kill -KILL -"$orphan_leader" 2>/dev/null || true
+  || fail "announcing the strand signalled the leaderless process group"
+kill -KILL -"$orphan_leader" 2>/dev/null || true
 for _ in $(seq 1 50); do kill -0 -"$orphan_leader" 2>/dev/null || break; sleep 0.1; done
 kill -0 -"$orphan_leader" 2>/dev/null && fail "could not clean up the leaderless fixture group"
 pe "$HG" retire orphan-src >/dev/null
@@ -2981,7 +2982,8 @@ while kill -0 -"$ORPHAN_PID" 2>/dev/null; do
 done
 # The descendant goes down with the same group signal, so it needs no bound of
 # its own beyond the slack that covers a loaded host.
-deadline=$((SECONDS + PROOF_LOAD_SLACK))while kill -0 "$ORPHAN_DESCENDANT" 2>/dev/null; do
+deadline=$((SECONDS + PROOF_LOAD_SLACK))
+while kill -0 "$ORPHAN_DESCENDANT" 2>/dev/null; do
   [ "$SECONDS" -lt "$deadline" ] \
     || fail "a listener whose owning session was gone left a descendant running"
   keep_owner_present

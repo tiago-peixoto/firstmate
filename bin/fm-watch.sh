@@ -730,16 +730,19 @@ secondmate_oldest_queue_row() {  # <queue-path>
 
 # 0 iff <task> is demonstrably inside an active turn, through the watcher's own
 # busy-state knowledge: an exact busy verdict from the semantic contract, bounded
-# by the same BUSY_TURN_MAX_SECS that stops a busy pane from proving liveness
-# forever. A mate mid-turn has not stopped draining its queue - it simply drains
-# between turns - so this gate, not the elapsed interval, is what separates a
-# healthy mate from a frozen wake loop. Any absence of proof (no window, a failed
-# capture, an idle or unknown verdict, a busy pane past the bound) is NOT an
-# active turn, so a frozen queue still escalates.
-secondmate_in_active_turn() {  # <task> <window>
-  local task=$1 w=$2 tail40
+# by how long the foreign queue itself has been frozen. A mate mid-turn has not
+# stopped draining its queue - it simply drains between turns - so this gate,
+# not the elapsed interval, is what separates a healthy mate from a frozen wake
+# loop. The bound is measured on <idle>, how long the queue's drain position has
+# not moved, because a mate's turns end in its own home and this home holds no
+# completed-turn evidence to age them by (busy_turn_over_age). Any absence of
+# proof (no window, a failed capture, an idle or unknown verdict, a queue frozen
+# past the bound) is NOT an active turn, so a frozen queue still escalates.
+secondmate_in_active_turn() {  # <task> <window> <idle>
+  local task=$1 w=$2 idle=$3 tail40
   [ -n "$w" ] || return 1
-  ! busy_turn_over_age "$task" || return 1  tail40=$(fm_backend_capture "$(window_backend "$w")" "$w" 40 "$(window_label "$w")" 2>/dev/null) || return 1
+  [ "$idle" -lt "$BUSY_TURN_MAX_SECS" ] || return 1
+  tail40=$(fm_backend_capture "$(window_backend "$w")" "$w" 40 "$(window_label "$w")" 2>/dev/null) || return 1
   window_is_busy "$w" "$tail40"
 }
 
@@ -817,7 +820,8 @@ EOF
     [ "$episode_alerted" -eq 0 ] || continue
     idle=$((now - observed_at))
     [ "$idle" -ge "$threshold" ] || continue
-    ! secondmate_in_active_turn "$task" "$(fm_backend_target_of_meta "$meta")" || continue    receipt="$receipt_dir/$row_key"
+    ! secondmate_in_active_turn "$task" "$(fm_backend_target_of_meta "$meta")" "$idle" || continue
+    receipt="$receipt_dir/$row_key"
     if [ "$(cat "$receipt" 2>/dev/null || true)" = "$row_key" ]; then
       fm_wake_secondmate_stall_marker_write "$task" "$row_key" || return 1
       continue
@@ -956,7 +960,8 @@ wedge_timer_check() {  # <window> <since-file> <triage-label> <escalation-count-
 # change semantic busy state. Before either marker exists, age the spawn record.
 # The caller checks busy state and routes a crossed bound through inspection.
 busy_turn_over_age() {  # <task>
-  local task=$1 f progress  f="$STATE/$task.turn-ended"
+  local task=$1 f progress
+  f="$STATE/$task.turn-ended"
   [ -e "$f" ] || f="$STATE/$task.meta"
   progress="$STATE/$task.progress"
   if [ -f "$progress" ] && [ "$progress" -nt "$f" ]; then f="$progress"; fi
@@ -987,27 +992,31 @@ busy_turn_over_age() {  # <task>
 # captain themself for a verified hold. Only the captain-held verb takes the second
 # wording; a caller that reached the bounded cadence off pause tracking alone, with
 # no declaring verb left on the log, keeps the external-wait wording it always had.
-handle_paused_stale() {  # <window> <task> <hash>
-  local win=$1 task=$2 h=$3 key statusf mtime age detail reason declaration last until now min_age  key=$(window_key "$win")
+handle_paused_stale() {  # <window> <task> <hash> <standing>
+  local win=$1 task=$2 h=$3 standing=$4 key sincef age detail reason declaration until now min_age
+  key=$(window_key "$win")
   printf '%s' "$h" > "$STATE/.stale-$key"
   : > "$STATE/.paused-$key"
   rm -f "$STATE/.stale-since-$key" "$STATE/.wedge-escalations-$key"
   clear_write_tracking "$key"
-  statusf="$STATE/$task.status"
-  mtime=$(stat_mtime "$statusf")
-  case "$mtime" in ''|*[!0-9]*) mtime=$(date +%s) ;; esac
+  declaration="declared:$standing"
+  sincef="$STATE/.paused-since-$key"
+  if [ "$(cat "$sincef" 2>/dev/null || true)" != "$declaration" ]; then
+    printf '%s' "$declaration" > "$sincef"
+    touch -r "$STATE/$task.status" "$sincef" 2>/dev/null || true
+  fi
+  age=$(age_of "$sincef")
   now=$(date +%s)
-  age=$(( now - mtime ))
-  last=$(last_status_line "$statusf")
   min_age=$PAUSE_RESURFACE_SECS
-  declaration="declared:$(fm_wake_signal_sig "$statusf" || true)"
-  if status_is_captain_held "$last"; then    if afk_record_present; then
+  if status_is_captain_held "$standing"; then
+    if afk_record_present; then
       triage_log "absorbed stale (captain-held, never rechecked while the away-posture record exists): $win"
       return 0
     fi
     detail="captain-held, awaiting the captain"
     reason="captain-held ${age}s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold"
-  elif until=$(status_paused_until "$last"); then    if [ "$now" -lt "$until" ] && [ "$age" -lt "$PAUSE_RESURFACE_SECS" ]; then
+  elif until=$(status_paused_until "$standing"); then
+    if [ "$now" -lt "$until" ] && [ "$age" -lt "$PAUSE_RESURFACE_SECS" ]; then
       triage_log "absorbed stale (paused until $(( until - now ))s from now, declared time not reached): $win"
       return 0
     elif [ "$now" -lt "$until" ]; then
@@ -1088,8 +1097,9 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
       key=$(window_key "$win")
       rm -f "$since_file" "$escalation_file"
       clear_write_tracking "$key"
-      declared="declared:$(fm_wake_signal_sig "$statusf" || true)"
-      if captain_held_silenced "$(last_status_line "$statusf")"; then        printf '%s' "$declared" > "$STATE/.stale-$key"
+      declared="declared:$standing"
+      if captain_held_silenced "$standing"; then
+        printf '%s' "$declared" > "$STATE/.stale-$key"
         triage_log "absorbed busy over-age pane (captain-held, never rechecked while the away-posture record exists): $win"
         return 0
       fi
@@ -1235,7 +1245,8 @@ task_captain_call_open() {  # <task>
 
 # Bind the throttle to the standing declaration, not unrelated status appends.
 stale_wait_declaration() {  # <standing>
-  printf 'declared:%s' "$1"}
+  printf 'declared:%s' "$1"
+}
 
 # The same scope for a captain call, carrying the CALL's own lifecycle identity
 # beside the status signature. The status log is not enough on its own: a task
@@ -1310,17 +1321,17 @@ captain_call_stale_bound() {  # <window-key> <task>
 # Both records of an ordinary crew wait bound it (see task_captain_call_open
 # above): the status line the worker declared, and the backlog hold firstmate
 # recorded once the captain took the work in hand.
-surface_nonterminal_stale() {  # <window> <hash>
-  local win=$1 h=$2 key task last declared=1 bounded=1 throttled=1 until now
+surface_nonterminal_stale() {  # <window> <hash> <standing>
+  local win=$1 h=$2 standing=$3 key task declared=1 bounded=1 throttled=1 until now
   key=$(window_key "$win")
   task=$(window_to_task "$win" "$STATE")
-  last=$(last_status_line "$STATE/$task.status")
   STALE_WAIT_DECLARATION=
-  if status_is_paused "$last"; then
+  if status_is_paused "$standing"; then
     declared=0
     bounded=0
-    STALE_WAIT_DECLARATION=$(stale_wait_declaration "$task")
-    if until=$(status_paused_until "$last"); then      now=$(date +%s)
+    STALE_WAIT_DECLARATION=$(stale_wait_declaration "$standing")
+    if until=$(status_paused_until "$standing"); then
+      now=$(date +%s)
       if [ "$now" -lt "$until" ]; then
         throttled=0
       else
@@ -1330,11 +1341,12 @@ surface_nonterminal_stale() {  # <window> <hash>
     else
       stale_wait_throttled "$key" "$STALE_WAIT_DECLARATION" && throttled=0
     fi
-  elif status_is_captain_held "$last"; then
+  elif status_is_captain_held "$standing"; then
     declared=0
     bounded=0
-    STALE_WAIT_DECLARATION=$(stale_wait_declaration "$task")
-    if captain_held_silenced "$last"; then      throttled=0
+    STALE_WAIT_DECLARATION=$(stale_wait_declaration "$standing")
+    if captain_held_silenced "$standing"; then
+      throttled=0
     else
       stale_wait_throttled "$key" "$STALE_WAIT_DECLARATION" && throttled=0
     fi
@@ -2253,7 +2265,8 @@ EOF
     # in the backlog while the mate still says `working:` or `done:` is outside
     # this guard: reaching it would require backlog reads for windows this gate
     # deliberately skips, putting that read on the ordinary poll hot path.
-    if [ "$kind" = secondmate ] && ! status_is_paused_or_captain_held "$last"; then      continue
+    if [ "$kind" = secondmate ] && ! status_is_paused_or_captain_held "$standing"; then
+      continue
     fi
     tail40=$(fm_backend_capture "$(window_backend "$w")" "$w" 40 "$(window_label "$w")" 2>/dev/null) || continue
     h=$(printf '%s' "$tail40" | hash_pane)
@@ -2285,7 +2298,8 @@ EOF
           # Daemon owns triage: one-shot per distinct stale hash, as before,
           # except that a captain-held pane is never handed over while the
           # away-posture record exists (captain_held_silenced).
-          if captain_held_silenced "$last"; then            printf '%s' "$h" > "$sf"
+          if captain_held_silenced "$standing"; then
+            printf '%s' "$h" > "$sf"
             triage_log "absorbed stale (captain-held, never rechecked while the away-posture record exists): $w"
           elif [ "$(cat "$sf" 2>/dev/null || true)" != "$h" ]; then
             fm_wake_append stale "$w" "stale: $w" || exit 1
