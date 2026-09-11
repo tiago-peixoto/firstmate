@@ -1749,8 +1749,9 @@ esac
 PI_MCP_FLAG=
 if [ "$HARNESS" = pi ] || [ "$HARNESS" = pi-signed ]; then
   pi_mcp_cfg="$PIN_CONFIG/pi-mcp-config"
-  pi_mcp_path=$(fm_account_pin_read_path "$pi_mcp_cfg")
-  case "$?" in
+  # set -e is on, so the parser's status has to be captured, not inherited.
+  pi_mcp_path=$(fm_account_pin_read_path "$pi_mcp_cfg") && pi_mcp_rc=0 || pi_mcp_rc=$?
+  case "$pi_mcp_rc" in
     0)
       if [ ! -f "$pi_mcp_path" ] || [ ! -r "$pi_mcp_path" ]; then
         echo "error: config/pi-mcp-config names an MCP config file that is missing or unreadable: $pi_mcp_path (from $pi_mcp_cfg); refusing rather than launching with the project's own default servers instead" >&2

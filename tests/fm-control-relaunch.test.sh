@@ -719,7 +719,7 @@ test_same_harness_relaunch_keeps_the_profile_axes() {
 test_native_ultra_relaunch_preserves_profile_and_rejects_before_stop() {
   local dir out rc id=rl-ultra
   dir=$(new_case native-ultra "$id")
-  add_ship_task "$dir" "$id" pi
+  add_ship_task "$dir" "$id" pi codex-native/gpt-6-astra
   printf pi > "$dir/fake/command"
   printf pi > "$dir/fake/becomes"
   cat > "$dir/fakebin/pi" <<'SH'
@@ -728,7 +728,7 @@ test_native_ultra_relaunch_preserves_profile_and_rejects_before_stop() {
 printf "Options: --tui-mode\n"
 SH
   chmod +x "$dir/fakebin/pi"
-  sed 's|^model=default$|model=codex-native/gpt-6-astra|; s/^effort=default$/effort=ultra/' \
+  sed 's/^effort=default$/effort=ultra/' \
     "$dir/home/state/$id.meta" > "$dir/home/state/$id.meta.tmp"
   mv "$dir/home/state/$id.meta.tmp" "$dir/home/state/$id.meta"
   out=$(run_control "$dir" "$id" relaunch --model openai-codex/gpt-6-astra --note "invalid native effort transfer"); rc=$?
