@@ -351,7 +351,7 @@ family_for_basename() {
     fm-sessionstart-hook-live-e2e.test.sh|fm-sessionstart-instruction-refresh-live-e2e.test.sh|\
     fm-quota-array-dispatch-live-e2e.test.sh|fm-send-secondmate-marker-herdr-e2e.test.sh|\
     fm-send-inbox-doorbell-live-e2e.test.sh|\
-    fm-herdr-submit-confirm-live-e2e.test.sh)
+    fm-herdr-submit-confirm-live-e2e.test.sh|fm-afk-inject-prefix-live-e2e.test.sh)
       printf '%s\n' live-harness-optin
       ;;
     fm-backend-herdr.test.sh|fm-backend-tmux-smoke.test.sh|fm-backend.test.sh|\
@@ -655,6 +655,7 @@ portable_serial_weight_hints() {
 tests/fm-account-pin-preflight-live-e2e.test.sh 30
 tests/fm-afk-contract.test.sh 3000
 tests/fm-afk-inject-e2e.test.sh 35792
+tests/fm-afk-inject-prefix-live-e2e.test.sh 23
 tests/fm-afk-pi-herdr-return-e2e.test.sh 100
 tests/fm-afk-return.test.sh 1837
 tests/fm-ask-user-authority.test.sh 128
