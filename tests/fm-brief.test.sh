@@ -888,47 +888,52 @@ test_worker_role_scope() {
 # scaffolds' emission stamp, and that stamp must still be a live substitution
 # when the worker appends it rather than an epoch frozen at scaffold time.
 test_dod_ready_signals_carry_append_time_stamp() {
-  local home id mode count brief signals signal status before after epoch verb note
+  local home id args count brief signals signal status before after epoch verb note
   home="$TMP_ROOT/dod-ready-stamp"
   mkdir -p "$home/data" "$home/state"
-  while IFS='|' read -r id mode count; do
+  while IFS='|' read -r id args count; do
     [ -n "$id" ] || continue
-    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode "$mode" >/dev/null \
-      || fail "$id: --mode $mode scaffold failed"
+    # shellcheck disable=SC2086 # args is an intentional word-split scaffold flag list
+    FM_HOME="$home" FM_SECONDMATE_CHARTER='Supervise assigned work.' \
+      "$ROOT/bin/fm-brief.sh" "$id" $args >/dev/null \
+      || fail "$id: scaffold failed for $args"
     brief="$home/data/$id/brief.md"
-    signals=$(sed -n '/^# Definition of done$/,$p' "$brief" | grep -o '`done[^`]*`' | tr -d '`')
+    signals=$(sed -n '/^# Definition of done$/,$p' "$brief" \
+      | grep -oE '`(done|failed|blocked|needs-decision|resolved)[^`]*: [^`]*`' | tr -d '`')
     [ "$(printf '%s\n' "$signals" | grep -c .)" = "$count" ] \
-      || fail "$id: Definition of done did not instruct $count ready signals (got: $signals)"
+      || fail "$id: Definition of done did not instruct $count terminal signals (got: $signals)"
     status="$home/state/$id.status"
     while IFS= read -r signal; do
       [ -n "$signal" ] || continue
       case "$signal" in
-        'done [at=$(date +%s)]: '*) ;;
-        *) fail "$id: Definition of done instructs an unstamped ready signal: $signal" ;;
+        *' [at=$(date +%s)]: '*) ;;
+        *) fail "$id: Definition of done instructs an unstamped terminal signal: $signal" ;;
       esac
       : > "$status"
       before=$(date +%s)
       FM_DOD_STATUS="$status" bash -c "printf '%s\n' \"$signal\" >> \"\$FM_DOD_STATUS\"" \
-        || fail "$id: the instructed ready signal did not append"
+        || fail "$id: the instructed terminal signal did not append"
       after=$(date +%s)
       verb=$(bash -c '. "$1"; status_line_verb "$(cat "$2")"' _ "$ROOT/bin/fm-classify-lib.sh" "$status")
       epoch=$(bash -c '. "$1"; status_line_at_epoch "$(cat "$2")"' _ "$ROOT/bin/fm-classify-lib.sh" "$status")
       note=$(bash -c '. "$1"; status_line_note "$(cat "$2")"' _ "$ROOT/bin/fm-classify-lib.sh" "$status")
-      [ "$verb" = done ] \
-        || fail "$id: the instructed ready signal did not read as a done event (got: $verb)"
+      [ "$verb" = "${signal%% *}" ] \
+        || fail "$id: the instructed terminal signal lost its verb (got: $verb)"
       [ -n "$epoch" ] && [ "$epoch" -ge "$before" ] && [ "$epoch" -le "$after" ] \
-        || fail "$id: the instructed ready signal carried no append-time emission stamp"
+        || fail "$id: the instructed terminal signal carried no append-time emission stamp"
       [ "$note" = "${signal#*: }" ] \
-        || fail "$id: the instructed ready signal lost its note (got: $note)"
+        || fail "$id: the instructed terminal signal lost its note (got: $note)"
     done <<SIGNALS
 $signals
 SIGNALS
-  done <<MODES
-dod-ready-nomistakes|no-mistakes|2
-dod-ready-directpr|direct-PR|1
-dod-ready-localonly|local-only|1
-MODES
-  pass "fm-brief.sh: every Definition of done ready signal stamps its own append time"
+  done <<SCAFFOLDS
+dod-ready-nomistakes|some-proj --mode no-mistakes|2
+dod-ready-directpr|some-proj --mode direct-PR|1
+dod-ready-localonly|some-proj --mode local-only|1
+dod-ready-scout|some-proj --scout|1
+dod-ready-secondmate|--secondmate --no-projects|2
+SCAFFOLDS
+  pass "fm-brief.sh: every scaffold's Definition of done stamps its terminal signal's append time"
 }
 
 test_worker_role_scope
