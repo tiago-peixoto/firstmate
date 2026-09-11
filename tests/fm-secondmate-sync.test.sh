@@ -546,6 +546,31 @@ test_bootstrap_nudge_failure_records_retry_marker() {
   pass "T8c failed bootstrap nudge is surfaced and recorded for retry"
 }
 
+# Contract: the automatic re-read nudge never wakes a mate waiting on its own
+# decision; it is reported as deferred and its retry marker is kept.
+test_bootstrap_nudge_defers_while_the_mate_waits_on_a_decision() {
+  local w c1 fakebin out marker
+  w=$(new_world nudge-deferred)
+  c1=$(head_of "$w/main")
+  add_sm_worktree "$w" sm-instr "$c1"
+  bump_primary "$w" instr
+  fakebin=$(make_fake_toolchain "$w")
+  printf 'needs-decision [key=pick]: alpha or beta?\n' > "$w/home/state/sm-instr.status"
+
+  out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$w/home" FM_ROOT_OVERRIDE="$w/main" \
+    FM_SEND_SETTLE=0 FM_FAKE_TMUX_LOG="$w/tmux.log" \
+    "$ROOT/bin/fm-bootstrap.sh" 2>/dev/null)
+
+  assert_contains "$out" "NUDGE_SECONDMATES: secondmate sm-instr: deferred: sm-instr is waiting on its open decision or blocker (pick)" \
+    "a nudge to a mate waiting on its decision should be reported as deferred"
+  assert_not_contains "$out" "send failed" "a deferred nudge is not a failed send"
+  [ -z "$(find "$w/home/state/sm-instr.inbox" -name '*.msg' 2>/dev/null)" ] \
+    || fail "the mate waiting on its decision received the nudge"
+  marker="$w/home/state/.secondmate-nudge-pending/sm-instr.pending"
+  assert_present "$marker" "a deferred nudge should keep its retry marker"
+  pass "T8g bootstrap defers the re-read nudge while the mate waits on its decision"
+}
+
 test_bootstrap_nudge_retry_is_idempotent() {
   local w c1 fakebin out marker out2
   w=$(new_world nudge-retry)
@@ -1362,6 +1387,7 @@ test_bootstrap_sweep_nudges_only_instruction_change
 test_bootstrap_nudge_send_uses_state_override
 test_bootstrap_nudge_retry_rejects_malformed_marker_id
 test_bootstrap_nudge_failure_records_retry_marker
+test_bootstrap_nudge_defers_while_the_mate_waits_on_a_decision
 test_bootstrap_nudge_retry_is_idempotent
 test_bootstrap_nudge_retry_refuses_changed_home
 test_nudge_retry_uses_fresh_herdr_endpoint_after_respawn
