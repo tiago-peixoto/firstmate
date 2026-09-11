@@ -1001,7 +1001,9 @@ spawn_abort_cleanup() {
   if [ "$ORCA_ABORT_CLEANUP" = 1 ]; then
     ORCA_ABORT_CLEANUP=0
     if [ -n "${ORCA_TERMINAL:-}" ]; then
-      fm_backend_kill orca "$ORCA_TERMINAL" 2>/dev/null || true
+      if fm_backend_kill orca "$ORCA_TERMINAL" 2>/dev/null; then
+        echo "closed window $ORCA_TERMINAL" >&2
+      fi
     fi
     if [ -n "${ORCA_WORKTREE_ID:-}" ]; then
       if ! fm_backend_remove_worktree orca "$ORCA_WORKTREE_ID" 2>/dev/null; then
@@ -2994,7 +2996,7 @@ spawn_release_treehouse_lease() {  # <path> <cd-dir>
   ( CDPATH='' cd -- "$cd_dir" && treehouse return --force "$path" )
 }
 
-# Close the recorded task endpoint if one exists.
+# Close the recorded task endpoint if one exists. Skips orca.
 spawn_close_abort_endpoint() {
   local tab_id=
   [ -n "${T:-}" ] || return 0
@@ -3002,16 +3004,7 @@ spawn_close_abort_endpoint() {
   [ "$BACKEND" = orca ] && return 0
   [ "$BACKEND" = zellij ] && tab_id=$ZELLIJ_TAB_ID
   fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null || true
-}
-
-# Window-fate clause for abort errors: closed when a unique lease is armed,
-# otherwise inspect the still-live window.
-spawn_abort_window_clause() {
-  if [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ]; then
-    printf 'the window %s was closed' "$T"
-  else
-    printf 'inspect window %s' "$T"
-  fi
+  echo "closed window $T" >&2
 }
 
 # Close the task endpoint, then return the unique lease armed for abort,
@@ -3024,7 +3017,9 @@ spawn_return_abort_lease() {
   cd_dir=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
   SPAWN_LEASE_RETURN_ON_ABORT=
   spawn_close_abort_endpoint
-  if ! spawn_release_treehouse_lease "$path" "$cd_dir"; then
+  if spawn_release_treehouse_lease "$path" "$cd_dir"; then
+    echo "returned copy $path" >&2
+  else
     echo "warning: could not release treehouse lease for $path after aborted spawn of $ID" >&2
     return 1
   fi
@@ -3116,7 +3111,7 @@ spawn_seat_worktree() {  # <path> <label> [polls] [interval]
   if [ "$label" = recorded ]; then
     echo "error: task $ID's endpoint is in '${last_seen:-unknown}', not its recorded worktree '$want'; refusing to relaunch an agent outside the copy holding its work" >&2
   else
-    echo "error: pane did not enter leased worktree '$want' (last seen '${last_seen:-none}': $last_reason; spawning project '$PROJ_ABS'); $(spawn_abort_window_clause)" >&2
+    echo "error: pane did not enter leased worktree '$want' (last seen '${last_seen:-none}': $last_reason; spawning project '$PROJ_ABS')" >&2
   fi
   return 1
 }
@@ -3176,7 +3171,7 @@ kimi_wait_for_delivery() {
 
 kimi_spawn_fail() {  # <detail>
   printf 'failed: %s\n' "$1" >> "$STATE/$ID.status"
-  echo "error: $1; $(spawn_abort_window_clause)" >&2
+  echo "error: $1" >&2
 }
 
 # rovo mirrors kimi's launch-then-send shape exactly: a positional brief is
@@ -3242,14 +3237,13 @@ rovo_wait_for_delivery() {
   return 1
 }
 
-# No task record is ever published on this failure path, so nothing else
-# (teardown, the watcher) will ever learn this endpoint exists to close it:
-# without this, the already-launched --yolo rovo process keeps running as an
-# orphaned autonomous agent outside task control. Orca's worktree+terminal
-# are owned by the separate ORCA_ABORT_CLEANUP trap path.
+# Close the already-launched rovo endpoint on this failure: a relaunch has
+# no abort-time lease return to close it. After publication, an orca
+# terminal is not closed here (spawn_close_abort_endpoint skips orca, and
+# ORCA_ABORT_CLEANUP is already disarmed).
 rovo_spawn_fail() {  # <detail>
   printf 'failed: %s\n' "$1" >> "$STATE/$ID.status"
-  echo "error: $1; the window $T was closed" >&2
+  echo "error: $1" >&2
   spawn_close_abort_endpoint
 }
 
@@ -3288,7 +3282,7 @@ if [ "$KIND" != secondmate ]; then
   case "$HARNESS" in
     claude*)
       if ! CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG_ROOT" "$FM_ROOT/bin/fm-claude-trust.sh" "$WT" "$PROJ_ABS" >/dev/null; then
-        echo "error: could not pre-register Claude workspace trust for $WT; refusing to launch a claude worker that would wedge on the trust dialog; $(spawn_abort_window_clause)" >&2
+        echo "error: could not pre-register Claude workspace trust for $WT; refusing to launch a claude worker that would wedge on the trust dialog" >&2
         exit 1
       fi
       ;;

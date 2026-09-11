@@ -236,8 +236,10 @@ SH
   [ "$status" -ne 0 ] || fail "post-publish kimi readiness failure should abort"$'\n'"$out"
   assert_contains "$out" "kimi did not show a verified ready signal" \
     "post-publish kimi readiness failure lacked a loud diagnostic"
-  assert_contains "$out" "the window firstmate:fm-$id was closed" \
+  assert_contains "$out" "closed window firstmate:fm-$id" \
     "post-publish abort did not report the closed window"
+  assert_contains "$out" "returned copy $WT_DIR" \
+    "post-publish abort did not report the returned copy"
   assert_absent "$HOME_DIR/state/$id.meta" "post-publish abort must remove the published record"
   grep -F "get --lease --lease-holder $id" "$log" >/dev/null \
     || fail "post-publish abort never acquired a lease"$'\n'"$(cat "$log")"
@@ -255,6 +257,121 @@ SH
     }
   ' "$seq" || fail "task window was not killed before treehouse return"$'\n'"$(cat "$seq")"
   pass "a launch failure after publish returns the leased copy"
+}
+
+test_spawn_kimi_relaunch_delivery_failure_does_not_close_the_window() {
+  local rec id out status seq spawn_home
+  id=lease-relaunch-kimi-h8
+  rec=$(make_lease_case relaunch-kimi "$id")
+  read_lease_record "$rec"
+  seq="$CASE_DIR/seq.log"
+  : > "$seq"
+  spawn_home="$HOME_DIR/user-home"
+  mkdir -p "$spawn_home/.kimi-code"
+  printf 'default_model = "test"\n' > "$spawn_home/.kimi-code/config.toml"
+  fm_fake_exit0 "$FAKEBIN_DIR" kimi
+  fm_write_meta "$HOME_DIR/state/$id.meta" \
+    "window=firstmate:fm-$id" \
+    "endpoint_task_id=$id" \
+    "worktree=$WT_DIR" \
+    "project=$PROJ_DIR" \
+    "harness=kimi" \
+    "kind=scout"
+  mv "$FAKEBIN_DIR/tmux" "$FAKEBIN_DIR/tmux.real"
+  cat > "$FAKEBIN_DIR/tmux" <<SH
+#!/usr/bin/env bash
+set -u
+printf 'tmux %s\\n' "\$*" >> "$seq"
+case "\$*" in
+  *"#{pane_current_command}"*) printf 'zsh\\n'; exit 0 ;;
+  *"#{pane_current_path}"*) printf '%s\\n' "$WT_DIR"; exit 0 ;;
+esac
+if [ "\${1:-}" = capture-pane ]; then
+  printf 'shell starting\\n\$ \\n'
+  exit 0
+fi
+if [ "\${1:-}" = list-windows ]; then
+  printf '%s\\n' "fm-$id"
+  exit 0
+fi
+exec "\$(dirname "\$0")/tmux.real" "\$@"
+SH
+  chmod +x "$FAKEBIN_DIR/tmux"
+
+  out=$(FM_KIMI_READY_POLLS=1 FM_KIMI_POLL_INTERVAL=0 \
+    fm_test_run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" --relaunch "$id")
+  status=$?
+  [ "$status" -ne 0 ] || fail "kimi relaunch delivery failure should abort"$'\n'"$out"
+  assert_contains "$out" "kimi did not show a verified ready signal" \
+    "kimi relaunch delivery failure lacked a loud diagnostic"
+  printf '%s\n' "$out" | grep -F "closed window" >/dev/null \
+    && fail "kimi relaunch abort reported a closed window"$'\n'"$out"
+  grep -E "tmux kill-window" "$seq" >/dev/null \
+    && fail "kimi relaunch abort killed the task window"$'\n'"$(cat "$seq")"
+  assert_present "$HOME_DIR/state/$id.meta" "kimi relaunch abort must keep the task record"
+  pass "a kimi relaunch delivery failure leaves the window open"
+}
+
+test_spawn_failed_rollback_does_not_close_the_window() {
+  local rec id out status log seq spawn_home real_rm meta
+  id=lease-rollback-fail-i9
+  rec=$(make_lease_case rollback-fail "$id")
+  read_lease_record "$rec"
+  log="$CASE_DIR/treehouse.log"
+  seq="$CASE_DIR/seq.log"
+  : > "$log"
+  : > "$seq"
+  spawn_home="$HOME_DIR/user-home"
+  mkdir -p "$spawn_home/.kimi-code"
+  printf 'default_model = "test"\n' > "$spawn_home/.kimi-code/config.toml"
+  fm_fake_exit0 "$FAKEBIN_DIR" kimi
+  meta="$HOME_DIR/state/$id.meta"
+  real_rm=$(command -v rm)
+  cat > "$FAKEBIN_DIR/rm" <<SH
+#!/usr/bin/env bash
+for arg in "\$@"; do
+  [ "\$arg" != "$meta" ] || exit 1
+done
+exec "$real_rm" "\$@"
+SH
+  chmod +x "$FAKEBIN_DIR/rm"
+  mv "$FAKEBIN_DIR/tmux" "$FAKEBIN_DIR/tmux.real"
+  cat > "$FAKEBIN_DIR/tmux" <<SH
+#!/usr/bin/env bash
+set -u
+printf 'tmux %s\\n' "\$*" >> "$seq"
+if [ "\${1:-}" = capture-pane ]; then
+  printf 'shell starting\\n\$ \\n'
+  exit 0
+fi
+exec "\$(dirname "\$0")/tmux.real" "\$@"
+SH
+  chmod +x "$FAKEBIN_DIR/tmux"
+  mv "$FAKEBIN_DIR/treehouse" "$FAKEBIN_DIR/treehouse.real"
+  cat > "$FAKEBIN_DIR/treehouse" <<SH
+#!/usr/bin/env bash
+set -u
+printf 'treehouse %s\\n' "\$*" >> "$seq"
+exec "\$(dirname "\$0")/treehouse.real" "\$@"
+SH
+  chmod +x "$FAKEBIN_DIR/treehouse"
+
+  out=$(FM_FAKE_TREEHOUSE_LOG="$log" FM_KIMI_READY_POLLS=1 FM_KIMI_POLL_INTERVAL=0 \
+    run_lease_spawn "$id" --harness kimi --mode no-mistakes --yolo off)
+  status=$?
+  [ "$status" -ne 0 ] || fail "failed-rollback abort should fail"$'\n'"$out"
+  assert_contains "$out" "kimi did not show a verified ready signal" \
+    "failed-rollback abort lacked the launch diagnostic"
+  printf '%s\n' "$out" | grep -F "closed window" >/dev/null \
+    && fail "failed rollback reported a closed window"$'\n'"$out"
+  printf '%s\n' "$out" | grep -F "returned copy" >/dev/null \
+    && fail "failed rollback reported a returned copy"$'\n'"$out"
+  grep -E "tmux kill-window" "$seq" >/dev/null \
+    && fail "failed rollback killed the task window"$'\n'"$(cat "$seq")"
+  grep -F "return --force" "$seq" >/dev/null \
+    && fail "failed rollback returned the leased copy"$'\n'"$(cat "$seq")"
+  assert_present "$meta" "failed rollback must keep the task record"
+  pass "a failed record rollback leaves the window and copy with the record"
 }
 
 test_spawn_refuses_a_copy_another_local_home_records() {
@@ -333,6 +450,8 @@ test_spawn_refuses_a_copy_another_live_task_records
 test_spawn_retries_after_protecting_an_occupied_copy
 test_spawn_prepublish_failure_returns_the_lease
 test_spawn_postpublish_failure_returns_the_lease
+test_spawn_kimi_relaunch_delivery_failure_does_not_close_the_window
+test_spawn_failed_rollback_does_not_close_the_window
 test_spawn_refuses_a_copy_another_local_home_records
 test_spawn_refuses_before_endpoint_when_a_registered_home_is_missing
 
