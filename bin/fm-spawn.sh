@@ -1637,6 +1637,28 @@ launch_template() {
   esac
 }
 
+# raw_launch_model <raw launch command>
+# Prints the value of the --model flag embedded in a raw launch command, or
+# nothing. A raw command is passed through verbatim, so fm-spawn's own --model
+# does not reach the agent and only this value says which account a raw Pi
+# launch would spend. Model ids carry no spaces, so word splitting is enough;
+# one layer of shell quoting around the value is removed.
+raw_launch_model() {
+  local word next=0 value=
+  for word in $1; do
+    if [ "$next" -eq 1 ]; then value=$word; break; fi
+    case "$word" in
+      --model) next=1 ;;
+      --model=*) value=${word#--model=}; break ;;
+    esac
+  done
+  case "$value" in
+    \'*\') value=${value#\'}; value=${value%\'} ;;
+    '"'*'"') value=${value#'"'}; value=${value%'"'} ;;
+  esac
+  printf '%s\n' "$value"
+}
+
 case "$ARG3" in
   *' '*)  # raw launch command (unverified-adapter escape hatch)
     RAW_LAUNCH=1
@@ -2247,9 +2269,21 @@ else
 fi
 # An unauthenticated interactive Pi does not exit: it parks a live-looking pane
 # behind a /login hint. Ask the runner's own check first, under the pin.
+# A Pi root holds one login per provider id, so the pin alone no longer keeps
+# work and personal apart: the side guard runs first, before the vendor check
+# and before any endpoint or task record exists, and it refuses a launch whose
+# account it cannot prove. This is the one place every Pi launch passes -
+# fresh spawns, --relaunch, secondmates, and raw launch commands alike - so the
+# model it judges is the one the launch actually carries: a raw command ignores
+# --model, so its own embedded model is what counts.
 case "$HARNESS" in
   claude) fm_account_pin_preflight claude "$CLAUDE_CONFIG_ROOT" claude "$MODEL" || exit 1 ;;
-  pi|pi-signed) fm_account_pin_preflight "$HARNESS" "$PI_AGENT_ROOT" "$PI_BIN" "$MODEL" || exit 1 ;;
+  pi|pi-signed)
+    PI_LAUNCH_MODEL=$MODEL
+    [ "$RAW_LAUNCH" -ne 1 ] || PI_LAUNCH_MODEL=$(raw_launch_model "$LAUNCH")
+    fm_account_pin_side_guard "$HARNESS" "$PIN_CONFIG" "$PI_LAUNCH_MODEL" || exit 1
+    fm_account_pin_preflight "$HARNESS" "$PI_AGENT_ROOT" "$PI_BIN" "$PI_LAUNCH_MODEL" || exit 1
+    ;;
 esac
 if [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
   SPAWN_TREEHOUSE_PROJECT_LOCK=$(fm_treehouse_project_lock_path "$PROJ_ABS") || {
