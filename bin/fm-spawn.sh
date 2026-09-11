@@ -1001,9 +1001,8 @@ spawn_abort_cleanup() {
   if [ "$ORCA_ABORT_CLEANUP" = 1 ]; then
     ORCA_ABORT_CLEANUP=0
     if [ -n "${ORCA_TERMINAL:-}" ]; then
-      if fm_backend_kill orca "$ORCA_TERMINAL" 2>/dev/null; then
-        echo "closed window $ORCA_TERMINAL" >&2
-      fi
+      echo "closing window $ORCA_TERMINAL" >&2
+      fm_backend_kill orca "$ORCA_TERMINAL" 2>/dev/null || true
     fi
     if [ -n "${ORCA_WORKTREE_ID:-}" ]; then
       if ! fm_backend_remove_worktree orca "$ORCA_WORKTREE_ID" 2>/dev/null; then
@@ -3003,8 +3002,8 @@ spawn_close_abort_endpoint() {
   [ -n "${BACKEND:-}" ] || return 0
   [ "$BACKEND" = orca ] && return 0
   [ "$BACKEND" = zellij ] && tab_id=$ZELLIJ_TAB_ID
+  echo "closing window $T" >&2
   fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null || true
-  echo "closed window $T" >&2
 }
 
 # Close the task endpoint, then return the unique lease armed for abort,
@@ -3244,6 +3243,7 @@ rovo_wait_for_delivery() {
 rovo_spawn_fail() {  # <detail>
   printf 'failed: %s\n' "$1" >> "$STATE/$ID.status"
   echo "error: $1" >&2
+  [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] && return 0
   spawn_close_abort_endpoint
 }
 

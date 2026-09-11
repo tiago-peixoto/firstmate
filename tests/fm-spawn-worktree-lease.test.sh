@@ -236,8 +236,8 @@ SH
   [ "$status" -ne 0 ] || fail "post-publish kimi readiness failure should abort"$'\n'"$out"
   assert_contains "$out" "kimi did not show a verified ready signal" \
     "post-publish kimi readiness failure lacked a loud diagnostic"
-  assert_contains "$out" "closed window firstmate:fm-$id" \
-    "post-publish abort did not report the closed window"
+  assert_contains "$out" "closing window firstmate:fm-$id" \
+    "post-publish abort did not report the window close"
   assert_contains "$out" "returned copy $WT_DIR" \
     "post-publish abort did not report the returned copy"
   assert_absent "$HOME_DIR/state/$id.meta" "post-publish abort must remove the published record"
@@ -304,8 +304,8 @@ SH
   [ "$status" -ne 0 ] || fail "kimi relaunch delivery failure should abort"$'\n'"$out"
   assert_contains "$out" "kimi did not show a verified ready signal" \
     "kimi relaunch delivery failure lacked a loud diagnostic"
-  printf '%s\n' "$out" | grep -F "closed window" >/dev/null \
-    && fail "kimi relaunch abort reported a closed window"$'\n'"$out"
+  printf '%s\n' "$out" | grep -E 'clos(ed|ing) window' >/dev/null \
+    && fail "kimi relaunch abort reported a window close"$'\n'"$out"
   grep -E "tmux kill-window" "$seq" >/dev/null \
     && fail "kimi relaunch abort killed the task window"$'\n'"$(cat "$seq")"
   assert_present "$HOME_DIR/state/$id.meta" "kimi relaunch abort must keep the task record"
@@ -362,8 +362,8 @@ SH
   [ "$status" -ne 0 ] || fail "failed-rollback abort should fail"$'\n'"$out"
   assert_contains "$out" "kimi did not show a verified ready signal" \
     "failed-rollback abort lacked the launch diagnostic"
-  printf '%s\n' "$out" | grep -F "closed window" >/dev/null \
-    && fail "failed rollback reported a closed window"$'\n'"$out"
+  printf '%s\n' "$out" | grep -E 'clos(ed|ing) window' >/dev/null \
+    && fail "failed rollback reported a window close"$'\n'"$out"
   printf '%s\n' "$out" | grep -F "returned copy" >/dev/null \
     && fail "failed rollback reported a returned copy"$'\n'"$out"
   grep -E "tmux kill-window" "$seq" >/dev/null \
