@@ -197,28 +197,38 @@ test_spawn_prepublish_failure_returns_the_lease() {
 }
 
 test_spawn_postpublish_failure_returns_the_lease() {
-  local rec id out status log spawn_home
+  local rec id out status log seq spawn_home
   id=lease-postpub-e5
   rec=$(make_lease_case postpublish "$id")
   read_lease_record "$rec"
   log="$CASE_DIR/treehouse.log"
+  seq="$CASE_DIR/seq.log"
   : > "$log"
+  : > "$seq"
   spawn_home="$HOME_DIR/user-home"
   mkdir -p "$spawn_home/.kimi-code"
   printf 'default_model = "test"\n' > "$spawn_home/.kimi-code/config.toml"
   fm_fake_exit0 "$FAKEBIN_DIR" kimi
-  cat > "$FAKEBIN_DIR/tmux.capture" <<'SH'
+  mv "$FAKEBIN_DIR/tmux" "$FAKEBIN_DIR/tmux.real"
+  cat > "$FAKEBIN_DIR/tmux" <<SH
 #!/usr/bin/env bash
 set -u
-if [ "${1:-}" = capture-pane ]; then
-  printf 'shell starting\n$ \n'
+printf 'tmux %s\\n' "\$*" >> "$seq"
+if [ "\${1:-}" = capture-pane ]; then
+  printf 'shell starting\\n\$ \\n'
   exit 0
 fi
-exec "$(dirname "$0")/tmux.real" "$@"
+exec "\$(dirname "\$0")/tmux.real" "\$@"
 SH
-  mv "$FAKEBIN_DIR/tmux" "$FAKEBIN_DIR/tmux.real"
-  mv "$FAKEBIN_DIR/tmux.capture" "$FAKEBIN_DIR/tmux"
   chmod +x "$FAKEBIN_DIR/tmux"
+  mv "$FAKEBIN_DIR/treehouse" "$FAKEBIN_DIR/treehouse.real"
+  cat > "$FAKEBIN_DIR/treehouse" <<SH
+#!/usr/bin/env bash
+set -u
+printf 'treehouse %s\\n' "\$*" >> "$seq"
+exec "\$(dirname "\$0")/treehouse.real" "\$@"
+SH
+  chmod +x "$FAKEBIN_DIR/treehouse"
 
   out=$(FM_FAKE_TREEHOUSE_LOG="$log" FM_KIMI_READY_POLLS=1 FM_KIMI_POLL_INTERVAL=0 \
     run_lease_spawn "$id" --harness kimi --mode no-mistakes --yolo off)
@@ -226,11 +236,24 @@ SH
   [ "$status" -ne 0 ] || fail "post-publish kimi readiness failure should abort"$'\n'"$out"
   assert_contains "$out" "kimi did not show a verified ready signal" \
     "post-publish kimi readiness failure lacked a loud diagnostic"
+  assert_contains "$out" "the window firstmate:fm-$id was closed" \
+    "post-publish abort did not report the closed window"
   assert_absent "$HOME_DIR/state/$id.meta" "post-publish abort must remove the published record"
   grep -F "get --lease --lease-holder $id" "$log" >/dev/null \
     || fail "post-publish abort never acquired a lease"$'\n'"$(cat "$log")"
   grep -F "return --force $WT_DIR" "$log" >/dev/null \
     || fail "post-publish abort did not return the leased path"$'\n'"$(cat "$log")"
+  grep -E "tmux kill-window.*fm-$id" "$seq" >/dev/null \
+    || fail "post-publish abort did not kill the task window"$'\n'"$(cat "$seq")"
+  awk -v id="$id" '
+    $1 == "tmux" && /kill-window/ && index($0, id) { kill_at = NR }
+    $1 == "treehouse" && /return --force/ { ret_at = NR }
+    END {
+      if (!kill_at) { print "no kill-window"; exit 1 }
+      if (!ret_at) { print "no return --force"; exit 1 }
+      if (kill_at > ret_at) { print "kill-window after return --force"; exit 1 }
+    }
+  ' "$seq" || fail "task window was not killed before treehouse return"$'\n'"$(cat "$seq")"
   pass "a launch failure after publish returns the leased copy"
 }
 
@@ -270,6 +293,40 @@ test_spawn_refuses_a_copy_another_local_home_records() {
   pass "fm-spawn refuses a copy another local home already records"
 }
 
+test_spawn_refuses_before_endpoint_when_a_registered_home_is_missing() {
+  local rec id out status log tmux_log
+  id=lease-missing-home-g7
+  rec=$(make_lease_case missing-home "$id")
+  read_lease_record "$rec"
+  log="$CASE_DIR/treehouse.log"
+  tmux_log="$CASE_DIR/tmux.log"
+  : > "$log"
+  : > "$tmux_log"
+  printf -- '- gone - fixture (home: %s; scope: fixture; projects: sample; added 2026-09-10)\n' \
+    "$CASE_DIR/gone-home" > "$HOME_DIR/data/secondmates.md"
+  mv "$FAKEBIN_DIR/tmux" "$FAKEBIN_DIR/tmux.real"
+  cat > "$FAKEBIN_DIR/tmux" <<SH
+#!/usr/bin/env bash
+set -u
+printf '%s\\n' "\$*" >> "$tmux_log"
+exec "\$(dirname "\$0")/tmux.real" "\$@"
+SH
+  chmod +x "$FAKEBIN_DIR/tmux"
+
+  out=$(FM_FAKE_TREEHOUSE_LOG="$log" run_lease_spawn "$id" --scout)
+  status=$?
+  [ "$status" -ne 0 ] || fail "spawn proceeded with a missing registered home"$'\n'"$out"
+  assert_contains "$out" "could not enumerate local Firstmate homes for worktree occupancy" \
+    "missing registered home did not refuse occupancy enumeration"
+  assert_contains "$out" "registered local Firstmate home is unavailable" \
+    "missing registered home was not named"
+  grep -F new-window "$tmux_log" >/dev/null \
+    && fail "missing registered home created a task window"$'\n'"$(cat "$tmux_log")"
+  [ ! -s "$log" ] \
+    || fail "missing registered home acquired a treehouse copy"$'\n'"$(cat "$log")"
+  pass "spawn enumerates local homes before creating an endpoint or acquiring a copy"
+}
+
 test_plain_treehouse_get_reuses_a_processless_copy
 test_spawn_acquires_with_task_lifetime_lease
 test_spawn_refuses_a_copy_another_live_task_records
@@ -277,5 +334,6 @@ test_spawn_retries_after_protecting_an_occupied_copy
 test_spawn_prepublish_failure_returns_the_lease
 test_spawn_postpublish_failure_returns_the_lease
 test_spawn_refuses_a_copy_another_local_home_records
+test_spawn_refuses_before_endpoint_when_a_registered_home_is_missing
 
 echo "# all fm-spawn-worktree-lease tests passed"
