@@ -1,0 +1,19 @@
+This branch's own changed-file selection, the action a validation pipeline runs:
+$ git diff --name-only 9074f9d..HEAD
+bin/fm-test-run.sh
+tests/fm-test-run.test.sh
+
+$ bin/fm-test-run.sh --list --changed --base 9074f9d | head -12
+tests/fm-arm-pretool-check.test.sh
+tests/fm-ask-user-authority.test.sh
+tests/fm-bearings-board.test.sh
+tests/fm-brief.test.sh
+tests/fm-calm-pi-extension.test.sh
+tests/fm-captain-hold-lifecycle.test.sh
+tests/fm-cd-pretool-check.test.sh
+tests/fm-classify-decision-key.test.sh
+tests/fm-composer-ghost.test.sh
+tests/fm-composer-lib.test.sh
+tests/fm-crew-state.test.sh
+tests/fm-documentation-audiences.test.sh
+... (35 scripts)  [exit 0]

@@ -1,0 +1,5 @@
+=== tests/fm-arm-pretool-check.test.sh: red in BOTH throwaway copies, green in the real worktree ===
+=== so the one red script seen in a scratch fan-out is an artifact of my `git archive | git init` copy, not of this commit ===
+scratch-copy-of-BASE-9074f9d exit=1 not-ok=1
+scratch-copy-of-TARGET-880a9de exit=1 not-ok=1
+real-worktree-TARGET-880a9de exit=0 not-ok=0

@@ -1,0 +1,10 @@
+=== bounding the shadow: same nested fixture, but the suite names the FULL path ===
+$ bin/fm-test-run.sh --list --changed --base HEAD
+tests/fm-backend-orca.test.sh
+exit=0
+
+=== and a nested fixture NOT named *-fixture.sh, directory-referenced (unaffected arm) ===
+$ bin/fm-test-run.sh --list --changed --base HEAD
+tests/fm-backend-orca.test.sh
+exit=0
+(worktree copy clean)

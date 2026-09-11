@@ -1,0 +1,6 @@
+=== tests/herdr-client-pair-fixture.sh : base exit=0 target exit=0 ===
+selection IDENTICAL before and after the change (66 scripts)
+=== tests/fixtures.sh : base exit=0 target exit=0 ===
+selection IDENTICAL before and after the change (95 scripts)
+=== tests/lib.sh : base exit=0 target exit=0 ===
+selection IDENTICAL before and after the change (197 scripts)

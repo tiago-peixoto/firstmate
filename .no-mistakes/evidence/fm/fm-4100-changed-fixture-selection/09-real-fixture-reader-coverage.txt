@@ -1,0 +1,15 @@
+=== real repo fixture tests/remote-herdr-fixture.sh: direct readers vs what --changed selects ===
+$ grep -l remote-herdr-fixture.sh tests/*.test.sh   (the suites that actually read it)
+tests/fm-remote-secondmate-parent-binding.test.sh
+tests/fm-remote-secondmate-lifecycle-e2e.test.sh
+tests/fm-remote-secondmate-trace-context.test.sh
+tests/fm-secondmate-sync.test.sh
+
+Each of those appears in the --changed selection on the fixed runner:
+  selected: tests/fm-remote-secondmate-parent-binding.test.sh
+  selected: tests/fm-secondmate-sync.test.sh
+  selected: tests/fm-remote-secondmate-trace-context.test.sh
+  selected: tests/fm-remote-secondmate-lifecycle-e2e.test.sh
+
+Expensive real-Herdr lane was NOT dragged in:
+  fm-backend-herdr.test.sh absent - selection stayed off the real-Herdr family

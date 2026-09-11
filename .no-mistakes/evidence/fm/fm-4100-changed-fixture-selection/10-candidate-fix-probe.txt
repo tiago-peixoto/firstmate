@@ -1,0 +1,14 @@
+=== candidate fix probe: move the tests/fixtures/*/* arm ABOVE the tests/*-fixture.sh arm ===
+$ bin/fm-test-run.sh --list --changed --base HEAD   # nested *-fixture.sh, suite names only the directory
+tests/fm-backend-orca.test.sh
+exit=0
+
+$ and the top-level fixture the change is about still works:
+tests/fm-backlog-handoff.test.sh
+tests/fm-on.test.sh
+tests/fm-remote-backlog-handoff.test.sh
+exit=
+
+$ and an orphan fixture still refuses:
+fm-test-run: no changed-test mapping for source path: tests/orphan-fixture.sh
+exit=2

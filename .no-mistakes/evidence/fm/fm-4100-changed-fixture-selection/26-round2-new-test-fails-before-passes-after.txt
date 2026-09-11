@@ -1,0 +1,16 @@
+The new case from tests/fm-test-run.test.sh, run alone against each bin/fm-test-run.sh version.
+
+=== bin/fm-test-run.sh from 9074f9d ===
+fm-test-run: no changed-test mapping for source path: tests/shared-probe-fixture.sh
+not ok - shared test fixture selects its pr-forge reader (missing: 'tests/fm-pr-merge.test.sh')
+--- output ---
+
+[exit 1]
+
+=== bin/fm-test-run.sh from 880a9de ===
+fm-test-run: no changed-test mapping for source path: tests/fixtures/demo/demo-fixture.sh
+[exit 2]
+
+=== bin/fm-test-run.sh from a05d0eb ===
+ok - a changed shared test fixture selects its readers while an unread tests/ path still refuses
+[exit 0]

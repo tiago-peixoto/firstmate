@@ -1,0 +1,89 @@
+
+==================================================================
+### bin/fm-test-run.sh from commit 9074f9d
+==================================================================
+
+----- S1 changed shared top-level fixture, two readers in two families -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/shared-probe-fixture.sh)
+fm-test-run: no changed-test mapping for source path: tests/shared-probe-fixture.sh
+[exit 2]
+
+----- S2 changed top-level *-fixture.sh that NO suite reads -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/orphan-fixture.sh)
+fm-test-run: no changed-test mapping for source path: tests/orphan-fixture.sh
+[exit 2]
+
+----- S3 changed plain unmapped tests/ path -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/unread-thing.sh)
+fm-test-run: no changed-test mapping for source path: tests/unread-thing.sh
+[exit 2]
+
+----- S4 changed nested fixture referenced only by its directory -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/fixtures/demo/demo-fixture.sh)
+tests/fm-backend-orca.test.sh
+[exit 0]
+
+----- S5 changed tests/*-helpers.sh (pre-existing behaviour) -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/probe-helpers.sh)
+tests/fm-brief.test.sh
+[exit 0]
+
+==================================================================
+### bin/fm-test-run.sh from commit 880a9de
+==================================================================
+
+----- S1 changed shared top-level fixture, two readers in two families -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/shared-probe-fixture.sh)
+tests/fm-pr-merge.test.sh
+tests/fm-secondmate-safety.test.sh
+[exit 0]
+
+----- S2 changed top-level *-fixture.sh that NO suite reads -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/orphan-fixture.sh)
+fm-test-run: no changed-test mapping for source path: tests/orphan-fixture.sh
+[exit 2]
+
+----- S3 changed plain unmapped tests/ path -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/unread-thing.sh)
+fm-test-run: no changed-test mapping for source path: tests/unread-thing.sh
+[exit 2]
+
+----- S4 changed nested fixture referenced only by its directory -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/fixtures/demo/demo-fixture.sh)
+fm-test-run: no changed-test mapping for source path: tests/fixtures/demo/demo-fixture.sh
+[exit 2]
+
+----- S5 changed tests/*-helpers.sh (pre-existing behaviour) -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/probe-helpers.sh)
+tests/fm-brief.test.sh
+[exit 0]
+
+==================================================================
+### bin/fm-test-run.sh from commit a05d0eb
+==================================================================
+
+----- S1 changed shared top-level fixture, two readers in two families -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/shared-probe-fixture.sh)
+tests/fm-pr-merge.test.sh
+tests/fm-secondmate-safety.test.sh
+[exit 0]
+
+----- S2 changed top-level *-fixture.sh that NO suite reads -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/orphan-fixture.sh)
+fm-test-run: no changed-test mapping for source path: tests/orphan-fixture.sh
+[exit 2]
+
+----- S3 changed plain unmapped tests/ path -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/unread-thing.sh)
+fm-test-run: no changed-test mapping for source path: tests/unread-thing.sh
+[exit 2]
+
+----- S4 changed nested fixture referenced only by its directory -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/fixtures/demo/demo-fixture.sh)
+tests/fm-backend-orca.test.sh
+[exit 0]
+
+----- S5 changed tests/*-helpers.sh (pre-existing behaviour) -----
+$ bin/fm-test-run.sh --list --changed --base HEAD   (only changed path: tests/probe-helpers.sh)
+tests/fm-brief.test.sh
+[exit 0]

@@ -1,0 +1,8 @@
+=== nested tests/fixtures/<dir>/<name>-fixture.sh: does the new tests/*-fixture.sh glob shadow the tests/fixtures/*/* arm? ===
+--- BASE 9074f9d: touch tests/fixtures/demo/demo-fixture.sh (suite names only the directory) ---
+tests/fm-backend-orca.test.sh
+exit=0
+
+--- TARGET 880a9de: touch tests/fixtures/demo/demo-fixture.sh (suite names only the directory) ---
+fm-test-run: no changed-test mapping for source path: tests/fixtures/demo/demo-fixture.sh
+exit=2

@@ -1,0 +1,22 @@
+=== A. genuinely unmapped tests/ path must still refuse loudly ===
+$ echo "# scratch" > tests/unrelated-thing.sh   (untracked, not a *-fixture.sh)
+$ bin/fm-test-run.sh --list --changed --base HEAD
+fm-test-run: no changed-test mapping for source path: tests/unrelated-thing.sh
+exit=2
+
+=== B. a tests/*-fixture.sh that NO suite reads must still refuse loudly ===
+$ echo "# nobody reads me" > tests/orphan-fixture.sh
+$ bin/fm-test-run.sh --list --changed --base HEAD
+fm-test-run: no changed-test mapping for source path: tests/orphan-fixture.sh
+exit=2
+
+=== C. deleted tests/*-fixture.sh whose readers are gone must still refuse loudly ===
+$ git rm -q tests/remote-herdr-fixture.sh  (readers keep their reference)
+$ bin/fm-test-run.sh --list --changed --base HEAD | head -5
+tests/fm-backlog-handoff.test.sh
+tests/fm-on.test.sh
+tests/fm-remote-backlog-handoff.test.sh
+tests/fm-remote-doctor.test.sh
+tests/fm-remote-herdr-guard.test.sh
+(selection above, refusal would print instead)
+clean=0

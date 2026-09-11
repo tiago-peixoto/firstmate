@@ -1,0 +1,14 @@
+=== curated tests/herdr-client-pair-fixture.sh mapping is unchanged by the new glob ===
+$ bin/fm-test-run.sh --list --changed --base HEAD   # after touching tests/herdr-client-pair-fixture.sh
+base  (9074f9d): 66 scripts selected
+target(880a9de): 66 scripts selected
+$ diff base target
+(identical - the earlier curated case arm still wins)
+
+first 6 selected scripts on target:
+tests/fm-afk-inject-herdr-e2e.test.sh
+tests/fm-afk-launch.test.sh
+tests/fm-backend-autodetect-smoke.test.sh
+tests/fm-backend-herdr-agent-exit-shell-e2e.test.sh
+tests/fm-backend-herdr-eventwait-smoke.test.sh
+tests/fm-backend-herdr-focus-flash-e2e.test.sh

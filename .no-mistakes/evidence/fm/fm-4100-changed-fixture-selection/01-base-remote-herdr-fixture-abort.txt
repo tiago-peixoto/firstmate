@@ -1,0 +1,6 @@
+$ # BASE commit 9074f9d (before the fix)
+$ git status --porcelain
+ M tests/remote-herdr-fixture.sh
+$ bin/fm-test-run.sh --list --changed --base HEAD
+fm-test-run: no changed-test mapping for source path: tests/remote-herdr-fixture.sh
+exit=2
