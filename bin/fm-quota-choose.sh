@@ -48,7 +48,7 @@
 # Account pins are separate pools (bin/fm-account-pin-lib.sh), and a snapshot
 # is read under at most one pin (bin/fm-quota-snapshot.sh). A candidate list
 # naming two different pinned runners (claude beside pi or pi-signed) is
-# therefore refused with exit 2 rather than scored from one snapshot.
+# therefore refused with exit 2 rather than scored from its own snapshot.
 # Unpinned runners read the same ambient rows under any pin and may share it.
 set -u
 
@@ -58,8 +58,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/fm-quota-axi-lib.sh"
 # shellcheck source=bin/fm-control-lib.sh
 . "$SCRIPT_DIR/fm-control-lib.sh"
-# shellcheck source=bin/fm-account-pin-lib.sh
-. "$SCRIPT_DIR/fm-account-pin-lib.sh"
 
 die() { printf 'error: %s\n' "$1" >&2; exit 2; }
 usage() {
@@ -384,6 +382,7 @@ for c in "${CANDIDATES[@]}"; do
     *) die "unknown harness: $harness" ;;
   esac
 done
+
 
 pin_var=
 for c in "${CANDIDATES[@]}"; do

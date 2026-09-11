@@ -545,8 +545,7 @@ SH
     || fail "a mate busy past the bound hid its frozen queue: $(cat "$dir/watch-over.out")"
   stall_count=$(grep -c 'secondmate-wake-loop-mate-' "$state/.wake-queue" || true)
   [ "$stall_count" -eq 1 ] || fail "the over-bound episode did not publish exactly one notification"
-  pass "a long-lived mate mid-turn is not a stall, but a queue frozen past the busy bound still alarms"
-}
+  pass "a long-lived mate mid-turn is not a stall, but a queue frozen past the busy bound still alarms"}
 
 test_secondmate_stall_marker_rejects_symlink() {
   local dir state sub fakebin marker outside expected epoch
@@ -1974,8 +1973,7 @@ test_secondmate_foreign_queue_stall_tracks_progress_and_alerts_once
 test_secondmate_declared_pause_rows_do_not_feed_stall_escalation
 test_secondmate_reprovisioned_queue_starts_a_fresh_interval
 test_secondmate_active_turn_defers_stall_until_the_turn_ends
-test_secondmate_long_lived_mate_mid_turn_is_not_a_stall
-test_secondmate_stall_marker_rejects_symlink
+test_secondmate_long_lived_mate_mid_turn_is_not_a_stalltest_secondmate_stall_marker_rejects_symlink
 test_acknowledged_stall_publication_survives_pre_marker_crash
 test_empty_prefix_mate_preserves_other_mate_receipt
 test_self_announced_append_guards

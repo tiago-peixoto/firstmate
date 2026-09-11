@@ -672,12 +672,7 @@ test_native_ultra_relaunch_preserves_profile_and_rejects_before_stop() {
   add_ship_task "$dir" "$id" pi
   printf pi > "$dir/fake/command"
   printf pi > "$dir/fake/becomes"
-  cat > "$dir/fakebin/pi" <<'SH'
-#!/usr/bin/env bash
-[ "${1:-} ${2:-}" != "auth check" ] || exec fm-fake-pi-auth "$@"
-printf "Options: --tui-mode\n"
-SH
-  chmod +x "$dir/fakebin/pi"
+  printf '#!/usr/bin/env bash\nprintf "Options: --tui-mode\\n"\n' > "$dir/fakebin/pi"  chmod +x "$dir/fakebin/pi"
   sed 's|^model=default$|model=codex-native/gpt-6-astra|; s/^effort=default$/effort=ultra/' \
     "$dir/home/state/$id.meta" > "$dir/home/state/$id.meta.tmp"
   mv "$dir/home/state/$id.meta.tmp" "$dir/home/state/$id.meta"
@@ -1568,7 +1563,8 @@ test_spawn_relaunch_refuses_a_pane_outside_the_worktree() {
   out=$(run_spawn "$dir" rl18 --relaunch --harness claude); rc=$?
   expect_code 1 "$rc" "a pane outside the worktree should refuse"
   assert_contains "$out" "not its recorded worktree" "the refusal should name the wrong location"
-  pass "fm-spawn --relaunch: refuses to start a replacement outside the copy holding the work"
+  [ ! -s "$dir/fake/keys" ] || fail "a refused tmux relaunch must send nothing to the pane"
+  pass "fm-spawn --relaunch: refuses to start a replacement outside the copy holding its work"
 }
 
 test_relaunch_reverifies_an_already_in_flight_item_instead_of_rewriting_it() {

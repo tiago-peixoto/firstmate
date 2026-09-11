@@ -27,8 +27,10 @@ Hold-for-return is the default and the only reach profile this release records: 
    Write only clauses the words actually support; a wish with no object or no stated precondition is not a clause.
    Plain `/afk` with no words has no clauses.
 2. **Propose and read back.**
-   Run `bin/fm-afk-launch.sh propose --words-file <path> [--action <verb> --object <text> --when <text> [--stop <text>]]... [--expected-return <UTC ISO 8601>] [--spend <n>]` (or `--words <text>`), and relay its read-back to the captain in `AGENTS.md` section 9 language: the accepted clauses as a numbered list, every refused clause with the part it is missing, the expected return, the spend cap, and the one-sentence reach announcement.
-   A refused clause does not fail the proposal; the captain can restate it or leave it refused.
+   Run `bin/fm-afk-launch.sh propose --words-file <path> [--action <verb> --object <text> --when <text> [--stop <text>]]... [--expected-return <UTC ISO 8601>] [--spend <n>] [--grant <task-id>]...` (or `--words <text>`), and relay its read-back to the captain in `AGENTS.md` section 9 language: the accepted clauses as a numbered list, every refused clause with the part it is missing, the expected return, the spend cap, any merge-when-green task ids, and the one-sentence reach announcement.
+   When the captain names task ids that may merge while green, pass `--grant <id>` for each named id.
+   Never infer task ids from clause prose, object text, or the away words.
+   Red-check exceptions stay in the words or clause `when` text and are not executed.   A refused clause does not fail the proposal; the captain can restate it or leave it refused.
    Exit 3 only means a clause was refused; the proposal stands.
 3. **Confirm on the captain's go.**
    Run `bin/fm-afk-launch.sh confirm`; it promotes the proposal into the record and prints the entry announcement.
@@ -79,7 +81,9 @@ Bias ambiguous cases toward exit: a present captain beats token savings, and a f
 afk changes how the captain is informed and what happens at a captain-owned decision point, **not who approves what**.
 "Away" never means "approves more" or "approves less."
 A PR ready for merge keeps the merge authority from `AGENTS.md` section 7, and a needs-decision finding keeps the `ask-user-authority` policy; anything requiring the captain still waits for the captain's explicit word.
-A mandate clause is the captain's explicit instruction given before leaving, recorded with its named object and condition; a clause is never inferred, never applied by analogy, and expires at return.
+While the away-posture record exists, a merge proceeds only when that task's recorded yolo posture is on or its id is in the record's merge-grant list; otherwise it is held for the captain's return.
+A merge grant never releases a captain hold, and it expires when the away record is archived.
+`--allow-red` remains attended-only and is refused while the record exists.A mandate clause is the captain's explicit instruction given before leaving, recorded with its named object and condition; a clause is never inferred, never applied by analogy, and expires at return.
 Forbidden, destructive, irreversible, and security-sensitive actions are never pre-authorizable regardless of clause text, and no recorded clause is authority by itself.
 This release records clauses and does not execute them.
 
@@ -142,8 +146,7 @@ The daemon still clears its buffer only on the backend's `empty` success verdict
 
 The daemon wraps `fm-watch.sh`, runs the watcher as a child, presents every durable wake after each actionable watcher close, classifies each presented record in bash, and acknowledges the presented generation only after routing completes.
 It self-handles the routine majority without consuming a firstmate turn.
-Captain-relevant events, plus a bounded recheck of a declared external wait that is still declared, escalate to firstmate's context as one pre-read, batched digest.
-The captain-relevant verb set, declared-wait vocabulary, status-span classifier, and presentation-marker contract live in shared `bin/fm-classify-lib.sh`, while each supervisor owns its routing and fleet scan as a consumer of that policy.
+Captain-relevant events, plus a bounded recheck of a declared external wait that is still declared, escalate to firstmate's context as one pre-read, single-line, batched digest.The captain-relevant verb set, declared-wait vocabulary, status-span classifier, and presentation-marker contract live in shared `bin/fm-classify-lib.sh`, while each supervisor owns its routing and fleet scan as a consumer of that policy.
 While `state/.afk` exists the daemon owns the watcher, so the watcher reverts to one-shot and lets the daemon do the triage - the two never run their triage at the same time.
 
 Classify each wake this way:
@@ -156,8 +159,7 @@ Classify each wake this way:
   An unreported captain-relevant event in the newly classified span still escalates immediately while the current declaration independently keeps the pause cadence.
   With no unreported actionable event, the wake self-handles, and the current declaration outranks an enriched possible-wedge reason so it never escalates on the `FM_STALE_ESCALATE_SECS` cadence.
   If a declared external wait is still declared past `FM_PAUSE_RESURFACE_SECS` (default four hours), housekeeping sends one recheck and resets the pause window; a captain-held transfer is never rechecked while the posture record exists.
-  The window ages against the standing declaration, so only the crew's own retraction ends this routing and restores wedge detection.
-- `check` -> always escalate. Check scripts print only when firstmate should wake.
+  The window ages against the standing declaration, so only the crew's own retraction ends this routing and restores wedge detection.- `check` -> always escalate. Check scripts print only when firstmate should wake.
 - `stale` with a terminal status or bare legacy captain-relevant line -> escalate.
   Nonterminal progress remains transient even when its prose contains a legacy free-text token or its seen-status marker already matches, so record a marker and self-handle.
   If the pane is still idle past `FM_STALE_ESCALATE_SECS` (default 240s), housekeeping escalates it as a possible wedge.

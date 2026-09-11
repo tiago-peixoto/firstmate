@@ -541,9 +541,7 @@ clear_pause_tracking() {  # <window> <state>
   key=$(_stale_key "$task")
   watcher_key=$(_stale_key "$win")
   rm -f "$state/.subsuper-paused-$key" "$state/.subsuper-pause-until-due-$key" "$state/.subsuper-stale-$key" \
-    "$state/.paused-$watcher_key" "$state/.paused-rechecked-$watcher_key" \
-    "$state/.paused-since-$watcher_key" "$state/.paused-resurfaced-$watcher_key" \
-    "$state/.stale-$watcher_key" "$state/.stale-since-$watcher_key" "$state/.wedge-escalations-$watcher_key" \
+    "$state/.paused-$watcher_key" "$state/.paused-rechecked-$watcher_key" "$state/.paused-resurfaced-$watcher_key" \    "$state/.stale-$watcher_key" "$state/.stale-since-$watcher_key" "$state/.wedge-escalations-$watcher_key" \
     "$state/.writing-since-$watcher_key" "$state/.writing-resurfaced-$watcher_key"
 }
 
@@ -1049,8 +1047,7 @@ _oldest_line_age() {  # <buf> -> seconds since the oldest buffered item first ar
 #  3) heartbeat scan: every HEARTBEAT_SCAN_SECS, grep state/*.status for a
 #     captain-relevant line the per-wake classifier missed and escalate it.
 housekeeping() {  # <state>
-  local state=$1 now due f key task win marker age standing max_defer oldest pause_secs marker_epoch until bounded_until pause_reason
-  now=$(_now)
+  local state=$1 now due f key task win marker age last max_defer oldest pause_secs marker_epoch until bounded_until pause_reason  now=$(_now)
   migrate_watcher_pause_markers "$state"
 
   # (1) batch flush
@@ -1149,11 +1146,10 @@ housekeeping() {  # <state>
     due="$state/.subsuper-pause-until-due-$key"
     until=
     bounded_until=0
-    if status_is_captain_held "$standing" && fm_afk_contract_present "$state"; then
+    if status_is_captain_held "$last" && fm_afk_contract_present "$state"; then
       continue
     fi
-    if until=$(status_paused_until "$standing"); then
-      if [ "$now" -lt "$until" ] && [ "$age" -lt "$pause_secs" ]; then
+    if until=$(status_paused_until "$last"); then      if [ "$now" -lt "$until" ] && [ "$age" -lt "$pause_secs" ]; then
         continue
       elif [ "$now" -lt "$until" ]; then
         bounded_until=1
@@ -1178,17 +1174,12 @@ housekeeping() {  # <state>
           if escalate_add "$state" "captain-held ${age}s (awaiting the captain, answer the held decision or release the hold): $win" "pause recheck"; then
             _now > "$marker"
           fi
-        elif [ -n "$standing" ] && status_is_paused "$standing"; then
-          if [ "$bounded_until" -eq 1 ]; then
+        elif [ -n "$last" ] && status_is_paused "$last"; then          if [ "$bounded_until" -eq 1 ]; then
             pause_reason="paused ${age}s (awaiting external, the declared time is beyond the recheck cadence; confirm the wait still holds): $win"
           else
             pause_reason="paused ${age}s (awaiting external, recheck whether the wait still holds): $win"
           fi
-          # A healthy PR movement poll covers an untimed wait, but cannot
-          # replace a recheck at the worker's explicitly declared clearing time.
-          if [ -z "$until" ] && fm_pr_poll_covers_wait "$state" "$task" "$FM_DAEMON_DIR/fm-pr-poll.sh" "$pause_secs"; then
-            _now > "$marker"
-          elif escalate_add "$state" "$pause_reason" "pause recheck"; then
+          if escalate_add "$state" "$pause_reason"; then
             _now > "$marker"
             if [ -n "$until" ] && [ "$now" -ge "$until" ]; then
               printf '%s\n' "$until" > "$due"
@@ -1417,6 +1408,10 @@ is_wake_reason() {  # <reason>
 
 # --- dispatch one wake reason to self-handle or escalate --------------------
 # Side effects: logging, marker records, escalation buffer appends.
+# A decision-owned queued row arrives as needs-decision:<files> rather than
+# signal:<files> (bin/fm-watch.sh). Classify it as a signal so the capture file
+# is populated, suppression markers commit, and the digest names the decision
+# instead of "unknown wake:".
 handle_wake() {  # <reason> <state>
   local reason=$1 state=$2 decision action distilled task stale_detail last
   local capture="$state/.subsuper-classified-end.$$" span_record='' span_rc='' endpoint ident rest sig marker
@@ -1428,7 +1423,12 @@ handle_wake() {  # <reason> <state>
     return
   fi
   case "$reason" in
-    signal:*) kind=signal; arg="${reason#signal: }"
+    signal:*|needs-decision:*)
+              kind=signal
+              case "$reason" in
+                needs-decision:*) arg="${reason#needs-decision: }" ;;
+                *) arg="${reason#signal: }" ;;
+              esac
               decision=$(FM_STATUS_SPAN_ENDPOINT_FILE="$capture" classify_signal "$arg" "$state") ;;
     stale:*)  kind=stale; arg="${reason#stale: }"; stale_detail="${arg#"$arg"}"
               case "$arg" in *" ("*) stale_detail="${arg#*" ("}"; arg="${arg%% \(*}" ;; esac

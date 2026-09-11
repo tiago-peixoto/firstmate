@@ -39,10 +39,10 @@
 #   model, and effort may change, which is what makes a harness switch one
 #   ordinary relaunch. It refuses unless the recorded endpoint is positively
 #   agent-free on a backend with a recovery-grade agent-state classifier (tmux
-#   or herdr), seats that endpoint in the recorded worktree (a top-level cd if
-#   the shell has drifted) and refuses if the pane never reaches that copy, and
-#   clears the previous harness's per-task wiring before arming the new
-#   incarnation.
+#   or herdr), and clears the previous harness's per-task wiring before arming
+#   the new incarnation. The replacement still never starts outside the copy
+#   holding the work: a Herdr shell that has drifted out of the recorded
+#   worktree is told once to return, and only a shell that will not go refuses.
 #   --harness <name> is the explicit per-spawn harness/profile adapter. The old
 #   positional harness arg still works for back-compat.
 #   --model <name> and --effort <low|medium|high|xhigh|max|ultra> are concrete profile
@@ -218,13 +218,13 @@
 #   Ship/scout spawns refuse to launch unless the resolved task path is a real
 #   git worktree root distinct from both the spawning project and its repository's
 #   primary checkout, including when the spawning project is a linked worktree.
-#   The same isolation test screens the leased path before seating, and screens
-#   every pane cwd read while seating: a pane still showing the project or the
-#   repository primary is waited out as a transient rather than adopted, so a
-#   home that is itself a linked worktree of the project repository still
-#   launches. A pane that never reaches the leased worktree refuses at the end
-#   of that wait, naming the last path seen and why it was rejected.
-#   That placement is proven only at launch. Every ship or scout pane therefore
+#   On the backends that discover that path by reading the task pane's own cwd,
+#   the same isolation test screens every read: a pane still showing the project
+#   or the repository primary while `treehouse get` prepares the slot is waited
+#   out as a transient rather than adopted and then refused, so a home that is
+#   itself a linked worktree of the project repository still launches. A pane
+#   that never reaches an isolated worktree refuses at the end of that wait,
+#   naming the last path seen and why it was rejected.#   That placement is proven only at launch. Every ship or scout pane therefore
 #   also receives `export FM_TASK_ID=<task-id>` before the launch command, on
 #   the same channel as GOTMPDIR, and bin/fm-test-run.sh refuses to execute the
 #   behavior suite from the repository primary checkout while that marker is
@@ -347,9 +347,10 @@
 # re-running the transition, so an eligible In-flight item is left untouched.
 # The transition is
 # skipped entirely for --secondmate spawns (persistent agents are not work
-# items), on a config/backlog-backend=manual home, and in a home that keeps no
-# data/backlog.md. An automatic-backend home with a backlog but no compatible
-# tasks-axi refuses before creating any lifecycle state.
+# items), on a config/backlog-backend=manual home, and in a markdown home that
+# keeps no data/backlog.md. A configured non-markdown adapter remains
+# active without a markdown file; any active automatic backend without
+# compatible tasks-axi refuses before creating lifecycle state.
 # On success prints: spawned <id> harness=<name> kind=<ship|scout|secondmate> [mode=<mode> yolo=<on|off>] window=<backend-target> worktree=<path>
 # A ship task records the explicit mode/yolo it was passed; a secondmate spawn records
 # mode=secondmate, yolo=off, home=, and projects=; a scout records neither, and both the
@@ -918,8 +919,7 @@ SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
 SPAWN_LEASE_RETURN_ON_ABORT=
 SPAWN_LEASE_RETURN_CD=
 SPAWN_LAST_PROTECTED=
-TREEHOUSE_OWNER_STATES=()
-RELAUNCH_REPLACEMENT_PENDING=0
+TREEHOUSE_OWNER_STATES=()RELAUNCH_REPLACEMENT_PENDING=0
 RELAUNCH_REPLACEMENT_BUSY_GEN=
 RELAUNCH_REPLACEMENT_HARNESS=
 RELAUNCH_REPLACEMENT_STATE=
@@ -2377,14 +2377,14 @@ real_path_or_raw() {  # <path>
 # left holding the worktree root the check read, and SPAWN_WT_REASON a short
 # phrase naming why a rejected path failed, both for the refusal messages.
 #
-# The seating poll reads this same predicate, so it can never treat a rejected
-# path as the leased copy. A pane's cwd read is a snapshot of whatever process
-# is in the foreground: a brand-new window can transiently report the
-# repository primary or another real checkout before the top-level `cd` lands.
-# That path differs from a linked spawning project, so a poll comparing only
-# against the project accepted it. A read like that is a transient, not a
-# destination: the poll keeps waiting for the leased path.
-SPAWN_WT_TOP=
+# The worktree-discovery poll below reads this same predicate, so it can never
+# adopt a path the guard would then refuse. That matters because a pane's cwd
+# read is a snapshot of whatever process is in the foreground: while `treehouse
+# get` is still fetching and checking a slot out, it reports the REPOSITORY's
+# primary checkout as its own cwd. That path differs from a linked spawning
+# project, so a poll comparing only against the project accepted it, and the
+# guard then refused a launch whose slot treehouse went on to create normally.
+# A read like that is a transient, not a destination: the poll keeps waiting.SPAWN_WT_TOP=
 SPAWN_WT_REASON=
 spawn_worktree_isolated() {  # <path>
   local path=$1 wt_real wt_top_real wt_git_dir proj_common
@@ -2608,8 +2608,13 @@ herdr_projection_existing_meta_allows_flat() {  # <meta>
     }
     old_state=$(fm_backend_herdr_pane_agent_state "$old_session" "$old_pane")
     case "$old_state" in
+      # A stale registration over a shell-only pane is agent-free for RECOVERY
+      # (--relaunch reuses the pane, issue #4115), but the duplicate-launch
+      # corridor keeps refusing it like every other non-husk state, so a fresh
+      # spawn is refused here consistently with the reclaim and presentation
+      # gates downstream.
       dead|no-agent) return 0 ;;
-      live|unknown)
+      live|stale-agent|unknown)
         echo "error: existing herdr endpoint for $ID is $old_state; refusing duplicate launch" >&2
         return 1
         ;;
