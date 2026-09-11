@@ -884,6 +884,53 @@ test_worker_role_scope() {
   pass "fm-brief: scaffolds leave the worker role scope to the launch boundary and keep the secondmate contract"
 }
 
+# Every terminal ready signal the Definition of done instructs must carry the
+# scaffolds' emission stamp, and that stamp must still be a live substitution
+# when the worker appends it rather than an epoch frozen at scaffold time.
+test_dod_ready_signals_carry_append_time_stamp() {
+  local home id mode count brief signals signal status before after epoch verb note
+  home="$TMP_ROOT/dod-ready-stamp"
+  mkdir -p "$home/data" "$home/state"
+  while IFS='|' read -r id mode count; do
+    [ -n "$id" ] || continue
+    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode "$mode" >/dev/null \
+      || fail "$id: --mode $mode scaffold failed"
+    brief="$home/data/$id/brief.md"
+    signals=$(sed -n '/^# Definition of done$/,$p' "$brief" | grep -o '`done[^`]*`' | tr -d '`')
+    [ "$(printf '%s\n' "$signals" | grep -c .)" = "$count" ] \
+      || fail "$id: Definition of done did not instruct $count ready signals (got: $signals)"
+    status="$home/state/$id.status"
+    while IFS= read -r signal; do
+      [ -n "$signal" ] || continue
+      case "$signal" in
+        'done [at=$(date +%s)]: '*) ;;
+        *) fail "$id: Definition of done instructs an unstamped ready signal: $signal" ;;
+      esac
+      : > "$status"
+      before=$(date +%s)
+      FM_DOD_STATUS="$status" bash -c "printf '%s\n' \"$signal\" >> \"\$FM_DOD_STATUS\"" \
+        || fail "$id: the instructed ready signal did not append"
+      after=$(date +%s)
+      verb=$(bash -c '. "$1"; status_line_verb "$(cat "$2")"' _ "$ROOT/bin/fm-classify-lib.sh" "$status")
+      epoch=$(bash -c '. "$1"; status_line_at_epoch "$(cat "$2")"' _ "$ROOT/bin/fm-classify-lib.sh" "$status")
+      note=$(bash -c '. "$1"; status_line_note "$(cat "$2")"' _ "$ROOT/bin/fm-classify-lib.sh" "$status")
+      [ "$verb" = done ] \
+        || fail "$id: the instructed ready signal did not read as a done event (got: $verb)"
+      [ -n "$epoch" ] && [ "$epoch" -ge "$before" ] && [ "$epoch" -le "$after" ] \
+        || fail "$id: the instructed ready signal carried no append-time emission stamp"
+      [ "$note" = "${signal#*: }" ] \
+        || fail "$id: the instructed ready signal lost its note (got: $note)"
+    done <<SIGNALS
+$signals
+SIGNALS
+  done <<MODES
+dod-ready-nomistakes|no-mistakes|2
+dod-ready-directpr|direct-PR|1
+dod-ready-localonly|local-only|1
+MODES
+  pass "fm-brief.sh: every Definition of done ready signal stamps its own append time"
+}
+
 test_worker_role_scope
 test_script_parses
 test_no_heredoc_in_command_substitution
@@ -894,6 +941,7 @@ test_ship_mode_is_explicit_not_registry
 test_delivery_flags_are_refused_where_they_do_not_apply
 test_faster_paths_use_configured_authority_without_stacked_review
 test_no_mistakes_dod_wording
+test_dod_ready_signals_carry_append_time_stamp
 test_ask_user_escalation_format
 test_ship_project_memory_wording
 test_herdr_lab_contract_is_explicit_and_complete
