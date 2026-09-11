@@ -822,10 +822,10 @@ test_create_task_refuses_duplicate_label_when_agent_live() {
   printf '{"result":{"panes":[{"pane_id":"w1:p2","tab_id":"w1:t2"}]}}\n' > "$resp/2.out"
   # 3: pane get -> the pane structurally exists
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/3.out"
-  # 4: agent get -> a genuinely registered, live agent (idle, not just working)
+  # 4: agent get -> a genuinely registered agent (idle, not just working)
   printf '{"result":{"agent":{"agent_status":"idle"}}}\n' > "$resp/4.out"
-  # 5: process-info -> the agent process is still in the foreground
-  printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"pi"}]}}}\n' > "$resp/5.out"
+  # 5: process-info -> a well-formed active foreground process
+  printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":123,"foreground_process_group_id":456,"foreground_processes":[{"pid":456,"name":"node","argv0":"pi"}]}}}\n' > "$resp/5.out"
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_create_task fmtest:w1 fm-dup1 /tmp/proj' "$ROOT" 2>&1 )
@@ -847,7 +847,7 @@ test_create_task_refuses_when_any_duplicate_label_is_live() {
   printf '{"result":{"panes":[{"pane_id":"w1:p2","tab_id":"w1:t2"},{"pane_id":"w1:p3","tab_id":"w1:t3"}]}}\n' > "$resp/5.out"
   printf '{"result":{"pane":{"pane_id":"w1:p3"}}}\n' > "$resp/6.out"
   printf '{"result":{"agent":{"agent_status":"idle"}}}\n' > "$resp/7.out"
-  printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p3","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"pi"}]}}}\n' > "$resp/8.out"
+  printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p3","shell_pid":123,"foreground_process_group_id":456,"foreground_processes":[{"pid":456,"name":"node","argv0":"pi"}]}}}\n' > "$resp/8.out"
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_create_task fmtest:w1 fm-mixed1 /tmp/proj' "$ROOT" 2>&1 )
@@ -1001,10 +1001,13 @@ test_create_task_closes_and_replaces_stale_registered_shell() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/3.out"
   printf '{"result":{"agent":{"agent":"pi","agent_status":"done"}}}\n' > "$resp/4.out"
   printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"}]}}}\n' > "$resp/5.out"
-  printf '{"result":{"tab":{"tab_id":"w1:t3"},"root_pane":{"pane_id":"w1:p3"}}}\n' > "$resp/6.out"
-  printf '{"result":{"tabs":[{"tab_id":"w1:t3","label":"fm-stale-done","workspace_id":"w1"}]}}\n' > "$resp/8.out"
+  cp "$resp/5.out" "$resp/6.out"
+  printf '{"result":{"tab":{"tab_id":"w1:t3"},"root_pane":{"pane_id":"w1:p3"}}}\n' > "$resp/7.out"
+  printf '{"result":{"tabs":[{"tab_id":"w1:t3","label":"fm-stale-done","workspace_id":"w1"}]}}\n' > "$resp/9.out"
+  make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
+    FM_HERDR_PS_BIN="$dir/ps" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_create_task fmtest:w1 fm-stale-done /tmp/proj' "$ROOT" ) \
     || fail "create_task should close-and-replace a stale done registration whose process is gone"
   read -r tab pane <<EOF
@@ -1024,9 +1027,62 @@ herdr_process_info_out() {  # <file> <pane> <shell_pid> <pgid> <name> <argv0>
     "$2" "$3" "$4" "$4" "$5" "$6" > "$1"
 }
 
-classify_pane_agent_state() {  # <fakebin> <log> <resp>
+# make_idle_root_ps <dir> <pid>: a ps stub for the idle-shell proof when
+# the canned process-info names a root-only childless sleeping shell.
+make_idle_root_ps() {  # <dir> <pid>
+  cat > "$1/ps" <<SH
+#!/usr/bin/env bash
+set -u
+pid=$2
+case "\$*" in
+  "-axo pid=,ppid=,comm=") printf '%s 1 zsh\\n' "\$pid" ;;
+  "-p \$pid -o stat=") printf 'Ss\\n' ;;
+  "-p \$pid -o comm=") printf 'zsh\\n' ;;
+  "-o tty= -p \$pid") printf 'ttys001\\n' ;;
+  "-t ttys001 -o pid=") printf '%s\\n' "\$pid" ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$1/ps"
+}
+
+# make_idle_nested_ps <dir> <root> <treehouse> <leaf> [extra-tty-pid]
+make_idle_nested_ps() {
+  extra=${5:-}
+  cat > "$1/ps" <<SH
+#!/usr/bin/env bash
+set -u
+root=$2
+wrap=$3
+leaf=$4
+extra='$extra'
+case "\$*" in
+  "-axo pid=,ppid=,comm=")
+    printf '%s 1 zsh\\n' "\$root"
+    printf '%s %s treehouse\\n' "\$wrap" "\$root"
+    printf '%s %s zsh\\n' "\$leaf" "\$wrap"
+    ;;
+  "-p \$root -o stat="|"-p \$leaf -o stat=") printf 'Ss\\n' ;;
+  "-p \$root -o comm="|"-p \$leaf -o comm=") printf 'zsh\\n' ;;
+  "-p \$wrap -o comm=") printf 'treehouse\\n' ;;
+  "-p \$leaf -o ppid=") printf '%s\\n' "\$wrap" ;;
+  "-o tty= -p \$root") printf 'ttys001\\n' ;;
+  "-t ttys001 -o pid=")
+    printf '%s\\n' "\$root"
+    printf '%s\\n' "\$wrap"
+    printf '%s\\n' "\$leaf"
+    if [ -n "\$extra" ]; then printf '%s\\n' "\$extra"; fi
+    ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$1/ps"
+}
+
+classify_pane_agent_state() {  # <fakebin> <log> <resp> [ps-bin]
+  [ -f "$3/3.out" ] && [ ! -f "$3/4.out" ] && cp "$3/3.out" "$3/4.out"
   PATH="$1:$PATH" FM_HERDR_LOG="$2" FM_HERDR_RESPONSES="$3" \
-    FM_BACKEND_HERDR_PROCESS_LIVENESS_POLLS=1 \
+    FM_HERDR_PS_BIN="${4:-${FM_HERDR_PS_BIN:-ps}}" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_pane_agent_state fmtest w1:p2' "$ROOT"
 }
 
@@ -1036,8 +1092,9 @@ test_pane_agent_state_stale_done_shell_is_no_agent() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
   printf '{"result":{"agent":{"agent":"pi","agent_status":"done"}}}\n' > "$resp/2.out"
   herdr_process_info_out "$resp/3.out" w1:p2 100 100 zsh zsh
+  make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
   [ "$out" = no-agent ] || fail "a done registration whose foreground is only zsh should be no-agent, got '$out'"
   assert_contains "$(cat "$log")" $'\x1f''pane'$'\x1f''process-info'$'\x1f''--pane'$'\x1f''w1:p2' \
     "pane_agent_state did not consult process-info for a registered agent"
@@ -1050,10 +1107,61 @@ test_pane_agent_state_idle_shell_is_no_agent() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
   printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
   herdr_process_info_out "$resp/3.out" w1:p2 100 100 zsh zsh
+  make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
-  out=$(classify_pane_agent_state "$fb" "$log" "$resp")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
   [ "$out" = no-agent ] || fail "an idle registration whose process is gone should be no-agent, got '$out'"
   pass "fm_backend_herdr_pane_agent_state: idle + shell-only foreground is no-agent"
+}
+
+test_pane_agent_state_nested_idle_shell_is_no_agent() {
+  local dir log resp fb out
+  dir="$TMP_ROOT/state-nested-idle"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
+  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
+  printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
+  herdr_process_info_out "$resp/3.out" w1:p2 100 300 zsh zsh
+  make_idle_nested_ps "$dir" 100 200 300
+  fb=$(make_herdr_fakebin "$dir")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  [ "$out" = no-agent ] || fail "an idle nested treehouse shell should be no-agent, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: idle nested treehouse chain is no-agent"
+}
+
+test_pane_agent_state_orphaned_agent_on_terminal_is_live() {
+  local dir log resp fb out
+  dir="$TMP_ROOT/state-orphan-tty"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
+  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
+  printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
+  herdr_process_info_out "$resp/3.out" w1:p2 100 300 zsh zsh
+  make_idle_nested_ps "$dir" 100 200 300 999
+  fb=$(make_herdr_fakebin "$dir")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  [ "$out" = live ] || fail "an orphaned agent still on the pane terminal should be live, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: orphaned agent on the pane terminal stays live"
+}
+
+test_pane_agent_state_terminal_read_failure_is_live() {
+  local dir log resp fb out
+  dir="$TMP_ROOT/state-tty-fail"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
+  printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
+  printf '{"result":{"agent":{"agent":"pi","agent_status":"idle"}}}\n' > "$resp/2.out"
+  herdr_process_info_out "$resp/3.out" w1:p2 100 100 zsh zsh
+  cat > "$dir/ps" <<'SH'
+#!/usr/bin/env bash
+set -u
+case "$*" in
+  "-axo pid=,ppid=,comm=") printf '100 1 zsh\n' ;;
+  "-p 100 -o stat=") printf 'Ss\n' ;;
+  "-p 100 -o comm=") printf 'zsh\n' ;;
+  "-o tty= -p 100") exit 1 ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$dir/ps"
+  fb=$(make_herdr_fakebin "$dir")
+  out=$(classify_pane_agent_state "$fb" "$log" "$resp" "$dir/ps")
+  [ "$out" = live ] || fail "a terminal read failure should keep the pane live, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: terminal read failure stays live"
 }
 
 test_pane_agent_state_shell_plus_starship_is_no_agent() {
@@ -1064,8 +1172,8 @@ test_pane_agent_state_shell_plus_starship_is_no_agent() {
   printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"},{"pid":102,"name":"starship","argv0":"starship"}]}}}\n' > "$resp/3.out"
   fb=$(make_herdr_fakebin "$dir")
   out=$(classify_pane_agent_state "$fb" "$log" "$resp")
-  [ "$out" = no-agent ] || fail "zsh+starship after the agent exits should be no-agent, got '$out'"
-  pass "fm_backend_herdr_pane_agent_state: shell plus starship prompt helper is still no-agent"
+  [ "$out" = live ] || fail "zsh+starship is an extra foreground job, so it stays live, got '$out'"
+  pass "fm_backend_herdr_pane_agent_state: shell plus starship stays live under the idle-shell proof"
 }
 
 test_pane_agent_state_pi_process_is_live() {
@@ -1146,9 +1254,11 @@ test_pane_agent_state_maps_to_agent_state_dead() {
   printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' > "$resp/1.out"
   printf '{"result":{"agent":{"agent_status":"done"}}}\n' > "$resp/2.out"
   herdr_process_info_out "$resp/3.out" w1:p2 100 100 zsh zsh
+  cp "$resp/3.out" "$resp/4.out"
+  make_idle_root_ps "$dir" 100
   fb=$(make_herdr_fakebin "$dir")
   out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
-    FM_BACKEND_HERDR_PROCESS_LIVENESS_POLLS=1 \
+    FM_HERDR_PS_BIN="$dir/ps" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_agent_state fmtest:w1:p2' "$ROOT" )
   [ "$out" = dead ] || fail "stale done+shell should map to recovery-grade dead, got '$out'"
   pass "fm_backend_herdr_agent_state: stale registration whose process is gone is dead"
@@ -1868,7 +1978,7 @@ make_death_lab() {  # <dir> <shell-pid>
   cat > "$dir/ps" <<SH
 #!/usr/bin/env bash
 case "\$*" in
-  "-axo pid=,ppid=") printf '1 0\n$pid 1\n' ;;
+  "-axo pid=,ppid=,comm=") printf '1 0 init\n$pid 1 zsh\n' ;;
   "-p $pid -o stat=") printf 'Ss+\n' ;;
   "-p $pid -o comm=") printf -- '-zsh\n' ;;
   *) exit 1 ;;
@@ -3200,7 +3310,7 @@ test_projection_recovery_is_read_only_and_refuses_live_duplicate_risk() {
   printf '{"result":{"panes":[{"pane_id":"w1:p1","tab_id":"w1:t1"}]}}\n' > "$resp/2.out"
   printf '{"result":{"pane":{"pane_id":"w1:p1"}}}\n' > "$resp/3.out"
   printf '{"result":{"agent":{"agent_status":"idle"}}}\n' > "$resp/4.out"
-  printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p1","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"pi"}]}}}\n' > "$resp/5.out"
+  printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p1","shell_pid":123,"foreground_process_group_id":456,"foreground_processes":[{"pid":456,"name":"node","argv0":"pi"}]}}}\n' > "$resp/5.out"
   out=$(PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" \
     bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_projection_recovery_allows_flat fmtest "$1" task-p3' "$ROOT" "$journal" 2>&1)
   status=$?
@@ -4901,6 +5011,9 @@ test_create_task_refuses_when_agent_state_ambiguous
 test_create_task_closes_and_replaces_stale_registered_shell
 test_pane_agent_state_stale_done_shell_is_no_agent
 test_pane_agent_state_idle_shell_is_no_agent
+test_pane_agent_state_nested_idle_shell_is_no_agent
+test_pane_agent_state_orphaned_agent_on_terminal_is_live
+test_pane_agent_state_terminal_read_failure_is_live
 test_pane_agent_state_shell_plus_starship_is_no_agent
 test_pane_agent_state_pi_process_is_live
 test_pane_agent_state_opencode_process_is_live

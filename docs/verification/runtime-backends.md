@@ -195,7 +195,7 @@ Both recorded runtime identities now classify the exact `pi-launcher` foreground
 
 Backend applicability was reviewed across every spawn adapter.
 Tmux needs the exact `pi-launcher`, `pi-signed`, `pi`, and `Pi` process identities for recovery-grade liveness.
-Herdr uses native registered-agent state and needs no process-name branch.
+Herdr composes native registered-agent state with structural foreground-process evidence and needs no worker-runtime process-name branch.
 Zellij has no verified recovery-grade agent process probe, while Orca and cmux do not support secondmate spawns, so those three retain their existing generic ordinary-launch semantics without a new liveness matcher.
 
 The current classifier matrix and its refresh guard are recorded in [Composer classification matrix](#composer-classification-matrix), with portable shape coverage in `tests/fm-composer-lib.test.sh` and `tests/fm-composer-ghost.test.sh`.
@@ -629,6 +629,55 @@ rc=1
 The refusal is a JSON error on stderr with exit 1 and empty stdout, and both client generations report `.server.compatible` and `.server.protocol` per named session, which is what the selection in `bin/backends/herdr.sh` reads.
 `tests/fm-backend-herdr.test.sh` pins the bypass, same-process same-session caching, cross-session isolation, forced reselection, and both status shapes against fakes; `tests/fm-backend-herdr-smoke.test.sh` refreshes the real status normalization against the installed binary's running lab server.
 
+### Post-exit agent registration
+
+Measured 2026-09-04 against Herdr 0.8.2 and Pi 0.84.4 using OpenAI `gpt-5.6-sol` in a guarded named lab, and re-checked 2026-09-10 against Herdr 0.9.0 (protocol 22) and Pi 0.85.1 with integration v8.
+
+Herdr keeps a hook-authority registration after the process exits until that integration calls `pane.release-agent`.
+`herdr agent get` returns `AgentInfo.agent_status` (`idle|working|blocked|done|unknown`) and can keep listing `agent=pi` after `/quit`.
+`herdr agent explain --json` reports `screen_detection_skipped: true` with `screen_detection_skip_reason: full_lifecycle_hook_authority` while that integration is authoritative.
+`herdr pane process-info --pane <pane>` returns `PaneProcessInfo` (`shell_pid`, `foreground_process_group_id`, `foreground_processes[]` with `pid`, `name`, `argv0`).
+`herdr pane release-agent` exists but requires the integration's `--source` and `--agent`.
+`herdr agent` has no command that clears a registration.
+The installed Pi v8 extension and OpenCode v11 plugin contain no `release_agent` call.
+
+The public exit command delivered Pi's `/quit`, after which `herdr agent get` still reported the old Pi registration as idle while `pane process-info` reported one foreground `/bin/zsh` and the real process table showed the pane root shell, `treehouse get`, and that childless sleeping task shell as one unbranched chain.
+The previous process-group classifier treated that leftover nested `treehouse` shell as live, so public relaunch delivered a second exit command into the shell and refused.
+The idle-shell proof returns dead for the same stale registration, while a registered non-shell foreground process remains alive and malformed process evidence becomes unreadable.
+The public relaunch then reused the exact endpoint and launched a new Pi agent successfully.
+
+Measured 2026-09-11 against Herdr 0.9.0 in an isolated `fm-lab-` session: after `treehouse get`, Pi launched as `/bin/sh -c 'unset TRACEPARENT; pi'`, then SIGTERM of that `/bin/sh` left Pi re-parented to pid 1 still on the pane tty (`idle-shell` / `live` / `alive`).
+
+Portable public-interface coverage uses real shell processes and a scripted Herdr protocol surface:
+
+```sh
+tests/fm-control-herdr-agent-state.test.sh
+```
+
+Refresh the credentialed real-harness proof without invoking Claude or Anthropic models:
+
+```sh
+FM_HERDR_PI_EXIT_LIVE=1 \
+  FM_HERDR_PI_EXIT_MODEL=gpt-5.6-sol \
+  tests/fm-control-herdr-pi-exit-live-e2e.test.sh
+```
+
+Observed output:
+
+```text
+ok - live Herdr/Pi: stale idle registration over the post-exit shell no longer blocks public relaunch (gpt-5.6-sol)
+```
+
+A leftover registration over a bare root shell is covered by:
+
+```sh
+HERDR_LAB_HELPER=bin/fm-herdr-lab.sh \
+  tests/fm-control-herdr-smoke.test.sh
+```
+
+The classifier remains runtime-neutral: every supported worker runtime reaches the same native-registration plus process-shape composition, while tmux retains its independent process-name classifier and Zellij, Orca, and cmux remain without recovery-grade agent-state authority.
+`firstmate-relaunch-blocked-by-pane-cwd` is a separate relaunch-guard precondition and was not changed.
+
 ### Submit confirmation
 
 Measured 2026-08-19 against Herdr 0.8.0 and Claude Code 2.1.236 in an isolated `fm-lab-` session.
@@ -667,46 +716,6 @@ HERDR_LAB_HELPER=bin/fm-herdr-lab.sh \
 ```
 
 Observed guarantee: a restored no-agent tab was replaced create-before-close, while a registered live agent caused refusal.
-
-### Exited-agent liveness
-
-Measured 2026-09-10 against Herdr 0.9.0 (protocol 22) and Pi 0.85.1 with integration v8 in an isolated `fm-lab-` session.
-
-Herdr's 0.9.0 CLI and socket schema expose process liveness separately from agent registration:
-
-- `herdr agent get <pane>` returns `AgentInfo.agent_status` (`idle|working|blocked|done|unknown`) and can keep listing `agent=pi` after the process has exited.
-- `herdr agent explain --json` reports `screen_detection_skipped: true` with `screen_detection_skip_reason: full_lifecycle_hook_authority` while that integration is authoritative.
-- `herdr pane process-info --pane <pane>` returns `PaneProcessInfo` (`shell_pid`, `foreground_process_group_id`, `foreground_processes[]` with `pid`, `name`, `argv0`).
-- `herdr pane release-agent` exists but requires the integration's `--source` and `--agent`; `herdr agent` has no clear-registration command.
-- Official 0.9.0 integrations docs require the hook to call `pane.release-agent` on exit. The installed Pi v8 extension and OpenCode v11 plugin contain no `release_agent` call.
-
-Live Pi in the lab:
-
-```text
-agent=pi agent_status=idle screen_detection_skipped=true
-foreground_processes=[{name:node, argv0:pi}]
-fm_backend_herdr_pane_agent_state=live
-```
-
-Immediately after SIGKILL of that Pi pid, before Herdr dropped the listing:
-
-```text
-agent_status=idle screen_detection_skipped=true
-foreground_processes=[{name:zsh, argv0:zsh}]
-```
-
-The previous classifier mapped every registered status, including `done`, to live, so `fm-control exit` waited for dead and reported unconfirmed, and relaunch rolled back.
-The classifier now treats a registered agent whose foreground process group is the pane's shell as `no-agent` (recovery-grade `dead`), and fails safe to `unknown` when process-info is missing, empty, pane-mismatched, or has no numeric pids.
-
-Refresh with:
-
-```sh
-HERDR_LAB_HELPER=bin/fm-herdr-lab.sh \
-  tests/fm-control-herdr-smoke.test.sh
-tests/fm-backend-herdr.test.sh
-```
-
-`firstmate-relaunch-blocked-by-pane-cwd` is a separate relaunch-guard precondition and was not changed.
 
 ### Launcher workspace placement
 
@@ -1021,8 +1030,9 @@ ok - real herdr: no control verb removed the endpoint or the task's local copy
 ok - real herdr: an agent that does not stop fails closed instead of being reported as stopped
 ```
 
-The registry read through `herdr pane report-agent` is the same source `fm_backend_herdr_agent_state` classifies, so registering and not registering an agent on a plain shell pane exercises exactly the gate every lifecycle verb depends on, with no real agent launched.
-That command is the guard that refreshes this record; run it after every Herdr upgrade rather than trusting the version above.
+The smoke test composes `herdr pane report-agent` with a real foreground command so a registered agent has independent active process evidence, and leaves the no-registration pane at its real shell.
+No provider-backed agent is launched.
+That command is the uncredentialed guard that refreshes the base lifecycle record; use the GPT-only live guard under [Post-exit agent registration](#post-exit-agent-registration) to refresh the stale-registration boundary after a Herdr or Pi upgrade.
 
 ### Away-mode transport
 

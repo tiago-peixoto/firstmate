@@ -279,9 +279,10 @@ Create replaces only a confidently dead or no-agent husk, creates the replacemen
 This prevents closing the workspace's last tab before a replacement exists.
 
 The generic Herdr agent-liveness probe reuses the same classifier.
-A structurally gone pane becomes `missing`, a confirmed agent-less pane becomes `dead`, a registered agent whose foreground process is still present becomes `alive`, and an unexpected read becomes `unreadable`.
-Registration alone is not live: Herdr 0.9.0 keeps a hook-authority agent listed after the process exits until that integration calls `pane.release-agent`, which the bundled Pi and OpenCode integrations never send, so `pane process-info` decides whether the foreground is still an agent or only a shell.
-The classifier does not guess a harness from an interpreter name; any non-shell, non-prompt-helper foreground process counts as live.
+A structurally gone pane becomes `missing`, a restored agent-less shell becomes `dead`, a registered agent with a well-formed active foreground process becomes `alive`, and an unexpected or contradictory read becomes `unreadable`.
+Herdr can retain Pi's last idle registration after Pi exits, so a complete live-process proof may override a registration only when the pane root's process subtree is exactly root shell -> `treehouse` -> childless sleeping task shell, with no surviving sibling or descendant, and every process on the pane root shell's controlling terminal is one of those pids.
+Any malformed process response, extra branch, foreground job, unrecognized shell, or unreadable operating-system process row preserves the conservative refusal.
+Unlike tmux process-name inspection, positive Herdr liveness composes native registration with a nonempty foreground process shape and does not guess any worker runtime from a generic interpreter name.
 
 The session-start sweep uses this probe.
 Mid-session secondmate agent-process liveness is not implemented because idle secondmates are deliberately exempt from stale-pane escalation and need a separate periodic identity signal.
