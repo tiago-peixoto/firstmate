@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Herdr lifecycle classification through the public control interface.
 # The fake CLI supplies native registry/process JSON while real shell processes
-# prove the stale-registration topology against the operating-system process table.
+# prove leftover-registration classification against the process table
+# (upstream #4191 descendant walk).
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -39,7 +40,7 @@ SH
 cat > "$PROC/live-root.sh" <<'SH'
 #!/usr/bin/env bash
 echo "$$" > "$1/live-root.pid"
-"$1/treehouse" "$1/agent" "$1/live-leaf.sh" "$1" &
+"$1/treehouse" "$1/pi" "$1/live-leaf.sh" "$1" &
 wait
 SH
 cat > "$PROC/active-root.sh" <<'SH'
@@ -62,9 +63,9 @@ int main(int argc, char **argv) {
 }
 C
 cc "$PROC/wrapper.c" -o "$PROC/treehouse"
-cc "$PROC/wrapper.c" -o "$PROC/agent"
+cc "$PROC/wrapper.c" -o "$PROC/pi"
 chmod +x "$PROC/leaf.sh" "$PROC/live-leaf.sh" "$PROC/root.sh" \
-  "$PROC/live-root.sh" "$PROC/active-root.sh" "$PROC/treehouse" "$PROC/agent"
+  "$PROC/live-root.sh" "$PROC/active-root.sh" "$PROC/treehouse" "$PROC/pi"
 bash "$PROC/root.sh" "$PROC" &
 TREE_PID=$!
 bash "$PROC/live-root.sh" "$PROC" &
@@ -112,7 +113,6 @@ ACTIVE_ROOT_PID=$(cat "$PROC/active-root.pid")
 ACTIVE_PID=$(cat "$PROC/active.pid")
 LIVE_ROOT_PID=$(cat "$PROC/live-root.pid")
 LIVE_LEAF_PID=$(cat "$PROC/live-leaf.pid")
-AGENT_PID=$(ps -p "$LIVE_LEAF_PID" -o ppid= | tr -d '[:space:]')
 
 cat > "$FAKEBIN/herdr" <<'SH'
 #!/usr/bin/env bash
@@ -154,29 +154,6 @@ esac
 SH
 chmod +x "$FAKEBIN/herdr"
 
-# The test's own session processes share a terminal. Stub the terminal
-# read and listing so those extras do not fail the fork check.
-TREEHOUSE_PID=$(ps -p "$LEAF_PID" -o ppid= | tr -d '[:space:]')
-printf '%s\n' "$ROOT_PID" "$TREEHOUSE_PID" "$LEAF_PID" > "$TMP_ROOT/tty-pids"
-cat > "$FAKEBIN/ps" <<'SH'
-#!/usr/bin/env bash
-set -u
-real_ps=/bin/ps
-args="$*"
-case "$args" in
-  "-o tty= -p "*)
-    printf 'testdev\n'
-    exit 0
-    ;;
-  "-t testdev -o pid=")
-    cat "${FM_HERDR_TTY_PIDS:?}"
-    exit 0
-    ;;
-esac
-exec "$real_ps" "$@"
-SH
-chmod +x "$FAKEBIN/ps"
-
 cat > "$HOME_DIR/state/hs.meta" <<EOF
 window=fmtest:w1:p2
 endpoint_task_id=hs
@@ -200,9 +177,8 @@ run_control() {
     FM_HERDR_LOG="$TMP_ROOT/herdr.log" FM_HERDR_MODE="$TMP_ROOT/mode" \
     FM_HERDR_ROOT_PID="$ROOT_PID" FM_HERDR_LEAF_PID="$LEAF_PID" \
     FM_HERDR_ACTIVE_ROOT_PID="$ACTIVE_ROOT_PID" FM_HERDR_ACTIVE_PID="$ACTIVE_PID" \
-    FM_HERDR_LIVE_ROOT_PID="$LIVE_ROOT_PID" FM_HERDR_AGENT_PID="$AGENT_PID" \
+    FM_HERDR_LIVE_ROOT_PID="$LIVE_ROOT_PID" \
     FM_HERDR_LIVE_LEAF_PID="$LIVE_LEAF_PID" \
-    FM_HERDR_PS_BIN="$FAKEBIN/ps" FM_HERDR_TTY_PIDS="$TMP_ROOT/tty-pids" \
     FM_CONTROL_POLL=0.01 FM_CONTROL_SETTLE_WAIT=0.01 \
     "$ROOT/bin/fm-control.sh" "$@" 2>&1
 }
@@ -214,15 +190,6 @@ assert_contains "$out" "already-stopped hs" "the public exit command did not rec
 assert_not_contains "$(cat "$TMP_ROOT/herdr.log")" "pane send-keys" "an agent-free shell must receive no lifecycle input"
 pass "fm-control herdr: a stale Pi registration over a real idle-shell process tree is already stopped"
 
-printf 'stale\n' > "$TMP_ROOT/mode"
-: > "$TMP_ROOT/herdr.log"
-printf '%s\n' "$ROOT_PID" "$TREEHOUSE_PID" "$LEAF_PID" 99999 > "$TMP_ROOT/tty-pids"
-out=$(run_control hs interrupt) || fail "an orphaned agent still on the pane terminal should remain live: $out"
-assert_contains "$out" "interrupt-delivered hs" "the orphaned-agent terminal member was mistaken for a stale registration"
-assert_contains "$(cat "$TMP_ROOT/herdr.log")" "pane send-keys w1:p2 escape" "the orphaned agent did not receive its interrupt key"
-pass "fm-control herdr: an extra process on the pane terminal keeps a leftover registration live"
-printf '%s\n' "$ROOT_PID" "$TREEHOUSE_PID" "$LEAF_PID" > "$TMP_ROOT/tty-pids"
-
 printf 'alive\n' > "$TMP_ROOT/mode"
 : > "$TMP_ROOT/herdr.log"
 out=$(run_control hs interrupt) || fail "a registered agent with an active foreground process should remain live: $out"
@@ -232,16 +199,14 @@ pass "fm-control herdr: a registered agent with an active process remains live"
 
 printf 'live_agent_shell\n' > "$TMP_ROOT/mode"
 : > "$TMP_ROOT/herdr.log"
-out=$(run_control hs interrupt) || fail "a live agent running a childless foreground shell should remain live: $out"
-assert_contains "$out" "interrupt-delivered hs" "the live-agent foreground shell was mistaken for a stale registration"
+out=$(run_control hs interrupt) || fail "a harness-named descendant outside the foreground should remain live: $out"
+assert_contains "$out" "interrupt-delivered hs" "the descendant walk missed the harness-named process outside the foreground"
 assert_contains "$(cat "$TMP_ROOT/herdr.log")" "pane send-keys w1:p2 escape" "the live agent did not receive its interrupt key"
-pass "fm-control herdr: an arbitrary intermediate agent prevents stale-registration override"
+pass "fm-control herdr: a harness-named descendant outside the foreground keeps a leftover registration live"
 
 printf 'ambiguous\n' > "$TMP_ROOT/mode"
 : > "$TMP_ROOT/herdr.log"
-if out=$(run_control hs exit); then
-  fail "ambiguous process evidence must refuse lifecycle input: $out"
-fi
-assert_contains "$out" "reads 'unreadable'" "the ambiguous-process refusal did not preserve the conservative verdict"
-assert_not_contains "$(cat "$TMP_ROOT/herdr.log")" "pane send-keys" "ambiguous process evidence must receive no lifecycle input"
-pass "fm-control herdr: ambiguous process evidence refuses instead of licensing a duplicate or lifecycle input"
+out=$(run_control hs exit) || fail "empty foreground over a real idle tree should settle via the descendant walk: $out"
+assert_contains "$out" "already-stopped hs" "empty foreground over a real idle tree did not settle to agent-free"
+assert_not_contains "$(cat "$TMP_ROOT/herdr.log")" "pane send-keys" "an agent-free empty-foreground pane must receive no lifecycle input"
+pass "fm-control herdr: empty foreground over a real idle tree settles via the descendant walk"
