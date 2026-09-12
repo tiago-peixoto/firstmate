@@ -53,8 +53,9 @@ SH
   "agent get")
     printf '{"id":"cli:agent:get","result":{"agent":{"agent":"claude","agent_status":"idle","pane_id":"wCY:p2"},"type":"agent_info"}}\n' ;;
   "pane process-info")
-    printf '{"id":"cli:pane:process_info","result":{"type":"pane_process_info","process_info":{"pane_id":"wCY:p2","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"claude"}]}}}\n' ;;
-  *) : ;;
+    # The registration above is only trusted once a live harness process backs
+    # it (issue #4115), so the compatible client also serves the process view.
+    printf '{"id":"cli:pane:process_info","result":{"process_info":{"pane_id":"wCY:p2","shell_pid":4242,"foreground_process_group_id":4243,"foreground_processes":[{"pid":4243,"name":"claude","argv0":"claude","argv":["claude"],"cmdline":"claude"}]},"type":"pane_process_info"}}\n' ;;  *) : ;;
 esac
 exit 0
 SH

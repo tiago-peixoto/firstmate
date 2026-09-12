@@ -41,13 +41,14 @@ SH
 printf '%s\n' "$*" >> "$LOG"
 jq_state() { jq "$@" "$STATE"; }
 save() { tmp="$STATE.tmp.$$"; cat > "$tmp" && mv "$tmp" "$STATE"; }
-ws=""; label=""; cwd=""
+ws=""; label=""; cwd=""; pane=""
 args=("$@")
 for ((i=0; i<${#args[@]}; i++)); do
   case "${args[$i]}" in
     --workspace) ws=${args[$((i+1))]:-} ;;
     --label) label=${args[$((i+1))]:-} ;;
     --cwd) cwd=${args[$((i+1))]:-} ;;
+    --pane) pane=${args[$((i+1))]:-} ;;
   esac
 done
 case "${1:-} ${2:-}" in
@@ -98,20 +99,8 @@ case "${1:-} ${2:-}" in
     jq_state --arg p "${3:-}" '.typed[$p] = true | .working[$p] = true' | save ;;
   "pane read") printf '\n' ;;
   "pane process-info")
-    pane=""
-    for ((i=0; i<${#args[@]}; i++)); do
-      case "${args[$i]}" in
-        --pane) pane=${args[$((i+1))]:-} ;;
-      esac
-    done
-    [ -n "$pane" ] || pane=${3:-}
-    if [ "$(jq_state -r --arg p "$pane" '.working[$p] // .typed[$p] // false')" = true ]; then
-      printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"%s","shell_pid":100,"foreground_process_group_id":101,"foreground_processes":[{"pid":101,"name":"node","argv0":"codex"}]}}}\n' "$pane"
-    else
-      printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"%s","shell_pid":100,"foreground_process_group_id":100,"foreground_processes":[{"pid":100,"name":"zsh","argv0":"zsh"}]}}}\n' "$pane"
-    fi
-    ;;
-  "agent get")
+    printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"%s","shell_pid":%s,"foreground_process_group_id":%s,"foreground_processes":[{"pid":%s,"name":"codex","argv0":"codex","argv":["codex"],"cmdline":"codex"}]}}}\n' \
+      "$pane" "$$" "$$" "$$" ;;  "agent get")
     pane=${3:-}
     if [ "$(jq_state -r --arg p "$pane" '.working[$p] // false')" = true ]; then
       jq_state --arg p "$pane" '.working |= with_entries(select(.key != $p))' | save

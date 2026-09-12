@@ -76,6 +76,22 @@
 #                          and has not been surfaced yet; reported once per
 #                          captured generation, never again while that record
 #                          stays queued and never once it is acknowledged
+#   check: process-event source stranded: <keys>
+#                          a registered process-to-event source has a claim
+#                          reconcile will not displace and nothing collecting
+#                          for it (bin/fm-procevent.sh reconcile queues it
+#                          once per stranded claim generation); the queued
+#                          payload names what clears it
+#   check: process-event source failed to start: <keys>
+#                          a registered process-to-event source was launched by
+#                          reconcile and did not prove it took the claim within
+#                          the confirm window, so nothing is confirmed to be
+#                          collecting for it and every cycle will relaunch it
+#                          (bin/fm-procevent.sh reconcile queues it once per
+#                          failure episode, and a later cycle that finds the
+#                          source owned closes that episode); the queued
+#                          payload names what to check. These three kinds are
+#                          joined with `;` when more than one surfaces in a cycle
 #   check: rejected unauthenticated state checks: <paths>
 #                          unsafe state checks were refused without execution
 #   check: rejected unauthenticated PR poll retirement receipts: <paths>
@@ -90,10 +106,7 @@
 #                          an actionable row in an endpoint-recorded local
 #                          secondmate home's durable wake queue did not advance
 #                          between observations for FM_SECONDMATE_WAKE_STALL_SECS
-#                          while the mate was not in an active turn (a busy mate
-#                          is exempt only until the queue has been frozen for
-#                          BUSY_TURN_MAX_SECS); declared
-#                          external-wait pause rows do not feed this escalation,
+#                          while the mate was not in an active turn; declared#                          external-wait pause rows do not feed this escalation,
 #                          observation is read-only, and one parent notification
 #                          covers each no-progress episode
 # For normal supervision, resume the session-start primary-harness protocol
@@ -118,6 +131,10 @@ mkdir -p "$STATE"
 . "$SCRIPT_DIR/fm-push-transition-lib.sh"
 # shellcheck source=bin/fm-pr-lib.sh
 . "$SCRIPT_DIR/fm-pr-lib.sh"
+# Only for the arm-time check on FM_PROCEVENT_LAUNCH_CONFIRM_SECONDS below;
+# the per-cycle reconcile itself runs as a separate process.
+# shellcheck source=bin/fm-procevent-lib.sh
+. "$SCRIPT_DIR/fm-procevent-lib.sh"
 # Single owner of durable merge-outcome publication, shared with
 # bin/fm-pr-merge.sh so self and poll origins use the same role-routed outcome.
 # The watcher still owns immediate delivery of its actionable poll result and
@@ -713,15 +730,14 @@ secondmate_oldest_queue_row() {  # <queue-path>
 
 # 0 iff <task> is demonstrably inside an active turn, through the watcher's own
 # busy-state knowledge: an exact busy verdict from the semantic contract, bounded
-# by the same BUSY_TURN_MAX_SECS that stops a busy pane from proving liveness
-# forever. A mate mid-turn has not stopped draining its queue - it simply drains
-# between turns - so this gate, not the elapsed interval, is what separates a
-# healthy mate from a frozen wake loop. The bound is measured on <idle>, how long
-# the queue's drain position has not moved, because a mate's turns end in its own
-# home and this home holds no completed-turn evidence to age them by
-# (busy_turn_over_age). Any absence of proof (no window, a failed capture, an
-# idle or unknown verdict, a queue frozen past the bound) is NOT an active turn,
-# so a frozen queue still escalates.
+# by how long the foreign queue itself has been frozen. A mate mid-turn has not
+# stopped draining its queue - it simply drains between turns - so this gate,
+# not the elapsed interval, is what separates a healthy mate from a frozen wake
+# loop. The bound is measured on <idle>, how long the queue's drain position has
+# not moved, because a mate's turns end in its own home and this home holds no
+# completed-turn evidence to age them by (busy_turn_over_age). Any absence of
+# proof (no window, a failed capture, an idle or unknown verdict, a queue frozen
+# past the bound) is NOT an active turn, so a frozen queue still escalates.
 secondmate_in_active_turn() {  # <task> <window> <idle>
   local task=$1 w=$2 idle=$3 tail40
   [ -n "$w" ] || return 1
@@ -942,13 +958,9 @@ wedge_timer_check() {  # <window> <since-file> <triage-label> <escalation-count-
 # progress is at least BUSY_TURN_MAX_SECS old. Progress is actual observed model
 # or tool activity, never a timer or a busy footer. It does not emit a wake or
 # change semantic busy state. Before either marker exists, age the spawn record.
-# A secondmate's turns end in its own home, so neither marker ever lands here and
-# its spawn record ages only its last launch; with no evidence that its turn is
-# young, a secondmate is always over age.
 # The caller checks busy state and routes a crossed bound through inspection.
 busy_turn_over_age() {  # <task>
   local task=$1 f progress
-  [ "$(fm_meta_get "$STATE/$task.meta" kind)" != secondmate ] || return 0
   f="$STATE/$task.turn-ended"
   [ -e "$f" ] || f="$STATE/$task.meta"
   progress="$STATE/$task.progress"
@@ -1442,7 +1454,7 @@ procevent_surface_after_output() {
 }
 
 procevent_surface_queued() {
-  local key reason
+  local key reason captured="" stranded="" unstarted=""
   PROCEVENT_SURFACED=
   [ -s "$FM_WAKE_QUEUE" ] || return 0
   fm_lock_acquire_wait "$FM_WAKE_QUEUE_LOCK"
@@ -1450,12 +1462,30 @@ procevent_surface_queued() {
     case "$key" in procevent:*) ;; *) continue ;; esac
     [ -e "$(procevent_surfaced_marker "$key")" ] && continue
     PROCEVENT_SURFACED="$PROCEVENT_SURFACED $key"
+    # A stranded source or one whose launch never proved itself is the opposite
+    # of a captured result: nothing is collecting for it. Headlining either as
+    # a capture would present it as healthy, which is the shape of defect
+    # these wakes exist to surface.
+    case "$key" in
+      procevent:*:stranded:*) stranded="$stranded $key" ;;
+      procevent:*:launch-failed:*) unstarted="$unstarted $key" ;;
+      *) captured="$captured $key" ;;
+    esac
   done < <(fm_wake_queued_keys_locked check)
   if [ -z "$PROCEVENT_SURFACED" ]; then
     fm_lock_release "$FM_WAKE_QUEUE_LOCK"
     return 0
   fi
-  reason="check: process-event result captured:$PROCEVENT_SURFACED"
+  reason="check:"
+  [ -z "$captured" ] || reason="$reason process-event result captured:$captured"
+  if [ -n "$stranded" ]; then
+    [ "$reason" = "check:" ] || reason="$reason;"
+    reason="$reason process-event source stranded:$stranded"
+  fi
+  if [ -n "$unstarted" ]; then
+    [ "$reason" = "check:" ] || reason="$reason;"
+    reason="$reason process-event source failed to start:$unstarted"
+  fi
   # shellcheck disable=SC2034 # Consumed by wake() in the separately linted transition owner.
   FM_WAKE_POST_OUTPUT_ACTION=procevent_surface_after_output
   wake "$reason"
@@ -1729,6 +1759,24 @@ event_wait_or_sleep() {
 # before acquiring the singleton lock or entering the blocking loop.
 if [ "${BASH_SOURCE[0]}" != "$0" ]; then
   return 0
+fi
+
+# FM_PROCEVENT_LAUNCH_CONFIRM_SECONDS is validated here, at arm time, and an
+# unusable value refuses to arm. This is deliberately NOT symmetry with the
+# tunables above, which this watcher only defaults and never validates. The
+# reason is specific: every supervision cycle runs `fm-procevent.sh reconcile`
+# with its output and exit status discarded, and reconcile refuses an unusable
+# window by name before it launches anything. Under this watcher that refusal
+# is invisible - every cycle would exit early, no source would ever start, and
+# the whole home would sit disarmed while presenting as supervised. A watcher
+# that refuses to arm is loud through an existing, independent, proven path:
+# the liveness guard's WATCHER DOWN banner in firstmate's own session. The
+# message shape is reconcile's own, so the operator reads one refusal in both
+# places. The refusal goes to stdout because bin/fm-watch-arm.sh relays the
+# child's stdout and recognises `watcher: FAILED` as the typed failure line.
+if ! fm_procevent_launch_confirm_seconds >/dev/null; then
+  echo "watcher: FAILED - FM_PROCEVENT_LAUNCH_CONFIRM_SECONDS must be whole seconds from $FM_PROCEVENT_LAUNCH_CONFIRM_MIN_SECONDS to $FM_PROCEVENT_LAUNCH_CONFIRM_MAX_SECONDS"
+  exit 1
 fi
 
 if ! fm_lock_try_acquire "$WATCH_LOCK"; then
@@ -2124,11 +2172,12 @@ EOF
     # instead of the ordinary "signal:" below (other files in the same batch
     # keep the ordinary payload). The wake reason line itself, and every
     # harness-arm consumer that pattern-matches it, stays byte-identical -
-    # only the per-row payload changes, which is what
-    # docs/pi-supervision-branch.md's Pi-only branch dispatcher reads to keep a
+    # only the per-row payload changes. Two readers branch on that payload:
+    # docs/pi-supervision-branch.md's Pi-only branch dispatcher, to keep a
     # decision-owned row off the supervision branch (fm-branch-dispatch.ts,
-    # fm-primary-pi-watch.ts). Every other harness and script keeps seeing the
-    # exact same "signal:$files" wake it always has.
+    # fm-primary-pi-watch.ts), and the away daemon, whose handle_durable_wakes
+    # passes it to handle_wake (see the comment above handle_wake in
+    # bin/fm-supervise-daemon.sh).
     # shellcheck disable=SC2086  # same space-separated status-path list
     if afk_present || [ "$signal_actionable" -eq 0 ] \
       || { ! signal_crew_provably_working $files && ! signal_turnend_panes_churned $files; }; then
