@@ -167,18 +167,18 @@ fm_account_pin_pi_provider() {
 # header row is skipped; a timeout, an unreadable root, or no matching row all
 # return 1.
 fm_account_pin_pi_model_listed() {
-  local root=$1 executable=$2 provider=$3 model=$4 id alt level out
+  local root=$1 executable=$2 provider=$3 model=$4 want alt level out
   shift 4
-  id=${model#*/}
+  want=${model#*/}
   alt=
   for level in $FM_ACCOUNT_PIN_PI_THINKING; do
-    [ "$id" != "${id%:"$level"}" ] || continue
-    alt=${id%:"$level"}
+    [ "$want" != "${want%:"$level"}" ] || continue
+    alt=${want%:"$level"}
     break
   done
   out=$(fm_run_timed "$FM_ACCOUNT_PIN_PREFLIGHT_SECONDS" "$@" "PI_CODING_AGENT_DIR=$root" \
     "$executable" --list-models "$provider" 2>/dev/null </dev/null) || return 1
-  printf '%s\n' "$out" | awk -v p="$provider" -v a="$id" -v b="$alt" '
+  printf '%s\n' "$out" | awk -v p="$provider" -v a="$want" -v b="$alt" '
     NR > 1 && $1 == p && ($2 == a || (b != "" && $2 == b)) { found = 1; exit }
     END { exit !found }'
 }

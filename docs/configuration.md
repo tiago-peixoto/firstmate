@@ -415,6 +415,7 @@ The guard runs before the authentication check above and before any endpoint or 
 `openai-codex-work` is a fixed id rather than a per-home setting, so a home that declares nothing can still be told which provider it must not use.
 The guard covers every launch path that reaches a Pi agent: fresh spawns, `--relaunch`, second mates, and raw launch commands.
 A raw launch command is passed through verbatim and ignores `fm-spawn`'s own `--model`, so the guard judges the model embedded in that command instead.
+A Pi second mate launches on its launching home's pin, so that home's `config/secondmate-harness` must carry a model (`pi <provider>/<id>`); a bare `pi` or `pi-signed` line names no provider and is refused, including by the automatic liveness relaunch.
 A refusal names the harness, the model, the provider it resolved, the side, and this file.
 
 The guard decides which account a launch may spend; it is not a credential sandbox.
