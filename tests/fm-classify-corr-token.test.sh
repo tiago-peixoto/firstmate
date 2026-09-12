@@ -561,6 +561,8 @@ test_optional_event_time() {
     date() { return 1; }
     [ "$(status_stamp_line 'done: clock unavailable')" = 'done: clock unavailable' ]
   ) || fail "clock failure lost the event"
+  # Malformed tags (including a colon in the value) stay unknown-time; note
+  # fidelity for those lines is out of contract (bin/fm-classify-lib.sh:236).
   for line in 'done: legacy' 'done: [at=1700000000] prose' \
     'done [at=]: empty' "done [at=\$(date +%s)]: literal substitution" \
     'done [at=bad]: malformed' 'done [at=17:00]: malformed colon' 'done [at=-1]: negative' \
@@ -607,6 +609,8 @@ test_captain_override_ignores_event_time() {
   local FM_CAPTAIN_RE='done:|needs-decision:|blocked:|failed:'
   dir=$(make_case captain-override-time)
   for verb in 'done' needs-decision blocked failed; do
+    # A malformed tag still cannot hide a captain-relevant event. Note fidelity
+    # for such a line is out of contract (bin/fm-classify-lib.sh:236).
     for line in "$verb: audit complete" "$verb [at=1700000000]: audit complete" \
       "$verb [at=]: audit complete" "$verb [at=bad]: audit complete" \
       "$verb [at=17:00]: audit complete" "$verb [at=bad] [at=17:00]: audit complete" \
