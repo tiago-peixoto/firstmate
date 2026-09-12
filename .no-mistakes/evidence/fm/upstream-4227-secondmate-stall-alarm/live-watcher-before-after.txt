@@ -1,0 +1,60 @@
+Secondmate wake-loop stall alarm - live watcher transcripts
+==========================================================
+
+Every run below drives bin/fm-watch-checkpoint.sh (the real bounded watcher
+checkpoint) against an isolated firstmate home, a real local secondmate home
+with its own durable wake queue, and a REAL tmux 3.7c server on a private
+socket. The mate's busy state is written by bin/fm-busy-event.sh, the
+documented sole writer of the semantic busy contract. Knobs are scaled down
+(stall interval 2s) so a 12s checkpoint covers the same decision the 180s
+default makes.
+
+############################################################
+# BEFORE (base a27646c): the reported false alarm, reproduced
+############################################################
+=== scenario: long-lived-busy   (repo: /tmp/nm-live/base-repo)
+=== FM_SECONDMATE_WAKE_STALL_SECS=2  FM_BUSY_TURN_MAX_SECS=3600  busy_contract=busy
+=== mate.meta (parent-side spawn record) mtime: 2020-01-01 00:00
+=== tmux windows: firstmate:fm-mate 
+=== watcher ran 1789191436-1789191433 = 3s, exit 0
+
+--- watcher stdout (what the captain sees) ---
+check: secondmate wake-loop stalled: mate=mate row=7 idle=2s
+--- durable parent wake queue (state/.wake-queue) ---
+1789191435	1	check	secondmate-wake-loop-mate-1789191422-7	check: secondmate wake-loop stalled: mate=mate row=7 idle=2s
+--- foreign (mate) queue, must be byte-for-byte untouched ---
+1789191422	7	check	routed	check: routed row
+
+############################################################
+# BEFORE (base a27646c) CONTROL: same mate, launched just now
+# -> silent. The only difference is the age of the spawn record,
+#    which pins the cause to aging the turn from launch meta.
+############################################################
+=== scenario: fresh-busy   (repo: /tmp/nm-live/base-repo)
+=== FM_SECONDMATE_WAKE_STALL_SECS=2  FM_BUSY_TURN_MAX_SECS=3600  busy_contract=busy
+=== mate.meta (parent-side spawn record) mtime: 2026-09-12 02:38
+=== tmux windows: firstmate:fm-mate 
+=== watcher ran 1789191531-1789191519 = 12s, exit 124
+
+--- watcher stdout (what the captain sees) ---
+checkpoint: no actionable wake within 12s
+--- durable parent wake queue (state/.wake-queue) ---
+(empty - nothing published)
+--- foreign (mate) queue, must be byte-for-byte untouched ---
+1789191509	7	check	routed	check: routed row
+
+############################################################
+# AFTER (e179eae): same long-lived busy mate -> silent
+############################################################
+=== scenario: long-lived-busy   (repo: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M2A07S3YFH20TWPWE3JK6F3W)
+=== FM_SECONDMATE_WAKE_STALL_SECS=2  FM_BUSY_TURN_MAX_SECS=3600  busy_contract=busy
+=== mate.meta (parent-side spawn record) mtime: 2020-01-01 00:00
+=== tmux windows: firstmate:fm-mate 
+=== watcher ran 1789191422-1789191410 = 12s, exit 124
+
+--- watcher stdout (what the captain sees) ---
+checkpoint: no actionable wake within 12s
+--- durable parent wake queue (state/.wake-queue) ---
+(empty - nothing published)
+--- foreign (mate) queue, must be byte-for-byte untouched ---
+1789191400	7	check	routed	check: routed row

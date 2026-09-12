@@ -1,0 +1,66 @@
+Guards and unchanged promises, driven live on e179eae
+=====================================================
+
+############################################################
+# ADVERSARIAL: mate stays busy forever, queue frozen past the bound
+############################################################
+=== scenario: busy-past-bound   (repo: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M2A07S3YFH20TWPWE3JK6F3W)
+=== FM_SECONDMATE_WAKE_STALL_SECS=2  FM_BUSY_TURN_MAX_SECS=3  busy_contract=busy
+=== mate.meta (parent-side spawn record) mtime: 2020-01-01 00:00
+=== tmux windows: firstmate:fm-mate 
+=== watcher ran 1789191445-1789191441 = 4s, exit 0
+
+--- watcher stdout (what the captain sees) ---
+check: secondmate wake-loop stalled: mate=mate row=7 idle=3s
+--- durable parent wake queue (state/.wake-queue) ---
+1789191445	1	check	secondmate-wake-loop-mate-1789191431-7	check: secondmate wake-loop stalled: mate=mate row=7 idle=3s
+--- foreign (mate) queue, must be byte-for-byte untouched ---
+1789191431	7	check	routed	check: routed row
+
+############################################################
+# UNCHANGED: turn ended, queue frozen -> the real stall still surfaces
+############################################################
+=== scenario: idle-mate   (repo: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M2A07S3YFH20TWPWE3JK6F3W)
+=== FM_SECONDMATE_WAKE_STALL_SECS=2  FM_BUSY_TURN_MAX_SECS=3600  busy_contract=idle (turn ended)
+=== mate.meta (parent-side spawn record) mtime: 2020-01-01 00:00
+=== tmux windows: firstmate:fm-mate 
+=== watcher ran 1789191448-1789191446 = 2s, exit 0
+
+--- watcher stdout (what the captain sees) ---
+check: secondmate wake-loop stalled: mate=mate row=7 idle=2s
+--- durable parent wake queue (state/.wake-queue) ---
+1789191448	1	check	secondmate-wake-loop-mate-1789191436-7	check: secondmate wake-loop stalled: mate=mate row=7 idle=2s
+--- foreign (mate) queue, must be byte-for-byte untouched ---
+1789191436	7	check	routed	check: routed row
+
+############################################################
+# ADVERSARIAL: busy record but the endpoint is gone -> no proof, escalates
+############################################################
+=== scenario: no-window   (repo: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M2A07S3YFH20TWPWE3JK6F3W)
+=== FM_SECONDMATE_WAKE_STALL_SECS=2  FM_BUSY_TURN_MAX_SECS=3600  busy_contract=busy
+=== mate.meta (parent-side spawn record) mtime: 2020-01-01 00:00
+=== tmux windows: firstmate:fm-mate 
+=== watcher ran 1789191468-1789191464 = 4s, exit 0
+
+--- watcher stdout (what the captain sees) ---
+check: secondmate wake-loop stalled: mate=mate row=7 idle=3s
+--- durable parent wake queue (state/.wake-queue) ---
+1789191468	1	check	secondmate-wake-loop-mate-1789191454-7	check: secondmate wake-loop stalled: mate=mate row=7 idle=3s
+--- foreign (mate) queue, must be byte-for-byte untouched ---
+1789191454	7	check	routed	check: routed row
+
+############################################################
+# UNCHANGED: a queue that keeps draining stays silent
+############################################################
+=== scenario: draining-queue   (repo: /Users/tiago/.no-mistakes/worktrees/5dfc3e2f8f7a/01M2A07S3YFH20TWPWE3JK6F3W)
+=== FM_SECONDMATE_WAKE_STALL_SECS=2  FM_BUSY_TURN_MAX_SECS=3600  busy_contract=idle (turn ended)
+=== mate.meta (parent-side spawn record) mtime: 2020-01-01 00:00
+=== tmux windows: firstmate:fm-mate 
+=== watcher ran 1789191498-1789191486 = 12s, exit 124
+
+--- watcher stdout (what the captain sees) ---
+checkpoint: no actionable wake within 12s
+--- durable parent wake queue (state/.wake-queue) ---
+(empty - nothing published)
+--- foreign (mate) queue, must be byte-for-byte untouched ---
+1789191497	18	check	routed-18	check: routed row 18
