@@ -1,0 +1,72 @@
+fm-pr-reviewers.sh driven against live GitHub pull requests (no stubs, no fixtures)
+when: 2026-09-12T06:16:39Z   gh: gh version 2.100.0 (2026-09-03)   account: tiago-peixoto
+
+===== A. suggestions ranked by unique recent commits on the exact changed paths
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/14429
+mislav	39 recent commits
+samcoe	13 recent commits
+tidy-dev	12 recent commits
+cristiand391	11 recent commits
+babakks	4 recent commits
+mntlty	4 recent commits
+BagToad	3 recent commits
+andyfeller	3 recent commits
+dpromanko	3 recent commits
+ffalor	3 recent commits
+muzimuzhi	3 recent commits
+vilmibm	3 recent commits
+divbhasin	2 recent commits
+nobe4	2 recent commits
+pxrth9	2 recent commits
+ErKiran	1 recent commit
+ShubhankarKG	1 recent commit
+Sixeight	1 recent commit
+adonovan	1 recent commit
+armandgrillet	1 recent commit
+dyl10s	1 recent commit
+estensen	1 recent commit
+goggle	1 recent commit
+hirasawayuki	1 recent commit
+mikelolasagasti	1 recent commit
+ptxmac	1 recent commit
+quiye	1 recent commit
+rethab	1 recent commit
+rsteube	1 recent commit
+zaboyle	1 recent commit
+(exit 0)
+--- GitHub ground truth: author=williammartin base=7f0590c2b8050bb04c5af52291062e6825dda9df
+  changed paths: acceptance/testdata/pr/pr-merge-merge-strategy.txtar, pkg/cmd/pr/merge/merge.go, pkg/cmd/pr/merge/merge_test.go
+  raw commit rows across those paths: 201   unique commits: 141   rows with no GitHub author mapping (dropped, never guessed): 17
+  the pull-request author (williammartin) has 9 unique commits in this same history and is excluded from the list above
+--- independent recount of the same API data (dedup per commit, author and Bot accounts removed): IDENTICAL to the command output above
+
+===== B. Bot accounts are never candidates (paths whose history is dominated by dependabot)
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/14417
+williammartin	15 recent commits
+BagToad	9 recent commits
+babakks	9 recent commits
+tidy-dev	5 recent commits
+web-flow	4 recent commits
+sergiou87	2 recent commits
+niik	1 recent commit
+tommaso-moro	1 recent commit
+(exit 0)
+--- GitHub ground truth: author=dependabot[bot] (a Bot, also excluded), changed paths=go.mod, go.sum
+  Bot-authored unique commits present in that history but absent from the candidates:
+       1 Copilot
+      64 dependabot[bot]
+
+===== C. evidence that names only the pull-request author: no candidate, and it says so
+$ bin/fm-pr-reviewers.sh https://github.com/abdallah-altawab/git-team-workflow-lab/pull/1
+NO CANDIDATES: no mapped author other than the PR author
+(exit 0)
+--- GitHub ground truth: author=AbdallahAlTawab changed paths=feature.txt
+
+===== D. a pull request that changes no file at all
+$ bin/fm-pr-reviewers.sh https://github.com/Darwish98/Agent-ship/pull/1
+NO CANDIDATES: pull request changes no files
+(exit 0)
+--- GitHub ground truth: changed_files=0, files endpoint returns 0 entries
+
+Note: an earlier drive of this case used thinca/action-setup-vim#18 while it had changed_files=0;
+that pull request was pushed to mid-run (updated_at 2026-09-12T06:16:51Z) and no longer has an empty file list.

@@ -1,0 +1,110 @@
+fm-pr-state.sh driven against live GitHub pull requests (no stubs, no fixtures)
+when: 2026-09-12T06:15:41Z   gh: gh version 2.100.0 (2026-09-03)   account: tiago-peixoto
+Live pull requests move; each case prints an independent read of the same pull request taken right after the command.
+
+===== A. merged: terminal state is the whole report (its mergeable is CONFLICTING and is deliberately NOT reported)
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/1
+STATE: merged at 2019-10-04T16:01:04Z
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=MERGED mergedAt=2019-10-04T16:01:04Z draft=false mergeable=CONFLICTING reviewDecision=(none)
+  head=e9a3253762e768badaa1d4a5b3d267416d1e42f4 author=vilmibm
+  gh pr checks --required: no checks reported on the 'gh-pr' branch
+
+
+===== B. closed-unmerged: terminal state is the whole report (REVIEW_REQUIRED is not reported after it)
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/14423
+STATE: closed
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=CLOSED mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=REVIEW_REQUIRED
+  head=d183ba011ed26152e63aa9e8150c9253cb366f26 author=app/github-actions
+  gh pr checks --required: [{"bucket":"pass","name":"build (macos-latest)","state":"SUCCESS"},{"bucket":"pass","name":"build (ubuntu-latest)","state":"SUCCESS"},{"bucket":"pass","name":"build (windows-latest)","state":"SUCCESS"}]
+
+
+===== C. approved, mergeable, required checks green: silence
+$ bin/fm-pr-state.sh https://github.com/s3ntin3l8/mullion-helper/pull/34
+<no output: no blocker this command can see>
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=APPROVED
+  head=28a7e636810ddc08d88da3495388d2ce0fbe6a47 author=s3ntin3l8
+  gh pr checks --required: [{"bucket":"pass","name":"dependency-review / dependency-review","state":"SUCCESS"},{"bucket":"pass","name":"ci-tauri / lint-and-test","state":"SUCCESS"}]
+
+
+===== D. approved and green, but NO required context reported: readiness unconfirmed rather than silence
+$ bin/fm-pr-state.sh https://github.com/pascalandy/qobuz-dl/pull/76
+CHECKS: no required check has reported; readiness unconfirmed
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=APPROVED
+  head=1755a0f2b4287a0008ef6e9ddb8c13bc5e473740 author=pascalandy
+  gh pr checks --required: no required checks reported on the 't3code/epic-20-45-coverage' branch
+
+
+===== E. draft + merge conflict + nothing reported
+$ bin/fm-pr-state.sh https://github.com/commandzero/tq/pull/35
+DRAFT: pull request is not ready for review
+MERGEABILITY: conflicting
+CHECKS: none reported yet
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=true mergeable=CONFLICTING reviewDecision=(none)
+  head=cfd5c5beebd1aab50c87d9dc78fbb777b005b1d6 author=VimCommando
+  gh pr checks --required: no checks reported on the 'split/pr33-openspec' branch
+
+
+===== F. pending required checks are reported by name and state; the passing required one is omitted
+$ bin/fm-pr-state.sh https://github.com/jimchen5209/Discord-Voice-log/pull/497
+REQUIRED CHECK: Socket Security: Pull Request Alerts (IN_PROGRESS)
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=(none)
+  head=70bef5eac3dd398e2e7686a79aab66c1f77af2d7 author=app/renovate
+  gh pr checks --required: [{"bucket":"pass","name":"build","state":"SUCCESS"},{"bucket":"pass","name":"security-scan","state":"SUCCESS"},{"bucket":"pending","name":"Socket Security: Pull Request Alerts","state":"IN_PROGRESS"},{"bucket":"pass","name":"Socket Security: Project Report","state":"SUCCESS"},{"bucket":"pass","name":"build","state":"SUCCESS"},{"bucket":"pass","name":"security-scan","state":"SUCCESS"},{"bucket":"pass","name":"security/snyk (jimchen5209)","state":"SUCCESS"}]
+
+
+===== G. failing required check, plus a changes-requested verdict left at the CURRENT head (reviewer named, no commit printed)
+$ bin/fm-pr-state.sh https://github.com/phase-rs/phase/pull/8814
+REQUIRED CHECK: Rust (fmt, clippy, test, coverage-gate) (FAILURE)
+REVIEW DECISION: CHANGES_REQUESTED
+REVIEW: matthewevans CHANGES_REQUESTED
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=CHANGES_REQUESTED
+  head=71078941048ea001686f78ca27ec6528cecd7f52 author=dsteele101
+  gh pr checks --required: [{"bucket":"fail","name":"Rust (fmt, clippy, test, coverage-gate)","state":"FAILURE"},{"bucket":"pass","name":"Frontend (lint, type-check, test)","state":"SUCCESS"}]
+
+
+===== H. changes-requested verdict left at a SUPERSEDED head: marked STALE and names that commit, not the head
+$ bin/fm-pr-state.sh https://github.com/youhaowei/DashFrame/pull/424
+REVIEW DECISION: CHANGES_REQUESTED
+STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at 510caf25008fd35563ec86d0562e1ed57b0ccf3e
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=CHANGES_REQUESTED
+  head=dffeeebdbdae6ee436d337fae955c2e081a19b6e author=youhaowei
+  gh pr checks --required: [{"bucket":"pass","name":"E2E Tests","state":"SUCCESS"},{"bucket":"pass","name":"Format","state":"SUCCESS"},{"bucket":"pass","name":"Lint, Type Check & Format","state":"SUCCESS"}]
+
+
+===== I. no check of any kind has reported on the head
+$ bin/fm-pr-state.sh https://github.com/abdallah-altawab/git-team-workflow-lab/pull/1
+CHECKS: none reported yet
+REVIEW DECISION: CHANGES_REQUESTED
+REVIEW: abdallah-altawab CHANGES_REQUESTED
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=CHANGES_REQUESTED
+  head=9bd61e48a493b55fde1ba9279ffe3303025d64ff author=AbdallahAlTawab
+  gh pr checks --required: no checks reported on the 'feature/test-workflow' branch
+
+
+===== J. only an approval is outstanding (reviewDecision REVIEW_REQUIRED): not reported as a blocker
+$ bin/fm-pr-state.sh https://github.com/home-assistant/core/pull/182009
+<no output: no blocker this command can see>
+(exit 0)
+--- GitHub ground truth, read independently at this moment:
+  state=OPEN mergedAt=null draft=false mergeable=MERGEABLE reviewDecision=REVIEW_REQUIRED
+  head=2827ac606d3ee86ba7e922995a0638f78076f59d author=cp296944
+  gh pr checks --required: [{"bucket":"pass","name":"Check all requirements","state":"SUCCESS"},{"bucket":"pass","name":"Check hassfest","state":"SUCCESS"},{"bucket":"pass","name":"Collect information & changes data","state":"SUCCESS"},{"bucket":"pass","name":"blocking-label-awaiting-frontend","state":"SUCCESS"},{"bucket":"pass","name":"cla-bot","state":"SUCCESS"},{"bucket":"pass","name":"code-owner-approval","state":"SUCCESS"},{"bucket":"pass","name":"docs-missing","state":"SUCCESS"},{"bucket":"pass","name":"required-labels","state":"SUCCESS"}]
+

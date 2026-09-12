@@ -1,0 +1,48 @@
+The contract a user reads before trusting empty output
+when: 2026-09-12T06:19:28Z
+
+$ bin/fm-pr-state.sh --help
+Report the blockers this command can see on one GitHub pull request.
+
+This is a one-shot, read-only command. It reads the current pull request,
+reported checks, submitted reviews, and review decision from GitHub at
+invocation time. It never posts, requests, approves, or merges.
+It reports on checks that have reported. A required context that has never
+reported on this head is absent from what this command reads and cannot be
+enumerated here. Empty output therefore means that no reported required check
+is failing or pending; it does not mean the pull request is ready to merge.
+When nothing has reported, or nothing required has, that is printed rather
+than read as ready. Advisory checks do not block and are omitted.
+A pull request that only awaits an approval (reviewDecision REVIEW_REQUIRED)
+is not reported as blocked. GitHub's reviewDecision owns whether reviews
+block; review history is printed only to explain CHANGES_REQUESTED, naming
+each reviewer whose latest verdict still requests changes and marking it
+STALE when it was left at a superseded head.
+A closed or merged pull request reports that terminal state and nothing else.
+Unresolved review-thread state is out of this command's scope.
+
+Usage: fm-pr-state.sh <pr-url>
+  Prints one line per blocker it can see and nothing when it sees none.
+  Blockers do not change the successful exit status; lookup or usage refusal
+  exits non-zero.
+
+$ bin/fm-pr-reviewers.sh --help
+Suggest GitHub reviewers from recent authorship of a pull request's files.
+
+This is a read-only advisory command. It reads the pull request's exact file
+list, then the most recent 100 commits on its base commit for each path. A
+commit is counted once even when it touched multiple changed paths. Candidates
+use GitHub's own commit author.login mapping; names and email addresses are
+never converted or guessed. The pull-request author and Bot accounts are
+excluded. One API read is issued per changed path, so a wide pull request
+costs proportionally more reads and time.
+
+Usage: fm-pr-reviewers.sh <pr-url>
+  Prints candidates in descending unique-commit count as:
+    <github-login><tab><count> recent commit[s]
+  When no mapped author other than the pull-request author appears, prints no
+  candidate and explains that result. Lookup or usage refusal exits non-zero.
+
+$ grep -n "fm-pr-state\|fm-pr-reviewers" docs/scripts.md
+134:| `fm-pr-state.sh`         | Read-only: print one line per GitHub pull-request blocker it can see, reporting on checks that have reported rather than verdicting merge-readiness |
+135:| `fm-pr-reviewers.sh`     | Read-only: suggest reviewers from GitHub's own author mapping of recent commits on a pull request's changed files, never requesting one |

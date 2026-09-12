@@ -1,0 +1,29 @@
+How many times does fm-pr-state.sh read the pull request?
+when: 2026-09-12T06:19:05Z
+
+A PATH shim logs the first line of every gh invocation the running command makes and forwards
+it to the real gh, so this is the live command against live GitHub with its calls counted.
+
+===== changes-requested pull request (every read this command can make is exercised)
+  command output: REVIEW DECISION: CHANGES_REQUESTED
+  command output: STALE BLOCKING REVIEW: coderabbitai[bot] CHANGES_REQUESTED at 510caf25008fd35563ec86d0562e1ed57b0ccf3e
+--- gh invocations (first line of each):
+  gh pr view https://github.com/youhaowei/DashFrame/pull/424 --json state,mergedAt,isDraft,headRefOid,author,mergeable,reviewDecision --jq 
+  gh pr checks https://github.com/youhaowei/DashFrame/pull/424 --required --json name,state,bucket --jq 
+  gh api /repos/youhaowei/DashFrame/pulls/424/reviews?per_page=100 --paginate --jq 
+--- pull-request object reads: gh pr view=1, gh api /repos/.../pulls/N=0 (total gh invocations=3)
+
+===== merged pull request (terminal: nothing is read after the state)
+  command output: STATE: merged at 2019-10-04T16:01:04Z
+--- gh invocations (first line of each):
+  gh pr view https://github.com/cli/cli/pull/1 --json state,mergedAt,isDraft,headRefOid,author,mergeable,reviewDecision --jq 
+--- pull-request object reads: gh pr view=1, gh api /repos/.../pulls/N=0 (total gh invocations=1)
+
+===== clean open pull request
+--- gh invocations (first line of each):
+  gh pr view https://github.com/s3ntin3l8/mullion-helper/pull/34 --json state,mergedAt,isDraft,headRefOid,author,mergeable,reviewDecision --jq 
+  gh pr checks https://github.com/s3ntin3l8/mullion-helper/pull/34 --required --json name,state,bucket --jq 
+--- pull-request object reads: gh pr view=1, gh api /repos/.../pulls/N=0 (total gh invocations=2)
+
+One read means there is no second reading to reconcile and no head-consistency refusal to hit:
+a push landing between two reads can no longer turn a blocker report into an exit-2 failure.

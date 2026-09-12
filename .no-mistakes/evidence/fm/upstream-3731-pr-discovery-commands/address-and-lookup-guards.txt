@@ -1,0 +1,109 @@
+Address and lookup guards, driven live (both commands)
+when: 2026-09-12T06:18:50Z
+
+Every line below is the real command run from a shell. Exit 2 is a refusal; nothing is
+printed that could be mistaken for "this pull request has no blockers".
+
+===== bin/fm-pr-state.sh
+
+$ bin/fm-pr-state.sh <no argument>
+fm-pr-state: usage: fm-pr-state.sh <pr-url>
+(exit 2)
+
+$ bin/fm-pr-state.sh 7
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh cli/cli#1
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh not-a-pr
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/issues/1
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/1/files
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/abc
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh https://gitlab.com/group/sub/proj/-/merge_requests/3
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh https://evil.example/github.com/cli/cli/pull/1
+fm-pr-state: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/1 https://github.com/cli/cli/pull/2
+fm-pr-state: usage: fm-pr-state.sh <pr-url>
+(exit 2)
+
+$ bin/fm-pr-state.sh https://github.com/cli/cli/pull/99999999
+GraphQL: Could not resolve to a PullRequest with the number of 99999999. (repository.pullRequest)
+fm-pr-state: could not read https://github.com/cli/cli/pull/99999999
+(exit 2)
+
+$ bin/fm-pr-state.sh https://github.com/this-org-does-not-exist-zz/nope/pull/1
+GraphQL: Could not resolve to a Repository with the name 'this-org-does-not-exist-zz/nope'. (repository)
+fm-pr-state: could not read https://github.com/this-org-does-not-exist-zz/nope/pull/1
+(exit 2)
+
+===== bin/fm-pr-reviewers.sh
+
+$ bin/fm-pr-reviewers.sh <no argument>
+fm-pr-reviewers: usage: fm-pr-reviewers.sh <pr-url>
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh 7
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh cli/cli#1
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh not-a-pr
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/issues/1
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/1/files
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/abc
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://gitlab.com/group/sub/proj/-/merge_requests/3
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://evil.example/github.com/cli/cli/pull/1
+fm-pr-reviewers: expected a GitHub pull-request URL
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/1 https://github.com/cli/cli/pull/2
+fm-pr-reviewers: usage: fm-pr-reviewers.sh <pr-url>
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://github.com/cli/cli/pull/99999999
+gh: Not Found (HTTP 404)
+fm-pr-reviewers: could not read https://github.com/cli/cli/pull/99999999
+(exit 2)
+
+$ bin/fm-pr-reviewers.sh https://github.com/this-org-does-not-exist-zz/nope/pull/1
+gh: Not Found (HTTP 404)
+fm-pr-reviewers: could not read https://github.com/this-org-does-not-exist-zz/nope/pull/1
+(exit 2)
