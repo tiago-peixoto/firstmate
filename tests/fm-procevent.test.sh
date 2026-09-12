@@ -1426,7 +1426,8 @@ assert_contains "$sr4_start" "cannot claim source" \
   || fail "a refused start replaced the reused-pid generation's claim"
 sleep 0.3
 [ "$(wc -l < "$SR4_LOG" | tr -d ' ')" = 1 ] \
-  || fail "a refused start ran a second source beside a reused pid's live group: $(cat "$SR4_LOG")"set +e
+  || fail "a refused start ran a second source beside a reused pid's live group: $(cat "$SR4_LOG")"
+set +e
 sr4_retire=$(pe "$HSR4" retire reused-group-src 2>&1)
 sr4_rc=$?
 set -e

@@ -638,11 +638,16 @@ test_native_pi_ultra_is_explicit_and_model_scoped() {
 }
 
 test_batch_preserves_native_ultra() {
-  local rec id1=ultra-batch-a id2=ultra-batch-b out launch
+  local rec id1=ultra-batch-a id2=ultra-batch-b out launch second queue
   rec=$(make_spawn_case ultra-batch pi "$id1" "$id2")
   read_case_record "$rec"
   enable_dispatch_profile "$HOME_DIR"
-  out=$(run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
+  second="$CASE_DIR/wt2"
+  git -C "$PROJ_DIR" worktree add --quiet -b "wt2-ultra-batch" "$second"
+  queue="$CASE_DIR/th-queue"
+  printf '%s\n%s\n' "$WT_DIR" "$second" > "$queue"
+  out=$(FM_FAKE_TREEHOUSE_QUEUE="$queue" \
+    run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
     "$id1=$PROJ_DIR" "$id2=$PROJ_DIR" --harness pi --model codex-native/gpt-6-astra --effort ultra)
   expect_code 0 "$?" "native Ultra batch failed: $out"
   assert_meta_profile "$HOME_DIR/state/$id1.meta" pi codex-native/gpt-6-astra ultra
@@ -832,9 +837,11 @@ test_claude_worker_ignores_spawning_config_dir() {
   status=$?
   expect_code 0 "$status" "claude spawn beside another CLAUDE_CONFIG_DIR should succeed: $out"
   launch=$(cat "$LAUNCH_LOG")
-  assert_contains "$launch" "CLAUDE_CONFIG_DIR='$CASE_DIR/claude-work' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-permissions --settings '{\"feedbackDrafts\":\"off\",\"attribution\":{\"commit\":\"\",\"pr\":\"\",\"sessionUrl\":false}}'" \
-    "claude launch did not forward firstmate's CLAUDE_CONFIG_DIR to the crewmate pane"
-  pass "claude forwards firstmate's CLAUDE_CONFIG_DIR so the crewmate uses the same credential store"
+  assert_contains "$launch" "CLAUDE_CONFIG_DIR='$HOME_DIR/accounts/claude' env -u CURSOR_AGENT" \
+    "a claude worker did not launch on its home's pin"
+  assert_not_contains "$launch" "$CASE_DIR/supervisor-account" \
+    "a claude worker launched on the spawning CLAUDE_CONFIG_DIR"
+  pass "a claude worker launches on its home's pin even when the spawning CLAUDE_CONFIG_DIR names another account"
 }
 
 # A Claude launch runs with its pin and without the environment credentials
