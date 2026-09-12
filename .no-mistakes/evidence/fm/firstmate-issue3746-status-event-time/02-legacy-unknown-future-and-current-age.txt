@@ -1,0 +1,51 @@
+
+=== a legacy worker (pre-change vocabulary) appends an unstamped event ===
+and its status file is given a misleading mtime of 2020-01-01
+Jan 1 2020 /tmp/fm-live/home-s2.54plNx/state/legacy-task.status
+
+=== a clock-skewed worker stamps an event 200s in the future ===
+
+=== a current worker stamps an event 100s ago ===
+
+=== a worker writes a malformed time tag (an ISO time, not epoch seconds) ===
+
+=== captain snapshot at a fixed observation time of 1789200000 ===
+[
+  {
+    "id": "future-task",
+    "raw": "working [at=1789200200]: long build running",
+    "emitted_at_epoch": 1789200200,
+    "age_seconds": null
+  },
+  {
+    "id": "legacy-task",
+    "raw": "done: report ready",
+    "emitted_at_epoch": null,
+    "age_seconds": null
+  },
+  {
+    "id": "malformed-task",
+    "raw": "blocked [at=2026-09-12T17:05Z]: upstream release slipped",
+    "emitted_at_epoch": null,
+    "age_seconds": null
+  },
+  {
+    "id": "stamped-task",
+    "raw": "needs-decision [at=1789199900] [key=api-shape]: choose REST or gRPC",
+    "emitted_at_epoch": 1789199900,
+    "age_seconds": 100
+  }
+]
+
+=== verdicts ===
+  ok   legacy-task    emitted_at_epoch=null age_seconds=null
+  ok   future-task    emitted_at_epoch=1789200200 age_seconds=null
+  ok   stamped-task   emitted_at_epoch=1789199900 age_seconds=100
+  ok   malformed-task emitted_at_epoch=null age_seconds=null
+
+=== the stored event bytes are untouched by the read ===
+working [at=1789200200]: long build running
+done: report ready
+blocked [at=2026-09-12T17:05Z]: upstream release slipped
+needs-decision [at=1789199900] [key=api-shape]: choose REST or gRPC
+RESULT S2: PASS

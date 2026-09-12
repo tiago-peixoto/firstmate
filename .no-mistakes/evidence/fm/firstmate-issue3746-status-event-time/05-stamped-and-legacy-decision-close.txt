@@ -1,0 +1,39 @@
+
+=== two workers open a decision: one stamped by the new brief, one legacy ===
+needs-decision [key=api-shape] [at=1789219927]: choose REST or gRPC
+working [at=1789219928]: continuing on an unrelated stream
+needs-decision [key=port-choice]: 8080 or 9090
+
+=== captain drain before answering ===
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t-legacy [key=port-choice] needs-decision: 8080 or 9090
+t-stamped [key=api-shape] needs-decision: choose REST or gRPC
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+
+=== captain answers the stamped decision: bin/fm-send.sh t-stamped --resolve-key api-shape 'go with REST' ===
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  (rc=0)
+
+=== captain answers the legacy decision: bin/fm-send.sh t-legacy --resolve-key port-choice 'use 9090' ===
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  (rc=0)
+
+=== status ledgers after the answers ===
+t-stamped.status:
+  needs-decision [key=api-shape] [at=1789219927]: choose REST or gRPC
+  working [at=1789219928]: continuing on an unrelated stream
+  resolved [key=api-shape] [at=1789219928]: answered: go with REST
+t-legacy.status:
+  needs-decision [key=port-choice]: 8080 or 9090
+  resolved [key=port-choice] [at=1789219929]: answered: use 9090
+
+=== the closing lines carry their own emission time ===
+  ok   t-stamped close stamped at 1789219928: resolved [key=api-shape] [at=1789219928]: answered: go with REST
+  ok   t-legacy close stamped at 1789219929: resolved [key=port-choice] [at=1789219929]: answered: use 9090
+
+=== captain drain after answering ===
+  ok   no OPEN DECISIONS remain
+
+=== fleet snapshot agrees the decisions are closed ===
+[{"id":"t-legacy","open":0,"pending":false,"last":1789219929},{"id":"t-stamped","open":0,"pending":false,"last":1789219928}]
+RESULT S6: PASS

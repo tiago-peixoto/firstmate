@@ -1,0 +1,23 @@
+
+=== a child of the secondmate finishes and writes the brief's stamped ready signal ===
+  (no pr= recorded in meta, so the PR can only come from the stamped ready line)
+done [at=1789219930]: PR https://example.test/owner/repo/pull/3746 checks green
+
+=== the secondmate's poll publishes it on the parent channel (real bin/fm-inactive-reconcile.sh scan) ===
+parent channel (main/state/mate.status):
+  working: delegated scope
+  done [key=child-outcome-child-done-acf96bcc] [at=1789219930]: child child done: PR https://example.test/owner/repo/pull/3746 checks green pr=https://example.test/owner/repo/pull/3746 mode=no-mistakes yolo=off
+  ok   the stamped ready signal still yielded the delivered PR
+  ok   the upward delivery carries its own emission time (1789219930)
+
+=== a replayed poll after the delivery receipt is lost (restart / restored state) ===
+  receipts removed; re-running the same poll a second later
+parent channel now:
+  working: delegated scope
+  done [key=child-outcome-child-done-acf96bcc] [at=1789219930]: child child done: PR https://example.test/owner/repo/pull/3746 checks green pr=https://example.test/owner/repo/pull/3746 mode=no-mistakes yolo=off
+  ok   the retry was recognised as the same event despite a newer clock: 1 delivered line
+
+=== captain's view of the parent home ===
+  STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+  mate done [key=child-outcome-child-done-acf96bcc] [at=1789219930]: child child done: PR https://example.test/owner/repo/pull/3746 checks green pr=https://example.test/owner/repo/pull/3746 mode=no-mistakes yolo=off
+RESULT S7/S8: PASS

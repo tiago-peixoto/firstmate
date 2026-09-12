@@ -1,0 +1,44 @@
+
+=== a worker is provably busy, and its newest event is a stamped done from an hour ago ===
+done [at=1789196400]: PR https://example.test/owner/repo/pull/1 checks green
+
+=== snapshot: current state comes from the crew record, the stamp only ages the event ===
+{
+  "current_state": {
+    "state": "working",
+    "source": "pane",
+    "detail": "harness busy (claude-hook)",
+    "raw": "state: working · source: pane · harness busy (claude-hook)",
+    "observed_at": "2026-09-12T13:32:06Z",
+    "freshness": "fresh"
+  },
+  "last_event": {
+    "state": "done",
+    "note": "PR https://example.test/owner/repo/pull/1 checks green",
+    "raw": "done [at=1789196400]: PR https://example.test/owner/repo/pull/1 checks green",
+    "emitted_at_epoch": 1789196400,
+    "age_seconds": 3600
+  }
+}
+  ok   current_state=working (crew record) while the event log reports age 3600s as event_history
+
+=== human fleet view (bin/fm-fleet-view.sh) ===
+# Fleet View
+
+Schema: fm-fleet-snapshot.v1
+Home: /tmp/fm-live/home-s9.2dVdLO
+
+## Under Way
+| ID | Current | Kind | Repo/Project | Backend | Endpoint | Artifact | Path | Watch / return channel |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| busy-task | working / pane | ship | firstmate | tmux | present | https://example.test/owner/repo/pull/1 | /tmp/fm-live/home-s9.2dVdLO/projects/p | bin/fm-peek.sh fm-busy-task |
+
+## Queued
+No queued backlog records found.
+
+## Done
+No done backlog records found.
+
+## Secondmates
+For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority.
+RESULT S9: PASS

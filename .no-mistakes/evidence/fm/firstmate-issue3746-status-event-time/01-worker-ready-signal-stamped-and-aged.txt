@@ -1,0 +1,49 @@
+
+=== captain scaffolds a no-mistakes ship task brief (real bin/fm-brief.sh) ===
+scaffolded: /tmp/fm-live/home-s1.ZHcJoa/data/ship-alpha/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+
+=== the status-report interface the brief hands the worker ===
+30:   `echo "{state} [at=$(date +%s)]: {one short line}" >> '/tmp/fm-live/home-s1.ZHcJoa/state/ship-alpha.status'`
+81:When you believe it is complete, append `done [at=$(date +%s)]: {summary}` to the status file and stop.
+107:After /no-mistakes reports CI green (the CI-ready return point - do not wait for it to keep monitoring in the background until merge), append `done [at=$(date +%s)]: PR {url} checks green` and stop. You are finished.
+
+=== worker runs the brief's rule-4 append verbatim (shell evaluates the stamp now) ===
+$ echo "working [at=$(date +%s)]: fix implemented, validating" >> '/tmp/fm-live/home-s1.ZHcJoa/state/ship-alpha.status'
+
+=== worker reaches CI green and follows the Definition of done ready signal ===
+$ echo "done [at=$(date +%s)]: PR https://github.com/kunchenguid/firstmate/pull/3746 checks green" >> /tmp/fm-live/home-s1.ZHcJoa/state/ship-alpha.status
+
+=== state/ship-alpha.status as written by the worker ===
+working [at=1789220020]: fix implemented, validating
+done [at=1789220020]: PR https://github.com/kunchenguid/firstmate/pull/3746 checks green
+
+=== captain reads the fleet snapshot (real bin/fm-fleet-snapshot.sh --json) ===
+{
+  "path": "/tmp/fm-live/home-s1.ZHcJoa/state/ship-alpha.status",
+  "present": true,
+  "kind": "event_history",
+  "last_event": {
+    "state": "done",
+    "note": "PR https://github.com/kunchenguid/firstmate/pull/3746 checks green",
+    "raw": "done [at=1789220020]: PR https://github.com/kunchenguid/firstmate/pull/3746 checks green",
+    "emitted_at_epoch": 1789220020,
+    "age_seconds": 0
+  }
+}
+worker appended between 1789220020 and 1789220020; snapshot emitted_at_epoch=1789220020 age_seconds=0
+
+=== same snapshot 90 seconds later (FM_SNAPSHOT_NOW_EPOCH) ages the same event ===
+{
+  "emitted_at_epoch": 1789220020,
+  "age_seconds": 90,
+  "raw": "done [at=1789220020]: PR https://github.com/kunchenguid/firstmate/pull/3746 checks green"
+}
+
+=== the PR URL the captain copies is still readable from the stamped ready line ===
+{
+  "pr": "https://github.com/kunchenguid/firstmate/pull/3746",
+  "state": "unknown",
+  "note": "PR https://github.com/kunchenguid/firstmate/pull/3746 checks green"
+}
+RESULT S1: PASS
+HOME=/tmp/fm-live/home-s1.ZHcJoa

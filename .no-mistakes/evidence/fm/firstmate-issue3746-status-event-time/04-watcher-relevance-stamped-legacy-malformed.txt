@@ -1,0 +1,59 @@
+
+=== stamped-blocked-custom-vocabulary ===
+FM_CAPTAIN_RE   : done:|needs-decision:|blocked:|failed:
+crew evidence   : state: working · source: run-step · validating (running)
+status event    : blocked [at=1789219936]: pipeline daemon socket refused
+expectation     : surface
+watcher exited  : 1 (after 1.1s)
+watcher stdout  : signal: /tmp/fm-live/watch.onSpy1/stamped-blocked-custom-vocabulary/state/task.status
+wake queue      : 1789219938	1	signal	task.status	signal: /tmp/fm-live/watch.onSpy1/stamped-blocked-custom-vocabulary/state/task.status
+1789219938	2	signal	task.status	signal: /tmp/fm-live/watch.onSpy1/stamped-blocked-custom-vocabulary/state/task.status
+  ok   the captain was woken for this event
+captain digest  :
+    1789219938	2	signal	task.status	signal: /tmp/fm-live/watch.onSpy1/stamped-blocked-custom-vocabulary/state/task.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: task.status: blocked [at=1789219936]: pipeline daemon socket refused
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    task blocked: pipeline daemon socket refused
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+stored bytes    : blocked [at=1789219936]: pipeline daemon socket refused
+
+=== stamped-blocked-outside-custom-vocabulary ===
+FM_CAPTAIN_RE   : done:
+crew evidence   : state: working · source: run-step · validating (running)
+status event    : blocked [at=1789219936]: pipeline daemon socket refused
+expectation     : absorb
+watcher exited  : 0 (after 10.0s)
+watcher stdout  : 
+wake queue      : <empty>
+  ok   absorbed: no wake, no queue entry
+stored bytes    : blocked [at=1789219936]: pipeline daemon socket refused
+
+=== stamped-working-is-not-actionable ===
+FM_CAPTAIN_RE   : <default vocabulary>
+crew evidence   : state: working · source: run-step · validating (running)
+status event    : working [at=1789219936]: rebased onto merged #76
+expectation     : absorb
+watcher exited  : 0 (after 10.0s)
+watcher stdout  : 
+wake queue      : <empty>
+  ok   absorbed: no wake, no queue entry
+stored bytes    : working [at=1789219936]: rebased onto merged #76
+
+=== malformed-stamp-default-vocabulary ===
+FM_CAPTAIN_RE   : <default vocabulary>
+crew evidence   : state: working · source: run-step · validating (running)
+status event    : needs-decision [at=17:00]: choose REST or gRPC
+expectation     : surface
+watcher exited  : 1 (after 1.0s)
+watcher stdout  : signal: /tmp/fm-live/watch.onSpy1/malformed-stamp-default-vocabulary/state/task.status
+wake queue      : 1789219987	1	signal	task.status	needs-decision: /tmp/fm-live/watch.onSpy1/malformed-stamp-default-vocabulary/state/task.status
+1789219987	2	signal	task.status	needs-decision: /tmp/fm-live/watch.onSpy1/malformed-stamp-default-vocabulary/state/task.status
+  ok   the captain was woken for this event
+captain digest  :
+    1789219987	2	signal	task.status	needs-decision: /tmp/fm-live/watch.onSpy1/malformed-stamp-default-vocabulary/state/task.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: task.status: needs-decision [at=17:00]: choose REST or gRPC
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    task needs-decision: 00]: choose REST or gRPC
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+stored bytes    : needs-decision [at=17:00]: choose REST or gRPC
+RESULT S4/S5: PASS

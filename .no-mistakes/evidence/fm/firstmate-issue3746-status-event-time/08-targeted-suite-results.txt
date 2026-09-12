@@ -1,0 +1,41 @@
+Targeted suites for the files this change touches (stock /bin/bash 3.2.57, macOS):
+
+  fm-bearings-snapshot rc=0
+  fm-brief rc=0
+  fm-captain-hold-lifecycle rc=0
+  fm-classify-corr-token rc=0
+  fm-fleet-snapshot-view rc=0
+  fm-inactive-reconcile rc=0
+  fm-pending-reply rc=0
+  fm-remote-reply rc=0
+  fm-send-resolve-key rc=0
+  fm-wake-queue rc=0
+
+Per-suite 'ok -' assertions:
+  fm-bearings-snapshot               59 ok
+  fm-brief                           24 ok
+  fm-captain-hold-lifecycle          50 ok
+  fm-classify-corr-token             15 ok
+  fm-fleet-snapshot-view             19 ok
+  fm-inactive-reconcile              29 ok
+  fm-pending-reply                   40 ok
+  fm-remote-reply                    19 ok
+  fm-send-resolve-key                20 ok
+  fm-wake-queue                      41 ok
+
+CI gate the change edits (.github/workflows/ci.yml expects 19 snapshot/fleet-view tests):
+  $ /bin/bash tests/fm-fleet-snapshot-view.test.sh | grep -c "^ok - "  ->  19
+
+New emission-time coverage exercised inside those suites:
+  ok - captain regex overrides preserve timed and legacy relevance and event bytes
+  ok - malformed event times stay ordinary line bytes for every reader
+  ok - optional event time preserves parsing and legacy unknown time
+  ok - prose, malformed, wrong-length and unknown name=value tokens stay non-transitions
+  ok - snapshot exposes emission time and unknown-safe event age independently of file age and current state
+  ok - durable fold keeps an open decision past a later unrelated event
+  ok - a live secondmate endpoint preserves unrelated open decisions
+  ok - durable captain-held transfer closes the duplicate live status decision
+  ok - durable fold clears a decision only on a keyed resolution
+  ok - a completed scout's stale decision surfaces as a report pointer, not pending
+  ok - a scout still parked at a decision stays pending (terminal clear does not over-fire)
+  ok - fm-brief.sh: investigation and visual-review completions load the shared decision policy

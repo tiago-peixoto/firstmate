@@ -1,0 +1,30 @@
+Remote relay: the real remote-reply adapter (bin/fm-procevent.sh + bin/fm-procevent-remote-reply.sh)
+mirrors a remote mate's status events onto the parent channel. Source times are carried
+through unchanged, legacy unstamped events stay unstamped, and two events with identical
+text but different emission times both survive the mirror and a replay of the same delta.
+Captured from tests/fm-remote-reply.test.sh with FM_TEST_EVIDENCE=1.
+
+Remote source status records:
+done [corr=0123456789abcdef] [at=1700000000]: build verified (data/reply/report.md)
+working [corr=1111111111111111]: second generation
+done [corr=2222222222222222]: third generation
+working [key=version-audit]: family --version audit complete (data/reply/report.md)
+needs-decision [key=rough-cut-version]: implement --version or retire the tool
+needs-decision [at=1700000000]: which base branch?
+needs-decision [at=1700086400]: which base branch?
+done [corr=03112da289294ab0]: release chain audited
+
+Parent status after handling and replaying generation 4:
+done [corr=0123456789abcdef] [at=1700000000]: build verified (data/remote-secondmates/ios/data/reply/report.md)
+working [corr=1111111111111111]: second generation
+done [corr=2222222222222222]: third generation
+working [key=version-audit]: family --version audit complete (data/remote-secondmates/ios/data/reply/report.md)
+needs-decision [key=rough-cut-version]: implement --version or retire the tool
+needs-decision [at=1700000000]: which base branch?
+needs-decision [at=1700086400]: which base branch?
+done [corr=03112da289294ab0]: release chain audited
+
+Committed remote cursor:
+
+ok - the remote status and decision model mirrors and the cursor advances
+ok - a replayed mirrored delta is idempotent in both the stream and the cursor
