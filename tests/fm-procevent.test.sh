@@ -2922,7 +2922,8 @@ orphan_pe() {  # <home> <command...>
   local home=$1
   shift
   FM_PROCEVENT_OWNER_LEASE_SECONDS="$PROOF_LEASE_SECONDS" \
-    FM_PROCEVENT_OWNER_CHECK_SECONDS="$PROOF_CHECK_SECONDS" \    FM_HOME="$home" "$ROOT/bin/fm-procevent.sh" "$@"
+    FM_PROCEVENT_OWNER_CHECK_SECONDS="$PROOF_CHECK_SECONDS" \
+    FM_HOME="$home" "$ROOT/bin/fm-procevent.sh" "$@"
 }
 
 wait_gone() {  # <pid-or-group-spec> [tries]

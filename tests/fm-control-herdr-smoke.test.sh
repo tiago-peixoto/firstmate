@@ -102,7 +102,8 @@ EOF
 } > "$HOME_DIR/state/hsmoke.meta"
 
 run_control() {
-  env FM_HOME="$HOME_DIR" HERDR_SESSION="$SESSION" FM_SPAWN_NO_GUARD=1 \    FM_CONTROL_POLL=0.2 FM_CONTROL_EXIT_WAIT=2 \
+  env FM_HOME="$HOME_DIR" HERDR_SESSION="$SESSION" FM_SPAWN_NO_GUARD=1 \
+    FM_CONTROL_POLL=0.2 FM_CONTROL_EXIT_WAIT=2 \
     "$ROOT/bin/fm-control.sh" "$@" 2>&1
 }
 
