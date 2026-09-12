@@ -901,12 +901,14 @@ test_dod_ready_signals_carry_append_time_stamp() {
       "$ROOT/bin/fm-brief.sh" "$id" $args >/dev/null \
       || fail "$id: scaffold failed for $args"
     brief="$home/data/$id/brief.md"
+    # shellcheck disable=SC2016 # Backticks are literal generated Markdown.
     signals=$(grep -oE '`(done|failed|blocked|needs-decision|resolved)[^`]*: [^`]*`' "$brief" | tr -d '`')
     [ "$(printf '%s\n' "$signals" | grep -c .)" = "$count" ] \
       || fail "$id: brief did not instruct $count appendable status signals (got: $signals)"
     status="$home/state/$id.status"
     while IFS= read -r signal; do
       [ -n "$signal" ] || continue
+      # shellcheck disable=SC2016 # The worker's shell expands the stamp at append time.
       case "$signal" in
         *' [at=$(date +%s)]: '*) ;;
         *) fail "$id: brief instructs an unstamped status signal: $signal" ;;
