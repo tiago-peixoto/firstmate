@@ -31,3 +31,12 @@ jobs:
         uses: kunchenguid/no-mistakes/.github/actions/require-no-mistakes@f6441c96c352a18b9cadcaef6b6c7017e9ac3970 # v1.80.1
         with:
           exempt-authors: kunchenguid
+          # The captain ruled on 2026-09-09 that firstmate-repo work ships
+          # direct-PR rather than through no-mistakes, so no PR from one of this
+          # fleet's own fm/ branches can carry a pipeline attestation and the
+          # gate would fail every one of them by construction. exempt-head-branches
+          # is the pinned action's own supported input for exactly this - it
+          # reports the PR as exempt with a reason rather than bypassing the
+          # check - so this is configuration, not a fork patch. Every branch this
+          # fleet ships is named fm/..., and any other branch is still judged.
+          exempt-head-branches: "fm/*"
