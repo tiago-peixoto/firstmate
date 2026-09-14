@@ -37,10 +37,11 @@
 # A source skipped with credentialPresent passes only when the root's own
 # .claude.json records a login (oauthAccount): quota-axi 0.1.41 answers an
 # empty root skipped/keychain_presence_check_failed with credentialPresent
-# true, while a keychain-only /login still writes oauthAccount to that file. Pi: `pi auth check --provider
-# <the launch model's provider> --json --no-refresh`, and only status "ready"
-# passes. That command loads no extensions, so an extension-registered provider
-# comes back not_ready/provider_not_found; only that one answer falls through to
+# true, while a keychain-only /login still writes oauthAccount to that file.
+# Pi: `pi auth check --provider <the launch model's provider> --json
+# --no-refresh`, and only status "ready" passes. That command loads no
+# extensions, so an extension-registered provider comes back
+# not_ready/provider_not_found; only that one answer falls through to
 # `pi --list-models <provider>`, which does load them, and the launch passes
 # only when a listed row's provider and model columns both match exactly. Every
 # other answer, including a logged-out built-in provider's
