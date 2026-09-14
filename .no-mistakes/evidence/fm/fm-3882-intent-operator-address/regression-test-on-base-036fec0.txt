@@ -1,0 +1,6 @@
+not ok - authorized --intent must contain exactly the request, without headings, address, or contract prose: Keep the original request intact.
+
+Preserve its provenance, punctuation, and `literal code`.
+
+Firstmate-authored constraints, acceptance criteria, implementation details, decisions, and tradeoffs are specification, not captain intent.
+The Definition of done's rule that `--intent` must be self-sufficient still governs the string you pass: resolve any report, decision, or PR the intent above refers to into its substance rather than passing the pointer.
