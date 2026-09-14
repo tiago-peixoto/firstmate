@@ -1,0 +1,10 @@
+# target 26ceaa0, quota-axi 0.1.43; read-only preflight of this host's real keychain-only account roots
+== /Users/tiago/.claude-account-pers  (.credentials.json present: no; oauthAccount in .claude.json: true)
+   quota-axi: [{"source":"oauth-file","status":"missing","error":null,"credentialPresent":null},{"source":"keychain","status":"available","error":null,"credentialPresent":null}]
+   fm_account_pin_preflight exit=0 
+== /Users/tiago/.claude-account-work  (.credentials.json present: no; oauthAccount in .claude.json: true)
+   quota-axi: [{"source":"oauth-file","status":"missing","error":null,"credentialPresent":null},{"source":"keychain","status":"expired","error":null,"credentialPresent":null}]
+   fm_account_pin_preflight exit=0 
+== /Users/tiago/.claude-account-frete  (.credentials.json present: no; oauthAccount in .claude.json: true)
+   quota-axi: [{"source":"oauth-file","status":"missing","error":null,"credentialPresent":null},{"source":"keychain","status":"skipped","error":"keychain_prompt_required","credentialPresent":true}]
+   fm_account_pin_preflight exit=0 

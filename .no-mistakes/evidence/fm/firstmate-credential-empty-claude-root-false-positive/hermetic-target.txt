@@ -1,0 +1,3 @@
+$ bash tests/fm-account-pin-claude-preflight.test.sh   # target 26ceaa0
+ok - a skipped keychain answer passes only a Claude root whose .claude.json records a login
+exit=0

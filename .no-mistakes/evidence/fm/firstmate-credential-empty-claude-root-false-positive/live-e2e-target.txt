@@ -1,0 +1,7 @@
+$ quota-axi --version
+0.1.43
+$ bash tests/fm-account-pin-preflight-live-e2e.test.sh   # target 26ceaa0
+ok - pi 0.85.1: the Pi preflight refuses an empty root, even under a caller's key, passes a credentialed one, and refuses a launch that names no provider
+ok - pi 0.85.1: pi auth check still routes an unseen provider to the second reading, and --list-models still answers by exact provider and model column
+ok - quota-axi 0.1.43: the Claude preflight refuses an empty root and passes a credentialed one
+exit=0

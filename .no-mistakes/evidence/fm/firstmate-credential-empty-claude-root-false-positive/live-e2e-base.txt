@@ -1,0 +1,8 @@
+$ bash tests/fm-account-pin-preflight-live-e2e.test.sh   # base b356f76 (before fix)
+ok - pi 0.85.1: the Pi preflight refuses an empty root, even under a caller's key, passes a credentialed one, and refuses a launch that names no provider
+ok - pi 0.85.1: pi auth check still routes an unseen provider to the second reading, and --list-models still answers by exact provider and model column
+not ok - quota-axi 0.1.43: an empty Claude root must refuse: 
+    Known on 0.1.41: the keychain source answers skipped/keychain_presence_check_failed with
+    credentialPresent true, which the library counts as ready. See the dated readings in
+    docs/verification/dispatch-auth.md under "quota-axi keychain reporting on 0.1.41".: expected exit 1, got 0
+exit=1
