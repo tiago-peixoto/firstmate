@@ -1,0 +1,81 @@
+=== S1: real fm-secondmate-report.sh emits a stamped parent status event ===
+exit=0 before=1789484298 after=1789484298
+--- /tmp/fm-evtime.lzanjI/home/state/secondmate-task.status:
+done [corr=0123456789abcdef] [at=1789484298]: audit complete (via-helper)
+RESULT S1: PASS (at=1789484298 within emission window)
+
+=== S2: fleet snapshot exposes emission time and age for the stamped event ===
+{
+  "last_event": {
+    "state": "done",
+    "note": "audit complete (via-helper)",
+    "raw": "done [corr=0123456789abcdef] [at=1789484298]: audit complete (via-helper)",
+    "emitted_at_epoch": 1789484298,
+    "age_seconds": 42
+  },
+  "open_decisions": [],
+  "secondmate_fallback": {
+    "current_state": "unknown",
+    "parent_event": {
+      "raw": "done [corr=0123456789abcdef] [at=1789484298]: audit complete (via-helper)",
+      "emitted_at_epoch": 1789484298,
+      "age_seconds": 42
+    },
+    "freshness_age": 42
+  }
+}
+RESULT S2: PASS
+
+=== S3: legacy / malformed / duplicate / future tags keep an unknown age (no mtime fallback) ===
+{"raw":"working: legacy unstamped line","state":"working","emitted_at_epoch":null,"age_seconds":null}
+{"raw":"working [at=oops]: malformed","state":"working","emitted_at_epoch":null,"age_seconds":null}
+{"raw":"working [at=0123]: leading zero","state":"working","emitted_at_epoch":null,"age_seconds":null}
+{"raw":"working [at=1700000000] [at=1700000001]: duplicate","state":"working","emitted_at_epoch":null,"age_seconds":null}
+{"raw":"working [at=1700000200]: future event","state":"working","emitted_at_epoch":1700000200,"age_seconds":null}
+RESULT S3: PASS
+
+=== S4 (adversarial): out-of-order timestamps never decide current state or decision closure ===
+needs-decision [key=api-shape] [at=1700000900]: choose REST or GraphQL
+working [at=1700000950]: waiting on answer
+resolved [key=api-shape] [at=1700000001]: answered: use REST
+working [at=1600000000]: implementing REST
+{
+  "last_event": {
+    "state": "working",
+    "note": "implementing REST",
+    "raw": "working [at=1600000000]: implementing REST",
+    "emitted_at_epoch": 1600000000,
+    "age_seconds": 100001000
+  },
+  "open_decisions": [],
+  "secondmate_fallback": {
+    "current_state": "unknown",
+    "parent_event": {
+      "raw": "working [at=1600000000]: implementing REST",
+      "emitted_at_epoch": 1600000000,
+      "age_seconds": 100001000
+    },
+    "freshness_age": 100001000
+  }
+}
+latest-line-wins despite older stamp, resolved closes despite older stamp: PASS
+{"last_state":"done","open_decisions":[{"key":"api-shape","verb":"needs-decision","summary":"choose REST or GraphQL"}]}
+later done/newer-stamp does not close keyed decision: PASS
+RESULT S4: PASS
+
+=== S5: classifier treats stamped terminal lines like unstamped ones ===
+captain-relevant: done [at=1700000000]: PR https://x/pull/1
+captain-relevant: failed [at=1700000000]: agy never showed its folder-trust dialog
+captain-relevant: needs-decision [key=k] [at=1700000000]: pick
+retry dedup ignores time tag: yes
+different corr still distinct: yes
+RESULT S5: PASS
+
+=== S6: generated worker brief instructs stamped status lines, and executing it yields a known-time event ===
+scaffolded: /tmp/fm-evtime.lzanjI/home/data/demo-task/brief.md (ship, mode=direct-PR; replace {TASK} and {FIRSTMATE_SPEC})
+20:If the top-level path is the primary checkout or not the worktree you were launched in, STOP - do not branch or commit here - append `blocked [at=$(date +%s)]: launched in primary checkout, not an isolated worktree` to the status file and stop.
+29:   `echo "{state} [at=$(date +%s)]: {one short line}" >> '/tmp/fm-evtime.lzanjI/home/state/demo-task.status'`
+44:5. If you hit the same obstacle twice, append `blocked [at=$(date +%s)]: {why}` and stop; firstmate will help.
+executing brief instruction: echo "done [at=$(date +%s)]: PR https://github.com/example/repo/pull/2" >> '/tmp/fm-evtime.lzanjI/home/state/demo-task.status'
+done [at=1789484301]: PR https://github.com/example/repo/pull/2
+RESULT S6: PASS
