@@ -1,0 +1,668 @@
+# Mutation: bin/fm-classify-lib.sh:552 lets a secondmate's done/failed line supersede its open decisions
+-    *:*) case "$verb:$kind" in done:ship|done:scout|failed:ship|failed:scout) return 0 ;; esac ;;
++    *:*) case "$verb:$kind" in done:ship|done:scout|failed:ship|failed:scout|done:secondmate|failed:secondmate) return 0 ;; esac ;;
+# Running only test_completed_scout_report_is_pointer_not_pending (the merged test)
+not ok - terminal snapshot revived a completed decision or lost a current one: {
+  "schema": "fm-fleet-snapshot.v1",
+  "generated": "2026-09-17T02:57:10Z",
+  "fm_home": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup",
+  "roots": {
+    "fm_root": "/Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2PMMJVQAJ6BASK9630ERMK3",
+    "state": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state",
+    "data": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data",
+    "config": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/config",
+    "projects": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/projects"
+  },
+  "backlog": {
+    "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/backlog.md",
+    "present": false,
+    "records": []
+  },
+  "tasks": [
+    {
+      "id": "scout-done",
+      "kind": "scout",
+      "harness": "claude",
+      "mode": "",
+      "yolo": "",
+      "project": "",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/scout-done.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/scout-done.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "note",
+            "note": "cleanup complete",
+            "raw": "note: cleanup complete"
+          }
+        },
+        "worktree": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/projects/task",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/scout-done/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "no current-state source available",
+        "raw": "state: unknown · source: none · no current-state source available",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-scout-done",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "note: cleanup complete"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh fm-scout-done",
+        "steer": "bin/fm-send.sh fm-scout-done '<instruction>'",
+        "return_channel_note": null
+      },
+      "backlog": null
+    },
+    {
+      "id": "scout-failed",
+      "kind": "scout",
+      "harness": "claude",
+      "mode": "",
+      "yolo": "",
+      "project": "",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/scout-failed.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/scout-failed.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "note",
+            "note": "cleanup complete",
+            "raw": "note: cleanup complete"
+          }
+        },
+        "worktree": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/projects/task",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/scout-failed/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "no current-state source available",
+        "raw": "state: unknown · source: none · no current-state source available",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-scout-failed",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "note: cleanup complete"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh fm-scout-failed",
+        "steer": "bin/fm-send.sh fm-scout-failed '<instruction>'",
+        "return_channel_note": null
+      },
+      "backlog": null
+    },
+    {
+      "id": "secondmate-done",
+      "kind": "secondmate",
+      "harness": "claude",
+      "mode": "",
+      "yolo": "",
+      "project": "",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/secondmate-done.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/secondmate-done.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "note",
+            "note": "cleanup complete",
+            "raw": "note: cleanup complete"
+          }
+        },
+        "worktree": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/projects/task",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/secondmate-done/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "no current-state source available",
+        "raw": "state: unknown · source: none · no current-state source available",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-secondmate-done",
+        "exists": true,
+        "agent_alive": "alive",
+        "status": "alive",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "note: cleanup complete"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-secondmate-done '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "secondmate-failed",
+      "kind": "secondmate",
+      "harness": "claude",
+      "mode": "",
+      "yolo": "",
+      "project": "",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/secondmate-failed.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/secondmate-failed.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "note",
+            "note": "cleanup complete",
+            "raw": "note: cleanup complete"
+          }
+        },
+        "worktree": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/projects/task",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/secondmate-failed/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "no current-state source available",
+        "raw": "state: unknown · source: none · no current-state source available",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-secondmate-failed",
+        "exists": true,
+        "agent_alive": "alive",
+        "status": "alive",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "note: cleanup complete"
+      },
+      "actions": {
+        "send": "bin/fm-send.sh fm-secondmate-failed '<request>'",
+        "watch": "read status/doc return channel; do not routinely fm-peek a secondmate for answers",
+        "return_channel_note": "Secondmate answers come back through status/doc paths after a marked fm-send request."
+      },
+      "backlog": null
+    },
+    {
+      "id": "ship-done",
+      "kind": "ship",
+      "harness": "claude",
+      "mode": "",
+      "yolo": "",
+      "project": "",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/ship-done.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/ship-done.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "note",
+            "note": "cleanup complete",
+            "raw": "note: cleanup complete"
+          }
+        },
+        "worktree": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/projects/task",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/ship-done/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "no current-state source available",
+        "raw": "state: unknown · source: none · no current-state source available",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-ship-done",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "note: cleanup complete"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh fm-ship-done",
+        "steer": "bin/fm-send.sh fm-ship-done '<instruction>'",
+        "return_channel_note": null
+      },
+      "backlog": null
+    },
+    {
+      "id": "ship-failed",
+      "kind": "ship",
+      "harness": "claude",
+      "mode": "",
+      "yolo": "",
+      "project": "",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/ship-failed.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/state/ship-failed.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "note",
+            "note": "cleanup complete",
+            "raw": "note: cleanup complete"
+          }
+        },
+        "worktree": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/projects/task",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/ship-failed/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "none",
+        "detail": "no current-state source available",
+        "raw": "state: unknown · source: none · no current-state source available",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-ship-failed",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown",
+        "observed_at": "2026-09-17T02:57:10Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "note: cleanup complete"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh fm-ship-failed",
+        "steer": "bin/fm-send.sh fm-ship-failed '<instruction>'",
+        "return_channel_note": null
+      },
+      "backlog": null
+    }
+  ],
+  "main_inventory": {
+    "valid": true,
+    "reason": null,
+    "orphan_in_flight": [],
+    "unstructured_current_count": 0
+  },
+  "contributions": {
+    "known": 0,
+    "checked": 0,
+    "counts": {
+      "captain": 0,
+      "fleet": 0,
+      "maintainer": 0,
+      "nobody": 0
+    },
+    "unmeasured": 0,
+    "complete": false,
+    "proven_clear": false,
+    "stale_verdicts": 0,
+    "missing_verdicts": 0,
+    "unreadable_records": 1,
+    "valid_until": 900,
+    "captain": [],
+    "captain_omitted": 0
+  },
+  "scout_reports": [],
+  "secondmate_current": {
+    "registry": {
+      "present": false,
+      "available": true,
+      "complete": true,
+      "reason": null,
+      "provenance": "registered-table",
+      "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.let6qf/terminal-cleanup/data/secondmates.md",
+      "freshness": {
+        "status": "fresh",
+        "observed_at": "2026-09-17T02:57:10Z"
+      },
+      "records": [],
+      "input_truncated": false,
+      "records_truncated": false,
+      "reasons": [],
+      "lines_in_window": 0,
+      "records_in_window": 0
+    },
+    "records": [
+      {
+        "id": "secondmate-done",
+        "home": null,
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": null,
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-17T02:57:10Z",
+          "age_seconds": 0
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "note: cleanup complete",
+          "note": "cleanup complete",
+          "age_seconds": 0,
+          "open_activities": [],
+          "open_decisions": [],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 4,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": true,
+          "observed_at": "2026-09-17T02:57:10Z",
+          "freshness": "fresh",
+          "reason": null,
+          "lines": 2,
+          "bytes": 12,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      },
+      {
+        "id": "secondmate-failed",
+        "home": null,
+        "host": null,
+        "remote": false,
+        "registered": false,
+        "spawn_gen": null,
+        "current": {
+          "state": "unknown",
+          "reason": "secondmate metadata is not registered"
+        },
+        "invalidity": null,
+        "reconcile_inventory": null,
+        "provenance": {
+          "selected": "parent-event-fallback",
+          "structured_home": null,
+          "parent_event_role": "fallback-only-not-current"
+        },
+        "freshness": {
+          "status": "historical-event",
+          "observed_at": "2026-09-17T02:57:10Z",
+          "age_seconds": 0
+        },
+        "active_children": [],
+        "decisions_open": [],
+        "holds": [],
+        "queued": [],
+        "landed": [],
+        "endpoints": [],
+        "counts": {
+          "active_children": 0,
+          "decisions_open": 0,
+          "holds": 0,
+          "queued": 0,
+          "landed": 0,
+          "endpoints": 0
+        },
+        "omitted": [],
+        "parent_event": {
+          "raw": "note: cleanup complete",
+          "note": "cleanup complete",
+          "age_seconds": 0,
+          "open_activities": [],
+          "open_decisions": [],
+          "activity_scan": {
+            "records": [],
+            "available": true,
+            "input_truncated": false,
+            "retained_truncated": false,
+            "reasons": [],
+            "lines_in_window": 4,
+            "records_in_window": 0
+          }
+        },
+        "terminal_evidence": {
+          "provenance": "parent-direct-report-terminal",
+          "trust": "untrusted-supplement",
+          "captured": true,
+          "observed_at": "2026-09-17T02:57:10Z",
+          "freshness": "fresh",
+          "reason": null,
+          "lines": 2,
+          "bytes": 12,
+          "event_note_seen": false,
+          "contradiction": false
+        },
+        "contradiction": false
+      }
+    ],
+    "total_registered": 0,
+    "total": 2,
+    "shown": 2,
+    "truncated": 0
+  },
+  "secondmate_landed": {
+    "records": [],
+    "truncated": [],
+    "unreadable": [
+      "<secondmate-done: unavailable>",
+      "<secondmate-failed: unavailable>"
+    ],
+    "partial": []
+  },
+  "secondmate_guidance": {
+    "note": "For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority."
+  }
+}
+exit=

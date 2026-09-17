@@ -1,0 +1,2 @@
+$ git diff --exit-code 795e5e4aacdf..HEAD -- .github/workflows/ci.yml
+exit=0
