@@ -347,9 +347,9 @@
 # launch_template() below owns the reason it cannot come from the captain's own
 # settings.
 # Cursor and the other non-Claude runtimes have no equivalent per-launch
-# settings overlay: Cursor injects a Co-Authored-By / Made-with trailer at
-# the tooling layer after the worker types a clean message, and a
-# per-machine ~/.cursor/cli-config.json attribution-off is not durable (it
+# settings overlay: Cursor injects a Co-Authored-By trailer at the tooling
+# layer after the worker types a clean message, and a per-machine
+# ~/.cursor/cli-config.json attribution-off is not durable (it
 # does not travel with this repo, and Cursor's CLI has ignored that setting on
 # some paths). Every spawn therefore installs state/<id>.git-hooks as a
 # GIT_CONFIG core.hooksPath for the pane, so git commit-msg strips known AI

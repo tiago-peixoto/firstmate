@@ -15,8 +15,8 @@
 #
 # WHY THIS EXISTS. Claude launches already carry attribution-off in their
 # per-launch --settings JSON. Cursor and other non-Claude runtimes inject a
-# Co-Authored-By (or "Made with Cursor") trailer at the tooling layer AFTER the
-# worker types a clean message, so the typed message is not the commit object.
+# Co-Authored-By trailer at the tooling layer AFTER the worker types a clean
+# message, so the typed message is not the commit object.
 # A prior per-machine ~/.cursor/cli-config.json attribution-off is not durable:
 # it does not travel with Firstmate, and Cursor's CLI has ignored that setting
 # on some paths. The spawn-owned commit-msg hook is the layer that sees the
@@ -25,7 +25,7 @@
 # rewritten. git commit --no-verify still skips hooks; that is git's own
 # escape hatch, not a Firstmate setting.
 set -u
-unset CDPATH
+unset CDPATH GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 
 SELF="$(cd "$(dirname "$0")" && pwd -P)/$(basename "$0")"
 
@@ -54,13 +54,9 @@ fm_is_ai_attribution_line() {
   raw=$(trim_space "$raw")
   [ -n "$raw" ] || return 1
   lowered=$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')
+  lowered=${lowered#"${lowered%%[[:alnum:]]*}"}
   case "$lowered" in
-  'made with cursor' | 'made with cursor.' | 'made-with: cursor' | 'made-with:cursor')
-    return 0
-    ;;
-  esac
-  case "$lowered" in
-  *'generated with'*claude* | *'generated-by:'*claude* | *'generated-by:'*cursor*)
+  'generated with '*claude* | 'generated-by:'*claude* | 'generated-by:'*cursor*)
     return 0
     ;;
   esac
@@ -121,11 +117,9 @@ quote_for_hook() {
 resolve_orig_hooks() {
   local wt=$1 orig
   orig=$(git -C "$wt" config --path --get core.hooksPath 2>/dev/null || true)
-  if [ -n "$orig" ]; then
-    printf '%s\n' "$orig"
-    return 0
+  if [ -z "$orig" ]; then
+    orig=$(git -C "$wt" rev-parse --git-path hooks) || return 1
   fi
-  orig=$(git -C "$wt" rev-parse --git-path hooks) || return 1
   case "$orig" in
   /*) printf '%s\n' "$orig" ;;
   *) printf '%s\n' "$wt/$orig" ;;
