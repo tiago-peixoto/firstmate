@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # Host-local remote-secondmate Claude launch uses the default login.
 #
-# A remote second mate is launched and relaunched on the host by
+# A remote second mate is launched on the host by
 # bin/fm-remote-secondmate-control.sh, with FM_HOME pointed at that host's
 # Firstmate code root. That checkout has no config/claude-config-dir. The pane
-# must still start bare `claude` with CLAUDE_CONFIG_DIR unset, including when
-# the launching environment exports one.
+# command must still start bare `claude` with CLAUDE_CONFIG_DIR unset, including
+# when the launching environment exports one.
+#
+# This asserts the launch command/environment written into the pane, not Herdr
+# agent-process or composer detection. A live-agent relaunch /exit depends on
+# that unrelated Herdr behaviour, so relaunch is not driven here: it uses the
+# same spawn prefix already covered by the local Claude launch tests.
 set -u
 
 # shellcheck source=tests/fixtures.sh
@@ -29,7 +34,7 @@ assert_claude_launch_unsets_config_dir() { # <herdr-log> <what>
   fi
 }
 
-test_host_local_claude_launch_and_relaunch_use_default_login() {
+test_host_local_claude_launch_uses_default_login() {
   local w coderoot home fakebin user_home leftover env_root out status
   w="$TMP_ROOT/world"
   coderoot="$w/coderoot"
@@ -78,34 +83,9 @@ test_host_local_claude_launch_and_relaunch_use_default_login() {
     && fail "a leftover config/claude-config-dir reached the remote pane"$'\n'"$(cat "$w/herdr.log")"
   [ "$(cat "$home/config/claude-config-dir")" = "$leftover" ] \
     || fail "a host-local launch rewrote the leftover config/claude-config-dir"
-
-  : > "$w/herdr.log"
-  out=$(PATH="$fakebin:$BASE_PATH" \
-    HOME="$user_home" \
-    CLAUDE_CONFIG_DIR="$env_root" \
-    FM_HOME="$home" FM_ROOT_OVERRIDE="$coderoot" FM_SPAWN_NO_GUARD=1 \
-    FM_CONTROL_LAUNCH_WAIT=8 \
-    "$ROOT/bin/fm-remote-secondmate-control.sh" relaunch sm claude default default 2>&1)
-  status=$?
-  assert_not_contains "$out" "claude-config-dir" \
-    "a host-local Claude relaunch refused on the leftover pin file: $out"
-  assert_not_contains "$out" "default login is not usable" \
-    "a host-local Claude relaunch refused the default login: $out"
-  case "$out" in
-    *composer\ state*|*relaunch of sm*) ;;
-    *)
-      [ "$status" -eq 0 ] || fail "a host-local Claude relaunch never reached the control plane: $out"
-      ;;
-  esac
-  if [ "$status" -eq 0 ]; then
-    assert_claude_launch_unsets_config_dir "$w/herdr.log" \
-      "a host-local Claude relaunch"
-    grep -q "$env_root" "$w/herdr.log" \
-      && fail "an inherited CLAUDE_CONFIG_DIR reached the relaunch pane"$'\n'"$(cat "$w/herdr.log")"
-  fi
-  pass "host-local Claude launch and relaunch use the default login with CLAUDE_CONFIG_DIR unset"
+  pass "host-local Claude launch uses the default login with CLAUDE_CONFIG_DIR unset"
 }
 
-test_host_local_claude_launch_and_relaunch_use_default_login
+test_host_local_claude_launch_uses_default_login
 
 echo "# all fm-remote-secondmate-claude-default tests passed"
