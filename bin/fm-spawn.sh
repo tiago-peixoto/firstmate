@@ -1241,6 +1241,27 @@ spawn_abort_cleanup() {
   fi
   return "$status"
 }
+
+# Close the task endpoint, then return the unique lease armed for abort,
+# then disarm so EXIT cannot return it twice. Warn and return non-zero
+# when the return itself fails. Defined ahead of the trap below, which calls it:
+# a refusal before the definition would otherwise print "command not found" on
+# the way out. The functions it calls are resolved when it runs, not here.
+spawn_return_abort_lease() {
+  local path cd_dir
+  [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] || return 0
+  path=$SPAWN_LEASE_RETURN_ON_ABORT
+  cd_dir=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
+  SPAWN_LEASE_RETURN_ON_ABORT=
+  spawn_close_abort_endpoint
+  if spawn_release_treehouse_lease "$path" "$cd_dir"; then
+    echo "returned copy $path" >&2
+  else
+    echo "warning: could not release treehouse lease for $path after aborted spawn of $ID" >&2
+    return 1
+  fi
+}
+
 trap spawn_abort_cleanup EXIT
 
 # One bounded lock per live Herdr session/socket, shared across all homes.
@@ -3329,23 +3350,6 @@ spawn_close_abort_endpoint() {
   fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null || true
 }
 
-# Close the task endpoint, then return the unique lease armed for abort,
-# then disarm so EXIT cannot return it twice. Warn and return non-zero
-# when the return itself fails.
-spawn_return_abort_lease() {
-  local path cd_dir
-  [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] || return 0
-  path=$SPAWN_LEASE_RETURN_ON_ABORT
-  cd_dir=${SPAWN_LEASE_RETURN_CD:-${PROJ_ABS:-}}
-  SPAWN_LEASE_RETURN_ON_ABORT=
-  spawn_close_abort_endpoint
-  if spawn_release_treehouse_lease "$path" "$cd_dir"; then
-    echo "returned copy $path" >&2
-  else
-    echo "warning: could not release treehouse lease for $path after aborted spawn of $ID" >&2
-    return 1
-  fi
-}
 
 # Durably lease a pool copy for this task's lifetime. Occupied copies that a
 # live record already owns are left leased (so a later get cannot take them)
