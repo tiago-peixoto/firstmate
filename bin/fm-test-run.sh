@@ -369,6 +369,7 @@ family_for_basename() {
     fm-herdr-session-cleanup.test.sh|fm-send-resolve-key.test.sh|fm-send-strict.test.sh|\
     fm-send-inbox.test.sh|fm-spawn-batch.test.sh|\
     fm-spawn-dispatch-profile.test.sh|fm-claude-trust.test.sh|\
+    fm-git-strip-ai-trailers.test.sh|\
     fm-trace-context-spawn.test.sh|fm-spawn-worktree-settle.test.sh|\
     fm-spawn-worktree-lease.test.sh|fm-teardown-endpoint-safety.test.sh)
       printf '%s\n' backend-dispatch
@@ -709,6 +710,7 @@ tests/fm-extension-binding.test.sh 7398
 tests/fm-fleet-snapshot-view.test.sh 8547
 tests/fm-fleet-sync.test.sh 37749
 tests/fm-gate-refuse.test.sh 4977
+tests/fm-git-strip-ai-trailers.test.sh 4000
 tests/fm-gitignore-config.test.sh 62
 tests/fm-gotmp.test.sh 1310
 tests/fm-grok-continuity-live-e2e.test.sh 20

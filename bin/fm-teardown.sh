@@ -3581,7 +3581,8 @@ rm -f "$STATE/$ID.turn-ended" "$STATE/$ID.progress" \
 # The steering inbox (bin/fm-task-inbox-lib.sh) is runtime state for the
 # retired endpoint; teardown only runs after landing is confirmed, so any
 # leftover unhandled steer here is moot rather than unlanded work.
-rm -rf "$STATE/$ID.inbox"
+# state/<id>.git-hooks is the spawn-owned commit-msg strip directory.
+rm -rf "$STATE/$ID.inbox" "$STATE/$ID.git-hooks"
 # The record is gone, so the backlog must not still show this task in flight
 # when teardown reports success. Still under this task's meta lock, so a steer
 # racing the same id stays serialized exactly as it was before. A captain-held

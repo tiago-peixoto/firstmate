@@ -346,6 +346,17 @@
 # Claude-Session link, or generated-with line into a commit or PR body;
 # launch_template() below owns the reason it cannot come from the captain's own
 # settings.
+# Cursor and the other non-Claude runtimes have no equivalent per-launch
+# settings overlay: Cursor injects a Co-Authored-By / Made-with trailer at
+# the tooling layer after the worker types a clean message, and a
+# per-machine ~/.cursor/cli-config.json attribution-off is not durable (it
+# does not travel with this repo, and Cursor's CLI has ignored that setting on
+# some paths). Every spawn therefore installs state/<id>.git-hooks as a
+# GIT_CONFIG core.hooksPath for the pane, so git commit-msg strips known AI
+# trailers at the commit object for every launched runtime, Claude included as
+# defense in depth. bin/fm-git-strip-ai-trailers.sh owns the identities, the
+# hook install, and chaining the worktree's previous hooksPath so a project
+# husky hook still runs. Author identity is not rewritten.
 # Publishing the record and moving this home's backlog item to In flight are one
 # step, not two: bin/fm-backlog-transition-lib.sh owns that invariant, and this
 # script performs the transition under the task's own meta lock before it reports
@@ -4151,6 +4162,28 @@ EOF
   esac
 fi
 
+# Per-task git hooksPath that strips AI commit trailers at the commit object.
+# Installed for every kind that sits in a git worktree, including secondmate:
+# Cursor and other non-Claude runtimes inject the trailer after the typed
+# message, so the typed message is not the object. The pane receives this
+# directory via GIT_CONFIG_* below, which overrides a project's husky
+# core.hooksPath without rewriting it; the installer chains the previous
+# hooks so they still run. A secondmate home that is not a git checkout (the
+# seeded-test shape) skips this rather than refusing the launch; a real
+# secondmate home is a firstmate clone and gets the hook.
+GIT_HOOKS_DIR="$STATE_REAL/$ID.git-hooks"
+GIT_HOOKS_INSTALLED=0
+if git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if ! "$FM_ROOT/bin/fm-git-strip-ai-trailers.sh" install "$GIT_HOOKS_DIR" "$WT"; then
+    echo "error: could not install the AI-trailer strip hooks for $ID" >&2
+    exit 1
+  fi
+  GIT_HOOKS_INSTALLED=1
+elif [ "$KIND" != secondmate ]; then
+  echo "error: could not install the AI-trailer strip hooks for $ID: $WT is not a git worktree" >&2
+  exit 1
+fi
+
 # Delivery posture recorded in meta so fm-teardown's safety check and the
 # validate/merge stages can branch on it. A ship task carries the explicit
 # per-task decision validated above; a secondmate's posture is fixed; a scout
@@ -4432,6 +4465,13 @@ if [ "$KIND" = secondmate ]; then
   # Reuse the single frozen decision from the carrier resolution above so the
   # injected carrier and this on/off snapshot are guaranteed to agree.
   LAUNCH="FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME=$sq_primary_home FM_HOME=$sq_home FM_TRACE_CONTEXT=$SPAWN_TRACE_EFFECTIVE FM_SUPERVISION_MODEL=$supervision_model $LAUNCH"
+fi
+# Pane-scoped override: git in this worker reads our commit-msg strip without
+# rewriting the project's core.hooksPath. GIT_CONFIG_* takes precedence over
+# config files and is inherited by child git processes. Prefix, never export
+# into this spawn process, so firstmate's own git is unchanged.
+if [ "$GIT_HOOKS_INSTALLED" = 1 ]; then
+  LAUNCH="GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=$(shell_quote "$GIT_HOOKS_DIR") $LAUNCH"
 fi
 if [ -z "$SPAWN_TRACEPARENT" ] && [ "$RELAUNCH" -eq 1 ]; then
   LAUNCH="unset TRACEPARENT; $LAUNCH"
