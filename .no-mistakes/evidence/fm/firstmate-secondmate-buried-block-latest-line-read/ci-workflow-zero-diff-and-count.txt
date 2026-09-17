@@ -1,0 +1,14 @@
+git diff --stat 795e5e4 64e0762 -- .github/workflows/ci.yml:
+(empty = zero diff)
+
+          snapshot_output=$(/bin/bash tests/fm-fleet-snapshot-view.test.sh)
+          printf '%s\n' "$snapshot_output"
+          snapshot_count=$(printf '%s\n' "$snapshot_output" | grep -c '^ok - ')
+          [ "$snapshot_count" -eq 18 ] || {
+            echo "::error::expected 18 snapshot/fleet-view tests, got $snapshot_count"
+            exit 1
+          }
+
+/bin/bash tests/fm-fleet-snapshot-view.test.sh ok count:
+18
+0

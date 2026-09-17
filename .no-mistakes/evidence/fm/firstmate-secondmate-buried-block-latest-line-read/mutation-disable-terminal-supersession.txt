@@ -1,0 +1,177 @@
+ok - empty fleet snapshot and view use explicit absence markers
+ok - fixture snapshot covers task rows, backlog rows, pointers, and stable ordering
+ok - home-summary excludes kind=secondmate from unowned_current and terminal_in_flight
+ok - undated captain holds age after a configurable threshold, decided only from structured fields
+ok - captain-hold buckets are total, mutually exclusive, and never decided by prose
+ok - main_inventory discloses orphan/unstructured and clears when inventory is consistent
+ok - backlog normalization preserves strict roles and resolves every blocker compatibly
+ok - snapshot event hints follow reconciled current state
+ok - durable fold keeps an open decision past a later unrelated event
+ok - a live secondmate endpoint preserves unrelated open decisions
+ok - durable captain-held transfer closes the duplicate live status decision
+ok - durable fold clears a decision only on a keyed resolution
+not ok - a completed scout report must be a pointer, not a pending decision: {
+  "schema": "fm-fleet-snapshot.v1",
+  "generated": "2026-09-17T03:34:03Z",
+  "fm_home": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout",
+  "roots": {
+    "fm_root": "/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.COBQWxbOEx",
+    "state": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/state",
+    "data": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/data",
+    "config": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/config",
+    "projects": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/projects"
+  },
+  "backlog": {
+    "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/data/backlog.md",
+    "present": false,
+    "records": []
+  },
+  "tasks": [
+    {
+      "id": "lavish-103",
+      "kind": "scout",
+      "harness": "claude",
+      "mode": "scout",
+      "yolo": "",
+      "project": "firstmate",
+      "spawn_gen": null,
+      "backend": "tmux",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/state/lavish-103.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/state/lavish-103.status",
+          "present": true,
+          "kind": "event_history",
+          "last_event": {
+            "state": "done",
+            "note": "report ready at data/lavish-103/report.md",
+            "raw": "done: report ready at data/lavish-103/report.md"
+          }
+        },
+        "worktree": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/projects/scout-wt",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/data/lavish-103/report.md",
+          "present": true
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "parked",
+        "source": "status-log",
+        "detail": "adopt approach A or B for Lavish issue 103",
+        "raw": "state: parked · source: status-log · adopt approach A or B for Lavish issue 103",
+        "observed_at": "2026-09-17T03:34:03Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "firstmate:fm-lavish-103",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown",
+        "observed_at": "2026-09-17T03:34:03Z",
+        "freshness": "fresh"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": true,
+        "blocked_event": false,
+        "open_decisions": [
+          {
+            "key": "default",
+            "verb": "needs-decision",
+            "summary": "adopt approach A or B for Lavish issue 103"
+          }
+        ],
+        "scout_report_present": true,
+        "last_event_text": "done: report ready at data/lavish-103/report.md"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh fm-lavish-103",
+        "steer": "bin/fm-send.sh fm-lavish-103 '<instruction>'",
+        "return_channel_note": null
+      },
+      "backlog": null
+    }
+  ],
+  "main_inventory": {
+    "valid": true,
+    "reason": null,
+    "orphan_in_flight": [],
+    "unstructured_current_count": 0
+  },
+  "contributions": {
+    "known": 0,
+    "checked": 0,
+    "counts": {
+      "captain": 0,
+      "fleet": 0,
+      "maintainer": 0,
+      "nobody": 0
+    },
+    "unmeasured": 0,
+    "complete": false,
+    "proven_clear": false,
+    "stale_verdicts": 0,
+    "missing_verdicts": 0,
+    "unreadable_records": 1,
+    "valid_until": 900,
+    "captain": [],
+    "captain_omitted": 0
+  },
+  "scout_reports": [
+    {
+      "id": "lavish-103",
+      "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/data/lavish-103/report.md",
+      "kind": "scout"
+    }
+  ],
+  "secondmate_current": {
+    "registry": {
+      "present": false,
+      "available": true,
+      "complete": true,
+      "reason": null,
+      "provenance": "registered-table",
+      "path": "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-fleet-snapshot.GknGdF/completed-scout/data/secondmates.md",
+      "freshness": {
+        "status": "fresh",
+        "observed_at": "2026-09-17T03:34:03Z"
+      },
+      "records": [],
+      "input_truncated": false,
+      "records_truncated": false,
+      "reasons": [],
+      "lines_in_window": 0,
+      "records_in_window": 0
+    },
+    "records": [],
+    "total_registered": 0,
+    "total": 0,
+    "shown": 0,
+    "truncated": 0
+  },
+  "secondmate_landed": {
+    "records": [],
+    "truncated": [],
+    "unreadable": [],
+    "partial": []
+  },
+  "secondmate_guidance": {
+    "note": "For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority."
+  }
+}
