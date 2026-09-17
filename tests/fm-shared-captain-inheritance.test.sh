@@ -318,6 +318,20 @@ test_unsafe_artifacts_and_failure_restore_readonly_mode() {
   assert_grep "unsafe destination" "$err" "unsafe destination hardlink error should be explicit"
   rm -f "$second/data/captain-shared.md" "$other"
 
+  # Root reads a mode-000 file regardless, which would make this case vacuous.
+  if [ "$(id -u)" != 0 ]; then
+    write_shared "$second/data/captain-shared.md" "unreadable local bytes"
+    chmod 000 "$second/data/captain-shared.md"
+    err="$TMP_ROOT/unreadable-dest.err"
+    propagate_secondmate_inheritance "$primary" "$second" >/dev/null 2>"$err"; rc=$?
+    chmod 600 "$second/data/captain-shared.md"
+    [ "$rc" -ne 0 ] || fail "an unhashable destination should not converge silently"
+    assert_grep "failed to hash destination" "$err" "unhashable destination error should be explicit"
+    assert_grep "unreadable local bytes" "$second/data/captain-shared.md" \
+      "unhashable destination was replaced without keeping its bytes"
+    rm -f "$second/data/captain-shared.md"
+  fi
+
   write_shared "$second/data/captain-shared.md" "permission drift"
   chmod "$FM_SHARED_CAPTAIN_MODE" "$second/data/captain-shared.md"
   before_mode=$(file_mode "$second/data/captain-shared.md")
