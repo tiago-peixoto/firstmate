@@ -118,10 +118,10 @@ Explicit per-spawn `--backend` and `FM_BACKEND` remain stronger than every home'
 `config/secondmate-harness` is not inherited because it is only the primary's knob for launching secondmate agents.
 `data/captain-shared.md` is main-authoritative in the primary home and read-only in secondmate homes.
 Its primary file header must state that the file is main-authoritative, read-only in secondmate homes, must not be edited there, and that new captain-preference discoveries are routed to the main firstmate through marked status or a document pointer.
-Every propagation point converges the secondmate copy to the primary bytes; when the primary file is absent, any existing secondmate copy is quarantined and removed so absence converges too.
+Every propagation point converges the secondmate copy to the primary bytes.
+[`fm-config-inherit-lib.sh`](../../../bin/fm-config-inherit-lib.sh) owns last-inherited-generation comparison, quiet replacement or removal of a destination that still matches that recorded generation, and quarantine of genuine destination divergence or interrupted publication.
 The helper rejects unsafe directories, symlinked or nonordinary source or destination artifacts, and hardlinked destination files.
 Between propagation runs, the secondmate copy is filesystem read-only; the helper may make its owned destination writable only around a guarded update and restores read-only mode on success, unchanged bytes, and recoverable failure paths.
-Before replacing divergent secondmate bytes, the helper hash-compares source and destination, quarantines the secondmate-local version to a collision-safe private dated sibling file, and emits a `SECONDMATE_SYNC:` diagnostic naming the home and quarantine artifact.
 Never copy any secondmate `data/captain-shared.md` back into the primary.
 Keep each home's `data/captain.md` domain-local.
 After first propagation to an existing home, trim that home's local `data/captain.md` by hand to domain-specific content plus pointers to `data/captain-shared.md`; do not automate or silently delete private content.

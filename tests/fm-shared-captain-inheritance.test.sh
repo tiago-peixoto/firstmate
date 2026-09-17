@@ -67,7 +67,7 @@ assert_secondmate_write_fails() {
 }
 
 test_first_copy_readonly_and_local_files_preserved() {
-  local rec primary second report out
+  local rec primary second report out qcount
   rec=$(new_home_pair first-copy)
   primary=${rec%%|*}
   second=${rec#*|}
@@ -90,7 +90,84 @@ test_first_copy_readonly_and_local_files_preserved() {
   [ -z "$out" ] || fail "unchanged convergence should stay quiet: $out"
   assert_grep $'data/captain-shared.md\tunchanged\t' "$report" "unchanged bytes should report unchanged"
   assert_shared_readonly "$second/data/captain-shared.md"
-  pass "shared captain first copy converges, is read-only, and preserves local captain/learnings files"
+
+  write_shared "$primary/data/captain-shared.md" "shared v2"
+  : > "$report"
+  out=$(FM_CONFIG_INHERIT_REPORT="$report" propagate_secondmate_inheritance "$primary" "$second")
+  [ -z "$out" ] || fail "source-only edit should not emit a quarantine diagnostic: $out"
+  cmp -s "$primary/data/captain-shared.md" "$second/data/captain-shared.md" \
+    || fail "source-only edit did not converge secondmate shared preferences"
+  qcount=$(find "$second/data" -name '.captain-shared.md.quarantine.*' | wc -l | tr -d ' ')
+  [ "$qcount" -eq 0 ] || fail "source-only edit quarantined an untouched inherited destination"
+  assert_grep $'data/captain-shared.md\tpushed\t' "$report" "source-only edit should report pushed"
+  assert_not_contains "$(cat "$report")" "quarantined local drift" \
+    "source-only edit should not report local drift"
+  assert_shared_readonly "$second/data/captain-shared.md"
+  pass "shared captain first copy, unchanged copy, and source-only edit stay quiet"
+}
+
+test_true_divergence_after_inherit_still_quarantines() {
+  local rec primary second report out diag qpath qcount
+  rec=$(new_home_pair true-divergence)
+  primary=${rec%%|*}
+  second=${rec#*|}
+  write_shared "$primary/data/captain-shared.md" "shared v1"
+  report="$TMP_ROOT/true-divergence.report"
+  out=$(FM_CONFIG_INHERIT_REPORT="$report" propagate_secondmate_inheritance "$primary" "$second")
+  [ -z "$out" ] || fail "setup inherit should stay quiet: $out"
+
+  chmod u+w "$second/data/captain-shared.md"
+  write_shared "$second/data/captain-shared.md" "local edit after inherit"
+  chmod "$FM_SHARED_CAPTAIN_MODE" "$second/data/captain-shared.md"
+  write_shared "$primary/data/captain-shared.md" "shared v2"
+  : > "$report"
+  out=$(FM_CONFIG_INHERIT_REPORT="$report" propagate_secondmate_inheritance "$primary" "$second")
+  diag=$(printf '%s\n' "$out" | grep '^SECONDMATE_SYNC: secondmate home ' || true)
+  [ -n "$diag" ] || fail "edited destination should emit a SECONDMATE_SYNC diagnostic"
+  qpath=${diag##* at }
+  assert_grep "local edit after inherit" "$qpath" "true-divergence quarantine lost the edited bytes"
+  cmp -s "$primary/data/captain-shared.md" "$second/data/captain-shared.md" \
+    || fail "true-divergence convergence did not install primary bytes"
+  qcount=$(find "$second/data" -name '.captain-shared.md.quarantine.*' | wc -l | tr -d ' ')
+  [ "$qcount" -eq 1 ] || fail "true-divergence should leave exactly one quarantine artifact"
+  assert_grep $'data/captain-shared.md\tpushed\tquarantined local drift at '"$qpath" "$report" \
+    "true-divergence push should name the quarantine artifact"
+  pass "shared captain true divergence after inherit is still quarantined"
+}
+
+test_interrupted_publication_matching_source_does_not_quarantine() {
+  local rec primary second report out qcount
+  rec=$(new_home_pair interrupted-pub)
+  primary=${rec%%|*}
+  second=${rec#*|}
+  write_shared "$primary/data/captain-shared.md" "shared v1"
+  report="$TMP_ROOT/interrupted-pub.report"
+  out=$(FM_CONFIG_INHERIT_REPORT="$report" propagate_secondmate_inheritance "$primary" "$second")
+  [ -z "$out" ] || fail "setup inherit should stay quiet: $out"
+
+  write_shared "$primary/data/captain-shared.md" "shared v2"
+  chmod u+w "$second/data/captain-shared.md"
+  cp "$primary/data/captain-shared.md" "$second/data/captain-shared.md"
+  chmod "$FM_SHARED_CAPTAIN_MODE" "$second/data/captain-shared.md"
+
+  : > "$report"
+  out=$(FM_CONFIG_INHERIT_REPORT="$report" propagate_secondmate_inheritance "$primary" "$second")
+  [ -z "$out" ] || fail "destination already matching the new source should not quarantine: $out"
+  qcount=$(find "$second/data" -name '.captain-shared.md.quarantine.*' | wc -l | tr -d ' ')
+  [ "$qcount" -eq 0 ] || fail "interrupted publication matching source created a quarantine artifact"
+  assert_grep $'data/captain-shared.md\tunchanged\t' "$report" \
+    "destination already matching source should report unchanged"
+  assert_shared_readonly "$second/data/captain-shared.md"
+
+  write_shared "$primary/data/captain-shared.md" "shared v3"
+  : > "$report"
+  out=$(FM_CONFIG_INHERIT_REPORT="$report" propagate_secondmate_inheritance "$primary" "$second")
+  [ -z "$out" ] || fail "healed receipt should accept a later source-only edit quietly: $out"
+  cmp -s "$primary/data/captain-shared.md" "$second/data/captain-shared.md" \
+    || fail "later source-only edit after healed receipt did not converge"
+  qcount=$(find "$second/data" -name '.captain-shared.md.quarantine.*' | wc -l | tr -d ' ')
+  [ "$qcount" -eq 0 ] || fail "later source-only edit after healed receipt quarantined"
+  pass "interrupted publication that already matches source heals without quarantine"
 }
 
 test_drift_quarantine_collision_and_repeated_convergence() {
@@ -370,6 +447,39 @@ EOF
   pass "fm-config-push convergence point updates changed shared captain source bytes from FM_DATA_OVERRIDE"
 }
 
+test_config_push_source_only_edit_after_inherit_stays_quiet() {
+  local rec w root home sm data_override out
+  rec=$(new_git_world config-push-source-only)
+  IFS='|' read -r w root home sm <<EOF
+$rec
+EOF
+  data_override="$w/primary-data-override"
+  mkdir -p "$data_override"
+  {
+    printf 'window=firstmate:fm-sm\n'
+    printf 'kind=secondmate\n'
+    printf 'home=%s\n' "$sm"
+  } > "$home/state/sm.meta"
+  write_shared "$data_override/captain-shared.md" "inherited shared bytes"
+  PATH="$BASE_PATH" FM_HOME="$home" FM_ROOT_OVERRIDE="$root" \
+    FM_DATA_OVERRIDE="$data_override" \
+    "$ROOT/bin/fm-config-push.sh" >/dev/null 2>&1
+  write_shared "$data_override/captain-shared.md" "updated shared bytes"
+
+  out=$(PATH="$BASE_PATH" FM_HOME="$home" FM_ROOT_OVERRIDE="$root" \
+    FM_DATA_OVERRIDE="$data_override" \
+    "$ROOT/bin/fm-config-push.sh" 2>/dev/null)
+
+  assert_contains "$out" "data/captain-shared.md: pushed" \
+    "config-push should report the shared file source-only update"
+  assert_not_contains "$out" "quarantined local drift" \
+    "config-push source-only edit after inherit should not report drift"
+  cmp -s "$data_override/captain-shared.md" "$sm/data/captain-shared.md" \
+    || fail "config-push source-only edit after inherit did not converge"
+  assert_shared_readonly "$sm/data/captain-shared.md"
+  pass "fm-config-push source-only edit after inherit stays quiet"
+}
+
 test_session_start_digest_labels_shared_file_and_read_once_rule() {
   local rec w root home _sm fakebin out contract
   rec=$(new_git_world session-start-label)
@@ -393,12 +503,15 @@ EOF
 }
 
 test_first_copy_readonly_and_local_files_preserved
+test_true_divergence_after_inherit_still_quarantines
+test_interrupted_publication_matching_source_does_not_quarantine
 test_drift_quarantine_collision_and_repeated_convergence
 test_missing_source_mirrors_absence_without_losing_local_bytes
 test_unsafe_artifacts_and_failure_restore_readonly_mode
 test_spawn_convergence_point_copies_shared_file
 test_bootstrap_convergence_point_copies_shared_file
 test_config_push_convergence_point_updates_changed_source
+test_config_push_source_only_edit_after_inherit_stays_quiet
 test_session_start_digest_labels_shared_file_and_read_once_rule
 
 echo "# all fm-shared-captain-inheritance tests passed"
