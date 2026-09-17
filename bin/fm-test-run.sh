@@ -703,6 +703,7 @@ tests/fm-cursor-primary-live-e2e.test.sh 21
 tests/fm-cursor-primary.test.sh 54947
 tests/fm-dispatch-resolve.test.sh 1800
 tests/fm-daemon.test.sh 26870
+tests/fm-declared-pause-standing.test.sh 763
 tests/fm-documentation-audiences.test.sh 732
 tests/fm-extension-binding.test.sh 7398
 tests/fm-fleet-snapshot-view.test.sh 8547
@@ -780,6 +781,7 @@ tests/fm-sessionstart-nudge.test.sh 66194
 tests/fm-shared-captain-inheritance.test.sh 6108
 tests/fm-spawn-dispatch-profile.test.sh 63996
 tests/fm-spawn-pool-base-freshen.test.sh 34920
+tests/fm-spawn-worktree-lease.test.sh 5918
 tests/fm-spawn-worktree-settle.test.sh 5687
 tests/fm-startup-memory-budget.test.sh 6964
 tests/fm-startup-network.test.sh 62274

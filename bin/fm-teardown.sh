@@ -3511,7 +3511,8 @@ if [ "$TEARDOWN_HERDR_ENDPOINT_CLOSED" != 1 ]; then
   if [ "$BACKEND" = herdr ]; then
     teardown_herdr_close_locked_endpoint
   elif [ "$BACKEND" != orca ]; then
-    fm_backend_kill "$BACKEND" "$T" "$(meta_value "$META" zellij_tab_id)" "fm-$ID" 2>/dev/null || true
+    fm_backend_kill "$BACKEND" "$T" "$(meta_value "$META" zellij_tab_id)" "fm-$ID" \
+      || endpoint_close_refusal "$ID" "$BACKEND" "$T" 1 || exit 1
   fi
 fi
 # A refused, skipped, or failed Herdr close must never erase a live task's
