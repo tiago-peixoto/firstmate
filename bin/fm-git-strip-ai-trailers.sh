@@ -8,22 +8,35 @@
 #       Rewrites that file in place, then exits 0 so the commit proceeds.
 #   fm-git-strip-ai-trailers.sh install <hooks-dir> <worktree>
 #       Recreate <hooks-dir> as a core.hooksPath for this launch: a commit-msg
-#       hook that runs this strip, then every other executable hook from the
-#       worktree's previous hooksPath (or $GIT_DIR/hooks) so husky and friends
-#       still run. Does not touch the project's git config; the caller exports
-#       GIT_CONFIG_COUNT / GIT_CONFIG_KEY_0 / GIT_CONFIG_VALUE_0 for the pane.
+#       hook that runs this strip, plus one wrapper per client-side hook name
+#       git documents. Each wrapper resolves the worktree's previous hooksPath
+#       entry (or $GIT_DIR/hooks) when git runs it, not when it is installed,
+#       so a husky directory that only appears once the worker runs npm install
+#       still runs for the rest of the task. Does not touch the project's git
+#       config; the caller exports GIT_CONFIG_COUNT / GIT_CONFIG_KEY_0 /
+#       GIT_CONFIG_VALUE_0 for the pane.
 #
 # WHY THIS EXISTS. Claude launches already carry attribution-off in their
 # per-launch --settings JSON. Cursor and other non-Claude runtimes inject a
 # Co-Authored-By trailer at the tooling layer AFTER the worker types a clean
 # message, so the typed message is not the commit object.
 # A prior per-machine ~/.cursor/cli-config.json attribution-off is not durable:
-# it does not travel with Firstmate, and Cursor's CLI has ignored that setting
-# on some paths. The spawn-owned commit-msg hook is the layer that sees the
-# assembled message, including --trailer, before the commit object is written.
+# it does not travel with Firstmate, it defaults back to on when unset, and it
+# only feeds the CLI's request to the server - the trailer text is emitted by
+# the model, so the setting suppresses rather than prevents it. Verified live
+# on cursor-agent 2026.09.15 with attribution on: the trailer is already in
+# .git/COMMIT_EDITMSG when the commit-msg hook runs, so the spawn-owned hook is
+# the layer that sees the assembled message before the commit object is written.
 # Human Co-Authored-By trailers are left untouched. Author identity is not
-# rewritten. git commit --no-verify still skips hooks; that is git's own
-# escape hatch, not a Firstmate setting.
+# rewritten.
+#
+# ACCEPTED RESIDUAL, ruled 2026-09-17. git commit --no-verify skips every hook,
+# so a worker that passes it still lands the trailer, as would a runtime that
+# writes the commit object without running git. Both incidents that motivated
+# this strip came through an ordinary hook-running commit, so the ruling is to
+# accept that gap rather than add a push-side rewrite or a push-side check. A
+# trailer found on a fleet commit therefore points at one of those two paths,
+# not at an unnoticed hole in the matcher.
 set -u
 unset CDPATH GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 
@@ -45,9 +58,13 @@ trim_space() {
   printf '%s' "$s"
 }
 
-# True when this line is AI attribution that must not reach a commit object.
-# Matches known product names and vendor emails only; a human co-author whose
-# name or address merely contains a substring such as "ai" is kept.
+# True when this line is AI attribution that must not reach a commit object:
+# an AI Co-Authored-By trailer, or a line that begins with the generated-with
+# form. Matches known product names and vendor emails only; a human co-author
+# whose name or address merely contains a substring such as "ai" is kept, as is
+# prose that merely mentions the phrase mid-line. A "Made with <product>" line
+# is deliberately not matched: no observed incident produced one, and a guessed
+# spelling list is not coverage.
 fm_is_ai_attribution_line() {
   local raw=$1 lowered rest name email
   raw=${raw%$'\r'}
@@ -132,8 +149,18 @@ write_executable() {
   chmod 700 "$dest"
 }
 
+# Client-side hook names git invokes by name from core.hooksPath, per
+# githooks(5) in git 2.50. The receive-side names, the config-invoked
+# fsmonitor-watchman, and the git-p4 names are left out because git never looks
+# them up in a fleet worker's own worktree. commit-msg is written separately
+# because it is the one that carries the strip.
+FM_GIT_CLIENT_HOOKS='applypatch-msg pre-applypatch post-applypatch pre-commit
+pre-merge-commit prepare-commit-msg post-commit pre-rebase post-checkout
+post-merge pre-push post-rewrite pre-auto-gc sendemail-validate
+reference-transaction post-index-change'
+
 install_hooks() {
-  local hooks_dir=$1 wt=$2 orig base hook
+  local hooks_dir=$1 wt=$2 orig name
   [ -n "$hooks_dir" ] && [ -n "$wt" ] || usage
   [ -d "$wt" ] || {
     echo "error: worktree is not a directory: $wt" >&2
@@ -162,21 +189,17 @@ if [ -x "\$orig" ]; then
 fi
 EOF
 
-  if [ -d "$orig" ]; then
-    for hook in "$orig"/*; do
-      [ -f "$hook" ] && [ -x "$hook" ] || continue
-      base=$(basename -- "$hook")
-      case "$base" in
-      *.sample | commit-msg) continue ;;
-      esac
-      write_executable "$hooks_dir/$base" <<EOF
+  for name in $FM_GIT_CLIENT_HOOKS; do
+    write_executable "$hooks_dir/$name" <<EOF
 #!/usr/bin/env bash
 set -u
-unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
-exec $(quote_for_hook "$hook") "\$@"
+orig=$(quote_for_hook "$orig/$name")
+if [ -x "\$orig" ]; then
+  unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+  exec "\$orig" "\$@"
+fi
 EOF
-    done
-  fi
+  done
 }
 
 CMD=${1:-}

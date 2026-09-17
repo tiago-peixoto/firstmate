@@ -148,6 +148,24 @@ test_inherited_hookspath_env_does_not_decide_the_chain() {
   pass "an inherited GIT_CONFIG hooksPath does not become the chained previous hooks"
 }
 
+test_project_hook_generated_after_install_still_runs() {
+  local repo hooks
+  repo="$TMP_ROOT/late-husky"
+  make_repo "$repo"
+  git -C "$repo" config core.hooksPath .husky/_
+  hooks="$TMP_ROOT/hooks-late"
+  "$STRIP" install "$hooks" "$repo" || fail "install should succeed before the project's hooks exist"
+  mkdir -p "$repo/.husky/_"
+  write_marker_hook "$repo/.husky/_/pre-commit" late-pre-commit
+  printf 'note\n' >>"$repo/README.md"
+  git -C "$repo" add README.md
+  with_hooks_env "$hooks" git -C "$repo" commit -q --trailer 'Co-authored-by: Cursor <cursoragent@cursor.com>' -m 'fix: late husky'
+  [ -f "$repo/late-pre-commit.ran" ] || fail "a project hook generated after the spawn did not run"
+  assert_not_contains "$(git -C "$repo" log -1 --format=%B)" "Co-authored-by: Cursor" \
+    "Cursor trailer survived a late-generated project hooks directory"
+  pass "a project hook that appears after install still runs for the rest of the task"
+}
+
 test_prose_mentioning_generated_with_survives() {
   local msg out
   msg="$TMP_ROOT/prose.txt"
@@ -177,6 +195,7 @@ test_human_coauthor_is_kept
 test_previous_commit_msg_hook_still_runs
 test_relative_project_hookspath_still_runs
 test_inherited_hookspath_env_does_not_decide_the_chain
+test_project_hook_generated_after_install_still_runs
 test_prose_mentioning_generated_with_survives
 test_strip_msgfile_alone_does_not_rewrite_author_fields
 
