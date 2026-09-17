@@ -166,6 +166,25 @@ test_project_hook_generated_after_install_still_runs() {
   pass "a project hook that appears after install still runs for the rest of the task"
 }
 
+test_pane_hookspath_does_not_reroute_another_repository() {
+  local repo other hooks
+  repo="$TMP_ROOT/task-wt"
+  other="$TMP_ROOT/other-repo"
+  make_repo "$repo"
+  make_repo "$other"
+  write_marker_hook "$other/.git/hooks/pre-commit" other-pre-commit
+  write_marker_hook "$repo/.git/hooks/pre-commit" task-pre-commit
+  hooks="$TMP_ROOT/hooks-pane"
+  "$STRIP" install "$hooks" "$repo" || fail "install should succeed"
+  printf 'note\n' >>"$other/README.md"
+  git -C "$other" add README.md
+  with_hooks_env "$hooks" git -C "$other" commit -q -m 'fix: other repo'
+  [ -f "$other/other-pre-commit.ran" ] || fail "the other repository's own pre-commit hook did not run"
+  [ -f "$other/task-pre-commit.ran" ] && fail "the task worktree's pre-commit ran inside another repository"
+  [ -f "$repo/task-pre-commit.ran" ] && fail "the task worktree's pre-commit ran while committing elsewhere"
+  pass "a pane GIT_CONFIG hooksPath still chains the repository git is actually in"
+}
+
 test_prose_mentioning_generated_with_survives() {
   local msg out
   msg="$TMP_ROOT/prose.txt"
@@ -196,6 +215,7 @@ test_previous_commit_msg_hook_still_runs
 test_relative_project_hookspath_still_runs
 test_inherited_hookspath_env_does_not_decide_the_chain
 test_project_hook_generated_after_install_still_runs
+test_pane_hookspath_does_not_reroute_another_repository
 test_prose_mentioning_generated_with_survives
 test_strip_msgfile_alone_does_not_rewrite_author_fields
 

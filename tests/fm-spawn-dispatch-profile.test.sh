@@ -99,6 +99,8 @@ make_seeded_secondmate_home() {
   printf '# Firstmate\n' > "$home/AGENTS.md"
   printf '%s\n' "$id" > "$home/.fm-secondmate-home"
   printf 'charter for %s\n' "$id" > "$home/data/charter.md"
+  printf '%s\n' 'projects/' 'state/' 'data/' 'config/' '.no-mistakes/' > "$home/.gitignore"
+  git -C "$home" init -q -b main
 }
 
 run_spawn() {
@@ -1036,7 +1038,7 @@ test_claude_secondmate_launch_carries_the_attribution_policy() {
 }
 
 test_active_dispatch_profile_does_not_block_secondmate_launch() {
-  local rec id sm out status
+  local rec id sm out status launch
   id=profile-secondmate-z16
   rec=$(make_spawn_case profile-secondmate codex "$id")
   read_case_record "$rec"
@@ -1049,6 +1051,8 @@ test_active_dispatch_profile_does_not_block_secondmate_launch() {
   expect_code 0 "$status" "secondmate spawn should be exempt from the dispatch-profile explicit harness requirement"
   assert_contains "$out" "spawned $id harness=codex kind=secondmate" "secondmate launch did not use secondmate harness resolution"
   assert_grep "kind=secondmate" "$HOME_DIR/state/$id.meta" "secondmate meta missing kind=secondmate"
+  launch=$(cat "$LAUNCH_LOG")
+  assert_ai_trailer_strip_wired "$launch" "$HOME_DIR" "$id" "codex secondmate"
   assert_meta_profile "$HOME_DIR/state/$id.meta" codex default default
   pass "active crew-dispatch profile does not block secondmate launches"
 }

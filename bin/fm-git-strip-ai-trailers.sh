@@ -9,12 +9,13 @@
 #   fm-git-strip-ai-trailers.sh install <hooks-dir> <worktree>
 #       Recreate <hooks-dir> as a core.hooksPath for this launch: a commit-msg
 #       hook that runs this strip, plus one wrapper per client-side hook name
-#       git documents. Each wrapper resolves the worktree's previous hooksPath
-#       entry (or $GIT_DIR/hooks) when git runs it, not when it is installed,
-#       so a husky directory that only appears once the worker runs npm install
-#       still runs for the rest of the task. Does not touch the project's git
-#       config; the caller exports GIT_CONFIG_COUNT / GIT_CONFIG_KEY_0 /
-#       GIT_CONFIG_VALUE_0 for the pane.
+#       git documents. Each wrapper unsets GIT_CONFIG_* and then resolves
+#       core.hooksPath (or $GIT_DIR/hooks) in the repository git is actually
+#       running in, so a husky directory that only appears after npm install
+#       still runs, and git -C some-other-repo does not inherit the task
+#       worktree's hooks. Does not touch the project's git config; the caller
+#       prefixes the pane with GIT_CONFIG_COUNT / GIT_CONFIG_KEY_0 /
+#       GIT_CONFIG_VALUE_0.
 #
 # WHY THIS EXISTS. Claude launches already carry attribution-off in their
 # per-launch --settings JSON. Cursor and other non-Claude runtimes inject a
@@ -131,22 +132,37 @@ quote_for_hook() {
   printf "'"
 }
 
-resolve_orig_hooks() {
-  local wt=$1 orig
-  orig=$(git -C "$wt" config --path --get core.hooksPath 2>/dev/null || true)
-  if [ -z "$orig" ]; then
-    orig=$(git -C "$wt" rev-parse --git-path hooks) || return 1
-  fi
-  case "$orig" in
-  /*) printf '%s\n' "$orig" ;;
-  *) printf '%s\n' "$wt/$orig" ;;
-  esac
-}
-
 write_executable() {
   local dest=$1
   cat >"$dest" || return 1
   chmod 700 "$dest"
+}
+
+# Shared body for every wrapper: after the pane-wide GIT_CONFIG override is
+# cleared, resolve this repository's previous hooksPath and exec that name if
+# it exists. Skip when that path is this launch's own hooks dir so the wrapper
+# cannot recurse into itself.
+runtime_chain_body() {
+  local ours=$1
+  cat <<EOF
+unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+ours=$(quote_for_hook "$ours")
+name=\$(basename "\$0")
+orig=\$(git config --path --get core.hooksPath 2>/dev/null || true)
+if [ -z "\$orig" ]; then
+  orig=\$(git rev-parse --git-path hooks) || exit 0
+fi
+case "\$orig" in
+/*) ;;
+*) orig="\$PWD/\$orig" ;;
+esac
+if [ "\$orig" = "\$ours" ]; then
+  exit 0
+fi
+if [ -x "\$orig/\$name" ]; then
+  exec "\$orig/\$name" "\$@"
+fi
+EOF
 }
 
 # Client-side hook names git invokes by name from core.hooksPath, per
@@ -160,7 +176,7 @@ post-merge pre-push post-rewrite pre-auto-gc sendemail-validate
 reference-transaction post-index-change'
 
 install_hooks() {
-  local hooks_dir=$1 wt=$2 orig name
+  local hooks_dir=$1 wt=$2 name
   [ -n "$hooks_dir" ] && [ -n "$wt" ] || usage
   [ -d "$wt" ] || {
     echo "error: worktree is not a directory: $wt" >&2
@@ -170,34 +186,23 @@ install_hooks() {
     echo "error: not a git worktree: $wt" >&2
     return 1
   }
-  orig=$(resolve_orig_hooks "$wt") || {
-    echo "error: cannot resolve git hooks path for $wt" >&2
-    return 1
-  }
   rm -rf "$hooks_dir"
   mkdir -p "$hooks_dir" || return 1
   chmod 700 "$hooks_dir" 2>/dev/null || true
+  hooks_dir=$(CDPATH='' cd -- "$hooks_dir" && pwd -P) || return 1
 
   write_executable "$hooks_dir/commit-msg" <<EOF
 #!/usr/bin/env bash
 set -u
 $(quote_for_hook "$SELF") "\$1" || exit \$?
-orig=$(quote_for_hook "$orig/commit-msg")
-if [ -x "\$orig" ]; then
-  unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
-  exec "\$orig" "\$@"
-fi
+$(runtime_chain_body "$hooks_dir")
 EOF
 
   for name in $FM_GIT_CLIENT_HOOKS; do
     write_executable "$hooks_dir/$name" <<EOF
 #!/usr/bin/env bash
 set -u
-orig=$(quote_for_hook "$orig/$name")
-if [ -x "\$orig" ]; then
-  unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
-  exec "\$orig" "\$@"
-fi
+$(runtime_chain_body "$hooks_dir")
 EOF
   done
 }

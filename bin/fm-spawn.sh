@@ -349,14 +349,15 @@
 # Cursor and the other non-Claude runtimes have no equivalent per-launch
 # settings overlay: Cursor injects a Co-Authored-By trailer at the tooling
 # layer after the worker types a clean message, and a per-machine
-# ~/.cursor/cli-config.json attribution-off is not durable (it
-# does not travel with this repo, and Cursor's CLI has ignored that setting on
-# some paths). Every spawn therefore installs state/<id>.git-hooks as a
-# GIT_CONFIG core.hooksPath for the pane, so git commit-msg strips known AI
-# trailers at the commit object for every launched runtime, Claude included as
-# defense in depth. bin/fm-git-strip-ai-trailers.sh owns the identities, the
-# hook install, and chaining the worktree's previous hooksPath so a project
-# husky hook still runs. Author identity is not rewritten.
+# ~/.cursor/cli-config.json attribution-off is not durable (it does not travel
+# with this repo, defaults back to on when unset, and only feeds the CLI's
+# request to the server, so it suppresses the trailer rather than preventing
+# it). Every spawn therefore installs state/<id>.git-hooks as a GIT_CONFIG
+# core.hooksPath for the pane, so git commit-msg strips known AI trailers at
+# the commit object for every launched runtime, Claude included as defense
+# in depth. bin/fm-git-strip-ai-trailers.sh owns the identities, the hook
+# install, and chaining the repository git is actually running in so a
+# project husky hook still runs. Author identity is not rewritten.
 # Publishing the record and moving this home's backlog item to In flight are one
 # step, not two: bin/fm-backlog-transition-lib.sh owns that invariant, and this
 # script performs the transition under the task's own meta lock before it reports
@@ -4163,14 +4164,13 @@ EOF
 fi
 
 # Per-task git hooksPath that strips AI commit trailers at the commit object.
-# Installed for every kind that sits in a git worktree, including secondmate:
-# Cursor and other non-Claude runtimes inject the trailer after the typed
-# message, so the typed message is not the object. The pane receives this
-# directory via GIT_CONFIG_* below, which overrides a project's husky
-# core.hooksPath without rewriting it; the installer chains the previous
-# hooks so they still run. A secondmate home that is not a git checkout (the
-# seeded-test shape) skips this rather than refusing the launch; a real
-# secondmate home is a firstmate clone and gets the hook.
+# Installed for every kind, including secondmate: Cursor and other non-Claude
+# runtimes inject the trailer after the typed message, so the typed message is
+# not the object. The pane receives this directory via GIT_CONFIG_* below,
+# which overrides a project's husky core.hooksPath without rewriting it; the
+# installer chains the previous hooks so they still run. Real secondmate
+# homes are firstmate clones; a launch whose worktree is not git fails closed
+# rather than shipping a runtime that cannot strip.
 GIT_HOOKS_DIR="$STATE_REAL/$ID.git-hooks"
 GIT_HOOKS_INSTALLED=0
 if git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -4179,7 +4179,7 @@ if git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     exit 1
   fi
   GIT_HOOKS_INSTALLED=1
-elif [ "$KIND" != secondmate ]; then
+else
   echo "error: could not install the AI-trailer strip hooks for $ID: $WT is not a git worktree" >&2
   exit 1
 fi

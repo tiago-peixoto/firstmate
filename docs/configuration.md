@@ -411,8 +411,8 @@ Regression coverage executes emitted launch commands with synthetic nonsecret va
 
 Every claude launch's inline `--settings` JSON also carries `"attribution":{"commit":"","pr":"","sessionUrl":false}`, so a spawned worker never writes a Co-Authored-By trailer, Claude-Session link, or generated-with line into a commit or PR body regardless of which settings scopes end up loaded.
 Every fleet launch, Claude included, also receives a pane-scoped `GIT_CONFIG` `core.hooksPath` pointing at `state/<id>.git-hooks`, so `git commit-msg` strips known AI trailers at the commit object even when a runtime injects them after the typed message.
-`bin/fm-git-strip-ai-trailers.sh` owns the identities, the install, and chaining the worktree's previous hooks so a project hook such as husky still runs.
-Per-machine Cursor `cli-config.json` attribution-off is not this contract: it does not travel with Firstmate and is not always honored by the CLI.
+`bin/fm-git-strip-ai-trailers.sh` owns the identities, the install, and chaining the repository git is actually running in so a project hook such as husky still runs.
+Per-machine Cursor `cli-config.json` attribution-off is not this contract: it does not travel with Firstmate, defaults back to on when unset, and only feeds the CLI's request to the server, so it suppresses the trailer rather than preventing it.
 
 ## Crew dispatch profiles (config/crew-dispatch.json)
 
