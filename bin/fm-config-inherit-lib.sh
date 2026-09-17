@@ -25,11 +25,12 @@
 # data/captain-shared.md, into each secondmate home's data/ as a read-only copy.
 # Shared-captain convergence records the SHA-256 of the last successfully
 # published destination generation beside that copy. A destination whose bytes
-# still match that receipt is replaced or removed quietly when the primary
-# source advances or disappears. A destination that differs from the receipt,
-# or that has no usable receipt, is quarantined before replacement so genuine
-# local edits and interrupted publication keep a recovery copy. The receipt is
-# written only after the destination file matches the intended generation.
+# still match that receipt is replaced quietly when the primary source advances.
+# A destination that differs from the receipt, or that has no usable receipt, is
+# quarantined before replacement so genuine local edits and interrupted
+# publication keep a recovery copy, and primary absence always quarantines
+# before removing. The receipt is written only after the destination file
+# matches the intended generation.
 #
 # Usage: . bin/fm-config-inherit-lib.sh   (no FM_* setup required)
 #
@@ -264,16 +265,15 @@ shared_captain_inherited_receipt_path() {
 }
 
 # Prints the recorded SHA-256 when the receipt is a safe ordinary file containing
-# exactly one 64-hex digest. Returns 1 when the receipt is absent or a safe
-# ordinary file with no usable digest. Returns 2 when a receipt path exists but
-# is not a safe ordinary file.
+# exactly one 64-hex digest. Returns 1 for every other receipt state, which the
+# callers treat as "no usable receipt" and answer by quarantining first.
 shared_captain_read_inherited_hash() {
   local parent=$1 path hash
   path=$(shared_captain_inherited_receipt_path "$parent")
   if [ ! -e "$path" ] && [ ! -L "$path" ]; then
     return 1
   fi
-  shared_captain_file_safe_existing "$path" || return 2
+  shared_captain_file_safe_existing "$path" || return 1
   hash=$(awk '
     NR == 1 { digest = $0; next }
     { extra = 1 }
@@ -314,16 +314,11 @@ shared_captain_remove_inherited_receipt() {
 }
 
 # Record hash after the destination already matches that generation. Skip a
-# rewrite when the receipt already names the same digest. Refuse an unsafe
-# existing receipt rather than overwriting it.
+# rewrite when the receipt already names the same digest.
 shared_captain_record_inherited_hash() {
-  local parent=$1 hash=$2 current rc
-  rc=0
-  current=$(shared_captain_read_inherited_hash "$parent" 2>/dev/null) || rc=$?
-  if [ "$rc" -eq 0 ]; then
+  local parent=$1 hash=$2 current
+  if current=$(shared_captain_read_inherited_hash "$parent" 2>/dev/null); then
     [ "$current" = "$hash" ] && return 0
-  elif [ "$rc" -eq 2 ]; then
-    return 1
   fi
   shared_captain_write_inherited_hash "$parent" "$hash"
 }
@@ -401,7 +396,7 @@ copy_shared_captain_file() {
 
 propagate_shared_captain_preferences() {
   local src_data=$1 dest_data=$2 src dest src_hash dest_hash dest_parent dest_home
-  local quarantine inherited_hash inherited_rc reason rc
+  local quarantine inherited_hash reason rc
   [ -n "$src_data" ] || return 1
   [ -n "$dest_data" ] || return 1
   src="$src_data/$FM_SHARED_CAPTAIN_FILE"
@@ -443,15 +438,7 @@ propagate_shared_captain_preferences() {
         restore_shared_captain_readonly "$dest" || true
         return 1
       }
-      inherited_rc=0
-      inherited_hash=$(shared_captain_read_inherited_hash "$dest_parent" 2>/dev/null) || inherited_rc=$?
-      if [ "$inherited_rc" -eq 2 ]; then
-        reason="unsafe inherited-generation receipt"
-        warn_inheritable_config_error "$FM_SHARED_CAPTAIN_REL" "$dest_parent" "$reason"
-        record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" error "$reason"
-        restore_shared_captain_readonly "$dest" || true
-        return 1
-      fi
+      inherited_hash=$(shared_captain_read_inherited_hash "$dest_parent" 2>/dev/null) || inherited_hash=
       if [ "$src_hash" = "$dest_hash" ]; then
         if restore_shared_captain_readonly "$dest" \
           && shared_captain_record_inherited_hash "$dest_parent" "$dest_hash"; then
@@ -470,9 +457,7 @@ propagate_shared_captain_preferences() {
         restore_shared_captain_readonly "$dest" || true
         return 1
       fi
-      if [ "$inherited_rc" -eq 0 ] && [ "$dest_hash" = "$inherited_hash" ]; then
-        :
-      else
+      if [ "$dest_hash" != "$inherited_hash" ]; then
         if ! quarantine=$(quarantine_shared_captain_dest "$dest" "$dest_parent"); then
           reason="failed to quarantine divergent destination"
           warn_inheritable_config_error "$FM_SHARED_CAPTAIN_REL" "$dest" "$reason"
@@ -514,22 +499,6 @@ propagate_shared_captain_preferences() {
       record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" error "$reason"
       return 1
     fi
-    dest_hash=$(fm_inherit_sha256 "$dest") || {
-      reason="failed to hash destination"
-      warn_inheritable_config_error "$FM_SHARED_CAPTAIN_REL" "$dest" "$reason"
-      record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" error "$reason"
-      restore_shared_captain_readonly "$dest" || true
-      return 1
-    }
-    inherited_rc=0
-    inherited_hash=$(shared_captain_read_inherited_hash "$dest_parent" 2>/dev/null) || inherited_rc=$?
-    if [ "$inherited_rc" -eq 2 ]; then
-      reason="unsafe inherited-generation receipt"
-      warn_inheritable_config_error "$FM_SHARED_CAPTAIN_REL" "$dest_parent" "$reason"
-      record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" error "$reason"
-      restore_shared_captain_readonly "$dest" || true
-      return 1
-    fi
     if ! shared_captain_dir_safe "$dest_parent"; then
       reason="unsafe destination directory"
       warn_inheritable_config_error "$FM_SHARED_CAPTAIN_REL" "$dest_parent" "$reason"
@@ -537,24 +506,7 @@ propagate_shared_captain_preferences() {
       restore_shared_captain_readonly "$dest" || true
       return 1
     fi
-    if [ "$inherited_rc" -eq 0 ] && [ "$dest_hash" = "$inherited_hash" ]; then
-      chmod u+w "$dest" 2>/dev/null || {
-        reason="failed to remove inherited destination while mirroring primary absence"
-        warn_inheritable_config_error "$FM_SHARED_CAPTAIN_REL" "$dest" "$reason"
-        record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" error "$reason"
-        restore_shared_captain_readonly "$dest" || true
-        return 1
-      }
-      if rm -f -- "$dest" 2>/dev/null && shared_captain_remove_inherited_receipt "$dest_parent"; then
-        record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" pushed "mirrored primary absence"
-      else
-        reason="failed to remove inherited destination while mirroring primary absence"
-        warn_inheritable_config_error "$FM_SHARED_CAPTAIN_REL" "$dest" "$reason"
-        record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" error "$reason"
-        restore_shared_captain_readonly "$dest" || true
-        rc=1
-      fi
-    elif quarantine=$(quarantine_shared_captain_dest "$dest" "$dest_parent"); then
+    if quarantine=$(quarantine_shared_captain_dest "$dest" "$dest_parent"); then
       shared_captain_remove_inherited_receipt "$dest_parent" || true
       printf 'SECONDMATE_SYNC: secondmate home %s: quarantined %s drift at %s\n' "$dest_home" "$FM_SHARED_CAPTAIN_REL" "$quarantine"
       record_inheritable_config_result "$FM_SHARED_CAPTAIN_REL" pushed "mirrored primary absence after quarantining local copy at $quarantine"

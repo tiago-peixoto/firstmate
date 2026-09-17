@@ -170,6 +170,58 @@ test_interrupted_publication_matching_source_does_not_quarantine() {
   pass "interrupted publication that already matches source heals without quarantine"
 }
 
+# The remote secondmate route reaches the same destination through
+# bin/fm-remote-inherit.sh, so it owes the same answer: an untouched inherited
+# copy is ordinary convergence, a locally edited one is drift worth keeping.
+remote_put_shared() {
+  local home=$1 payload=$2 generation=$3 bytes hash
+  bytes=$(LC_ALL=C wc -c < "$payload" | tr -d ' ')
+  hash=$(fm_inherit_sha256 "$payload") || fail "cannot hash remote inheritance payload"
+  PATH="$BASE_PATH" FM_HOME="$home" "$ROOT/bin/fm-remote-inherit.sh" \
+    put data/captain-shared.md "$bytes" "$hash" "$generation" < "$payload" 2>&1
+}
+
+remote_quarantine_count() {
+  find "$1/data" -name 'captain-shared.md.remote-quarantine-*' | wc -l | tr -d ' '
+}
+
+test_remote_receiver_accepts_source_only_edit_without_quarantine() {
+  local home source out qpath
+  home="$TMP_ROOT/remote-receiver/home"
+  source="$TMP_ROOT/remote-receiver/source.md"
+  mkdir -p "$home/data" "$home/config" "$TMP_ROOT/remote-receiver"
+
+  write_shared "$source" "shared v1"
+  out=$(remote_put_shared "$home" "$source" 1) || fail "remote first inherit failed: $out"
+  assert_contains "$out" "pushed: data/captain-shared.md" "remote first inherit did not publish"
+  assert_shared_readonly "$home/data/captain-shared.md"
+
+  write_shared "$source" "shared v2"
+  out=$(remote_put_shared "$home" "$source" 2) || fail "remote source-only edit failed: $out"
+  assert_not_contains "$out" "quarantined:" \
+    "remote source-only edit quarantined an untouched inherited copy"
+  [ "$(remote_quarantine_count "$home")" -eq 0 ] \
+    || fail "remote source-only edit left a recovery copy for an untouched destination"
+  cmp -s "$source" "$home/data/captain-shared.md" \
+    || fail "remote source-only edit did not converge the destination"
+  assert_shared_readonly "$home/data/captain-shared.md"
+
+  chmod u+w "$home/data/captain-shared.md"
+  write_shared "$home/data/captain-shared.md" "remote local edit"
+  chmod "$FM_SHARED_CAPTAIN_MODE" "$home/data/captain-shared.md"
+  write_shared "$source" "shared v3"
+  out=$(remote_put_shared "$home" "$source" 3) || fail "remote divergent inherit failed: $out"
+  assert_contains "$out" "quarantined:" "remote edited destination was replaced without a recovery copy"
+  [ "$(remote_quarantine_count "$home")" -eq 1 ] \
+    || fail "remote divergence should leave exactly one recovery copy"
+  qpath=$(find "$home/data" -name 'captain-shared.md.remote-quarantine-*')
+  assert_grep "remote local edit" "$qpath" "remote quarantine lost the edited bytes"
+  cmp -s "$source" "$home/data/captain-shared.md" \
+    || fail "remote divergent inherit did not install the primary bytes"
+  assert_shared_readonly "$home/data/captain-shared.md"
+  pass "remote receiver accepts a source-only edit quietly and still quarantines real drift"
+}
+
 test_drift_quarantine_collision_and_repeated_convergence() {
   local rec primary second fakebin hash collision report out diag qpath qcount
   rec=$(new_home_pair drift)
@@ -505,6 +557,7 @@ EOF
 test_first_copy_readonly_and_local_files_preserved
 test_true_divergence_after_inherit_still_quarantines
 test_interrupted_publication_matching_source_does_not_quarantine
+test_remote_receiver_accepts_source_only_edit_without_quarantine
 test_drift_quarantine_collision_and_repeated_convergence
 test_missing_source_mirrors_absence_without_losing_local_bytes
 test_unsafe_artifacts_and_failure_restore_readonly_mode
