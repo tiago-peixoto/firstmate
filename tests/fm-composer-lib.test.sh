@@ -527,9 +527,6 @@ test_matrix_pi_dollar_status_footer_is_empty() {
   assert_screen "dollar-first status with no pi pair" unknown \
     "$CAPS_STYLED" "$footer_only" '' "$pi_idle"
 
-  wrap=$'❯\n'"$dollar_status"
-  assert_screen "dollar-first Pi status bounds a bare wrap on herdr" empty \
-    "$CAPS_STYLED" "$wrap"
   wrap=$'❯\n$ ls -la'
   out=$(fm_composer_classify_screen "$CAPS_STYLED" "$wrap")
   [ "$out" = unknown ] \

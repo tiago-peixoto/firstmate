@@ -61,10 +61,9 @@
 #                A bare composer's WRAP region (typed input continuing on the
 #                rows beneath the glyph row) is bounded by blank rows, by
 #                structural edges, and by the FURNITURE rows a harness draws
-#                directly below its composer - omp's status row, pi's
-#                dollar-first cost footer, and braille-only animation rows
-#                (declared once below, next to the idle placeholders) - none
-#                of which is ever typed input.
+#                directly below its composer - omp's status row and
+#                braille-only animation rows (declared once below, next to
+#                the idle placeholders) - none of which is ever typed input.
 #   left-bar   - opencode: rows prefixed by a heavy left bar `┃` with no
 #                closing border, holding the idle hint, blank rows, and a
 #                mode/model footer line.
@@ -449,9 +448,9 @@ FM_COMPOSER_OMP_STATUS_RE_DEFAULT='^[[:space:]]*(π|󰵗)[[:space:]]+·[[:space:
 # prompt, cursorless selection failed, and herdr exit/relaunch refused on
 # `unknown`. A row is pi status furniture when it opens with a dollar amount
 # (`$` immediately followed by a digit, never `$` then whitespace, which is
-# still a prompt). Consulted as the SHELL_ROW exception and as a bare-wrap
-# bound, never as composer content: a status-like string typed BETWEEN the
-# separator pair still reads pending.
+# still a prompt). Consulted only as the SHELL_ROW exception, never as
+# composer content: a status-like string typed BETWEEN the separator pair
+# still reads pending.
 FM_COMPOSER_PI_STATUS_RE_DEFAULT='^\$[0-9]+(\.[0-9]+)?([[:space:]]|$)'
 # Braille-pattern cells (U+2800..U+28FF) are animation furniture: codex-cli
 # 0.154.0 draws an idle "starfield" of them on the row above its `›` prompt
@@ -1089,7 +1088,7 @@ _fm_composer_row_is_omp_status() {  # <trimmed-row>
 # (FM_COMPOSER_PI_STATUS_RE_DEFAULT above). Composer furniture that sits below
 # the separated pair; a `$` cost cell must not count as a dead-shell prompt.
 _fm_composer_row_is_pi_status() {  # <trimmed-row>
-  fm_composer_idle_matches "$1" "${FM_COMPOSER_PI_STATUS_RE:-$FM_COMPOSER_PI_STATUS_RE_DEFAULT}" sensitive
+  fm_composer_idle_matches "$1" "$FM_COMPOSER_PI_STATUS_RE_DEFAULT" sensitive
 }
 
 # _fm_composer_row_is_braille_furniture: 0 when the row is non-blank and its
@@ -1276,7 +1275,6 @@ _fm_composer_select_cursorless() {
       [ -n "$trimmed" ] || break
       fm_composer_row_has_edge "$trimmed" && break
       _fm_composer_row_is_omp_status "$trimmed" && break
-      _fm_composer_row_is_pi_status "$trimmed" && break
       _fm_composer_row_is_braille_furniture "$trimmed" && break
       FM_COMPOSER_SELECTED_LAST=$next
       next=$((next + 1))
