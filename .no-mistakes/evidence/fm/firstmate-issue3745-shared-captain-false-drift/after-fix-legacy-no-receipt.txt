@@ -1,0 +1,74 @@
+=== scenario: legacy-no-receipt (bin: /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2SEXBTP9B26YY7ZVDQA33NG/bin) ===
+
+$ fm-config-push.sh    # first copy
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v1
+   .captain-shared.md.inherited                                 mode=600 last-line=3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+
+$ fm-config-push.sh    # unchanged re-run
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: unchanged
+[exit 0]
+-- receipt removed (home inherited before this fix, or receipt lost)
+
+$ fm-config-push.sh    # source edit with no receipt
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+SECONDMATE_SYNC: secondmate home <scratch>/sm: quarantined data/captain-shared.md drift at <scratch>/sm/data/.captain-shared.md.quarantine.20260918T053517Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <scratch>/sm/data/.captain-shared.md.quarantine.20260918T053517Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+[exit 0]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v2
+   .captain-shared.md.inherited                                 mode=600 last-line=9208885e64763034f25aa30e938699b3142bbc14eac43086d1b7d8010018d6b2
+   .captain-shared.md.quarantine.20260918T053517Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d mode=600 last-line=shared v1
+
+$ fm-config-push.sh    # next source-only edit (receipt now recorded)
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v3
+   .captain-shared.md.inherited                                 mode=600 last-line=ab3732b0ed53641f7ee388e9967e5553d166bdd09915a70500096f6ad5ab4108
+   .captain-shared.md.quarantine.20260918T053517Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d mode=600 last-line=shared v1

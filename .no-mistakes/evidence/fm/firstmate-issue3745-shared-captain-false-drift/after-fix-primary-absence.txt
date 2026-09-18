@@ -1,0 +1,90 @@
+=== scenario: primary-absence (bin: /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2SEXBTP9B26YY7ZVDQA33NG/bin) ===
+
+$ fm-config-push.sh    # first copy
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v1
+   .captain-shared.md.inherited                                 mode=600 last-line=3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+
+$ fm-config-push.sh    # unchanged re-run
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: unchanged
+[exit 0]
+
+$ fm-config-push.sh    # primary deletes its shared file
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+SECONDMATE_SYNC: secondmate home <scratch>/sm: quarantined data/captain-shared.md drift at <scratch>/sm/data/.captain-shared.md.quarantine.20260918T053533Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed - mirrored primary absence after quarantining local copy at <scratch>/sm/data/.captain-shared.md.quarantine.20260918T053533Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+[exit 0]
+-- secondmate data/ captain files:
+   .captain-shared.md.quarantine.20260918T053533Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d mode=600 last-line=shared v1
+
+$ fm-config-push.sh    # primary re-adds the shared file
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v2 re-added
+   .captain-shared.md.inherited                                 mode=600 last-line=3484518013bb9b5a122b34e175e417692ec4a19d0386757ca76cd1272dc29a0a
+   .captain-shared.md.quarantine.20260918T053533Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d mode=600 last-line=shared v1
+
+$ fm-config-push.sh    # later source-only edit
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v3
+   .captain-shared.md.inherited                                 mode=600 last-line=ab3732b0ed53641f7ee388e9967e5553d166bdd09915a70500096f6ad5ab4108
+   .captain-shared.md.quarantine.20260918T053533Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d mode=600 last-line=shared v1

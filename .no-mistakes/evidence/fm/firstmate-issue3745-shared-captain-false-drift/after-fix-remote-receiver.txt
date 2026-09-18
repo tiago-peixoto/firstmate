@@ -1,0 +1,61 @@
+=== remote receiver (bin: /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2SEXBTP9B26YY7ZVDQA33NG/bin) ===
+
+$ fm-remote-inherit.sh put data/captain-shared.md 294 <sha256> 1    # first copy
+pushed: data/captain-shared.md
+[exit 0]
+-- remote home data/:
+   captain-shared.md                                          mode=444 last-line=shared v1
+
+$ fm-remote-inherit.sh put data/captain-shared.md 294 <sha256> 2    # unchanged re-push
+unchanged: data/captain-shared.md
+[exit 0]
+
+$ fm-remote-inherit.sh put data/captain-shared.md 294 <sha256> 3    # source-only edit, remote copy untouched
+pushed: data/captain-shared.md
+[exit 0]
+-- remote home data/:
+   captain-shared.md                                          mode=444 last-line=shared v2
+
+$ fm-remote-inherit.sh put data/captain-shared.md 294 <sha256> 4    # remote copy edited locally, then source edited
+quarantined: data/captain-shared.md.remote-quarantine-20260918T053607Z-33255 (replaced)
+pushed: data/captain-shared.md
+[exit 0]
+-- remote home data/:
+   captain-shared.md                                          mode=444 last-line=shared v3
+   captain-shared.md.remote-quarantine-20260918T053607Z-33255 mode=600 last-line=REMOTE LOCAL EDIT
+
+$ fm-remote-inherit.sh put data/captain-shared.md 294 <sha256> 5    # later source-only edit
+pushed: data/captain-shared.md
+[exit 0]
+-- remote home data/:
+   captain-shared.md                                          mode=444 last-line=shared v4
+   captain-shared.md.remote-quarantine-20260918T053607Z-33255 mode=600 last-line=REMOTE LOCAL EDIT
+
+-- simulated crash: generation 6 record committed (v5) but destination still holds: shared v4
+
+$ fm-remote-inherit.sh put data/captain-shared.md 294 <sha256> 7    # source advanced after interrupted publication
+quarantined: data/captain-shared.md.remote-quarantine-20260918T053608Z-34321 (replaced)
+pushed: data/captain-shared.md
+[exit 0]
+-- remote home data/:
+   captain-shared.md                                          mode=444 last-line=shared v6
+   captain-shared.md.remote-quarantine-20260918T053607Z-33255 mode=600 last-line=REMOTE LOCAL EDIT
+   captain-shared.md.remote-quarantine-20260918T053608Z-34321 mode=600 last-line=shared v4
+
+$ fm-remote-inherit.sh absent data/captain-shared.md 0 <empty-sha256> 8    # primary deleted its shared file
+quarantined: data/captain-shared.md.remote-quarantine-20260918T053608Z-34756 (removed)
+removed: data/captain-shared.md
+[exit 0]
+-- remote home data/:
+   captain-shared.md.remote-quarantine-20260918T053607Z-33255 mode=600 last-line=REMOTE LOCAL EDIT
+   captain-shared.md.remote-quarantine-20260918T053608Z-34321 mode=600 last-line=shared v4
+   captain-shared.md.remote-quarantine-20260918T053608Z-34756 mode=600 last-line=shared v6
+
+$ fm-remote-inherit.sh put data/captain-shared.md 303 <sha256> 9    # primary re-added the shared file
+pushed: data/captain-shared.md
+[exit 0]
+-- remote home data/:
+   captain-shared.md                                          mode=444 last-line=shared v7 re-added
+   captain-shared.md.remote-quarantine-20260918T053607Z-33255 mode=600 last-line=REMOTE LOCAL EDIT
+   captain-shared.md.remote-quarantine-20260918T053608Z-34321 mode=600 last-line=shared v4
+   captain-shared.md.remote-quarantine-20260918T053608Z-34756 mode=600 last-line=shared v6

@@ -1,0 +1,53 @@
+=== scenario: unreadable-destination (bin: /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2SEXBTP9B26YY7ZVDQA33NG/bin) ===
+
+$ fm-config-push.sh    # first copy
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v1
+   .captain-shared.md.inherited                                 mode=600 last-line=3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+
+$ fm-config-push.sh    # unchanged re-run
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: unchanged
+[exit 0]
+
+$ fm-config-push.sh    # source edit while the secondmate copy is unreadable (mode 000)
+config-push: <scratch>/home -> live secondmate homes
+secondmate sm (<scratch>/sm):
+fm-config-inherit: error: failed to hash destination data/captain-shared.md at <scratch>/sm/data/captain-shared.md
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: error - failed to hash destination
+[exit 1]
+-- secondmate data/ captain files:
+   captain-shared.md                                            mode=444 last-line=shared v1
+   .captain-shared.md.inherited                                 mode=600 last-line=3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
