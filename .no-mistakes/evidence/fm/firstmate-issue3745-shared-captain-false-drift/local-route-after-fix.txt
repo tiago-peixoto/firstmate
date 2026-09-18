@@ -1,0 +1,320 @@
+firstmate source under test: /Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M2RT6MP9KJJXJMEAFGMXXJW6
+revision: 0abbcc0d
+
+=== 1. captain publishes the first shared-preferences copy ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 4 128 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-r--r--r--@ 1 303 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v1
+
+=== 2. captain converges again with nothing changed ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: unchanged
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 4 128 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-r--r--r--@ 1 303 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v1
+
+=== 3. captain edits ONLY the authoritative source (issue 3745 case) ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 4 128 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-r--r--r--@ 1 303 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v2
+
+=== 4. secondmate hand-edits its read-only copy, then the captain edits the source ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+SECONDMATE_SYNC: secondmate home <sandbox>/secondmate-home: quarantined data/captain-shared.md drift at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 5 160 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-r--r--r--@ 1 303 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v3
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+
+=== 5. captain edits the source again right after that quarantine ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 5 160 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-r--r--r--@ 1 303 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v4
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+
+=== 5c. interrupted publication: new bytes landed, receipt write never happened; captain reconverges ===
+receipt before: 74fccc8aa6417a6b
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: unchanged
+[exit 0]
+receipt after:  b34314917d39ea63
+--- secondmate data/ ---
+drwxr-xr-x@ 5 160 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-r--r--r--@ 1 304 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v4b
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+
+=== 5d. interrupted publication, then the source advances again before any convergence ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+SECONDMATE_SYNC: secondmate home <sandbox>/secondmate-home: quarantined data/captain-shared.md drift at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 6 192 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae
+-r--r--r--@ 1 304 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v4d
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+--- quarantine .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae body line ---
+preference set v4c
+
+=== 6a. adversarial: unreadable secondmate copy with NO receipt (pre-upgrade home) ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+fm-config-inherit: error: failed to hash destination data/captain-shared.md at <sandbox>/secondmate-home/data/captain-shared.md
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: error - failed to hash destination
+[exit 1]
+--- secondmate data/ ---
+drwxr-xr-x@ 5 160 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae
+-r--r--r--@ 1 304 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v4d
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+--- quarantine .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae body line ---
+preference set v4c
+
+=== 6b. adversarial: unreadable secondmate copy WITH a receipt ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+fm-config-inherit: error: failed to hash destination data/captain-shared.md at <sandbox>/secondmate-home/data/captain-shared.md
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: error - failed to hash destination
+[exit 1]
+--- secondmate data/ ---
+drwxr-xr-x@ 7 224 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001831Z.0fb63d07e99d51b24e0121e99d0a36c5a91604362ce6acaf2b2a411c82b68f15
+-r--r--r--@ 1 303 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v5
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+--- quarantine .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae body line ---
+preference set v4c
+--- quarantine .captain-shared.md.quarantine.20260918T001831Z.0fb63d07e99d51b24e0121e99d0a36c5a91604362ce6acaf2b2a411c82b68f15 body line ---
+preference set v4d
+
+=== 7. adversarial: the inheritance receipt is corrupted, then the source advances ===
+-rw-------@ 1 tiago  staff  65 Sep 17 21:18 <sandbox>/secondmate-home/data/.captain-shared.md.inherited
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+SECONDMATE_SYNC: secondmate home <sandbox>/secondmate-home: quarantined data/captain-shared.md drift at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001834Z.315ce131b6b0c87ce68aaa7b44c6834912decb67a7c5db4360d4922a0575388f
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001834Z.315ce131b6b0c87ce68aaa7b44c6834912decb67a7c5db4360d4922a0575388f
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 8 256 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 65 Sep 17 21:18 .captain-shared.md.inherited
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001831Z.0fb63d07e99d51b24e0121e99d0a36c5a91604362ce6acaf2b2a411c82b68f15
+-rw-------@ 1 303 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001834Z.315ce131b6b0c87ce68aaa7b44c6834912decb67a7c5db4360d4922a0575388f
+-r--r--r--@ 1 303 Sep 17 21:18 captain-shared.md
+--- secondmate data/captain-shared.md body line ---
+preference set v6
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+--- quarantine .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae body line ---
+preference set v4c
+--- quarantine .captain-shared.md.quarantine.20260918T001831Z.0fb63d07e99d51b24e0121e99d0a36c5a91604362ce6acaf2b2a411c82b68f15 body line ---
+preference set v4d
+--- quarantine .captain-shared.md.quarantine.20260918T001834Z.315ce131b6b0c87ce68aaa7b44c6834912decb67a7c5db4360d4922a0575388f body line ---
+preference set v5
+
+=== 8. captain deletes the authoritative source entirely ===
+$ FM_HOME=<captain-home> fm-config-push.sh
+config-push: <sandbox>/captain-home -> live secondmate homes
+secondmate sm (<sandbox>/secondmate-home):
+SECONDMATE_SYNC: secondmate home <sandbox>/secondmate-home: quarantined data/captain-shared.md drift at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001835Z.62751d6a97a276950d36d9e8e2d01cc7fff39eb8d5632fadfaa6e085c4090ccf
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: pushed - mirrored primary absence after quarantining local copy at <sandbox>/secondmate-home/data/.captain-shared.md.quarantine.20260918T001835Z.62751d6a97a276950d36d9e8e2d01cc7fff39eb8d5632fadfaa6e085c4090ccf
+[exit 0]
+--- secondmate data/ ---
+drwxr-xr-x@ 7 224 Sep 17 21:18 .
+drwxr-xr-x@ 12 384 Sep 17 21:18 ..
+-rw-------@ 1 325 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae
+-rw-------@ 1 304 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001831Z.0fb63d07e99d51b24e0121e99d0a36c5a91604362ce6acaf2b2a411c82b68f15
+-rw-------@ 1 303 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001834Z.315ce131b6b0c87ce68aaa7b44c6834912decb67a7c5db4360d4922a0575388f
+-rw-------@ 1 303 Sep 17 21:18 .captain-shared.md.quarantine.20260918T001835Z.62751d6a97a276950d36d9e8e2d01cc7fff39eb8d5632fadfaa6e085c4090ccf
+--- secondmate data/captain-shared.md body line ---
+(absent)
+--- quarantine .captain-shared.md.quarantine.20260918T001823Z.0cc181fbe490b7ba2e1117f045f3b25ed2cc2e108d537bacc1e3317df1acd88b body line ---
+secondmate local edit
+--- quarantine .captain-shared.md.quarantine.20260918T001828Z.03bccb49be5d0f65674a829dccf2c158db8ba3a0859429b94e7d73b793baf4ae body line ---
+preference set v4c
+--- quarantine .captain-shared.md.quarantine.20260918T001831Z.0fb63d07e99d51b24e0121e99d0a36c5a91604362ce6acaf2b2a411c82b68f15 body line ---
+preference set v4d
+--- quarantine .captain-shared.md.quarantine.20260918T001834Z.315ce131b6b0c87ce68aaa7b44c6834912decb67a7c5db4360d4922a0575388f body line ---
+preference set v5
+--- quarantine .captain-shared.md.quarantine.20260918T001835Z.62751d6a97a276950d36d9e8e2d01cc7fff39eb8d5632fadfaa6e085c4090ccf body line ---
+preference set v6
+
+sandbox: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm3745-after.0WbSym

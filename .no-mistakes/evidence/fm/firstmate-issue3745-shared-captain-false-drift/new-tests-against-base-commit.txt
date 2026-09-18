@@ -1,0 +1,13 @@
+# New/changed tests from tests/fm-shared-captain-inheritance.test.sh (target 0abbcc0d) run one at a time against base e5316501 code
+test_first_copy_readonly_and_local_files_preserved: exit 1
+    not ok - source-only edit should not emit a quarantine diagnostic: SECONDMATE_SYNC: secondmate home <tmp>/first-copy/second: quarantined data/captain-shared.md drift at <tmp>/first-copy/second/data/.captain-shared.md.quarantine.20260918T002227Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+test_true_divergence_after_inherit_still_quarantines: exit 0
+    ok - shared captain true divergence after inherit is still quarantined
+test_interrupted_publication_matching_source_does_not_quarantine: exit 1
+    not ok - healed receipt should accept a later source-only edit quietly: SECONDMATE_SYNC: secondmate home <tmp>/interrupted-pub/second: quarantined data/captain-shared.md drift at <tmp>/interrupted-pub/second/data/.captain-shared.md.quarantine.20260918T002230Z.9208885e64763034f25aa30e938699b3142bbc14eac43086d1b7d8010018d6b2
+test_remote_receiver_accepts_source_only_edit_without_quarantine: exit 1
+    not ok - remote source-only edit quarantined an untouched inherited copy (unexpected: 'quarantined:')
+test_unsafe_artifacts_and_failure_restore_readonly_mode: exit 1
+    not ok - an unhashable destination should not converge silently
+test_config_push_source_only_edit_after_inherit_stays_quiet: exit 1
+    not ok - config-push source-only edit after inherit should not report drift (unexpected: 'quarantined local drift')
