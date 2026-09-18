@@ -485,36 +485,22 @@ test_matrix_pi_separated_needs_identity() {
   pass "matrix: pi's separated composer needs identity + structure; the blank row alone never proves it"
 }
 
-test_matrix_pi_dollar_status_and_blank_idle_are_empty() {
-  # Two 2026-09 herdr-pi reproductions that made exit/relaunch refuse:
-  # (1) 2026-09-17 solo-dev-vps: status row `$0.000 (sub) 5.4%/272k (auto)` at
-  # column 0 was a dead-shell prompt, so cursorless selection failed.
-  # (2) 2026-09-18 local mates: idle composer blank between separator rules,
-  # no glyph; an interrupt only briefly redrew a classifiable shape.
-  # fm-control exit types its command only on a proven `empty` composer.
-  local dollar blank rv_dollar typed dead_shell dead_cmd footer_only wrap dollar_status
+test_matrix_pi_dollar_status_footer_is_empty() {
+  # 2026-09-17 solo-dev-vps: Pi's status row `$0.000 (sub) 5.4%/272k (auto)`
+  # at column 0 read as a dead-shell prompt, so cursorless selection failed and
+  # fm-control exit/relaunch refused on `unknown`. The 2026-09-18 local-mate
+  # report (blank idle composer reading unknown) did not reproduce on live
+  # panes that day: their counters-first footer read `empty` before and after
+  # this fix, and test_matrix_pi_separated_needs_identity pins the blank pair.
+  local dollar rv_dollar typed dead_shell dead_cmd footer_only wrap dollar_status
   local pi_idle pi_working none out
   pi_idle=$(printf 'pi\tidle'); pi_working=$(printf 'pi\tworking'); none=$(printf 'zsh\t')
   dollar_status=$'$0.000 (sub) 5.4%/272k (auto)'
   dollar=$'transcript\n────────────────────────\n\n────────────────────────\n'"$dollar_status"
-  blank=$'transcript\n────────────────────────\n\n────────────────────────\nproj (main)'
   rv_dollar=$'transcript\n────────────────────────\n'"${ESC}[7m ${ESC}[0m"$'\n────────────────────────\n'"$dollar_status"
-
-  _fm_composer_row_is_pi_status "$dollar_status" \
-    || fail "the dollar-first Pi status row must be recognized as furniture"
-  _fm_composer_row_is_pi_status '5.4%/272k (auto)' \
-    || fail "a context-usage Pi status row must be recognized as furniture"
-  _fm_composer_row_is_pi_status '$' \
-    && fail "a bare dead-shell prompt must not be mistaken for Pi status furniture"
-  _fm_composer_row_is_pi_status '$ ls -la' \
-    && fail "a dead-shell command row must not be mistaken for Pi status furniture"
-  _fm_composer_row_is_pi_status 'fix the flaky test' \
-    && fail "ordinary typed text must not be mistaken for Pi status furniture"
 
   assert_screen "pi dollar-first status on herdr" empty "$CAPS_STYLED" "$dollar" '' "$pi_idle"
   assert_screen "pi dollar-first status on tmux" empty "$CAPS_TMUX" "$dollar" 2 "$pi_idle"
-  assert_screen "pi blank idle composer on herdr" empty "$CAPS_STYLED" "$blank" '' "$pi_idle"
-  assert_screen "pi blank idle composer on tmux" empty "$CAPS_TMUX" "$blank" 2 "$pi_idle"
   assert_screen "pi reverse-video blank plus dollar status on herdr" empty \
     "$CAPS_STYLED" "$rv_dollar" '' "$pi_idle"
 
@@ -522,8 +508,6 @@ test_matrix_pi_dollar_status_and_blank_idle_are_empty() {
   # dead-shell SHELL_ROW used to (that skip never reached _fm_composer_pi_verdict).
   [ "$(fm_composer_classify_screen "$CAPS_STYLED" "$dollar")" = need-identity ] \
     || fail "a dollar-first Pi footer must still request the lazy identity probe"
-  [ "$(fm_composer_classify_screen "$CAPS_STYLED" "$blank")" = need-identity ] \
-    || fail "a blank Pi pair must still request the lazy identity probe"
   assert_screen "dollar-first status without identity capability" unknown "$CAPS_PLAIN" "$dollar"
   assert_screen "working pi with dollar-first status defers" unknown \
     "$CAPS_STYLED" "$dollar" '' "$pi_working"
@@ -550,7 +534,10 @@ test_matrix_pi_dollar_status_and_blank_idle_are_empty() {
   out=$(fm_composer_classify_screen "$CAPS_STYLED" "$wrap")
   [ "$out" = unknown ] \
     || fail "a real dead shell below a bare glyph must still invalidate cursorless selection, got '$out'"
-  pass "matrix: pi dollar-first status and blank idle composers read empty; dead shells still refuse"
+  wrap=$'› please trim the prompt cache, it is using\n40%/200k tokens right now and that is too much'
+  assert_screen "typed context-usage text in a bare wrap on herdr" pending "$CAPS_STYLED" "$wrap"
+  assert_screen "typed context-usage text in a bare wrap on tmux" pending "$CAPS_TMUX" "$wrap" 1
+  pass "matrix: a dollar-first pi status footer reads empty; dead shells still refuse"
 }
 
 test_matrix_opencode_leftbar_signals() {
@@ -858,7 +845,7 @@ test_matrix_herdr_halfblock_rule_bounds_bare_wrap
 test_matrix_omp_status_row_bounds_bare_composer
 test_matrix_codex_idle_starfield_furniture
 test_matrix_pi_separated_needs_identity
-test_matrix_pi_dollar_status_and_blank_idle_are_empty
+test_matrix_pi_dollar_status_footer_is_empty
 test_matrix_opencode_leftbar_signals
 test_matrix_grok_titled_bottom_border
 test_matrix_kimi_bordered_shell_glyph_box

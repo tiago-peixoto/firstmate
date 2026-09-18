@@ -61,8 +61,8 @@
 #                A bare composer's WRAP region (typed input continuing on the
 #                rows beneath the glyph row) is bounded by blank rows, by
 #                structural edges, and by the FURNITURE rows a harness draws
-#                directly below its composer - omp's status row, pi's cost
-#                and context-usage footer, and braille-only animation rows
+#                directly below its composer - omp's status row, pi's
+#                dollar-first cost footer, and braille-only animation rows
 #                (declared once below, next to the idle placeholders) - none
 #                of which is ever typed input.
 #   left-bar   - opencode: rows prefixed by a heavy left bar `┃` with no
@@ -449,11 +449,10 @@ FM_COMPOSER_OMP_STATUS_RE_DEFAULT='^[[:space:]]*(π|󰵗)[[:space:]]+·[[:space:
 # prompt, cursorless selection failed, and herdr exit/relaunch refused on
 # `unknown`. A row is pi status furniture when it opens with a dollar amount
 # (`$` immediately followed by a digit, never `$` then whitespace, which is
-# still a prompt) or when it carries Pi's context-usage cell (`5.4%/272k`,
-# either k or K). Consulted as the SHELL_ROW exception and as a wrap-region
+# still a prompt). Consulted as the SHELL_ROW exception and as a bare-wrap
 # bound, never as composer content: a status-like string typed BETWEEN the
 # separator pair still reads pending.
-FM_COMPOSER_PI_STATUS_RE_DEFAULT='^\$[0-9]+(\.[0-9]+)?([[:space:]]|$)|[0-9]+(\.[0-9]+)?%/[0-9]+[kKmM]'
+FM_COMPOSER_PI_STATUS_RE_DEFAULT='^\$[0-9]+(\.[0-9]+)?([[:space:]]|$)'
 # Braille-pattern cells (U+2800..U+28FF) are animation furniture: codex-cli
 # 0.154.0 draws an idle "starfield" of them on the row above its `›` prompt
 # row, on the `›` row itself after the dim `Ask Codex to do anything`
@@ -1136,7 +1135,6 @@ _fm_composer_wrap_region_ok() {  # <plain-screen> <glyph-row> <cursor-row>
     [ -n "$trimmed" ] || return 1
     if fm_composer_row_has_edge "$trimmed"; then return 1; fi
     if _fm_composer_row_is_omp_status "$trimmed"; then return 1; fi
-    if _fm_composer_row_is_pi_status "$trimmed"; then return 1; fi
     if _fm_composer_row_is_braille_furniture "$trimmed"; then return 1; fi
     if fm_composer_leading_shell_glyph_var glyph "$trimmed"; then return 1; fi
     row=$((row + 1))
