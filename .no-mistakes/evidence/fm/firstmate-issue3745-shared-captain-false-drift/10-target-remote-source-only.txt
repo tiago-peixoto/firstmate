@@ -1,0 +1,19 @@
+## TARGET ddbaa22 pusher+receiver: remote scenario source-only
+
+### first put
+$ fm-remote-inherit-push.sh rsm 1   [TARGET ddbaa22 pusher+receiver]
+    pushed: data/captain-shared.md
+    (exit 0)
+    remote copy: mode=444 last-line=shared_v1 matches-primary=yes remote-quarantine-files=0
+
+### unchanged rerun
+$ fm-remote-inherit-push.sh rsm 2   [TARGET ddbaa22 pusher+receiver]
+    unchanged: data/captain-shared.md
+    (exit 0)
+    remote copy: mode=444 last-line=shared_v1 matches-primary=yes remote-quarantine-files=0
+
+### edit ONLY the primary source (remote copy untouched)
+$ fm-remote-inherit-push.sh rsm 3   [TARGET ddbaa22 pusher+receiver]
+    pushed: data/captain-shared.md
+    (exit 0)
+    remote copy: mode=444 last-line=shared_v2 matches-primary=yes remote-quarantine-files=0

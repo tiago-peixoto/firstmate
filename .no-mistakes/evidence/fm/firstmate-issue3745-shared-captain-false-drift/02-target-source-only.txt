@@ -1,0 +1,25 @@
+## TARGET ddbaa22 (fix): scenario source-only
+
+### first copy
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v1 matches-primary=yes quarantine-files=0 receipt=present
+
+### unchanged rerun
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: unchanged
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v1 matches-primary=yes quarantine-files=0 receipt=present
+
+### edit ONLY the primary source (secondmate copy untouched)
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v2 matches-primary=yes quarantine-files=0 receipt=present
+
+### second source-only edit
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v3 matches-primary=yes quarantine-files=0 receipt=present

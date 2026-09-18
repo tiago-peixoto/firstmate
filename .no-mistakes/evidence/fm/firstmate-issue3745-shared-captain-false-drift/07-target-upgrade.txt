@@ -1,0 +1,19 @@
+## TARGET ddbaa22 (fix): scenario upgrade
+
+### first copy with the OLD (base) code - no receipt is written
+$ fm-config-push.sh   [base 9bc051f code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v1 matches-primary=yes quarantine-files=0 receipt=absent
+
+### NEW code, source unchanged (heals receipt quietly)
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: unchanged
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v1 matches-primary=yes quarantine-files=0 receipt=present
+
+### NEW code, source-only edit
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v2 matches-primary=yes quarantine-files=0 receipt=present

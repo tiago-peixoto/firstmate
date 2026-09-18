@@ -1,0 +1,21 @@
+## BASE 9bc051f pusher+receiver: remote scenario source-only
+
+### first put
+$ fm-remote-inherit-push.sh rsm 1   [BASE 9bc051f pusher+receiver]
+    pushed: data/captain-shared.md
+    (exit 0)
+    remote copy: mode=444 last-line=shared_v1 matches-primary=yes remote-quarantine-files=0
+
+### unchanged rerun
+$ fm-remote-inherit-push.sh rsm 2   [BASE 9bc051f pusher+receiver]
+    unchanged: data/captain-shared.md
+    (exit 0)
+    remote copy: mode=444 last-line=shared_v1 matches-primary=yes remote-quarantine-files=0
+
+### edit ONLY the primary source (remote copy untouched)
+$ fm-remote-inherit-push.sh rsm 3   [BASE 9bc051f pusher+receiver]
+    quarantined: data/captain-shared.md.remote-quarantine-20260918T064214Z-99925 (replaced)
+    pushed: data/captain-shared.md
+    (exit 0)
+    remote copy: mode=444 last-line=shared_v2 matches-primary=yes remote-quarantine-files=1
+    recovery copy captain-shared.md.remote-quarantine-20260918T064214Z-99925 ends with: shared v1

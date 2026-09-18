@@ -1,0 +1,27 @@
+## TARGET ddbaa22 (fix): scenario absence
+
+### first copy
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v1 matches-primary=yes quarantine-files=0 receipt=present
+
+### primary removes its shared file
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+    SECONDMATE_SYNC: secondmate home <world>/sm: quarantined data/captain-shared.md drift at <world>/sm/data/.captain-shared.md.quarantine.20260918T064104Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+      data/captain-shared.md: pushed - mirrored primary absence after quarantining local copy at <world>/sm/data/.captain-shared.md.quarantine.20260918T064104Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+    (exit 0)
+    secondmate copy: mode=absent last-line= matches-primary=no quarantine-files=1 receipt=absent
+    recovery copy .captain-shared.md.quarantine.20260918T064104Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d ends with: shared v1
+
+### primary recreates its shared file
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v2 matches-primary=yes quarantine-files=1 receipt=present
+
+### source-only edit afterwards
+$ fm-config-push.sh   [TARGET ddbaa22 (fix) code]
+      data/captain-shared.md: pushed
+    (exit 0)
+    secondmate copy: mode=444 last-line=shared_v3 matches-primary=yes quarantine-files=1 receipt=present
