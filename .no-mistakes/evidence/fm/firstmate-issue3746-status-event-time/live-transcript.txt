@@ -1,0 +1,115 @@
+=== S1: worker follows the rendered no-mistakes brief (ask-user escalation + done) ===
+--- brief lines carrying the stamp instruction:
+47:   append `needs-decision [at=$(date +%s)]: {summary of options}` and stop. Firstmate will reply with the decision.
+49:   `needs-decision [at=$(date +%s)] [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-<run>-findings.txt`
+81:When you believe it is complete, append `done [at=$(date +%s)]: {summary}` to the status file and stop.
+109:After /no-mistakes reports CI green (the CI-ready return point - do not wait for it to keep monitoring in the background until merge), append `done [at=$(date +%s)]: PR {url} checks green` and stop. You are finished.
+--- extracted ask-user template: needs-decision [at=$(date +%s)] [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-<run>-findings.txt
+PASS: brief renders ask-user line with literal [at=$(date +%s)] before [key=...]
+--- status line the worker wrote:
+needs-decision [at=1789717152] [key=nm-r42-review]: ask-user findings=f1,f2 file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-r42-findings.txt
+--- snapshot last_event: {"state":"needs-decision","note":"ask-user findings=f1,f2 file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-r42-findings.txt","raw":"needs-decision [at=1789717152] [key=nm-r42-review]: ask-user findings=f1,f2 file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-r42-findings.txt","emitted_at_epoch":1789717152,"age_seconds":0}
+PASS: worker line gets a real emission epoch in [1789717152,1789717152]
+PASS: age_seconds is known and small
+PASS: decision key nm-r42-review is open in hints
+{
+  "last_event": {
+    "state": "needs-decision",
+    "note": "ask-user findings=f1,f2 file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-r42-findings.txt",
+    "raw": "needs-decision [at=1789717152] [key=nm-r42-review]: ask-user findings=f1,f2 file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-r42-findings.txt",
+    "emitted_at_epoch": 1789717152,
+    "age_seconds": 0
+  },
+  "open_decisions": [
+    {
+      "key": "nm-r42-review",
+      "verb": "needs-decision",
+      "summary": "ask-user findings=f1,f2 file=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/data/nm-task/nm-r42-findings.txt"
+    }
+  ]
+}
+
+=== S2: secondmate reports via fm-secondmate-report.sh; parent snapshot uses the stamp, not mtime ===
+--- parent state/mate.status:
+working: delegated scope
+done [corr=0123456789abcdef] [at=1789717152]: audit complete (via-helper)
+PASS: helper appended 'done [corr=..] [at=N]: audit complete (via-helper)' with N=now
+{
+  "last_event": {
+    "state": "done",
+    "note": "audit complete (via-helper)",
+    "raw": "done [corr=0123456789abcdef] [at=1789717152]: audit complete (via-helper)",
+    "emitted_at_epoch": 1789717152,
+    "age_seconds": 100
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "done [corr=0123456789abcdef] [at=1789717152]: audit complete (via-helper)",
+      "emitted_at_epoch": 1789717152,
+      "age_seconds": 100
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-18T07:39:12Z",
+      "age_seconds": 100
+    }
+  }
+}
+PASS: task last_event age is 100 from the stamp despite a 2020 file mtime
+PASS: secondmate parent_event and fallback freshness carry the same age
+
+=== S3: legacy, malformed, and future stamps stay unknown (adversarial) ===
+PASS: working: legacy unstamped line                             -> ["working",null,null]
+PASS: working [at=1700000000]: well-formed                       -> ["working",1700000000,100]
+PASS: working [at=1700000200]: future stamp keeps epoch, age unknown -> ["working",1700000200,null]
+PASS: working [at=oops]: non-numeric                             -> ["working",null,null]
+PASS: working [at=]: empty                                       -> ["working",null,null]
+PASS: working [at=01700000000]: leading zero                     -> ["working",null,null]
+PASS: working [at=1700000000000]: 13 digits                      -> ["working",null,null]
+PASS: working [at=1700000000] [at=1700000050]: duplicate         -> ["working",null,null]
+PASS: working [at=-5]: negative                                  -> ["working",null,null]
+PASS: working: stamp only in note [at=1700000000]                -> ["working",null,null]
+PASS: blocked [key=k] [at=1700000090]: stamp after key           -> ["blocked",1700000090,10]
+
+=== S4: stamped keyed decision opens and a stamped resolve closes it ===
+PASS: stamped needs-decision is open under key api-shape: ["api-shape"]
+PASS: stamped resolve closes it: []
+PASS: malformed stamp does not hide the decision: ["api-shape"]
+
+=== S5: human fleet view still renders over stamped status logs (sanity) ===
+# Fleet View
+
+Schema: fm-fleet-snapshot.v1
+Home: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main
+
+## Under Way
+| ID | Current | Kind | Repo/Project | Backend | Endpoint | Artifact | Path | Watch / return channel |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| mate | unknown / none | secondmate | alpha | tmux | present / dead | - | /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/mate | bin/fm-send.sh fm-mate '<request>' - read status/doc return channel; do not routinely fm-peek a secondmate for answers |
+| nm-task | unknown / none | ship | alpha | tmux | present | - | /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/projects/nm-task (absent) | bin/fm-peek.sh fm-nm-task |
+| probe | unknown / none | ship | alpha | tmux | present | - | /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-live.8SnwMe/main/projects/probe (absent) | bin/fm-peek.sh fm-probe |
+
+## Queued
+No queued backlog records found.
+
+## Done
+No done backlog records found.
+
+## Secondmates
+For kind=secondmate, bearings selects validated structured state from that registered home; parent events and bounded terminal evidence are fallback-only supplements and never current-state authority.
+
+=== S6: ledger-first parent delivery is stamped and a replay one second later is not duplicated ===
+--- parent status after first delivery:
+done [key=child-outcome-child-done-fa40e371] [at=1789717169]: child child done: PR https://example.test/owner/repo/pull/7 checks green pr=https://example.test/owner/repo/pull/1 mode=ship yolo=off
+PASS: delivered line is stamped with delivery time, child PR carried
+--- receipts before simulated crash:
+fa40e37178324c15533d8d106c689c77.reported
+--- parent status after replay:
+done [key=child-outcome-child-done-fa40e371] [at=1789717169]: child child done: PR https://example.test/owner/repo/pull/7 checks green pr=https://example.test/owner/repo/pull/1 mode=ship yolo=off
+PASS: replay at a later second did not append a duplicate
+
+ALL LIVE CHECKS PASSED
