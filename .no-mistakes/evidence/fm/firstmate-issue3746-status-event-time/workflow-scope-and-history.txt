@@ -1,0 +1,12 @@
+$ git diff --stat 9bc051f b4a1328 -- .github/
+(empty = PR touches no workflow file)
+
+$ git ls-tree b4a1328 .github/workflows/ci.yml; git ls-tree 9bc051f .github/workflows/ci.yml
+100644 blob 8436d065119ffdb666be49706f48cc747c5c411b	.github/workflows/ci.yml
+100644 blob 8436d065119ffdb666be49706f48cc747c5c411b	.github/workflows/ci.yml
+
+$ git merge-base --is-ancestor 668e47d b4a1328
+668e47d is an unchanged ancestor of b4a1328
+668e47d Merge upstream main into status event time branch
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+

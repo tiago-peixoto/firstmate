@@ -1,0 +1,244 @@
+$ touch -t 202001010000 /private<tmp>/fixture/state/secondmate-task.status
+$ FM_HOME=/private<tmp>/fixture FM_SNAPSHOT_NOW_EPOCH=1789721470 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "done",
+    "note": "audit complete (via-helper)",
+    "raw": "done [corr=0123456789abcdef] [at=1789721370]: audit complete (via-helper)",
+    "emitted_at_epoch": 1789721370,
+    "age_seconds": 100
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "done [corr=0123456789abcdef] [at=1789721370]: audit complete (via-helper)",
+      "note": "audit complete (via-helper)",
+      "emitted_at_epoch": 1789721370,
+      "age_seconds": 100,
+      "open_activities": [],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 0
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-18T08:49:30Z",
+      "age_seconds": 100
+    }
+  }
+}
+$ touch -t 202001010000 /private<tmp>/fixture/state/secondmate-task.status
+$ FM_HOME=/private<tmp>/fixture FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "legacy",
+    "raw": "working: legacy",
+    "emitted_at_epoch": null,
+    "age_seconds": null
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working: legacy",
+      "note": "legacy",
+      "emitted_at_epoch": null,
+      "age_seconds": null,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "legacy"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "legacy"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-18T08:49:32Z",
+      "age_seconds": null
+    }
+  }
+}
+$ touch -t 202001010000 /private<tmp>/fixture/state/secondmate-task.status
+$ FM_HOME=/private<tmp>/fixture FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "timed",
+    "raw": "working [at=1700000000]: timed",
+    "emitted_at_epoch": 1700000000,
+    "age_seconds": 100
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working [at=1700000000]: timed",
+      "note": "timed",
+      "emitted_at_epoch": 1700000000,
+      "age_seconds": 100,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "timed"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "timed"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-18T08:49:34Z",
+      "age_seconds": 100
+    }
+  }
+}
+$ touch -t 202001010000 /private<tmp>/fixture/state/secondmate-task.status
+$ FM_HOME=/private<tmp>/fixture FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "future",
+    "raw": "working [at=1700000200]: future",
+    "emitted_at_epoch": 1700000200,
+    "age_seconds": null
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working [at=1700000200]: future",
+      "note": "future",
+      "emitted_at_epoch": 1700000200,
+      "age_seconds": null,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "future"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "future"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-18T08:49:36Z",
+      "age_seconds": null
+    }
+  }
+}
+$ touch -t 202001010000 /private<tmp>/fixture/state/secondmate-task.status
+$ FM_HOME=/private<tmp>/fixture FM_SNAPSHOT_NOW_EPOCH=1700000100 bin/fm-fleet-snapshot.sh --json
+{
+  "last_event": {
+    "state": "working",
+    "note": "malformed",
+    "raw": "working [at=oops]: malformed",
+    "emitted_at_epoch": null,
+    "age_seconds": null
+  },
+  "secondmate": {
+    "current": {
+      "state": "unknown",
+      "reason": "secondmate metadata is not registered"
+    },
+    "parent_event": {
+      "raw": "working [at=oops]: malformed",
+      "note": "malformed",
+      "emitted_at_epoch": null,
+      "age_seconds": null,
+      "open_activities": [
+        {
+          "key": "default",
+          "verb": "working",
+          "summary": "malformed"
+        }
+      ],
+      "open_decisions": [],
+      "activity_scan": {
+        "records": [
+          {
+            "key": "default",
+            "verb": "working",
+            "summary": "malformed"
+          }
+        ],
+        "available": true,
+        "input_truncated": false,
+        "retained_truncated": false,
+        "reasons": [],
+        "lines_in_window": 1,
+        "records_in_window": 1
+      }
+    },
+    "freshness": {
+      "status": "historical-event",
+      "observed_at": "2026-09-18T08:49:37Z",
+      "age_seconds": null
+    }
+  }
+}
+ok - fixture snapshot covers task rows, backlog rows, pointers, stable ordering, and emission-time event age

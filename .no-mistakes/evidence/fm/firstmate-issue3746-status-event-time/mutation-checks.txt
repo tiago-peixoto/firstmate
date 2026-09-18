@@ -1,0 +1,35 @@
+== M1: snapshot substitutes status-file mtime for emission time ==
+   362c362
+   <     epoch=$(status_line_at_epoch "$raw") || epoch=null
+   ---
+   >     epoch=$(stat -f %m "$log")
+exit=1
+not ok - legacy event must have explicit unknown time and age
+
+== M2: snapshot invents a time (now) for legacy/malformed records ==
+   362c362
+   <     epoch=$(status_line_at_epoch "$raw") || epoch=null
+   ---
+   >     epoch=$(status_line_at_epoch "$raw") || epoch=$SNAPSHOT_EPOCH
+exit=1
+not ok - legacy event must have explicit unknown time and age
+
+== M3: secondmate parent report stops stamping [at=<epoch>] ==
+   105c105
+   < printf '%s\n' "$(status_stamp_line "$line")" >> "$DESTINATION"
+   ---
+   > printf '%s\n' "$line" >> "$DESTINATION"
+exit=1
+not ok - new parent report has unknown time
+
+== M4: future-dated record gets a negative age instead of null ==
+   363c363
+   <     if [ "$epoch" != null ] && [ "$epoch" -le "$SNAPSHOT_EPOCH" ]; then
+   ---
+   >     if [ "$epoch" != null ]; then
+exit=1
+not ok - event time/age came from something other than the record: working [at=1700000200]: future
+
+== Restored product (control) ==
+exit=0
+ok - fixture snapshot covers task rows, backlog rows, pointers, stable ordering, and emission-time event age
