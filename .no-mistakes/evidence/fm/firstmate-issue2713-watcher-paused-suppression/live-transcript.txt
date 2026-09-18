@@ -1,0 +1,205 @@
+# Issue 2713 live validation: real bin/fm-watch.sh + real fm-crew-state.sh + real fm-wake-drain.sh
+# against a real, isolated tmux server (TMUX_TMPDIR=/tmp/fmlive.RsWa/tmux).
+# base   = bin/ at 9bc051f (before the change)
+# target = bin/ at 7a33973 (this change)
+# Driver: live-drive.sh in this evidence directory.
+# The 'agent' in fm-alive/fm-alive2 is a process launched as <dir>/agentbin/grok (a symlink to sleep),
+# and fm-churn is bash launched with argv0 <dir>/agentbin/grok; the real tmux backend probe reads both as alive.
+# fm-ambig runs plain sleep (ambiguous -> unknown); fm-dead is an idle zsh (dead).
+
+## Real tmux panes the watcher supervised
+  base: pane_current_command=zsh
+  fm-alive: pane_current_command=sleep
+  fm-ambig: pane_current_command=sleep
+  fm-dead: pane_current_command=zsh
+  fm-churn: pane_current_command=bash
+  fm-alive2: pane_current_command=sleep
+  fm-alive -> fm_backend_agent_state=alive ; pane text: grok: parked, waiting on upstream release
+  fm-ambig -> fm_backend_agent_state=ambiguous ; pane text: parked, waiting on upstream release
+  fm-dead -> fm_backend_agent_state=dead ; pane text: Tiagos-MBP%
+  fm-churn -> fm_backend_agent_state=alive ; pane text: grok: parked on upstream, elapsed 180m
+  fm-alive2 -> fm_backend_agent_state=alive ; pane text: grok: resumed, idle
+
+## A. paused: + live agent (alive)
+== case b-alive-paused  tree=base  window=fmlive:fm-alive
+   status: paused: waiting on the upstream tool release
+   liveness (real backend): alive
+   crew-state (real):       state: paused · source: status-log · waiting on the upstream tool release
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/b-alive-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): EXIT stale: fmlive:fm-alive 
+   wake queue after round 2:
+     kind=stale key=fmlive:fm-alive payload=stale: fmlive:fm-alive
+   triage log (stale lines):
+   pause flag present: yes
+== case t-alive-paused  tree=target  window=fmlive:fm-alive
+   status: paused: waiting on the upstream tool release
+   liveness (real backend): alive
+   crew-state (real):       state: paused · source: status-log · waiting on the upstream tool release
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/t-alive-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): ALIVE
+   wake queue after round 2:
+   triage log (stale lines):
+     [2026-09-18T04:58:30-0300] absorbed stale (paused, awaiting external, age 33s): fmlive:fm-alive
+     [2026-09-18T04:58:31-0300] absorbed stale (paused, awaiting external, age 34s): fmlive:fm-alive
+     [2026-09-18T04:58:33-0300] absorbed stale (paused, awaiting external, age 36s): fmlive:fm-alive
+     [2026-09-18T04:58:34-0300] absorbed stale (paused, awaiting external, age 37s): fmlive:fm-alive
+   pause flag present: yes
+
+## B. paused: + ambiguous pane (unknown)
+== case b-ambig-paused  tree=base  window=fmlive:fm-ambig
+   status: paused: waiting on the upstream tool release
+   liveness (real backend): ambiguous
+   crew-state (real):       state: paused · source: status-log · waiting on the upstream tool release
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/b-ambig-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): EXIT stale: fmlive:fm-ambig 
+   wake queue after round 2:
+     kind=stale key=fmlive:fm-ambig payload=stale: fmlive:fm-ambig
+   triage log (stale lines):
+   pause flag present: yes
+== case t-ambig-paused  tree=target  window=fmlive:fm-ambig
+   status: paused: waiting on the upstream tool release
+   liveness (real backend): ambiguous
+   crew-state (real):       state: paused · source: status-log · waiting on the upstream tool release
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/t-ambig-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): ALIVE
+   wake queue after round 2:
+   triage log (stale lines):
+     [2026-09-18T04:38:29-0300] absorbed stale (paused, awaiting external, age 35s): fmlive:fm-ambig
+     [2026-09-18T04:38:30-0300] absorbed stale (paused, awaiting external, age 36s): fmlive:fm-ambig
+     [2026-09-18T04:38:32-0300] absorbed stale (paused, awaiting external, age 38s): fmlive:fm-ambig
+     [2026-09-18T04:38:33-0300] absorbed stale (paused, awaiting external, age 39s): fmlive:fm-ambig
+   pause flag present: yes
+
+## C. paused: + dead agent (idle shell), unchanged behavior
+== case b-dead-paused  tree=base  window=fmlive:fm-dead
+   status: paused: waiting on the upstream tool release
+   liveness (real backend): dead
+   crew-state (real):       state: paused · source: status-log · waiting on the upstream tool release
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/b-dead-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): ALIVE
+   wake queue after round 2:
+   triage log (stale lines):
+     [2026-09-18T04:39:09-0300] absorbed stale (paused, awaiting external, age 34s): fmlive:fm-dead
+     [2026-09-18T04:39:10-0300] absorbed stale (paused, awaiting external, age 35s): fmlive:fm-dead
+     [2026-09-18T04:39:12-0300] absorbed stale (paused, awaiting external, age 37s): fmlive:fm-dead
+     [2026-09-18T04:39:14-0300] absorbed stale (paused, awaiting external, age 39s): fmlive:fm-dead
+   pause flag present: yes
+== case t-dead-paused  tree=target  window=fmlive:fm-dead
+   status: paused: waiting on the upstream tool release
+   liveness (real backend): dead
+   crew-state (real):       state: paused · source: status-log · waiting on the upstream tool release
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/t-dead-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): ALIVE
+   wake queue after round 2:
+   triage log (stale lines):
+     [2026-09-18T04:39:52-0300] absorbed stale (paused, awaiting external, age 36s): fmlive:fm-dead
+     [2026-09-18T04:39:54-0300] absorbed stale (paused, awaiting external, age 38s): fmlive:fm-dead
+     [2026-09-18T04:39:56-0300] absorbed stale (paused, awaiting external, age 40s): fmlive:fm-dead
+     [2026-09-18T04:39:58-0300] absorbed stale (paused, awaiting external, age 42s): fmlive:fm-dead
+   pause flag present: yes
+
+## D. captain-held + live agent, and E. paused: + live agent whose pane churns every 6s
+== case b-alive-held  tree=base  window=fmlive:fm-alive
+   status: captain-held [key=route]: awaiting the captain on the routing call
+   liveness (real backend): alive
+   crew-state (real):       state: unknown · source: none · no current-state source available
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/b-alive-held/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): EXIT stale: fmlive:fm-alive 
+   wake queue after round 2:
+     kind=stale key=fmlive:fm-alive payload=stale: fmlive:fm-alive
+   triage log (stale lines):
+   pause flag present: yes
+== case t-alive-held  tree=target  window=fmlive:fm-alive
+   status: captain-held [key=route]: awaiting the captain on the routing call
+   liveness (real backend): alive
+   crew-state (real):       state: unknown · source: none · no current-state source available
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/t-alive-held/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): ALIVE
+   wake queue after round 2:
+   triage log (stale lines):
+     [2026-09-18T04:41:19-0300] absorbed stale (captain-held, awaiting the captain, age 35s): fmlive:fm-alive
+     [2026-09-18T04:41:21-0300] absorbed stale (captain-held, awaiting the captain, age 37s): fmlive:fm-alive
+     [2026-09-18T04:41:22-0300] absorbed stale (captain-held, awaiting the captain, age 38s): fmlive:fm-alive
+     [2026-09-18T04:41:24-0300] absorbed stale (captain-held, awaiting the captain, age 40s): fmlive:fm-alive
+   pause flag present: yes
+== case b-churn-paused  tree=base  window=fmlive:fm-churn
+   status: paused: waiting on the validation run to finish
+   liveness (real backend): alive
+   crew-state (real):       state: paused · source: status-log · waiting on the validation run to finish
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/b-churn-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 40s): EXIT stale: fmlive:fm-churn 
+   wake queue after round 2:
+     kind=stale key=fmlive:fm-churn payload=stale: fmlive:fm-churn
+   triage log (stale lines):
+   pause flag present: yes
+== case t-churn-paused  tree=target  window=fmlive:fm-churn
+   status: paused: waiting on the validation run to finish
+   liveness (real backend): alive
+   crew-state (real):       state: paused · source: status-log · waiting on the validation run to finish
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/t-churn-paused/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 40s): ALIVE
+   wake queue after round 2:
+   triage log (stale lines):
+     [2026-09-18T04:42:42-0300] absorbed stale (paused, awaiting external, age 66s): fmlive:fm-churn
+     [2026-09-18T04:42:44-0300] absorbed stale (paused, awaiting external, age 68s): fmlive:fm-churn
+     [2026-09-18T04:42:48-0300] absorbed stale (paused, awaiting external, age 72s): fmlive:fm-churn
+     [2026-09-18T04:42:50-0300] absorbed stale (paused, awaiting external, age 74s): fmlive:fm-churn
+   pause flag present: yes
+
+## F. bounded recheck (FM_PAUSE_RESURFACE_SECS=60) then absorbed again, and G. superseded declaration surfaces
+== case t-alive-recheck  tree=target  window=fmlive:fm-churn
+   status: paused: waiting on the validation run to finish
+   liveness (real backend): alive
+   crew-state (real):       state: paused · source: status-log · waiting on the validation run to finish
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/t-alive-recheck/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 60s): EXIT stale: fmlive:fm-churn (paused 61s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   wake queue after round 2:
+     kind=stale key=fmlive:fm-churn payload=stale: fmlive:fm-churn (paused 61s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+   triage log (stale lines):
+     [2026-09-18T04:43:55-0300] absorbed stale (paused, awaiting external, age 48s): fmlive:fm-churn
+     [2026-09-18T04:43:58-0300] absorbed stale (paused, awaiting external, age 51s): fmlive:fm-churn
+     [2026-09-18T04:44:02-0300] absorbed stale (paused, awaiting external, age 55s): fmlive:fm-churn
+     [2026-09-18T04:44:06-0300] absorbed stale (paused, awaiting external, age 59s): fmlive:fm-churn
+   pause flag present: yes
+   firstmate drained + acked round 2
+   round 3 (re-armed, observed 20s): ALIVE
+   wake queue after round 3:
+   triage log (last lines):
+     [2026-09-18T04:44:38-0300] absorbed stale (paused, awaiting external, age 91s): fmlive:fm-churn
+     [2026-09-18T04:44:40-0300] absorbed stale (paused, awaiting external, age 93s): fmlive:fm-churn
+     [2026-09-18T04:44:44-0300] absorbed stale (paused, awaiting external, age 97s): fmlive:fm-churn
+== case t-alive-superseded  tree=target  window=fmlive:fm-alive2
+   status: paused: waiting on the upstream tool release
+   liveness (real backend): alive
+   crew-state (real):       state: paused · source: status-log · waiting on the upstream tool release
+   round 1 (fresh status line): EXIT signal: /tmp/fmlive.RsWa/cases/t-alive-superseded/state/parked.status 
+   firstmate drained + acked round 1
+   round 2 (re-armed, observed 20s): ALIVE
+   wake queue after round 2:
+   triage log (stale lines):
+     [2026-09-18T04:47:28-0300] absorbed stale (paused, awaiting external, age 34s): fmlive:fm-alive2
+     [2026-09-18T04:47:30-0300] absorbed stale (paused, awaiting external, age 36s): fmlive:fm-alive2
+     [2026-09-18T04:47:31-0300] absorbed stale (paused, awaiting external, age 37s): fmlive:fm-alive2
+     [2026-09-18T04:47:33-0300] absorbed stale (paused, awaiting external, age 39s): fmlive:fm-alive2
+   pause flag present: yes
+   hook before round 3: printf "working: resumed after the upstream release\n" >> "$STATE/$TASK.status"
+   round 3 surfaced a non-stale wake first (EXIT check: rearm-resurface ); firstmate acks and re-arms
+   round 3 surfaced a non-stale wake first (EXIT signal: /tmp/fmlive.RsWa/cases/t-alive-superseded/state/parked.status ); firstmate acks and re-arms
+   round 3 (re-armed, observed 25s): EXIT stale: fmlive:fm-alive2 
+   wake queue after round 3:
+     kind=stale key=fmlive:fm-alive2 payload=stale: fmlive:fm-alive2
+   triage log (last lines):
+     [2026-09-18T04:47:30-0300] absorbed stale (paused, awaiting external, age 36s): fmlive:fm-alive2
+     [2026-09-18T04:47:31-0300] absorbed stale (paused, awaiting external, age 37s): fmlive:fm-alive2
+     [2026-09-18T04:47:33-0300] absorbed stale (paused, awaiting external, age 39s): fmlive:fm-alive2

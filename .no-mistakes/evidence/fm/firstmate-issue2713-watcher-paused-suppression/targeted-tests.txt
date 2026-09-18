@@ -1,10 +1,33 @@
-test_declared_pause_is_absorbed_for_every_agent_liveness_verdict: ok - a declared pause is absorbed on the bounded cadence for alive, unknown, and dead agent liveness 
-test_exited_declared_pause_is_bounded_and_live_gate_uses_pause_cadence: ok - exited declared-pause and captain-held panes use bounded pause cadence, and a live decision gate is absorbed on that same cadence 
-test_absorbed_replacement_wait_does_not_inherit_the_old_throttle: ok - absorbed paused and captain-held replacements each start their own re-surface cadence 
-test_live_declared_wait_churn_honors_the_resurface_throttle: ok - a parked live worker absorbs pane churn, rechecks once when its declaration ages past the cadence, then absorbs churn again 
-test_live_captain_held_first_sight_silenced_by_away_record: ok - a live captain-held pane past the cadence is absorbed on first sight while the away-posture record exists 
-test_nonterminal_stale_paused_absorbed_then_resurfaced: ok - a declared pause is absorbed on first sight, then re-surfaced as a recheck past the threshold, never wedge-escalated 
-test_nonterminal_stale_not_working_surfaced: ok - a not-provably-working non-terminal stale is surfaced immediately (never left to wait out the timer) 
-test_live_paused_until_controls_recheck_time: ok - a live paused worker stays absorbed until its declared time, then rechecks 
-test_captain_held_never_rechecked_while_away_record_exists: ok - a captain-held item is never rechecked while the away-posture record exists, and the recheck returns once the record is archived 
-test_paused_until_that_passed_is_rechecked_before_the_cadence: ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence 
+# Targeted tests on target (FM_TEST_ONLY=<name> bash tests/fm-watch-triage.test.sh)
+test_declared_pause_is_absorbed_for_every_agent_liveness_verdict: PASS
+test_exited_declared_pause_is_bounded_and_live_gate_uses_pause_cadence: PASS
+test_absorbed_replacement_wait_does_not_inherit_the_old_throttle: PASS
+test_live_declared_wait_churn_honors_the_resurface_throttle: PASS
+test_live_captain_held_first_sight_silenced_by_away_record: PASS
+test_nonterminal_stale_paused_absorbed_then_resurfaced: PASS
+test_nonterminal_stale_not_working_surfaced: PASS
+test_paused_authoritative_working_preserves_wedge_timer: PASS
+test_nonterminal_paused_rechecks_authoritative_state: PASS
+test_nonterminal_stale_pause_transitions_reclassify_unchanged_hash: PASS
+test_live_paused_until_controls_recheck_time: PASS
+test_busy_declared_pause_is_rechecked_not_wedge_escalated: PASS
+test_wedge_threshold_recheck_names_the_captain_for_a_held_lane: PASS
+test_open_captain_call_bounds_stale_churn: PASS
+test_stale_churn_without_a_captain_call_still_alarms: PASS
+test_failed_wake_append_does_not_arm_the_captain_hold_throttle: PASS
+test_reheld_captain_call_starts_its_own_resurface_window: PASS
+test_secondmate_paused_resurfaces_in_normal_mode: PASS
+test_secondmate_captain_held_resurfaces_in_normal_mode: PASS
+test_secondmate_nonpaused_stale_remains_suppressed: PASS
+test_secondmate_unpause_clears_pause_tracking: PASS
+test_captain_held_never_rechecked_while_away_record_exists: PASS
+test_backlog_hold_never_rechecked_while_away_record_exists: PASS
+test_afk_paused_changed_pane_hands_off_plain_stale: PASS
+test_paused_until_near_future_is_quiet_before_the_cadence: PASS
+test_paused_until_wrong_year_is_bounded_by_the_cadence: PASS
+test_paused_until_that_passed_is_rechecked_before_the_cadence: PASS
+test_identical_dead_display_of_a_successor_still_reports: PASS
+
+# Same new/changed tests with bin/ from base 9bc051f (expected to fail: reproduces issue 2713)
+test_declared_pause_is_absorbed_for_every_agent_liveness_verdict: FAIL rc=1 :: not ok - [alive] declared pause under alive liveness surfaced on first sight: stale: test:fm-held
+test_exited_declared_pause_is_bounded_and_live_gate_uses_pause_cadence: FAIL rc=1 :: not ok - live external-decision gate surfaced on first sight: stale: test:fm-gate
