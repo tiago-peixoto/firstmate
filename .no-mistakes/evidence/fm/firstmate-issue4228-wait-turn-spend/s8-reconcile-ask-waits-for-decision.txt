@@ -1,0 +1,59 @@
+### sm3's books show an orphan in flight, and sm3 is waiting on its own decision
+
+$ sh -c printf 'needs-decision [key=pick3]: keep or drop the ghost task?\n' >> /tmp/fm-live-4228/w3/home/state/sm3.status
+[exit 0]
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-secondmate-reconcile.sh request --snapshot /tmp/fm-live-4228/snap-sm3.json
+requested: /tmp/fm-live-4228/w3/home/state/reconcile-notify/request-08cc98669d94490a012bc40a5cf0da2d27364d2f8e7c76fe82b9fc83403eb63e.json
+[exit 0]
+
+### The supervision pass processes the queued reconcile request
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-secondmate-reconcile.sh process-requests
+processed: 0 deferred: 0 waiting: 1
+[exit 0]
+
+$ ls /tmp/fm-live-4228/w3/home/state/reconcile-notify
+request-08cc98669d94490a012bc40a5cf0da2d27364d2f8e7c76fe82b9fc83403eb63e.json
+[exit 0]
+cooldown file: none (cooldown not started)
+--- inbox sm3 ---
+./.escalated
+./.ring-state
+./handled/001.msg
+./handled/002.msg
+./handled/003.msg
+--- stand-in agent turns (sm3) ---
+
+### A second pass while still waiting stays quiet and successful
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-secondmate-reconcile.sh process-requests
+processed: 0 deferred: 0 waiting: 1
+[exit 0]
+
+### The decision closes; the next pass delivers the ask
+
+$ sh -c printf 'resolved [key=pick3]: captain said drop it\n' >> /tmp/fm-live-4228/w3/home/state/sm3.status
+[exit 0]
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-secondmate-reconcile.sh process-requests
+processed: 1 deferred: 0 waiting: 0
+[exit 0]
+cooldown file: /tmp/fm-live-4228/w3/home/state/sm3.reconcile-nudged
+--- inbox sm3 ---
+./.escalated
+./.ring-state
+./004.msg
+./handled/001.msg
+./handled/002.msg
+./handled/003.msg
+--- record 004.msg ---
+schema=fm-task-inbox.v1
+at=2026-09-18T21:45:25Z
+delivery=fire-and-forget
+--
+[fm-from-firstmate]⁣delivery=eb98b36816492a92 A fleet snapshot found that your home's backlog and task metadata disagreed.
+
+Please check your current books and, if they still disagree, reconcile them to match reality. Nothing outside your home has been changed, and no reply is expected.
+--- stand-in agent turns (sm3) ---
+18:45:26 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.

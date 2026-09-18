@@ -1,0 +1,69 @@
+### AGENTS.md changes on main, and the primary checkout is then left on a feature branch (as in a PR checkout)
+
+$ git -C /tmp/fm-live-4228/w3/main log --oneline --decorate -2
+4586d0b (HEAD -> fm/feature-branch, main) instructions v2
+3909089 c2
+[exit 0]
+
+$ git -C /tmp/fm-live-4228/w3/sm3 log --oneline -1
+3909089 c2
+[exit 0]
+
+### sm3 is waiting on its own decision
+
+$ tail -n1 /tmp/fm-live-4228/w3/home/state/sm3.status
+needs-decision [key=pick4]: which staging region?
+[exit 0]
+
+### What a raw automatic send prints here (guard banner lines first, then deferred:)
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh sm3 --automatic reread AGENTS.md
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WORKTREE TANGLE - PRIMARY CHECKOUT IS ON A FEATURE BRANCH
+●  /tmp/fm-live-4228/w3/main is on 'fm/feature-branch', not its default branch 'main'.
+●  A crewmate likely branched/committed in the primary instead of its own worktree.
+●  The work is SAFE on the 'fm/feature-branch' ref.
+●  Restore the primary to 'main':
+●      git -C /tmp/fm-live-4228/w3/main checkout main
+●  then re-validate 'fm/feature-branch' in a proper isolated worktree.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+deferred: sm3 is waiting on its open decision or blocker (pick4); nothing was sent
+[exit 4]
+
+### Session start runs bootstrap
+[bootstrap exit 0]
+TANGLE: primary checkout on feature branch 'fm/feature-branch' (expected 'main'); the work is safe on that ref - restore the primary with: git -C /tmp/fm-live-4228/w3/main checkout main, then re-validate the branch in a proper worktree
+NUDGE_SECONDMATES: secondmate sm3: deferred: sm3 is waiting on its open decision or blocker (pick4); nothing was sent
+
+$ git -C /tmp/fm-live-4228/w3/sm3 log --oneline -1
+4586d0b instructions v2
+[exit 0]
+nudge retry marker: sm3.pending
+--- inbox sm3 ---
+./.escalated
+./.ring-state
+./handled/001.msg
+./handled/002.msg
+./handled/003.msg
+./handled/004.msg
+--- stand-in agent turns (sm3) ---
+
+### The decision closes; the next session start retries the retained nudge
+
+$ sh -c printf 'resolved [key=pick4]: eu-west\n' >> /tmp/fm-live-4228/w3/home/state/sm3.status
+[exit 0]
+[bootstrap exit 0]
+BOOTSTRAP_INFO: nudged fm-sm3 with 'firstmate was updated to the latest - please re-read your AGENTS.md to pick up the new instructions.'
+nudge retry marker: none
+--- inbox sm3 ---
+./.escalated
+./.ring-state
+./005.msg
+./handled/001.msg
+./handled/002.msg
+./handled/003.msg
+./handled/004.msg
+--- body 005.msg ---
+[fm-from-firstmate]⁣corr=8d83bc95f1fa3dd4 firstmate was updated to the latest - please re-read your AGENTS.md to pick up the new instructions.
+--- stand-in agent turns (sm3) ---
+18:47:10 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.

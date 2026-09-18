@@ -1,0 +1,41 @@
+### The captain has a half-typed draft sitting in secondmate sm's composer
+╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ > half-typed captain draft                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ? for shortcuts
+
+### A reconcile-style fire-and-forget automatic steer is sent
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh sm --automatic --fire-and-forget 0123456789abcdef reconcile your books
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-live-4228/home2/state/sm.inbox/001.msg and the watcher will ring it once more
+[exit 0]
+--- inbox sm ---
+./.retry-ring
+./001.msg
+
+$ cat /tmp/fm-live-4228/home2/state/sm.inbox/.retry-ring
+001.msg
+[exit 0]
+--- stand-in agent turns (sm) ---
+
+### The draft is cleared; the real watcher is started (poll 1s, inbox grace 3s)
+watcher pid 31649 started at 18:37:32
+after 25s at 18:37:57: watcher alive? yes
+--- stand-in agent turns (sm) ---
+18:37:37 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/home2/state/sm.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/home2/state/sm.inbox'/handled/.
+--- inbox sm ---
+./001.msg
+ring-state present? no
+wake queue: (empty)
+--- watcher triage log (retry lines) ---
+--- watcher stdout ---
+--- real tmux pane sess:fm-sm (capture-pane) ---
+ * Claude Code (stand-in agent for firstmate live test)
+[18:37:37] user turn: : Firstmate instruction waiting: list '/tmp/fm-live-4228/home2/state/sm.inbo
+[18:37:37] (agent would spend a full-context model turn here)
+╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ >                                                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ? for shortcuts
+--- watcher triage log ---
+[2026-09-18T18:37:37-0300] steer-inbox retry ring: sm 001.msg result=0

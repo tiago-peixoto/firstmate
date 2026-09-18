@@ -1,0 +1,44 @@
+### Parent-raised keys only (pending-reply escalation, captain hold relay, remote continuity blocker)
+
+$ cat /tmp/fm-live-4228/home/state/t1.status
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick]: answered: use alpha
+blocked [key=pending-reply-0123456789abcdef]: pending-reply-missed: no report
+needs-decision [key=captain-hold-t42-1]: captain hold t42: ship alpha or beta?
+blocked [key=remote-reply-continuity-t1]: remote reply continuity broke for t1 (gap)
+[exit 0]
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh t1 --automatic reconcile-style automatic nudge
+[exit 0]
+--- stand-in agent turns (t1) ---
+18:36:24 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/home/state/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/home/state/t1.inbox'/handled/.
+
+### Worker raises its own keyless blocker
+
+$ sh -c printf 'blocked: waiting on the captain for staging credentials\n' >> /tmp/fm-live-4228/home/state/t1.status
+[exit 0]
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh t1 --automatic reconcile-style automatic nudge
+deferred: t1 is waiting on its open decision or blocker (default); nothing was sent
+[exit 4]
+--- inbox t1 ---
+./handled/001.msg
+./handled/002.msg
+./handled/003.msg
+./handled/004.msg
+--- stand-in agent turns (t1) ---
+
+### Misuse is refused
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh sess:fm-t1 --automatic explicit backend target
+error: --automatic needs a task selector resolved through this home's metadata
+[exit 1]
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh t1 --automatic --resolve-key pick automatic answer
+error: --automatic cannot accompany --key or --resolve-key
+[exit 1]
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh t1 --automatic --key Enter
+error: --automatic cannot accompany --key or --resolve-key
+[exit 1]
+--- stand-in agent turns (t1) ---

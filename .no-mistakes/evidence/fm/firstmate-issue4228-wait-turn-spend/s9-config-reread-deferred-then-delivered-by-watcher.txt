@@ -1,0 +1,91 @@
+### Firstmate's watcher is armed and steady
+[18:43:40] armed: watcher: started pid=27475 (beacon fresh)
+[18:43:43] watcher woke firstmate: signal: /tmp/fm-live-4228/w3/home/state/sm3.status 
+    drain| wake annotation: unread wake-EVENT since last drain, not current state: sm3.status: needs-decision [key=pick1]: alpha or beta?
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: sm3.status: resolved [key=pick1]: answered: use alpha
+[18:43:46] armed: watcher: started pid=36347 (beacon fresh)
+[18:43:49] watcher still supervising (no wake)
+
+### Secondmate sm3 ends its turn waiting on its own decision
+
+$ sh -c printf 'needs-decision [key=pick2]: alpha or beta?\n' >> /tmp/fm-live-4228/w3/home/state/sm3.status
+[exit 0]
+[18:43:52] watcher still supervising (no wake)
+
+### The captain changes inherited config; firstmate runs config-push
+
+$ cat /tmp/fm-live-4228/w3/home/config/crew-harness
+codex
+[exit 0]
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-config-push.sh
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+config-push: /tmp/fm-live-4228/w3/home -> live secondmate homes
+secondmate sm3 (/private/tmp/fm-live-4228/w3/sm3):
+  crew-dispatch.json: unchanged
+  crew-harness: pushed
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  data/captain-shared.md: unchanged
+CONFIG_REREAD: secondmate sm3: deferred: sm3 is waiting on its open decision or blocker (pick2); nothing was sent
+[exit 0]
+
+$ cat /tmp/fm-live-4228/w3/sm3/config/crew-harness
+codex
+[exit 0]
+deferred flag: sm3
+--- inbox sm3 ---
+./handled/001.msg
+--- stand-in agent turns (sm3) ---
+
+### ~20s pass with the decision still open, watcher supervising
+[18:43:58] watcher woke firstmate: signal: /tmp/fm-live-4228/w3/home/state/sm3.status 
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: sm3.status: needs-decision [key=pick2]: alpha or beta?
+    drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[18:44:01] armed: watcher: started pid=56515 (beacon fresh)
+[18:44:06] watcher still supervising (no wake)
+[18:44:11] watcher still supervising (no wake)
+[18:44:16] watcher still supervising (no wake)
+deferred flag: sm3
+--- inbox sm3 ---
+./handled/001.msg
+--- stand-in agent turns (sm3) ---
+
+### Firstmate answers the decision deliberately
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh sm3 --resolve-key pick2 use alpha
+[exit 0]
+(sm3 reads and acks the answer)
+[18:44:24] watcher still supervising (no wake)
+[18:44:29] watcher still supervising (no wake)
+[18:44:35] watcher still supervising (no wake)
+[18:44:40] watcher woke firstmate: stale: sess:fm-sm3 (unread firstmate instruction: /tmp/fm-live-4228/w3/home/state/sm3.inbox/003.msg still unhandled after 3 doorbell delivery attempts with an idle pane; inspect the worker) 
+[18:44:43] armed: watcher: started pid=16450 (beacon fresh)
+deferred flag: 
+--- inbox sm3 ---
+./.escalated
+./.ring-state
+./003.msg
+./handled/001.msg
+./handled/002.msg
+--- body of 003.msg ---
+[fm-from-firstmate]⁣corr=8033535ae12b0f9e CONFIG_REREAD: /private/tmp/fm-live-4228/w3/sm3/state/.fm-inherited-config-reread.20260918T214352.00000001.GZUZPg
+--- stand-in agent turns (sm3) ---
+18:44:18 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
+18:44:21 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
+18:44:24 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
+18:44:28 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
+18:44:33 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
+
+NOTE (tester): the 18:44:18 turn is firstmate's deliberate answer (002.msg). The 18:44:21 turn is the
+watcher's --retry-deferred delivery of the held CONFIG_REREAD pointer (003.msg), about 3s after the
+decision closed, so the deferred flag is gone. The stand-in agent never reads or acks messages, so the
+later rings (18:44:24/28/33) and the final stale wake are the ordinary re-ring ladder for an
+unacknowledged, non-fire-and-forget record, with the grace compressed to 3s for this run. A real
+secondmate would ack 003.msg and the ladder would go quiet.

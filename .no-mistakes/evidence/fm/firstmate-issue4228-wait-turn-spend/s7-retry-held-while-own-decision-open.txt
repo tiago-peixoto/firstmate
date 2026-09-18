@@ -1,0 +1,61 @@
+### Firstmate arms its watcher and handles any pending wake until it is steady
+[18:40:36] armed: watcher: started pid=27891 (beacon fresh)
+[18:40:39] watcher woke firstmate: check: rearm-resurface 
+[18:40:42] armed: watcher: started pid=42055 (beacon fresh)
+[18:40:45] watcher woke firstmate: signal: /tmp/fm-live-4228/home2/state/sm.status 
+    drain| wake annotation: unread wake-EVENT since last drain, not current state: sm.status: needs-decision [key=pick]: ship alpha or beta?
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: sm.status: resolved [key=pick]: captain chose alpha in chat
+[18:40:49] armed: watcher: started pid=53137 (beacon fresh)
+[18:40:52] watcher still supervising (no wake)
+
+### A fire-and-forget automatic steer meets a draft in sm's composer, so its ring is skipped
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh sm --automatic --fire-and-forget 2123456789abcdef reconcile your books
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-live-4228/home2/state/sm.inbox/003.msg and the watcher will ring it once more
+[exit 0]
+
+### sm's turn ends waiting on its own decision (draft cleared, pane idle)
+
+$ sh -c printf 'needs-decision [key=pick2]: ship alpha or beta?\n' >> /tmp/fm-live-4228/home2/state/sm.status
+[exit 0]
+--- inbox sm ---
+./.retry-ring
+./003.msg
+./handled/001.msg
+./handled/002.msg
+[18:40:58] watcher woke firstmate: signal: /tmp/fm-live-4228/home2/state/sm.status 
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: sm.status: needs-decision [key=pick2]: ship alpha or beta?
+    drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[18:41:01] armed: watcher: started pid=71589 (beacon fresh)
+[18:41:06] watcher still supervising (no wake)
+[18:41:11] watcher still supervising (no wake)
+[18:41:17] watcher still supervising (no wake)
+[18:41:22] watcher still supervising (no wake)
+[18:41:22] after ~25s with the decision open:
+--- stand-in agent turns (sm) ---
+--- inbox sm ---
+./.retry-ring
+./003.msg
+./handled/001.msg
+./handled/002.msg
+
+### The decision closes
+
+$ sh -c printf 'resolved [key=pick2]: captain chose alpha in chat\n' >> /tmp/fm-live-4228/home2/state/sm.status
+[exit 0]
+[18:41:27] watcher woke firstmate: signal: /tmp/fm-live-4228/home2/state/sm.status 
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: sm.status: resolved [key=pick2]: captain chose alpha in chat
+[18:41:31] armed: watcher: started pid=25199 (beacon fresh)
+[18:41:36] watcher still supervising (no wake)
+[18:41:41] watcher still supervising (no wake)
+[18:41:46] watcher still supervising (no wake)
+[18:41:46] after ~20s with the decision closed:
+--- stand-in agent turns (sm) ---
+18:41:31 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/home2/state/sm.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/home2/state/sm.inbox'/handled/.
+--- inbox sm ---
+./003.msg
+./handled/001.msg
+./handled/002.msg
+--- watcher triage log ---
+[2026-09-18T18:41:31-0300] steer-inbox retry ring: sm 003.msg result=0

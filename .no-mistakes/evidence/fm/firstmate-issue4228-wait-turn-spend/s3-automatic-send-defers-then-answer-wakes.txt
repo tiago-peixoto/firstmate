@@ -1,0 +1,58 @@
+### Worker t1 ends its turn with its own open decision
+
+$ sh -c printf 'needs-decision [key=pick]: ship alpha or beta?\n' >> /tmp/fm-live-4228/home/state/t1.status
+[exit 0]
+
+$ cat /tmp/fm-live-4228/home/state/t1.status
+needs-decision [key=pick]: ship alpha or beta?
+[exit 0]
+
+### An automatic sender (e.g. re-read nudge) fires while the decision is open
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh t1 --automatic re-read your AGENTS.md instructions
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+[exit 4]
+--- inbox t1 ---
+./handled/001.msg
+--- stand-in agent turns (t1) ---
+
+### Firstmate sends its deliberate answer, resolving the key
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh t1 --resolve-key pick use alpha
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+[exit 0]
+
+$ tail -n 2 /tmp/fm-live-4228/home/state/t1.status
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick]: answered: use alpha
+[exit 0]
+--- inbox t1 ---
+./002.msg
+./handled/001.msg
+--- stand-in agent turns (t1) ---
+18:36:06 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/home/state/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/home/state/t1.inbox'/handled/.
+
+### Worker acks; the same automatic send now goes through
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh t1 --automatic re-read your AGENTS.md instructions
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+[exit 0]
+--- inbox t1 ---
+./003.msg
+./handled/001.msg
+./handled/002.msg
+--- stand-in agent turns (t1) ---
+18:36:10 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/home/state/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/home/state/t1.inbox'/handled/.
+--- real tmux pane sess:fm-t1 (capture-pane) ---
+ * Claude Code (stand-in agent for firstmate live test)
+[18:35:45] user turn: : Firstmate instruction waiting: list '/tmp/fm-live-4228/home/state/t1.inbox
+[18:35:45] (agent would spend a full-context model turn here)
+[18:36:06] user turn: : Firstmate instruction waiting: list '/tmp/fm-live-4228/home/state/t1.inbox
+[18:36:06] (agent would spend a full-context model turn here)
+[18:36:10] user turn: : Firstmate instruction waiting: list '/tmp/fm-live-4228/home/state/t1.inbox
+[18:36:10] (agent would spend a full-context model turn here)
+╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ >                                                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ? for shortcuts

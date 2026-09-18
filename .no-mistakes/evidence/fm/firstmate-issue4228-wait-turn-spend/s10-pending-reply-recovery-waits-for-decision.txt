@@ -1,0 +1,74 @@
+### Firstmate's watcher is armed and steady
+[18:50:40] armed: watcher: started pid=59154 (beacon fresh)
+[18:50:43] watcher still supervising (no wake)
+[18:50:46] watcher still supervising (no wake)
+
+### Firstmate sends sm3 a marked request that expects a correlated report (recovery grace 5s)
+
+$ /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V4TQ3YJ4WXR8NT34T0G6TD/bin/fm-send.sh sm3 what is the status of phase 8?
+[exit 0]
+### sm3's turn ends with a question of its own instead of the report
+
+$ sh -c printf 'needs-decision [key=phase8]: phase 8 needs a schema choice - A or B?\n' >> /tmp/fm-live-4228/w3/home/state/sm3.status
+[exit 0]
+pending reply record:
+corr_id=6aea9d9f6cddbaa0 phase=awaiting_report turn_seen_busy=0 request_turn_completed_epoch= recovery_attempted_epoch= 
+[18:50:56] watcher still supervising (no wake)
+[18:51:00] watcher woke firstmate: signal: /tmp/fm-live-4228/w3/home/state/sm3.status 
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: sm3.status: needs-decision [key=phase8]: phase 8 needs a schema choice - A or B?
+    drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[18:51:07] armed: watcher: started pid=99725 (beacon fresh)
+[18:51:11] watcher still supervising (no wake)
+[18:51:15] watcher still supervising (no wake)
+[18:51:19] watcher still supervising (no wake)
+[18:51:23] watcher still supervising (no wake)
+[18:51:23] ~25s later, decision still open:
+corr_id=6aea9d9f6cddbaa0 phase=awaiting_report recovery_attempted_epoch= turn_seen_busy=1 request_turn_completed_epoch=1789768267 
+--- inbox sm3 ---
+./011.msg
+./handled/001.msg
+./handled/002.msg
+./handled/003.msg
+./handled/004.msg
+./handled/005.msg
+./handled/006.msg
+./handled/007.msg
+./handled/008.msg
+./handled/009.msg
+./handled/010.msg
+--- stand-in agent turns (sm3) ---
+18:50:49 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
+
+### The decision closes
+
+$ sh -c printf 'resolved [key=phase8]: captain picked A\n' >> /tmp/fm-live-4228/w3/home/state/sm3.status
+[exit 0]
+[18:51:27] watcher still supervising (no wake)
+[18:51:31] watcher still supervising (no wake)
+[18:51:35] watcher woke firstmate: signal: /tmp/fm-live-4228/w3/home/state/sm3.status 
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: sm3.status: resolved [key=phase8]: captain picked A
+[18:51:41] armed: watcher: started pid=49140 (beacon fresh)
+[18:51:45] watcher still supervising (no wake)
+[18:51:45] ~16s after close:
+corr_id=6aea9d9f6cddbaa0 turn_seen_busy=1 request_turn_completed_epoch=1789768267 recovery_attempted_epoch=1789768286 phase=escalated 
+--- inbox sm3 ---
+./011.msg
+./012.msg
+./handled/001.msg
+./handled/002.msg
+./handled/003.msg
+./handled/004.msg
+./handled/005.msg
+./handled/006.msg
+./handled/007.msg
+./handled/008.msg
+./handled/009.msg
+./handled/010.msg
+--- body 011.msg ---
+[fm-from-firstmate]⁣corr=6aea9d9f6cddbaa0 what is the status of phase 8?
+--- body 012.msg ---
+[fm-from-firstmate]⁣corr=6aea9d9f6cddbaa0 REPOST REQUIRED: previous marked request had no correlated parent report. Reply on the parent status channel including corr=6aea9d9f6cddbaa0. Original request: what is the status of phase 8?
+--- stand-in agent turns (sm3) ---
+18:50:49 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
+18:51:29 TURN : Firstmate instruction waiting: list '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-live-4228/w3/home/state/sm3.inbox'/handled/.
