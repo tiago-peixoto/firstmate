@@ -75,6 +75,66 @@ test_human_coauthor_is_kept() {
   pass "a human Co-authored-by trailer survives next to a stripped Cursor trailer"
 }
 
+test_human_at_a_vendor_domain_is_kept() {
+  local repo hooks body
+  repo="$TMP_ROOT/vendor-human"
+  make_repo "$repo"
+  hooks="$TMP_ROOT/hooks-vendor-human"
+  "$STRIP" install "$hooks" "$repo" || fail "install should succeed"
+  printf 'note\n' >>"$repo/README.md"
+  git -C "$repo" add README.md
+  with_hooks_env "$hooks" git -C "$repo" commit -q \
+    --trailer 'Co-authored-by: Claude <noreply@anthropic.com>' \
+    --trailer 'Co-authored-by: Jane Doe <jane@anthropic.com>' \
+    --trailer 'Co-authored-by: Sam Roe <sam@cursor.com>' -m 'fix: vendor staff co-authors'
+  body=$(git -C "$repo" log -1 --format=%B)
+  assert_not_contains "$body" "noreply@anthropic.com" "the Claude bot trailer reached the commit object"
+  assert_contains "$body" "Co-authored-by: Jane Doe <jane@anthropic.com>" "a human at a vendor domain was stripped"
+  assert_contains "$body" "Co-authored-by: Sam Roe <sam@cursor.com>" "a human at a vendor domain was stripped"
+  pass "a human co-author at a vendor domain survives; only the exact bot address is stripped"
+}
+
+test_hook_manager_cannot_displace_the_strip() {
+  local repo hooks target body
+  if [ "$(id -u)" = 0 ]; then
+    pass "a hook manager cannot displace the strip (skipped as root)"
+    return 0
+  fi
+  repo="$TMP_ROOT/hook-manager"
+  make_repo "$repo"
+  hooks="$TMP_ROOT/hooks-manager"
+  "$STRIP" install "$hooks" "$repo" || fail "install should succeed"
+  target=$(with_hooks_env "$hooks" git -C "$repo" rev-parse --path-format=absolute --git-path hooks)
+  [ "$target" = "$hooks" ] || fail "a hook manager in the pane would resolve $target, not the strip dir $hooks"
+  mv "$target/commit-msg" "$target/commit-msg.old" 2>/dev/null &&
+    fail "a hook manager could rename the strip's commit-msg aside"
+  (printf '#!/bin/sh\nexit 0\n' >"$target/commit-msg") 2>/dev/null &&
+    fail "a hook manager could overwrite the strip's commit-msg"
+  (printf '#!/bin/sh\nexit 0\n' >"$target/post-update") 2>/dev/null &&
+    fail "a hook manager could add a hook to the strip dir"
+  printf 'note\n' >>"$repo/README.md"
+  git -C "$repo" add README.md
+  with_hooks_env "$hooks" git -C "$repo" commit -q --trailer 'Co-authored-by: Cursor <cursoragent@cursor.com>' -m 'fix: after a manager tried'
+  body=$(git -C "$repo" log -1 --format=%B)
+  assert_not_contains "$body" "cursoragent@cursor.com" "Cursor trailer survived a hook manager's install attempt"
+  pass "a hook manager resolving the pane hooks dir fails instead of displacing the strip"
+}
+
+test_reinstall_replaces_a_read_only_install() {
+  local repo hooks body
+  repo="$TMP_ROOT/reinstall"
+  make_repo "$repo"
+  hooks="$TMP_ROOT/hooks-reinstall"
+  "$STRIP" install "$hooks" "$repo" || fail "first install should succeed"
+  "$STRIP" install "$hooks" "$repo" || fail "a relaunch reinstall over the read-only install failed"
+  printf 'note\n' >>"$repo/README.md"
+  git -C "$repo" add README.md
+  with_hooks_env "$hooks" git -C "$repo" commit -q --trailer 'Co-authored-by: Cursor <cursoragent@cursor.com>' -m 'fix: after reinstall'
+  body=$(git -C "$repo" log -1 --format=%B)
+  assert_not_contains "$body" "cursoragent@cursor.com" "Cursor trailer survived after a reinstall"
+  pass "a relaunch reinstall replaces the read-only strip dir and still strips"
+}
+
 test_previous_commit_msg_hook_still_runs() {
   local repo orig hooks
   repo="$TMP_ROOT/chain-hook"
@@ -211,6 +271,9 @@ test_strip_msgfile_alone_does_not_rewrite_author_fields() {
 test_cursor_trailer_does_not_reach_the_commit_object
 test_claude_generated_with_line_is_stripped
 test_human_coauthor_is_kept
+test_human_at_a_vendor_domain_is_kept
+test_hook_manager_cannot_displace_the_strip
+test_reinstall_replaces_a_read_only_install
 test_previous_commit_msg_hook_still_runs
 test_relative_project_hookspath_still_runs
 test_inherited_hookspath_env_does_not_decide_the_chain

@@ -40,6 +40,15 @@
 # accept that gap rather than add a push-side rewrite or a push-side check. A
 # trailer found on a fleet commit therefore points at one of those two paths,
 # not at an unnoticed hole in the matcher.
+#
+# ACCEPTED RESIDUAL, ruled 2026-09-17. Inside a fleet pane git reports this
+# directory as the repository's hooks directory, so a hook manager run there
+# (lefthook's npm postinstall, pre-commit install) targets it and would
+# displace the strip. install leaves the directory and every hook in it
+# read-only, so such a manager fails loudly instead of silently winning. Hook
+# managers therefore cannot install from inside fleet panes until a registered
+# project genuinely needs it. Whoever removes the directory restores the owner
+# write bit first.
 set -u
 unset CDPATH GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 
@@ -63,7 +72,9 @@ trim_space() {
 
 # True when this line is AI attribution that must not reach a commit object:
 # an AI Co-Authored-By trailer, or a line that begins with the generated-with
-# form. Matches known product names and vendor emails only; a human co-author
+# form. Matches known product names and exact observed bot addresses only; an
+# address is added when a runtime is seen emitting it, never guessed from a
+# vendor domain, so a human co-author who works at a vendor is kept. A human
 # whose name or address merely contains a substring such as "ai" is kept, as is
 # prose that merely mentions the phrase mid-line. A "Made with <product>" line
 # is deliberately not matched: no observed incident produced one, and a guessed
@@ -97,7 +108,7 @@ fm_is_ai_attribution_line() {
   esac
   name=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
   case "$email" in
-  *@cursor.com | *@anysphere.com | *@anthropic.com | copilot@github.com | cursoragent@* | noreply@openai.com)
+  noreply@anthropic.com | cursoragent@* | noreply@openai.com | copilot@github.com)
     return 0
     ;;
   esac
@@ -137,27 +148,21 @@ quote_for_hook() {
 write_executable() {
   local dest=$1
   cat >"$dest" || return 1
-  chmod 700 "$dest"
+  chmod 500 "$dest"
 }
 
 # Shared body for every wrapper: after the pane-wide GIT_CONFIG override is
-# cleared, resolve this repository's previous hooksPath and exec that name if
-# it exists. Skip when that path is this launch's own hooks dir so the wrapper
+# cleared, resolve this repository's own hooks directory the way git does
+# (core.hooksPath, else the common dir's hooks) and exec that name if it
+# exists. Skip when that path is this launch's own hooks dir so the wrapper
 # cannot recurse into itself.
 runtime_chain_body() {
   local ours=$1
   cat <<EOF
 unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 ours=$(quote_for_hook "$ours")
-name=\$(basename "\$0")
-orig=\$(git config --path --get core.hooksPath 2>/dev/null || true)
-if [ -z "\$orig" ]; then
-  orig=\$(git rev-parse --git-path hooks) || exit 0
-fi
-case "\$orig" in
-/*) ;;
-*) orig="\$PWD/\$orig" ;;
-esac
+name=\${0##*/}
+orig=\$(git rev-parse --path-format=absolute --git-path hooks) || exit 0
 if [ "\$orig" = "\$ours" ]; then
   exit 0
 fi
@@ -174,14 +179,23 @@ EOF
 # because it is the one that carries the strip.
 #
 # reference-transaction and post-index-change are deliberately excluded, ruled
-# 2026-09-17. They are the only documented names git invokes more than once per
-# command - reference-transaction twice per updated ref, post-index-change on
-# every index write - so a wrapper for either turns a stat git used to skip into
-# a fork. Measured on git 2.50.1: a fetch of 300 new refs goes 0.23s -> 24.6s,
-# and a no-op /bin/sh hook still costs 4.9s, so the price is git's invocation
-# rather than the wrapper body. Neither name is one commit-message or lint
-# tooling installs, which is what this chaining exists to preserve. A project
-# that does install one loses chaining for it inside fleet panes only.
+# 2026-09-17. git invokes them twice per updated ref and on every index write,
+# so a wrapper for either turns a stat git used to skip into hundreds of forks
+# on one bulk command. Measured on git 2.50.1: a fetch of 300 new refs goes
+# 0.23s -> 24.6s, and a no-op /bin/sh hook still costs 4.9s, so the price is
+# git's invocation rather than the wrapper body. Neither name is one
+# commit-message or lint tooling installs, which is what this chaining exists
+# to preserve. A project that does install one loses chaining for it inside
+# fleet panes only.
+#
+# The names kept are not free either, and that cost is accepted, ruled
+# 2026-09-17. Every wrapper call forks bash plus one git rev-parse. A plain
+# commit fires four wrappers, and git's sequencer fires prepare-commit-msg and
+# post-commit once per replayed commit in rebase and cherry-pick, as git am does
+# its applypatch hooks per patch. Measured on git 2.50.1 with no project hooks:
+# one commit goes ~76ms -> ~276ms, and a 60-commit rebase 0.74s -> 3.7s. They
+# stay because git-lfs installs post-commit, post-checkout, post-merge and
+# pre-push, and a slower rebase inside a pane is the accepted price.
 FM_GIT_CLIENT_HOOKS='applypatch-msg pre-applypatch post-applypatch pre-commit
 pre-merge-commit prepare-commit-msg post-commit pre-rebase post-checkout
 post-merge pre-push post-rewrite pre-auto-gc sendemail-validate'
@@ -197,6 +211,7 @@ install_hooks() {
     echo "error: not a git worktree: $wt" >&2
     return 1
   }
+  chmod u+w "$hooks_dir" 2>/dev/null
   rm -rf "$hooks_dir"
   mkdir -p "$hooks_dir" || return 1
   chmod 700 "$hooks_dir" 2>/dev/null || true
@@ -216,6 +231,7 @@ set -u
 $(runtime_chain_body "$hooks_dir")
 EOF
   done
+  chmod 500 "$hooks_dir"
 }
 
 CMD=${1:-}
