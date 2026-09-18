@@ -1,0 +1,10 @@
+Repeated runs (N=15 each) of the single concurrent-resolution test
+trees: head = 750ee4f; reverted = 750ee4f with fm_current_pid restored to pre-#3789 ${BASHPID:-$$}; pre3789 = full tree at 8fd5575^
+
+head      test=new bash=5.3  pass=15 fail= 0  (139s)
+head      test=new bash=3.2  pass=15 fail= 0  (145s)
+reverted  test=new bash=5.3  pass= 0 fail=15  (31s)
+pre3789   test=new bash=5.3  pass= 0 fail=15  (33s)
+pre3789   test=new bash=3.2  pass= 0 fail=15  (41s)
+pre3789   test=old bash=5.3  pass=15 fail= 0  (26s)
+pre3789   test=old bash=3.2  pass= 7 fail= 8  (23s)

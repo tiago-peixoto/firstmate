@@ -1,0 +1,17 @@
+Regression-guard matrix for tests/fm-pending-reply.test.sh::test_concurrent_resolution_closes_escalation_once
+new = branch HEAD 750ee4f (5 trials, resolvers run as ( unset BASHPID; ... ) &)
+old = base 9bc051f (1 trial, resolvers run as fm_pending_reply_try_resolve ... &)
+trees: head = 750ee4f unchanged; reverted = 750ee4f with fm_current_pid restored to pre-#3789 ${BASHPID:-$$}; pre3789 = full tree at 8fd5575^
+
+head      test=new bash=5.3  rc=0  ok - concurrent resolution closes one keyed escalation exactly once
+head      test=new bash=3.2  rc=0  ok - concurrent resolution closes one keyed escalation exactly once
+head      test=old bash=5.3  rc=0  ok - concurrent resolution closes one keyed escalation exactly once
+head      test=old bash=3.2  rc=0  ok - concurrent resolution closes one keyed escalation exactly once
+reverted  test=new bash=5.3  rc=1  not ok - trial 1: concurrent resolvers did not append exactly one decision close
+reverted  test=new bash=3.2  rc=1  not ok - trial 1: concurrent resolvers did not append exactly one decision close
+reverted  test=old bash=5.3  rc=0  ok - concurrent resolution closes one keyed escalation exactly once
+reverted  test=old bash=3.2  rc=1  not ok - concurrent resolvers did not append exactly one decision close
+pre3789   test=new bash=5.3  rc=1  not ok - trial 2: concurrent resolvers did not append exactly one decision close
+pre3789   test=new bash=3.2  rc=1  not ok - trial 1: concurrent resolvers did not append exactly one decision close
+pre3789   test=old bash=5.3  rc=0  ok - concurrent resolution closes one keyed escalation exactly once
+pre3789   test=old bash=3.2  rc=0  ok - concurrent resolution closes one keyed escalation exactly once

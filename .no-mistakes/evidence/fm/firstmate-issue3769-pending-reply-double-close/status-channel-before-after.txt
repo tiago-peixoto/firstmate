@@ -1,0 +1,15 @@
+=== tree=pre3789 (stock /bin/bash 3.2, 8 subshell resolvers): closes=2 phase=resolved
+--- state/hibit.status (the parent status channel the captain reads):
+blocked [key=pending-reply-fd26f4e61ac249f9]: pending-reply-missed: task=hibit pending-reply-id=fd26f4e61ac249f9 request=concurrent resolution
+done [corr=fd26f4e61ac249f9]: concurrent delayed reply
+resolved [key=pending-reply-fd26f4e61ac249f9]: pending-reply-resolved: task=hibit pending-reply-id=fd26f4e61ac249f9 via=status
+resolved [key=pending-reply-fd26f4e61ac249f9]: pending-reply-resolved: task=hibit pending-reply-id=fd26f4e61ac249f9 via=status
+--- distinct resolved lines: 1 of 2
+
+=== tree=head (stock /bin/bash 3.2, 8 subshell resolvers): closes=1 phase=resolved
+--- state/hibit.status (the parent status channel the captain reads):
+blocked [key=pending-reply-45be2452d1e102b3]: pending-reply-missed: task=hibit pending-reply-id=45be2452d1e102b3 request=concurrent resolution
+done [corr=45be2452d1e102b3]: concurrent delayed reply
+resolved [key=pending-reply-45be2452d1e102b3]: pending-reply-resolved: task=hibit pending-reply-id=45be2452d1e102b3 via=status
+--- distinct resolved lines: 1 of 1
+

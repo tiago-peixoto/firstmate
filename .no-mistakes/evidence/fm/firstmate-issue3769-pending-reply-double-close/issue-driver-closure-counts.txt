@@ -1,0 +1,10 @@
+Issue #3769 driver: 8 concurrent fm_pending_reply_try_resolve calls on one escalated record, 25 rounds per row.
+Histogram = number of keyed "pending-reply-resolved" closes appended per round (the contract is exactly 1).
+subshell = 8 background subshells of one shell (as in the issue); process = 8 independent bash processes (as separate firstmate scripts race).
+
+head     bash=3.2  subshell -> closes=1:25
+head     bash=3.2  process  -> closes=1:25
+head     bash=5.3  subshell -> closes=1:25
+head     bash=5.3  process  -> closes=1:25
+pre3789  bash=3.2  subshell -> closes=1:9 closes=2:16
+pre3789  bash=3.2  process  -> closes=1:25
