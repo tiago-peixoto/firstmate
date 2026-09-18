@@ -1,0 +1,10 @@
+test_declared_pause_is_absorbed_for_every_agent_liveness_verdict: ok - a declared pause is absorbed on the bounded cadence for alive, unknown, and dead agent liveness 
+test_exited_declared_pause_is_bounded_and_live_gate_uses_pause_cadence: ok - exited declared-pause and captain-held panes use bounded pause cadence, and a live decision gate is absorbed on that same cadence 
+test_absorbed_replacement_wait_does_not_inherit_the_old_throttle: ok - absorbed paused and captain-held replacements each start their own re-surface cadence 
+test_live_declared_wait_churn_honors_the_resurface_throttle: ok - a parked live worker absorbs pane churn, rechecks once when its declaration ages past the cadence, then absorbs churn again 
+test_live_captain_held_first_sight_silenced_by_away_record: ok - a live captain-held pane past the cadence is absorbed on first sight while the away-posture record exists 
+test_nonterminal_stale_paused_absorbed_then_resurfaced: ok - a declared pause is absorbed on first sight, then re-surfaced as a recheck past the threshold, never wedge-escalated 
+test_nonterminal_stale_not_working_surfaced: ok - a not-provably-working non-terminal stale is surfaced immediately (never left to wait out the timer) 
+test_live_paused_until_controls_recheck_time: ok - a live paused worker stays absorbed until its declared time, then rechecks 
+test_captain_held_never_rechecked_while_away_record_exists: ok - a captain-held item is never rechecked while the away-posture record exists, and the recheck returns once the record is archived 
+test_paused_until_that_passed_is_rechecked_before_the_cadence: ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence 

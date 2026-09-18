@@ -1,0 +1,127 @@
+# Issue 2713 live run: real bin/fm-watch.sh + real bin/fm-crew-state.sh + real fm-wake-drain.sh against an isolated tmux 3.7c server (TMUX_TMPDIR=$SCRATCH/tmux).
+# Panes: fm-alive runs a process named 'grok' (agent), fm-unknown runs 'sleep' (non-agent, non-shell), fm-dead is an idle zsh.
+# Each case: worker writes its status line -> watcher surfaces the status signal -> firstmate drains+acks -> watcher re-armed while the pane sits idle.
+# 'base' = 9bc051f (before the change), 'head' = a818cca (this branch).
+
+## BEFORE (base 9bc051f): a live or unknown parked worker is surfaced as stale right after its declaration is acked
+=== [base-alive] code=base window=fmtest:fm-alive liveness=alive
+    pane foreground command: grok
+    last status line: paused: holding for the upstream tool release  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/base-alive/state/parked.status 
+    firstmate drained + acked: 1789714469	2	signal	parked.status	signal: $SCRATCH/cases/base-alive/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: holding for the upstream tool release 
+--- arm 2 (re-armed, pane left idle 12s): watcher exited; printed: stale: fmtest:fm-alive 
+    wake queue rows: stale | stale: fmtest:fm-alive;
+    triage log (stale lines):
+    pause flag .paused-fmtest_fm-alive: present; wedge timer .stale-since: absent
+=== [base-unknown] code=base window=fmtest:fm-unknown liveness=unknown
+    pane foreground command: sleep
+    last status line: paused: holding for the upstream tool release  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/base-unknown/state/parked.status 
+    firstmate drained + acked: 1789714479	2	signal	parked.status	signal: $SCRATCH/cases/base-unknown/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: holding for the upstream tool release 
+--- arm 2 (re-armed, pane left idle 12s): watcher exited; printed: stale: fmtest:fm-unknown 
+    wake queue rows: stale | stale: fmtest:fm-unknown;
+    triage log (stale lines):
+    pause flag .paused-fmtest_fm-unknown: present; wedge timer .stale-since: absent
+=== [base-captain-held] code=base window=fmtest:fm-alive liveness=alive
+    pane foreground command: grok
+    last status line: captain-held [key=route]: awaiting the captain on the routing call  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/base-captain-held/state/parked.status 
+    firstmate drained + acked: 1789714488	2	signal	parked.status	needs-decision: $SCRATCH/cases/base-captain-held/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: captain-held [key=route]: awaiting the captain on the routing call 
+--- arm 2 (re-armed, pane left idle 12s): watcher exited; printed: stale: fmtest:fm-alive 
+    wake queue rows: stale | stale: fmtest:fm-alive;
+    triage log (stale lines):
+    pause flag .paused-fmtest_fm-alive: present; wedge timer .stale-since: absent
+
+## AFTER (head a818cca): the declared wait is absorbed for every liveness verdict
+=== [head-alive] code=01M2SJHM18K55AEQHHJFD45ND3 window=fmtest:fm-alive liveness=alive
+    pane foreground command: grok
+    last status line: paused: holding for the upstream tool release  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/head-alive/state/parked.status 
+    firstmate drained + acked: 1789714498	2	signal	parked.status	signal: $SCRATCH/cases/head-alive/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: holding for the upstream tool release 
+--- arm 2 (re-armed, pane left idle 12s): watcher running; printed: 
+    wake queue rows: 
+    triage log (stale lines):
+      [2026-09-18T03:55:15-0300] absorbed stale (paused, awaiting external, age 19s): fmtest:fm-alive
+      [2026-09-18T03:55:16-0300] absorbed stale (paused, awaiting external, age 20s): fmtest:fm-alive
+      [2026-09-18T03:55:18-0300] absorbed stale (paused, awaiting external, age 21s): fmtest:fm-alive
+      [2026-09-18T03:55:19-0300] absorbed stale (paused, awaiting external, age 23s): fmtest:fm-alive
+      [2026-09-18T03:55:21-0300] absorbed stale (paused, awaiting external, age 24s): fmtest:fm-alive
+    pause flag .paused-fmtest_fm-alive: present; wedge timer .stale-since: absent
+=== [head-unknown] code=01M2SJHM18K55AEQHHJFD45ND3 window=fmtest:fm-unknown liveness=unknown
+    pane foreground command: sleep
+    last status line: paused: holding for the upstream tool release  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/head-unknown/state/parked.status 
+    firstmate drained + acked: 1789714524	2	signal	parked.status	signal: $SCRATCH/cases/head-unknown/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: holding for the upstream tool release 
+--- arm 2 (re-armed, pane left idle 12s): watcher running; printed: 
+    wake queue rows: 
+    triage log (stale lines):
+      [2026-09-18T03:55:38-0300] absorbed stale (paused, awaiting external, age 16s): fmtest:fm-unknown
+      [2026-09-18T03:55:40-0300] absorbed stale (paused, awaiting external, age 18s): fmtest:fm-unknown
+      [2026-09-18T03:55:41-0300] absorbed stale (paused, awaiting external, age 19s): fmtest:fm-unknown
+      [2026-09-18T03:55:43-0300] absorbed stale (paused, awaiting external, age 21s): fmtest:fm-unknown
+      [2026-09-18T03:55:45-0300] absorbed stale (paused, awaiting external, age 23s): fmtest:fm-unknown
+    pause flag .paused-fmtest_fm-unknown: present; wedge timer .stale-since: absent
+=== [head-dead] code=01M2SJHM18K55AEQHHJFD45ND3 window=fmtest:fm-dead liveness=dead
+    pane foreground command: zsh
+    last status line: paused: holding for the upstream tool release  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/head-dead/state/parked.status 
+    firstmate drained + acked: 1789714549	2	signal	parked.status	signal: $SCRATCH/cases/head-dead/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: holding for the upstream tool release 
+--- arm 2 (re-armed, pane left idle 12s): watcher running; printed: 
+    wake queue rows: 
+    triage log (stale lines):
+      [2026-09-18T03:56:06-0300] absorbed stale (paused, awaiting external, age 20s): fmtest:fm-dead
+      [2026-09-18T03:56:07-0300] absorbed stale (paused, awaiting external, age 21s): fmtest:fm-dead
+      [2026-09-18T03:56:09-0300] absorbed stale (paused, awaiting external, age 23s): fmtest:fm-dead
+      [2026-09-18T03:56:11-0300] absorbed stale (paused, awaiting external, age 25s): fmtest:fm-dead
+      [2026-09-18T03:56:12-0300] absorbed stale (paused, awaiting external, age 26s): fmtest:fm-dead
+    pause flag .paused-fmtest_fm-dead: present; wedge timer .stale-since: absent
+=== [head-captain-held] code=01M2SJHM18K55AEQHHJFD45ND3 window=fmtest:fm-alive liveness=alive
+    pane foreground command: grok
+    last status line: captain-held [key=route]: awaiting the captain on the routing call  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/head-captain-held/state/parked.status 
+    firstmate drained + acked: 1789714576	2	signal	parked.status	needs-decision: $SCRATCH/cases/head-captain-held/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: captain-held [key=route]: awaiting the captain on the routing call 
+--- arm 2 (re-armed, pane left idle 12s): watcher running; printed: 
+    wake queue rows: 
+    triage log (stale lines):
+      [2026-09-18T03:56:34-0300] absorbed stale (captain-held, awaiting the captain, age 20s): fmtest:fm-alive
+      [2026-09-18T03:56:36-0300] absorbed stale (captain-held, awaiting the captain, age 22s): fmtest:fm-alive
+      [2026-09-18T03:56:38-0300] absorbed stale (captain-held, awaiting the captain, age 23s): fmtest:fm-alive
+      [2026-09-18T03:56:39-0300] absorbed stale (captain-held, awaiting the captain, age 25s): fmtest:fm-alive
+      [2026-09-18T03:56:41-0300] absorbed stale (captain-held, awaiting the captain, age 27s): fmtest:fm-alive
+    pause flag .paused-fmtest_fm-alive: present; wedge timer .stale-since: absent
+
+## AFTER, guards: suppression stays bounded, and undeclared idle still surfaces
+=== [head-recheck] code=01M2SJHM18K55AEQHHJFD45ND3 window=fmtest:fm-alive liveness=alive
+    pane foreground command: grok
+    last status line: paused: holding for the upstream tool release  (status age 2000s, FM_PAUSE_RESURFACE_SECS=240)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/head-recheck/state/parked.status 
+    firstmate drained + acked: 1789714604	2	signal	parked.status	signal: $SCRATCH/cases/head-recheck/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: holding for the upstream tool release 
+--- arm 2 (re-armed, pane left idle 12s): watcher exited; printed: stale: fmtest:fm-alive (paused 2006s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+    wake queue rows: stale | stale: fmtest:fm-alive (paused 2006s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds);
+    triage log (stale lines):
+    pause flag .paused-fmtest_fm-alive: present; wedge timer .stale-since: absent
+--- arm 3 (recheck acked, pane churned, re-armed 10s): watcher running; printed: 
+    wake queue rows now: 
+    pane after churn: xxx 
+    triage log (last stale lines):
+      [2026-09-18T03:57:05-0300] absorbed stale (paused, awaiting external, age 2023s): fmtest:fm-alive
+      [2026-09-18T03:57:06-0300] absorbed stale (paused, awaiting external, age 2024s): fmtest:fm-alive
+      [2026-09-18T03:57:08-0300] absorbed stale (paused, awaiting external, age 2026s): fmtest:fm-alive
+=== [head-until-passed] code=01M2SJHM18K55AEQHHJFD45ND3 window=fmtest:fm-alive liveness=alive
+    pane foreground command: grok
+    last status line: paused: waiting on the vendor release until 2020-01-01T00:00Z  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/head-until-passed/state/parked.status 
+    firstmate drained + acked: 1789714631	2	signal	parked.status	signal: $SCRATCH/cases/head-until-passed/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: waiting on the vendor release until 2020-01-01T00:00Z 
+--- arm 2 (re-armed, pane left idle 12s): watcher exited; printed: stale: fmtest:fm-alive (paused 6s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared) 
+    wake queue rows: stale | stale: fmtest:fm-alive (paused 6s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared);
+    triage log (stale lines):
+    pause flag .paused-fmtest_fm-alive: present; wedge timer .stale-since: absent
+=== [head-undeclared] code=01M2SJHM18K55AEQHHJFD45ND3 window=fmtest:fm-alive liveness=alive
+    pane foreground command: grok
+    last status line: working: implementing the parser  (status age 0s, FM_PAUSE_RESURFACE_SECS=999)
+--- arm 1 (worker just declared the wait): watcher exited; printed: signal: $SCRATCH/cases/head-undeclared/state/parked.status 
+    firstmate drained + acked: 1789714638	2	signal	parked.status	signal: $SCRATCH/cases/head-undeclared/state/parked.status wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: working: implementing the parser 
+--- arm 2 (re-armed, pane left idle 12s): watcher exited; printed: stale: fmtest:fm-alive 
+    wake queue rows: stale | stale: fmtest:fm-alive;
+    triage log (stale lines):
+    pause flag .paused-fmtest_fm-alive: absent; wedge timer .stale-since: absent
