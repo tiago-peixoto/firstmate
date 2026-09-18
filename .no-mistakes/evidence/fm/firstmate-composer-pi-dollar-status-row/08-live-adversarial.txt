@@ -1,0 +1,4 @@
+(a) tail: To resume this session: pi --session 01a0b5a6-2be1-7242-8738-e3d6b0e3f734|tiago@Tiagos-MBP wt % PS1='$ ' bash --norc|$|
+(a) composer_state: base=unknown target=unknown
+(b) tail: ❯|$5 left in the budget|
+(b) composer_state: base=unknown target=pending

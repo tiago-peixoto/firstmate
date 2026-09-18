@@ -1,0 +1,3 @@
+(c) tail: transcript|────────────────────────|────────────────────────|$0.000 (sub) 0.0%/272k (auto)|$|
+(c) identity: "agent_not_found"
+(c) composer_state: base=unknown target=unknown

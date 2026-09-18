@@ -1,0 +1,5 @@
+herdr agent get: {"agent":"pi","agent_status":"idle"}
+status row: $0.000 (sub) 0.0%/272k (auto) (openai-codex) gpt-6-astra • high
+try 1: base 07dab42d composer_state=unknown  target 5f987b66 composer_state=empty
+try 2: base 07dab42d composer_state=unknown  target 5f987b66 composer_state=empty
+try 3: base 07dab42d composer_state=unknown  target 5f987b66 composer_state=empty

@@ -1,0 +1,11 @@
+$ fm-control.sh pidollar exit    # BASE 07dab42d, pi idle, footer $0.000 (sub) ...
+error: task pidollar's composer state is 'unknown', not proven empty; refusing to type the /quit exit command because it could concatenate onto existing text. Clear the composer, then retry 'exit'
+[exit status 1]
+pi still registered: {"agent":"pi","agent_status":"idle"}
+
+typed (no Enter): draft that must survive the exit attempt
+target composer_state=pending
+$ fm-control.sh pidollar exit    # TARGET 5f987b66, draft in composer
+error: task pidollar's composer visibly holds pending text; refusing to type the /quit exit command because it would concatenate onto that text. Clear or submit the pending text, then retry 'exit'
+[exit status 1]
+draft still on screen: 1 row(s); pi: {"agent":"pi","agent_status":"idle"}

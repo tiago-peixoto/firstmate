@@ -1,0 +1,87 @@
+<!doctype html><meta charset="utf-8"><title>pi dollar status live evidence</title><style>body{background:#f6f6f4;color:#222;font:14px/1.45 -apple-system,Helvetica,sans-serif;margin:24px;max-width:1280px}pre{white-space:pre;overflow-x:auto;padding:10px 12px;border-radius:6px;font:12.5px/1.35 Menlo,monospace}.term{background:#1e1e1e;color:#d4d4d4}.cli{background:#fff;border:1px solid #ddd;white-space:pre-wrap;overflow-wrap:anywhere}h3{margin:22px 0 6px}</style><h1>Pi dollar-first status row: live herdr lab run</h1>
+<p>Real pi 0.85.1 in an isolated herdr 0.9.0 lab session (<code>fm-lab-pidollar-*</code>). Base = 07dab42d, target = 5f987b66. The same pane is classified by both code roots.</p>
+<h3>1. Real idle pi screen: status row opens with $0.000 (sub) at column 0</h3><pre class="term"><span style="color:#f0c674">[Extensions]</span>                                                                                                            
+<span style="color:#666666">  herdr-agent-state.ts, pi-codex-accounts@0.1.1:src, pi-cursor-sdk:dist, pi-mcp-adapter@2.32.1, pi-web-access</span>           
+
+
+<span style="color:#b294bb">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span style="color:#1e1e1e;background:#d4d4d4"> </span>                                                                                                                       
+<span style="color:#b294bb">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span style="color:#666666">/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt (pidollar)</span>
+<span style="color:#666666">$0.000 (sub) 0.0%/272k (auto)                                                          (openai-codex) gpt-6-astra • high</span></pre>
+<h3>2. Composer verdict on that pane: base vs target</h3><pre class="cli">herdr agent get: {&quot;agent&quot;:&quot;pi&quot;,&quot;agent_status&quot;:&quot;idle&quot;}
+status row: $0.000 (sub) 0.0%/272k (auto) (openai-codex) gpt-6-astra • high
+try 1: base 07dab42d composer_state=unknown  target 5f987b66 composer_state=empty
+try 2: base 07dab42d composer_state=unknown  target 5f987b66 composer_state=empty
+try 3: base 07dab42d composer_state=unknown  target 5f987b66 composer_state=empty</pre>
+<h3>3. Base fm-control exit refuses; a typed draft still blocks target exit</h3><pre class="cli">$ fm-control.sh pidollar exit    # BASE 07dab42d, pi idle, footer $0.000 (sub) ...
+error: task pidollar&#x27;s composer state is &#x27;unknown&#x27;, not proven empty; refusing to type the /quit exit command because it could concatenate onto existing text. Clear the composer, then retry &#x27;exit&#x27;
+[exit status 1]
+pi still registered: {&quot;agent&quot;:&quot;pi&quot;,&quot;agent_status&quot;:&quot;idle&quot;}
+
+typed (no Enter): draft that must survive the exit attempt
+target composer_state=pending
+$ fm-control.sh pidollar exit    # TARGET 5f987b66, draft in composer
+error: task pidollar&#x27;s composer visibly holds pending text; refusing to type the /quit exit command because it would concatenate onto that text. Clear or submit the pending text, then retry &#x27;exit&#x27;
+[exit status 1]
+draft still on screen: 1 row(s); pi: {&quot;agent&quot;:&quot;pi&quot;,&quot;agent_status&quot;:&quot;idle&quot;}</pre>
+<h3>3b. Pane while the draft is typed (draft kept after the refused exit)</h3><pre class="term">
+
+<span style="color:#b294bb">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+draft that must survive the exit attempt<span style="color:#1e1e1e;background:#d4d4d4"> </span>                                                                               
+<span style="color:#b294bb">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span style="color:#666666">/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt (pidollar)</span>
+<span style="color:#666666">$0.000 (sub) 0.0%/272k (auto)                                                          (openai-codex) gpt-6-astra • high</span></pre>
+<h3>4. Target fm-control exit stops pi; re-exit is idempotent; the dead shell reads unknown</h3><pre class="cli">before: pi {&quot;agent&quot;:&quot;pi&quot;,&quot;agent_status&quot;:&quot;idle&quot;}, status row: $0.000 (sub) 0.0%/272k (auto)
+target composer_state=empty
+$ fm-control.sh pidollar exit    # TARGET 5f987b66
+stopped pidollar harness=pi backend=herdr endpoint=fm-lab-pidollar-22573:w1:p2 worktree=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt
+[exit status 0]
+after: herdr agent get -&gt; {&quot;code&quot;:&quot;agent_not_found&quot;,&quot;message&quot;:&quot;agent target w1:p2 not found&quot;}
+pane process state: shell
+recovery-grade agent state: dead
+dead-shell pane composer_state: base=unknown target=unknown
+$ fm-control.sh pidollar exit    # TARGET again (idempotent)
+already-stopped pidollar harness=pi backend=herdr endpoint=fm-lab-pidollar-22573:w1:p2 worktree=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt
+[exit status 0]</pre>
+<h3>5. Relaunch: base refuses at the exit step, target relaunches in the same endpoint</h3><pre class="cli">before: pi {&quot;agent&quot;:&quot;pi&quot;,&quot;agent_status&quot;:&quot;idle&quot;}, status row: $0.000 (sub) 0.0%/272k (auto)
+composer_state: base=unknown target=empty
+$ fm-control.sh pidollar relaunch --note &quot;...&quot;    # BASE 07dab42d
+error: task pidollar&#x27;s composer state is &#x27;unknown&#x27;, not proven empty; refusing to type the /quit exit command because it could concatenate onto existing text. Clear the composer, then retry &#x27;relaunch&#x27;
+error: relaunch of pidollar failed while stopping the old agent, which is still running; its original instructions were restored
+[exit status 1]
+$ fm-control.sh pidollar relaunch --note &quot;...&quot;    # TARGET 5f987b66
+warning: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/home/data/pidollar/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+relaunched pidollar harness=pi from=pi model=default effort=default backend=herdr endpoint=fm-lab-pidollar-22573:w1:p2 worktree=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt
+[exit status 0]</pre>
+<h3>6. The relaunched pi (footer still dollar-first) exits through the target control plane</h3><pre class="cli">relaunched: pi {&quot;agent&quot;:&quot;pi&quot;,&quot;agent_status&quot;:&quot;idle&quot;}, agent state alive
+settled: agent_status=idle, status row: $0.000 (sub) 0.3%/272k (auto)
+composer_state: base=unknown target=empty
+$ fm-control.sh pidollar exit    # TARGET 5f987b66, relaunched pi
+stopped pidollar harness=pi backend=herdr endpoint=fm-lab-pidollar-22573:w1:p2 worktree=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt
+[exit status 0]
+recovery-grade agent state: dead</pre>
+<h3>6b. Relaunched pi screen before that exit</h3><pre class="term">
+ <span style="color:#cc6666">Error: Codex error: The usage limit has been reached</span>                                                                   
+
+<span style="color:#b294bb">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span style="color:#1e1e1e;background:#d4d4d4"> </span>                                                                                                                       
+<span style="color:#b294bb">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span style="color:#666666">/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt (pidollar)</span>
+<span style="color:#666666">$0.000 (sub) 0.3%/272k (auto)                                                          (openai-codex) gpt-6-astra • high</span></pre>
+<h3>7. Read-only probe of the three live local pi mates (reproduction 2)</h3><pre class="cli">solo-dev-mate       sample 1  identity=pi/done      base=empty    target=empty    status row: ↑74k ↓1.1k R324k CH99.4% $0.000 (sub) 16.0%/262k (auto)
+solo-dev-mate       sample 2  identity=pi/done      base=empty    target=empty    status row: ↑74k ↓1.1k R324k CH99.4% $0.000 (sub) 16.0%/262k (auto)
+solo-dev-mate       sample 3  identity=pi/done      base=empty    target=empty    status row: ↑74k ↓1.1k R324k CH99.4% $0.000 (sub) 16.0%/262k (auto)
+artemis-mate        sample 1  identity=pi/done      base=empty    target=empty    status row: ↑272k ↓48k R16M CH99.9% $0.000 (sub) 78.2%/262k (auto)
+artemis-mate        sample 2  identity=pi/done      base=empty    target=empty    status row: ↑272k ↓48k R16M CH99.9% $0.000 (sub) 78.2%/262k (auto)
+artemis-mate        sample 3  identity=pi/done      base=empty    target=empty    status row: ↑272k ↓48k R16M CH99.9% $0.000 (sub) 78.2%/262k (auto)
+opensourcerer-mate  sample 1  identity=pi/done      base=empty    target=empty    status row: ↑359k ↓55k R20M CH99.9% $0.000 (sub) 66.5%/262k (auto)
+opensourcerer-mate  sample 2  identity=pi/done      base=empty    target=empty    status row: ↑359k ↓55k R20M CH99.9% $0.000 (sub) 66.5%/262k (auto)
+opensourcerer-mate  sample 3  identity=pi/done      base=empty    target=empty    status row: ↑359k ↓55k R20M CH99.9% $0.000 (sub) 66.5%/262k (auto)</pre>
+<h3>8. Adversarial: real dead shells and a bare-glyph pane never read empty</h3><pre class="cli">(a) tail: To resume this session: pi --session 01a0b5a6-2be1-7242-8738-e3d6b0e3f734|tiago@Tiagos-MBP wt % PS1=&#x27;$ &#x27; bash --norc|$|
+(a) composer_state: base=unknown target=unknown
+(b) tail: ❯|$5 left in the budget|
+(b) composer_state: base=unknown target=pending</pre>
+<h3>8c. Pi-shaped frame directly above a real bash &quot;$ &quot; prompt</h3><pre class="cli">(c) tail: transcript|────────────────────────|────────────────────────|$0.000 (sub) 0.0%/272k (auto)|$|
+(c) identity: &quot;agent_not_found&quot;
+(c) composer_state: base=unknown target=unknown</pre>

@@ -1,0 +1,22 @@
+pi --no-session
+tiago@Tiagos-MBP wt % pi --no-session
+
+ [0m[1m[38;2;138;190;183mpi[0m[38;2;102;102;102m v0.85.1[0m                                                                                                             
+ [0m[38;2;102;102;102mescape[0m[38;2;128;128;128m interrupt · [0m[38;2;102;102;102mctrl+c/ctrl+d[0m[38;2;128;128;128m clear/exit · [0m[38;2;102;102;102m/[0m[38;2;128;128;128m commands · [0m[38;2;102;102;102m![0m[38;2;128;128;128m bash · [0m[38;2;102;102;102mctrl+o[0m[38;2;128;128;128m more[0m                                        
+ [0m[38;2;102;102;102mPress ctrl+o to show full startup help and loaded resources.[0m                                                           
+                                                                                                                        
+ [0m[38;2;102;102;102mPi can explain its own features and look up its docs. Ask it how to use or extend Pi.[0m                                  
+
+[0m[38;2;240;198;116m[Skills][0m                                                                                                                
+[0m[38;2;102;102;102m  context7-mcp, mcp-scripting, no-mistakes, ponytail, ponytail-audit, ponytail-debt, ponytail-gain, ponytail-help,      [0m
+[0m[38;2;102;102;102mponytail-review, typesafe-ai[0m                                                                                            
+
+[0m[38;2;240;198;116m[Extensions][0m                                                                                                            
+[0m[38;2;102;102;102m  herdr-agent-state.ts, pi-codex-accounts@0.1.1:src, pi-cursor-sdk:dist, pi-mcp-adapter@2.32.1, pi-web-access[0m           
+
+
+[0m[38;2;178;148;187m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[0m[7m [0m                                                                                                                       
+[0m[38;2;178;148;187m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[0m
+[0m[38;2;102;102;102m/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-pidollar-live.6XYh9Z/wt (pidollar)[0m
+[0m[38;2;102;102;102m$0.000 (sub) 0.0%/272k (auto)                                                          (openai-codex) gpt-6-astra • high[0m
