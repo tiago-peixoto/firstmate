@@ -4172,17 +4172,14 @@ fi
 # homes are firstmate clones; a launch whose worktree is not git fails closed
 # rather than shipping a runtime that cannot strip.
 GIT_HOOKS_DIR="$STATE_REAL/$ID.git-hooks"
-GIT_HOOKS_INSTALLED=0
-if git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if ! "$FM_ROOT/bin/fm-git-strip-ai-trailers.sh" install "$GIT_HOOKS_DIR" "$WT"; then
-    echo "error: could not install the AI-trailer strip hooks for $ID" >&2
-    exit 1
-  fi
-  GIT_HOOKS_INSTALLED=1
-else
+git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
   echo "error: could not install the AI-trailer strip hooks for $ID: $WT is not a git worktree" >&2
   exit 1
-fi
+}
+"$FM_ROOT/bin/fm-git-strip-ai-trailers.sh" install "$GIT_HOOKS_DIR" "$WT" || {
+  echo "error: could not install the AI-trailer strip hooks for $ID" >&2
+  exit 1
+}
 
 # Delivery posture recorded in meta so fm-teardown's safety check and the
 # validate/merge stages can branch on it. A ship task carries the explicit
@@ -4470,9 +4467,7 @@ fi
 # rewriting the project's core.hooksPath. GIT_CONFIG_* takes precedence over
 # config files and is inherited by child git processes. Prefix, never export
 # into this spawn process, so firstmate's own git is unchanged.
-if [ "$GIT_HOOKS_INSTALLED" = 1 ]; then
-  LAUNCH="GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=$(shell_quote "$GIT_HOOKS_DIR") $LAUNCH"
-fi
+LAUNCH="GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=$(shell_quote "$GIT_HOOKS_DIR") $LAUNCH"
 if [ -z "$SPAWN_TRACEPARENT" ] && [ "$RELAUNCH" -eq 1 ]; then
   LAUNCH="unset TRACEPARENT; $LAUNCH"
 fi

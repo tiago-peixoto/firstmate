@@ -170,10 +170,19 @@ EOF
 # fsmonitor-watchman, and the git-p4 names are left out because git never looks
 # them up in a fleet worker's own worktree. commit-msg is written separately
 # because it is the one that carries the strip.
+#
+# reference-transaction and post-index-change are deliberately excluded, ruled
+# 2026-09-17. They are the only documented names git invokes more than once per
+# command - reference-transaction twice per updated ref, post-index-change on
+# every index write - so a wrapper for either turns a stat git used to skip into
+# a fork. Measured on git 2.50.1: a fetch of 300 new refs goes 0.23s -> 24.6s,
+# and a no-op /bin/sh hook still costs 4.9s, so the price is git's invocation
+# rather than the wrapper body. Neither name is one commit-message or lint
+# tooling installs, which is what this chaining exists to preserve. A project
+# that does install one loses chaining for it inside fleet panes only.
 FM_GIT_CLIENT_HOOKS='applypatch-msg pre-applypatch post-applypatch pre-commit
 pre-merge-commit prepare-commit-msg post-commit pre-rebase post-checkout
-post-merge pre-push post-rewrite pre-auto-gc sendemail-validate
-reference-transaction post-index-change'
+post-merge pre-push post-rewrite pre-auto-gc sendemail-validate'
 
 install_hooks() {
   local hooks_dir=$1 wt=$2 name
