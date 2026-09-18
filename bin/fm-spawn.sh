@@ -1087,6 +1087,7 @@ RELAUNCH_REPLACEMENT_STATE=
 RELAUNCH_REPLACEMENT_WT=
 CONFIG_INHERIT_LOCK=
 CONFIG_INHERIT_LOCK_HELD=0
+GIT_HOOKS_DIR=
 
 spawn_fresh_commit_rollback() {
   if fm_backlog_atomic_transition rollback "$STATE/$ID.meta" \
@@ -1216,6 +1217,16 @@ spawn_abort_cleanup() {
   if [ "$SPAWN_META_LOCK_HELD" = 1 ]; then
     SPAWN_META_LOCK_HELD=0
     fm_lock_release "$SPAWN_META_LOCK" || true
+  fi
+  # The per-id spawn lock is retaken so a concurrent spawn of the same id, which
+  # reinstalls this strip dir, is never undone.
+  if [ "$status" -ne 0 ] && [ -n "$GIT_HOOKS_DIR" ] &&
+    fm_lock_try_acquire "$SPAWN_TASK_LOCK"; then
+    if [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
+      chmod u+w "$GIT_HOOKS_DIR" 2>/dev/null || true
+      rm -rf "$GIT_HOOKS_DIR" 2>/dev/null || true
+    fi
+    fm_lock_release "$SPAWN_TASK_LOCK" || true
   fi
   # A spawn that aborts after claiming its slot but before its record survives
   # must not leave a claim naming a task no record describes. The release is a

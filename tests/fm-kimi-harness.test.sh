@@ -508,6 +508,9 @@ test_kimi_unconfirmed_delivery_fails_loudly() {
     "unconfirmed kimi delivery lacked a loud diagnostic"
   assert_grep 'failed: kimi brief pointer delivery was not confirmed' "$HOME_DIR/state/$id.status" \
     "unconfirmed kimi delivery did not leave a supervisor-visible failure"
+  [ ! -e "$HOME_DIR/state/$id.meta" ] || fail "an unconfirmed kimi delivery kept its task record"
+  [ ! -e "$HOME_DIR/state/$id.git-hooks" ] ||
+    fail "an unconfirmed kimi delivery leaked its read-only strip dir"
   pass "fm-spawn: kimi treats a silent pointer drop as a failed spawn"
 }
 
@@ -523,6 +526,9 @@ test_kimi_readiness_gate_precedes_pointer() {
   assert_contains "$out" "kimi did not show a verified ready signal" \
     "kimi readiness failure lacked a loud diagnostic"
   [ ! -s "$CASE_DIR/pointer.log" ] || fail "kimi pointer was sent before readiness"
+  [ ! -e "$HOME_DIR/state/$id.meta" ] || fail "a kimi spawn that never became ready kept its task record"
+  [ ! -e "$HOME_DIR/state/$id.git-hooks" ] ||
+    fail "a kimi spawn that never became ready leaked its read-only strip dir"
   jq -e --arg id "$id" 'any(.endpoints[]; .id == $id)' \
     "$HOME_DIR/state/home-summary.json" >/dev/null \
     || fail "kimi readiness failure omitted its durable endpoint from the home summary"

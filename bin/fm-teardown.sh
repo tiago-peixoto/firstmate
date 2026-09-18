@@ -2468,6 +2468,7 @@ remove_firstmate_home() {
     restore_firstmate_home_process_events "$abs_home_path" "$label" "$process_event_backup" || return $?
     return 1
   fi
+  chmod u+w "$abs_home_path"/state/*.git-hooks 2>/dev/null || true
   if firstmate_home_has_treehouse_slot "$abs_home_path"; then
     command -v treehouse >/dev/null 2>&1 || {
       echo "error: treehouse command not found; cannot return $label $abs_home_path" >&2
