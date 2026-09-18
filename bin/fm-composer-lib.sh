@@ -61,9 +61,10 @@
 #                A bare composer's WRAP region (typed input continuing on the
 #                rows beneath the glyph row) is bounded by blank rows, by
 #                structural edges, and by the FURNITURE rows a harness draws
-#                directly below its composer - omp's status row and
-#                braille-only animation rows (declared once below, next to
-#                the idle placeholders) - none of which is ever typed input.
+#                directly below its composer - omp's status row, pi's cost
+#                and context-usage footer, and braille-only animation rows
+#                (declared once below, next to the idle placeholders) - none
+#                of which is ever typed input.
 #   left-bar   - opencode: rows prefixed by a heavy left bar `┃` with no
 #                closing border, holding the idle hint, blank rows, and a
 #                mode/model footer line.
@@ -442,6 +443,17 @@ FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT='^(Build|Plan)[[:space:]]+·[[:space:]]+'
 # a middle dot. It is consulted only as the boundary BELOW a bare composer,
 # never on the composer row itself.
 FM_COMPOSER_OMP_STATUS_RE_DEFAULT='^[[:space:]]*(π|󰵗)[[:space:]]+·[[:space:]]|^[[:space:]]*'"$FM_OMP_SPINNER_FRAMES_RE"'[[:space:]]+[0-9]+[smh]([[:space:]]|$)|[[:space:]]·[[:space:]].*[0-9]+(\.[0-9]+)?%/[0-9]+K'
+# Pi draws a one-row status footer BELOW its separated composer. The 2026-09-17
+# solo-dev-vps repro started at column 0 with a session-cost cell (`$0.000
+# (sub) 5.4%/272k (auto)`), so the dead-shell heuristic took that `$` as a
+# prompt, cursorless selection failed, and herdr exit/relaunch refused on
+# `unknown`. A row is pi status furniture when it opens with a dollar amount
+# (`$` immediately followed by a digit, never `$` then whitespace, which is
+# still a prompt) or when it carries Pi's context-usage cell (`5.4%/272k`,
+# either k or K). Consulted as the SHELL_ROW exception and as a wrap-region
+# bound, never as composer content: a status-like string typed BETWEEN the
+# separator pair still reads pending.
+FM_COMPOSER_PI_STATUS_RE_DEFAULT='^\$[0-9]+(\.[0-9]+)?([[:space:]]|$)|[0-9]+(\.[0-9]+)?%/[0-9]+[kKmM]'
 # Braille-pattern cells (U+2800..U+28FF) are animation furniture: codex-cli
 # 0.154.0 draws an idle "starfield" of them on the row above its `›` prompt
 # row, on the `›` row itself after the dim `Ask Codex to do anything`
@@ -775,7 +787,9 @@ _fm_composer_scan_screen() {  # <plain-screen> <cursor-or-empty> [extract-wrap]
     # Bare agent-glyph rows: the glyph itself is the container proof. Bare
     # shell glyphs are deliberately not candidates (dead-shell rule). Keep
     # lower shell prompts as staleness evidence for cursorless selection.
-    if [ "$top" -lt 0 ] && fm_composer_leading_shell_glyph_var glyph "$trimmed"; then
+    # Pi's cost footer can open with `$0.000`; that is furniture, not a prompt.
+    if [ "$top" -lt 0 ] && fm_composer_leading_shell_glyph_var glyph "$trimmed" \
+       && ! _fm_composer_row_is_pi_status "$trimmed"; then
       FM_COMPOSER_SCAN_SHELL_ROW=$row
     elif fm_composer_leading_agent_glyph_var glyph "$trimmed"; then
       FM_COMPOSER_SCAN_BARE_ROW=$row
@@ -1072,6 +1086,13 @@ _fm_composer_row_is_omp_status() {  # <trimmed-row>
   fm_composer_idle_matches "$1" "${FM_COMPOSER_OMP_STATUS_RE:-$FM_COMPOSER_OMP_STATUS_RE_DEFAULT}" sensitive
 }
 
+# _fm_composer_row_is_pi_status: 0 when the trimmed row is Pi's status footer
+# (FM_COMPOSER_PI_STATUS_RE_DEFAULT above). Composer furniture that sits below
+# the separated pair; a `$` cost cell must not count as a dead-shell prompt.
+_fm_composer_row_is_pi_status() {  # <trimmed-row>
+  fm_composer_idle_matches "$1" "${FM_COMPOSER_PI_STATUS_RE:-$FM_COMPOSER_PI_STATUS_RE_DEFAULT}" sensitive
+}
+
 # _fm_composer_row_is_braille_furniture: 0 when the row is non-blank and its
 # non-whitespace content is entirely braille cells (fm_composer_strip_braille
 # above) - an animation row that never counts as typed content and bounds a
@@ -1115,6 +1136,7 @@ _fm_composer_wrap_region_ok() {  # <plain-screen> <glyph-row> <cursor-row>
     [ -n "$trimmed" ] || return 1
     if fm_composer_row_has_edge "$trimmed"; then return 1; fi
     if _fm_composer_row_is_omp_status "$trimmed"; then return 1; fi
+    if _fm_composer_row_is_pi_status "$trimmed"; then return 1; fi
     if _fm_composer_row_is_braille_furniture "$trimmed"; then return 1; fi
     if fm_composer_leading_shell_glyph_var glyph "$trimmed"; then return 1; fi
     row=$((row + 1))
@@ -1256,6 +1278,7 @@ _fm_composer_select_cursorless() {
       [ -n "$trimmed" ] || break
       fm_composer_row_has_edge "$trimmed" && break
       _fm_composer_row_is_omp_status "$trimmed" && break
+      _fm_composer_row_is_pi_status "$trimmed" && break
       _fm_composer_row_is_braille_furniture "$trimmed" && break
       FM_COMPOSER_SELECTED_LAST=$next
       next=$((next + 1))

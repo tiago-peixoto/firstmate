@@ -119,7 +119,9 @@ case "${1:-}" in
   display-message)
     for a in "$@"; do
       case "$a" in
-        *cursor_y*) printf '1\n'; exit 0 ;;
+        *cursor_y*)
+          if [ -f "$D/cursor_y" ]; then cat "$D/cursor_y"; printf '\n'; exit 0; fi
+          printf '1\n'; exit 0 ;;
         *pane_current_command*) cat "$D/command"; printf '\n'; exit 0 ;;
         *pane_current_path*) cat "$D/cwd"; printf '\n'; exit 0 ;;
       esac
@@ -701,6 +703,44 @@ test_idle_agent_is_not_interrupted() {
   pass "fm-control exit: an idle agent goes straight to its exit command"
 }
 
+test_exit_proceeds_on_pi_dollar_status_and_blank_idle() {
+  # The two 2026-09 herdr-pi pane shapes. The control plane types /quit only
+  # when composer_state is empty; these fixtures must not refuse as unknown.
+  local dir out rc
+  dir=$(new_case pi-dollar)
+  add_task "$dir" t1 pi
+  alive_as "$dir" pi
+  printf '2\n' > "$dir/fake/cursor_y"
+  printf '%s\n' \
+    'transcript' \
+    '────────────────────────' \
+    '' \
+    '────────────────────────' \
+    $'$0.000 (sub) 5.4%/272k (auto)' > "$dir/fake/pane"
+  out=$(run_control "$dir" t1 exit); rc=$?
+  expect_code 0 "$rc" "exit on a pi pane with a dollar-first status footer should proceed"$'\n'"$out"
+  [ "$(literals "$dir")" = "/quit" ] \
+    || fail "dollar-first status exit should type /quit, got: $(literals "$dir")"
+  assert_contains "$out" "stopped t1 harness=pi" "dollar-first status exit should report the stop"
+
+  dir=$(new_case pi-blank)
+  add_task "$dir" t1 pi
+  alive_as "$dir" pi
+  printf '2\n' > "$dir/fake/cursor_y"
+  printf '%s\n' \
+    'transcript' \
+    '────────────────────────' \
+    '' \
+    '────────────────────────' \
+    'proj (main)' > "$dir/fake/pane"
+  out=$(run_control "$dir" t1 exit); rc=$?
+  expect_code 0 "$rc" "exit on a blank idle pi composer should proceed"$'\n'"$out"
+  [ "$(literals "$dir")" = "/quit" ] \
+    || fail "blank idle exit should type /quit, got: $(literals "$dir")"
+  assert_contains "$out" "stopped t1 harness=pi" "blank idle exit should report the stop"
+  pass "fm-control exit: pi dollar-first status and blank idle composers proceed"
+}
+
 test_interrupt_without_acknowledgement_preserves_busy_state() {
   local dir gen before after out rc
   dir=$(new_case unconfirmed)
@@ -905,6 +945,7 @@ test_interrupt_refuses_when_no_agent_runs
 test_ambiguous_endpoint_refuses
 test_busy_agent_is_interrupted_before_the_exit_command
 test_idle_agent_is_not_interrupted
+test_exit_proceeds_on_pi_dollar_status_and_blank_idle
 test_interrupt_without_acknowledgement_preserves_busy_state
 test_muse_interrupt_confirms_adapter_acknowledgement
 test_interrupt_revalidates_agent_after_acknowledgement_wait
