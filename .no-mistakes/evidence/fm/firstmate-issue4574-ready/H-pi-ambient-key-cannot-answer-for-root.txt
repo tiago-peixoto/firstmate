@@ -1,0 +1,27 @@
+## Scenario H: declared Pi root stores no personal-llm credential; its models.json reads $PERSONAL_ENV_KEY
+$ cat config/pi-account
+/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-envkey
+personal-llm
+(spawning shell: PERSONAL_ENV_KEY=AMBIENT-SPAWN-ENV-KEY; tmux server: PERSONAL_ENV_KEY=AMBIENT-ENV-KEY)
+$ fm-spawn.sh t-pi-envkey <proj> --mode local-only --yolo off --harness pi --model personal-llm/m1
+error: the Pi account /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-envkey cannot authenticate --provider personal-llm (pi auth check: not_ready personal-llm credentials_not_configured); log in under it with PI_CODING_AGENT_DIR=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-envkey pi, then /login, or pass --model as <provider>/<id>
+exit=1
+$ tmux windows:
+firstmate:control
+firstmate:fm-t-pi-personal
+firstmate:fm-t-pi-mx
+$ ls state/:
+.last-watcher-beat
+
+### H2: the home explicitly selects environment credentials
+$ cat config/pi-account
+/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-envkey
+personal-llm
+environment
+$ fm-spawn.sh t-pi-envkey <proj> --mode local-only --yolo off --harness pi --model personal-llm/m1
+spawned t-pi-envkey harness=pi kind=ship mode=local-only yolo=off window=firstmate:fm-t-pi-envkey worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-acct-live.NSc6vQ/pool/.treehouse/proj-2bb8a1/3/proj
+--- pane footer / reply:
+ACK from the personal account (model m1). 
+↑10 ↓10 0.0%/128k (auto) (personal-llm) m1
+--- provider request log:
+{"t": "20:03:25", "identity": "personal", "path": "/personal/v1/chat/completions", "authorization": "Bearer AMBIENT-ENV-KEY", "model": "m1"}

@@ -1,0 +1,28 @@
+## Scenario F/I: personal home, shared Pi root holding work-llm AND personal-llm identities
+$ cat config/pi-account
+/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-shared
+personal-llm
+$ PI_CODING_AGENT_DIR=<shared root> pi --list-models   # both identities are authenticated in the shared root
+provider      model             context  max-out  thinking  images
+personal-llm  m1                128K     16.4K    no        no    
+work-llm      m1                128K     16.4K    no        no    
+work-llm      personal-llm/m-x  128K     16.4K    no        no    
+
+### F: the personal home asks for the work provider
+$ fm-spawn.sh t-pi-work <proj> --mode local-only --yolo off --harness pi --model work-llm/m1
+error: a Pi launch may spend only the providers config/pi-account declares (personal-llm), but --model 'work-llm/m1' resolves to provider 'work-llm'
+exit=1
+
+### I: unqualified model (would fall to the shared root's defaultProvider)
+$ fm-spawn.sh t-pi-bare <proj> --mode local-only --yolo off --harness pi --model m1
+error: a Pi launch needs --model as <provider>/<id> for a provider config/pi-account declares (personal-llm): 'm1' names no provider, so the account inside a shared Pi root cannot be proved; the root's defaultProvider never decides this
+exit=1
+$ fm-spawn.sh t-pi-bare <proj> --mode local-only --yolo off --harness pi   # no --model at all
+error: a Pi launch needs --model as <provider>/<id> for a provider config/pi-account declares (personal-llm): 'none' names no provider, so the account inside a shared Pi root cannot be proved; the root's defaultProvider never decides this
+exit=1
+$ tmux windows after:
+firstmate:control
+$ ls state/:
+.last-watcher-beat
+$ provider requests:
+(none)

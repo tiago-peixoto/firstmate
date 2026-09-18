@@ -1,0 +1,27 @@
+## Scenario P: malformed or unresolvable declarations refuse before any endpoint
+$ printf accounts/work
+ > config/claude-account; fm-spawn.sh t-bad <proj> ... --harness claude 
+error: config/claude-account must contain 'ordinary' or one absolute path on line 1, and optionally 'environment' on line 2, LF-separated with no other control characters: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-e/config/claude-account
+exit=1
+$ printf ordinary
+ > config/claude-account; fm-spawn.sh t-bad <proj> ... --harness claude 
+error: config/claude-account must contain 'ordinary' or one absolute path on line 1, and optionally 'environment' on line 2, LF-separated with no other control characters: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-e/config/claude-account
+exit=1
+$ printf /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/does-not-exist
+ > config/claude-account; fm-spawn.sh t-bad <proj> ... --harness claude 
+error: config/claude-account must name a readable, searchable existing directory (ordinary means ~/.claude): /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-e/config/claude-account -> /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/does-not-exist
+exit=1
+$ printf /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-shared
+ > config/pi-account; fm-spawn.sh t-bad <proj> ... --harness pi --model personal-llm/m1
+error: config/pi-account must contain an ordinary-or-absolute root on line 1, the providers this home may spend on line 2 separated by spaces, and optionally 'environment' on line 3, LF-separated with no other control characters: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-e/config/pi-account
+exit=1
+$ printf /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-shared
+personal-llm
+env
+ > config/pi-account; fm-spawn.sh t-bad <proj> ... --harness pi --model personal-llm/m1
+error: config/pi-account must contain an ordinary-or-absolute root on line 1, the providers this home may spend on line 2 separated by spaces, and optionally 'environment' on line 3, LF-separated with no other control characters: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-e/config/pi-account
+exit=1
+$ tmux windows:
+0
+$ ls state/:
+.last-watcher-beat

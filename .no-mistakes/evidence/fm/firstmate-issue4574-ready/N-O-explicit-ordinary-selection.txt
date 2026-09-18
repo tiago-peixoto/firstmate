@@ -1,0 +1,28 @@
+## Scenario N: explicit 'ordinary' Pi selection launches on the runtime default root ($HOME/.pi/agent), not the ambient PI_CODING_AGENT_DIR
+(HOME for the spawn and tmux is the lab's throwaway /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/userhome; ambient PI_CODING_AGENT_DIR=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-other)
+$ cat config/pi-account
+ordinary
+personal-llm
+$ fm-spawn.sh t-pi-ordinary <proj> --mode local-only --yolo off --harness pi --model personal-llm/m1
+spawned t-pi-ordinary harness=pi kind=ship mode=local-only yolo=off window=firstmate:fm-t-pi-ordinary worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-acct-live.NSc6vQ/pool/.treehouse/proj-2bb8a1/5/proj
+--- launch line + reply:
+bash-3.2$ PI_CODING_AGENT_DIR='/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/userhome/.pi/agent' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI FM_PI_HARNESS=pi '/Users/tiago/.nvm/versions/node/v22.23.1/bin/pi' --tui-mode regular --provider 'personal-llm' --model 'personal-llm/m1' -e ... <brief>
+ACK from the ordinary account (model m1). 
+↑10 ↓10 0.0%/128k (auto) (personal-llm) m1
+--- provider request log:
+{"t": "20:08:27", "identity": "ordinary", "path": "/ordinary/v1/chat/completions", "authorization": "Bearer ORDINARY-ROOT-KEY", "model": "m1"}
+
+## Scenario O: explicit 'ordinary' Claude is a real selection (CLAUDE_CONFIG_DIR unset), distinct from an absent file
+$ cat config/claude-account
+ordinary
+(throwaway HOME has no default login; the supervising shell's ambient CLAUDE_CONFIG_DIR=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/ambient-spawn-claude DOES hold a credential that real quota-axi reports available)
+$ CLAUDE_CONFIG_DIR=<ambient> quota-axi auth --json --provider claude | sources
+[{"source":"oauth-file","status":"available"},{"source":"keychain","status":"missing"}]
+$ fm-spawn.sh t-claude-ordinary <proj> --mode local-only --yolo off --harness claude
+error: the ordinary Claude account holds no usable login (quota-axi auth: oauth-file=missing, keychain=missing); log in under it with env -u CLAUDE_CONFIG_DIR claude, then /login, select another root in config/claude-account, or declare environment credentials there
+exit=1
+$ ls state/ | grep t-claude-ordinary
+(no record)
+--- contrast: same home with config/claude-account removed
+error: Claude launches from home /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-d require an explicit account selection: create /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-d/config/claude-account (see docs/configuration.md "Worker accounts"); Firstmate does not spend an ambient or ~/.claude login when that file is absent
+exit=1

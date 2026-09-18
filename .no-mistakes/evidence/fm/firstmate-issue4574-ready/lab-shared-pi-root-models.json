@@ -1,0 +1,18 @@
+{
+  "providers": {
+    "work-llm": {
+      "baseUrl": "http://127.0.0.1:18717/work/v1",
+      "api": "openai-completions",
+      "apiKey": "WORK-ACCOUNT-KEY",
+      "compat": {"supportsDeveloperRole": false, "supportsReasoningEffort": false},
+      "models": [{"id": "m1"}, {"id": "personal-llm/m-x"}]
+    },
+    "personal-llm": {
+      "baseUrl": "http://127.0.0.1:18717/personal/v1",
+      "api": "openai-completions",
+      "apiKey": "PERSONAL-ACCOUNT-KEY",
+      "compat": {"supportsDeveloperRole": false, "supportsReasoningEffort": false},
+      "models": [{"id": "m1"}]
+    }
+  }
+}

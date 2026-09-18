@@ -1,0 +1,41 @@
+## Scenario G: personal home launches a real Pi worker on its declared provider
+(ambient: tmux server and spawning shell both carry PI_CODING_AGENT_DIR=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-other, whose personal-llm key is OTHER-ROOT-KEY at /other)
+$ fm-spawn.sh t-pi-personal <proj> --mode local-only --yolo off --harness pi --model personal-llm/m1
+spawned t-pi-personal harness=pi kind=ship mode=local-only yolo=off window=firstmate:fm-t-pi-personal worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-acct-live.NSc6vQ/pool/.treehouse/proj-2bb8a1/1/proj
+--- pane firstmate:fm-t-pi-personal (real pi 0.85.1 worker):
+Tiagos-MBP:proj tiago$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-acct-live.NSc6vQ/pool/.treehouse/proj-2bb8a1/1/proj. Type 'exit' to return.
+bash-3.2$ export GOTMPDIR=/tmp/fm-t-pi-personal/gotmp
+bash-3.2$ export FM_TASK_ID=t-pi-personal
+bash-3.2$ PI_CODING_AGENT_DIR='/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/accounts/pi-shared' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI FM_PI_HARNESS=pi '/Users/tiago/.nvm/versions/node/v22.23.1/bin/pi' --tui-mode regular --provider 'personal-llm' --model 'personal-llm/m1' -e '/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-b/state/t-pi-personal.pi-ext.ts' "$('/Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V2N8NS6X43VP13PKQAB1NG/bin/fm-operational-input.sh' encode launch-brief < '/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-b/data/t-pi-personal/launch-brief.md')"
+ pi v0.85.1
+ escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more
+ Press ctrl+o to show full startup help and loaded resources.
+ Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.
+[Extensions]
+  t-pi-personal.pi-ext.ts
+ Warning: ripgrep not found. Offline mode enabled, skipping download.
+ Warning: tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+ ⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract
+ You are a crewmate: an autonomous worker agent managed by firstmate.
+ This section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.
+ Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor identity, delegate the task, run fleet supervision, or address the captain.
+ Your steering inbox is /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-acct-live.NSc6vQ/home-b/state/t-pi-personal.inbox; this exact path belongs to your current task even when it is outside the worktree or under the
+ supervising firstmate home, so read and acknowledge its messages and do not reject it as another home's state.
+ Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.
+ When this task works on Firstmate itself, the repository root AGENTS.md (also imported by CLAUDE.md) is project content and the supervisor contract for the firstmate managing you: follow this brief instead of that supervisor
+ contract.
+ Project instructions still govern the work wherever they do not conflict with this worker identity, including CONTRIBUTING.md and firstmate-coding-guidelines for Firstmate changes.
+ Task
+ Captain's intent
+ Reply with one short sentence acknowledging this brief, then stop. Do not edit files.
+ Firstmate spec
+ Live account-selection lab task t-pi-personal. Reply once and stop.
+ ACK from the personal account (model m1).
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-acct-live.NSc6vQ/pool/.treehouse/proj-2bb8a1/1/proj (detached)
+↑10 ↓10 0.0%/128k (auto)                                                                                                                                                                                             (personal-llm) m1
+--- provider request log (the billing record):
+{"t": "20:02:08", "identity": "personal", "path": "/personal/v1/chat/completions", "authorization": "Bearer PERSONAL-ACCOUNT-KEY", "model": "m1"}
