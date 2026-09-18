@@ -9,7 +9,9 @@
 #   fm-git-strip-ai-trailers.sh install <hooks-dir> <worktree>
 #       Recreate <hooks-dir> as a core.hooksPath for this launch: a commit-msg
 #       hook that runs this strip, plus one wrapper per client-side hook name
-#       git documents. Each wrapper unsets GIT_CONFIG_* and then resolves
+#       git documents except reference-transaction and post-index-change,
+#       which are deliberately excluded (see FM_GIT_CLIENT_HOOKS below).
+#       Each wrapper unsets GIT_CONFIG_* and then resolves
 #       core.hooksPath (or $GIT_DIR/hooks) in the repository git is actually
 #       running in, so a husky directory that only appears after npm install
 #       still runs, and git -C some-other-repo does not inherit the task

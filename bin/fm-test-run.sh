@@ -661,6 +661,8 @@ list_portable_serial() {
 # than only on the fastest one measured. These are balance hints only: the shard
 # partition stays complete and disjoint whatever they say, so a stale hint costs
 # balance rather than coverage. That doc owns the refresh procedure.
+# Exception: tests/fm-git-strip-ai-trailers.test.sh is an initial unmeasured
+# estimate, pending the next refresh from CI timing artifacts.
 portable_serial_weight_hints() {
   cat <<'EOF'
 tests/fm-agy-harness.test.sh 11000

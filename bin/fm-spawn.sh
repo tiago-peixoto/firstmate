@@ -4172,10 +4172,6 @@ fi
 # homes are firstmate clones; a launch whose worktree is not git fails closed
 # rather than shipping a runtime that cannot strip.
 GIT_HOOKS_DIR="$STATE_REAL/$ID.git-hooks"
-git -C "$WT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
-  echo "error: could not install the AI-trailer strip hooks for $ID: $WT is not a git worktree" >&2
-  exit 1
-}
 "$FM_ROOT/bin/fm-git-strip-ai-trailers.sh" install "$GIT_HOOKS_DIR" "$WT" || {
   echo "error: could not install the AI-trailer strip hooks for $ID" >&2
   exit 1
