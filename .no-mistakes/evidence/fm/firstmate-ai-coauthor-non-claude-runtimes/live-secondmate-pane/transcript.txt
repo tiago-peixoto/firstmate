@@ -1,0 +1,60 @@
+== A/B: secondmate spawn with a git home (fm-spawn --secondmate, launch command: bash)
+fm-spawn exit: 0
+  spawn| warning: secondmate sm-strip-probe sync skipped before launch: primary default-branch commit cannot be resolved
+  spawn| spawned sm-strip-probe harness=bash kind=secondmate mode=secondmate yolo=off window=fleet:fm-sm-strip-probe worktree=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-git
+-- secondmate pane transcript:
+  pane| export GOTMPDIR=/tmp/fm-sm-strip-probe/gotmp
+  pane| tiago@Tiagos-MBP sm-git % export GOTMPDIR=/tmp/fm-sm-strip-probe/gotmp
+  pane| tiago@Tiagos-MBP sm-git % GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0='/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe
+  pane| .git-hooks' FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/f
+  pane| m-strip-sm.JmvviX/parent' FM_HOME='/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-git' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=persistent bash --noprofile --norc
+  pane| bash-5.3$ clear
+  pane| bash-5.3$ env | grep ^GIT_CONFIG_ | sort
+  pane| GIT_CONFIG_COUNT=1
+  pane| GIT_CONFIG_KEY_0=core.hooksPath
+  pane| GIT_CONFIG_VALUE_0=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe.git-hooks
+  pane| bash-5.3$ cd '/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-git/projects/managed'
+  pane| bash-5.3$ echo change >> README.md && git add README.md
+  pane| bash-5.3$ git commit -q --trailer 'Co-authored-by: Cursor <cursoragent@cursor.com>' --trailer 'Co-authored-by: Jane Doe <jane@example.com>' -m 'fix: secondmate commit in a managed clone'
+  pane| git cat-file commit HEAD
+  pane| bash-5.3$ git cat-file commit HEAD
+  pane| tree 41e1e8e2028d20837755626ed24f9b4efd809d92
+  pane| parent 6a8544e5e6a7b03a36af269bc7552e66be01d9b9
+  pane| author Tiago Peixoto <tiagop@hey.com> 1789696719 -0300
+  pane| committer Tiago Peixoto <tiagop@hey.com> 1789696719 -0300
+  pane| fix: secondmate commit in a managed clone
+  pane| Co-authored-by: Jane Doe <jane@example.com>
+  pane| bash-5.3$ cat .git/managed-pre-commit.ran
+  pane| managed-project pre-commit ran in /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-git/projects/managed
+  pane| bash-5.3$ H=$(git rev-parse --path-format=absolute --git-path hooks); echo "hooks dir git reports in this pane: $H"
+  pane| hooks dir git reports in this pane: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe.git-hooks
+  pane| bash-5.3$ printf "#!/bin/sh\nexit 0\n" > "$H/commit-msg"; echo "overwrite commit-msg exit=$?"
+  pane| bash: !/bin/sh\nexit: event not found
+  pane| bash-5.3$ mv "$H/commit-msg" "$H/commit-msg.old"; echo "rename commit-msg exit=$?"
+  pane| mv: rename /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe.git-hooks/commit-msg to /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe.git-hooks/commit-msg.old: Permission denied
+  pane| rename commit-msg exit=1
+  pane| bash-5.3$ git config --get core.hooksPath; echo "(repo-local core.hooksPath above, if any)"
+  pane| /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe.git-hooks
+  pane| (repo-local core.hooksPath above, if any)
+  pane| bash-5.3$ echo DONE-SM-PANE
+  pane| DONE-SM-PANE
+  pane| bash-5.3$ 
+-- managed clone commit object (read from outside the pane):
+  obj| tree 41e1e8e2028d20837755626ed24f9b4efd809d92
+  obj| parent 6a8544e5e6a7b03a36af269bc7552e66be01d9b9
+  obj| author Tiago Peixoto <tiagop@hey.com> 1789696719 -0300
+  obj| committer Tiago Peixoto <tiagop@hey.com> 1789696719 -0300
+  obj| 
+  obj| fix: secondmate commit in a managed clone
+  obj| 
+  obj| Co-authored-by: Jane Doe <jane@example.com>
+-- strip dir after the hook-manager attempt: dr-x------@ commit-msg head: '/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M2RVXA817J3Y8YT3X2YK18YZ/bin
+
+== C: secondmate spawn with a non-git home must fail closed
+fm-spawn exit: 1
+  spawn| warning: secondmate sm-nogit-probe sync skipped before launch: primary default-branch commit cannot be resolved
+  spawn| fatal: not a git repository (or any of the parent directories): .git
+  spawn| error: not a git worktree: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-nogit
+  spawn| error: could not install the AI-trailer strip hooks for sm-nogit-probe
+tmux windows: ctl fm-sm-strip-probe fm-sm-nogit-probe 
+parent state entries for sm-nogit-probe: 

@@ -1,0 +1,86 @@
+cd -- '/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/treehouse/.treehouse/project-b7b0d5/1/project'
+tiago@Tiagos-MBP project % cd -- '/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/treehouse/.treehouse/project-b7b0d5/1/project'
+tiago@Tiagos-MBP project % export GOTMPDIR=/tmp/fm-strip-probe-before/gotmp
+export FM_TASK_ID=strip-probe-before                                                                                                                                                                                        
+tiago@Tiagos-MBP project % export FM_TASK_ID=strip-probe-before
+tiago@Tiagos-MBP project % env -u CLAUDECODE -u PI_CODING_AGENT -u GROK_AGENT -u FM_PI_HARNESS -u GEMINI_CLI -u CURSOR_INVOKED_AS '/Users/tiago/.local/bin/cursor-agent' --trust --yolo --workspace '/private/var/folders/r8
+/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/treehouse/.treehouse/project-b7b0d5/1/project' "$('/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-basetree.2P412S/bin/fm-operational-input.sh' e
+ncode launch-brief < '/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/home/data/strip-probe-before/launch-brief.md')"
+
+
+  Cursor Agent
+  v2026.09.15-d2fe57e
+
+                                                                                                                                                                                                                           
+  ⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract                                                                                                                                                           
+  You are a crewmate: an autonomous worker agent managed by firstmate.                                                                                                                                                     
+  This section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.                                                        
+  Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor identity, delegate the task, run fleet supervision, or address the captain.                                
+  Your steering inbox is `/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/home/state/strip-probe-before.inbox`; this exact path belongs to your current task even when it is outside       
+  the worktree or under the supervising firstmate home, so read and acknowledge its messages and do not reject it as another home's state.                                                                                 
+  Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.                                                                                  
+  When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project content and the supervisor contract for the firstmate managing you: follow this brief instead        
+  of that supervisor contract.                                                                                                                                                                                             
+  Project instructions still govern the work wherever they do not conflict with this worker identity, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.                                 
+                                                                                                                                                                                                                           
+  # Task                                                                                                                                                                                                                   
+  ## Captain's intent                                                                                                                                                                                                      
+  Add one line to README.md and commit it locally.                                                                                                                                                                         
+                                                                                                                                                                                                                           
+  ## Firstmate spec                                                                                                                                                                                                        
+  1. Append the exact line `strip probe` to README.md in your task worktree.                                                                                                                                               
+  2. Commit that change with git, using the commit message "docs: add strip probe line".                                                                                                                                   
+  3. Do not push and do not open a pull request. Stop once the commit exists.                                                                                                                                              
+                                                                                                                                                                                                                           
+
+  I'll append strip probe to README.md, commit it locally with the requested message, and check the steering inbox first.
+
+    Read, globbed 2 files, 1 glob
+    Read .
+    Read README.md
+    Globbed "README.md" in .
+
+  Inbox path wasn’t a readable file; I’ll check that location, then append the line and commit.
+
+  $ ls -la "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/home/state/" 2>&1; echo "---"; ls -la
+    "/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/home/state/strip-probe-before.inbox" 2>&1 exit 1 • 2.8s
+    … 7 output lines hidden · ctrl+o to expand
+    ---
+    ls: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/home/state/strip-probe-before.inbox: No such file or directory
+
+  $ git status && git diff && git log -5 --oneline 2.6s
+    … 1 output lines hidden · ctrl+o to expand
+    nothing to commit, working tree clean
+    2df0a39 initial
+
+  Steering inbox isn’t present yet; I’ll append the line and commit locally.
+
+    Edited README.md +1
+
+    ▎  # strip probe project
+    ▎+ strip probe                                                                                                                                                                                                      
+
+  $ git status && git diff && git log -5 --format='%s' 582ms
+    … 13 output lines hidden · ctrl+o to expand
+    +strip probe
+    initial
+
+  $ git add README.md && git commit --trailer "Co-authored-by: Cursor <cursoragent@cursor.com>" -m "$(cat <<'EOF'
+    docs: add strip probe line 896ms
+    … 3 input + 3 output lines hidden · ctrl+o to expand
+    nothing to commit, working tree clean
+    94d5a3c docs: add strip probe line
+
+  Appended strip probe to README.md and committed it locally as 94d5a3c with message docs: add strip probe line. Did not push and did not open a pull request.
+
+  Steering inbox path was acknowledged; the file was not present under home/state.
+
+
+
+                                                                                                                                                                                                                           
+  → Add a follow-up                                                                                                                                                                                                        
+                                                                                                                                                                                                                           
+
+  Cursor Grok 4.6 High · 8.4% · 1 file edited                                                                                                                                                               Run Everything
+  /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-before.vW5IAs/treehouse/.treehouse/project-b7b0d5/1/project · 94d5a3c
+

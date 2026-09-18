@@ -1,0 +1,10 @@
+# planted leaked child strip dir (as an aborted child spawn leaves it):
+dr-x------@ 17 tiago  staff  544 Sep 17 22:59 /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-git/state/child-leaked.git-hooks
+# parent strip dir:
+dr-x------@ 17 tiago  staff  544 Sep 17 22:58 /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe.git-hooks
+# fm-teardown.sh sm-strip-probe --force exit: 0
+teardown sm-strip-probe complete (window fleet:fm-sm-strip-probe, worktree /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-git)
+# after:
+ls: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/sm-git: No such file or directory
+ls: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-strip-sm.JmvviX/parent/state/sm-strip-probe.git-hooks: No such file or directory
+home-summary.json

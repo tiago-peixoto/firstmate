@@ -1,0 +1,8 @@
+tree f5657403ed339d4bc63c4a12ff026c1ae9e68a88
+parent 2df0a39a5058aac2090552f04cae5f513cb2ec7f
+author Tiago Peixoto <tiagop@hey.com> 1789696614 -0300
+committer Tiago Peixoto <tiagop@hey.com> 1789696614 -0300
+
+docs: add strip probe line
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
