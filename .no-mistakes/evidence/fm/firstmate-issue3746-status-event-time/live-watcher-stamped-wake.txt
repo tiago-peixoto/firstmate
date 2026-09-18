@@ -1,0 +1,44 @@
+--- case stamped-done: state/task.status = done [at=1789694907]: PR https://example.test/o/r/pull/9 checks green
+watcher output:
+  signal: $TMP/stamped-done/state/task.status
+  drain: 1789694910	2	signal	task.status	signal: $TMP/stamped-done/state/task.status
+  drain: wake annotation: latest wake-EVENT observed at drain, not current state: task.status: done [at=1789694907]: PR https://example.test/o/r/pull/9 checks green
+  drain: STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+  drain: task done [at=1789694907]: PR https://example.test/o/r/pull/9 checks green
+PASS: stamped-done woke the captain
+--- case stamped-needs-decision: state/task.status = needs-decision [at=1789694912]: REST or gRPC?
+watcher output:
+  signal: $TMP/stamped-needs-decision/state/task.status
+  drain: 1789694915	2	signal	task.status	needs-decision: $TMP/stamped-needs-decision/state/task.status
+  drain: wake annotation: latest wake-EVENT observed at drain, not current state: task.status: needs-decision [at=1789694912]: REST or gRPC?
+  drain: OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain: task needs-decision: REST or gRPC?
+  drain: OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS: stamped-needs-decision woke the captain
+--- case stamped-working: state/task.status = working [at=1789694917]: compiling step 2
+PASS: stamped-working absorbed (no wake after 6s, queue empty=yes)
+--- case legacy-keyed-needs-decision: state/task.status = needs-decision [key=api]: REST or gRPC?
+PASS: legacy-keyed-needs-decision absorbed (no wake after 6s, queue empty=yes)
+--- case stamped-keyed-needs-decision: state/task.status = needs-decision [key=api] [at=1789694942]: REST or gRPC?
+PASS: stamped-keyed-needs-decision absorbed (no wake after 6s, queue empty=yes)
+=== same stamped lines with the DEFAULT vocabulary (no FM_CAPTAIN_RE) ===
+--- case default-stamped-keyed-needs-decision: state/task.status = needs-decision [key=api] [at=1789694956]: REST or gRPC?
+watcher output:
+  signal: $TMP/default-stamped-keyed-needs-decision/state/task.status
+  drain: 1789694958	2	signal	task.status	needs-decision: $TMP/default-stamped-keyed-needs-decision/state/task.status
+  drain: wake annotation: latest wake-EVENT observed at drain, not current state: task.status: needs-decision [key=api] [at=1789694956]: REST or gRPC?
+  drain: OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain: task [key=api] needs-decision: REST or gRPC?
+  drain: OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS: default-stamped-keyed-needs-decision woke the captain
+--- case default-stamped-failed: state/task.status = failed [at=1789694960]: build broke on main
+watcher output:
+  signal: $TMP/default-stamped-failed/state/task.status
+  drain: 1789694963	2	signal	task.status	signal: $TMP/default-stamped-failed/state/task.status
+  drain: wake annotation: latest wake-EVENT observed at drain, not current state: task.status: failed [at=1789694960]: build broke on main
+  drain: STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+  drain: task failed [at=1789694960]: build broke on main
+PASS: default-stamped-failed woke the captain
+--- case default-stamped-working: state/task.status = working [at=1789694965]: compiling step 3
+PASS: default-stamped-working absorbed (no wake after 6s, queue empty=yes)
+RESULT: all watcher checks passed

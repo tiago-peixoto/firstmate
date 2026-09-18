@@ -1,0 +1,25 @@
+--- state/t1.status before answer (legacy worker lines, no stamps) ---
+needs-decision [key=api-shape]: pick REST or RPC
+working: kept busy on an unrelated stream
+--- open decisions before:
+api-shape	needs-decision	pick REST or RPC
+$ fm-send.sh t1 --resolve-key api-shape 'go with REST'
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-3746-send.1ZwZwq/home/state/t1.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+fm-send exit=0
+--- state/t1.status after answer ---
+needs-decision [key=api-shape]: pick REST or RPC
+working: kept busy on an unrelated stream
+resolved [key=api-shape] [at=1789694741]: answered: go with REST
+PASS: fm-send delivered
+PASS: close line stamped at answer time (1789694741 in [1789694740,1789694741])
+PASS: stamped resolved line closed key api-shape
+PASS: worker's legacy decision line not restamped
+inbox record: 001.msg
+inbox record: handled

@@ -1,0 +1,24 @@
+# Serial-5 root cause: tests/fm-contributions.test.sh hang mode, FM_CONTRIBUTIONS_BUDGET=1
+# Simulated slow CI host: fixture jq sleeps 1.1s, so wall clock always ticks past DEADLINE before the first forge call.
+## old fixture (hang mode clock NOT frozen, as on 668e47d / main)
+grep: $TMP/budget-hang/forge/calls: No such file or directory
+not ok - budget exhaustion (hang) never started the observation
+grep: $TMP/budget-hang/forge/calls: No such file or directory
+not ok - budget exhaustion (hang) never started the observation
+grep: $TMP/budget-hang/forge/calls: No such file or directory
+not ok - budget exhaustion (hang) never started the observation
+grep: $TMP/budget-hang/forge/calls: No such file or directory
+not ok - budget exhaustion (hang) never started the observation
+grep: $TMP/budget-hang/forge/calls: No such file or directory
+not ok - budget exhaustion (hang) never started the observation
+variant=old runs=5 failures=5
+## fixed fixture (both modes freeze clock, this branch dc06a0c)
+ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
+ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
+ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
+ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
+ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
+variant=new runs=5 failures=0
+## normal host, 30 runs each
+variant=old runs=30 failures=0
+variant=new runs=30 failures=0

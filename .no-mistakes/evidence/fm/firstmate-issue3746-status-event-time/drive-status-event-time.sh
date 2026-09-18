@@ -1,87 +1,128 @@
 #!/usr/bin/env bash
-# Live driver: real firstmate CLIs against an isolated FM home.
+# Live drive of issue 3746 (optional [at=<epoch>] emission stamp on new status
+# records) against the real firstmate bin/ scripts in an isolated FM home.
+# Usage: drive-status-event-time.sh <firstmate-checkout>
 set -u
-ROOT=${ROOT:?}
-T=$(mktemp -d /tmp/fm-evtime.XXXXXX)
-export TMUX_TMPDIR=$T/tmux; mkdir -p "$TMUX_TMPDIR"   # isolated tmux server, never the user's
-H=$T/home; SM=$H/secondmate-home
-mkdir -p "$H/state" "$H/data" "$H/projects" "$H/config" "$SM/state" "$SM/data"
-printf 'window=firstmate:fm-secondmate-task\nworktree=%s\nproject=%s\nharness=codex\nkind=secondmate\nmode=secondmate\nhome=%s\nprojects=alpha\n' "$SM" "$SM" "$SM" > "$H/state/secondmate-task.meta"
-printf 'secondmate-task\n' > "$SM/.fm-secondmate-home"
-printf 'schema=fm-secondmate-parent.v1\nroute=local\nparent_home=%s\n' "$H" > "$SM/.fm-secondmate-parent"
-STATUS=$H/state/secondmate-task.status
-snap() { FM_HOME="$H" FM_SNAPSHOT_NOW_EPOCH=$1 "$ROOT/bin/fm-fleet-snapshot.sh" --json; }
-show() { jq '{last_event:(.tasks[]|select(.id=="secondmate-task")|.paths.status_log.last_event), open_decisions:(.tasks[]|select(.id=="secondmate-task")|.hints.open_decisions), secondmate_fallback:(.secondmate_current.records[]|select(.id=="secondmate-task")|{current_state:.current.state, parent_event:{raw:.parent_event.raw,emitted_at_epoch:.parent_event.emitted_at_epoch,age_seconds:.parent_event.age_seconds}, freshness_age:.freshness.age_seconds})}'; }
+ROOT=$1
+W=$(mktemp -d "${TMPDIR:-/tmp}/fm-3746-live.XXXXXX")
+trap 'rm -rf "$W"' EXIT
+H=$W/home
+FB=$W/fakebin
+mkdir -p "$H/state" "$H/data" "$H/projects/alpha" "$H/config" "$FB" "$H/mate"
+# Fake tmux/no-mistakes so the snapshot never reads the operator's real tmux.
+printf '#!/usr/bin/env bash\nexit 0\n' > "$FB/no-mistakes"
+printf '#!/usr/bin/env bash\ncase "${1:-}" in display-message) printf "codex\\n";; esac\nexit 0\n' > "$FB/tmux"
+chmod +x "$FB/no-mistakes" "$FB/tmux"
+export PATH="$FB:$PATH"
+: > "$H/data/backlog.md"
+FAILS=0
+check() { if eval "$2"; then echo "PASS: $1"; else echo "FAIL: $1"; FAILS=$((FAILS + 1)); fi; }
+at_of() { bash -c '. "$1/bin/fm-classify-lib.sh"; status_line_at_epoch "$2"' _ "$ROOT" "$1"; }
 
-echo "=== S1: real fm-secondmate-report.sh emits a stamped parent status event ==="
+meta() {  # <id> <kind>
+  printf '%s\n' "window=firstmate:fm-$1" "worktree=$H/projects/alpha" "project=alpha" \
+    "harness=codex" "kind=$2" "mode=$2" "yolo=off" > "$H/state/$1.meta"
+}
+
+echo "=== S1: secondmate reports an outcome through the real report helper ==="
+meta mate secondmate
+printf '%s\n' "home=$H/mate" >> "$H/state/mate.meta"
+printf 'mate\n' > "$H/mate/.fm-secondmate-home"
+printf 'schema=fm-secondmate-parent.v1\nroute=local\nparent_home=%s\n' "$H" > "$H/mate/.fm-secondmate-parent"
 before=$(date +%s)
-( cd "$SM" && FM_HOME="$SM" "$ROOT/bin/fm-secondmate-report.sh" done 0123456789abcdef 'audit complete' ); rc=$?
+echo "\$ FM_HOME=mate bin/fm-secondmate-report.sh done 0123456789abcdef 'audit complete'"
+FM_HOME=$H/mate "$ROOT/bin/fm-secondmate-report.sh" done 0123456789abcdef 'audit complete'
 after=$(date +%s)
-echo "exit=$rc before=$before after=$after"
-echo "--- $STATUS:"; cat "$STATUS"
-line=$(tail -1 "$STATUS")
-. "$ROOT/bin/fm-classify-lib.sh"
-ep=$(status_line_at_epoch "$line") && [ "$ep" -ge "$before" ] && [ "$ep" -le "$after" ] && echo "RESULT S1: PASS (at=$ep within emission window)" || echo "RESULT S1: FAIL"
+line=$(tail -1 "$H/state/mate.status")
+echo "parent state/mate.status -> $line"
+epoch=$(at_of "$line")
+check "report line carries [at=<epoch>] within [$before,$after] (got ${epoch:-none})" \
+  '[ -n "$epoch" ] && [ "$epoch" -ge "$before" ] && [ "$epoch" -le "$after" ]'
+verb=$(bash -c '. "$1/bin/fm-classify-lib.sh"; status_line_verb "$2"' _ "$ROOT" "$line")
+note=$(bash -c '. "$1/bin/fm-classify-lib.sh"; status_line_note "$2"' _ "$ROOT" "$line")
+check "classifier still reads verb=done (got $verb) and note unchanged (got '$note')" \
+  '[ "$verb" = done ] && [ "$note" = "audit complete (via-helper)" ]'
 
-echo; echo "=== S2: fleet snapshot exposes emission time and age for the stamped event ==="
-touch -t 202001010000 "$STATUS"   # file mtime deliberately unrelated
-out=$(snap $((ep + 42))); printf '%s' "$out" | show
-printf '%s' "$out" | jq -e --argjson ep "$ep" '.tasks[]|select(.id=="secondmate-task")|.paths.status_log.last_event|.emitted_at_epoch==$ep and .age_seconds==42' >/dev/null && echo "RESULT S2: PASS" || echo "RESULT S2: FAIL"
+echo
+echo "=== S2: brief scaffold stamps at worker append time, not scaffold time ==="
+FM_HOME=$H "$ROOT/bin/fm-brief.sh" briefed alpha --mode no-mistakes >/dev/null
+# shellcheck disable=SC2016
+cmd=$(sed -n '/`echo "{state}/s/.*`\(echo .*\)`.*/\1/p' "$H/data/briefed/brief.md" | head -1)
+echo "brief rule 4 command: $cmd"
+dod=$(grep -o 'append `done \[at=[^`]*`' "$H/data/briefed/brief.md" | head -1)
+echo "brief definition-of-done: $dod"
+gen_time=$(date +%s)
+sleep 2
+cmd=${cmd//\{state\}/done}; cmd=${cmd//\{one short line\}/validation passed}
+run_time=$(date +%s)
+echo "\$ $cmd"
+(cd "$H" && bash -c "$cmd")
+line=$(tail -1 "$H/state/briefed.status")
+echo "state/briefed.status -> $line"
+epoch=$(at_of "$line")
+check "worker-appended stamp is execution time ($run_time), not scaffold time ($gen_time); got ${epoch:-none}" \
+  '[ -n "$epoch" ] && [ "$epoch" -ge "$run_time" ]'
 
-echo; echo "=== S3: legacy / malformed / duplicate / future tags keep an unknown age (no mtime fallback) ==="
-s3=PASS
-for l in 'working: legacy unstamped line' 'working [at=oops]: malformed' 'working [at=0123]: leading zero' 'working [at=1700000000] [at=1700000001]: duplicate' 'working [at=1700000200]: future event'; do
-  printf '%s\n' "$l" > "$STATUS"; touch -t 202001010000 "$STATUS"
-  o=$(snap 1700000100)
-  r=$(printf '%s' "$o" | jq -c '.tasks[]|select(.id=="secondmate-task")|.paths.status_log.last_event|{raw,state,emitted_at_epoch,age_seconds}')
-  echo "$r"
-  case "$l" in
-    *future*) printf '%s' "$r" | jq -e '.emitted_at_epoch==1700000200 and .age_seconds==null' >/dev/null || s3=FAIL ;;
-    *) printf '%s' "$r" | jq -e '.emitted_at_epoch==null and .age_seconds==null' >/dev/null || s3=FAIL ;;
-  esac
+echo
+echo "=== S3: fleet snapshot exposes emission time and age; legacy/malformed stay unknown ==="
+NOW=1788576100
+for spec in 'stamped|done [at=1788576000]: PR https://example.test/o/r/pull/7 checks green' \
+  'legacy|done: PR https://example.test/o/r/pull/8' \
+  'malformed|done [at=17:00]: shipped' \
+  'empty|done [at=]: shipped' \
+  'dup|done [at=1788576000] [at=1788576050]: shipped' \
+  'future|working [at=1788576200]: clock skew' \
+  'prose|done: mentions [at=1788576000] in prose'; do
+  id=${spec%%|*}; meta "$id" ship
+  printf '%s\n' "${spec#*|}" > "$H/state/$id.status"
+  # A fresh-looking file must never stand in for event time.
+  touch "$H/state/$id.status"
 done
-echo "RESULT S3: $s3"
-
-echo; echo "=== S4 (adversarial): out-of-order timestamps never decide current state or decision closure ==="
-cat > "$STATUS" <<'L'
-needs-decision [key=api-shape] [at=1700000900]: choose REST or GraphQL
-working [at=1700000950]: waiting on answer
-resolved [key=api-shape] [at=1700000001]: answered: use REST
-working [at=1600000000]: implementing REST
-L
-cat "$STATUS"
-o=$(snap 1700001000); printf '%s' "$o" | show
-printf '%s' "$o" | jq -e '(.tasks[]|select(.id=="secondmate-task")) as $t | $t.paths.status_log.last_event.note=="implementing REST" and $t.paths.status_log.last_event.state=="working" and ($t.hints.open_decisions|length)==0' >/dev/null && s4a=PASS || s4a=FAIL
-echo "latest-line-wins despite older stamp, resolved closes despite older stamp: $s4a"
-# Converse: a stamped close for a DIFFERENT key must not close, even with a newer time
-cat > "$STATUS" <<'L'
-needs-decision [key=api-shape] [at=1700000001]: choose REST or GraphQL
-resolved [key=other] [at=1700000999]: unrelated
-done [at=1700000999]: PR https://github.com/example/repo/pull/1
-L
-o=$(snap 1700001000); printf '%s' "$o" | jq -c '.tasks[]|select(.id=="secondmate-task")|{last_state:.paths.status_log.last_event.state, open_decisions:.hints.open_decisions}'
-printf '%s' "$o" | jq -e '(.tasks[]|select(.id=="secondmate-task")) as $t | $t.paths.status_log.last_event.state=="done" and ($t.hints.open_decisions|length)==1' >/dev/null && s4b=PASS || s4b=FAIL
-echo "later done/newer-stamp does not close keyed decision: $s4b"
-[ $s4a = PASS ] && [ $s4b = PASS ] && echo "RESULT S4: PASS" || echo "RESULT S4: FAIL"
-
-echo; echo "=== S5: classifier treats stamped terminal lines like unstamped ones ==="
-s5=PASS
-for l in 'done [at=1700000000]: PR https://x/pull/1' 'failed [at=1700000000]: agy never showed its folder-trust dialog' 'needs-decision [key=k] [at=1700000000]: pick'; do
-  status_is_captain_relevant "$l" && echo "captain-relevant: $l" || { echo "NOT relevant: $l"; s5=FAIL; }
+out=$(FM_HOME=$H FM_SNAPSHOT_NOW_EPOCH=$NOW "$ROOT/bin/fm-fleet-snapshot.sh" --json 2>"$W/snap.err") \
+  || { echo "snapshot failed:"; cat "$W/snap.err"; }
+printf '%s' "$out" > "$W/snapshot.json"
+echo "\$ FM_HOME=home FM_SNAPSHOT_NOW_EPOCH=$NOW bin/fm-fleet-snapshot.sh --json | jq '.tasks[] | {id, last_event}'"
+jq -c '.tasks[] | select(.id != "mate" and .id != "briefed") | {id, last_event: .paths.status_log.last_event}' "$W/snapshot.json"
+ev() { jq -c --arg id "$1" '.tasks[] | select(.id == $id) | .paths.status_log.last_event | [.emitted_at_epoch, .age_seconds]' "$W/snapshot.json"; }
+check "stamped: epoch 1788576000, age 100 ($(ev stamped))" '[ "$(ev stamped)" = "[1788576000,100]" ]'
+check "future: epoch retained, age unknown ($(ev future))" '[ "$(ev future)" = "[1788576200,null]" ]'
+for id in legacy malformed empty dup prose; do
+  check "$id: emission time and age both null, not file mtime ($(ev "$id"))" '[ "$(ev "$id")" = "[null,null]" ]'
 done
-printf 'working [corr=abc] [at=1700000000]: x\n' > "$T/dedup.status"
-status_event_recorded "$T/dedup.status" 'working [corr=abc]: x' && echo "retry dedup ignores time tag: yes" || s5=FAIL
-status_event_recorded "$T/dedup.status" 'working [corr=abd]: x' && s5=FAIL || echo "different corr still distinct: yes"
-echo "RESULT S5: $s5"
+check "malformed stamp keeps its verb (state=$(jq -r '.tasks[]|select(.id=="malformed")|.paths.status_log.last_event.state' "$W/snapshot.json"))" \
+  '[ "$(jq -r ".tasks[]|select(.id==\"malformed\")|.paths.status_log.last_event.state" "$W/snapshot.json")" = done ]'
 
-echo; echo "=== S6: generated worker brief instructs stamped status lines, and executing it yields a known-time event ==="
-mkdir -p "$H/projects/alpha"; git -C "$H/projects/alpha" init -q 2>/dev/null
-b=$(cd "$ROOT" && FM_HOME="$H" "$ROOT/bin/fm-brief.sh" demo-task alpha --mode direct-PR 2>&1); echo "$b" | tail -2
-brief=$(ls "$H"/data/demo-task/brief.md 2>/dev/null || find "$H" -name 'brief*.md' | head -1)
-grep -n 'at=\$(date +%s)' "$brief" | head -3
-cmd=$(grep -o '`echo "{state} \[at=$(date +%s)\]: {one short line}" >> [^`]*`' "$brief" | head -1 | tr -d '`')
-cmd=${cmd//\{state\}/done}; cmd=${cmd//\{one short line\}/PR https:\/\/github.com\/example\/repo\/pull\/2}
-echo "executing brief instruction: $cmd"; b0=$(date +%s); eval "$cmd"; b1=$(date +%s)
-sf=$(printf '%s' "$cmd" | sed -E "s/.*>> //; s/'//g"); tail -1 "$sf"
-e=$(status_line_at_epoch "$(tail -1 "$sf")") && [ "$e" -ge "$b0" ] && [ "$e" -le "$b1" ] && echo "RESULT S6: PASS" || echo "RESULT S6: FAIL"
-rm -rf "$T"
+echo
+echo "=== S4: event time never decides decision closure ==="
+# A secondmate record: the snapshot never lifecycle-clears its keyed decisions,
+# so hints.open_decisions shows the status fold itself.
+meta decide secondmate
+mkdir -p "$H/decide-home"; printf '%s\n' "home=$H/decide-home" >> "$H/state/decide.meta"
+printf '%s\n' 'needs-decision [key=api-shape] [at=1788576000]: choose REST or gRPC' \
+  'working [at=1788576050]: exploring both' > "$H/state/decide.status"
+open1=$(FM_HOME=$H FM_SNAPSHOT_NOW_EPOCH=$NOW "$ROOT/bin/fm-fleet-snapshot.sh" --json | jq -c '.tasks[]|select(.id=="decide")|.hints.open_decisions')
+echo "after stamped needs-decision + later working: open_decisions=$open1"
+check "stamped decision stays open after a later working event" 'printf "%s" "$open1" | grep -q api-shape'
+printf '%s\n' 'resolved [key=api-shape] [at=1788575000]: answered: use REST' >> "$H/state/decide.status"
+open2=$(FM_HOME=$H FM_SNAPSHOT_NOW_EPOCH=$NOW "$ROOT/bin/fm-fleet-snapshot.sh" --json | jq -c '.tasks[]|select(.id=="decide")|.hints.open_decisions')
+echo "after resolved line whose [at=] is EARLIER than the decision: open_decisions=$open2"
+check "keyed resolved closes the decision by log order even with an older stamp" '[ "$open2" = "[]" ]'
+
+echo
+echo "=== S5: parent-channel retry is deduplicated, never restamped ==="
+bash -c '
+  . "$1/bin/fm-parent-channel-lib.sh"
+  f=$2/state/retry.status
+  printf "%s\n" "$(status_stamp_line "done [corr=0123456789abcdef]: shipped")" > "$f"
+  first=$(cat "$f"); sleep 1
+  fm_parent_channel_append_once "$f" "done [corr=0123456789abcdef]: shipped"
+  fm_parent_channel_append_once "$f" "$(status_stamp_line "done [corr=0123456789abcdef]: shipped")"
+  printf "%s\n" "$first" > "$2/first"
+' _ "$ROOT" "$H"
+echo "state/retry.status after two retries:"; cat "$H/state/retry.status"
+check "retries left exactly the original stamped line" \
+  '[ "$(wc -l < "$H/state/retry.status" | tr -d " ")" = 1 ] && [ "$(cat "$H/state/retry.status")" = "$(cat "$H/first")" ]'
+
+echo
+[ "$FAILS" -eq 0 ] && echo "RESULT: all live checks passed" || echo "RESULT: $FAILS live checks FAILED"
+exit "$FAILS"

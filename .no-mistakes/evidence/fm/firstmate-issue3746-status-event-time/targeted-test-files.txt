@@ -1,0 +1,15 @@
+# Targeted test files at bf7c045 (local macOS, bash 5.3)
+fm-contributions rc=0 secs=106 ok=36
+fm-pi-branch-extension rc=0 secs=162 ok=42
+fm-classify-corr-token rc=0 secs=61 ok=15
+fm-brief rc=0 secs=21 ok=25
+fm-inactive-reconcile rc=0 secs=71 ok=32
+fm-pending-reply rc=0 secs=51 ok=40
+fm-remote-reply rc=0 secs=287 ok=29
+fm-agy-harness rc=0 secs=77 ok=30
+fm-kimi-harness rc=0 secs=42 ok=17
+fm-rovo-harness rc=0 secs=28 ok=11
+fm-send-resolve-key rc=0 secs=58 ok=20
+pi-run2 rc=0
+remote-reply-evidence rc=0
+not-ok lines across all logs: 0
