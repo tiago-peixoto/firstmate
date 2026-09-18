@@ -6,8 +6,9 @@
 #   fm-remote-inherit.sh absent <allowlisted-relative-path> 0 <empty-sha256> <generation>
 #
 # Only the inherited-material allowlist is writable or removable. Writes are
-# atomic ordinary-file replacements. data/captain-shared.md bytes that diverge
-# from the last published generation are quarantined and its copy is read-only.
+# atomic ordinary-file replacements. data/captain-shared.md bytes are quarantined
+# before removal, or before replacement when they differ from the last published
+# generation, and its copy is read-only.
 set -eu
 
 FM_HOME=${FM_HOME:?FM_HOME is required}
