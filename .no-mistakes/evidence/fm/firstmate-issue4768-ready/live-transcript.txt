@@ -1,0 +1,214 @@
+sandbox: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ
+firstmate under test: /Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2V0A53VN1WJCGX08Y9FW37J @ e4eebad
+
+==================== S1 direct-PR: fix only in the disposable copy, never pushed ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-a commit -q --allow-empty -m fix: the actual fix
+[exit 0]
+worker HEAD (the fix) = 4c9cd13eec3d86bfe673f55e74ecabcf88138c76
+$ echo 'done: PR https://github.com/o/r/pull/11' >> state/a.status   # worker appends
+$ bin/fm-crew-state.sh a
+state: blocked · source: status-log · named head 4c9cd13eec3d86bfe673f55e74ecabcf88138c76 is unreachable outside the worker copy
+[exit 0]
+$ bin/fm-pr-check.sh a https://github.com/o/r/pull/11
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: named head 4c9cd13eec3d86bfe673f55e74ecabcf88138c76 is unreachable outside the worker copy
+[exit 1]
+$ grep '^pr' state/a.meta
+project=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/project
+
+==================== S2 direct-PR: branch pushed, then a later fix committed but NOT pushed (issue case: pushed branch lacks the named fix) ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-b commit -q --allow-empty -m merge main into fm/b
+[exit 0]
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-b push -q origin fm/b
+[exit 0]
+pushed branch tip = bc6bba2c4e8cdb93bcbf7be20258eee3617b2e41
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-b commit -q --allow-empty -m fix: the actual fix, unpushed
+[exit 0]
+worker HEAD (the fix) = 997bf5777042d9255eda784177f77908a4c60824
+$ echo 'done: PR https://github.com/o/r/pull/12' >> state/b.status   # worker appends
+$ bin/fm-crew-state.sh b
+state: blocked · source: status-log · named head 997bf5777042d9255eda784177f77908a4c60824 is unreachable outside the worker copy
+[exit 0]
+$ bin/fm-pr-check.sh b https://github.com/o/r/pull/12
+error: named head 997bf5777042d9255eda784177f77908a4c60824 is unreachable outside the worker copy
+[exit 1]
+$ grep '^pr' state/b.meta
+project=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/project
+
+==================== S2b same worker now pushes the fix -> accepted everywhere ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-b push -q origin fm/b
+[exit 0]
+$ bin/fm-crew-state.sh b
+state: done · source: status-log · PR https://github.com/o/r/pull/12
+[exit 0]
+$ bin/fm-pr-check.sh b https://github.com/o/r/pull/12
+armed: state/b.check.sh
+[exit 0]
+$ grep '^pr' state/b.meta
+project=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/project
+pr=https://github.com/o/r/pull/12
+pr_head=997bf5777042d9255eda784177f77908a4c60824
+
+==================== S3 adversarial: remote branch moved to a merge of main, fix not on it; done note cites an already-pushed SHA ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-c commit -q --allow-empty -m fix: only here
+[exit 0]
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-c push -q origin 5887c7367519910d27314d5a344b13328fbe597a:refs/heads/fm/c
+[exit 0]
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-c fetch -q origin
+[exit 0]
+$ git -C wt-c branch -r --contains 4ce83c99c5ee79560fc3cc84351f80b42cef880c
+(none above = fix not on any remote branch)
+$ echo 'done: PR https://github.com/o/r/pull/13 reverted 5887c7367519910d27314d5a344b13328fbe597a and fixed the retry' >> state/c.status   # worker appends
+$ bin/fm-crew-state.sh c
+state: blocked · source: status-log · named head 4ce83c99c5ee79560fc3cc84351f80b42cef880c is unreachable outside the worker copy
+[exit 0]
+
+==================== S4 no-mistakes: pre-validation handoff done is NOT gated; CI-ready done is ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-d commit -q --allow-empty -m fix: implemented, not pushed (pipeline owns push)
+[exit 0]
+$ echo 'done: implemented the retry fix, ready to validate' >> state/d.status   # worker appends
+$ bin/fm-crew-state.sh d
+state: done · source: status-log · implemented the retry fix, ready to validate
+[exit 0]
+$ echo 'done: PR https://github.com/o/r/pull/14 checks green' >> state/d.status   # worker appends
+$ bin/fm-crew-state.sh d
+state: blocked · source: status-log · named head 4ac4dac637284496a3767be3320d368b299044e4 is unreachable outside the worker copy
+[exit 0]
+
+==================== S4b no-mistakes: the pipeline pushed the worker HEAD to its gate remote -> CI-ready done accepted ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-d remote add no-mistakes /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/gate.git
+[exit 0]
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-d push -q no-mistakes fm/d
+[exit 0]
+$ bin/fm-crew-state.sh d
+state: done · source: status-log · PR https://github.com/o/r/pull/14 checks green
+[exit 0]
+
+==================== S4c no-mistakes: worker commits after the run (not pushed) -> CI-ready done refused again ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-d commit -q --allow-empty -m post-run tweak, never pushed
+[exit 0]
+$ echo 'done: PR https://github.com/o/r/pull/14 checks green' >> state/d.status   # worker appends
+$ bin/fm-crew-state.sh d
+state: blocked · source: status-log · named head dbc44387ed7c3e2d344356eb7339f547c57c03dc is unreachable outside the worker copy
+[exit 0]
+
+==================== S4d no-mistakes: pipeline added commits the worker never fetched; forge reports that head -> pr-check registers it ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-e commit -q --allow-empty -m fix
+[exit 0]
+forge head (pipeline-created) = 00bee05b94436308d818348b23f71be6ea9d8fb5; worker HEAD = e4f283e52037e2ef597cfed5eee52cb9bcb60e78
+$ git -C wt-e cat-file -e 00bee05b94436308d818348b23f71be6ea9d8fb5
+(worker copy never fetched the forge head)
+$ echo 'done: PR https://github.com/o/r/pull/15 checks green' >> state/e.status   # worker appends
+$ bin/fm-crew-state.sh e
+state: blocked · source: status-log · named head e4f283e52037e2ef597cfed5eee52cb9bcb60e78 is unreachable outside the worker copy
+[exit 0]
+$ bin/fm-pr-check.sh e https://github.com/o/r/pull/15
+armed: state/e.check.sh
+[exit 0]
+$ grep '^pr' state/e.meta
+project=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/project
+pr=https://github.com/o/r/pull/15
+pr_head=00bee05b94436308d818348b23f71be6ea9d8fb5
+$ bin/fm-crew-state.sh e
+state: done · source: status-log · PR https://github.com/o/r/pull/15 checks green
+[exit 0]
+
+==================== S5 local-only: commit on shared branch fm/f accepted; detached-HEAD commit refused ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-f commit -q --allow-empty -m fix on fm/f
+[exit 0]
+$ echo 'done: ready in branch fm/f' >> state/f.status   # worker appends
+$ bin/fm-crew-state.sh f
+state: done · source: status-log · ready in branch fm/f
+[exit 0]
+$ git -C project branch --contains HEAD-of-wt-f
++ fm/f
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-f checkout -q --detach
+[exit 0]
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-f commit -q --allow-empty -m fix only on a detached HEAD
+[exit 0]
+$ git -C project branch --contains HEAD-of-wt-f
+(none = only the worker copy's HEAD holds it)
+$ echo 'done: ready in branch fm/f' >> state/f.status   # worker appends
+$ bin/fm-crew-state.sh f
+state: blocked · source: status-log · named head b301979a8c4b09a9eba52507c4f5f1f233afd784 is unreachable outside the worker copy
+[exit 0]
+
+==================== S6 direct-PR squash-merged, branch deleted on forge and pruned by fleet sync ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-g commit -q --allow-empty -m fix g
+[exit 0]
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-g push -q origin fm/g
+[exit 0]
+$ echo 'done: PR https://github.com/o/r/pull/16' >> state/g.status   # worker appends
+$ bin/fm-crew-state.sh g
+state: done · source: status-log · PR https://github.com/o/r/pull/16
+[exit 0]
+$ bin/fm-pr-check.sh g https://github.com/o/r/pull/16
+armed: state/g.check.sh
+[exit 0]
+$ grep '^pr' state/g.meta
+project=/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/project
+pr=https://github.com/o/r/pull/16
+pr_head=2604099ebf1ba42fcd307de04818c6183330ed50
+$ git -C project fetch origin --prune   # what bin/fm-fleet-sync.sh does
+$ git -C wt-g branch -r --contains 2604099ebf1ba42fcd307de04818c6183330ed50
+(none = pruned; squash left it off main)
+-- before the merge poll has recorded the merge:
+$ bin/fm-crew-state.sh g
+state: blocked · source: status-log · named head 2604099ebf1ba42fcd307de04818c6183330ed50 is unreachable outside the worker copy
+[exit 0]
+-- run the real watcher once so the armed PR poll (bin/fm-pr-poll.sh) sees MERGED:
+$ FM_WATCH_HANDLING_SUCCESSOR=0 bin/fm-watch.sh   # watcher cycle 1 (returns on the first wake)
+check: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/home/state/contributions.check.sh: contributions: observation unavailable for https://github.com/o/r/pull/12
+contributions: observation unavailable for https://github.com/o/r/pull/15
+contributions: observation unavailable for https://github.com/o/r/pull/16
+[exit 0]
+$ FM_WATCH_HANDLING_SUCCESSOR=1 bin/fm-watch.sh   # watcher cycle 2 (returns on the first wake)
+check: /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/home/state/g.check.sh: merged
+[exit 0]
+$ grep 'merge landed' state/.wake-queue
+check: merge landed: g https://github.com/o/r/pull/16 external
+$ ls state/g.pr-poll-merge-notified
+/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/home/state/g.pr-poll-merge-notified
+$ bin/fm-crew-state.sh g
+state: done · source: status-log · PR https://github.com/o/r/pull/16
+[exit 0]
+-- adversarial: a done naming a different PR URL than the recorded, merged pr= gets no merge credit
+$ echo 'done: PR https://github.com/o/r/pull/99' >> state/g.status   # worker appends
+$ bin/fm-crew-state.sh g
+state: blocked · source: status-log · named head 2604099ebf1ba42fcd307de04818c6183330ed50 is unreachable outside the worker copy
+[exit 0]
+
+==================== S7 secondmate home: child's unpushed done is not published upstream; after push it is ====================
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-h commit -q --allow-empty -m child fix, unpushed
+[exit 0]
+$ echo 'done: PR https://github.com/o/r/pull/17' >> mate/state/h.status   # child appends
+$ FM_HOME=mate bin/fm-inactive-reconcile.sh scan
+[exit 0]
+$ cat main/state/mate.status   # parent channel
+working: delegated scope
+$ ls mate/state/terminal-outcomes
+$ git -C /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4768-live.8OFPQZ/wt-h push -q origin fm/h
+[exit 0]
+$ FM_HOME=mate bin/fm-inactive-reconcile.sh scan
+[exit 0]
+$ cat main/state/mate.status   # parent channel
+working: delegated scope
+done [key=child-outcome-h-done-0b6d29e2]: child h done: PR https://github.com/o/r/pull/17 pr=https://github.com/o/r/pull/17 mode=direct-PR yolo=off
+$ ls mate/state/terminal-outcomes
+0b6d29e2a7c929e8589eb17294769b75.reported
+
+==================== S8 fleet snapshot (captured-meta path firstmate reads) over the same crews ====================
+$ echo 'done: PR https://github.com/o/r/pull/16' >> state/g.status   # worker appends
+$ bin/fm-fleet-snapshot.sh --json | jq '.tasks[] | {id, mode, state: .current_state.state, detail: .current_state.detail}'
+[exit 0]
+{"id":"a","state":"blocked","source":"status-log","detail":"named head 4c9cd13eec3d86bfe673f55e74ecabcf88138c76 is unreachable outside the worker copy"}
+{"id":"b","state":"done","source":"status-log","detail":"PR https://github.com/o/r/pull/12"}
+{"id":"c","state":"blocked","source":"status-log","detail":"named head 4ce83c99c5ee79560fc3cc84351f80b42cef880c is unreachable outside the worker copy"}
+{"id":"d","state":"blocked","source":"status-log","detail":"named head dbc44387ed7c3e2d344356eb7339f547c57c03dc is unreachable outside the worker copy"}
+{"id":"e","state":"done","source":"status-log","detail":"PR https://github.com/o/r/pull/15 checks green"}
+{"id":"f","state":"blocked","source":"status-log","detail":"named head b301979a8c4b09a9eba52507c4f5f1f233afd784 is unreachable outside the worker copy"}
+{"id":"g","state":"done","source":"status-log","detail":"PR https://github.com/o/r/pull/16"}
+
+==================== cleanup ====================
+sandbox removed

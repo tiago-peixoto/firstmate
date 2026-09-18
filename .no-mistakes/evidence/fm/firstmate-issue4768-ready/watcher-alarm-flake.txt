@@ -1,0 +1,15 @@
+Pre-existing flake in tests/fm-pr-check-security.test.sh (not caused by this change)
+
+run_watcher_bounded (line 701) kills bin/fm-watch.sh after a hard `alarm 10` and exits 124 with empty stderr.
+On this shared 14-core host one watcher cycle took 2.9-6.3 s at load ~11 and 8.7-10.7 s at load ~18.
+
+Parallel run of 7 targeted suites (load ~28):
+  not ok - merged poll watcher failed:            (test_merged_poll_row_carries_the_merge_authority)
+Solo re-run while 2 other suites were still running:
+  not ok - first merged watcher cycle failed:     (test_merged_poll_reregistration_after_notification_is_absorbed)
+Solo re-run on a quieter host: 39 ok, exit 0.
+
+Timed watcher cycles in those two tests, same host, back to back:
+  round 1 (load 11.7)  target: 2.86 4.25 4.07 6.28 s        base daaffdb: 5.23 3.93 5.60 10.67 s rc=124
+  round 2 (load 18.5)  target: 9.24 8.70 10.61 s rc=124     base daaffdb: 10.72 s rc=124
+The base commit times out the same way, so the flake predates the named-head gate.

@@ -1,0 +1,211 @@
+
+# Note: bin/fm-pr-check.sh runs the supervision guard first. This sandbox home has no watcher running,
+
+# so its WATCHER DOWN / queued-wakes warnings below are expected here and unrelated to the gate.
+
+### Scenario 1 - direct-PR: pushed branch is only a merge of main; the fix commit is unpushed (issue case: branch moved, named head not on it)
+
+# main advances on origin while the worker is busy
+
+# worker pushed fm/a1 at the merge commit 89c9c7dae69e3243cf3fd9945c424cd446e331ee and opened PR 41 (forge head = that merge)
+
+# worker then commits the real fix e0ce682aef509ad7dc05df2433e6df65963cab03 locally and does NOT push it
+$ git -C wt/a1 status -sb
+  ## fm/a1...origin/fm/a1 [ahead 1]
+  [exit 0]
+$ echo done:\ PR\ https://github.com/acme/widget/pull/41 >> state/a1.status
+$ bin/fm-crew-state.sh a1
+  state: blocked · source: status-log · named head e0ce682aef509ad7dc05df2433e6df65963cab03 is unreachable outside the worker copy
+  [exit 0]
+$ bin/fm-pr-check.sh a1 https://github.com/acme/widget/pull/41
+  ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ●  WATCHER DOWN - SUPERVISION IS OFF
+  ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+  ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+  ●  This is a supervision warning only; the guarded operation WILL still run.
+  ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  error: named head e0ce682aef509ad7dc05df2433e6df65963cab03 is unreachable outside the worker copy
+  [exit 1]
+$ recorded PR metadata
+  (no pr= / pr_head= recorded)
+  [exit 0]
+$ merge poll
+  no merge poll armed
+  [exit 0]
+
+# worker pushes the fix; the forge's PR head moves to it
+$ git -C wt/a1 push origin fm/a1
+  [exit 0]
+$ bin/fm-crew-state.sh a1
+  state: done · source: status-log · PR https://github.com/acme/widget/pull/41
+  [exit 0]
+$ bin/fm-pr-check.sh a1 https://github.com/acme/widget/pull/41
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  armed: state/a1.check.sh
+  [exit 0]
+$ recorded PR metadata
+  pr=https://github.com/acme/widget/pull/41
+  pr_head=e0ce682aef509ad7dc05df2433e6df65963cab03
+  [exit 0]
+$ merge poll
+  merge poll armed: state/a1.check.sh
+  [exit 0]
+
+### Scenario 2 - direct-PR: squash-merged PR whose branch fleet sync pruned
+
+# PR 41 is squash-merged on origin and GitHub deletes the head branch
+Squash commit -- not updating HEAD
+$ git -C project fetch origin --prune   (what fleet sync runs)
+  [exit 0]
+$ git -C project branch -r --contains e0ce682aef509ad7dc05df2433e6df65963cab03
+  [exit 0]
+$ bin/fm-crew-state.sh a1   (merge not yet observed by the poll)
+  state: blocked · source: status-log · named head e0ce682aef509ad7dc05df2433e6df65963cab03 is unreachable outside the worker copy
+  [exit 0]
+
+# the watcher's poll sees the merge and records it through fm_merge_outcome_report (the same call bin/fm-watch.sh makes)
+$ fm_merge_outcome_report home state a1 <url> poll
+  [exit 0]
+$ ls state/a1.pr-poll-merge-notified
+  /tmp/fm4768-live.Sm2aVH/home/state/a1.pr-poll-merge-notified
+  [exit 0]
+$ bin/fm-crew-state.sh a1
+  state: done · source: status-log · PR https://github.com/acme/widget/pull/41
+  [exit 0]
+
+# adversarial: a done naming a different PR than the recorded pr= does not inherit the merge
+$ echo done:\ PR\ https://github.com/acme/widget/pull/99 >> state/a1.status
+$ bin/fm-crew-state.sh a1
+  state: blocked · source: status-log · named head e0ce682aef509ad7dc05df2433e6df65963cab03 is unreachable outside the worker copy
+  [exit 0]
+
+### Scenario 3 - no-mistakes: pre-validation handoff is not gated; CI-ready done is
+
+# worker commits 23fbab0529e9ce24395ec4b01432b66469530d78 locally (the pipeline owns the push)
+$ echo done:\ implemented\ cache\ warmup\,\ ready\ to\ validate >> state/n1.status
+$ bin/fm-crew-state.sh n1   (pre-validation handoff)
+  state: done · source: status-log · implemented cache warmup, ready to validate
+  [exit 0]
+
+# adversarial: CI-ready done while HEAD is still only in this copy and no PR is registered
+$ echo done:\ PR\ https://github.com/acme/widget/pull/42\ checks\ green >> state/n1.status
+$ bin/fm-crew-state.sh n1
+  state: blocked · source: status-log · named head 23fbab0529e9ce24395ec4b01432b66469530d78 is unreachable outside the worker copy
+  [exit 0]
+$ bin/fm-pr-check.sh n1 https://github.com/acme/widget/pull/42   (forge gives no head)
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  error: named head 23fbab0529e9ce24395ec4b01432b66469530d78 is unreachable outside the worker copy
+  [exit 1]
+$ recorded PR metadata
+  (no pr= / pr_head= recorded)
+  [exit 0]
+
+# the /no-mistakes run pushes the worker branch to its gate remote
+$ git -C wt/n1 push no-mistakes fm/n1
+  [exit 0]
+$ bin/fm-crew-state.sh n1
+  state: done · source: status-log · PR https://github.com/acme/widget/pull/42 checks green
+  [exit 0]
+
+# the pipeline adds a review-fix commit the worker copy never fetches, and pushes it to origin as PR 42's head
+$ git -C wt/n1 cat-file -e 76f4ec220db204fd54290dff21fed4003c5ca8d3   (worker copy never saw the pipeline head)
+  [exit 1]
+$ bin/fm-pr-check.sh n1 https://github.com/acme/widget/pull/42
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  armed: state/n1.check.sh
+  [exit 0]
+$ recorded PR metadata
+  pr=https://github.com/acme/widget/pull/42
+  pr_head=76f4ec220db204fd54290dff21fed4003c5ca8d3
+  [exit 0]
+$ bin/fm-crew-state.sh n1
+  state: done · source: status-log · PR https://github.com/acme/widget/pull/42 checks green
+  [exit 0]
+
+### Scenario 4 - local-only: shared branch vs detached copy vs standalone clone
+$ echo done:\ ready\ in\ branch\ fm/l1 >> state/l1.status
+$ git -C project rev-parse fm/l1   (linked worktree shares refs/heads)
+  a840c7792aa6fa6b9df6809901fb29094e372a06
+  [exit 0]
+$ bin/fm-crew-state.sh l1
+  state: done · source: status-log · ready in branch fm/l1
+  [exit 0]
+
+# adversarial: the worker commits on a detached HEAD in the copy instead of its branch
+$ echo done:\ ready\ in\ branch\ fm/l2 >> state/l2.status
+$ git -C wt/l2 branch --contains 90d095243421507f6c512d2970d5ccf36e42d914
+  * (HEAD detached from 13e8c16)
+  [exit 0]
+$ bin/fm-crew-state.sh l2
+  state: blocked · source: status-log · named head 90d095243421507f6c512d2970d5ccf36e42d914 is unreachable outside the worker copy
+  [exit 0]
+
+# adversarial: the copy is a standalone clone, so its fm/l3 branch is not the project's
+$ echo done:\ ready\ in\ branch\ fm/l3 >> state/l3.status
+$ bin/fm-crew-state.sh l3
+  state: blocked · source: status-log · named head d591be2554b200e299e6f3fdba24615b3f755b49 is unreachable outside the worker copy
+  [exit 0]
+$ git -C project fetch wt/l3 fm/l3:fm/l3   (branch now on the project)
+  [exit 0]
+$ bin/fm-crew-state.sh l3
+  state: done · source: status-log · ready in branch fm/l3
+  [exit 0]
+
+### Scenario 5 - secondmate home: a child's unpushed ship done is not published to the parent
+$ echo done:\ PR\ https://github.com/acme/widget/pull/43 >> state/c1.status
+$ (mate home) bin/fm-inactive-reconcile.sh scan
+  [exit 0]
+$ cat main/state/mate.status   (parent channel)
+  working: delegated scope
+  [exit 0]
+
+# child pushes its fix
+$ git -C wt/c1 push origin fm/c1
+  [exit 0]
+$ (mate home) bin/fm-inactive-reconcile.sh scan
+  [exit 0]
+$ cat main/state/mate.status   (parent channel)
+  working: delegated scope
+  done [key=child-outcome-c1-done-e7756bbd]: child c1 done: PR https://github.com/acme/widget/pull/43 pr=https://github.com/acme/widget/pull/43 mode=direct-PR yolo=off
+  [exit 0]
+
+### Scenario 7 - no-mistakes run still monitoring CI: the CI-ready done is gated on the run-step path too
+
+# the no-mistakes run status below is served by the stub (no live daemon); the CI step is running with no conclusive log yet
+$ git -C wt/n2 push no-mistakes fm/n2
+  [exit 0]
+$ echo done:\ PR\ https://github.com/acme/widget/pull/44\ checks\ green >> state/n2.status
+$ bin/fm-crew-state.sh n2   (run head 23ad003517143b514ff52172756aebf4b55b0d31 pushed to the gate)
+  state: done · source: status-log · PR https://github.com/acme/widget/pull/44 checks green · run still monitoring PR
+  [exit 0]
+
+# adversarial: a run is monitoring CI for a head that was never pushed anywhere outside the copy
+$ echo done:\ PR\ https://github.com/acme/widget/pull/45\ checks\ green >> state/n3.status
+$ git -C wt/n3 branch -r --contains 1e8fdf563327801bca3af3ada2320016a790cbfa
+  [exit 0]
+$ bin/fm-crew-state.sh n3
+  state: blocked · source: status-log · named head 1e8fdf563327801bca3af3ada2320016a790cbfa is unreachable outside the worker copy
+  [exit 0]
+
+### Scenario 6 - worker-facing Definition of done wording in each mode
+
+$ bin/fm-brief.sh brief-direct-pr widget --mode direct-PR   (Definition of done excerpt)
+  1:Delivery contract: mode=direct-PR
+  4:When it is implemented and committed, push your branch and open a PR with `gh-axi`, then append `done: PR {url}` to the status file and stop.
+  5:That `done: PR {url}` is accepted only when this copy's HEAD - your latest commit - is pushed to your PR branch; the check tests that commit, not merely that a branch moved.
+
+$ bin/fm-brief.sh brief-local-only widget --mode local-only   (Definition of done excerpt)
+  1:Delivery contract: mode=local-only
+  3:The task is complete only when committed on your branch `fm/brief-local-only`. Do NOT push, do NOT open a PR, do NOT merge.
+  4:A `done:` is accepted when the named head is on this project's shared local branch, not only on a detached copy; the check tests that head, not merely that a branch moved.
+  6:When it is implemented and committed, append `done: ready in branch fm/brief-local-only` to the status file and stop.
+
+$ bin/fm-brief.sh brief-no-mistakes widget --mode no-mistakes   (Definition of done excerpt)
+  1:Delivery contract: mode=no-mistakes
+  3:When you believe it is complete, append `done: {summary}` to the status file and stop.
+  5:That first `done:` is the handoff that starts the pipeline, which owns the push; it is not a request to push from this copy.
+  32:After /no-mistakes reports CI green (the CI-ready return point - do not wait for it to keep monitoring in the background until merge), append `done: PR {url} checks green` and stop. You are finished.
+  33:That CI-ready `done:` is accepted only when this copy's HEAD - your latest commit - is one the /no-mistakes run pushed, so commit nothing after the run; the check tests that commit, not merely that a branch moved.
