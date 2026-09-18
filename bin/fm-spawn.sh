@@ -1088,6 +1088,8 @@ RELAUNCH_REPLACEMENT_WT=
 CONFIG_INHERIT_LOCK=
 CONFIG_INHERIT_LOCK_HELD=0
 GIT_HOOKS_DIR=
+SPAWN_LAUNCH_SENT=0
+SPAWN_ENDPOINT_CLOSED=0
 
 spawn_fresh_commit_rollback() {
   if fm_backlog_atomic_transition rollback "$STATE/$ID.meta" \
@@ -1219,8 +1221,10 @@ spawn_abort_cleanup() {
     fm_lock_release "$SPAWN_META_LOCK" || true
   fi
   # The per-id spawn lock is retaken so a concurrent spawn of the same id, which
-  # reinstalls this strip dir, is never undone.
+  # reinstalls this strip dir, is never undone. A launched agent whose endpoint
+  # was not closed may still be committing, so it keeps its strip.
   if [ "$status" -ne 0 ] && [ -n "$GIT_HOOKS_DIR" ] &&
+    { [ "$SPAWN_LAUNCH_SENT" = 0 ] || [ "$SPAWN_ENDPOINT_CLOSED" = 1 ]; } &&
     fm_lock_try_acquire "$SPAWN_TASK_LOCK"; then
     if [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
       chmod u+w "$GIT_HOOKS_DIR" 2>/dev/null || true
@@ -3370,7 +3374,7 @@ spawn_close_abort_endpoint() {
   [ "$BACKEND" = orca ] && return 0
   [ "$BACKEND" = zellij ] && tab_id=$ZELLIJ_TAB_ID
   echo "closing window $T" >&2
-  fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null || true
+  fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null && SPAWN_ENDPOINT_CLOSED=1 || true
 }
 
 
@@ -3602,12 +3606,12 @@ rovo_spawn_fail() { # <detail>
 rovo_endpoint_cleanup() {
   [ -n "${SPAWN_LEASE_RETURN_ON_ABORT:-}" ] && return 0
   if [ "$BACKEND" = orca ]; then
-    fm_backend_kill orca "$T" 2>/dev/null || true
+    fm_backend_kill orca "$T" 2>/dev/null && SPAWN_ENDPOINT_CLOSED=1 || true
     return 0
   fi
   local tab_id=
   [ "$BACKEND" = zellij ] && tab_id=$ZELLIJ_TAB_ID
-  fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null || true
+  fm_backend_kill "$BACKEND" "$T" "$tab_id" "fm-$ID" 2>/dev/null && SPAWN_ENDPOINT_CLOSED=1 || true
 }
 
 # agy carries its brief on the launch command, so it needs no delivery gate,
@@ -4555,6 +4559,7 @@ if [ "$LAUNCH_ENV_ENABLED" = 1 ]; then
   LAUNCH="$LAUNCH_ENV_PREFIX /bin/sh -c $(shell_quote "$LAUNCH")"
 fi
 sleep 0.3
+SPAWN_LAUNCH_SENT=1
 spawn_send_literal "$T" "$LAUNCH"
 sleep 0.3
 if [ "${HERDR_PROJECTED:-0}" -eq 1 ]; then
