@@ -1,0 +1,10 @@
+unkeyed needs-decision                                     exit=4 new-records=0 deferred: t1 is waiting on its open decision or blocker (default); nothing was sent
+unkeyed blocked                                            exit=4 new-records=0 deferred: t1 is waiting on its open decision or blocker (default); nothing was sent
+needs-decision then working:                               exit=4 new-records=0 deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+needs-decision then done:                                  exit=0 new-records=1 
+decision resolved by worker                                exit=0 new-records=1 
+paused: (external wait, not a decision)                    exit=0 new-records=1 
+working only                                               exit=0 new-records=1 
+no status file                                             exit=0 new-records=1 
+status file absent                                          exit=0 
+--automatic --key Escape                                    exit=1 error: --automatic cannot accompany --key or --resolve-key

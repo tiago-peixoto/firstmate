@@ -1,0 +1,30 @@
+--- brief-sm.base.md	2026-09-18 15:39:35
++++ brief-sm.head.md	2026-09-18 15:39:34
+@@ -19,7 +19,7 @@
+ Never start a survey, audit, or "find improvements" sweep on your own initiative; that is not your job and it is unwanted.
+ 
+ # The captain and the parent channel
+-Nobody reads this chat: the captain and the main firstmate see only what is appended to '/tmp/fm4228-brief-base.tJEBWo/state/wait-sm.status', and a captain-facing sentence that is not appended there has not been sent.
++Nobody reads this chat: the captain and the main firstmate see only what is appended to '/tmp/fm4228-brief-head.TqvTCF/state/wait-sm.status', and a captain-facing sentence that is not appended there has not been sent.
+ That file is your parent channel, and in this home it IS the captain: every sentence you would say to the captain, and every outcome the local AGENTS.md tells a firstmate to bring to the captain, is one appended line there, never chat.
+ Your own machinery publishes the durable facts about your crew's work for you (`bin/fm-parent-channel-lib.sh`): a child's terminal done or failed line with its note and PR on every supervision poll, a PR-ready line when you register a PR, a task you hold for the captain and its answer, a merge, and a child's final line at cleanup all reach the parent channel from the scripts that record them, whether or not you append anything.
+ What only you can append is judgement: the answer to a marked request below, a recommendation or caveat on a delivered outcome, a blocker or failure of your own, and anything else you would otherwise say to the captain.
+@@ -39,14 +39,15 @@
+ A request arriving through the instruction inbox below follows the same marker and reply rules.
+ 
+ # Firstmate instruction inbox
+-Firstmate steers you through durable message files in '/tmp/fm4228-brief-base.tJEBWo/state/wait-sm.inbox'.
+-When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm4228-brief-base.tJEBWo/state/wait-sm.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm4228-brief-base.tJEBWo/state/wait-sm.inbox'/NNN.msg '/tmp/fm4228-brief-base.tJEBWo/state/wait-sm.inbox'/handled/`.
++Firstmate steers you through durable message files in '/tmp/fm4228-brief-head.TqvTCF/state/wait-sm.inbox'.
++When a terminal message says an instruction is waiting there, list '/tmp/fm4228-brief-head.TqvTCF/state/wait-sm.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm4228-brief-head.TqvTCF/state/wait-sm.inbox'/NNN.msg '/tmp/fm4228-brief-head.TqvTCF/state/wait-sm.inbox'/handled/`.
+ The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
++Every waiting instruction rings, so never list the inbox on your own.
+ 
+ # Escalation to main firstmate
+ Handle routine work yourself.
+ Report only true captain-relevant outcomes or a declared external wait by appending one line:
+-   `echo "{state}: {one short line}" >> '/tmp/fm4228-brief-base.tJEBWo/state/wait-sm.status'`
++   `echo "{state}: {one short line}" >> '/tmp/fm4228-brief-head.TqvTCF/state/wait-sm.status'`
+ States: working, needs-decision, blocked, paused, done, failed.
+ Use `paused: {why}` (distinct from `blocked:`) only when your domain is deliberately idling on a known external wait you expect to clear on its own, naming when it clears with `until <YYYY-MM-DDTHH:MMZ>` (UTC) when you know; use `blocked:` when you are stuck and need firstmate to act.
+ Use this only for material phase changes, a captain decision, a real blocker, a failure, work ready for review, or work you landed.

@@ -1,0 +1,76 @@
+--- brief-ship.base.md	2026-09-18 15:39:35
++++ brief-ship.head.md	2026-09-18 15:39:34
+@@ -27,7 +27,7 @@
+ 2. Stay inside this worktree; modify nothing outside it.
+ 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
+ 4. Report status by appending one line:
+-   `echo "{state}: {one short line}" >> '/tmp/fm4228-brief-base.tJEBWo/state/wait-ship.status'`
++   `echo "{state}: {one short line}" >> '/tmp/fm4228-brief-head.TqvTCF/state/wait-ship.status'`
+    States: working, needs-decision, blocked, paused, done, failed.
+    Each append wakes firstmate, so report sparingly: only phase changes a supervisor
+    would act on (setup done, bug reproduced, fix implemented, validation passed) and the
+@@ -39,14 +39,14 @@
+    A mid-task `working:` line (including setup complete) is nonterminal: do not end the
+    turn after it; continue the same stage until a defined `done:` gate under Definition of done.
+    Use `paused: {why}` - distinct from `blocked:` - ONLY when you are deliberately idling on a
+-   known external wait you expect to clear on its own (an upstream release, a rate-limit reset, a scheduled window, or your own validation round):
++   known external wait you expect to clear on its own (an upstream release, a rate-limit reset, a scheduled window, or your own validation round, which you declare once just before its blocking hold and then wait out inside that one command):
+    firstmate then leaves your idle pane alone and rechecks it on a long
+    cadence instead of treating it as a possible wedge. Use `blocked:` when you are stuck and need help.
+ 5. If you hit the same obstacle twice, append `blocked: {why}` and stop; firstmate will help.
+ 6. If a decision belongs above the implementation worker (product choices, destructive actions),
+    append `needs-decision: {summary of options}` and stop. Firstmate will reply with the decision.
+-   For a no-mistakes ask-user gate specifically, escalate all ask-user findings as one event plus one snapshot file, using that same shape even when the gate holds only a single ask-user finding: write only the ask-user findings, verbatim and unparaphrased (id, severity, file, line, description, authority), to `/tmp/fm4228-brief-base.tJEBWo/data/wait-ship/nm-<run>-findings.txt`, then report the gate with
+-   `needs-decision [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/tmp/fm4228-brief-base.tJEBWo/data/wait-ship/nm-<run>-findings.txt`
++   For a no-mistakes ask-user gate specifically, escalate all ask-user findings as one event plus one snapshot file, using that same shape even when the gate holds only a single ask-user finding: write only the ask-user findings, verbatim and unparaphrased (id, severity, file, line, description, authority), to `/tmp/fm4228-brief-head.TqvTCF/data/wait-ship/nm-<run>-findings.txt`, then report the gate with
++   `needs-decision [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/tmp/fm4228-brief-head.TqvTCF/data/wait-ship/nm-<run>-findings.txt`
+    naming every ask-user finding id from that gate. The status line only points at the file; it never restates or summarizes a finding's content.
+    A decision or blocker you opened stays open until a `resolved` line carrying its exact key lands; a later `done:` or `working:` line never closes it, even when the answer is what started that work.
+    Firstmate's reply normally writes that closing line at answer time; when a blocker or wait clears WITHOUT a firstmate reply, append `resolved: {how it cleared}` yourself (same `[key=<slug>]` if you opened it with one) as you resume.
+@@ -63,16 +63,28 @@
+    the daemon accepts `respond` immediately and runs the round in the background, so a killed or
+    timed-out call was only waiting for a read while the run kept working.
+ 
++# Waiting
++Every turn you take resends your whole context, so a wait must cost no turns.
++After you append `needs-decision:` or `blocked:`, end your turn at once: do not check the inbox, the status file, or anything else, because the answer arrives as a terminal message that starts your next turn.
++Wait on anything external - a pipeline gate, PR checks, a heavy-test slot - with ONE blocking shell command that returns when the state changes: `no-mistakes axi run` or `respond` with `--wait`, `gh pr checks <pr> --watch`, or `until <condition>; do sleep 30; done` for anything else.
++Never spend turns on `sleep` followed by a status check, and never background a command in order to poll it.
++In Claude Code that `until` loop in a single Bash call is the sanctioned foreground wait: when the harness refuses a sleep-then-check command and points you at backgrounding instead, reissue the wait as the loop rather than accepting the background.
++Bound that command by what your harness lets one command run: in Pi pass the bash tool a `timeout` of at most 2700 seconds, because Pi sets none by default; in Claude Code pass the Bash tool its maximum `timeout` of 600000 ms, because its default is 2 minutes; in Codex keep waiting on a still-running command with empty `write_stdin` polls of up to 300000 ms; elsewhere pass your shell tool its largest timeout and assume at most 10 minutes.
++Give any `--wait` a duration a little under that bound.
++When the bound passes with nothing changed, run the same blocking command again, with no status check in between.
++A wait your shell can watch this way needs no `paused:` line, except your own validation round: append `paused:` once just before its first blocking command, then stay in the command, and never append it again as you reissue that command.
++
+ # Firstmate instruction inbox
+-Firstmate steers you through durable message files in '/tmp/fm4228-brief-base.tJEBWo/state/wait-ship.inbox'.
+-When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm4228-brief-base.tJEBWo/state/wait-ship.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm4228-brief-base.tJEBWo/state/wait-ship.inbox'/NNN.msg '/tmp/fm4228-brief-base.tJEBWo/state/wait-ship.inbox'/handled/`.
++Firstmate steers you through durable message files in '/tmp/fm4228-brief-head.TqvTCF/state/wait-ship.inbox'.
++When a terminal message says an instruction is waiting there, list '/tmp/fm4228-brief-head.TqvTCF/state/wait-ship.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm4228-brief-head.TqvTCF/state/wait-ship.inbox'/NNN.msg '/tmp/fm4228-brief-head.TqvTCF/state/wait-ship.inbox'/handled/`.
+ The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
++Every waiting instruction rings, so never list the inbox on your own.
+ 
+ # Project memory
+-If `AGENTS.md` or `CLAUDE.md` already exists, or if this task produced durable project-intrinsic knowledge, run `/tmp/fm4228-base.LNjlkR/bin/fm-ensure-agents-md.sh .` in the worktree.
++If `AGENTS.md` or `CLAUDE.md` already exists, or if this task produced durable project-intrinsic knowledge, run `/Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2TT38T18TMBTSGSQ65V116Y/bin/fm-ensure-agents-md.sh .` in the worktree.
+ Record only project knowledge useful to almost every future session.
+ For anything the codebase already shows, prefer a pointer to the authoritative file, command, or doc over copying the detail.
+-If you touch a project `AGENTS.md`, follow `/tmp/fm4228-base.LNjlkR/bin/fm-ensure-agents-md.sh`'s self-governance contract in the same pass.
++If you touch a project `AGENTS.md`, follow `/Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2TT38T18TMBTSGSQ65V116Y/bin/fm-ensure-agents-md.sh`'s self-governance contract in the same pass.
+ Keep it proportionate: skip `AGENTS.md` edits for trivial tasks that produced no durable project knowledge.
+ 
+ # Definition of done
+@@ -93,9 +105,10 @@
+ This replaces the no-mistakes skill's advice to enrich `--intent` with decisions and tradeoffs; that advice does not apply to Firstmate-dispatched work.
+ Do not hand-edit, commit, or fix findings yourself while a run is active - the pipeline applies every fix.
+ 
+-One drive call blocks until the next gate or outcome, which routinely outlives what your harness lets a single command run: Claude Code kills a command at ten minutes maximum, while one fix round is capped around thirty minutes and up to three rounds chain.
+-So background the drive call and poll `no-mistakes axi status` from a separate call instead of sitting in one blocking hold your harness will kill.
+-Where a harness's own command limit is not established, assume it bounds commands and use that same background-and-poll shape.
++Drive the run with ONE foreground `no-mistakes axi run` and let it block.
++It bounds its own hold for you: `--wait` (default 8m) exists precisely so a harness with a ten-minute command cap gets a structured return instead of being killed mid-hold.
++When it returns on elapsed wait rather than a gate or an outcome, that is not a failure - issue the same foreground call again, one at a time, until a gate or outcome comes back.
++Never background a wait, and never arm a timer to stand in for one: a backgrounded call returns in milliseconds, so it does not wait at all, and every timer left behind fires later as a paid wake for nothing.
+ A killed or timed-out call is never evidence the daemon died: the daemon accepts your response immediately and runs the round in the background, so the call was only ever waiting for a read while the run kept working.
+ Reattach and keep going rather than reporting the pipeline blocked; rule 7 owns the checks that decide when a pipeline block is real.
+ 

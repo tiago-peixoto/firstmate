@@ -1,0 +1,29 @@
+### tests/fm-send-inbox.test.sh
+ok - fm-send inbox: the payload is recorded durably and only the doorbell is typed
+ok - fm-send inbox: an automatic send defers while the worker's own decision is open, and the answer still wakes it
+exit=
+### tests/fm-secondmate-sync.test.sh
+ok - T8c failed bootstrap nudge is surfaced and recorded for retry
+ok - T8g bootstrap defers the re-read nudge while the mate waits on its decision
+ok - T8h a deferred nudge is classified by exit status, not by the first line of output
+ok - T8d bootstrap nudge retry is idempotent after success
+# all fm-secondmate-sync tests passed
+exit=
+### tests/fm-secondmate-harness.test.sh
+ok - B16 config reread isolation, ABSENT, generation safety, send failure, and retry
+ok - config-push defers a local reread while the mate waits on its decision, then delivers it
+# all fm-secondmate-harness tests passed
+exit=
+### tests/fm-secondmate-reconcile.test.sh
+ok - the reconcile ask waits while the mate waits on its decision, then is delivered
+ok - the reconcile ask expects no reply and stays out of a ladder that still rings ordinary steers
+exit=
+### tests/fm-pending-reply.test.sh
+ok - completed turn with no report triggers exactly one recovery
+ok - recovery never pokes a mate waiting on its own decision, and runs once it closes
+ok - all pending-reply tests passed
+exit=
+### tests/fm-brief.test.sh
+ok - fm-brief.sh: ship and scout scaffolds declare a validation-round pause once, then hold it
+ok - fm-brief: workers end the turn on a decision, wait in one bounded shell command, and never poll
+exit=

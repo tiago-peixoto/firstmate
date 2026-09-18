@@ -1,0 +1,53 @@
+== mate opens its own decision
+  status: working: supervising crew
+  status: needs-decision [key=pick]: alpha or beta?
+
+== bearings publishes a reconcile request
+$ fm-secondmate-reconcile.sh request --snapshot /private/tmp/fm4228-rec.EBo8yf/snap.json
+  | requested: /private/tmp/fm4228-rec.EBo8yf/home/state/reconcile-notify/request-f0c6db96345ca6fbeddb7331481bb357698448639727a4e08b59767be1ff4975.json
+  exit=0
+  requests queued: 1 | fm-send spawns so far: 0 | mate inbox records: 0 | cooldown stamp: absent
+
+== watcher poll 1 runs process-requests
+$ fm-secondmate-reconcile.sh process-requests
+  | processed: 0 deferred: 0 waiting: 1
+  exit=0
+  requests queued: 1 | fm-send spawns so far: 0 | mate inbox records: 0 | cooldown stamp: absent
+
+== watcher poll 2 runs process-requests
+$ fm-secondmate-reconcile.sh process-requests
+  | processed: 0 deferred: 0 waiting: 1
+  exit=0
+  requests queued: 1 | fm-send spawns so far: 0 | mate inbox records: 0 | cooldown stamp: absent
+
+== watcher poll 3 runs process-requests
+$ fm-secondmate-reconcile.sh process-requests
+  | processed: 0 deferred: 0 waiting: 1
+  exit=0
+  requests queued: 1 | fm-send spawns so far: 0 | mate inbox records: 0 | cooldown stamp: absent
+
+== a direct notify also defers without spawning fm-send
+$ fm-secondmate-reconcile.sh notify --snapshot /private/tmp/fm4228-rec.EBo8yf/snap.json
+  | deferred: mate orphan_in_flight
+  exit=0
+  requests queued: 1 | fm-send spawns so far: 0 | mate inbox records: 0 | cooldown stamp: absent
+
+== firstmate answers the decision; next poll delivers the queued ask
+$ fm-secondmate-reconcile.sh process-requests
+  | processed: 1 deferred: 0 waiting: 0
+  exit=0
+  requests queued: 0 | fm-send spawns so far: 1 | mate inbox records: 1 | cooldown stamp: present
+  fm-send calls:
+    fm-send mate --automatic --fire-and-forget b590b5d0eaa1c030 <message>
+  mate pane:
+    > : Firstmate instruction waiting: list '/private/tmp/fm4228-rec.EBo8yf/home/state
+    > /mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each han
+    > dled file to '/private/tmp/fm4228-rec.EBo8yf/home/state/mate.inbox'/handled/.
+    > : Firstmate instruction waiting: list '/private/tmp/fm4228-rec.EBo8yf/home/state
+    > /mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each han
+    > dled file to '/private/tmp/fm4228-rec.EBo8yf/home/state/mate.inbox'/handled/.
+
+== next poll: queue empty, cooldown now active
+$ fm-secondmate-reconcile.sh process-requests
+  exit=0
+  requests queued: 0 | fm-send spawns so far: 1 | mate inbox records: 1 | cooldown stamp: present

@@ -1,0 +1,25 @@
+== firstmate asked hibit for a report; hibit finished its turn without one (grace 0)
+== hibit has its own decision open AND relays a captain hold for its child
+  status: needs-decision [key=scope]: narrow or wide?
+  status: needs-decision [key=captain-hold-t42-1]: captain hold t42: ship alpha or beta?
+  recovery: not attempted
+  record phase: awaiting_report | inbox records: 0
+  mate pane:
+
+== watcher tick again while still open
+  recovery: not attempted
+  record phase: awaiting_report | inbox records: 0
+  mate pane:
+
+== firstmate answers hibit's own decision; the captain hold stays open
+  recovery: sent
+  record phase: recovery_sent | inbox records: 1
+  mate pane:
+    > : Firstmate instruction waiting: list '/private/tmp/fm4228-prr.ShAhOL/home/state
+    > /hibit.inbox'/*.msg and, in numeric order, read and act on each, then mv each ha
+    > ndled file to '/private/tmp/fm4228-prr.ShAhOL/home/state/hibit.inbox'/handled/.
+    > : Firstmate instruction waiting: list '/private/tmp/fm4228-prr.ShAhOL/home/state
+    > /hibit.inbox'/*.msg and, in numeric order, read and act on each, then mv each ha
+    > ndled file to '/private/tmp/fm4228-prr.ShAhOL/home/state/hibit.inbox'/handled/.
+  recovery message recorded:
+    [fm-from-firstmate]⁣corr=f19744d79ceccdc0 REPOST REQUIRED: previous marked request had no correlated parent report. Reply on the parent status channel including corr=f19744d79ceccdc0. Original request: status of phase 8

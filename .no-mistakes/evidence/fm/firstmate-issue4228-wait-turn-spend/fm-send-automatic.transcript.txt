@@ -1,0 +1,100 @@
+
+== 1. worker opens its own decision, then an automatic re-read nudge fires
+  status: working: implementing
+  status: needs-decision [key=pick]: ship alpha or beta?
+$ fm-send.sh t1 --automatic re-read your instructions
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | ●  WATCHER DOWN - SUPERVISION IS OFF
+  | ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+  | ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+  | ●  This is a supervision warning only; the requested message WILL still be sent.
+  | ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+  exit=4
+  inbox records: 
+  pane shows:
+
+== 2. a blocked: line (blocker, not decision) also defers
+  status: working: implementing
+  status: blocked [key=creds]: need the deploy token
+$ fm-send.sh t1 --automatic re-read your instructions
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  | deferred: t1 is waiting on its open decision or blocker (creds); nothing was sent
+  exit=4
+  inbox records: 
+  pane shows:
+
+== 3. firstmate's deliberate answer still wakes the worker (--resolve-key closes the blocker)
+$ fm-send.sh t1 --resolve-key creds token is in 1password item deploy
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  exit=0
+  inbox records: 001.msg
+  pane shows:
+    > : Firstmate instruction waiting: list '/tmp/fm4228-send.xlnEQF/home/state/t1.inb
+    > ox'/*.msg and, in numeric order, read and act on each, then mv each handled file
+    >  to '/tmp/fm4228-send.xlnEQF/home/state/t1.inbox'/handled/.
+    > : Firstmate instruction waiting: list '/tmp/fm4228-send.xlnEQF/home/state/t1.inb
+    > ox'/*.msg and, in numeric order, read and act on each, then mv each handled file
+    >  to '/tmp/fm4228-send.xlnEQF/home/state/t1.inbox'/handled/.
+  status: resolved [key=creds]: answered: token is in 1password item deploy
+
+== 4. automatic nudge now goes through (no open decision of its own)
+$ fm-send.sh t1 --automatic re-read your instructions
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  exit=0
+  inbox records: 001.msg 002.msg
+  pane shows:
+    > : Firstmate instruction waiting: list '/tmp/fm4228-send.xlnEQF/home/state/t1.inb
+    > ox'/*.msg and, in numeric order, read and act on each, then mv each handled file
+    >  to '/tmp/fm4228-send.xlnEQF/home/state/t1.inbox'/handled/.
+    > : Firstmate instruction waiting: list '/tmp/fm4228-send.xlnEQF/home/state/t1.inb
+    > ox'/*.msg and, in numeric order, read and act on each, then mv each handled file
+    >  to '/tmp/fm4228-send.xlnEQF/home/state/t1.inbox'/handled/.
+    > : Firstmate instruction waiting: list '/tmp/fm4228-send.xlnEQF/home/state/t1.inb
+    > ox'/*.msg and, in numeric order, read and act on each, then mv each handled file
+    >  to '/tmp/fm4228-send.xlnEQF/home/state/t1.inbox'/handled/.
+    > : Firstmate instruction waiting: list '/tmp/fm4228-send.xlnEQF/home/state/t1.inb
+    > ox'/*.msg and, in numeric order, read and act on each, then mv each handled file
+    >  to '/tmp/fm4228-send.xlnEQF/home/state/t1.inbox'/handled/.
+
+== 5. adversarial: open pending-reply escalation (reserved key) must NOT defer
+$ fm-send.sh t1 --automatic re-read your instructions
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  exit=0
+  inbox records: 001.msg 002.msg 003.msg
+
+== 6. adversarial: open captain-hold relay must NOT defer
+$ fm-send.sh t1 --automatic re-read your instructions
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  exit=0
+  inbox records: 001.msg 002.msg 003.msg 004.msg
+
+== 7. adversarial: own decision opened beside those still defers
+$ fm-send.sh t1 --automatic re-read your instructions
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  | deferred: t1 is waiting on its open decision or blocker (scope); nothing was sent
+  exit=4
+  inbox records: 001.msg 002.msg 003.msg 004.msg
+
+== 8. adversarial: --automatic refused with --resolve-key, and with an explicit backend target
+$ fm-send.sh t1 --automatic --resolve-key scope narrow
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  | error: --automatic cannot accompany --key or --resolve-key
+  exit=1
+  inbox records: 001.msg 002.msg 003.msg 004.msg
+$ fm-send.sh tmux:sess:fm-t1 --automatic re-read your instructions
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  | error: explicit target 'tmux:sess:fm-t1' is not a live herdr endpoint (tried meta=/tmp/fm4228-send.xlnEQF/home/state/tmux:sess:fm-t1.meta; metadata window/terminal lookup; backend=herdr). Use fm-<id> for a recorded task/lane, or pass a target whose backend endpoint can be verified.
+  exit=1
+$ fm-send.sh sess:fm-t1 --automatic re-read your instructions
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  | error: --automatic needs a task selector resolved through this home's metadata
+  exit=1
+  inbox records: 001.msg 002.msg 003.msg 004.msg
+
+== 9. a plain (non-automatic) firstmate steer is never deferred by an open decision
+$ fm-send.sh t1 holding note: still thinking about scope
+  | WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  exit=0
+  inbox records: 001.msg 002.msg 003.msg 004.msg 005.msg

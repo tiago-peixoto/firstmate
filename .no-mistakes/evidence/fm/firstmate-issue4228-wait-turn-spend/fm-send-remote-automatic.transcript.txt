@@ -1,0 +1,6 @@
+== remote secondmate rsm (remote_host=remote-mac) waits on its own decision
+$ fm-send.sh fm-rsm --automatic 'please re-read your AGENTS.md'
+  | deferred: rsm is waiting on its open decision or blocker (pick); nothing was sent
+  exit=4
+  ssh transport attempts: 0
+  pending-reply records: 0

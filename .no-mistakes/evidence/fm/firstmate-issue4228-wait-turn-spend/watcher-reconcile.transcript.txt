@@ -1,0 +1,62 @@
+== queued request, mate status:
+  working: supervising crew
+  needs-decision [key=pick]: alpha or beta?
+== PHASE 1 (decision open): after 12s of the real watcher at FM_POLL=1 (watcher relaunched 17 time(s))
+  watcher beats: yes
+  requests still queued: 1
+  fm-send spawns: 0
+  mate inbox records: 0
+  triage log lines mentioning reconcile: 0
+  triage log:
+    (absent)
+  watcher stdout:
+    signal: /private/tmp/fm4228-watch.MGfYHs/home/state/mate.status
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+  mate pane:
+
+== firstmate answers the decision
+  working: supervising crew
+  needs-decision [key=pick]: alpha or beta?
+  resolved [key=pick]: answered: alpha
+== PHASE 2 (decision answered): after 6s of the real watcher at FM_POLL=1 (watcher relaunched 10 time(s))
+  watcher beats: yes
+  requests still queued: 0
+  fm-send spawns: 1
+  mate inbox records: 1
+  triage log lines mentioning reconcile: 0
+  triage log:
+    (absent)
+  watcher stdout:
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+    check: rearm-resurface
+  mate pane:
+    > : Firstmate instruction waiting: list '/private/tmp/fm4228-watch.MGfYHs/home/sta
+    > te/mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each h
+    > andled file to '/private/tmp/fm4228-watch.MGfYHs/home/state/mate.inbox'/handled/
+    > .
+    > : Firstmate instruction waiting: list '/private/tmp/fm4228-watch.MGfYHs/home/sta
+    > te/mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each h
+    > andled file to '/private/tmp/fm4228-watch.MGfYHs/home/state/mate.inbox'/handled/
+    > .

@@ -1,0 +1,52 @@
+--- brief-scout.base.md	2026-09-18 15:39:35
++++ brief-scout.head.md	2026-09-18 15:39:34
+@@ -23,7 +23,7 @@
+ 2. Stay inside this worktree; the only files you may write outside it are the report and the status file below.
+ 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
+ 4. Report status by appending one line:
+-   `echo "{state}: {one short line}" >> '/tmp/fm4228-brief-base.tJEBWo/state/wait-scout.status'`
++   `echo "{state}: {one short line}" >> '/tmp/fm4228-brief-head.TqvTCF/state/wait-scout.status'`
+    States: working, needs-decision, blocked, paused, done, failed.
+    Each append wakes firstmate, so report sparingly: only phase changes a supervisor
+    would act on and the needs-decision/blocked/paused/done/failed states. No step-by-step
+@@ -32,7 +32,7 @@
+    https:// URL exactly as the forge printed it, never a bare number such as "PR 108"; firstmate
+    copies that URL from your line rather than assembling one.
+    Use `paused: {why}` - distinct from `blocked:` - ONLY when you are deliberately idling on a
+-   known external wait you expect to clear on its own (an upstream release, a rate-limit reset, a scheduled window, or your own validation round):
++   known external wait you expect to clear on its own (an upstream release, a rate-limit reset, a scheduled window, or your own validation round, which you declare once just before its blocking hold and then wait out inside that one command):
+    firstmate then leaves your idle pane alone and rechecks it on a long cadence instead of
+    treating it as a possible wedge. When you know when the wait clears, say so in the line with
+    `until <YYYY-MM-DDTHH:MMZ>` (UTC) and firstmate rechecks at that time instead.
+@@ -55,15 +55,27 @@
+    the daemon accepts `respond` immediately and runs the round in the background, so a killed or
+    timed-out call was only waiting for a read while the run kept working.
+ 
++# Waiting
++Every turn you take resends your whole context, so a wait must cost no turns.
++After you append `needs-decision:` or `blocked:`, end your turn at once: do not check the inbox, the status file, or anything else, because the answer arrives as a terminal message that starts your next turn.
++Wait on anything external - a pipeline gate, PR checks, a heavy-test slot - with ONE blocking shell command that returns when the state changes: `no-mistakes axi run` or `respond` with `--wait`, `gh pr checks <pr> --watch`, or `until <condition>; do sleep 30; done` for anything else.
++Never spend turns on `sleep` followed by a status check, and never background a command in order to poll it.
++In Claude Code that `until` loop in a single Bash call is the sanctioned foreground wait: when the harness refuses a sleep-then-check command and points you at backgrounding instead, reissue the wait as the loop rather than accepting the background.
++Bound that command by what your harness lets one command run: in Pi pass the bash tool a `timeout` of at most 2700 seconds, because Pi sets none by default; in Claude Code pass the Bash tool its maximum `timeout` of 600000 ms, because its default is 2 minutes; in Codex keep waiting on a still-running command with empty `write_stdin` polls of up to 300000 ms; elsewhere pass your shell tool its largest timeout and assume at most 10 minutes.
++Give any `--wait` a duration a little under that bound.
++When the bound passes with nothing changed, run the same blocking command again, with no status check in between.
++A wait your shell can watch this way needs no `paused:` line, except your own validation round: append `paused:` once just before its first blocking command, then stay in the command, and never append it again as you reissue that command.
++
+ # Firstmate instruction inbox
+-Firstmate steers you through durable message files in '/tmp/fm4228-brief-base.tJEBWo/state/wait-scout.inbox'.
+-When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm4228-brief-base.tJEBWo/state/wait-scout.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm4228-brief-base.tJEBWo/state/wait-scout.inbox'/NNN.msg '/tmp/fm4228-brief-base.tJEBWo/state/wait-scout.inbox'/handled/`.
++Firstmate steers you through durable message files in '/tmp/fm4228-brief-head.TqvTCF/state/wait-scout.inbox'.
++When a terminal message says an instruction is waiting there, list '/tmp/fm4228-brief-head.TqvTCF/state/wait-scout.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm4228-brief-head.TqvTCF/state/wait-scout.inbox'/NNN.msg '/tmp/fm4228-brief-head.TqvTCF/state/wait-scout.inbox'/handled/`.
+ The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
++Every waiting instruction rings, so never list the inbox on your own.
+ 
+ # Definition of done
+-Write your findings to `/tmp/fm4228-brief-base.tJEBWo/data/wait-scout/report.md`.
++Write your findings to `/tmp/fm4228-brief-head.TqvTCF/data/wait-scout/report.md`.
+ The report must stand alone: what you did, what you found, the evidence (commands run, output, file:line references), and what you recommend.
+ If your deliverable is a visual artifact the captain will review and iterate on, you may host the Lavish review loop yourself (poll, revise, re-serve, staying alive) instead of handing it back to firstmate.
+-Before reporting done, read and follow `/tmp/fm4228-base.LNjlkR/.agents/skills/captain-hold-lifecycle/SKILL.md` and pass its shared completion gate for the report and any visual review.
++Before reporting done, read and follow `/Users/tiago/.no-mistakes/worktrees/762e4773438f/01M2TT38T18TMBTSGSQ65V116Y/.agents/skills/captain-hold-lifecycle/SKILL.md` and pass its shared completion gate for the report and any visual review.
+ When the report is complete, append `done: {one-line conclusion}` to the status file and stop.
+ If your findings reveal work that should ship (e.g. you reproduced a bug and the fix is clear), say so in the report; firstmate may promote this task in place, and you would then receive mode-specific ship instructions as a follow-up message.
