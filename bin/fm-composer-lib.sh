@@ -442,15 +442,17 @@ FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT='^(Build|Plan)[[:space:]]+·[[:space:]]+'
 # a middle dot. It is consulted only as the boundary BELOW a bare composer,
 # never on the composer row itself.
 FM_COMPOSER_OMP_STATUS_RE_DEFAULT='^[[:space:]]*(π|󰵗)[[:space:]]+·[[:space:]]|^[[:space:]]*'"$FM_OMP_SPINNER_FRAMES_RE"'[[:space:]]+[0-9]+[smh]([[:space:]]|$)|[[:space:]]·[[:space:]].*[0-9]+(\.[0-9]+)?%/[0-9]+K'
-# Pi draws a one-row status footer BELOW its separated composer. The 2026-09-17
-# solo-dev-vps repro started at column 0 with a session-cost cell (`$0.000
-# (sub) 5.4%/272k (auto)`), so the dead-shell heuristic took that `$` as a
-# prompt, cursorless selection failed, and herdr exit/relaunch refused on
-# `unknown`. A row is pi status furniture when it opens with a dollar amount
-# (`$` immediately followed by a digit, never `$` then whitespace, which is
-# still a prompt). Consulted only as the SHELL_ROW exception, never as
-# composer content: a status-like string typed BETWEEN the separator pair
-# still reads pending.
+# Pi draws its footer BELOW its separated composer: a pwd row, then a stats
+# row whose token counters (`↑` `↓` `R` `W`) lead only when non-zero, so while
+# they are all zero the row opens at column 0 with the session-cost cell (pi
+# 0.85.1 footer.js). The 2026-09-17 solo-dev-vps repro showed `$0.000 (sub)
+# 5.4%/272k (auto)`, so the dead-shell heuristic took that `$` as a prompt,
+# cursorless selection failed, and herdr exit/relaunch refused on `unknown`.
+# A row is pi status furniture when it opens with a dollar amount (`$`
+# immediately followed by a digit, never `$` then whitespace, which is still a
+# prompt). Consulted only as the SHELL_ROW exception, never as composer
+# content: a status-like string typed BETWEEN the separator pair still reads
+# pending.
 FM_COMPOSER_PI_STATUS_RE_DEFAULT='^\$[0-9]+(\.[0-9]+)?([[:space:]]|$)'
 # Braille-pattern cells (U+2800..U+28FF) are animation furniture: codex-cli
 # 0.154.0 draws an idle "starfield" of them on the row above its `›` prompt
@@ -1084,9 +1086,10 @@ _fm_composer_row_is_omp_status() {  # <trimmed-row>
   fm_composer_idle_matches "$1" "${FM_COMPOSER_OMP_STATUS_RE:-$FM_COMPOSER_OMP_STATUS_RE_DEFAULT}" sensitive
 }
 
-# _fm_composer_row_is_pi_status: 0 when the trimmed row is Pi's status footer
-# (FM_COMPOSER_PI_STATUS_RE_DEFAULT above). Composer furniture that sits below
-# the separated pair; a `$` cost cell must not count as a dead-shell prompt.
+# _fm_composer_row_is_pi_status: 0 when the trimmed row is Pi's dollar-first
+# footer stats row (FM_COMPOSER_PI_STATUS_RE_DEFAULT above). Composer
+# furniture that sits below the separated pair; a `$` cost cell must not count
+# as a dead-shell prompt.
 _fm_composer_row_is_pi_status() {  # <trimmed-row>
   fm_composer_idle_matches "$1" "$FM_COMPOSER_PI_STATUS_RE_DEFAULT" sensitive
 }
