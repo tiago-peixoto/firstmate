@@ -1760,6 +1760,61 @@ SH
   pass "bounded acquire hands ownership to the waiting caller after contention"
 }
 
+# A live holder must deadline the bounded waiter promptly, keep its own hold,
+# and never surface a trap-builtin parse failure. A command-string TERM handler
+# in the handoff helper can fail to parse and leave the waiter hung; the
+# function-name trap exists so that parse cannot fail.
+test_bounded_lock_timeout_against_a_live_holder_returns_promptly() {
+  local dir state lock holder_pid i trial start now elapsed rc err
+  dir=$(make_case bounded-lock-timeout-prompt)
+  state="$dir/state"
+  lock="$state/.fixture.lock"
+  err="$dir/bounded.err"
+
+  FM_STATE_OVERRIDE="$state" bash -c '
+    . "$1"
+    fm_lock_acquire_wait "$2" || exit 10
+    printf "ready\n" > "$3"
+    exec sleep 60
+  ' _ "$ROOT/bin/fm-wake-lib.sh" "$lock" "$dir/holder.ready" &
+  holder_pid=$!
+  i=0
+  while [ "$i" -lt 100 ] && [ ! -s "$dir/holder.ready" ]; do
+    sleep 0.05
+    i=$((i + 1))
+  done
+  [ -s "$dir/holder.ready" ] \
+    || { kill "$holder_pid" 2>/dev/null || true; fail "timeout-prompt fixture holder never acquired its lock"; }
+
+  trial=1
+  while [ "$trial" -le 10 ]; do
+    start=$(date +%s)
+    rc=0
+    FM_STATE_OVERRIDE="$state" bash -c '
+      . "$1"
+      fm_lock_acquire_wait_bounded "$2" 1
+    ' _ "$ROOT/bin/fm-wake-lib.sh" "$lock" >>"$dir/bounded.out" 2>>"$err" || rc=$?
+    now=$(date +%s)
+    elapsed=$((now - start))
+    [ "$elapsed" -lt 8 ] \
+      || { kill "$holder_pid" 2>/dev/null || true; fail "bounded acquire hung ${elapsed}s against a live holder on trial $trial"; }
+    [ "$rc" -eq 124 ] \
+      || { kill "$holder_pid" 2>/dev/null || true; fail "bounded acquire rc=$rc against a live holder on trial $trial (want 124)"; }
+    [ "$(cat "$lock/pid" 2>/dev/null || true)" = "$holder_pid" ] \
+      || { kill "$holder_pid" 2>/dev/null || true; fail "bounded acquire stole a live holder's lock on trial $trial"; }
+    trial=$((trial + 1))
+  done
+  if grep -F 'unexpected EOF while looking for matching' "$err" >/dev/null 2>&1 \
+    || grep -F 'trap: line' "$err" >/dev/null 2>&1; then
+    kill "$holder_pid" 2>/dev/null || true
+    fail "bounded acquire helper emitted a trap parse error: $(cat "$err")"
+  fi
+
+  kill "$holder_pid" 2>/dev/null || true
+  wait "$holder_pid" 2>/dev/null || true
+  pass "bounded acquire against a live holder deadlines promptly without a trap parse error"
+}
+
 # A live-but-stuck presentation lock must not strand the executable drain. The
 # presentation remains retriable on the next pass, while the separate queue
 # mutation lock keeps its blocking all-or-nothing acknowledgement contract.
@@ -1983,6 +2038,7 @@ test_historical_annotation_skips_announced_status() {
 test_self_held_lock_reclaims_instead_of_deadlocking
 test_subshell_lock_ownership_without_bashpid
 test_bounded_lock_handoff_after_contention
+test_bounded_lock_timeout_against_a_live_holder_returns_promptly
 test_live_presentation_holder_is_deadlined_without_weakening_ack
 test_malformed_presentation_lock_reports_acquire_failure
 test_secondmate_foreign_queue_stall_tracks_progress_and_alerts_once

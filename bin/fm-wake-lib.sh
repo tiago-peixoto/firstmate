@@ -1019,6 +1019,18 @@ fm_lock_acquire_wait() {
   done
 }
 
+# TERM/INT handler for the bounded-acquire helper. A function-name trap is one
+# token, so the trap builtin never has to parse a command string. A string
+# handler can fail that parse (`trap: line 2: unexpected EOF while looking for
+# matching ')'`) and leave TERM without a usable handler. Dynamic scope still
+# supplies the helper's lockdir.
+# shellcheck disable=SC2317,SC2329 # Invoked by the trap in the handoff helper.
+_fm_lock_handoff_on_signal() {
+  [ -n "${lockdir:-}" ] || exit 143
+  fm_lock_release "$lockdir"
+  exit 143
+}
+
 # Acquire in the timed helper process, then transfer the lock record to the
 # waiting caller before exiting. The lock's ordinary stale-owner recovery makes
 # every interruption safe: before transfer the helper is the owner; after
@@ -1027,7 +1039,7 @@ _fm_lock_acquire_wait_handoff() {  # <lockdir> <caller-pid>
   local lockdir=$1 caller_pid=$2 ownerdir current back
   case "$caller_pid" in ''|*[!0-9]*) return 1 ;; esac
   fm_pid_alive "$caller_pid" || return 1
-  trap 'fm_lock_release "$lockdir"; exit 143' TERM INT
+  trap _fm_lock_handoff_on_signal TERM INT
   fm_lock_acquire_wait "$lockdir" || return 1
   if [ -L "$lockdir" ]; then
     ownerdir=$(fm_lock_link_owner "$lockdir" 2>/dev/null) || {
