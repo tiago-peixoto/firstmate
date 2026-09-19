@@ -1,0 +1,19 @@
+[base 1bb72cc t=01s] $ fm-captain-hold.sh hold sample-parked --reason operator review pending
+    sample-parked
+[base 1bb72cc t=02s] state/sample-parked.status now reads:
+    | paused: waiting on the sample upstream release
+[base 1bb72cc t=02s] last_status_line -> paused: waiting on the sample upstream release
+[base 1bb72cc t=02s] supervising for 14s while held (always-on, cadence 5s)
+[base 1bb72cc t=04s] WAKE: stale: firstmate:fm-sample-parked (paused 62s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=09s] WAKE: stale: firstmate:fm-sample-parked (paused 68s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=16s] WAKE: stale: firstmate:fm-sample-parked (paused 74s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=18s] $ fm-captain-hold.sh answer sample-parked --decision-file /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4766-live.aetKX7/go.txt --release
+    released: sample-parked
+[base 1bb72cc t=19s] state/sample-parked.status now reads:
+    | paused: waiting on the sample upstream release
+[base 1bb72cc t=19s] last_status_line -> paused: waiting on the sample upstream release
+[base 1bb72cc t=19s] supervising for 14s after the release (worker never came back)
+[base 1bb72cc t=21s] WAKE: stale: firstmate:fm-sample-parked (paused 79s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=25s] WAKE: stale: firstmate:fm-sample-parked (paused 84s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=34s] RESULT held phase: 0 wake(s) asking for the captain's answer, 3 wake(s) calling it an external wait
+[base 1bb72cc t=34s] RESULT released phase: 0 wake(s) asking for the captain's answer, 2 wake(s) calling it an external wait

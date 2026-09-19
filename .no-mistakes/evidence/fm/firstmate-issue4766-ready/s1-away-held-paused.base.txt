@@ -1,0 +1,16 @@
+[base 1bb72cc t=01s] $ fm-captain-hold.sh hold sample-held --reason operator review pending
+    sample-held
+[base 1bb72cc t=02s] state/sample-held.status now reads:
+    | working: implementing the sample
+    | paused: waiting on the sample upstream release
+[base 1bb72cc t=02s] last_status_line -> paused: waiting on the sample upstream release
+[base 1bb72cc t=02s] away-posture record written (state/.afk-contract present; watcher-owned away posture)
+[base 1bb72cc t=02s] supervising for 30s (declared-wait recheck cadence FM_PAUSE_RESURFACE_SECS=5)
+[base 1bb72cc t=06s] WAKE: stale: firstmate:fm-sample-held (paused 64s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=13s] WAKE: stale: firstmate:fm-sample-held (paused 72s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=19s] WAKE: stale: firstmate:fm-sample-held (paused 77s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=25s] WAKE: stale: firstmate:fm-sample-held (paused 83s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=29s] WAKE: stale: firstmate:fm-sample-held (paused 87s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[base 1bb72cc t=34s] RESULT: wakes naming the held lane while away: 5
+    triage: [2026-09-18T22:58:31-0300] absorbed stale (paused, awaiting external, age 86s): firstmate:fm-sample-held
+    triage: [2026-09-18T22:58:35-0300] absorbed stale (paused, awaiting external, age 90s): firstmate:fm-sample-held

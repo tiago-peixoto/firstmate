@@ -1,0 +1,12 @@
+[target 8328434 t=00s] $ fm-captain-hold.sh hold sample-held --reason operator review pending
+    sample-held
+[target 8328434 t=01s] state/sample-held.status now reads:
+    | working: implementing the sample
+    | paused: waiting on the sample upstream release
+    | captain-held [key=captain-hold-sample-held-1]: operator review pending
+[target 8328434 t=01s] last_status_line -> captain-held [key=captain-hold-sample-held-1]: operator review pending
+[target 8328434 t=02s] away-posture record written (state/.afk-contract present; watcher-owned away posture)
+[target 8328434 t=02s] supervising for 30s (declared-wait recheck cadence FM_PAUSE_RESURFACE_SECS=5)
+[target 8328434 t=34s] RESULT: wakes naming the held lane while away: 0
+    triage: [2026-09-18T22:58:33-0300] absorbed stale (captain-held, never rechecked while the away-posture record exists): firstmate:fm-sample-held
+    triage: [2026-09-18T22:58:35-0300] absorbed stale (captain-held, never rechecked while the away-posture record exists): firstmate:fm-sample-held

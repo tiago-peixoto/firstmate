@@ -1,0 +1,15 @@
+[base 1bb72cc t=01s] $ fm-captain-hold.sh hold sample-away --reason operator review pending
+    sample-away
+[base 1bb72cc t=03s] state/sample-away.status now reads:
+    | paused: waiting on the sample upstream release
+[base 1bb72cc t=03s] last_status_line -> paused: waiting on the sample upstream release
+[base 1bb72cc t=04s] away-posture record written (state/.afk-contract present; watcher-owned away posture)
+[base 1bb72cc t=04s] starting fm-supervise-daemon.sh (away mode) for 30s
+[base 1bb72cc t=35s] daemon escalation buffer (state/.subsuper-escalations) for the captain:
+    | paused 5s (awaiting external, recheck whether the wait still holds): firstmate:fm-sample-away
+    | paused 6s (awaiting external, recheck whether the wait still holds): firstmate:fm-sample-away
+    | paused 6s (awaiting external, recheck whether the wait still holds): firstmate:fm-sample-away
+    | paused 5s (awaiting external, recheck whether the wait still holds): firstmate:fm-sample-away
+    | paused 5s (awaiting external, recheck whether the wait still holds): firstmate:fm-sample-away
+[base 1bb72cc t=35s] daemon log lines naming the lane:
+[base 1bb72cc t=35s] RESULT: rechecks escalated for the held lane while away: 5

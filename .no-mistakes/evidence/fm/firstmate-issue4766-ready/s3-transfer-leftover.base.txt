@@ -1,0 +1,25 @@
+[base 1bb72cc t=00s] $ fm-captain-hold.sh hold sample-scout --reason route choice pending
+    sample-scout
+[base 1bb72cc t=02s] $ fm-captain-hold.sh complete sample-scout sample-scout
+    complete: sample-scout captain-call inventory reviewed (sample-scout)
+[base 1bb72cc t=03s] state/sample-scout.status now reads:
+    | done: report ready
+    | needs-decision [key=route]: choose route north or route south
+    | captain-held [key=route]: tracked by sample-scout
+[base 1bb72cc t=03s] last_status_line -> captain-held [key=route]: tracked by sample-scout
+[base 1bb72cc t=03s] supervising for 12s while the call is open (always-on, cadence 5s)
+[base 1bb72cc t=10s] WAKE: stale: firstmate:fm-sample-scout (captain-held 6s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[base 1bb72cc t=17s] $ fm-captain-hold.sh answer sample-scout --decision-file /private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4766-live.MTZtXc/north.txt
+    answered: sample-scout
+[base 1bb72cc t=18s] state/sample-scout.status now reads:
+    | done: report ready
+    | needs-decision [key=route]: choose route north or route south
+    | captain-held [key=route]: tracked by sample-scout
+[base 1bb72cc t=18s] last_status_line -> captain-held [key=route]: tracked by sample-scout
+[base 1bb72cc t=18s] supervising for 18s after the captain answered (worker never came back)
+[base 1bb72cc t=19s] WAKE: check: rearm-resurface
+[base 1bb72cc t=23s] WAKE: stale: firstmate:fm-sample-scout (captain-held 19s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[base 1bb72cc t=28s] WAKE: stale: firstmate:fm-sample-scout (captain-held 24s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[base 1bb72cc t=33s] WAKE: stale: firstmate:fm-sample-scout (captain-held 30s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[base 1bb72cc t=38s] RESULT open phase: 1 wake(s) asking for the captain's answer
+[base 1bb72cc t=38s] RESULT answered phase: 3 wake(s) still asking for the captain's answer
