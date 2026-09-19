@@ -1,0 +1,200 @@
+== ROOT=/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M2VQP2JTKE99QCC959RA4X8T (head) commit=0eefdaf3
+---- fold_single: session-start drain lists the decision, supervisor answers with --resolve-key, watcher starts
+  worker(t1)| needs-decision [key=api-shape]: pick REST or RPC
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 [key=api-shape] needs-decision: pick REST or RPC
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  send| rc=0
+  file| needs-decision [key=api-shape]: pick REST or RPC
+  file| resolved [key=api-shape]: answered: go with REST
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+  worker(t1)| blocked: need staging credentials
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/fold_single/state/t1.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786028	2	signal	t1.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/fold_single/state/t1.status
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=api-shape]: pick REST or RPC
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=api-shape]: answered: go with REST
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: need staging credentials
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 blocked: need staging credentials
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 2)
+---- watcher_loop: watcher surfaces the decision, supervisor drains, answers, restarts watcher
+  worker(t1)| needs-decision [key=db]: postgres or sqlite?
+  (watcher up: it surfaces the decision; supervisor drains and acks)
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/watcher_loop/state/t1.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786032	2	signal	t1.status	needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/watcher_loop/state/t1.status
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: needs-decision [key=db]: postgres or sqlite?
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 [key=db] needs-decision: postgres or sqlite?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 2)
+  send| rc=0
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+  worker(t1)| blocked: migration needs a superuser
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/watcher_loop/state/t1.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786043	4	signal	t1.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/watcher_loop/state/t1.status
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=db]: answered: postgres
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: migration needs a superuser
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 blocked: migration needs a superuser
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 4)
+---- fold_multi: drain lists two decisions, ONE answer closes both keys
+  worker(t1)| needs-decision [key=budget]: approve spend?
+  worker(t1)| needs-decision [key=vendor]: pick a vendor
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 [key=budget] needs-decision: approve spend?
+  drain| t1 [key=vendor] needs-decision: pick a vendor
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  send| rc=0
+  file| needs-decision [key=budget]: approve spend?
+  file| needs-decision [key=vendor]: pick a vendor
+  file| resolved [key=budget]: answered: approve spend, pick acme
+  file| resolved [key=vendor]: answered: approve spend, pick acme
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+  drain| 
+  drain| (acked through 0)
+---- late_worker (adversarial): worker appends after the drain, before the supervisor's close
+  worker(t1)| needs-decision [key=region]: us-east or eu-west?
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 [key=region] needs-decision: us-east or eu-west?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  worker(t1)| blocked: vendor portal is down
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  send| rc=0
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/late_worker/state/t1.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786063	2	signal	t1.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/late_worker/state/t1.status
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=region]: us-east or eu-west?
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: blocked: vendor portal is down
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: resolved [key=region]: answered: eu-west
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 blocked: vendor portal is down
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 2)
+---- folded_working (adversarial): ship worker changes course while watcher is down; drain folds past it; supervisor closes
+  worker(t1)| needs-decision [key=budget]: approve spend?
+  (watcher up: it surfaces the decision; supervisor drains and acks)
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/folded_working/state/t1.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786069	2	signal	t1.status	needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/folded_working/state/t1.status
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: needs-decision [key=budget]: approve spend?
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 2)
+  worker(t1)| working: abandoned the migration, rewriting the schema by hand
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| t1 [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  send| rc=0
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/folded_working/state/t1.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786076	4	signal	t1.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/folded_working/state/t1.status
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: working: abandoned the migration, rewriting the schema by hand
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: resolved [key=budget]: answered: approved
+  drain| (acked through 4)
+---- sm_failed (adversarial): secondmate relays a crew failure while watcher is down; drain folds; supervisor closes
+  worker(mate)| needs-decision [key=budget]: approve spend?
+  (watcher up: it surfaces the decision; supervisor drains and acks)
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_failed/state/mate.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786080	2	signal	mate.status	needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_failed/state/mate.status
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: mate.status: needs-decision [key=budget]: approve spend?
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| mate [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 2)
+  worker(mate)| failed: crew c3 hit an unrecoverable migration error
+  worker(mate)| working: retrying c3 in a fresh worktree
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| mate [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  send| rc=0
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_failed/state/mate.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786086	4	signal	mate.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_failed/state/mate.status
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: mate.status: failed: crew c3 hit an unrecoverable migration error
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: mate.status: working: retrying c3 in a fresh worktree
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: mate.status: resolved [key=budget]: answered: approved
+  drain| (acked through 4)
+---- sm_paused (adversarial): secondmate pauses while watcher is down; drain folds; supervisor closes
+  worker(mate)| needs-decision [key=budget]: approve spend?
+  (watcher up: it surfaces the decision; supervisor drains and acks)
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_paused/state/mate.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786091	2	signal	mate.status	needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_paused/state/mate.status
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: mate.status: needs-decision [key=budget]: approve spend?
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| mate [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 2)
+  worker(mate)| paused: waiting on vendor quote
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| mate [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  send| rc=0
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_paused/state/mate.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786099	4	signal	mate.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_paused/state/mate.status
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: mate.status: paused: waiting on vendor quote
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: mate.status: resolved [key=budget]: answered: approved
+  drain| (acked through 4)
+---- sm_selfresolved (adversarial): secondmate raises and self-resolves a decision while watcher is down
+  worker(mate)| needs-decision [key=budget]: approve spend?
+  (watcher up: it surfaces the decision; supervisor drains and acks)
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_selfresolved/state/mate.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786104	2	signal	mate.status	needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_selfresolved/state/mate.status
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: mate.status: needs-decision [key=budget]: approve spend?
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| mate [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| (acked through 2)
+  worker(mate)| needs-decision [key=vendor]: vendor A or B?
+  worker(mate)| resolved [key=vendor]: picked vendor B myself, cheaper
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| mate [key=budget] needs-decision: approve spend?
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  send| rc=0
+  watch| WOKE: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_selfresolved/state/mate.status 
+  (supervisor drains the wake it was handed)
+  drain| 1789786112	4	signal	mate.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/sm_selfresolved/state/mate.status
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: mate.status: needs-decision [key=vendor]: vendor A or B?
+  drain| wake annotation: unread wake-EVENT since last drain, not current state: mate.status: resolved [key=vendor]: picked vendor B myself, cheaper
+  drain| wake annotation: latest wake-EVENT observed at drain, not current state: mate.status: resolved [key=budget]: answered: approved
+  drain| (acked through 4)
+---- hold_transfer: investigation with two open decisions; drain folds; captain-hold complete transfers both
+  worker(sample-review)| needs-decision [key=route]: route north or south
+  worker(sample-review)| needs-decision [key=access]: open or restricted access
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| sample-review [key=route] needs-decision: route north or south
+  drain| sample-review [key=access] needs-decision: open or restricted access
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  hold| hold rc=0
+  hold| complete: sample-review captain-call inventory reviewed (route-call)
+  file| needs-decision [key=route]: route north or south
+  file| needs-decision [key=access]: open or restricted access
+  file| captain-held [key=route]: tracked by route-call
+  file| captain-held [key=access]: tracked by route-call
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+---- append_fail (adversarial): the status file cannot be appended; two-key answer must fail loudly with a usable manual close
+  worker(t1)| needs-decision [key=budget]: approve spend?
+  worker(t1)| needs-decision [key=vendor]: pick a vendor
+  send| rc=1
+  send.err| WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  send.err| /Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M2VQP2JTKE99QCC959RA4X8T/bin/fm-wake-lib.sh: line 2199: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/append_fail/state/t1.status: Permission denied
+  send.err| error: the answer was delivered to sess:fm-t1, but the close for decision key(s) 'budget vendor' could not be appended to /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/append_fail/state/t1.status. Close it manually with: printf '%s
+  send.err| ' resolved\ \[key=budget\]:\ answered:\ approve\ spend\,\ pick\ acme resolved\ \[key=vendor\]:\ answered:\ approve\ spend\,\ pick\ acme >> /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/append_fail/state/t1.status - do not resend the answer.
+  operator runs: printf '%s
+' resolved\ \[key=budget\]:\ answered:\ approve\ spend\,\ pick\ acme resolved\ \[key=vendor\]:\ answered:\ approve\ spend\,\ pick\ acme >> /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-head.isnEup/append_fail/state/t1.status
+  file| needs-decision [key=budget]: approve spend?
+  file| needs-decision [key=vendor]: pick a vendor
+  file| resolved [key=budget]: answered: approve spend, pick acme
+  file| resolved [key=vendor]: answered: approve spend, pick acme
+  drain| 

@@ -1,0 +1,77 @@
+Issue 4767 end-to-end: real fm-watch.sh / fm-wake-drain.sh / fm-send.sh / fm-captain-hold.sh in throwaway homes.
+HEAD=0eefdaf3  BASE=1bb72cc5. Full transcripts: e2e-head-transcript.txt, e2e-base-transcript.txt. Driver: e2e-4767.sh
+
+#### head
+---- fold_single: session-start drain lists the decision, supervisor answers with --resolve-key, watcher starts
+  send| rc=0
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+  watch| WOKE: signal: state/t1.status 
+---- watcher_loop: watcher surfaces the decision, supervisor drains, answers, restarts watcher
+  watch| WOKE: signal: state/t1.status 
+  send| rc=0
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+  watch| WOKE: signal: state/t1.status 
+---- fold_multi: drain lists two decisions, ONE answer closes both keys
+  send| rc=0
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+---- late_worker (adversarial): worker appends after the drain, before the supervisor's close
+  send| rc=0
+  watch| WOKE: signal: state/t1.status 
+---- folded_working (adversarial): ship worker changes course while watcher is down; drain folds past it; supervisor closes
+  watch| WOKE: signal: state/t1.status 
+  send| rc=0
+  watch| WOKE: signal: state/t1.status 
+---- sm_failed (adversarial): secondmate relays a crew failure while watcher is down; drain folds; supervisor closes
+  watch| WOKE: signal: state/mate.status 
+  send| rc=0
+  watch| WOKE: signal: state/mate.status 
+---- sm_paused (adversarial): secondmate pauses while watcher is down; drain folds; supervisor closes
+  watch| WOKE: signal: state/mate.status 
+  send| rc=0
+  watch| WOKE: signal: state/mate.status 
+---- sm_selfresolved (adversarial): secondmate raises and self-resolves a decision while watcher is down
+  watch| WOKE: signal: state/mate.status 
+  send| rc=0
+  watch| WOKE: signal: state/mate.status 
+---- hold_transfer: investigation with two open decisions; drain folds; captain-hold complete transfers both
+  hold| complete: sample-review captain-call inventory reviewed (route-call)
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+---- append_fail (adversarial): the status file cannot be appended; two-key answer must fail loudly with a usable manual close
+  send| rc=1
+
+#### base
+---- fold_single: session-start drain lists the decision, supervisor answers with --resolve-key, watcher starts
+  send| rc=0
+  watch| WOKE: signal: state/t1.status 
+---- watcher_loop: watcher surfaces the decision, supervisor drains, answers, restarts watcher
+  watch| WOKE: signal: state/t1.status 
+  send| rc=0
+  watch| QUIET after 3 full poll cycles (no output, empty wake queue)
+  watch| WOKE: signal: state/t1.status 
+---- fold_multi: drain lists two decisions, ONE answer closes both keys
+  send| rc=0
+  watch| WOKE: signal: state/t1.status 
+---- late_worker (adversarial): worker appends after the drain, before the supervisor's close
+  send| rc=0
+  watch| WOKE: signal: state/t1.status 
+---- folded_working (adversarial): ship worker changes course while watcher is down; drain folds past it; supervisor closes
+  watch| WOKE: signal: state/t1.status 
+  send| rc=0
+  watch| WOKE: signal: state/t1.status 
+---- sm_failed (adversarial): secondmate relays a crew failure while watcher is down; drain folds; supervisor closes
+  watch| WOKE: signal: state/mate.status 
+  send| rc=0
+  watch| WOKE: signal: state/mate.status 
+---- sm_paused (adversarial): secondmate pauses while watcher is down; drain folds; supervisor closes
+  watch| WOKE: signal: state/mate.status 
+  send| rc=0
+  watch| WOKE: signal: state/mate.status 
+---- sm_selfresolved (adversarial): secondmate raises and self-resolves a decision while watcher is down
+  watch| WOKE: signal: state/mate.status 
+  send| rc=0
+  watch| WOKE: signal: state/mate.status 
+---- hold_transfer: investigation with two open decisions; drain folds; captain-hold complete transfers both
+  hold| complete: sample-review captain-call inventory reviewed (route-call)
+  watch| WOKE: signal: state/sample-review.status 
+---- append_fail (adversarial): the status file cannot be appended; two-key answer must fail loudly with a usable manual close
+  send| rc=1
