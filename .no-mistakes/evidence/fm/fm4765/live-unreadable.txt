@@ -1,0 +1,27 @@
+######## BASE (1bb72cc) mode=unreadable
+== control script: /tmp/fm4765.C1XN/bin/fm-control.sh
+== state/ before relaunch:
+   total 8
+   drwxr-xr-x 2 firstmate firstmate  80 Sep 19 04:42 .
+   drwxr-xr-x 5 firstmate firstmate 180 Sep 19 04:42 ..
+   -rw-r--r-- 1 firstmate firstmate  15 Sep 19 04:42 c1.meta
+   ---------- 1 firstmate firstmate  15 Sep 19 04:42 c2.meta
+== $ fm-control.sh sm9 relaunch
+   error: secondmate sm9's child record /tmp/fm-control-relaunch.IkFXXe/live4765-27430/smhome/state/c2.meta is not a readable regular file; refusing to relaunch
+== exit code: 1
+== secondmate agent command now: claude
+== journal children=: 
+
+######## FIX (ef8a25b) mode=unreadable
+== control script: /home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M2VYARPVCA20CAN8081M3MZS/bin/fm-control.sh
+== state/ before relaunch:
+   total 8
+   drwxr-xr-x 2 firstmate firstmate  80 Sep 19 04:42 .
+   drwxr-xr-x 5 firstmate firstmate 180 Sep 19 04:42 ..
+   -rw-r--r-- 1 firstmate firstmate  15 Sep 19 04:42 c1.meta
+   ---------- 1 firstmate firstmate  15 Sep 19 04:42 c2.meta
+== $ fm-control.sh sm9 relaunch
+   error: secondmate sm9's child record /tmp/fm-control-relaunch.Ud1dfp/live4765-3404/smhome/state/c2.meta is not a readable regular file; refusing to relaunch
+== exit code: 1
+== secondmate agent command now: claude
+== journal children=: 

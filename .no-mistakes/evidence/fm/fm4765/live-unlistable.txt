@@ -1,0 +1,19 @@
+######## BASE (1bb72cc) mode=unlistable
+== control script: /tmp/fm4765.C1XN/bin/fm-control.sh
+== state/ before relaunch:
+   ls: cannot open directory '/tmp/fm-control-relaunch.OEgUHF/live4765-30083/smhome/state': Permission denied
+== $ fm-control.sh sm9 relaunch
+   error: secondmate sm9's child records cannot be traversed; refusing to relaunch
+== exit code: 1
+== secondmate agent command now: claude
+== journal children=: 
+
+######## FIX (ef8a25b) mode=unlistable
+== control script: /home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M2VYARPVCA20CAN8081M3MZS/bin/fm-control.sh
+== state/ before relaunch:
+   ls: cannot open directory '/tmp/fm-control-relaunch.i3krCW/live4765-29134/smhome/state': Permission denied
+== $ fm-control.sh sm9 relaunch
+   error: secondmate sm9's home has no readable state directory, so its child work cannot be accounted for; refusing to relaunch
+== exit code: 1
+== secondmate agent command now: claude
+== journal children=: 

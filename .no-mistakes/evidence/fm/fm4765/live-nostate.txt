@@ -1,0 +1,19 @@
+######## BASE (1bb72cc) mode=nostate
+== control script: /tmp/fm4765.C1XN/bin/fm-control.sh
+== state/ before relaunch:
+   ls: cannot access '/tmp/fm-control-relaunch.IcVoKH/live4765-32166/smhome/state': No such file or directory
+== $ fm-control.sh sm9 relaunch
+   error: secondmate sm9's home has no readable state directory, so its child work cannot be accounted for; refusing to relaunch
+== exit code: 1
+== secondmate agent command now: claude
+== journal children=: 
+
+######## FIX (ef8a25b) mode=nostate
+== control script: /home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M2VYARPVCA20CAN8081M3MZS/bin/fm-control.sh
+== state/ before relaunch:
+   ls: cannot access '/tmp/fm-control-relaunch.b5YwxI/live4765-2091/smhome/state': No such file or directory
+== $ fm-control.sh sm9 relaunch
+   error: secondmate sm9's home has no readable state directory, so its child work cannot be accounted for; refusing to relaunch
+== exit code: 1
+== secondmate agent command now: claude
+== journal children=: 

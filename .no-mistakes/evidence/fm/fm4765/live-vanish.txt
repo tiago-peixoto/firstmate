@@ -1,0 +1,42 @@
+######## BASE (1bb72cc) mode=vanish
+== control script: /tmp/fm4765.C1XN/bin/fm-control.sh
+== state/ before relaunch:
+   total 8
+   drwxr-xr-x 2 firstmate firstmate 2840 Sep 19  2026 .
+   drwxr-xr-x 5 firstmate firstmate  180 Sep 19 04:42 ..
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-1
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-2
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-3
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-4
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-5
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-6
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-7
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-8
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .hash-1
+== $ fm-control.sh sm9 relaunch
+   error: secondmate sm9's child records cannot be traversed; refusing to relaunch
+== exit code: 1
+== secondmate agent command now: claude
+== journal children=: 
+
+######## FIX (ef8a25b) mode=vanish
+== control script: /home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M2VYARPVCA20CAN8081M3MZS/bin/fm-control.sh
+== state/ before relaunch:
+   total 8
+   drwxr-xr-x 2 firstmate firstmate 1040 Sep 19  2026 .
+   drwxr-xr-x 5 firstmate firstmate  180 Sep 19 04:42 ..
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-1
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-10
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-11
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-12
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-13
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-14
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-15
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-16
+   -rw-r--r-- 1 firstmate firstmate    0 Sep 19 04:42 .count-2
+== $ fm-control.sh sm9 relaunch
+   warning: secondmate sm9 sync skipped before launch: primary default-branch commit cannot be resolved
+   relaunched sm9 harness=claude from=claude model=default effort=default backend=tmux endpoint=fmses:fm-sm9 worktree=/tmp/fm-control-relaunch.H23rrk/live4765-12566/smhome
+== exit code: 0
+== secondmate agent command now: claude
+== journal children=: 2
