@@ -1,0 +1,21 @@
+firstmate checkout: /Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M2TZN7Y0R0MFY2TSW0WMVM3C
+== before the answer
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> t1 [key=budget] needs-decision: approve spend?
+  drain> t1 [key=vendor] needs-decision: pick a vendor
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+$ fm-send.sh t1 --resolve-key budget --resolve-key vendor "ok, acme'; touch /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/injected; echo '"   (status file made read-only)
+fm-send rc=1
+  stderr> WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  stderr> /Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M2TZN7Y0R0MFY2TSW0WMVM3C/bin/fm-wake-lib.sh: line 2254: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/home/state/t1.status: Permission denied
+  stderr> error: the answer was delivered to sess:fm-t1, but the close for decision key(s) 'budget vendor' could not be appended to /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/home/state/t1.status. Close it manually with: printf '%s
+  stderr> ' resolved\ \[key=budget\]:\ answered:\ ok\,\ acme\'\;\ touch\ /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/injected\;\ echo\ \' resolved\ \[key=vendor\]:\ answered:\ ok\,\ acme\'\;\ touch\ /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/injected\;\ echo\ \' >> /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/home/state/t1.status - do not resend the answer.
+== operator runs the printed manual close command
+manual close rc=0
+== status file after the manual close
+  | needs-decision [key=budget]: approve spend?
+  | needs-decision [key=vendor]: pick a vendor
+  | resolved [key=budget]: answered: ok, acme'; touch /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/injected; echo '
+  | resolved [key=vendor]: answered: ok, acme'; touch /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-failclose.MV4cvf/injected; echo '
+== drain after the manual close
+RESULT: PASS - failed close exits nonzero, manual command closes both keys, answer text stays inert

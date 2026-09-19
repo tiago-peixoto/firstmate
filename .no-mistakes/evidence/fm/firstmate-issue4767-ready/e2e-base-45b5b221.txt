@@ -1,0 +1,173 @@
+firstmate checkout: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm4767-base.L81M3p (archive)
+== single: one --resolve-key close after a session-start OPEN DECISIONS drain
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> t1 [key=api-shape] needs-decision: pick REST or RPC
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  $ fm-send.sh t1 --resolve-key api-shape go with REST
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/single/state/t1.status ---
+  | needs-decision [key=api-shape]: pick REST or RPC
+  | resolved [key=api-shape]: answered: go with REST
+  RESULT[single/own-close]: FAIL - expected quiet, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/single/state/t1.status 
+  wake-drain> 1789782690	2	signal	t1.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/single/state/t1.status
+  wake-drain> wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=api-shape]: pick REST or RPC
+  wake-drain> wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: resolved [key=api-shape]: answered: go with REST
+  drain> (acked wake queue through 2)
+  worker appends: blocked: need prod DB credentials to continue
+  RESULT[single/next-worker-line]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/single/state/t1.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/single/state/t1.status 
+
+== multi: one fm-send closing two keys after an OPEN DECISIONS drain
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> t2 [key=budget] needs-decision: approve spend?
+  drain> t2 [key=vendor] needs-decision: pick a vendor
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  $ fm-send.sh t2 --resolve-key budget --resolve-key vendor approve spend, pick acme
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/multi/state/t2.status ---
+  | needs-decision [key=budget]: approve spend?
+  | needs-decision [key=vendor]: pick a vendor
+  | resolved [key=budget]: answered: approve spend, pick acme
+  | resolved [key=vendor]: answered: approve spend, pick acme
+  RESULT[multi/own-closes]: FAIL - expected quiet, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/multi/state/t2.status 
+  wake-drain> 1789782703	2	signal	t2.status	signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/multi/state/t2.status
+  wake-drain> wake annotation: unread wake-EVENT since last drain, not current state: t2.status: needs-decision [key=budget]: approve spend?
+  wake-drain> wake annotation: unread wake-EVENT since last drain, not current state: t2.status: needs-decision [key=vendor]: pick a vendor
+  wake-drain> wake annotation: unread wake-EVENT since last drain, not current state: t2.status: resolved [key=budget]: answered: approve spend, pick acme
+  wake-drain> wake annotation: latest wake-EVENT observed at drain, not current state: t2.status: resolved [key=vendor]: answered: approve spend, pick acme
+  drain> (acked wake queue through 2)
+  worker appends: failed: vendor API rejected the order
+  RESULT[multi/next-worker-line]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/multi/state/t2.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/multi/state/t2.status 
+
+== livecycle: watcher surfaces the decision, supervisor answers, watcher re-armed
+  worker appends: needs-decision [key=db]: postgres or sqlite?
+  RESULT[livecycle/worker-decision]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/livecycle/state/t1.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/livecycle/state/t1.status 
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> t1 [key=db] needs-decision: postgres or sqlite?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain> (acked wake queue through 2)
+  $ fm-send.sh t1 --resolve-key db postgres
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/livecycle/state/t1.status ---
+  | working: scaffolding the service
+  | needs-decision [key=db]: postgres or sqlite?
+  | resolved [key=db]: answered: postgres
+  RESULT[livecycle/own-close]: PASS - expected quiet, observed: quiet (watcher alive after 3 poll beats, no wake printed)
+  worker appends: blocked: postgres container will not start
+  RESULT[livecycle/next-worker-line]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/livecycle/state/t1.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/livecycle/state/t1.status 
+
+== captain_hold: fm-captain-hold.sh complete transfers two open keys after an OPEN DECISIONS drain
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> scout [key=route] needs-decision: north or south?
+  drain> scout [key=access] needs-decision: open or restricted?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  $ fm-captain-hold.sh complete scout sample-route-call
+  complete: scout captain-call inventory reviewed (sample-route-call)
+  complete rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/captain_hold/state/scout.status ---
+  | needs-decision [key=route]: north or south?
+  | needs-decision [key=access]: open or restricted?
+  | captain-held [key=route]: tracked by sample-route-call
+  | captain-held [key=access]: tracked by sample-route-call
+  RESULT[captain_hold/own-transfers]: FAIL - expected quiet, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/captain_hold/state/scout.status 
+  wake-drain> 1789782736	2	signal	scout.status	needs-decision: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/captain_hold/state/scout.status
+  wake-drain> wake annotation: unread wake-EVENT since last drain, not current state: scout.status: needs-decision [key=route]: north or south?
+  wake-drain> wake annotation: unread wake-EVENT since last drain, not current state: scout.status: needs-decision [key=access]: open or restricted?
+  wake-drain> wake annotation: unread wake-EVENT since last drain, not current state: scout.status: captain-held [key=route]: tracked by sample-route-call
+  wake-drain> wake annotation: latest wake-EVENT observed at drain, not current state: scout.status: captain-held [key=access]: tracked by sample-route-call
+  drain> (acked wake queue through 2)
+  worker appends: blocked: sample repo access revoked
+  RESULT[captain_hold/next-worker-line]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/captain_hold/state/scout.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/captain_hold/state/scout.status 
+
+== folded_failure: a secondmate failed: line inside the folded span
+  RESULT[folded_failure/worker-decision]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/folded_failure/state/mate.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/folded_failure/state/mate.status 
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> mate [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain> (acked wake queue through 2)
+  while the watcher is down the worker appends:
+    + failed: crew c3 hit an unrecoverable migration error
+    + working: retrying c3 in a fresh worktree
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> mate [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  $ fm-send.sh fm-mate --resolve-key budget approved
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/folded_failure/state/mate.status ---
+  | needs-decision [key=budget]: approve spend?
+  | failed: crew c3 hit an unrecoverable migration error
+  | working: retrying c3 in a fresh worktree
+  | resolved [key=budget]: answered: approved
+  RESULT[folded_failure/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/folded_failure/state/mate.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/folded_failure/state/mate.status 
+
+== ship_paused: a ship worker's paused: line inside the folded span
+  RESULT[ship_paused/worker-decision]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/ship_paused/state/t1.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/ship_paused/state/t1.status 
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> t1 [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain> (acked wake queue through 2)
+  while the watcher is down the worker appends:
+    + paused: waiting on upstream API quota reset
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> t1 [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  $ fm-send.sh t1 --resolve-key budget approved
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/ship_paused/state/t1.status ---
+  | needs-decision [key=budget]: approve spend?
+  | paused: waiting on upstream API quota reset
+  | resolved [key=budget]: answered: approved
+  RESULT[ship_paused/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/ship_paused/state/t1.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/ship_paused/state/t1.status 
+
+== mate_paused: a secondmate paused: line inside the folded span
+  RESULT[mate_paused/worker-decision]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_paused/state/mate.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_paused/state/mate.status 
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> mate [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain> (acked wake queue through 2)
+  while the watcher is down the worker appends:
+    + paused: waiting on vendor quote
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> mate [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  $ fm-send.sh fm-mate --resolve-key budget approved
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_paused/state/mate.status ---
+  | needs-decision [key=budget]: approve spend?
+  | paused: waiting on vendor quote
+  | resolved [key=budget]: answered: approved
+  RESULT[mate_paused/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_paused/state/mate.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_paused/state/mate.status 
+
+== mate_self_resolved: the secondmate raised and closed its own decision inside the folded span
+  RESULT[mate_self_resolved/worker-decision]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_self_resolved/state/mate.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_self_resolved/state/mate.status 
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> mate [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain> (acked wake queue through 2)
+  while the watcher is down the worker appends:
+    + needs-decision [key=vendor]: vendor A or B?
+    + resolved [key=vendor]: picked vendor B myself, cheaper
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> mate [key=budget] needs-decision: approve spend?
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  $ fm-send.sh fm-mate --resolve-key budget approved
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_self_resolved/state/mate.status ---
+  | needs-decision [key=budget]: approve spend?
+  | needs-decision [key=vendor]: vendor A or B?
+  | resolved [key=vendor]: picked vendor B myself, cheaper
+  | resolved [key=budget]: answered: approved
+  RESULT[mate_self_resolved/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_self_resolved/state/mate.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/mate_self_resolved/state/mate.status 
+
+== race_after_drain: a worker line lands after the drain but before the close
+  drain> OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain> t1 [key=api-shape] needs-decision: pick REST or RPC
+  drain> OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  worker appends (after the drain, before the answer): paused: waiting on design review
+  $ fm-send.sh t1 --resolve-key api-shape go with REST
+  fm-send rc=0
+  --- /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/race_after_drain/state/t1.status ---
+  | needs-decision [key=api-shape]: pick REST or RPC
+  | paused: waiting on design review
+  | resolved [key=api-shape]: answered: go with REST
+  RESULT[race_after_drain/unread-worker-line-still-wakes]: PASS - expected woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/race_after_drain/state/t1.status, observed: woke: signal: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4767-e2e.511pik/race_after_drain/state/t1.status 
+
