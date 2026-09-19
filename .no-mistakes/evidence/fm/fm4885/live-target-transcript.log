@@ -1,0 +1,70 @@
+[target] S1 worker opens two keyed decisions
+[target] S1 watcher woke: signal: /tmp/fm4885/run-target-8L3M/s1/state/t1.status
+[target] S1 drain output:
+    1789800126	2	signal	t1.status	needs-decision: /tmp/fm4885/run-target-8L3M/s1/state/t1.status
+    wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=api]: pick REST or RPC
+    wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: needs-decision [key=region]: pick us-east or eu-west
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    t1 [key=api] needs-decision: pick REST or RPC
+    t1 [key=region] needs-decision: pick us-east or eu-west
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[target] S1 captain answers api then region (fm-send --resolve-key)
+[target]   send api rc=0
+[target]   send region rc=0
+[target] S1 status log now:
+    needs-decision [key=api]: pick REST or RPC
+    needs-decision [key=region]: pick us-east or eu-west
+    resolved [key=api]: answered: go with REST
+    resolved [key=region]: answered: eu-west
+[target] RESULT S1_answers_quiet: pass (watcher alive 6s, queue rows=0, out='')
+[target] S1 worker appends a real blocker
+[target] RESULT S1_worker_wakes: pass: signal: /tmp/fm4885/run-target-8L3M/s1/state/t1.status
+[target] S1 drain after blocker:
+    1789800145	4	signal	t1.status	signal: /tmp/fm4885/run-target-8L3M/s1/state/t1.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: need staging credentials
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    t1 blocked: need staging credentials
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[target] RESULT S2_first_answer_quiet: pass
+[target] RESULT S2_second_answer_quiet: pass (queue rows=0)
+[target] S3 wake #1: signal: /tmp/fm4885/run-target-8L3M/s3/state/t1.status
+[target] RESULT S3_wake_count: wakes=1 (expect 1: worker decisions only, not one per answer)
+[target] RESULT S3_worker_wakes: pass: signal: /tmp/fm4885/run-target-8L3M/s3/state/t1.status
+[target] RESULT S4_folded_worker_decision_wakes: pass: signal: /tmp/fm4885/run-target-8L3M/s4/state/t1.status
+[target] RESULT S5_worker_resolved_wakes: pass: signal: /tmp/fm4885/run-target-8L3M/s5/state/t1.status
+[target]   S6 answer api rc=0
+[target]   S6 answer region rc=0
+[target] RESULT S6_answers_after_absorbed_notes: wakes=0 (expect 0)
+[target] S6 status log:
+    needs-decision [key=api]: pick REST or RPC
+    needs-decision [key=region]: pick us-east or eu-west
+    working: applying feedback before api
+    resolved [key=api]: answered: go with REST
+    working: applying feedback before region
+    resolved [key=region]: answered: eu-west
+[target] RESULT S6_worker_blocker_wakes: pass: signal: /tmp/fm4885/run-target-8L3M/s6/state/t1.status
+[target]   S7 trial 1 (send rc 0/0) quiet; queue rows=0
+[target]   S7 trial 1 ledger: v1 ident=strong:33:4899293:2026-09-19 06:44:10.602329363 +0000 96	180 
+[target]   S7 trial 2 (send rc 0/0) quiet; queue rows=0
+[target]   S7 trial 2 ledger: v1 ident=strong:33:4899883:2026-09-19 06:44:28.911299473 +0000 96	180 
+[target]   S7 trial 3 (send rc 0/0) quiet; queue rows=0
+[target]   S7 trial 3 ledger: v1 ident=strong:33:4900474:2026-09-19 06:44:46.386270944 +0000 96	180 
+[target]   S7 trial 4 (send rc 0/0) quiet; queue rows=0
+[target]   S7 trial 4 ledger: v1 ident=strong:33:4901035:2026-09-19 06:45:04.277241735 +0000 96	180 
+[target]   S7 trial 5 (send rc 0/0) quiet; queue rows=0
+[target]   S7 trial 5 ledger: v1 ident=strong:33:4901632:2026-09-19 06:45:21.539213554 +0000 96	180 
+[target]   S7 trial 6 (send rc 0/0) quiet; queue rows=0
+[target]   S7 trial 6 ledger: v1 ident=strong:33:4902201:2026-09-19 06:45:38.881185242 +0000 96	180 
+[target] RESULT S7_concurrent_answers: woke in 0/6 trials (expect 0)
+[target] SUMMARY
+[target]   S1_answers_quiet=pass (watcher alive 6s, queue rows=0, out='')
+[target]   S1_worker_wakes=pass: signal: /tmp/fm4885/run-target-8L3M/s1/state/t1.status
+[target]   S2_first_answer_quiet=pass
+[target]   S2_second_answer_quiet=pass (queue rows=0)
+[target]   S3_wake_count=wakes=1 (expect 1: worker decisions only, not one per answer)
+[target]   S3_worker_wakes=pass: signal: /tmp/fm4885/run-target-8L3M/s3/state/t1.status
+[target]   S4_folded_worker_decision_wakes=pass: signal: /tmp/fm4885/run-target-8L3M/s4/state/t1.status
+[target]   S5_worker_resolved_wakes=pass: signal: /tmp/fm4885/run-target-8L3M/s5/state/t1.status
+[target]   S6_answers_after_absorbed_notes=wakes=0 (expect 0)
+[target]   S6_worker_blocker_wakes=pass: signal: /tmp/fm4885/run-target-8L3M/s6/state/t1.status
+[target]   S7_concurrent_answers=woke in 0/6 trials (expect 0)

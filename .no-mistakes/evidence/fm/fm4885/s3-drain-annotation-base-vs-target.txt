@@ -1,0 +1,12 @@
+== base drain after worker decisions + two early --resolve-key answers (S3)
+1789800179	2	signal	t1.status	signal: /tmp/fm4885/run-base-cYqz/s3/state/t1.status
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=api]: pick REST or RPC
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=region]: pick us-east or eu-west
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=api]: answered: go with REST
+wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: resolved [key=region]: answered: eu-west
+
+== target drain after worker decisions + two early --resolve-key answers (S3)
+1789800180	2	signal	t1.status	signal: /tmp/fm4885/run-target-8L3M/s3/state/t1.status
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=api]: pick REST or RPC
+wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: needs-decision [key=region]: pick us-east or eu-west
+

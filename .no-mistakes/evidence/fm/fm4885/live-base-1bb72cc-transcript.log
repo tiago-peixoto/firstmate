@@ -1,0 +1,78 @@
+[base] S1 worker opens two keyed decisions
+[base] S1 watcher woke: signal: /tmp/fm4885/run-base-cYqz/s1/state/t1.status
+[base] S1 drain output:
+    1789800126	2	signal	t1.status	needs-decision: /tmp/fm4885/run-base-cYqz/s1/state/t1.status
+    wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=api]: pick REST or RPC
+    wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: needs-decision [key=region]: pick us-east or eu-west
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    t1 [key=api] needs-decision: pick REST or RPC
+    t1 [key=region] needs-decision: pick us-east or eu-west
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[base] S1 captain answers api then region (fm-send --resolve-key)
+[base]   send api rc=0
+[base]   send region rc=0
+[base] S1 status log now:
+    needs-decision [key=api]: pick REST or RPC
+    needs-decision [key=region]: pick us-east or eu-west
+    resolved [key=api]: answered: go with REST
+    resolved [key=region]: answered: eu-west
+[base] RESULT S1_answers_quiet: pass (watcher alive 6s, queue rows=0, out='')
+[base] S1 worker appends a real blocker
+[base] RESULT S1_worker_wakes: pass: signal: /tmp/fm4885/run-base-cYqz/s1/state/t1.status
+[base] S1 drain after blocker:
+    1789800144	4	signal	t1.status	signal: /tmp/fm4885/run-base-cYqz/s1/state/t1.status
+    wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=api]: answered: go with REST
+    wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=region]: answered: eu-west
+    wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: need staging credentials
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    t1 blocked: need staging credentials
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[base] RESULT S2_first_answer_quiet: pass
+[base] RESULT S2_second_answer_quiet: pass (queue rows=0)
+[base] S3 wake #1: signal: /tmp/fm4885/run-base-cYqz/s3/state/t1.status
+[base] RESULT S3_wake_count: wakes=1 (expect 1: worker decisions only, not one per answer)
+[base] RESULT S3_worker_wakes: pass: signal: /tmp/fm4885/run-base-cYqz/s3/state/t1.status
+[base] RESULT S4_folded_worker_decision_wakes: pass: signal: /tmp/fm4885/run-base-cYqz/s4/state/t1.status
+[base] RESULT S5_worker_resolved_wakes: pass: signal: /tmp/fm4885/run-base-cYqz/s5/state/t1.status
+[base]   S6 answer api rc=0
+[base]   S6 answer region rc=0
+[base] RESULT S6_answers_after_absorbed_notes: wakes=0 (expect 0)
+[base] S6 status log:
+    needs-decision [key=api]: pick REST or RPC
+    needs-decision [key=region]: pick us-east or eu-west
+    working: applying feedback before api
+    resolved [key=api]: answered: go with REST
+    working: applying feedback before region
+    resolved [key=region]: answered: eu-west
+[base] RESULT S6_worker_blocker_wakes: pass: signal: /tmp/fm4885/run-base-cYqz/s6/state/t1.status
+[base]   S7 trial 1 (send rc 0/0) quiet; queue rows=0
+./drive.sh: line 164: /tmp/fm4885/run-base-cYqz/s7-1/state/.t1.home-appends: No such file or directory
+[base]   S7 trial 1 ledger: 
+[base]   S7 trial 2 (send rc 0/0) quiet; queue rows=0
+./drive.sh: line 164: /tmp/fm4885/run-base-cYqz/s7-2/state/.t1.home-appends: No such file or directory
+[base]   S7 trial 2 ledger: 
+[base]   S7 trial 3 (send rc 0/0) quiet; queue rows=0
+./drive.sh: line 164: /tmp/fm4885/run-base-cYqz/s7-3/state/.t1.home-appends: No such file or directory
+[base]   S7 trial 3 ledger: 
+[base]   S7 trial 4 (send rc 0/0) quiet; queue rows=0
+./drive.sh: line 164: /tmp/fm4885/run-base-cYqz/s7-4/state/.t1.home-appends: No such file or directory
+[base]   S7 trial 4 ledger: 
+[base]   S7 trial 5 (send rc 0/0) quiet; queue rows=0
+./drive.sh: line 164: /tmp/fm4885/run-base-cYqz/s7-5/state/.t1.home-appends: No such file or directory
+[base]   S7 trial 5 ledger: 
+[base]   S7 trial 6 (send rc 0/0) quiet; queue rows=0
+./drive.sh: line 164: /tmp/fm4885/run-base-cYqz/s7-6/state/.t1.home-appends: No such file or directory
+[base]   S7 trial 6 ledger: 
+[base] RESULT S7_concurrent_answers: woke in 0/6 trials (expect 0)
+[base] SUMMARY
+[base]   S1_answers_quiet=pass (watcher alive 6s, queue rows=0, out='')
+[base]   S1_worker_wakes=pass: signal: /tmp/fm4885/run-base-cYqz/s1/state/t1.status
+[base]   S2_first_answer_quiet=pass
+[base]   S2_second_answer_quiet=pass (queue rows=0)
+[base]   S3_wake_count=wakes=1 (expect 1: worker decisions only, not one per answer)
+[base]   S3_worker_wakes=pass: signal: /tmp/fm4885/run-base-cYqz/s3/state/t1.status
+[base]   S4_folded_worker_decision_wakes=pass: signal: /tmp/fm4885/run-base-cYqz/s4/state/t1.status
+[base]   S5_worker_resolved_wakes=pass: signal: /tmp/fm4885/run-base-cYqz/s5/state/t1.status
+[base]   S6_answers_after_absorbed_notes=wakes=0 (expect 0)
+[base]   S6_worker_blocker_wakes=pass: signal: /tmp/fm4885/run-base-cYqz/s6/state/t1.status
+[base]   S7_concurrent_answers=woke in 0/6 trials (expect 0)
