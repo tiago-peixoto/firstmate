@@ -1,0 +1,3 @@
+#!/bin/bash
+{ echo "=== codex agent process started ==="; echo "cwd=$PWD"; } | tee "/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm4574-live/rec/codex.$$.log"
+exec sleep 86400
