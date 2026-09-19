@@ -1,0 +1,18 @@
+== b4f11f66
+  RESULT[folded_failure/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: mate.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[ship_paused/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: t1.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[mate_paused/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: mate.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[mate_self_resolved/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: mate.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[race_after_drain/unread-worker-line-still-wakes]: PASS - expected woke: signal: t1.status, observed: woke: signal: t1.status 
+== 0101aba5
+  RESULT[folded_failure/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: mate.status, observed: woke: signal: mate.status 
+  RESULT[ship_paused/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: t1.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[mate_paused/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: mate.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[mate_self_resolved/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: mate.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[race_after_drain/unread-worker-line-still-wakes]: PASS - expected woke: signal: t1.status, observed: woke: signal: t1.status 
+== 7ff86f9d
+  RESULT[folded_failure/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: mate.status, observed: woke: signal: mate.status 
+  RESULT[ship_paused/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: t1.status, observed: woke: signal: t1.status 
+  RESULT[mate_paused/unlisted-worker-lines-still-wake]: PASS - expected woke: signal: mate.status, observed: woke: signal: mate.status 
+  RESULT[mate_self_resolved/unlisted-worker-lines-still-wake]: FAIL - expected woke: signal: mate.status, observed: quiet (watcher still blocking after 15s, no wake)
+  RESULT[race_after_drain/unread-worker-line-still-wakes]: PASS - expected woke: signal: t1.status, observed: woke: signal: t1.status 
