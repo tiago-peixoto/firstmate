@@ -1,0 +1,9 @@
+### the shared status-line cap is 220 bytes; the captain's reason is 392 characters
+### bytes actually written to the lane's status log:
+       39 bytes  within cap
+      220 bytes  within cap
+      104 bytes  within cap
+### the mirror line as stored (truncated for display):
+      captain-held [key=captain-hold-ship-long-reason-1] [at=1789929494]: merge approval pending on the settlement rollout mer
+### the settled lane still reads back to the worker's own event:
+      paused: waiting on the upstream sandbox

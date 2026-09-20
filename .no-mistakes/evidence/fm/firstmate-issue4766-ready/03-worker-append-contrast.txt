@@ -1,0 +1,18 @@
+### round 1: held lane surfaces its captain recheck
+      stale: firstmate:fm-ship-refunds-api (captain-held 502s, awaiting the captain - the hold is recorded, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+    suppressor after the surfaced recheck: present
+
+### the WORKER itself moves on (writes its own line), no hold retraction
+    lane's last event now: working: picked the lane back up after the captain pinged in the pane
+--- watcher stdout ---
+      signal: /tmp/fmlab/workerhome/state/ship-refunds-api.status
+--- wake queue ---
+      1789929049	2	signal	ship-refunds-api.status	signal: /tmp/fmlab/workerhome/state/ship-refunds-api.status
+      1789929049	3	signal	ship-refunds-api.status	signal: /tmp/fmlab/workerhome/state/ship-refunds-api.status
+    captain-held cadence marker lifted? no
+    stale suppressor reset by the worker's new evidence? no - kept
+    hold still open in the backlog record? yes
+### next watcher round after firstmate handled the worker's signal
+    captain-held cadence marker lifted? yes
+    stale suppressor reset by the worker's new evidence? yes
+    wake queue: ''

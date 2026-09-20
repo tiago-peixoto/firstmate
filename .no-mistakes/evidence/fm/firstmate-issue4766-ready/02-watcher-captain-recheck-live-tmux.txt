@@ -1,0 +1,76 @@
+### live pane the watcher is looking at
+      agent exited; bare shell
+      firstmate@srv1986173:~/.no-mistakes/worktrees/42fe67ed39fa/01M2ZXMY0F223KCHFN1N4MC2AQ$
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+### the lane before the hold: done: PR https://example.invalid/pr/7 checks green
+
+### captain holds the delivered lane for merge approval
+      captain-held [key=captain-hold-ship-checkout-flow-1] [at=1789928957]: merge approval pending
+
+### watcher round 1 (held lane, agent exited) - what the captain is told
+--- watcher stdout (what firstmate's session sees) ---
+      stale: firstmate:fm-ship-checkout-flow (captain-held 502s, awaiting the captain - the hold is recorded, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+--- durable wake queue row ---
+      1789928959	1	stale	firstmate:fm-ship-checkout-flow	stale: firstmate:fm-ship-checkout-flow (captain-held 502s, awaiting the captain - the hold is recorded, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+
+    OK: recheck says the hold is recorded
+    OK: no 'verified hold transfer' claim
+    OK: lane took the captain-held bounded cadence (.paused marker present)
+### the captain acknowledges the recheck (drain + ack), as firstmate does each round
+    queue after ack: ''
+
+### captain answers and releases the hold (no worker process alive)
+released: ship-checkout-flow
+    status log tail:
+      done: PR https://example.invalid/pr/7 checks green
+      captain-held [key=captain-hold-ship-checkout-flow-1] [at=1789928957]: merge approval pending
+      resolved [key=captain-hold-ship-checkout-flow-1] [at=1789928987]: captain call released by fm-captain-hold
+    what the watcher's reader now sees as the lane's last event:
+      done: PR https://example.invalid/pr/7 checks green
+
+### watcher round 2 over the same unchanged pane, hold now settled
+    watcher still polling after 10s (did not exit on a wake)? yes
+--- watcher stdout ---
+--- wake queue ---
+    wedge timer started? no
+    captain-held cadence marker lifted? yes
+    stale suppressor kept (no re-alarm of the same hash)? yes
+    re-surface throttle kept? no

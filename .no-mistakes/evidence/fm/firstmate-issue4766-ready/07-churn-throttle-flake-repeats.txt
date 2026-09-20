@@ -1,0 +1,11 @@
+The CI failure this branch was asked to fix was tests/fm-watch-triage.test.sh
+[paused-pipeline-churn]: "replacement wait re-alarmed 1 time(s) inside its own
+re-surface window". Run here in the full suite, then 9 more times in isolation
+(a churn-only copy of the same file, driving the same real bin/fm-watch.sh):
+
+  tests/fm-watch-triage.test.sh (full suite)
+    ok - a parked live worker surfaces once, absorbs pane churn for the whole
+         re-surface window, then re-surfaces when it elapses
+    FM_TEST_END exit=0 duration_ms=1624036
+
+  churn-only repeats: 8 passed, 0 failed

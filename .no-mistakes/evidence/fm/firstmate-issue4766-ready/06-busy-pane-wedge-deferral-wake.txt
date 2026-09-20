@@ -1,0 +1,5 @@
+Rendered by a real bin/fm-watch.sh subprocess during tests/fm-watch-triage.test.sh
+(case captain-held-wait: a held lane whose busy pane crossed the wedge threshold,
+ so the wait record at bin/fm-watch.sh:1032 is what the captain is shown).
+
+stale: test:fm-wedge (idle 2s, waiting 2004s - captain-held, awaiting the captain - the hold is recorded, rechecked on a long cadence not a wedge; answer the held decision or release the hold)

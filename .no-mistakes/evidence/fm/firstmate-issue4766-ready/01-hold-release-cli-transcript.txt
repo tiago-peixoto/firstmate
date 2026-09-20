@@ -1,0 +1,43 @@
+### 1. Worker lane's status log before the captain holds it
+working: implementing the settlement endpoint
+needs-decision [key=api-shape]: REST or RPC for the settlement endpoint
+paused: waiting on the upstream sandbox to come back
+    last event read by the watcher/away-mode classifier: paused: waiting on the upstream sandbox to come back
+    classifies as captain-held? no
+
+### 2. captain holds the lane
+$ fm-captain-hold.sh hold ship-payments-api --reason 'merge approval pending'
+ship-payments-api
+    status log now:
+      working: implementing the settlement endpoint
+      needs-decision [key=api-shape]: REST or RPC for the settlement endpoint
+      paused: waiting on the upstream sandbox to come back
+      captain-held [key=captain-hold-ship-payments-api-1] [at=1789928849]: merge approval pending
+    last event the watcher reads: captain-held [key=captain-hold-ship-payments-api-1] [at=1789928849]: merge approval pending
+    classifies as captain-held? yes
+    the captain call is open in the backlog record: open
+
+### 3. repeated hold (operator runs it twice)
+    captain-held lines on the log: 1
+
+### 4. captain answers and releases, with no worker process alive
+$ fm-captain-hold.sh answer ship-payments-api --decision-file answer.txt --release
+released: ship-payments-api
+    status log now:
+      working: implementing the settlement endpoint
+      needs-decision [key=api-shape]: REST or RPC for the settlement endpoint
+      paused: waiting on the upstream sandbox to come back
+      captain-held [key=captain-hold-ship-payments-api-1] [at=1789928849]: merge approval pending
+      resolved [key=captain-hold-ship-payments-api-1] [at=1789928853]: captain call released by fm-captain-hold
+    last event the watcher reads: paused: waiting on the upstream sandbox to come back
+    classifies as captain-held? no
+    worker's own open decisions still standing:
+      api-shape	needs-decision	REST or RPC for the settlement endpoint
+### 5. adversarial: replay the same answer
+    retraction lines on the log: 1
+
+### 6. adversarial: a decision-only hold with no worker lane
+    no status log minted for the lane-less decision (correct)
+
+### 7. divergence guard over the two records
+    diverged output: '' (empty = the two records agree)

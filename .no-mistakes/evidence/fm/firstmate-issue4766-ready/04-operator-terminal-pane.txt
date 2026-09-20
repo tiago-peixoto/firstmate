@@ -1,0 +1,34 @@
+$ tail -n 1 /tmp/fmlab/opshome/state/ship-checkout-flow.status
+done: PR https://example.invalid/pr/7 checks green
+
+$ fm-captain-hold.sh hold ship-checkout-flow --reason 'merge approval pending'
+ship-checkout-flow
+$ tail -n 1 /tmp/fmlab/opshome/state/ship-checkout-flow.status
+captain-held [key=captain-hold-ship-checkout-flow-1] [at=1789929168]: merge approval pending
+
+$ fm-watch.sh     # the recheck the captain is shown for a held lane
+stale: firstmate:fm-ship-checkout-flow (captain-held 502s, awaiting the captain - the hold is record
+ed, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+firstmate@srv1986173:~/.no-mistakes/worktrees/42fe67ed39fa/01M2ZXMY0F223KCHFN1N4MC2AQ$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
