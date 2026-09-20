@@ -1,0 +1,62 @@
+checkout under test: /home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M2YF86AG8VETDN9HQKHA0P9N (a3624c9)
+throwaway FM_HOME:   /tmp/fm-live-4907.zPzfqz/home
+
+=== setup: a ship worker opens two captain decisions on task t1
+needs-decision [key=budget]: approve the $400 spend?
+needs-decision [key=vendor]: vendor A or vendor B?
+
+=== scenario 1: the worker's two decisions wake the supervisor once
+PASS  watcher exited and woke the supervisor: signal: /tmp/fm-live-4907.zPzfqz/home/state/t1.status
+
+=== scenario 2: the supervisor sees both decisions and acknowledges the wake
+1789878172	2	signal	t1.status	needs-decision: /tmp/fm-live-4907.zPzfqz/home/state/t1.status
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=budget]: approve the $400 spend?
+wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: needs-decision [key=vendor]: vendor A or vendor B?
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=budget] needs-decision: approve the $400 spend?
+t1 [key=vendor] needs-decision: vendor A or vendor B?
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS  both open decisions presented to the captain
+PASS  wake acknowledged; queue is empty
+
+=== scenario 3: the supervisor answers BOTH decisions with two --resolve-key sends
+PASS  first answer sent (key=budget)
+PASS  second answer sent (key=vendor)
+--- status log after both answers ---
+needs-decision [key=budget]: approve the $400 spend?
+needs-decision [key=vendor]: vendor A or vendor B?
+resolved [key=budget]: answered: approved, go ahead
+resolved [key=vendor]: answered: go with vendor B
+
+=== scenario 4 (the fix): neither of this home's own answers wakes the supervisor again
+PASS  watcher stayed asleep through a full poll cycle: no wake reason, empty wake queue
+
+=== scenario 5 (adversarial): a later worker line on the same task still wakes
+PASS  the worker's blocked: line woke the supervisor: signal: /tmp/fm-live-4907.zPzfqz/home/state/t1.status
+
+=== scenario 6 (guard): the answers are still shown to the captain, not hidden
+1789878183	4	signal	t1.status	signal: /tmp/fm-live-4907.zPzfqz/home/state/t1.status
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=budget]: answered: approved, go ahead
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=vendor]: answered: go with vendor B
+wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: need staging credentials to continue
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 blocked: need staging credentials to continue
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS  both owned closes still printed on the captain-facing surface
+PASS  the worker's blocker is presented too
+
+=== scenario 7 (adversarial): a real fm-teardown.sh leaves no orphaned ledger state
+PASS  precondition: the answered task carries a live home-appends ledger
+.task-x1.home-appends
+fm-teardown.sh exit=0
+==> /tmp/fm-live-4907.zPzfqz/td.out <==
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree /tmp/fm-live-4907.zPzfqz/td/wt)
+Backlog: task-x1 just finished (this home keeps no markdown backlog at /tmp/fm-live-4907.zPzfqz/td/data/backlog.md). Update /tmp/fm-live-4907.zPzfqz/td/data/backlog.md - move task-x1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+
+==> /tmp/fm-live-4907.zPzfqz/td.err <==
+PASS  real fm-teardown.sh removed the per-task ledger and its stale lock
+remaining task-x1 state: none
+
+===========================
+RESULT: all live scenarios passed
+artifacts under /tmp/fm-live-4907.zPzfqz

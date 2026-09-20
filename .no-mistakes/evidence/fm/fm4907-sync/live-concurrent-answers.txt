@@ -1,0 +1,50 @@
+
+=== 12 real fm-send --resolve-key processes answer the same task simultaneously
+
+=== every send either closed its key exactly once or refused loudly
+  12 closed, 0 refused, out of 12 concurrent answers
+PASS  no close was silently lost or duplicated
+PASS  no torn or interleaved line in the status log
+
+=== the ledger is well formed: ascending, non-overlapping, byte-accurate ranges
+--- /tmp/fm-live-conc.NYQLbo/home/state/.t1.home-appends ---
+v1
+ident=strong:33:7288885:2026-09-20 04:28:36.700591186 +0000
+498	960
+--- ranges as the product reads them ---
+498	960
+PASS  ranges are ascending and non-overlapping
+PASS  no range runs past the log's 960 bytes
+
+=== the captain still sees every close, and no decision is left open
+1789878524	1	signal	t1.status	signal: /tmp/fm-live-conc.NYQLbo/home/state/t1.status
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k1]: choose option 1
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k2]: choose option 2
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k3]: choose option 3
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k4]: choose option 4
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k5]: choose option 5
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k6]: choose option 6
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k7]: choose option 7
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k8]: choose option 8
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k9]: choose option 9
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k10]: choose option 10
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k11]: choose option 11
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: needs-decision [key=k12]: choose option 12
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k1]: answered: answer 1
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k11]: answered: answer 11
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k12]: answered: answer 12
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k6]: answered: answer 6
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k5]: answered: answer 5
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k10]: answered: answer 10
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k7]: answered: answer 7
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k4]: answered: answer 4
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k2]: answered: answer 2
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k9]: answered: answer 9
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k8]: answered: answer 8
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k3]: answered: answer 3
+wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: working: carrying on with the answers
+PASS  every landed close is presented on the captain-facing surface
+PASS  exactly the 0 refused answers are still listed as open decisions
+
+===========================
+RESULT: all live scenarios passed

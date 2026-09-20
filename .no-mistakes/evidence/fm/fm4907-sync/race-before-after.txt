@@ -1,0 +1,93 @@
+########## BASE 1b1b6e0 (before the fix) ##########
+checkout under test: /tmp/fm-base-1b1b6e0.hrZQQi
+throwaway FM_HOME:   /tmp/fm-live-race.sSvxaW/home
+crew-probe hold:     8s
+
+=== step 1: the worker's decision wakes the supervisor (the legitimate wake)
+PASS  woken: signal: /tmp/fm-live-race.sSvxaW/home/state/t1.status
+PASS  wake acknowledged
+
+=== step 2: the worker keeps working (routine growth the watcher will classify)
+status size before the answer: 92 bytes
+
+=== step 3: the watcher enters its slow crew-evidence check
+PASS  watcher is inside the crew-state probe with its endpoint already captured
+
+=== step 4: the supervisor answers the decision INSIDE that window
+PASS  answer sent while the watcher was mid-check
+status size after the answer: 144 bytes
+
+=== step 5: the watcher commits the endpoint it captured before the answer
+PASS  watcher's classified offset regressed to 92, behind the answer's bytes - the race reproduced
+
+=== step 6 (the question): is the supervisor woken by its own answer?
+FAIL  the supervisor was WOKEN by its own --resolve-key answer: signal: /tmp/fm-live-race.sSvxaW/home/state/t1.status
+
+=== step 7 (guard): the worker's turn ends - the owned close must still be annotated
+FAIL  the watcher was already gone before the turn-end guard
+
+=== step 8 (adversarial): a real worker line must still wake
+FAIL  a real worker line after the owned answer was swallowed: check: rearm-resurface
+
+=== step 9 (guard): the answer is still on the captain-facing surface
+1789878685	4	signal	t1.status	signal: /tmp/fm-live-race.sSvxaW/home/state/t1.status
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: working: still refactoring the adapter
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=budget]: answered: approved, go ahead
+wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: need staging credentials to continue
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 blocked: need staging credentials to continue
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS  the worker's blocker is presented to the captain
+
+===========================
+RESULT: at least one live scenario FAILED
+base EXIT=1
+
+########## TARGET a3624c9 (with the fix) ##########
+checkout under test: /home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M2YF86AG8VETDN9HQKHA0P9N
+throwaway FM_HOME:   /tmp/fm-live-race.CVBoZv/home
+crew-probe hold:     8s
+
+=== step 1: the worker's decision wakes the supervisor (the legitimate wake)
+PASS  woken: signal: /tmp/fm-live-race.CVBoZv/home/state/t1.status
+PASS  wake acknowledged
+
+=== step 2: the worker keeps working (routine growth the watcher will classify)
+status size before the answer: 92 bytes
+
+=== step 3: the watcher enters its slow crew-evidence check
+PASS  watcher is inside the crew-state probe with its endpoint already captured
+
+=== step 4: the supervisor answers the decision INSIDE that window
+PASS  answer sent while the watcher was mid-check
+status size after the answer: 144 bytes
+
+=== step 5: the watcher commits the endpoint it captured before the answer
+PASS  watcher's classified offset regressed to 92, behind the answer's bytes - the race reproduced
+
+=== step 6 (the question): is the supervisor woken by its own answer?
+PASS  the watcher stayed asleep: this home's own answer did not wake it
+
+=== step 7 (guard): the worker's turn ends - the owned close must still be annotated
+PASS  the worker's turn end woke the supervisor: signal: /tmp/fm-live-race.CVBoZv/home/state/t1.turn-ended
+1789878738	4	signal	t1.turn-ended	signal: /tmp/fm-live-race.CVBoZv/home/state/t1.turn-ended
+wake annotation: unread wake-EVENT since last drain, not current state; historical / not necessarily the triggering event: t1.status: working: still refactoring the adapter
+wake annotation: latest wake-EVENT observed at drain, not current state; historical / not necessarily the triggering event: t1.status: resolved [key=budget]: answered: approved, go ahead
+PASS  the turn-ended annotation still presents this home's own close
+
+=== step 8 (adversarial): a real worker line must still wake
+PASS  the worker's blocked: line woke the supervisor: signal: /tmp/fm-live-race.CVBoZv/home/state/t1.status
+
+=== step 9 (guard): the answer is still on the captain-facing surface
+1789878749	6	signal	t1.status	signal: /tmp/fm-live-race.CVBoZv/home/state/t1.status
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: working: still refactoring the adapter
+wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=budget]: answered: approved, go ahead
+wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: need staging credentials to continue
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 blocked: need staging credentials to continue
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS  the worker's blocker is presented to the captain
+
+===========================
+RESULT: all live scenarios passed
+target EXIT=0

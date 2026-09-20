@@ -1,0 +1,5 @@
+# The new regression test, run against BASE 1b1b6e0 (change reverted, test copied in)
+$ tests/fm-send-resolve-key.test.sh
+ok - fm-send --resolve-key: the answer send itself closes the open decision
+ok - fm-send --resolve-key: the close never re-wakes its own home, later lines still do
+not ok - the first --resolve-key answer was left to re-wake this home
