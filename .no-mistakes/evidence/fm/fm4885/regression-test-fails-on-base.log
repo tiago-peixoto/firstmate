@@ -1,0 +1,7 @@
+# The branch's own regression test, run against the BASE commit (a09090d) with
+# only tests/fm-send-resolve-key.test.sh copied in from the branch.
+$ bash tests/fm-send-resolve-key.test.sh
+ok - fm-send --resolve-key: the answer send itself closes the open decision
+ok - fm-send --resolve-key: the close never re-wakes its own home, later lines still do
+not ok - the first --resolve-key answer was left to re-wake this home
+exit=1

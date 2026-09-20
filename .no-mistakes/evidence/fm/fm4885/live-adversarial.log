@@ -1,0 +1,55 @@
+
+=== A1  a worker line landing BETWEEN two owned answers must still wake
+    status| needs-decision [key=k1]: pick REST or RPC
+    status| needs-decision [key=k2]: pick us-east or eu-west
+    status| working: still building
+    status| resolved [key=k1]: answered: go with REST
+    status| blocked: need staging credentials
+    status| resolved [key=k2]: answered: use eu-west
+    classified-offset=115 file-size=264 ledger=[115	173 207	264 ]
+PASS  the interleaved worker blocker still woke the supervisor
+    drain| 1789900035	4	signal	t1.status	signal: <STATE>/t1.status
+    drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: working: still building
+    drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k1]: answered: go with REST
+    drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: blocked: need staging credentials
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: resolved [key=k2]: answered: use eu-west
+    drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    drain| t1 blocked: need staging credentials
+    drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS  the interleaved worker blocker is presented to the captain
+
+===== RESULT: ADVERSARIAL-PASS =====
+
+=== A2  a rotated status file (new identity, same bytes) must not reuse the ledger
+    status| needs-decision [key=k1]: pick REST or RPC
+    status| needs-decision [key=k2]: pick us-east or eu-west
+    status| working: still building
+    status| resolved [key=k1]: answered: go with REST
+    status| resolved [key=k2]: answered: use eu-west
+    classified-offset=115 file-size=230 ledger=[115	230 ]
+PASS  baseline: the owned answers alone stay quiet
+    rotated the status log onto a new inode, byte-identical content
+    status| needs-decision [key=k1]: pick REST or RPC
+    status| needs-decision [key=k2]: pick us-east or eu-west
+    status| working: still building
+    status| resolved [key=k1]: answered: go with REST
+    status| resolved [key=k2]: answered: use eu-west
+    classified-offset=0 file-size=230 ledger=[115	230 ]
+    (watcher woke with: check: rearm-resurface  - acknowledging and re-checking)
+PASS  the rotated log wakes: the ledger is not replayed against a new identity
+
+===== RESULT: ADVERSARIAL-PASS =====
+
+=== A3  an unreadable status log after owned growth must still wake
+    status| needs-decision [key=k1]: pick REST or RPC
+    status| needs-decision [key=k2]: pick us-east or eu-west
+    status| working: still building
+    status| resolved [key=k1]: answered: go with REST
+    status| resolved [key=k2]: answered: use eu-west
+    classified-offset=115 file-size=230 ledger=[115	230 ]
+PASS  baseline: the owned answers alone stay quiet
+    the status log is now mode 000 (unreadable)
+    (watcher woke with: check: rearm-resurface  - acknowledging and re-checking)
+PASS  the unreadable log surfaces instead of being absorbed as owned
+
+===== RESULT: ADVERSARIAL-PASS =====

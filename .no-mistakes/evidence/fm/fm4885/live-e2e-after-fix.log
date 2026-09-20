@@ -1,0 +1,40 @@
+
+=== S1  worker opens two keyed decisions -> the supervisor is woken
+PASS  watcher surfaced the worker's decisions: signal: <STATE>/t1.status
+--- OPEN DECISIONS as the captain sees them ---
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=k1] needs-decision: pick REST or RPC
+t1 [key=k2] needs-decision: pick us-east or eu-west
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+
+=== S2  the supervisor answers BOTH keys in one handling turn, while the
+
+===     watcher's classification for an unrelated worker note is in flight
+    status| needs-decision [key=k1]: pick REST or RPC
+    status| needs-decision [key=k2]: pick us-east or eu-west
+    status| working: still building
+    status| resolved [key=k1]: answered: go with REST
+    status| resolved [key=k2]: answered: use eu-west
+    classified-offset=115 file-size=230
+    home-appends ledger: v1 ident=strong:33:7869029:2026-09-20 10:22:59.967456724 +0000 115	230 
+
+=== S3  the two answers alone must NOT wake the supervisor again
+PASS  a full watcher poll cycle passed with no wake over this home's own answers
+
+=== S4  a worker-authored line after the answers must still wake
+PASS  watcher surfaced the worker's blocked line: signal: <STATE>/t1.status
+
+=== S5  the answers are still presented to the captain (never hidden)
+    drain| 1789899796	4	signal	t1.status	signal: <STATE>/t1.status
+    drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: working: still building
+    drain| wake annotation: unread wake-EVENT since last drain, not current state: t1.status: resolved [key=k1]: answered: go with REST
+    drain| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: resolved [key=k2]: answered: use eu-west
+PASS  both owned answers still appear in the captain-facing status presentation
+    final| 1789899805	6	signal	t1.status	signal: <STATE>/t1.status
+    final| wake annotation: latest wake-EVENT observed at drain, not current state: t1.status: blocked: need staging credentials
+    final| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    final| t1 blocked: need staging credentials
+    final| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+PASS  the worker's blocked line is presented too
+
+===== RESULT: ALL-SCENARIOS-PASS =====
