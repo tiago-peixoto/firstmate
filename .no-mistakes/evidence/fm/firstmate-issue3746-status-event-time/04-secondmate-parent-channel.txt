@@ -1,0 +1,24 @@
+==================================================================
+10. A secondmate's upward report on the real parent channel
+==================================================================
+Local-route secondmate home "domain-alpha" with route=local, parent_home=<P>.
+
+$ FM_HOME=<mate> bin/fm-secondmate-report.sh done 0123456789abcdef 'audit complete, no findings'
+$ cat <P>/state/domain-alpha.status
+  done [corr=0123456789abcdef] [at=1789880647]: audit complete, no findings (via-helper)
+  done [corr=0123456789abcdef] [at=1789880650]: audit complete, no findings (via-helper)
+
+  (wall clock at the first call: 1789880647)
+
+The retried publication above is an unchanged pre-existing behaviour of this
+helper - it appends directly, and base a452a79 duplicates the same way:
+
+  done [corr=0123456789abcdef]: audit complete, no findings (via-helper)
+  done [corr=0123456789abcdef]: audit complete, no findings (via-helper)
+
+The deduplicating channel path (fm_parent_channel_report -> append_once, now
+keyed on fm-classify-lib.sh's stamp-insensitive retry contract instead of
+grep -Fqx) is driven end-to-end by tests/fm-pr-merge.test.sh:
+
+  ok - a merge a secondmate home performs itself is reported upward exactly once
+  ok - a landed GitLab merge request is reported upward on the same channel

@@ -1,0 +1,99 @@
+Adversarial: a worker mis-spells the stamp (a readable clock time whose colons
+pose as the head/note separator, or the brief's <epoch> placeholder left as-is).
+
+The module's own rule: a worker-written tag must never decide whether a terminal
+event reaches its supervisor, and must never decide whether a captain's decision
+survives. These runs try to break exactly that.
+
+Fixture (identical for every tree below):
+  state/t1.status
+    needs-decision [key=api-shape] [at=1700000000]: REST or gRPC?
+    done [at=17:00] finished the audit
+  state/t2.status
+    needs-decision [at=10:30] which base branch
+
+==================================================================
+3. bin/fm-wake-drain.sh - the captain's OPEN DECISIONS view
+==================================================================
+--- previous branch head ce3b5c2 (stamping shipped, fold not yet unstamped) ---
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t2 needs-decision: needs-decision which base branch
+
+   api-shape is GONE: the colon inside [at=17:00] made a colonless prose line
+   look like a terminal transition and silently closed the captain's decision.
+   t2 is a PHANTOM: the colon inside [at=10:30] made a keyless line look like a
+   declaration, opening a decision no later line could ever close.
+
+--- target 91d9b79 ---
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=api-shape] needs-decision: REST or gRPC?
+
+   The real decision survives; the phantom is gone.
+
+==================================================================
+4. bin/fm-fleet-snapshot.sh - the same two tasks, machine surface
+==================================================================
+--- ce3b5c2 ---
+{"id":"t1","last_event":{"state":"done","note":"done finished the audit","raw":"done [at=17:00] finished the audit","age_seconds":null},"open":[]}
+{"id":"t2","last_event":{"state":"needs-decision","note":"needs-decision which base branch","raw":"needs-decision [at=10:30] which base branch","age_seconds":null},"open":[{"key":"default","verb":"needs-decision","summary":"needs-decision which base branch"}]}
+
+--- target 91d9b79 ---
+{"id":"t1","last_event":{"state":"done","note":"done finished the audit","raw":"done [at=17:00] finished the audit","age_seconds":null},"open":[{"key":"api-shape","verb":"needs-decision","summary":"REST or gRPC?"}]}
+{"id":"t2","last_event":{"state":"needs-decision","note":"needs-decision which base branch","raw":"needs-decision [at=10:30] which base branch","age_seconds":null},"open":[]}
+
+   hints.open_decisions is what the bearings board and fm-send --resolve-key
+   validate against, so the wrong set propagated well past the drain.
+   The raw bytes are preserved verbatim in both; only the reading changed.
+
+==================================================================
+5. Note text: a colon-bearing stamp must not slice up the note.
+==================================================================
+  state/t3.status
+    done [at=2026-09-20T14:03:00Z]: PR https://example.test/pull/1 checks green
+
+--- base a452a79 (before this change) ---
+{"id":"t3","note":"03:00Z]: PR https://example.test/pull/1 checks green","state":"done"}
+
+--- target 91d9b79 ---
+{"id":"t3","note":"PR https://example.test/pull/1 checks green","state":"done","age":null}
+
+   That garbled note was what fm-inactive-reconcile published upward to the
+   parent channel and what status_open_decisions handed the captain as a
+   decision summary.
+
+==================================================================
+6. The terminal event still WAKES supervision (real bin/fm-watch.sh)
+==================================================================
+$ bin/fm-watch.sh &            # FM_POLL=1, crew-state says "working · run-step"
+  state/t1.status: "working: fixture set up, starting the audit"
+  -> baseline: watcher absorbed the working: line and is still supervising
+
+$ echo 'done [at=17:00] finished the audit, PR ready for review' >> state/t1.status
+  -> watcher surfaced and exited:
+     signal: .../state/t1.status
+
+$ bin/fm-wake-drain.sh   (fresh state, one task, the same malformed line)
+   base a452a79   -> STATUS OUTCOME BACKSTOP: t1 done [at=17:00] finished the audit
+   ce3b5c2        -> STATUS OUTCOME BACKSTOP: t1 done [at=17:00] finished the audit
+   target 91d9b79 -> STATUS OUTCOME BACKSTOP: t1 done [at=17:00] finished the audit
+
+   A malformed stamp never hides a terminal outcome from the captain, in any
+   of the three trees.
+
+==================================================================
+7. Upgrade path: a decision cursor folded under the OLD reading
+==================================================================
+$ ce3b5c2 bin/fm-wake-drain.sh        # writes .t1/.t2.open-decisions-cursor (v8)
+OPEN DECISIONS:
+t2 needs-decision: needs-decision which base branch            <- wrong set, now cached
+
+$ ls -A state | grep open-decisions
+.t1.open-decisions-cursor  .t2.open-decisions-cursor
+
+$ 91d9b79 bin/fm-wake-drain.sh        # same state dir, stale cursors still present
+OPEN DECISIONS:
+t1 [key=api-shape] needs-decision: REST or gRPC?               <- correct set
+
+   FM_OPEN_DECISIONS_FOLD_VERSION 8 -> 9 discarded the stale cursors and
+   refolded from byte 0, so an upgraded firstmate does not inherit the wrong
+   answer from its own cache.

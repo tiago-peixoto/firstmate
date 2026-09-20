@@ -1,0 +1,57 @@
+Live validation - "stamp status events with their emission time"
+branch fm/firstmate-issue3746-status-event-time, target 91d9b79, base a452a79
+
+Everything below was produced by running the real firstmate scripts against an
+isolated FM_HOME with a REAL tmux 3.6 server (own socket, own session "fmlive",
+a real interactive bash pane standing in for the worker). No test harness, no
+mocked classifier.
+
+==================================================================
+1. A worker opens a decision from its own pane, stamped as the brief
+   now instructs, and firstmate answers it with fm-send --resolve-key.
+==================================================================
+$ tmux send-keys -t fmlive:fm-t1 -l \
+    'echo "needs-decision [key=api-shape] [at=$(date +%s)]: REST or gRPC for the public surface" >> .../state/t1.status'
+
+$ cat state/t1.status
+needs-decision [key=api-shape] [at=1789880334]: REST or gRPC for the public surface
+                                  (wall clock at that moment: 1789880335)
+
+$ bin/fm-wake-drain.sh            # the captain's wake digest
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=api-shape] needs-decision: REST or gRPC for the public surface
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+      -> the stamp is read through: the key is api-shape, the note is clean.
+
+$ bin/fm-send.sh t1 --resolve-key api-shape 'go with REST; gRPC stays internal'
+
+$ cat state/t1.status
+needs-decision [key=api-shape] [at=1789880334]: REST or gRPC for the public surface
+resolved [key=api-shape] [at=1789880376]: answered: go with REST; gRPC stays internal
+                                  (wall clock at that moment: 1789880377)
+      -> firstmate's own close carries its real emission time.
+
+$ bin/fm-wake-drain.sh
+(no OPEN DECISIONS section)       -> the stamped close still closes the key.
+
+==================================================================
+2. Emission time, not file mtime, is what the captain reads.
+==================================================================
+A worker follows the brief literally from its pane:
+$ echo "done [at=$(date +%s)]: PR https://example.test/pull/42 checks green" >> state/t7.status
+$ cat state/t7.status
+done [at=1789880599]: PR https://example.test/pull/42 checks green
+
+...10 seconds later, bin/fm-fleet-snapshot.sh:
+{"state":"done","note":"PR https://example.test/pull/42 checks green",
+ "raw":"done [at=1789880599]: PR https://example.test/pull/42 checks green",
+ "age_seconds":10}
+
+Same file, stamp left as the brief's unsubstituted placeholder:
+{"state":"done","note":"PR https://example.test/pull/42 checks green",
+ "raw":"done [at=<epoch>]: PR https://example.test/pull/42 checks green",
+ "age_seconds":null}
+      -> unknown stays honestly unknown; age is never inferred from mtime
+         (the age-125 run below used a file written one second earlier):
+{"state":"done","note":"green CI, PR ready for review",
+ "raw":"done [at=1789880369]: green CI, PR ready for review","age_seconds":125}
