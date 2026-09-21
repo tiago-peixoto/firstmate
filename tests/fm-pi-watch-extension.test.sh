@@ -105,13 +105,15 @@ fm_test_pi_extension_version() {
 }
 
 load_pi_extensions_as_child() {
-  local repo=$1 home=$2
+  local repo=$1 home=$2 claim_lock=${3:-}
   WATCH_PLUGIN="$repo/.pi/extensions/fm-primary-pi-watch.ts" \
   TURNEND_PLUGIN="$repo/.pi/extensions/fm-primary-turnend-guard.ts" \
-  FM_HOME="$home" FM_ROOT_OVERRIDE="$repo" \
+  FM_HOME="$home" FM_ROOT_OVERRIDE="$repo" CLAIM_LOCK="$claim_lock" \
     node --input-type=module <<'EOF'
+import { writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
+if (process.env.CLAIM_LOCK) writeFileSync(`${process.env.FM_HOME}/state/.lock`, `${process.pid}\n`);
 const pi = {
   on() {},
   registerCommand() {},
@@ -4277,6 +4279,26 @@ test_pi_mark_loaded_claims_free_or_dead_lock() {
   pass "free or dead lock still produces a marker for the loading process"
 }
 
+test_pi_mark_loaded_binds_live_lock_naming_this_process() {
+  local repo home status lock_pid
+  repo="$TMP_ROOT/pi-self-lock-root"
+  home="$TMP_ROOT/pi-self-lock-home"
+  mkdir -p "$repo/bin" "$home/state" "$home/config"
+  install_pi_watch_extension_fixture "$repo"
+  install_pi_turnend_extension_fixture "$repo"
+  load_pi_extensions_as_child "$repo" "$home" 1
+  status=$?
+  expect_code 0 "$status" "self-lock marker write must not fail"
+  lock_pid=$(cat "$home/state/.lock")
+  [ -n "$lock_pid" ] && [ "$lock_pid" != "$$" ] \
+    || fail "loading process did not claim the lock"
+  [ "$(sed -n '2p' "$home/state/.pi-watch-extension-loaded")" = "$lock_pid" ] \
+    || fail "live lock naming the loading process did not bind the watch marker"
+  [ "$(sed -n '2p' "$home/state/.pi-turnend-extension-loaded")" = "$lock_pid" ] \
+    || fail "live lock naming the loading process did not bind the turn-end marker"
+  pass "live lock naming the loading process still binds both markers"
+}
+
 test_pi_extension_reports_external_healthy_watcher
 test_pi_tool_returns_agent_tool_result
 test_pi_redundant_tool_call_is_owned_noop
@@ -4328,3 +4350,4 @@ test_opencode_watch_arm_coordinates_with_turnend_guard
 test_opencode_healthy_arm_output_does_not_suppress_guard
 test_pi_nested_cli_does_not_replace_live_binding
 test_pi_mark_loaded_claims_free_or_dead_lock
+test_pi_mark_loaded_binds_live_lock_naming_this_process
