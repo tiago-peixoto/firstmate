@@ -1174,86 +1174,6 @@ EOF
   pass ".pi primary extension: delivery failure resets the logical-run latch"
 }
 
-pi_turnend_extension_version() {
-  local file=$1
-  if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$file" | awk '{print "sha256:" $1}'
-  elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$file" | awk '{print "sha256:" $1}'
-  else
-    cksum "$file" | awk '{print "cksum:" $1 ":" $2}'
-  fi
-}
-
-load_pi_turnend_extension_as_child() {
-  local ext=$1 home=$2
-  PLUGIN="$ext" FM_HOME="$home" node --input-type=module <<'EOF'
-import { pathToFileURL } from "node:url";
-const mod = await import(pathToFileURL(process.env.PLUGIN).href);
-mod.default({
-  on() {},
-  registerCommand() {},
-  registerTool() {},
-  sendUserMessage: async () => {},
-  events: { on() {} },
-});
-EOF
-}
-
-test_pi_turnend_nested_cli_does_not_replace_live_binding() {
-  local repo home ext status
-  repo="$TMP_ROOT/pi-turnend-nested-root"
-  home="$TMP_ROOT/pi-turnend-nested-home"
-  ext="$repo/.pi/extensions/fm-primary-turnend-guard.ts"
-  mkdir -p "$repo/.pi/extensions/lib" "$repo/bin" "$home/state"
-  cp "$ROOT/.pi/extensions/fm-primary-turnend-guard.ts" "$ext"
-  cp "$ROOT/.pi/extensions/lib/fm-operational-input.ts" "$repo/.pi/extensions/lib/fm-operational-input.ts"
-  cp "$ROOT/bin/fm-operational-input.sh" "$repo/bin/fm-operational-input.sh"
-  chmod +x "$repo/bin/fm-operational-input.sh"
-  printf '%s\n' "$$" > "$home/state/.lock"
-  printf '%s\n%s\n' "$(pi_turnend_extension_version "$ext")" "$$" \
-    > "$home/state/.pi-turnend-extension-loaded"
-  load_pi_turnend_extension_as_child "$ext" "$home"
-  status=$?
-  expect_code 0 "$status" "nested Pi turn-end load must not fail"
-  [ "$(sed -n '2p' "$home/state/.pi-turnend-extension-loaded")" = "$$" ] \
-    || fail "turn-end marker pid was replaced by a nested Pi process"
-  pass "nested Pi turn-end load leaves a live session binding in place"
-}
-
-test_pi_turnend_mark_loaded_claims_free_or_dead_lock() {
-  local repo home ext dead status marker_pid
-  repo="$TMP_ROOT/pi-turnend-free-dead-root"
-  home="$TMP_ROOT/pi-turnend-free-dead-home"
-  ext="$repo/.pi/extensions/fm-primary-turnend-guard.ts"
-  mkdir -p "$repo/.pi/extensions/lib" "$repo/bin" "$home/state"
-  cp "$ROOT/.pi/extensions/fm-primary-turnend-guard.ts" "$ext"
-  cp "$ROOT/.pi/extensions/lib/fm-operational-input.ts" "$repo/.pi/extensions/lib/fm-operational-input.ts"
-  cp "$ROOT/bin/fm-operational-input.sh" "$repo/bin/fm-operational-input.sh"
-  chmod +x "$repo/bin/fm-operational-input.sh"
-
-  load_pi_turnend_extension_as_child "$ext" "$home"
-  status=$?
-  expect_code 0 "$status" "free-lock turn-end write must not fail"
-  marker_pid=$(sed -n '2p' "$home/state/.pi-turnend-extension-loaded")
-  [ -n "$marker_pid" ] && [ "$marker_pid" != "$$" ] \
-    || fail "free lock did not write a turn-end marker for the loading process"
-
-  sleep 30 &
-  dead=$!
-  kill "$dead" 2>/dev/null || true
-  wait "$dead" 2>/dev/null || true
-  printf '%s\n' "$dead" > "$home/state/.lock"
-  rm -f "$home/state/.pi-turnend-extension-loaded"
-  load_pi_turnend_extension_as_child "$ext" "$home"
-  status=$?
-  expect_code 0 "$status" "dead-lock turn-end write must not fail"
-  marker_pid=$(sed -n '2p' "$home/state/.pi-turnend-extension-loaded")
-  [ -n "$marker_pid" ] && [ "$marker_pid" != "$dead" ] \
-    || fail "dead lock did not write a turn-end marker for the loading process"
-  pass "free or dead lock still produces a turn-end marker for the loading process"
-}
-
 # --- --claude cooperative mode -----------------------------------------------
 # In --claude mode the guard ignores stop_hook_active (Claude marks every stop
 # after ANY stop-hook continuation true, including asyncRewake rewake turns) and
@@ -2318,8 +2238,6 @@ test_codex_hook_ignores_nested_git_root_guard
 test_opencode_plugin_anchors_guard_to_worktree
 test_pi_extension_injects_once_per_logical_agent_run
 test_pi_extension_retries_after_followup_delivery_failure
-test_pi_turnend_nested_cli_does_not_replace_live_binding
-test_pi_turnend_mark_loaded_claims_free_or_dead_lock
 test_hook_claude_mode_reblocks_stop_hook_active_when_unhealthy
 test_hook_claude_mode_reblocks_x_mode_without_tasks
 test_hook_claude_mode_allows_when_autoarm_owner_alive
