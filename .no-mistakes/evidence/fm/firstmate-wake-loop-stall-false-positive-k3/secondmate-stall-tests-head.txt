@@ -1,0 +1,9 @@
+ok - foreign secondmate queue alerts once per no-progress episode without age-only or cascade noise
+ok - declared external-wait pause rows do not feed secondmate wake-loop escalation
+ok - a reprovisioned queue generation starts a fresh no-progress interval
+ok - an active turn defers the secondmate stall escalation without cancelling it
+ok - a long-lived mate mid-turn is not a stall, but a queue frozen past the busy bound still alarms
+ok - a proven-idle leftover row is rung so the child home can drain without a parent alarm
+ok - busy panes defer without a ring and unknown panes keep the parent alarm
+ok - a leftover row that survives a proven-idle ring still surfaces as a genuine stall
+ok - secondmate stall markers reject symlinks without touching their targets

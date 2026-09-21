@@ -1,0 +1,18 @@
+(scenario label: busy - armed busy contract with launch record state=busy, no stop event)
+pane_current_command=bash
+checkpoint pass1 rc=124
+--- watcher output pass1:
+checkpoint: no actionable wake within 12s
+--- parent wake queue:
+(none)
+--- child wake queue now:
+100	7	check	routed	check: routed row
+(eof)
+child queue byte-identical to before
+--- ring marker: none
+--- inbox records:
+--- text the agent received in its pane:
+(nothing typed)
+--- pane capture:
+pi (stand-in) - model kimi-coding/k3 - idle
+--- busy record: v1 gen=... seq=1 state=busy source=fm-spawn event=launch-brief

@@ -1,0 +1,26 @@
+pane_current_command=bash
+checkpoint pass1 rc=0
+--- watcher output pass1:
+check: secondmate wake-loop stalled: mate=mate row=7 idle=4s
+checkpoint pass2 rc=0
+--- watcher output pass2:
+check: rearm-resurface
+--- parent wake queue:
+1790030924	1	check	secondmate-wake-loop-mate-100-7	check: secondmate wake-loop stalled: mate=mate row=7 idle=4s
+--- child wake queue now:
+100	7	check	routed	check: routed row
+(eof)
+child queue byte-identical to before
+--- ring marker: 100-7
+--- inbox records:
+# /tmp/fmlive-ignores/state/mate.inbox/001.msg
+schema=fm-task-inbox.v1$
+at=2026-09-21T22:48:41Z$
+delivery=fire-and-forget$
+--$
+[fm-from-firstmate]M-bM-^AM-#delivery=ff9045615f1883dc Drain pending rows in this home's wake queue, then resume idle supervision.--- text the agent received in its pane:
+: Firstmate instruction waiting: list '/tmp/fmlive-ignores/state/mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fmlive-ignores/state/mate.inbox'/handled/.
+--- pane capture:
+pi (stand-in) - model kimi-coding/k3 - idle
+: Firstmate instruction waiting: list '/tmp/fmlive-ignores/state/mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/t
+mp/fmlive-ignores/state/mate.inbox'/handled/.

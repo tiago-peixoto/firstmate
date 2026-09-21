@@ -1,0 +1,23 @@
+pane_current_command=bash
+checkpoint pass1 rc=124
+--- watcher output pass1:
+checkpoint: no actionable wake within 12s
+--- parent wake queue:
+(none)
+--- child wake queue now:
+(eof)
+child queue changed
+--- ring marker: none
+--- inbox records:
+# /tmp/fmlive-drains/state/mate.inbox/001.msg
+schema=fm-task-inbox.v1$
+at=2026-09-21T22:48:23Z$
+delivery=fire-and-forget$
+--$
+[fm-from-firstmate]M-bM-^AM-#delivery=d63464604bc1bd0e Drain pending rows in this home's wake queue, then resume idle supervision.--- text the agent received in its pane:
+: Firstmate instruction waiting: list '/tmp/fmlive-drains/state/mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fmlive-drains/state/mate.inbox'/handled/.
+--- pane capture:
+pi (stand-in) - model kimi-coding/k3 - idle
+: Firstmate instruction waiting: list '/tmp/fmlive-drains/state/mate.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tm
+p/fmlive-drains/state/mate.inbox'/handled/.
+drained wake queue

@@ -1,0 +1,17 @@
+pane_current_command=bash
+checkpoint pass1 rc=0
+--- watcher output pass1:
+check: secondmate wake-loop stalled: mate=mate row=7 idle=3s
+--- parent wake queue:
+1790030974	1	check	secondmate-wake-loop-mate-100-7	check: secondmate wake-loop stalled: mate=mate row=7 idle=3s
+--- child wake queue now:
+100	7	check	routed	check: routed row
+(eof)
+child queue byte-identical to before
+--- ring marker: none
+--- inbox records:
+--- text the agent received in its pane:
+(nothing typed)
+--- pane capture:
+pi (stand-in) - model kimi-coding/k3 - idle
+--- busy record: v1 gen=g1790030969.3990943.28249 seq=2 state=idle source=pi-ext event=agent_settled ts=1790030969
