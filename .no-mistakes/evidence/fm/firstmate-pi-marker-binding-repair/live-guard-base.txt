@@ -1,0 +1,4 @@
+# tests/fm-pi-nested-probe-marker-live-e2e.test.sh run against base 09dc7b39 extensions (Pi 0.86.1)
+ok - pi --help still loads project extensions onto a free lock
+not ok - pi --help replaced a live watch binding (Pi 0.86.1)
+exit=1
