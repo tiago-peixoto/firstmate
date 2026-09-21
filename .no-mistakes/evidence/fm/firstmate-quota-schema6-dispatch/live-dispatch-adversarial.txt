@@ -1,0 +1,42 @@
+$ quota-axi resolved to: /tmp/tmp.jkTFvoOrM2/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/adv-schema4.json)
+dispatch-resolve: error (quota-axi --json returned an invalid snapshot)
+dispatch-resolve:
+  status: error
+  reason: quota-axi --json returned an invalid snapshot
+exit=0
+$ quota-axi resolved to: /tmp/tmp.lyHyNn27hJ/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/adv-schema7.json)
+dispatch-resolve: error (quota-axi --json returned an invalid snapshot)
+dispatch-resolve:
+  status: error
+  reason: quota-axi --json returned an invalid snapshot
+exit=0
+$ quota-axi resolved to: /tmp/tmp.0IhfsUdDmV/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/adv-schema6-dup.json)
+dispatch-resolve: error (quota-axi --json returned an invalid snapshot)
+dispatch-resolve:
+  status: error
+  reason: quota-axi --json returned an invalid snapshot
+exit=0
+$ quota-axi resolved to: /tmp/tmp.xrpHawIwU5/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/adv-schema5-dup.json)
+dispatch-resolve: error (quota-axi --json returned an invalid snapshot)
+dispatch-resolve:
+  status: error
+  reason: quota-axi --json returned an invalid snapshot
+exit=0
+$ quota-axi resolved to: /tmp/tmp.lmUPZZGFmg/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/adv-schema6-keyless.json)
+dispatch-resolve: error (quota-axi --json returned an invalid snapshot)
+dispatch-resolve:
+  status: error
+  reason: quota-axi --json returned an invalid snapshot
+exit=0
+$ quota-axi resolved to: /tmp/tmp.3daKEjbQkS/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/adv-schema6-string.json)
+dispatch-resolve: error (quota-axi --json returned an invalid snapshot)
+dispatch-resolve:
+  status: error
+  reason: quota-axi --json returned an invalid snapshot
+exit=0

@@ -1,0 +1,632 @@
+{
+  "generatedAt": "2026-09-21T22:05:22.190Z",
+  "schemaVersion": "6",
+  "providers": [
+    {
+      "provider": "claude",
+      "plan": "max",
+      "windows": [
+        {
+          "id": "five_hour",
+          "label": "session",
+          "kind": "session",
+          "resetsAt": "2026-09-22T00:00:00.339609+00:00",
+          "percentRemaining": 89,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 50.7881,
+            "burnMultiple": 0.178
+          }
+        },
+        {
+          "id": "seven_day",
+          "label": "week",
+          "kind": "weekly",
+          "resetsAt": "2026-09-23T17:00:00.339633+00:00",
+          "percentRemaining": 35,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 9.458,
+            "burnMultiple": 0.873
+          }
+        },
+        {
+          "id": "model:fable",
+          "label": "Fable week",
+          "kind": "model",
+          "resetsAt": "2026-09-23T17:00:00.339864+00:00",
+          "percentRemaining": 86,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 60.458,
+            "burnMultiple": 0.188
+          }
+        }
+      ],
+      "state": {
+        "status": "fresh",
+        "stale": false
+      },
+      "quotaSemantics": {
+        "status": "known",
+        "effectiveAvailability": [
+          {
+            "scope": "all_models",
+            "status": "known",
+            "effectivePercentRemaining": 35,
+            "boundedBy": [
+              "five_hour",
+              "seven_day"
+            ],
+            "limitingWindowIds": [
+              "seven_day"
+            ],
+            "pace": {
+              "status": "behind",
+              "worstReservePercentPoints": 9.458,
+              "worstReserveWindowId": "seven_day"
+            },
+            "runway": {
+              "status": "through_reset",
+              "projectionConfidence": "established"
+            },
+            "selection": {
+              "status": "known",
+              "spendPriority": 0.5451
+            }
+          },
+          {
+            "scope": "model:fable",
+            "status": "known",
+            "effectivePercentRemaining": 35,
+            "boundedBy": [
+              "five_hour",
+              "seven_day",
+              "model:fable"
+            ],
+            "limitingWindowIds": [
+              "seven_day"
+            ],
+            "pace": {
+              "status": "behind",
+              "worstReservePercentPoints": 9.458,
+              "worstReserveWindowId": "seven_day"
+            },
+            "runway": {
+              "status": "through_reset",
+              "projectionConfidence": "established"
+            },
+            "selection": {
+              "status": "known",
+              "spendPriority": 1.8427
+            }
+          }
+        ]
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "codex",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "Codex sign-in required"
+      },
+      "accountKey": "openai-codex",
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "codex",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "Codex sign-in required"
+      },
+      "accountKey": "openai-codex-work",
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "cursor",
+      "plan": "Ultra",
+      "windows": [
+        {
+          "id": "included_usage",
+          "label": "included usage",
+          "kind": "monthly",
+          "resetsAt": "2026-10-11T14:33:52.000Z",
+          "percentRemaining": 80,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 14.3785,
+            "burnMultiple": 0.5818
+          }
+        },
+        {
+          "id": "auto_usage",
+          "label": "auto usage",
+          "kind": "monthly",
+          "resetsAt": "2026-10-11T14:33:52.000Z",
+          "percentRemaining": 79,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 13.3785,
+            "burnMultiple": 0.6108
+          }
+        },
+        {
+          "id": "api_usage",
+          "label": "API usage",
+          "kind": "monthly",
+          "resetsAt": "2026-10-11T14:33:52.000Z",
+          "percentRemaining": 86,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 20.3785,
+            "burnMultiple": 0.4072
+          }
+        },
+        {
+          "id": "grok_bot",
+          "label": "Grok Bot",
+          "kind": "weekly",
+          "resetsAt": "2026-09-23T20:54:25.780Z",
+          "percentRemaining": 83,
+          "pace": {
+            "status": "behind",
+            "reservePercentPoints": 55.1323,
+            "burnMultiple": 0.2357
+          }
+        }
+      ],
+      "state": {
+        "status": "fresh",
+        "stale": false
+      },
+      "quotaSemantics": {
+        "status": "known",
+        "effectiveAvailability": [
+          {
+            "scope": "all_models",
+            "status": "known",
+            "effectivePercentRemaining": 79,
+            "boundedBy": [
+              "included_usage",
+              "auto_usage",
+              "api_usage"
+            ],
+            "limitingWindowIds": [
+              "auto_usage"
+            ],
+            "pace": {
+              "status": "behind",
+              "worstReservePercentPoints": 13.3785,
+              "worstReserveWindowId": "auto_usage"
+            },
+            "runway": {
+              "status": "through_reset",
+              "projectionConfidence": "established"
+            },
+            "selection": {
+              "status": "known",
+              "spendPriority": 0.7112
+            }
+          },
+          {
+            "scope": "grok_bot",
+            "status": "known",
+            "effectivePercentRemaining": 83,
+            "boundedBy": [
+              "grok_bot"
+            ],
+            "limitingWindowIds": [
+              "grok_bot"
+            ],
+            "pace": {
+              "status": "behind",
+              "worstReservePercentPoints": 55.1323,
+              "worstReserveWindowId": "grok_bot"
+            },
+            "runway": {
+              "status": "through_reset",
+              "projectionConfidence": "established"
+            },
+            "selection": {
+              "status": "known",
+              "spendPriority": 2.7427
+            }
+          }
+        ]
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "copilot",
+      "plan": "individual",
+      "windows": [
+        {
+          "id": "chat",
+          "label": "chat",
+          "kind": "monthly",
+          "percentRemaining": 100,
+          "resetsAt": "2026-10-01T00:00:00.000Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "missing_cycle"
+          }
+        },
+        {
+          "id": "completions",
+          "label": "completions",
+          "kind": "monthly",
+          "percentRemaining": 100,
+          "resetsAt": "2026-10-01T00:00:00.000Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "missing_cycle"
+          }
+        },
+        {
+          "id": "premium_interactions",
+          "label": "premium interactions",
+          "kind": "monthly",
+          "percentRemaining": 0,
+          "resetsAt": "2026-10-01T00:00:00.000Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "missing_cycle"
+          }
+        }
+      ],
+      "state": {
+        "status": "fresh",
+        "stale": false
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [],
+        "unresolvedWindowIds": [
+          "chat",
+          "completions",
+          "premium_interactions"
+        ]
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "grok",
+      "windows": [
+        {
+          "id": "credits",
+          "label": "credits",
+          "kind": "credits",
+          "percentRemaining": 6,
+          "resetsAt": "2026-09-25T19:29:09.000Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "stale"
+          }
+        },
+        {
+          "id": "product:grok_build",
+          "label": "Grok Build",
+          "kind": "credits",
+          "percentRemaining": 6,
+          "resetsAt": "2026-09-25T19:29:09.000Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "stale"
+          }
+        }
+      ],
+      "state": {
+        "status": "stale",
+        "stale": true,
+        "error": "Grok sign-in required",
+        "authStatus": "unusable"
+      },
+      "credits": {
+        "remaining": 0,
+        "unit": "credits"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [
+          {
+            "scope": "all_products",
+            "status": "unknown",
+            "boundedBy": [
+              "credits"
+            ],
+            "runway": {
+              "status": "unknown",
+              "unmeasurableWindowIds": [
+                "credits"
+              ]
+            },
+            "selection": {
+              "status": "unknown",
+              "unmeasurableWindowIds": [
+                "credits"
+              ]
+            },
+            "pace": {
+              "status": "unknown",
+              "unknownWindowIds": [
+                "credits"
+              ]
+            }
+          },
+          {
+            "scope": "product:grok_build",
+            "status": "unknown",
+            "boundedBy": [
+              "credits",
+              "product:grok_build"
+            ],
+            "runway": {
+              "status": "unknown",
+              "unmeasurableWindowIds": [
+                "credits",
+                "product:grok_build"
+              ]
+            },
+            "selection": {
+              "status": "unknown",
+              "unmeasurableWindowIds": [
+                "credits",
+                "product:grok_build"
+              ]
+            },
+            "pace": {
+              "status": "unknown",
+              "unknownWindowIds": [
+                "credits",
+                "product:grok_build"
+              ]
+            }
+          }
+        ]
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "kimi",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "kimi_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "zai",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "zai_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "agy",
+      "windows": [],
+      "state": {
+        "status": "unavailable",
+        "stale": false,
+        "error": "Antigravity/agy is not running"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "alibaba",
+      "windows": [],
+      "state": {
+        "status": "unavailable",
+        "stale": false,
+        "error": "bl_cli_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "opencode-go",
+      "plan": "OpenCode Go",
+      "windows": [
+        {
+          "id": "rolling",
+          "label": "rolling",
+          "kind": "unknown",
+          "percentRemaining": 3,
+          "resetsAt": "2026-09-22T00:46:52.707Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "missing_cycle"
+          }
+        },
+        {
+          "id": "weekly",
+          "label": "weekly",
+          "kind": "weekly",
+          "percentRemaining": 48,
+          "resetsAt": "2026-09-28T00:00:00.000Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "missing_cycle"
+          }
+        },
+        {
+          "id": "monthly",
+          "label": "monthly",
+          "kind": "monthly",
+          "percentRemaining": 23,
+          "resetsAt": "2026-10-06T22:25:15.000Z",
+          "pace": {
+            "status": "unknown",
+            "reason": "missing_cycle"
+          }
+        }
+      ],
+      "state": {
+        "status": "fresh",
+        "stale": false
+      },
+      "quotaSemantics": {
+        "status": "known",
+        "effectiveAvailability": [
+          {
+            "scope": "all_models",
+            "status": "known",
+            "effectivePercentRemaining": 3,
+            "boundedBy": [
+              "rolling",
+              "weekly",
+              "monthly"
+            ],
+            "limitingWindowIds": [
+              "rolling"
+            ],
+            "pace": {
+              "status": "unknown",
+              "unknownWindowIds": [
+                "rolling",
+                "weekly",
+                "monthly"
+              ]
+            },
+            "runway": {
+              "status": "unknown",
+              "unmeasurableWindowIds": [
+                "rolling",
+                "weekly",
+                "monthly"
+              ]
+            },
+            "selection": {
+              "status": "unknown",
+              "unmeasurableWindowIds": [
+                "rolling",
+                "weekly",
+                "monthly"
+              ]
+            }
+          }
+        ]
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "commandcode",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "commandcode_sign_in_required",
+        "authStatus": "unusable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "minimax",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "minimax_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "mimo",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "mimo_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [],
+        "unresolvedWindowIds": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "deepseek",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "deepseek_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [],
+        "unresolvedWindowIds": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "openrouter",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "openrouter_credential_unavailable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": [],
+        "unresolvedWindowIds": []
+      },
+      "accountKey": "default"
+    },
+    {
+      "provider": "elevenlabs",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "elevenlabs_credential_unavailable",
+        "authStatus": "unusable"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      },
+      "accountKey": "default"
+    }
+  ]
+}

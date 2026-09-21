@@ -1,0 +1,25 @@
+## control: exact live schema-6 bytes, current branch
+$ quota-axi resolved to: /tmp/tmp.SmIHE5v4ox/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/live-schema6-full-snapshot.json)
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 14   tokens: 1/1
+  rule: rule_1 (Research work across providers.)   confidence: 0.95
+  probabilities: rule_1=0.97 default=0.03
+  note: rule matched
+  note: 2 eligible candidate(s) unranked (codex)
+  candidate: pi:openai-codex-work/gpt-5.6-terra  provider=codex  -> eligible, unranked: provider codex unmeasured (unknown): disclosed uncertainty
+  candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex unmeasured (unknown): disclosed uncertainty
+  candidate: claude:opus  provider=claude  scope=all_models  remaining=35%  spendPriority=0.5451  runway=through_reset  -> eligible
+  candidate: cursor:cursor-grok-4.6-high  provider=cursor  scope=all_models  remaining=79%  spendPriority=0.7112  runway=through_reset  -> eligible
+  profile: --harness 'cursor' --model 'cursor-grok-4.6-high'
+exit=0
+
+## repro: same live schema-6 bytes, pre-fix bin/ from 259a669^
+$ quota-axi resolved to: /tmp/tmp.VBD77YvnQT/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=replay:/home/firstmate/.no-mistakes/evidence/01M32ZV3AQ7WXJRNVKW2MNFGAZ/live-schema6-full-snapshot.json)
+dispatch-resolve: error (quota-axi --json returned an invalid snapshot)
+dispatch-resolve:
+  status: error
+  reason: quota-axi --json returned an invalid snapshot
+exit=0

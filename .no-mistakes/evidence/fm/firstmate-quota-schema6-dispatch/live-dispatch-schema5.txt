@@ -1,0 +1,14 @@
+$ quota-axi resolved to: /home/firstmate/.local/bin/quota-axi
+$ fm-dispatch-resolve.sh brief.md   (mode=schema5)
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 13   tokens: 1/1
+  rule: rule_1 (Research work across providers.)   confidence: 0.95
+  probabilities: rule_1=0.97 default=0.03
+  note: rule matched
+  candidate: pi:openai-codex-work/gpt-5.6-terra  provider=codex  scope=all_models  remaining=60%  spendPriority=-0.462  runway=projected_exhaustion  -> eligible
+  candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=60%  spendPriority=-0.462  runway=projected_exhaustion  -> eligible
+  candidate: claude:opus  provider=claude  scope=all_models  remaining=35%  spendPriority=0.5458  runway=through_reset  -> eligible
+  candidate: cursor:cursor-grok-4.6-high  provider=cursor  scope=all_models  remaining=79%  spendPriority=0.7113  runway=through_reset  -> eligible
+  profile: --harness 'cursor' --model 'cursor-grok-4.6-high'
+exit=0
