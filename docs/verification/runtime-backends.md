@@ -2179,7 +2179,7 @@ FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3164
 ```
 
 The first line is the non-vacuous vendor pin: on this Pi, `--help` still auto-loads trusted project extensions.
-`tests/fm-pi-watch-extension.test.sh` and `tests/fm-turnend-guard.test.sh` pin the same writer rule with a stubbed Node child and no harness.
+`tests/fm-pi-watch-extension.test.sh` pins the same writer rule with a stubbed Node child and no harness, checking both the watch marker and the turn-end marker.
 Refresh the live guard after a Pi upgrade, and fail naming the installed version if `--help` stops loading project extensions.
 
 ## Oh My Pi (omp)
