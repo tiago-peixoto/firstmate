@@ -1,0 +1,194 @@
+$ FM_HOME=<scratch> bin/fm-pipeline-spend.sh record upstream-4238-pipeline-spend-records   # real treehouse task copy, real no-mistakes v1.75.2 state DB
+recorded upstream-4238-pipeline-spend-records s1790107764.3842811.13059
+exit=0
+$ (repeat - idempotent per incarnation)
+already recorded upstream-4238-pipeline-spend-records s1790107764.3842811.13059
+exit=0
+$ wc -l data/pipeline-spend.jsonl
+1
+$ jq . data/pipeline-spend.jsonl
+{
+  "task": "upstream-4238-pipeline-spend-records",
+  "spawn_gen": "s1790107764.3842811.13059",
+  "recorded_at": "2026-09-22T23:29:46Z",
+  "source": "no-mistakes-state",
+  "reason": null,
+  "repo": "/home/firstmate/homes/opensourcerer-vps/projects/firstmate",
+  "branch": "fm/upstream-4238-pipeline-spend-records",
+  "since": "2026-09-22T14:30:19Z",
+  "total": {
+    "invocations": 7,
+    "exit": {
+      "ok": 7
+    },
+    "duration_ms": 857001,
+    "input_tokens": {
+      "total": 228,
+      "unknown": 0
+    },
+    "output_tokens": {
+      "total": 1206,
+      "unknown": 0
+    },
+    "cache_read_tokens": {
+      "total": 5649298,
+      "unknown": 0
+    },
+    "cache_creation_tokens": {
+      "total": 502296,
+      "unknown": 0
+    }
+  },
+  "runs": [
+    {
+      "id": "01M34TS7X211NZT06FA742BKV9",
+      "status": "failed",
+      "created_at": "2026-09-22T15:12:08Z",
+      "invocations": 6,
+      "exit": {
+        "ok": 6
+      },
+      "duration_ms": 797303,
+      "input_tokens": {
+        "total": 196,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 1074,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 4894896,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 429232,
+        "unknown": 0
+      }
+    },
+    {
+      "id": "01M35Q5QZNA2MMEK7CJWP888SJ",
+      "status": "running",
+      "created_at": "2026-09-22T23:28:18Z",
+      "invocations": 1,
+      "exit": {
+        "ok": 1
+      },
+      "duration_ms": 59698,
+      "input_tokens": {
+        "total": 32,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 132,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 754402,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 73064,
+        "unknown": 0
+      }
+    }
+  ],
+  "purposes": [
+    {
+      "purpose": "document",
+      "invocations": 1,
+      "exit": {
+        "ok": 1
+      },
+      "duration_ms": 23738,
+      "input_tokens": {
+        "total": 24,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 186,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 478579,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 49465,
+        "unknown": 0
+      }
+    },
+    {
+      "purpose": "review",
+      "invocations": 3,
+      "exit": {
+        "ok": 3
+      },
+      "duration_ms": 216805,
+      "input_tokens": {
+        "total": 116,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 495,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 3166043,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 251476,
+        "unknown": 0
+      }
+    },
+    {
+      "purpose": "review-fix",
+      "invocations": 1,
+      "exit": {
+        "ok": 1
+      },
+      "duration_ms": 68365,
+      "input_tokens": {
+        "total": 32,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 197,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 794507,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 69422,
+        "unknown": 0
+      }
+    },
+    {
+      "purpose": "test",
+      "invocations": 2,
+      "exit": {
+        "ok": 2
+      },
+      "duration_ms": 548093,
+      "input_tokens": {
+        "total": 56,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 328,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 1210169,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 131933,
+        "unknown": 0
+      }
+    }
+  ]
+}

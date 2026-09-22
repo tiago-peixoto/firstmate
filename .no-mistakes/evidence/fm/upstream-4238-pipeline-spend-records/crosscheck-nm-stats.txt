@@ -1,0 +1,29 @@
+$ no-mistakes stats --run 01M34TS7X211NZT06FA742BKV9
+[33mA new version of no-mistakes is available: v1.75.2 -> v1.79.0
+Run "no-mistakes update" to update[0m
+run 01M34TS7X211NZT06FA742BKV9 (failed), parked at gates 6m51.5s total
+"-" means the field was not reported for that invocation (unknown), which is distinct from a recorded 0.
+
+STEP      ROUND  PURPOSE     AGENT   MODEL          SESSION  KEY               DURATION  MODEL  SUBPROC  RT  TOOLS (w/t/e/r/g/o)  FIND  WORK (f/l)  FALLBACK  EXIT
+review    1      review      claude  claude-opus-5  cold     d381c44143bda54d  1m50.3s   -      -        -   -                    4     9/733       -         ok
+review    2      review-fix  claude  claude-opus-5  started  360026616ba815d7  1m8.4s    -      -        -   -                    -     9/733       -         ok
+review    2      review      claude  claude-opus-5  cold     416f1b059c045363  46.8s     -      -        -   -                    0     9/733       -         ok
+test      1      test        claude  claude-opus-5  cold     5d3bcacc4dd8953e  8m47.8s   -      -        -   -                    0     -           -         ok
+test      1      test        claude  claude-opus-5  cold     ef038d03dedc63a0  20.3s     -      -        -   -                    0     -           -         ok
+document  1      document    claude  claude-opus-5  cold     82296e8f07ff0c1a  23.7s     -      -        -   -                    0     -           -         ok
+
+STEP      ROUND  PURPOSE     SESSION  Δ IN (round)  Δ OUT  Δ CACHE RD  IN (raw)  OUT (raw)  CACHE RD (raw)  CACHE WR  FRESH IN  REASON
+review    1      review      cold     56            248    1651491     56        248        1651491         84710     0         -
+review    2      review-fix  started  32            197    794507      32        197        794507          69422     0         -
+review    2      review      cold     28            115    760150      28        115        760150          93702     0         -
+test      1      test        cold     52            322    1184497     52        322        1184497         91871     0         -
+test      1      test        cold     4             6      25672       4         6          25672           40062     0         -
+document  1      document    cold     24            186    478579      24        186        478579          49465     0         -
+$ sqlite (ro): per-invocation rows for run 01M34TS7X211NZT06FA742BKV9
+['purpose', 'session_mode', 'exit_status', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_creation_tokens', 'delta_input_tokens', 'delta_output_tokens', 'delta_cache_read_tokens']
+('review', 'cold', 'ok', 56, 248, 1651491, 84710, 56, 248, 1651491)
+('review-fix', 'started', 'ok', 32, 197, 794507, 69422, 32, 197, 794507)
+('review', 'cold', 'ok', 28, 115, 760150, 93702, 28, 115, 760150)
+('test', 'cold', 'ok', 52, 322, 1184497, 91871, 52, 322, 1184497)
+('test', 'cold', 'ok', 4, 6, 25672, 40062, 4, 6, 25672)
+('document', 'cold', 'ok', 24, 186, 478579, 49465, 24, 186, 478579)

@@ -1,0 +1,6 @@
+ok - known spend, including failed and cancelled invocations, is attributed to the task that ran it
+ok - repeated review rounds in a resumed session are counted once
+ok - absent spend reads as zero only when no run exists, and as unavailable when it cannot be read
+ok - older state without delta columns counts only rounds it can prove
+ok - record appends one line per task incarnation
+ok - missing tasks, secondmates, and unsafe ids are refused
