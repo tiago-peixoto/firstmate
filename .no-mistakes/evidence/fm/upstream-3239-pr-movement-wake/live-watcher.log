@@ -1,0 +1,18 @@
+armed: state/delivery.check.sh
+--- baseline poll (first observation) via contributions check
+durable wakes: 0
+--- watcher checkpoint on unchanged PR (40s)
+checkpoint: no actionable wake within 40s
+watcher rc=124 (124 = quiet expiry)
+durable wakes: 0
+--- previous observation now records an older head
+--- watcher checkpoint (60s)
+check: contributions delivery d8f3282e6f7f78a64adb2ae9ff93eb06cf1161505f64fdda971e2240de4a624d
+
+watcher rc=0
+durable wakes: 1
+[{"type":"head","body":"head moved from 0000000000000000000000000000000000000001 to 9719a729742f0c06220a18bcc164184733b7110f"}]
+--- watcher checkpoint again, head unchanged (40s)
+checkpoint: no actionable wake within 40s
+watcher rc=124 (124 = quiet expiry)
+durable wakes: 1

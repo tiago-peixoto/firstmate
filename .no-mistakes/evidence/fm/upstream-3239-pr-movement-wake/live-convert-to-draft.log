@@ -1,0 +1,31 @@
+=== PR: https://github.com/cli/cli/pull/14355
++ fm-pr-check.sh delivery https://github.com/cli/cli/pull/14355
+error: https://github.com/cli/cli/pull/14355 is a draft pull request; a draft cannot be merged, so merge monitoring would wait for an event that cannot occur - mark it ready for review and arm again, or declare a wait instead of done if the draft is deliberate
+  (rc=1)
++ fm-contributions.sh arm (backlog-linked ownership)
+registered: state/contributions.check.sh
+  (rc=0)
+--- step 1: first observation (baseline)
++ run registered check contributions.check.sh
+  (rc=0)
+record: {"head":"7adb2541716f52964d46143be7877d69c6d9f457","draft":true,"review_requests":[],"pending":[]}
+durable wakes: 0
+--- step 2: unchanged re-poll
++ run registered check contributions.check.sh
+  (rc=0)
+record: {"head":"7adb2541716f52964d46143be7877d69c6d9f457","draft":true,"review_requests":[],"pending":[]}
+durable wakes: 0
+--- scenario: todraft
++ seed prior observation: .records[0].observation.draft = false
++ run registered check contributions.check.sh
+  (rc=0)
+record: {"head":"7adb2541716f52964d46143be7877d69c6d9f457","draft":true,"review_requests":[],"pending":[]}
+durable wakes: 0
++ fm-contributions.sh pending
+[]
+--- re-poll unchanged after todraft
++ run registered check contributions.check.sh
+  (rc=0)
+record: {"head":"7adb2541716f52964d46143be7877d69c6d9f457","draft":true,"review_requests":[],"pending":[]}
+durable wakes: 0
+--- wake queue

@@ -1,0 +1,79 @@
+=== PR: https://github.com/cli/cli/pull/14485
++ fm-pr-check.sh delivery https://github.com/cli/cli/pull/14485
+armed: state/delivery.check.sh
+  (rc=0)
+--- step 1: first observation (baseline)
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[]}
+durable wakes: 0
+--- step 2: unchanged re-poll
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[]}
+durable wakes: 0
+--- scenario: head
++ seed prior observation: .records[0].observation.head = "0000000000000000000000000000000000000001"
++ run registered check contributions.check.sh
+contribution-wake: check: contributions delivery 81ff6c784397cfc77084c2ded7441cf5a74c14db887e8deffa4958b36b7be0d6
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[{"type":"head","body":"head moved from 0000000000000000000000000000000000000001 to 9719a729742f0c06220a18bcc164184733b7110f"}]}
+durable wakes: 1
++ fm-contributions.sh pending
+[{"type":"head","body":"head moved from 0000000000000000000000000000000000000001 to 9719a729742f0c06220a18bcc164184733b7110f","source":"https://github.com/cli/cli/pull/14485"}]
+--- re-poll unchanged after head
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[{"type":"head","body":"head moved from 0000000000000000000000000000000000000001 to 9719a729742f0c06220a18bcc164184733b7110f"}]}
+durable wakes: 1
++ ack head:9719a729742f0c06220a18bcc164184733b7110f:2026-09-22T21:53:06Z
+--- scenario: ready
++ seed prior observation: .records[0].observation.draft = true
++ run registered check contributions.check.sh
+contribution-wake: check: contributions delivery 02608e2d27aa028fa0c17e291a09d2cbe1284b18c23be8ba08178e0119a9e4f8
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[{"type":"ready-for-review","body":"pull request left draft"}]}
+durable wakes: 2
++ fm-contributions.sh pending
+[{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/cli/cli/pull/14485"}]
+--- re-poll unchanged after ready
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[{"type":"ready-for-review","body":"pull request left draft"}]}
+durable wakes: 2
++ ack ready-for-review:9719a729742f0c06220a18bcc164184733b7110f:2026-09-22T21:53:23Z
+--- scenario: reviewer
++ seed prior observation: .records[0].observation.review_requests = []
++ run registered check contributions.check.sh
+contribution-wake: check: contributions delivery d6660a29907d674d934653b18b3c937d0ce9f7590f8309d9cc327789403fcfa6
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[{"type":"review-requested","body":"review requested from niik"}]}
+durable wakes: 3
++ fm-contributions.sh pending
+[{"type":"review-requested","body":"review requested from niik","source":"https://github.com/cli/cli/pull/14485"}]
+--- re-poll unchanged after reviewer
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[{"type":"review-requested","body":"review requested from niik"}]}
+durable wakes: 3
++ ack review-requested:niik:2026-09-22T21:53:41Z
+--- wake queue
+1790113993	1	check	contribution-81ff6c784397cfc77084c2ded7441cf5a74c14db887e8deffa4958b36b7be0d6	check: contributions delivery 81ff6c784397cfc77084c2ded7441cf5a74c14db887e8deffa4958b36b7be0d6
+1790114010	2	check	contribution-02608e2d27aa028fa0c17e291a09d2cbe1284b18c23be8ba08178e0119a9e4f8	check: contributions delivery 02608e2d27aa028fa0c17e291a09d2cbe1284b18c23be8ba08178e0119a9e4f8
+1790114027	3	check	contribution-d6660a29907d674d934653b18b3c937d0ce9f7590f8309d9cc327789403fcfa6	check: contributions delivery d6660a29907d674d934653b18b3c937d0ce9f7590f8309d9cc327789403fcfa6

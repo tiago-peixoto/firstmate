@@ -1,0 +1,31 @@
+$ fm-pr-check.sh delivery https://github.com/cli/cli/pull/14485   (real gh, read-only)
+armed: state/delivery.check.sh
+rc=0
+contributions.check-trust
+contributions.check.sh
+delivery.check.sh
+delivery.meta
+delivery.pr-poll
+delivery.pr-poll-registration
+$ bash state/contributions.check.sh   # poll 1 against live GitHub
+rc=0
+$ bash state/contributions.check.sh   # poll 2 against live GitHub
+rc=0
+$ fm-contributions.sh pending
+[]
+
+$ jq observation summary
+{
+  "url": "https://github.com/cli/cli/pull/14485",
+  "checked_at": "2026-09-22T21:47:38Z",
+  "error": null,
+  "head": "9719a729742f0c06220a18bcc164184733b7110f",
+  "draft": false,
+  "review_requests": [
+    "niik"
+  ],
+  "pending": 0
+}
+$ live gh cross-check
+{"draft":false,"head":"9719a729742f0c06220a18bcc164184733b7110f","requested_reviewers":["niik"],"requested_teams":[]}
+wake-queue check rows: 

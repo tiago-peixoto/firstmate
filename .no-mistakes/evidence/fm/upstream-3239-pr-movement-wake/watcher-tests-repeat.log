@@ -1,0 +1,15 @@
+branch run 1: not ok - watcher did not surface the new contribution signal: |ok - watcher stays quiet on an unchanged pull request and surfaces its movement once|not ok - 1 contribution regressions|
+base run 1: not ok - watcher did not surface the new contribution signal: |not ok - 1 contribution regressions|
+ 21:38:32 up 6 days,  1:43,  5 users,  load average: 52.51, 58.03, 56.81
+branch run 2: not ok - watcher did not surface the new contribution signal: |ok - watcher stays quiet on an unchanged pull request and surfaces its movement once|not ok - 1 contribution regressions|
+base run 2: not ok - watcher did not surface the new contribution signal: |not ok - 1 contribution regressions|
+ 21:39:30 up 6 days,  1:44,  5 users,  load average: 53.03, 57.05, 56.53
+branch run 3: not ok - watcher did not surface the new contribution signal: |ok - watcher stays quiet on an unchanged pull request and surfaces its movement once|not ok - 1 contribution regressions|
+base run 3: not ok - watcher did not surface the new contribution signal: |not ok - 1 contribution regressions|
+ 21:40:26 up 6 days,  1:45,  5 users,  load average: 50.08, 55.44, 56.01
+branch run 4: not ok - watcher did not surface the new contribution signal: |ok - watcher stays quiet on an unchanged pull request and surfaces its movement once|not ok - 1 contribution regressions|
+base run 4: not ok - watcher did not surface the new contribution signal: |not ok - 1 contribution regressions|
+ 21:41:30 up 6 days,  1:46,  8 users,  load average: 51.06, 54.77, 55.74
+branch run 5: not ok - watcher did not surface the new contribution signal: |ok - watcher stays quiet on an unchanged pull request and surfaces its movement once|not ok - 1 contribution regressions|
+base run 5: not ok - watcher did not surface the new contribution signal: |not ok - 1 contribution regressions|
+ 21:42:37 up 6 days,  1:47,  5 users,  load average: 54.11, 55.12, 55.81

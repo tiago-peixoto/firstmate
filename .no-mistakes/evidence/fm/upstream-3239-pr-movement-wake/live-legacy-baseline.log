@@ -1,0 +1,36 @@
+=== PR: https://github.com/cli/cli/pull/14475
++ fm-pr-check.sh delivery https://github.com/cli/cli/pull/14475
+armed: state/delivery.check.sh
+  (rc=0)
+--- step 1: first observation (baseline)
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9b6f66363f51a8265f1bb07f8fc3746017859cf1","draft":false,"review_requests":["williammartin"],"pending":[]}
+durable wakes: 0
+--- step 2: unchanged re-poll
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9b6f66363f51a8265f1bb07f8fc3746017859cf1","draft":false,"review_requests":["williammartin"],"pending":[]}
+durable wakes: 0
+--- scenario: legacy
++ seed prior observation: .records[0].observation |= del(.review_requests)
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9b6f66363f51a8265f1bb07f8fc3746017859cf1","draft":false,"review_requests":["williammartin"],"pending":[]}
+durable wakes: 0
++ fm-contributions.sh pending
+[]
+--- re-poll unchanged after legacy
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9b6f66363f51a8265f1bb07f8fc3746017859cf1","draft":false,"review_requests":["williammartin"],"pending":[]}
+durable wakes: 0
+--- wake queue

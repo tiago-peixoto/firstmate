@@ -1,0 +1,70 @@
+=== PR: https://github.com/cli/cli/pull/14485
++ fm-pr-check.sh delivery https://github.com/cli/cli/pull/14485
+armed: state/delivery.check.sh
+  (rc=0)
+--- step 1: first observation (baseline)
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
+--- step 2: unchanged re-poll
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
+--- scenario: head
++ seed prior observation: .records[0].observation.head = "0000000000000000000000000000000000000001"
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
++ fm-contributions.sh pending
+[]
+--- re-poll unchanged after head
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
+--- scenario: ready
++ seed prior observation: .records[0].observation.draft = true
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
++ fm-contributions.sh pending
+[]
+--- re-poll unchanged after ready
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
+--- scenario: reviewer
++ seed prior observation: .records[0].observation.review_requests = []
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
++ fm-contributions.sh pending
+[]
+--- re-poll unchanged after reviewer
++ run registered check contributions.check.sh
+  (rc=0)
++ run registered check delivery.check.sh
+  (rc=0)
+record: {"head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":null,"pending":[]}
+durable wakes: 0
+--- wake queue
