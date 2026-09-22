@@ -1,0 +1,58 @@
+== lab session: fm-lab-capacity-1935169-8412
+
+== S1 no declaration: uncapped (spawn cap-a, cap-b, cap-c)
+   spawn cap-a exit=0
+   spawn cap-b exit=0
+   spawn cap-c exit=0
+   records: cap-a.meta cap-b.meta cap-c.meta | lab panes: 3
+   backlog cap-a: in_flight
+   backlog cap-b: in_flight
+   backlog cap-c: in_flight
+   teardown cap-c to return to 2 holders
+   teardown exit=0
+   | teardown cap-c complete (window fm-lab-capacity-1935169-8412:w3:p2, worktree /home/firstmate/.treehouse/heavy-suite-915f2b/3/heavy-suite)
+   | Backlog: cap-c is closed in /tmp/fm-cap-live.xv1Cfo/home/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+   records: cap-a.meta cap-b.meta | lab panes: 2
+   backlog cap-c: done
+
+== S2 declare 'heavy-suite 2' and spawn cap-d beyond capacity
+   spawn cap-d exit=75
+   stderr| deferred: project heavy-suite admits 2 worker(s) at once on this machine (/tmp/fm-cap-live.xv1Cfo/home/config/project-capacity) and 2 already hold a place (cap-a, cap-b); task cap-d was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+   lab panes before=2 after=2; cap-d.meta exists: no; rendered launch brief: brief.md 
+   records: cap-a.meta cap-b.meta | lab panes: 2
+   backlog cap-d: queued
+
+== S3 batch spawn at capacity reports DEFERRED
+   batch exit=75
+   stderr| batch: DEFERRED cap-d (/tmp/fm-cap-live.xv1Cfo/work/heavy-suite) - its project is at capacity, so it stays queued
+   stderr| batch: DEFERRED cap-e (/tmp/fm-cap-live.xv1Cfo/work/heavy-suite) - its project is at capacity, so it stays queued
+   records: cap-a.meta cap-b.meta | lab panes: 2
+   backlog cap-d: queued
+   backlog cap-e: queued
+
+== S4 cap-a records its ready PR (fm-pr-check.sh) -> place frees -> cap-d admitted
+   pr-check exit=0; cap-a pr=https://github.com/example/heavy-suite/pull/1
+   spawn cap-d exit=0
+   records: cap-a.meta cap-b.meta cap-d.meta | lab panes: 3
+   backlog cap-d: in_flight
+   spawn cap-e (now cap-b, cap-d hold) exit=75
+   stderr| deferred: project heavy-suite admits 2 worker(s) at once on this machine (/tmp/fm-cap-live.xv1Cfo/home/config/project-capacity) and 2 already hold a place (cap-b, cap-d); task cap-e was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+
+== S5 cleanup frees a place: teardown cap-b -> cap-e admitted
+   teardown cap-b exit=0
+   spawn cap-e exit=0
+   records: cap-a.meta cap-d.meta cap-e.meta | lab panes: 3
+   backlog cap-e: in_flight
+
+== S6 malformed declaration refuses a fresh spawn
+   spawn cap-f exit=1
+   stderr| error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-cap-live.xv1Cfo/home/config/project-capacity line 1 gives heavy-suite a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+   records: cap-a.meta cap-d.meta cap-e.meta | lab panes: 3
+   backlog cap-f: queued
+
+== teardown remaining workers
+   teardown cap-a exit=0
+   teardown cap-d exit=0
+   teardown cap-e exit=0
+   records: | lab panes: 0
+lab fm-lab-capacity-1935169-8412 torn down
