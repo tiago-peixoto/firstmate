@@ -1,0 +1,9 @@
+ 21:12:24 up 6 days,  1:17,  8 users,  load average: 56.75, 53.38, 52.90
+copy 1 rc=1
+copy 3 rc=1
+copy 4 rc=0
+copy 2 rc=0
+copy 1: not ok - re-arm re-surface wake must close successfully: expected exit 0, got 1
+copy 2: ok - watch-arm: re-arm surfaces every queued wake and an open remote decision after downtime
+copy 3: not ok - re-arm re-surface wake must close successfully: expected exit 0, got 1
+copy 4: ok - watch-arm: re-arm surfaces every queued wake and an open remote decision after downtime

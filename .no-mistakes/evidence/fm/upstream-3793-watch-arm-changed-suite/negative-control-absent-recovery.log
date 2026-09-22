@@ -1,0 +1,13 @@
+ 21:10:15 up 6 days,  1:15,  8 users,  load average: 46.30, 50.09, 51.87
+/home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35EQD2J30Y3ZDRPSV13NDJD/bin/fm-watch-arm.sh: line 566: 3240815 Killed                     "$WATCH" > "$child_out"
+wait_for_exit: owned pid 3246723 exceeded 400 polls; sending TERM
+3246723 3239599 S    bash /home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35EQD2J30Y3ZDRPSV13NDJD/bin/fm-watch-arm.sh --restart
+wait_for_exit: owned pid 3246723 survived TERM; sending KILL
+not ok - slow re-arm stayed live instead of surfacing its recovery
+
+real	1m51.795s
+user	0m7.057s
+sys	0m27.889s
+rc=1
+mktemp: failed to create file via template '/tmp/fm-watch-arm-tests.yNT1X2/slow-rearm-recovery/state/.watcher-down.tmp.XXXXXX': No such file or directory
+watcher: recovery state could not be persisted; retaining stale lock evidence

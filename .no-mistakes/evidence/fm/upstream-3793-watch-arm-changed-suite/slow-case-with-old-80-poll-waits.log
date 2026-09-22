@@ -1,0 +1,9 @@
+ 21:10:15 up 6 days,  1:15,  8 users,  load average: 46.30, 50.09, 51.87
+/home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35EQD2J30Y3ZDRPSV13NDJD/bin/fm-watch-arm.sh: line 566: 3240745 Killed                     "$WATCH" > "$child_out"
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 3247940.1790111426.X6MYVy
+ok - watch-arm: a re-arm whose recovery cycle runs slowly still surfaces it
+
+real	0m53.281s
+user	0m5.006s
+sys	0m16.362s
+rc=0

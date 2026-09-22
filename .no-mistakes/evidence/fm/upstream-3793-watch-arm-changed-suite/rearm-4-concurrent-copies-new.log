@@ -1,0 +1,9 @@
+ 21:14:39 up 6 days,  1:19,  6 users,  load average: 52.64, 55.22, 53.80
+copy 2 rc=0
+copy 3 rc=0
+copy 1 rc=0
+copy 4 rc=0
+copy 1: ok - watch-arm: re-arm surfaces every queued wake and an open remote decision after downtime
+copy 2: ok - watch-arm: re-arm surfaces every queued wake and an open remote decision after downtime
+copy 3: ok - watch-arm: re-arm surfaces every queued wake and an open remote decision after downtime
+copy 4: ok - watch-arm: re-arm surfaces every queued wake and an open remote decision after downtime
