@@ -73,17 +73,23 @@ META_TMP=$(mktemp "$STATE/.fm-remote-relaunch-meta.XXXXXX") || {
   fm_lock_release "$META_LOCK"
   die "cannot stage the updated record"
 }
+{
+  printf 'harness=%s\n' "$NEW_HARNESS"
+  printf 'model=%s\n' "$NEW_MODEL"
+  printf 'effort=%s\n' "$NEW_EFFORT"
+} >> "$META_TMP"
+# Every other line is preserved in its original relative order after the
+# refreshed harness/model/effort - never before them. A pr= line's own
+# identity block (pr_head= and the x_* fields fm_pr_metadata_identity_parse
+# allows after it) must stay LAST in the record: that parser rejects any
+# other key following pr=, so writing harness/model/effort after it would
+# silently break PR movement monitoring on a task that already had one armed.
 while IFS= read -r line || [ -n "$line" ]; do
   case "$line" in
     harness=*|model=*|effort=*) ;;
     *) printf '%s\n' "$line" >> "$META_TMP" ;;
   esac
 done < "$META"
-{
-  printf 'harness=%s\n' "$NEW_HARNESS"
-  printf 'model=%s\n' "$NEW_MODEL"
-  printf 'effort=%s\n' "$NEW_EFFORT"
-} >> "$META_TMP"
 chmod 0600 "$META_TMP"
 mv -f -- "$META_TMP" "$META"
 fm_lock_release "$META_LOCK"
