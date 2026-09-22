@@ -1,0 +1,18 @@
+wrapper refused
+claude=2.1.280 (Claude Code) herdr= session=fm-lab-issue3473-live-3849864-2107
+S1 PASS long single-line (2634 chars) verdict=empty reply=HEADA489TAILB10108
+S2 PASS long multi-line (1847 chars) verdict=empty reply=HEADM27105TAILM6419
+S3 PASS long U+2063 digest (2107 chars) verdict=empty reply=HEADO30445TAILO10526
+S4 PASS pre-filled composer refused verdict=send-failed, draft kept, payload not typed
+S5 PASS tail-only composer refused verdict=send-failed composer=empty, no turn submitted
+S6 PASS clean retry after refusal verdict=empty reply=HEADT2650TAILT1836
+S7 PASS non-Claude shell pane executed long command (verdict=unknown, ident='')
+teardown ok: fm-lab-issue3473-live-3849864-2107
+S1 PASS long single-line (2634 chars) verdict=empty reply=HEADA489TAILB10108
+S2 PASS long multi-line (1847 chars) verdict=empty reply=HEADM27105TAILM6419
+S3 PASS long U+2063 digest (2107 chars) verdict=empty reply=HEADO30445TAILO10526
+S4 PASS pre-filled composer refused verdict=send-failed, draft kept, payload not typed
+S5 PASS tail-only composer refused verdict=send-failed composer=empty, no turn submitted
+S6 PASS clean retry after refusal verdict=empty reply=HEADT2650TAILT1836
+S7 PASS non-Claude shell pane executed long command (verdict=unknown, ident='')
+exit=0

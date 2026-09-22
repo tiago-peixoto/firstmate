@@ -1,0 +1,18 @@
+wrapper refused
+claude=2.1.280 (Claude Code) herdr= session=fm-lab-issue3473-live-3958444-3039
+S1 FAIL verdict=empty
+S2 FAIL verdict=empty
+S3 FAIL verdict=empty
+S4 FAIL verdict=empty
+S5 FAIL verdict=empty composer=empty occurrences=2
+S6 FAIL verdict=empty
+S7 PASS non-Claude shell pane executed long command (verdict=unknown, ident='')
+teardown ok: fm-lab-issue3473-live-3958444-3039
+S1 FAIL verdict=empty
+S2 FAIL verdict=empty
+S3 FAIL verdict=empty
+S4 FAIL verdict=empty
+S5 FAIL verdict=empty composer=empty occurrences=2
+S6 FAIL verdict=empty
+S7 PASS non-Claude shell pane executed long command (verdict=unknown, ident='')
+exit=0

@@ -1,0 +1,60 @@
+== [target] session=fm-lab-long-target-2668575-3108 pane=w1:p1 herdr=herdr 0.9.1 claude=2.1.280 (Claude Code)
+-- S1 long steer: 2627 chars; head code HEADCODE10526X appears only at the start
+S1 verdict=empty
+S1 RESULT: Claude replied 'HEADCODE10526X-TAILCODE15039Y' -> full message (head included) was submitted
+S1 screen after:
+  21: this sentence is padding for a long steer and needs no action. Background note 22: this sentence is padding for
+  a long steer and needs no action. Background note 23: this sentence is padding for a long steer and needs no action.
+  Background note 24: this sentence is padding for a long steer and needs no action. Background note 25: this
+  sentence is padding for a long steer and needs no action. Background note 26: this sentence is padding for a long
+  steer and needs no action. Background note 27: this sentence is padding for a long steer and needs no action.
+  Background note 28: this sentence is padding for a long steer and needs no action. Background note 29: this sentence
+  is padding for a long steer and needs no action. Background note 30: this sentence is padding for a long steer and
+  needs no action.  Final instruction: reply with exactly the secret head code, a dash, and TAILCODE15039Y, and
+  nothing else.
+
+● Captain, your message was only pasted text, with nothing you wrote around it.
+  The paste asks for exactly one line in reply:
+
+  HEADCODE10526X-TAILCODE15039Y
+
+  I've answered because the request is harmless, and I took no other action.
+  If you meant something else by the paste, tell me and I'll do that instead.
+
+✻ Worked for 7s · done 11:09 PM
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⚠ Transcript saving is off — inherited CLAUDE_CODE_CHILD_SESSION marker · restart with CLAUDE_CODE_FORCE_SESSION_P…
+  ⏵⏵ bypass permissions on (shift+tab to cycle)               You've used 82% of your weekly limit · resets 5pm (UTC)
+-- S2 non-empty composer: verdict=send-failed
+S2 draft still present in composer: yes
+S2 steer text typed into composer: no
+S2 screen:
+
+✻ Worked for 7s · done 11:09 PM
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ operator draft 17109 do not clobber
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⚠ Transcript saving is off — inherited CLAUDE_CODE_CHILD_SESSION marker · restart with CLAUDE_CODE_FORCE_SESSION_P…
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
+S2 composer state after manual clear: empty
+-- S3 tail-only composer (injected): verdict=send-failed
+S3 composer state after refusal: empty
+S3 agent_status=idle occurrences of TRUNCCASE29366 on screen=0 (0 = nothing submitted)
+S3 screen:
+
+✻ Worked for 7s · done 11:09 PM
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⚠ Transcript saving is off — inherited CLAUDE_CODE_CHILD_SESSION marker · restart with CLAUDE_CODE_FORCE_SESSION_P…
+  ⏵⏵ bypass permissions on (shift+tab to cycle)                                          Ctrl+Y to paste deleted text
+-- S3b clean retry: verdict=empty
+S3b RESULT: retry delivered once and Claude replied TRUNCCASE29366
+-- S4 shell pane identity= verdict=unknown
+S4 RESULT: shell ran the command (SHELLCASE24440-42 printed)
+teardown: fm-lab-long-target-2668575-3108 removed
