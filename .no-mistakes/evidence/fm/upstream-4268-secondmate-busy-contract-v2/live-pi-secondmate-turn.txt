@@ -1,0 +1,20 @@
+== mode=new; home guard has .fm-busy-stop: 2
+== spawn ok; generated /tmp/fm-sm-lab.v6ytya/sm/.claude/settings.local.json hook events:
+12:const notifyTurnEnd = false;
+fm-branch-supervision.ts
+fm-calm.ts
+fm-primary-pi-watch.ts
+fm-primary-turnend-guard.ts
+lib
+== .fm-busy-stop pointer present: no
+== after spawn: record: v1 gen=g1790118877.3179624.17659 seq=1 state=busy source=fm-spawn event=launch-brief ts=1790118877 
+== active-turn gate classify (mid-turn tail): busy fm-spawn
+== reset to idle: v1 gen=g1790118877.3179624.17659 seq=2 state=idle source=fm-recovery event=lab-reset ts=1790118879 
+== real harness turn in the mate home (claude -p, trivial prompt):
+   23:14:39.865 record: v1 gen=g1790118877.3179624.17659 seq=2 state=idle source=fm-recovery event=lab-reset ts=1790118879 
+   23:14:41.177 record: v1 gen=g1790118877.3179624.17659 seq=3 state=busy source=pi-ext event=agent-start ts=1790118881 
+   23:14:48.671 record: v1 gen=g1790118877.3179624.17659 seq=4 state=idle source=pi-ext event=agent-settled ts=1790118888 
+   agent> ok
+== final record: v1 gen=g1790118877.3179624.17659 seq=4 state=idle source=pi-ext event=agent-settled ts=1790118888 
+== parent turn-ended marker exists: no
+== active-turn gate classify now: idle pi-ext

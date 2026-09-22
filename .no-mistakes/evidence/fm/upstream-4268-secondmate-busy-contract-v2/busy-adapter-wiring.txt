@@ -18,4 +18,3 @@ ok - raw gemini launch remains unwired and classifies unknown
 ok - gemini is refused as a secondmate because it has no primary supervision protocol
 ok - codex classifies unknown until a semantic source is verified, never idle or footer-matched
 all fm-busy-adapter-wiring tests passed
-exit=0

@@ -1,0 +1,19 @@
+== mode=old; home guard has .fm-busy-stop: 0
+== spawn ok; generated /tmp/fm-sm-lab.nO8AQJ/sm/.claude/settings.local.json hook events:
+   UserPromptSubmit -> '/home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35NYT8V2ZW4JSWWD6C10MNY/bin/fm-busy-event.sh' apply '/tmp/fm-sm-lab.nO8AQJ/primary/s
+   Stop -> '/home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35NYT8V2ZW4JSWWD6C10MNY/bin/fm-busy-event.sh' apply '/tmp/fm-sm-lab.nO8AQJ/primary/s
+   StopFailure -> '/home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35NYT8V2ZW4JSWWD6C10MNY/bin/fm-busy-event.sh' apply '/tmp/fm-sm-lab.nO8AQJ/primary/s
+   SessionEnd -> '/home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35NYT8V2ZW4JSWWD6C10MNY/bin/fm-busy-event.sh' apply '/tmp/fm-sm-lab.nO8AQJ/primary/s
+== .fm-busy-stop pointer present: no
+== after spawn: record: v1 gen=g1790118758.2976469.26023 seq=1 state=busy source=fm-spawn event=launch-brief ts=1790118758 
+== active-turn gate classify (mid-turn tail): busy fm-spawn
+== reset to idle: v1 gen=g1790118758.2976469.26023 seq=2 state=idle source=fm-recovery event=lab-reset ts=1790118761 
+== real claude turn in the mate home (claude -p, trivial prompt):
+   23:12:41.595 record: v1 gen=g1790118758.2976469.26023 seq=2 state=idle source=fm-recovery event=lab-reset ts=1790118761 
+   23:12:44.051 record: v1 gen=g1790118758.2976469.26023 seq=3 state=busy source=claude-hook event=user-prompt-submit ts=1790118763 
+   23:12:45.660 record: v1 gen=g1790118758.2976469.26023 seq=4 state=idle source=claude-hook event=stop ts=1790118765 
+   23:12:46.008 record: v1 gen=g1790118758.2976469.26023 seq=5 state=idle source=claude-hook event=session-end ts=1790118765 
+   claude> ok
+== final record: v1 gen=g1790118758.2976469.26023 seq=5 state=idle source=claude-hook event=session-end ts=1790118765 
+== parent turn-ended marker exists: no
+== active-turn gate classify now: idle claude-hook

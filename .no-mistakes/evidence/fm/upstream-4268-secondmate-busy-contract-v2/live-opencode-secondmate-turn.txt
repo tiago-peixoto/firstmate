@@ -1,0 +1,49 @@
+== mode=new; home guard has .fm-busy-stop: 2
+== spawn ok; generated /tmp/fm-sm-lab.WK1K1y/sm/.claude/settings.local.json hook events:
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/fm-busy-state.js
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/package.json
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/lib/fm-operational-input.js
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/fm-primary-watch-arm.js
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/fm-primary-turnend-guard.js
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/fm-primary-sessionstart-nudge.js
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/fm-primary-pretool-check.js
+/tmp/fm-sm-lab.WK1K1y/sm/.opencode/plugins/fm-primary-cd-check.js
+2
+11:const notifyTurnEnd = false;
+== .fm-busy-stop pointer present: no
+== after spawn: record: v1 gen=g1790118782.3019736.1666 seq=1 state=busy source=fm-spawn event=launch-brief ts=1790118782 
+== active-turn gate classify (mid-turn tail): busy fm-spawn
+== reset to idle: v1 gen=g1790118782.3019736.1666 seq=2 state=idle source=fm-recovery event=lab-reset ts=1790118784 
+== real claude turn in the mate home (claude -p, trivial prompt):
+   23:13:04.526 record: v1 gen=g1790118782.3019736.1666 seq=2 state=idle source=fm-recovery event=lab-reset ts=1790118784 
+   23:13:13.810 record: v1 gen=g1790118782.3019736.1666 seq=3 state=busy source=opencode-plugin event=session-busy ts=1790118793 
+   23:13:15.085 record: v1 gen=g1790118782.3019736.1666 seq=4 state=busy source=opencode-plugin event=session-busy ts=1790118795 
+   23:13:17.043 record: v1 gen=g1790118782.3019736.1666 seq=5 state=busy source=opencode-plugin event=session-retry ts=1790118796 
+   23:13:18.318 record: v1 gen=g1790118782.3019736.1666 seq=6 state=busy source=opencode-plugin event=session-busy ts=1790118798 
+   23:13:19.028 record: v1 gen=g1790118782.3019736.1666 seq=7 state=busy source=opencode-plugin event=session-busy ts=1790118799 
+   23:13:19.412 record: v1 gen=g1790118782.3019736.1666 seq=8 state=busy source=opencode-plugin event=session-retry ts=1790118799 
+   23:13:21.710 record: v1 gen=g1790118782.3019736.1666 seq=9 state=busy source=opencode-plugin event=session-busy ts=1790118801 
+   23:13:21.950 record: v1 gen=g1790118782.3019736.1666 seq=10 state=busy source=opencode-plugin event=session-retry ts=1790118801 
+   23:13:24.017 record: v1 gen=g1790118782.3019736.1666 seq=11 state=busy source=opencode-plugin event=session-busy ts=1790118803 
+   23:13:24.285 record: v1 gen=g1790118782.3019736.1666 seq=12 state=busy source=opencode-plugin event=session-retry ts=1790118804 
+   23:13:24.406 record: v1 gen=g1790118782.3019736.1666 seq=13 state=busy source=opencode-plugin event=session-busy ts=1790118804 
+   23:13:24.772 record: v1 gen=g1790118782.3019736.1666 seq=14 state=busy source=opencode-plugin event=session-retry ts=1790118804 
+   23:13:28.625 record: v1 gen=g1790118782.3019736.1666 seq=15 state=busy source=opencode-plugin event=session-busy ts=1790118808 
+   23:13:28.859 record: v1 gen=g1790118782.3019736.1666 seq=16 state=busy source=opencode-plugin event=session-retry ts=1790118808 
+   23:13:33.461 record: v1 gen=g1790118782.3019736.1666 seq=17 state=busy source=opencode-plugin event=session-busy ts=1790118813 
+   23:13:33.697 record: v1 gen=g1790118782.3019736.1666 seq=18 state=busy source=opencode-plugin event=session-retry ts=1790118813 
+   23:13:37.462 record: v1 gen=g1790118782.3019736.1666 seq=19 state=busy source=opencode-plugin event=session-busy ts=1790118817 
+   23:13:37.820 record: v1 gen=g1790118782.3019736.1666 seq=20 state=busy source=opencode-plugin event=session-retry ts=1790118817 
+   23:13:50.836 record: v1 gen=g1790118782.3019736.1666 seq=21 state=busy source=opencode-plugin event=session-busy ts=1790118830 
+   23:13:51.091 record: v1 gen=g1790118782.3019736.1666 seq=22 state=busy source=opencode-plugin event=session-retry ts=1790118831 
+   23:13:53.910 record: v1 gen=g1790118782.3019736.1666 seq=23 state=busy source=opencode-plugin event=session-busy ts=1790118833 
+   23:13:54.154 record: v1 gen=g1790118782.3019736.1666 seq=24 state=busy source=opencode-plugin event=session-retry ts=1790118834 
+   23:14:23.501 record: v1 gen=g1790118782.3019736.1666 seq=25 state=busy source=opencode-plugin event=session-busy ts=1790118863 
+   23:14:24.122 record: v1 gen=g1790118782.3019736.1666 seq=26 state=idle source=opencode-plugin event=session-status-idle ts=1790118863 
+   claude> [0m
+   claude> > build · glm-5.3-flash
+   claude> [0m
+   claude> [91m[1mError: [0mUpstream request failed: Insufficient account funds
+== final record: v1 gen=g1790118782.3019736.1666 seq=26 state=idle source=opencode-plugin event=session-status-idle ts=1790118863 
+== parent turn-ended marker exists: no
+== active-turn gate classify now: idle opencode-plugin
