@@ -882,6 +882,7 @@ tests/fm-wake-drain-outcome-backstop.test.sh 46316
 tests/fm-wake-drain-unread-status.test.sh 24251
 tests/fm-wake-queue.test.sh 165906
 tests/fm-watch-arm.test.sh 113076
+tests/fm-watch-beacon-grace.test.sh 15600
 tests/fm-watch-checkpoint.test.sh 11234
 tests/fm-watch-recovery-loop.test.sh 59092
 tests/fm-watch-triage.test.sh 1074843
