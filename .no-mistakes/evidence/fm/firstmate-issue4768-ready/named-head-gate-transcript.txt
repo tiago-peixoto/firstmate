@@ -1,0 +1,73 @@
+
+===== S1 no-mistakes CI-ready done with fix only in worker copy =====
+worker HEAD: 4134ae82815ba4887c0e8ed74505e9e75b1b0382
+$ bin/fm-crew-state.sh nmun
+state: blocked · source: status-log · named head 4134ae82815ba4887c0e8ed74505e9e75b1b0382 is unreachable outside the worker copy
+(exit 0)
+$ bin/fm-pr-check.sh nmun https://github.com/o/r/pull/41
+error: named head 4134ae82815ba4887c0e8ed74505e9e75b1b0382 is unreachable outside the worker copy
+(exit 1)
+  meta: project=/tmp/fm-dod-live.AvKIrD/project
+  poll armed: no
+
+===== S2 same task after the head is pushed to origin =====
+$ bin/fm-crew-state.sh nmun
+state: done · source: status-log · PR https://github.com/o/r/pull/41 checks green
+(exit 0)
+
+===== S3 no-mistakes pre-validation handoff done (not gated) =====
+$ bin/fm-crew-state.sh nmpre
+state: done · source: status-log · implementation complete
+(exit 0)
+
+===== S4 direct-PR: branch pushed, then a later fix committed only in copy (forge still reports old head) =====
+forge head: b065eef93d558c4dbd7a68dd4caf2a5f8de9515e  worker HEAD: e7120791e1dcf3f9a9e6e88e20fb01aa9b59fd98
+$ bin/fm-crew-state.sh dpr
+state: blocked · source: status-log · named head e7120791e1dcf3f9a9e6e88e20fb01aa9b59fd98 is unreachable outside the worker copy
+(exit 0)
+$ bin/fm-pr-check.sh dpr https://github.com/o/r/pull/42
+error: named head e7120791e1dcf3f9a9e6e88e20fb01aa9b59fd98 is unreachable outside the worker copy
+(exit 1)
+  meta: project=/tmp/fm-dod-live.AvKIrD/project
+  poll armed: no
+
+===== S4b direct-PR after pushing the later fix =====
+$ bin/fm-pr-check.sh dpr https://github.com/o/r/pull/42
+armed: state/dpr.check.sh
+(exit 0)
+  meta: project=/tmp/fm-dod-live.AvKIrD/project
+  meta: pr=https://github.com/o/r/pull/42
+  meta: pr_head=e7120791e1dcf3f9a9e6e88e20fb01aa9b59fd98
+  poll armed: yes
+$ bin/fm-crew-state.sh dpr
+state: done · source: status-log · PR https://github.com/o/r/pull/42
+(exit 0)
+
+===== S5 local-only: named head on a detached copy only vs committed on fm/<id> in project =====
+$ bin/fm-crew-state.sh loc
+state: blocked · source: status-log · named head 26d36709a74d1190e2a2e81d5b6975ac135ff197 is unreachable outside the worker copy
+(exit 0)
+-- after committing on fm/loc --
+$ bin/fm-crew-state.sh loc
+state: done · source: status-log · ready in branch fm/loc
+(exit 0)
+
+===== S6 adversarial: remote branch moved to a different tip, named head still unpushed =====
+origin/fm/mov: 78bb2c2904ae5ca563fdf3dc187fc756b5642f30 worker HEAD: 88bcdf6501516ed4b54814b9b952d40a4cdec2f7
+$ bin/fm-crew-state.sh mov
+state: blocked · source: status-log · named head 88bcdf6501516ed4b54814b9b952d40a4cdec2f7 is unreachable outside the worker copy
+(exit 0)
+
+===== S7 no-mistakes: forge-reported head registers even though worker never fetched it =====
+$ bin/fm-pr-check.sh nmf https://github.com/o/r/pull/44
+armed: state/nmf.check.sh
+(exit 0)
+  meta: project=/tmp/fm-dod-live.AvKIrD/project
+  meta: pr=https://github.com/o/r/pull/44
+  meta: pr_head=0123456789abcdef0123456789abcdef01234567
+  poll armed: yes
+$ bin/fm-crew-state.sh nmf
+state: done · source: status-log · PR https://github.com/o/r/pull/44 checks green
+(exit 0)
+
+lab /tmp/fm-dod-live.AvKIrD removed
