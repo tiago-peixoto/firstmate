@@ -1,0 +1,19 @@
+00:41:04 spawn: fm-spawn.sh sm-live /tmp/fm-lab-smbusy.6BxcqZ/sm claude --model haiku --secondmate (guard=current)
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+warning: secondmate sm-live sync skipped before launch: primary default-branch commit cannot be resolved
+fm-config-inherit: warning: skipped crew-harness for /tmp/fm-lab-smbusy.6BxcqZ/sm/config: destination does not allow inherited item (not gitignored or guard failed)
+spawned sm-live harness=claude kind=secondmate mode=secondmate yolo=off window=firstmate:fm-sm-live worktree=/tmp/fm-lab-smbusy.6BxcqZ/sm
+00:41:08 spawn rc=0
+00:41:08 meta: window=firstmate:fm-sm-live endpoint_task_id=sm-live worktree=/tmp/fm-lab-smbusy.6BxcqZ/sm project=/tmp/fm-lab-smbusy.6BxcqZ/sm harness=claude kind=secondmate mode=secondmate yolo=off tasktmp=/tmp/fm-sm-live model=haiku effort=default spawn_gen=s1790124066.3626546.14970 home=/tmp/fm-lab-smbusy.6BxcqZ/sm projects= 
+00:41:08 busy-gen: MISSING
+00:41:08 home .fm-busy-stop: ABSENT
+00:41:08 home settings.local.json hook events: 
+00:41:08 [turn1-launch-brief] gate verdict='unknown missing' record='' turn-ended=absent
+00:42:29 send turn 2 (tmux send-keys): run sleep 20 via Bash
+00:42:30 [turn2-early] gate verdict='unknown missing' record='' turn-ended=absent
+00:42:43 [turn2] gate verdict='unknown missing' record='' turn-ended=absent
+00:43:49 final gate verdict: unknown missing
+00:43:49 parent turn-ended marker: absent

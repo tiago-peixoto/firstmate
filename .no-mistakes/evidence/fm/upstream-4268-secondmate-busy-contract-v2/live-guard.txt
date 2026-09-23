@@ -1,0 +1,16 @@
+# claude 2.1.280 (Claude Code): real process stayed up; pane tail classify=busy fm-spawn
+ok - claude 2.1.280 (Claude Code): a tmux secondmate spawn arms a busy verdict the active-turn gate can see
+# opencode 1.18.32: real process stayed up; pane tail classify=busy fm-spawn
+ok - opencode 1.18.32: a tmux secondmate spawn arms a busy verdict the active-turn gate can see
+# pi 0.86.1: real process stayed up; pane tail classify=unknown launch-prompt
+ok - pi 0.86.1: a tmux secondmate spawn arms a busy verdict the active-turn gate can see
+# skip: pi-signed is not installed on this machine, so its secondmate busy contract is unverified here
+# skip: omp is not installed on this machine, so its secondmate busy contract is unverified here
+ok - grok grok 1.0.41 (4220f3b224a6) [stable]: secondmate spawn stays unarmed and does not emit a parent turn-end
+# skip: codex is not installed on this machine, so its secondmate busy contract is unverified here
+# checked 4 harness(es); absent: pi-signed omp codex
+ok - secondmate busy contract live guard checked every installed harness
+
+real	0m23.697s
+user	0m4.197s
+sys	0m7.492s

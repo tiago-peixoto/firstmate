@@ -1,0 +1,25 @@
+firstmate@srv1986173:/tmp/fm-lab-smbusy.So4PiV/sm$ export GOTMPDIR=/tmp/fm-sm-li
+ve/gotmp
+firstmate@srv1986173:/tmp/fm-lab-smbusy.So4PiV/sm$ export COMPACT_ADVISER_DISABL
+E=1
+firstmate@srv1986173:/tmp/fm-lab-smbusy.So4PiV/sm$ . '/tmp/fm-sm-live+498ee4fc35
+3c02b607a1ecf2f8c2a00babfd11c65c58e33e1dab265aacff469a/launch.s1790123892.332739
+5.32191.sh'
+ ▐▛███▛█   Claude Code v2.1.280
+▝▜██████▀  Haiku 4.5 · Claude Max
+  ▝▝ ▝▝    /tmp/fm-lab-smbusy.So4PiV/sm
+
+
+❯ FIRSTMATE_OP: v1 launch-brief: Reply with exactly the single word READY. Do
+  not use any tools.
+
+● READY
+
+✻ Baked for 3s · done 12:38 AM
+
+────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+
+
