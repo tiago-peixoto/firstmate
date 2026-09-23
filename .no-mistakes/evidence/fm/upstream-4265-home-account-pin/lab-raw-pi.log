@@ -1,0 +1,4 @@
+$ fm-spawn.sh r1 <proj> 'pi --provider openai --model openai/gpt-4o-mini' --mode local-only --yolo off --backend herdr
+error: config/pi-account pins Pi workers, and a raw Pi launch command runs verbatim, so it cannot carry the pinned --provider; launch with --harness pi and --model <provider>/<id> instead
+rc=1 record: no panes: 0
+# teardown ok: fm-lab-acct-raw-1162958-16798

@@ -1,0 +1,75 @@
+# lab session: fm-lab-acct-pin-1082395-3260  scratch: /tmp/fm-acct-lab.PjVM4B
+
+=== S1 unpinned home: Claude launch unchanged ===
+warning: /tmp/fm-acct-lab.PjVM4B/home-unpinned/data/acct1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: acct1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acct1 harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acct-pin-1082395-3260:w1:p2 worktree=/home/firstmate/.treehouse/proj-6018e0/1/proj
+rc=0
+meta account line: <none>
+pane claude pid=1093238 argv: claude --dangerously-skip-permissions --settings {"feedbackDrafts":"off","attrib
+You are a crewmate: an autonomous worker agent managed by firstmate.
+This section establishes your current identity before every project or task inst
+Do the assigned work yourself and report only to firstmate; do not adopt a first
+Your steering inbox is `/tmp/fm-acct-lab.PjVM4B/home-unpinned/state/acct1.inbox`
+Never inspect or change any other home's endpoint namespace; this authorization 
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also 
+Project instructions still govern the work wherever they do not conflict with th
+
+# Task
+## Captain's intent
+Lab check of the worker account pin; do nothing.
+
+## Firstmate spec
+Reply ok and stop. 
+ANTHROPIC_API_KEY=ambient-pane-key
+CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.PjVM4B/ambient-claude
+OPENAI_API_KEY=ambient-pane-openai
+PI_CODING_AGENT_DIR=/tmp/fm-acct-lab.PjVM4B/ambient-pi
+
+=== S2 pinned home, signed-in work root: launch lands on the pin, ambient key shed ===
+warning: /tmp/fm-acct-lab.PjVM4B/home-pinned/data/acct2/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: acct2 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acct2 harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acct-pin-1082395-3260:w1:p3 worktree=/home/firstmate/.treehouse/proj-6018e0/2/proj account=/tmp/fm-acct-lab.PjVM4B/work-claude
+rc=0
+meta account line: account=/tmp/fm-acct-lab.PjVM4B/work-claude
+pane claude pid=1105346
+CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.PjVM4B/work-claude
+OPENAI_API_KEY=ambient-pane-openai
+PI_CODING_AGENT_DIR=/tmp/fm-acct-lab.PjVM4B/ambient-pi
+ANTHROPIC_API_KEY=<unset>
+trust registered in pinned store: 2 project(s)
+
+=== S3 pinned home, signed-out root: refused before any pane/worktree/record ===
+error: config/claude-account pins Claude workers to /tmp/fm-acct-lab.PjVM4B/empty-claude, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.PjVM4B/empty-claude claude, then /login, or change the pin
+rc=1
+record exists: no; panes before=2 after=2
+
+=== S4 malformed pin (relative path) refused ===
+error: config/claude-account must hold 'ordinary' or one absolute path on a single line with no control characters: /tmp/fm-acct-lab.PjVM4B/home-malformed/config/claude-account
+rc=1 record exists: no
+
+=== S5 Pi pin ===
+-- unqualified model:
+error: config/pi-account pins Pi workers to providers (openai), so a Pi launch needs --model <provider>/<id> naming one of them; 'gpt-5' names no provider, and Firstmate does not guess one
+rc=0 record: no
+-- undeclared provider:
+error: config/pi-account pins Pi workers to providers (openai), but --model 'anthropic/claude-x' names provider 'anthropic'
+record: no
+-- raw pi launch command:
+error: config/pi-account pins Pi workers to providers (openai), so a Pi launch needs --model <provider>/<id> naming one of them; 'none' names no provider, and Firstmate does not guess one
+record: no
+-- declared, signed-in provider:
+notice: acct5 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acct5 harness=pi kind=ship mode=local-only yolo=off window=fm-lab-acct-pin-1082395-3260:w1:p4 worktree=/home/firstmate/.treehouse/proj-6018e0/3/proj account=/tmp/fm-acct-lab.PjVM4B/pi-work account_provider=openai
+rc=0
+meta account lines: account=/tmp/fm-acct-lab.PjVM4B/pi-work account_provider=openai 
+pane pi pid=1121981 argv: --provider openai --model openai/gpt-4o-mini
+ANTHROPIC_API_KEY=ambient-pane-key
+OPENAI_API_KEY=ambient-pane-openai
+PI_CODING_AGENT_DIR=/tmp/fm-acct-lab.PjVM4B/pi-work
+
+=== S6 relaunch after the pinned root signs out: refused before the old agent stops ===
+error: config/claude-account pins Claude workers to /tmp/fm-acct-lab.PjVM4B/work-claude, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.PjVM4B/work-claude claude, then /login, or change the pin
+rc=1
+old claude pid 1105346 still alive: yes
+# teardown ok: fm-lab-acct-pin-1082395-3260 removed, default session tripwire unchanged
