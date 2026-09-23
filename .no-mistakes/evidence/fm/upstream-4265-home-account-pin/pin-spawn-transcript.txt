@@ -1,0 +1,26 @@
+claude: 2.1.281 (Claude Code)
+
+## 1. unpinned home (no config/claude-account)
+warning: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/home/data/live-none/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+spawned live-none harness=claude kind=ship mode=no-mistakes yolo=off window=firstmate:fm-live-none worktree=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/wt
+[exit 0]
+model=default
+launch: export COMPACT_ADVISER_DISABLE=1; env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-permissions --settings '{"feedbackDrafts":"off","attribution":{"commit":"","pr":"","sessionUrl":false}}' --append-
+
+## 2. pin -> signed-out root, invoker has ANTHROPIC_API_KEY
+error: config/claude-account pins Claude workers to /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/empty, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/empty claude, then /login, or change the pin
+[exit 1]
+ls: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/home/state/live-out.meta: No such file or directory
+launch.log bytes:        0
+
+## 3. pin -> signed-in root
+warning: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/home/data/live-in/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+spawned live-in harness=claude kind=ship mode=no-mistakes yolo=off window=firstmate:fm-live-in worktree=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/wt account=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/signed
+[exit 0]
+account=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/signed
+launch: export COMPACT_ADVISER_DISABLE=1; env -u CLAUDE_CODE_USE_BEDROCK -u CLAUDE_CODE_USE_VERTEX -u CLAUDE_CODE_USE_FOUNDRY -u CLAUDE_CODE_USE_ANTHROPIC_AWS -u CLAUDE_CODE_USE_MANTLE -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY -u CLAUDE_CODE_OAUTH_TOKEN -u ANTHROPIC_PROFILE -u ANTHROPIC_FEDERATION_RULE_ID CLAUDE_CONFIG_DIR='/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/tmp.9j0RfoBM6L/signed' env -u 
+
+## 4. pinned home, raw Claude command overriding CLAUDE_CONFIG_DIR
+error: config/claude-account pins Claude workers, but the raw launch command sets CLAUDE_CONFIG_DIR, which would override the pinned account; remove CLAUDE_CONFIG_DIR from the raw command, or change or remove config/claude-account
+[exit 1]
+launch.log bytes:        0
