@@ -528,6 +528,8 @@ It checks that a newly appended keyed decision is classified without rereading e
 - Startup-stop resilience: slow post-claim confirmation, typed startup-lock and identity-publication failures, safe-point deadline and signal forwarding, and cleanup of published locks and in-flight staging while preserving foreign owners.
 - A SIGSTOP counterfactual that distinguishes a live PID from a stale beacon before classifying termination.
 
+`tests/fm-watch-beacon-grace.test.sh` drives one watcher round whose registered checks together exceed `FM_WATCHER_STALE_GRACE` and keeps the beacon inside that grace, and shows a single check that hangs past the grace still reads stale.
+
 ### Claude auto-arm and turn-end guard
 
 `tests/fm-subagent-pretool-check.test.sh` proves Claude retains only the non-status Bash seatbelts.
