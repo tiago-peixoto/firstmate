@@ -61,6 +61,8 @@ file_mtime() {
   if [ "$(uname)" = Darwin ]; then stat -f %m "$1" 2>/dev/null; else stat -c %Y "$1" 2>/dev/null; fi
 }
 
+# Phase refreshes change the beacon mtime before classification finishes.
+# Wait for the next generation so priming cannot stop midway through a poll.
 wait_poll_cycle() {  # <state> <pid> [limit-ticks]
   local state=$1 pid=$2 limit=${3:-300} beat first now i=0
   beat="$state/.last-watcher-beat"
@@ -68,17 +70,22 @@ wait_poll_cycle() {  # <state> <pid> [limit-ticks]
   first=""
   while [ "$i" -lt "$limit" ]; do
     kill -0 "$pid" 2>/dev/null || return 1
-    first=$(file_mtime "$beat")
-    [ -n "$first" ] && break
+    first=$(cat "$beat" 2>/dev/null || true)
+    case "$first" in
+      ''|*[!0-9]*) first="" ;;
+      *) break ;;
+    esac
     sleep 0.1
     i=$((i + 1))
   done
+  [ -n "$first" ] || return 1
   while [ "$i" -lt "$limit" ]; do
     kill -0 "$pid" 2>/dev/null || return 1
-    now=$(file_mtime "$beat")
-    if [ -n "$now" ] && [ "$now" != "$first" ]; then
-      return 0
-    fi
+    now=$(cat "$beat" 2>/dev/null || true)
+    case "$now" in
+      ''|*[!0-9]*) ;;
+      *) [ "$now" != "$first" ] && return 0 ;;
+    esac
     sleep 0.1
     i=$((i + 1))
   done
