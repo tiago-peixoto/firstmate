@@ -86,10 +86,13 @@ age_of_file() {  # <file>
 # machine a short fixed budget can reap a round before the cycle it asserts on
 # ever ran - and then every "no wake, no marker" assertion passes vacuously
 # while every "marker written" assertion fails spuriously.
-# The liveness beacon is touched at the TOP of every poll, so this drops any
-# beacon left by an earlier round, waits for THIS watcher to write a fresh one
-# (some poll's top), then waits for that one to advance (the next poll's top) -
-# and the whole cycle in between is what the caller's assertions describe.
+# The beacon body is a generation rewritten only when a cycle opens.
+# Phase-boundary refreshes move the mtime and leave the body alone, so an
+# mtime change is not a finished cycle (a slow phase used to cross a one-second
+# boundary and this wait would reap the round before it classified).
+# Drop any generation left by an earlier round, wait for THIS watcher to write
+# one, then wait for a different one. The cycle in between is what the caller
+# asserts on.
 # 0 if the watcher is still alive after a completed cycle, 1 if it exited.
 wait_poll_cycle() {  # <state> <pid> [limit-ticks]
   local state=$1 pid=$2 limit=${3:-300} beat first now i=0
@@ -98,17 +101,22 @@ wait_poll_cycle() {  # <state> <pid> [limit-ticks]
   first=""
   while [ "$i" -lt "$limit" ]; do
     kill -0 "$pid" 2>/dev/null || return 1
-    first=$(file_mtime "$beat")
-    [ -n "$first" ] && break
+    first=$(cat "$beat" 2>/dev/null || true)
+    case "$first" in
+      ''|*[!0-9]*) first="" ;;
+      *) break ;;
+    esac
     sleep 0.1
     i=$((i + 1))
   done
+  [ -n "$first" ] || return 1
   while [ "$i" -lt "$limit" ]; do
     kill -0 "$pid" 2>/dev/null || return 1
-    now=$(file_mtime "$beat")
-    if [ -n "$now" ] && [ "$now" != "$first" ]; then
-      return 0
-    fi
+    now=$(cat "$beat" 2>/dev/null || true)
+    case "$now" in
+      ''|*[!0-9]*) ;;
+      *) [ "$now" != "$first" ] && return 0 ;;
+    esac
     sleep 0.1
     i=$((i + 1))
   done
