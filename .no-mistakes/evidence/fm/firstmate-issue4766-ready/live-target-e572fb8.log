@@ -1,0 +1,45 @@
+=== S1: hold on a lane writes a stamped captain-held mirror
+gated
+hold rc=0
+--- gated.status after hold
+     1	working: mid implementation
+     2	paused: waiting on the sample upstream release
+     3	captain-held [key=captain-hold-gated-1] [at=1790198662]: operator review pending
+last_status_line: captain-held [key=captain-hold-gated-1] [at=1790198662]: operator review pending
+last_worker_status_line: paused: waiting on the sample upstream release
+=== S2: repeat hold does not duplicate the stamped declaration
+gated
+hold rc=0
+captain-held lines: 1
+=== S3: release retracts the stamped mirror; readers return to the worker's event
+released: gated
+answer rc=0
+--- gated.status after release
+     1	working: mid implementation
+     2	paused: waiting on the sample upstream release
+     3	captain-held [key=captain-hold-gated-1] [at=1790198662]: operator review pending
+     4	resolved [key=captain-hold-gated-1] [at=1790198664]: captain call released by fm-captain-hold
+last_status_line: paused: waiting on the sample upstream release
+status_hold_settled: yes
+resolved lines after replayed answer: 1
+=== S4: complete transfer (stamped) is retracted when the call is answered
+complete rc=0
+last_status_line after complete: captain-held [key=route] [at=1790198666]: tracked by lane
+answered: lane
+answer rc=0
+--- lane.status after answer
+     1	done: report complete
+     2	needs-decision [key=route]: choose route north or route south
+     3	captain-held [key=captain-hold-lane-1] [at=1790198665]: route choice pending
+     4	captain-held [key=route] [at=1790198666]: tracked by lane
+     5	resolved [key=route] [at=1790198667]: captain call answered by fm-captain-hold
+last_status_line: needs-decision [key=route]: choose route north or route south
+=== S5: long reason stays within the 220-byte line cap after stamping
+line 1 bytes 10
+line 2 bytes 220
+=== S6: worker wrote newer state after hold - settlement must not append
+answer rc=0
+--- moved.status after answer
+     1	working: x
+     2	captain-held [key=captain-hold-moved-1] [at=1790198669]: gate
+     3	done: finished after hold

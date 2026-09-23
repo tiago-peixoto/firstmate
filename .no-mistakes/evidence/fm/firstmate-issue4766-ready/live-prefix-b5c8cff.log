@@ -1,0 +1,43 @@
+=== S1: hold on a lane writes a stamped captain-held mirror
+gated
+hold rc=0
+--- gated.status after hold
+     1	working: mid implementation
+     2	paused: waiting on the sample upstream release
+     3	captain-held [key=captain-hold-gated-1] [at=1790198677]: operator review pending
+last_status_line: captain-held [key=captain-hold-gated-1] [at=1790198677]: operator review pending
+last_worker_status_line: captain-held [key=captain-hold-gated-1] [at=1790198677]: operator review pending
+=== S2: repeat hold does not duplicate the stamped declaration
+gated
+hold rc=0
+captain-held lines: 1
+=== S3: release retracts the stamped mirror; readers return to the worker's event
+released: gated
+answer rc=0
+--- gated.status after release
+     1	working: mid implementation
+     2	paused: waiting on the sample upstream release
+     3	captain-held [key=captain-hold-gated-1] [at=1790198677]: operator review pending
+last_status_line: captain-held [key=captain-hold-gated-1] [at=1790198677]: operator review pending
+status_hold_settled: no
+resolved lines after replayed answer: 0
+=== S4: complete transfer (stamped) is retracted when the call is answered
+complete rc=0
+last_status_line after complete: captain-held [key=route] [at=1790198680]: tracked by lane
+answered: lane
+answer rc=0
+--- lane.status after answer
+     1	done: report complete
+     2	needs-decision [key=route]: choose route north or route south
+     3	captain-held [key=captain-hold-lane-1] [at=1790198680]: route choice pending
+     4	captain-held [key=route] [at=1790198680]: tracked by lane
+last_status_line: captain-held [key=route] [at=1790198680]: tracked by lane
+=== S5: long reason stays within the 220-byte line cap after stamping
+line 1 bytes 10
+line 2 bytes 236
+=== S6: worker wrote newer state after hold - settlement must not append
+answer rc=0
+--- moved.status after answer
+     1	working: x
+     2	captain-held [key=captain-hold-moved-1] [at=1790198683]: gate
+     3	done: finished after hold
