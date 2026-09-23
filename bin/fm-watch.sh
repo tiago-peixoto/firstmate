@@ -218,12 +218,14 @@ fi
 # turn-ended signature, annotation staleness checks, and guarded bookkeeping writes.
 
 POLL=${FM_POLL:-15}                   # seconds between cycles
-# The liveness beacon is touched once per cycle, immediately before the
-# terminal wait below (event_wait_or_sleep) as well as at the top of the next
-# one, so a healthy cycle's beacon can legitimately age up to POLL seconds
-# between touches. fm_poll_derived_grace (bin/fm-wake-lib.sh, already sourced
-# transitively above) is the single owner of the max(300, poll+60)
-# derivation - see docs/turnend-guard.md "Guard grace and the poll cadence".
+# The liveness beacon is refreshed between the slow phases of a cycle and
+# immediately before the terminal wait (event_wait_or_sleep), so a healthy
+# cycle ages by at most one phase, or POLL seconds during that wait.
+# A phase that hangs past the grace still reads stale: nothing refreshes the
+# beacon while a phase is running, and there is no background ticker.
+# fm_poll_derived_grace (bin/fm-wake-lib.sh, already sourced transitively
+# above) is the single owner of the max(300, poll+60) derivation - see
+# docs/turnend-guard.md "Guard grace and the poll cadence".
 # This recomputes the library default above now that the real configured
 # POLL is known.
 WATCHER_STALE_GRACE=${FM_WATCHER_STALE_GRACE:-${FM_GUARD_GRACE:-$(fm_poll_derived_grace "$POLL")}}
@@ -2318,6 +2320,13 @@ rerecord_device_shifted_pr_poll() {  # <id>
   return 0
 }
 
+# Phase boundary for the liveness beacon. Call this between slow phases, not
+# from inside one: a phase that hangs past WATCHER_STALE_GRACE must still go
+# stale, so this is never a background ticker.
+refresh_watcher_beacon() {
+  touch "$STATE/.last-watcher-beat"
+}
+
 resurface_after_downtime() {
   # Handling successors already have a predecessor-delivered wake on the way.
   # Re-announcing from this cycle is what turned a lost handshake into an
@@ -2348,7 +2357,8 @@ while :; do
 
   # Liveness beacon for fm-guard.sh: a fresh mtime here means a watcher is
   # alive. Supervision scripts warn when this goes stale with tasks in flight.
-  touch "$STATE/.last-watcher-beat"
+  # Later refreshes sit between slow phases; this one opens the cycle.
+  refresh_watcher_beacon
 
   if [ "$(age_of "$STATE/home-summary.json")" -ge "$HOME_SUMMARY_INTERVAL" ]; then
     home_summary_refresh_detached
@@ -2366,6 +2376,7 @@ while :; do
   # repost after grace, and escalate once if the recovery turn is also missed.
   # No conversation scraping; unresolved records are never silently expired.
   fm_pending_reply_tick "$STATE" || true
+  refresh_watcher_beacon
 
   # A live secondmate endpoint does not prove that its own wake loop is alive.
   # Observe the foreign queue before the rest of this cycle so an aged row wakes
@@ -2374,6 +2385,7 @@ while :; do
     echo "watcher: secondmate wake-loop observation failed" >&2
     exit 1
   }
+  refresh_watcher_beacon
 
   # Process-to-event liveness repair. This never discovers a result by polling:
   # each registered source has its own child blocking on that source, and this
@@ -2385,6 +2397,7 @@ while :; do
   # Then deliver any queued-but-unsurfaced result, including one a runner
   # published while this watcher was between cycles.
   procevent_surface_queued
+  refresh_watcher_beacon
 
   # A process-event result carries richer adapter-owned wake context than the
   # generic recovery reason, so give that owner first refusal.
@@ -2402,6 +2415,7 @@ while :; do
   else
     triage_log "inactive-outcome reconciliation unavailable"
   fi
+  refresh_watcher_beacon
 
   # Slow per-task checks (firstmate writes these, e.g. a merged-PR poll).
   # Time-based via .last-check mtime so the cadence survives watcher restarts.
@@ -2414,6 +2428,9 @@ while :; do
     rejected_checks=
     contribution_check_output=
     for c in "$STATE"/*.check.sh; do
+      # Between checks, including a PR poll or the contributions poll: each
+      # stays one step, so a check that hangs past the grace still goes stale.
+      refresh_watcher_beacon
       [ -e "$c" ] || continue
       is_pr_poll=0
       if [ "$(basename "$c")" = x-watch.check.sh ]; then
@@ -2951,6 +2968,8 @@ EOF
   fi
 
   # Terminal wait: a bounded native-event wait for push-capable homes (herdr),
-  # else the blind poll sleep. See event_wait_or_sleep.
+  # else the blind poll sleep. See event_wait_or_sleep. Refresh first so the
+  # wait is its own phase and does not stack on the last check.
+  refresh_watcher_beacon
   event_wait_or_sleep
 done
