@@ -1,0 +1,176 @@
+
+=================== S1 unpinned home: Claude ship spawn (today's behaviour) ===================
+$ ls /tmp/fm-acct-lab.cuQUCB/home/config  -> herdr-presentation-spaces 
+notice: acctU ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acctU harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acctpin-3964286-22058:w1:p2 worktree=/home/firstmate/.treehouse/proj-62576d/1/proj
+rc=0
+--- task record (account lines) ---
+harness=claude
+--- worker process ---
+pid=3972329 cwd=/home/firstmate/.treehouse/proj-62576d/1/proj
+argv: claude --dangerously-skip-permissions --settings {"feedbackDrafts":"off","attribution":{"commit":"","pr":"","sessionUrl":false}} --append-system-prompt You are a task worker launched by Firstmate, you
+You are a crewmate: an autonomous worker agent managed by firstmate.
+This section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.
+Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor identity, delegate the task, run fleet supervision, or address the captain.
+Your steering inbox is `/tmp/fm-acct-lab.cuQUCB/home/state/acctU.inbox`; this exact path belongs to your current task even when it is outside the worktree or under the supervising firstmate home, so r
+Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project content and the supervisor contract for the firstmate managing you: follow this brie
+Project instructions still govern the work wherever they do not conflict with this worker identity, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+
+# Task
+Delivery contract: mode=local-only
+## Captain's intent
+Live account pin check for acctU; do nothing.
+
+## Firstmate spec
+Do nothing. 
+env: CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/ambient-claude
+env: ANTHROPIC_API_KEY=sk-ant-ambient-pane-synthetic
+
+=================== S2 pinned home (signed-in root): Claude ship spawn ===================
+config/claude-account = /tmp/fm-acct-lab.cuQUCB/work-claude
+notice: acctP ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acctP harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acctpin-3964286-22058:w1:p3 worktree=/home/firstmate/.treehouse/proj-62576d/2/proj account=/tmp/fm-acct-lab.cuQUCB/work-claude
+rc=0
+--- task record (account lines) ---
+harness=claude
+account=/tmp/fm-acct-lab.cuQUCB/work-claude
+--- worker process ---
+pid=3983413 cwd=/home/firstmate/.treehouse/proj-62576d/2/proj
+argv: claude --dangerously-skip-permissions --settings {"feedbackDrafts":"off","attribution":{"commit":"","pr":"","sessionUrl":false}} --append-system-prompt You are a task worker launched by Firstmate, you
+You are a crewmate: an autonomous worker agent managed by firstmate.
+This section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.
+Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor identity, delegate the task, run fleet supervision, or address the captain.
+Your steering inbox is `/tmp/fm-acct-lab.cuQUCB/home/state/acctP.inbox`; this exact path belongs to your current task even when it is outside the worktree or under the supervising firstmate home, so r
+Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project content and the supervisor contract for the firstmate managing you: follow this brie
+Project instructions still govern the work wherever they do not conflict with this worker identity, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+
+# Task
+Delivery contract: mode=local-only
+## Captain's intent
+Live account pin check for acctP; do nothing.
+
+## Firstmate spec
+Do nothing. 
+env: CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/work-claude
+env: ANTHROPIC_API_KEY <absent>
+--- trust registered in pinned root? ---
+1 entry
+
+=================== S3 pinned home, signed-out root: spawn refuses before any endpoint ===================
+error: config/claude-account pins Claude workers to /tmp/fm-acct-lab.cuQUCB/signed-out-claude, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/signed-out-claude claude, then /login, or change the pin
+rc=1
+task record exists? no
+lab panes before=2 after=2
+
+=================== S4 malformed pin (relative path) refuses ===================
+error: config/claude-account must hold 'ordinary' or one absolute path on a single line with no control characters: /tmp/fm-acct-lab.cuQUCB/home/config/claude-account
+rc=1
+task record exists? no
+
+=================== S5 pinned home refuses raw Claude overrides ===================
+error: config/claude-account pins Claude workers, but the raw launch command sets CLAUDE_CONFIG_DIR, which would override the pinned account; remove CLAUDE_CONFIG_DIR from the raw command, or change or remove config/claude-account
+rc=1
+task record exists? no
+error: config/claude-account pins Claude workers, but the raw launch command sets ANTHROPIC_API_KEY, which would override the pinned account; remove ANTHROPIC_API_KEY from the raw command, or change or remove config/claude-account
+rc=1
+task record exists? no
+
+=================== S5b pinned home: raw Claude command without override gets the pin ===================
+notice: acctR3 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acctR3 harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acctpin-3964286-22058:w1:p4 worktree=/home/firstmate/.treehouse/proj-62576d/3/proj account=/tmp/fm-acct-lab.cuQUCB/work-claude
+rc=0
+harness=claude
+account=/tmp/fm-acct-lab.cuQUCB/work-claude
+--- worker process ---
+pid=3998106 cwd=/home/firstmate/.treehouse/proj-62576d/3/proj
+argv: claude --dangerously-skip-permissions --settings {"feedbackDrafts":"off","attribution":{"commit":"","pr":"","sessionUrl":false}} --append-system-prompt You are a task worker launched by Firstmate, you
+You are a crewmate: an autonomous worker agent managed by firstmate.
+This section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.
+Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor identity, delegate the task, run fleet supervision, or address the captain.
+Your steering inbox is `/tmp/fm-acct-lab.cuQUCB/home/state/acctR3.inbox`; this exact path belongs to your current task even when it is outside the worktree or under the supervising firstmate home, so 
+Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project content and the supervisor contract for the firstmate managing you: follow this brie
+Project instructions still govern the work wherever they do not conflict with this worker identity, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+
+# Task
+Delivery contract: mode=local-only
+## Captain's intent
+Live account pin check for acctR3; do nothing.
+
+## Firstmate spec
+Do nothing. 
+env: CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/work-claude
+env: ANTHROPIC_API_KEY <absent>
+
+=================== S6 unpinned home keeps a raw Claude account override ===================
+notice: acctR4 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acctR4 harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acctpin-3964286-22058:w1:p5 worktree=/home/firstmate/.treehouse/proj-62576d/4/proj
+rc=0
+harness=claude
+--- worker process ---
+pid=4006563 cwd=/home/firstmate/.treehouse/proj-62576d/4/proj
+argv: claude 
+env: CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/work-claude
+env: ANTHROPIC_API_KEY=sk-ant-ambient-pane-synthetic
+
+=================== S7 Pi pin: provider guard, raw refusal, and pinned launch ===================
+config/pi-account = /tmp/fm-acct-lab.cuQUCB/pi-work|openai|
+[unqualified model] error: config/pi-account pins Pi workers to providers (openai), so a Pi launch needs --model <provider>/<id> naming one of them; 'gpt-5' names no provider, and Firstmate does not guess one
+rc=1
+[undeclared provider] error: config/pi-account pins Pi workers to providers (openai), but --model 'anthropic/claude-x' names provider 'anthropic'
+rc=1
+[raw pi] error: config/pi-account pins Pi workers, and a raw Pi launch command runs verbatim, so it cannot carry the pinned --provider; launch with --harness pi and --model <provider>/<id> instead
+rc=1
+[pinned] notice: acctPi ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned acctPi harness=pi kind=ship mode=local-only yolo=off window=fm-lab-acctpin-3964286-22058:w1:p6 worktree=/home/firstmate/.treehouse/proj-62576d/5/proj account=/tmp/fm-acct-lab.cuQUCB/pi-work account_provider=openai
+rc=0
+harness=pi
+model=openai/gpt-4o-mini
+account=/tmp/fm-acct-lab.cuQUCB/pi-work
+account_provider=openai
+--- worker process ---
+pid=4021550 cwd=/home/firstmate/.treehouse/proj-62576d/5/proj
+argv: pi                                                                                                                                                                                                      
+launch line: PI_CODING_AGENT_DIR='/tmp/fm-acct-lab.cuQUCB/pi-work' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI FM_PI_HARNESS=pi '/home/firstmate/.local/bin/pi' --tui-mode regular --provider 'openai' --model 'openai/gpt-4o-mini'
+env: PI_CODING_AGENT_DIR=/tmp/fm-acct-lab.cuQUCB/pi-work
+env: ANTHROPIC_API_KEY=sk-ant-ambient-pane-synthetic
+env: CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/ambient-claude
+launch file: /tmp/fm-acctPi+8ce760cd8d1c9543adade60f31f7a3773355358c2b776acae7eab1d82bbf7d8d/launch.s1790124293.4010051.4734.sh
+PI_CODING_AGENT_DIR='/tmp/fm-acct-lab.cuQUCB/pi-work' env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI FM_PI_HARNESS=pi '/home/firstmate/.local/bin/pi' --tui-mode regular --provider 'openai' --model 'openai/gpt-4o-mini' -e '/tmp/fm-acct-lab.cuQUCB/home/state/acctPi.pi-ext.ts' "$('/home/firstma
+
+=================== S8 relaunch under a now signed-out pin refuses before stopping the agent ===================
+error: config/claude-account pins Claude workers to /tmp/fm-acct-lab.cuQUCB/signed-out-claude, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/signed-out-claude claude, then /login, or change the pin
+rc=1
+agent before: pid=3983413 cwd=/home/firstmate/.treehouse/proj-62576d/2/proj
+agent after:  pid=3983413 cwd=/home/firstmate/.treehouse/proj-62576d/2/proj
+task record unchanged
+
+=================== S9 relaunch after re-pinning to the signed-in root follows the pin ===================
+error: task acctP's composer state is 'unknown', not proven empty; refusing to type the /exit exit command because it could concatenate onto existing text. Clear the composer, then retry 'relaunch'
+error: relaunch of acctP failed while stopping the old agent, which is still running; its original instructions were restored
+rc=1
+harness=claude
+account=/tmp/fm-acct-lab.cuQUCB/work-claude
+--- worker process ---
+pid=3983413 cwd=/home/firstmate/.treehouse/proj-62576d/2/proj
+argv: claude --dangerously-skip-permissions --settings {"feedbackDrafts":"off","attribution":{"commit":"","pr":"","sessionUrl":false}} --append-system-prompt You are a task worker launched by Firstmate, you
+You are a crewmate: an autonomous worker agent managed by firstmate.
+This section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.
+Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor identity, delegate the task, run fleet supervision, or address the captain.
+Your steering inbox is `/tmp/fm-acct-lab.cuQUCB/home/state/acctP.inbox`; this exact path belongs to your current task even when it is outside the worktree or under the supervising firstmate home, so r
+Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project content and the supervisor contract for the firstmate managing you: follow this brie
+Project instructions still govern the work wherever they do not conflict with this worker identity, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+
+# Task
+Delivery contract: mode=local-only
+## Captain's intent
+Live account pin check for acctP; do nothing.
+
+## Firstmate spec
+Do nothing. 
+env: CLAUDE_CONFIG_DIR=/tmp/fm-acct-lab.cuQUCB/work-claude
+env: ANTHROPIC_API_KEY <absent>
+teardown rc=0

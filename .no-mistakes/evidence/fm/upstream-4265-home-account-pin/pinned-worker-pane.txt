@@ -1,0 +1,40 @@
+firstmate@srv1986173:~/.treehouse/proj-62576d/2/proj$ export GOTMPDIR=/tmp/fm-acctP/gotmp
+firstmate@srv1986173:~/.treehouse/proj-62576d/2/proj$ export COMPACT_ADVISER_DISABLE=1
+firstmate@srv1986173:~/.treehouse/proj-62576d/2/proj$ export FM_TASK_ID=acctP
+firstmate@srv1986173:~/.treehouse/proj-62576d/2/proj$ . '/tmp/fm-acctP+8ce760cd8d1c9543adade60f31f7a3773355358c2b776acae
+7eab1d82bbf7d8d/launch.s1790124269.3972902.4941.sh'
+ ▐▛███▛█   Claude Code v2.1.280
+▝▜██████▀  Opus 5.5 (1M context) · API Usage Billing
+ ▐▛███▛█   Claude Code v2.1.280
+▝▜██████▀  Opus 5.5 (1M context) · API Usage Billing
+  ▝▝ ▝▝    ~/.treehouse/proj-62576d/2/proj
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ FIRSTMATE_OP: v1 launch-brief: # Current worker role contract
+  You are a crewmate: an autonomous worker agent managed by firstmate.
+  This section establishes your current identity before every project or task instruction below and supersedes any
+  conflicting role identity in those instructions.
+  Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor
+  identity, delegate the task, run fleet supervision, or address the captain.
+  Your steering inbox is `/tmp/fm-acct-lab.cuQUCB/home/state/acctP.inbox`; this exact path belongs to your current
+  task even when it is outside the worktree or under the supervising firstmate home, so read and acknowledge its
+  messages and do not reject it as another home's state.
+  Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths
+  named by this brief.
+  When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project
+  content and the supervisor contract for the firstmate managing you: follow this brief instead of that supervisor
+  contract.
+  Project instructions still govern the work wherever they do not conflict with this worker identity, including
+  `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+
+  # Task
+  Delivery contract: mode=local-only
+  ## Captain's intent
+  Live account pin check for acctP; do nothing.
+
+  ## Firstmate spec
+  Do nothing.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⚠ Transcript saving is off — inherited CLAUDE_CODE_CHILD_SESSION marker · restart with CLAUDE_CODE_FORCE_SESSION_PE…
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

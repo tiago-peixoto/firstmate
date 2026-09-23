@@ -1,0 +1,30 @@
+ CONTRIBUTING.md and firstmate-coding-guidelines for Firstmate changes.
+
+ Task
+
+ Delivery contract: mode=local-only
+
+ Captain's intent
+
+ Live account pin check for acctPi; do nothing.
+
+ Firstmate spec
+
+ Do nothing.
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Update Available
+ New version 0.87.1 is available. Run pi update
+ Changelog: https://pi.dev/changelog
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+ Error: OpenAI API error (401): {"message":"Incorrect API key provided: sk-fm-sy***etic. You can find your API key at
+ https://platform.openai.com/account/api-keys.","type":"invalid_request_error","code":"invalid_api_key","param":null}
+ If this looks like a pi bug, /bug sends a report to the developers.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/.treehouse/proj-62576d/5/proj (detached)
+0.3%/128k (auto)                                                                                    (openai) gpt-4o-mini
