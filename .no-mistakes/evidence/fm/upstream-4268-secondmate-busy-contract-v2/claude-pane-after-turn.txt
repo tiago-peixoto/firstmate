@@ -1,0 +1,16 @@
+  ⎿  (timeout 2m)
+
+● Captain, the 50-second Python sleep ran in the foreground and finished
+  normally.
+
+  DONE
+
+✻ Churned for 55s · done 12:09 AM
+
+────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+
+
+

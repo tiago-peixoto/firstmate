@@ -1,0 +1,10 @@
+● READY
+
+✻ Worked for 14s · done 12:10 AM
+
+────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+                       You've used 84% of your weekly limit · resets 5pm (UTC)
+

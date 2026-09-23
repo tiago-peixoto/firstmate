@@ -1,0 +1,10 @@
+  ⎿  Running… (11s · timeout 2m)
+     (ctrl+b ctrl+b (twice) to run in background)
+
+· Infusing… (14s · ↓ 120 tokens)
+
+────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for ag…
+

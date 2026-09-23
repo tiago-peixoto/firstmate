@@ -1,0 +1,2 @@
+['SessionEnd', 'Stop', 'StopFailure', 'UserPromptSubmit']
+Stop: '/home/firstmate/.no-mistakes/worktrees/42fe67ed39fa/01M35S0EFZK6K4PXK1NXXSCQ58/bin/fm-busy-event.sh' apply '/tmp/fm-sm-claude-lab.5ODV7E/primary/state' 'sm-old' idle --gen 'g1790122211.520848.14949' --source claude-hook --event stop 2>/dev/null || true

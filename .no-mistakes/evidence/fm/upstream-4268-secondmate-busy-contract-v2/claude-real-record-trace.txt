@@ -1,0 +1,7 @@
+t+2s v1 gen=g1790121857.4022654.19951 seq=1 state=busy source=fm-spawn event=launch-brief ts=1790121857
+t+8s v1 gen=g1790121857.4022654.19951 seq=2 state=busy source=claude-hook event=user-prompt-submit ts=1790121868
+t+12s v1 gen=g1790121857.4022654.19951 seq=3 state=idle source=claude-hook event=stop ts=1790121872
+during turn: v1 gen=g1790121857.4022654.19951 seq=5 state=idle source=claude-hook event=stop ts=1790122075
+after bg shell: v1 gen=g1790121857.4022654.19951 seq=7 state=idle source=claude-hook event=stop ts=1790122120
+foreground turn: v1 gen=g1790121857.4022654.19951 seq=8 state=busy source=claude-hook event=user-prompt-submit ts=1790122139
+after turn: v1 gen=g1790121857.4022654.19951 seq=9 state=idle source=claude-hook event=stop ts=1790122194
