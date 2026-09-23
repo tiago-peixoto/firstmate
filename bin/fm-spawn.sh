@@ -235,9 +235,11 @@
 #   local-home set teardown already uses for slot exclusivity
 #   (collect_local_firstmate_states in bin/fm-wake-lib.sh). The occupied copy
 #   is left leased so a later get cannot take it, and acquire retries until it
-#   receives an unrecorded slot or refuses. Then the pane is seated with a
-#   top-level `cd` into the leased path and polled until two consecutive cwd
-#   reads agree on that exact copy.
+#   receives an unrecorded slot or refuses. A copy linked to another home's
+#   clone of the same origin is held leased the same way, then returned once
+#   acquire leases a copy of the spawning project's own clone. Then the pane is
+#   seated with a top-level `cd` into the leased path and polled until two
+#   consecutive cwd reads agree on that exact copy.
 #   Ship/scout spawns refuse to launch unless the resolved task path is a real
 #   git worktree root distinct from both the spawning project and its repository's
 #   primary checkout, including when the spawning project is a linked worktree.
@@ -3807,11 +3809,57 @@ spawn_close_abort_endpoint() {
 }
 
 
+# A copy linked to a different clone than the spawning project, compared by
+# resolved Git common directory.
+spawn_worktree_of_other_clone() {  # <path>
+  local wt_common proj_common
+  wt_common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) &&
+    wt_common=$(CDPATH='' cd -- "$wt_common" 2>/dev/null && pwd -P) || return 1
+  proj_common=$(git -C "$PROJ_ABS" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) &&
+    proj_common=$(CDPATH='' cd -- "$proj_common" 2>/dev/null && pwd -P) || return 1
+  [ "$wt_common" != "$proj_common" ]
+}
+
+# The primary checkout Claude trust is registered against for <worktree>. A task
+# recorded before spawn_acquire_treehouse_worktree skipped other clones' copies
+# can still sit in a copy of another home's clone, and relaunching it must not
+# strand the work there. A shared pool only mixes clones whose origin URL is
+# identical, so only a relaunch in that shape resolves to the other clone, and
+# fm-claude-trust.sh still verifies the worktree belongs to it.
+spawn_claude_trust_project() {  # <worktree>
+  local origin common
+  if [ "$RELAUNCH" -eq 1 ] && spawn_worktree_of_other_clone "$1" &&
+    origin=$(git -C "$PROJ_ABS" remote get-url origin 2>/dev/null) && [ -n "$origin" ] &&
+    [ "$(git -C "$1" remote get-url origin 2>/dev/null)" = "$origin" ] &&
+    common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then
+    dirname "$common"
+  else
+    printf '%s\n' "$PROJ_ABS"
+  fi
+}
+
 # Durably lease a pool copy for this task's lifetime. Occupied copies that a
 # live record already owns are left leased (so a later get cannot take them)
 # rather than returned. A unique isolated copy is stored in WT and marked for
 # abort-time return until the fresh commit is final.
+#
+# Treehouse names a pool by directory name and origin URL, not clone path, so a
+# get can hand out a copy linked to another home's clone of the same origin.
+# Claude trust registration, the slot claim and teardown's project lock all
+# refuse or skip such a copy, so it is held leased only until Treehouse, unable
+# to hand it out again, creates a copy from this clone.
 spawn_acquire_treehouse_worktree() {
+  local status=0 path
+  SPAWN_OTHER_CLONE_LEASES=()
+  spawn_lease_treehouse_worktree || status=$?
+  for path in ${SPAWN_OTHER_CLONE_LEASES[@]+"${SPAWN_OTHER_CLONE_LEASES[@]}"}; do
+    spawn_release_treehouse_lease "$path" "$PROJ_ABS" || \
+      echo "warning: could not release treehouse lease for $path, a copy of another clone of this project" >&2
+  done
+  return "$status"
+}
+
+spawn_lease_treehouse_worktree() {
   local path owner attempts=0
   while [ "$attempts" -lt 32 ]; do
     attempts=$((attempts + 1))
@@ -3846,12 +3894,16 @@ spawn_acquire_treehouse_worktree() {
       echo "error: treehouse get --lease did not yield an isolated worktree (resolved '$path': $SPAWN_WT_REASON; spawning project '$PROJ_ABS')" >&2
       return 1
     fi
+    if spawn_worktree_of_other_clone "$path"; then
+      SPAWN_OTHER_CLONE_LEASES+=("$path")
+      continue
+    fi
     WT=$path
     SPAWN_LEASE_RETURN_ON_ABORT=$path
     SPAWN_LEASE_RETURN_CD=$PROJ_ABS
     return 0
   done
-  echo "error: could not acquire a worktree that no live task in any local home already records" >&2
+  echo "error: could not acquire a worktree of $PROJ_ABS that no live task in any local home already records" >&2
   return 1
 }
 
@@ -4280,7 +4332,7 @@ claude*)
   if [ "$KIND" = secondmate ]; then
     spawn_trust_args=(--secondmate-home "$PROJ_ABS" "$ID")
   else
-    spawn_trust_args=("$WT" "$PROJ_ABS")
+    spawn_trust_args=("$WT" "$(spawn_claude_trust_project "$WT")")
   fi
   if ! "$FM_ROOT/bin/fm-claude-trust.sh" "${spawn_trust_args[@]}" >/dev/null; then
     echo "error: could not pre-register Claude workspace trust for $WT; refusing to launch a claude worker that would wedge on the trust dialog; inspect window $T" >&2
