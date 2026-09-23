@@ -444,6 +444,174 @@ SH
   pass "spawn enumerates local homes before creating an endpoint or acquiring a copy"
 }
 
+# A secondmate home keeps its own clone of a project, but Treehouse names a pool
+# by directory name and origin URL, so that clone shares the pool of every other
+# home's clone of the same origin. The case sets up the main home's clone and a
+# secondmate home's clone of one origin, each named "project".
+make_other_clone_case() {
+  local name=$1 id=$2 case_dir home main mate fakebin
+  case_dir="$TMP_ROOT/$name"
+  home="$case_dir/home"
+  main="$case_dir/main/projects/project"
+  mate="$home/projects/project"
+  fakebin=$(make_spawn_fakebin "$case_dir/fake")
+  fm_test_fake_sleep_noop "$fakebin"
+  fm_test_spawn_home "$home" claude
+  fm_test_spawn_brief "$home" "$id"
+  fm_git_init_commit "$main"
+  fm_git_add_origin "$main" "$case_dir/origin.git"
+  git clone --quiet "$(git -C "$main" remote get-url origin)" "$mate"
+  printf '%s\n' "$case_dir|$home|$main|$mate|$fakebin"
+}
+
+read_other_clone_record() {
+  IFS='|' read -r CASE_DIR HOME_DIR MAIN_DIR PROJ_DIR FAKEBIN_DIR <<EOF
+$1
+EOF
+}
+
+common_dir_of() {
+  local common
+  common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir) || return 1
+  CDPATH='' cd -- "$common" && pwd -P
+}
+
+test_spawn_skips_a_copy_of_another_clone() {
+  local rec id out status log queue foreign own
+  id=lease-other-clone-j10
+  rec=$(make_other_clone_case other-clone "$id")
+  read_other_clone_record "$rec"
+  foreign="$CASE_DIR/pool/1/project"
+  own="$CASE_DIR/pool/2/project"
+  git -C "$MAIN_DIR" worktree add --quiet --detach "$foreign"
+  git -C "$PROJ_DIR" worktree add --quiet --detach "$own"
+  queue="$CASE_DIR/queue"
+  printf '%s\n%s\n' "$foreign" "$own" > "$queue"
+  log="$CASE_DIR/treehouse.log"
+  : > "$log"
+
+  out=$(FM_FAKE_TREEHOUSE_LOG="$log" FM_FAKE_TREEHOUSE_QUEUE="$queue" \
+    fm_test_run_spawn "$HOME_DIR" "$own" "$FAKEBIN_DIR" "$id" "$PROJ_DIR" --scout)
+  status=$?
+  expect_code 0 "$status" "a claude spawn should skip a copy of another clone and launch in its own"$'\n'"$out"
+  assert_grep "worktree=$own" "$HOME_DIR/state/$id.meta" \
+    "the spawn did not publish the copy of its own clone"
+  grep -F "return --force $foreign" "$log" >/dev/null \
+    || fail "spawn did not return the copy of the other clone"$'\n'"$(cat "$log")"
+  grep -F "return --force $own" "$log" >/dev/null \
+    && fail "spawn returned its own copy"$'\n'"$(cat "$log")"
+  pass "fm-spawn skips and returns a pooled copy of another clone of the same origin"
+}
+
+# The same case end to end against the installed tool: the main home's clone
+# leaves an idle copy in the shared pool, and a secondmate home's claude spawn
+# must still launch in a copy of its own clone.
+test_spawn_with_real_treehouse_launches_in_its_own_clone() {
+  local rec id out status log queue pool real foreign wt
+  command -v treehouse >/dev/null 2>&1 || {
+    pass "skipped: treehouse is not installed"
+    return 0
+  }
+  real=$(command -v treehouse)
+  id=lease-real-other-clone-k11
+  rec=$(make_other_clone_case real-other-clone "$id")
+  read_other_clone_record "$rec"
+  pool="$CASE_DIR/pool"
+  log="$CASE_DIR/treehouse.log"
+  queue="$CASE_DIR/queue"
+  : > "$log"
+  # Records each call and the leased path the fake tmux reports as the pane's.
+  cat > "$FAKEBIN_DIR/treehouse" <<SH
+#!/usr/bin/env bash
+set -u
+printf '%s\\n' "\$*" >> "$log"
+out=\$("$real" "\$@") || exit
+case " \$* " in *" --lease "*) printf '%s\\n' "\$out" > "$queue.last" ;; esac
+printf '%s\\n' "\$out"
+SH
+  chmod +x "$FAKEBIN_DIR/treehouse"
+  foreign=$(CDPATH='' cd -- "$MAIN_DIR" &&
+    TREEHOUSE_ROOT="$pool" "$real" get --lease --lease-holder main-task 2>/dev/null)
+  [ -n "$foreign" ] || fail "the main clone could not lease a copy"
+  TREEHOUSE_ROOT="$pool" "$real" return --force "$foreign" >/dev/null 2>&1 \
+    || fail "the main clone could not return its copy"
+
+  out=$(TREEHOUSE_ROOT="$pool" FM_FAKE_TREEHOUSE_QUEUE="$queue" \
+    fm_test_run_spawn "$HOME_DIR" "" "$FAKEBIN_DIR" "$id" "$PROJ_DIR" --scout)
+  status=$?
+  expect_code 0 "$status" "a claude spawn from a secondmate clone should launch despite a shared pool"$'\n'"$out"$'\n'"$(cat "$log")"
+  wt=$(grep '^worktree=' "$HOME_DIR/state/$id.meta" | cut -d= -f2-)
+  assert_equals "$(common_dir_of "$PROJ_DIR")" "$(common_dir_of "$wt")" \
+    "the published worktree is not a copy of the spawning home's clone"
+  grep -F "return --force $foreign" "$log" >/dev/null \
+    || fail "spawn did not return the main clone's copy"$'\n'"$(cat "$log")"
+  pass "fm-spawn launches in its own clone's copy from a pool shared with another clone"
+}
+
+# A task recorded before spawns skipped other clones' copies still sits in one.
+# Relaunching it on claude must register trust against the clone that copy
+# belongs to, while a copy of an unrelated repository stays refused.
+run_other_clone_relaunch() {  # <id> <worktree>
+  local id=$1 wt=$2
+  fm_write_meta "$HOME_DIR/state/$id.meta" \
+    "window=firstmate:fm-$id" \
+    "endpoint_task_id=$id" \
+    "worktree=$wt" \
+    "project=$PROJ_DIR" \
+    "harness=codex" \
+    "kind=scout"
+  mv "$FAKEBIN_DIR/tmux" "$FAKEBIN_DIR/tmux.real"
+  cat > "$FAKEBIN_DIR/tmux" <<SH
+#!/usr/bin/env bash
+set -u
+case "\$*" in
+  *"#{pane_current_command}"*) printf 'zsh\\n'; exit 0 ;;
+  *"#{pane_current_path}"*) printf '%s\\n' "$wt"; exit 0 ;;
+esac
+if [ "\${1:-}" = list-windows ]; then
+  printf '%s\\n' "fm-$id"
+  exit 0
+fi
+exec "\$(dirname "\$0")/tmux.real" "\$@"
+SH
+  chmod +x "$FAKEBIN_DIR/tmux"
+  fm_test_run_spawn "$HOME_DIR" "$wt" "$FAKEBIN_DIR" --relaunch "$id" --harness claude
+}
+
+test_relaunch_trusts_a_recorded_copy_of_another_clone() {
+  local rec id out status foreign store
+  id=lease-relaunch-other-clone-l12
+  rec=$(make_other_clone_case relaunch-other-clone "$id")
+  read_other_clone_record "$rec"
+  foreign="$CASE_DIR/pool/1/project"
+  git -C "$MAIN_DIR" worktree add --quiet --detach "$foreign"
+
+  out=$(run_other_clone_relaunch "$id" "$foreign")
+  status=$?
+  printf '%s\n' "$out" | grep -F "refusing to pre-register Claude trust" >/dev/null \
+    && fail "relaunch refused trust for a recorded copy of another clone of the same origin"$'\n'"$out"
+  store="$HOME_DIR/user-home/.claude.json"
+  grep -F "\"$(CDPATH='' cd -- "$foreign" && pwd -P)\"" "$store" >/dev/null 2>&1 \
+    || fail "relaunch did not register trust for the recorded copy (exit $status)"$'\n'"$out"
+  pass "a claude relaunch trusts a recorded copy of another clone of the same origin"
+}
+
+test_relaunch_still_refuses_a_copy_of_an_unrelated_repository() {
+  local rec id out status other
+  id=lease-relaunch-unrelated-m13
+  rec=$(make_other_clone_case relaunch-unrelated "$id")
+  read_other_clone_record "$rec"
+  fm_git_worktree "$CASE_DIR/unrelated" "$CASE_DIR/unrelated-wt" unrelated
+  other="$CASE_DIR/unrelated-wt"
+
+  out=$(run_other_clone_relaunch "$id" "$other")
+  status=$?
+  [ "$status" -ne 0 ] || fail "relaunch launched claude in a copy of an unrelated repository"$'\n'"$out"
+  assert_contains "$out" "is not a worktree of project" \
+    "relaunch did not refuse trust for a copy of an unrelated repository"
+  pass "a claude relaunch still refuses a copy of an unrelated repository"
+}
+
 test_plain_treehouse_get_reuses_a_processless_copy
 test_spawn_acquires_with_task_lifetime_lease
 test_spawn_refuses_a_copy_another_live_task_records
@@ -454,5 +622,9 @@ test_spawn_kimi_relaunch_delivery_failure_does_not_close_the_window
 test_spawn_failed_rollback_does_not_close_the_window
 test_spawn_refuses_a_copy_another_local_home_records
 test_spawn_refuses_before_endpoint_when_a_registered_home_is_missing
+test_spawn_skips_a_copy_of_another_clone
+test_spawn_with_real_treehouse_launches_in_its_own_clone
+test_relaunch_trusts_a_recorded_copy_of_another_clone
+test_relaunch_still_refuses_a_copy_of_an_unrelated_repository
 
 echo "# all fm-spawn-worktree-lease tests passed"
