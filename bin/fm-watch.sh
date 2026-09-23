@@ -223,6 +223,9 @@ POLL=${FM_POLL:-15}                   # seconds between cycles
 # cycle ages by at most one phase, or POLL seconds during that wait.
 # A phase that hangs past the grace still reads stale: nothing refreshes the
 # beacon while a phase is running, and there is no background ticker.
+# Liveness is the file's mtime. Its body is a generation rewritten only when
+# a cycle opens (advance_watcher_poll); phase refreshes touch the mtime and
+# leave that generation alone.
 # fm_poll_derived_grace (bin/fm-wake-lib.sh, already sourced transitively
 # above) is the single owner of the max(300, poll+60) derivation - see
 # docs/turnend-guard.md "Guard grace and the poll cadence".
@@ -2322,9 +2325,24 @@ rerecord_device_shifted_pr_poll() {  # <id>
 
 # Phase boundary for the liveness beacon. Call this between slow phases, not
 # from inside one: a phase that hangs past WATCHER_STALE_GRACE must still go
-# stale, so this is never a background ticker.
+# stale, so this is never a background ticker. touch leaves the poll
+# generation in the file body unchanged.
 refresh_watcher_beacon() {
   touch "$STATE/.last-watcher-beat"
+}
+
+# Opens one cycle. Rewriting the body is the cycle boundary; the write also
+# refreshes liveness. The next refresh_watcher_beacon calls must not rewrite
+# the body, or a slow cycle's mid-phase mtime change looks like the next cycle.
+advance_watcher_poll() {
+  local n tmp
+  n=$(cat "$STATE/.last-watcher-beat" 2>/dev/null || echo 0)
+  case "$n" in
+    ''|*[!0-9]*) n=0 ;;
+  esac
+  tmp=$(mktemp "$STATE/.last-watcher-beat.XXXXXX")
+  printf '%s\n' "$((n + 1))" > "$tmp"
+  mv "$tmp" "$STATE/.last-watcher-beat"
 }
 
 resurface_after_downtime() {
@@ -2357,8 +2375,8 @@ while :; do
 
   # Liveness beacon for fm-guard.sh: a fresh mtime here means a watcher is
   # alive. Supervision scripts warn when this goes stale with tasks in flight.
-  # Later refreshes sit between slow phases; this one opens the cycle.
-  refresh_watcher_beacon
+  # This rewrite opens the cycle. Later refreshes only touch the mtime.
+  advance_watcher_poll
 
   if [ "$(age_of "$STATE/home-summary.json")" -ge "$HOME_SUMMARY_INTERVAL" ]; then
     home_summary_refresh_detached
