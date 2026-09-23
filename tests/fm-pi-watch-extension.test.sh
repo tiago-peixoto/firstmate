@@ -4425,9 +4425,11 @@ test_pi_mark_loaded_claims_free_or_dead_lock() {
   [ "$turnend_pid" = "$watch_pid" ] \
     || fail "free lock wrote mismatched watch and turn-end pids"
 
-  sleep 30 &
+  # The dead pid comes from a child that exits on its own: a TERM sent to a
+  # freshly forked child can land before it drops this shell's TERM trap, and
+  # that child then runs fm_test_cleanup and deletes this suite's fixtures.
+  sleep 0 &
   dead=$!
-  kill "$dead" 2>/dev/null || true
   wait "$dead" 2>/dev/null || true
   printf '%s\n' "$dead" > "$home/state/.lock"
   rm -f "$home/state/.pi-watch-extension-loaded" "$home/state/.pi-turnend-extension-loaded"
