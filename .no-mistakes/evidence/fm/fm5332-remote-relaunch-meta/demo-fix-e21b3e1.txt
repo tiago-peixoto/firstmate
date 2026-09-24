@@ -1,0 +1,40 @@
+=== checkout: e21b3e1
+--- parent state/ios.meta (harness/model/effort/pr lines):
+harness=pi
+model=openai-codex/gpt-5.6-sol
+effort=medium
+--- last key in record: remote_target
+
+=== operator arms a PR poll (fm-pr-check.sh), then relaunches onto claude default default
+--- parent state/ios.meta (harness/model/effort/pr lines):
+harness=pi
+model=openai-codex/gpt-5.6-sol
+effort=medium
+pr=https://github.com/example/repo/pull/1
+--- last key in record: pr
+$ bin/fm-remote-secondmate-relaunch.sh ios claude default default
+relaunched ios harness=claude from=pi model=default effort=default backend=herdr endpoint=fm-remote:w1:p2 worktree=/srv/fm-home
+schema=fm-remote-secondmate-control.v1
+backend=herdr
+target=fm-remote:w1:p2
+herdr_session=fm-remote
+harness=claude
+model=claude-opus-5-5
+effort=high
+rc=0
+--- parent state/ios.meta (harness/model/effort/pr lines):
+harness=claude
+model=claude-opus-5-5
+effort=high
+pr=https://github.com/example/repo/pull/1
+--- last key in record: pr
+PR poll artifacts: VALID
+
+=== refused relaunch leaves record byte-identical
+error: unverified remote secondmate harness: notaharness
+rc=1
+record unchanged: yes
+
+=== local mate refused
+error: task l is not a remotely placed secondmate; use bin/fm-control.sh l relaunch instead
+rc=1

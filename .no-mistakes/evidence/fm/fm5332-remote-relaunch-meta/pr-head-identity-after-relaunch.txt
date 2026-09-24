@@ -1,0 +1,39 @@
+### before
+window=remote:ios
+endpoint_task_id=ios
+harness=pi
+kind=secondmate
+model=m1
+effort=medium
+remote_host=remote-mac
+remote_herdr_session=fm-remote
+remote_target=fm-remote:w1:p1
+pr=https://github.com/example/repo/pull/7
+pr_head=0123456789abcdef0123456789abcdef01234567
+x_platform=github
+identity_parse: OK url=https://github.com/example/repo/pull/7
+$ bin/fm-remote-secondmate-relaunch.sh ios codex default default   (host confirms empty model/effort pins)
+relaunched ios harness=codex
+schema=fm-remote-secondmate-control.v1
+harness=codex
+model=
+effort=
+rc=0
+### after
+harness=codex
+model=
+effort=
+window=remote:ios
+endpoint_task_id=ios
+kind=secondmate
+remote_host=remote-mac
+remote_herdr_session=fm-remote
+remote_target=fm-remote:w1:p1
+pr=https://github.com/example/repo/pull/7
+pr_head=0123456789abcdef0123456789abcdef01234567
+x_platform=github
+identity_parse: OK url=https://github.com/example/repo/pull/7
+mode=600
+.
+..
+ios.meta
