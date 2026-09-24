@@ -1435,8 +1435,8 @@ fm_pr_poll_observed_record() {  # <state> <id> <provider> <host> <path> <number>
 # that same pull request, that reading must still be of an OPEN pull request,
 # and it must be no older than the window the recheck would have covered.
 # Anything else - a retired poll, a tampered registration, a GitLab merge
-# request, an expired credential, a wedged watcher - returns 1 and the recheck
-# happens.
+# request, a Gerrit change, an expired credential, a wedged watcher - returns 1
+# and the recheck happens.
 #
 # The open clause is what keeps a live poll from standing in for a live wait. A
 # closed-unmerged pull request deliberately keeps its poll armed, and its
