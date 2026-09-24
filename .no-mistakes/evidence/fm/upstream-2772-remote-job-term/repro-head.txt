@@ -1,0 +1,11 @@
+== [head-f9cb853] scenario A: lock removed, then TERM
+worker 865012 ready; lock owner pid=865012
+removed worker.lock (ownership lost)
+sent TERM to 865012
+RESULT A: worker exited rc=0 after TERM
+stderr: 
+== [head-f9cb853] scenario B: replacement owns lock + quarantine, ousted worker gets TERM
+old=866002 replacement=866241 lock pid=866241
+RESULT B: old worker exited rc=0
+replacement alive: yes; lock pid=866241
+quarantine content='replacement guard' inode same: yes

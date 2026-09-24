@@ -1,0 +1,13 @@
+== [base-d1ce6b6] scenario A: lock removed, then TERM
+worker 858904 ready; lock owner pid=858904
+removed worker.lock (ownership lost)
+sent TERM to 858904
+RESULT A: worker 858904 STILL ALIVE 3s after TERM (TERM swallowed)
+stderr: mktemp: failed to create file via template '/tmp/tmp.nXtySXxAib/a/worker.lock/.quarantine.XXXXXX': No such file or directory
+remote-job-worker: cannot guard worker ownership for shutdown
+/home/firstmate/.no-mistakes/evidence/01M3A5M3AQG169ZVFF41AG87ZZ/repro-lost-lock-term.sh: line 24: 858904 Killed                     HOME="$T/home" FM_ROOT_OVERRIDE="$T/root" FM_REMOTE_JOB_STATE_ROOT="$1" FM_REMOTE_JOB_PLATFORM_OVERRIDE=Linux "$T/root/bin/fm-remote-job-worker.sh" --serve > "$1.out" 2> "$1.err"
+== [base-d1ce6b6] scenario B: replacement owns lock + quarantine, ousted worker gets TERM
+old=864265 replacement=864600 lock pid=864600
+RESULT B: old worker exited rc=0
+replacement alive: yes; lock pid=864600
+quarantine: REMOVED
