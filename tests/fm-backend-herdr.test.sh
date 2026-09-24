@@ -4984,6 +4984,45 @@ test_send_text_submit_three_paste_placeholders_submit_the_long_payload() {
   pass "fm_backend_herdr_send_text_submit: three paste placeholders with no literal remainder submit the long payload"
 }
 
+# A short slash command opens a completion menu taller than the 20-line
+# history tail. The tail is only that menu; the viewport still shows the
+# composer row above it. Enter is owed, including the second Enter that
+# closes the menu, and the draft is not wiped.
+herdr_slash_menu_viewport() {
+  local i
+  printf '  \xe2\x9d\xaf /exit\n'
+  printf '\n'
+  printf '/exit                         Exit the CLI\n'
+  for i in $(seq 1 20); do
+    printf '/skill-%02d                    skill %s\n' "$i" "$i"
+  done
+}
+
+test_send_text_submit_slash_menu_taller_than_history_tail_still_submits() {
+  local dir log resp fb out enter_count viewport tail glyph
+  dir="$TMP_ROOT/submit-slash-menu-tail"; mkdir -p "$dir/responses"; log="$dir/log"; resp="$dir/responses"; : > "$log"
+  glyph=$'\xe2\x9d\xaf'
+  viewport=$(herdr_slash_menu_viewport)
+  tail=$(printf '%s' "$viewport" | tail -n 20)
+  case "$viewport" in *"$glyph /exit"*) ;; *) fail "the viewport fixture must show the /exit composer" ;; esac
+  case "$tail" in *"$glyph"*) fail "the 20-line history tail must be only the slash menu" ;; esac
+  herdr_submit_claude_prefix "$resp" "/exit"
+  printf '%s' "$viewport" > "$resp/4.out"
+  printf '{"result":{"agent":{"agent_status":"idle"}}}\n' > "$resp/5.out"
+  printf '{"result":{"agent":{"agent_status":"idle"}}}\n' > "$resp/7.out"
+  printf '  \xe2\x9d\xaf /exit\n' > "$resp/8.out"
+  printf '{"result":{"agent":{"agent_status":"working"}}}\n' > "$resp/10.out"
+  fb=$(make_herdr_fakebin "$dir")
+  out=$( PATH="$fb:$PATH" FM_HERDR_LOG="$log" FM_HERDR_RESPONSES="$resp" FM_BACKEND_HERDR_SUBMIT_POLLS=1 \
+    bash -c '. "$0/bin/backends/herdr.sh"; fm_backend_herdr_send_text_submit default:w1:p2 "/exit" 3 0.01 0.01' "$ROOT" )
+  [ "$out" = empty ] || fail "a slash menu taller than the history tail should still submit /exit, got '$out'"
+  enter_count=$(grep -c $'\x1f''pane'$'\x1f''send-keys'$'\x1f''w1:p2'$'\x1f''enter' "$log")
+  [ "$enter_count" -eq 2 ] || fail "the menu's first Enter stays idle, so a second Enter must submit, sent $enter_count Enter(s)"
+  [ "$(herdr_ctrl_u_count "$log")" -eq 0 ] || fail "a composer the viewport still shows must not be cleared"
+  [ "$(grep -c $'\x1f''--source'$'\x1f''visible' "$log")" -ge 1 ] || fail "the payload proof must read the visible viewport"
+  pass "fm_backend_herdr_send_text_submit: a slash menu taller than the 20-line history tail still submits /exit from the visible composer"
+}
+
 # A non-Claude harness keeps the unproven type-then-Enter path: its composer
 # is never read before Enter, so a harness-specific placeholder or an
 # unselectable composer cannot turn a landed send into send-failed.
@@ -5814,6 +5853,7 @@ test_send_text_submit_lone_paste_placeholder_submits_the_long_payload
 test_send_text_submit_multiline_paste_placeholder_submits_the_long_payload
 test_send_text_submit_refuses_placeholder_followed_by_a_literal_remainder
 test_send_text_submit_three_paste_placeholders_submit_the_long_payload
+test_send_text_submit_slash_menu_taller_than_history_tail_still_submits
 test_send_text_submit_non_claude_skips_the_payload_proof
 test_dispatch_routes_herdr_backend
 test_dispatch_busy_state_unknown_for_tmux
