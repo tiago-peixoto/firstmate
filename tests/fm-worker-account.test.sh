@@ -102,6 +102,7 @@ spawn_ship() {
   : > "$CASE/launch.log"
   FM_FAKE_LAUNCH_LOG="$CASE/launch.log" FM_TEST_CLAUDE_CONFIG_DIR="$CASE/ambient-claude" \
     ANTHROPIC_API_KEY=ambient-invoker-key \
+    FM_FAKE_TREEHOUSE_QUEUE="${FM_FAKE_TREEHOUSE_QUEUE:-}" \
     fm_test_run_spawn "$HOME_DIR" "$WT" "$FAKEBIN" "$id" "$PROJ" --mode no-mistakes --yolo off "$@"
 }
 
@@ -279,9 +280,16 @@ test_pi_pin_refusals() {
 }
 
 test_pi_extension_provider_and_old_pi_fall_back_to_the_model_listing() {
-  local out rc id=acct-pi-list
+  local out rc id=acct-pi-list n queue
   new_case pi-listing pi
   mkdir -p "$CASE/pi-work"
+  queue="$CASE/lease-queue"
+  : > "$queue"
+  for n in 1 2 3 4; do
+    git -C "$PROJ" worktree add --quiet -b "acct-pi-list-$n" "$CASE/wt-$n" HEAD
+    printf '%s\n' "$CASE/wt-$n" >> "$queue"
+  done
+  FM_FAKE_TREEHOUSE_QUEUE=$queue
   printf 'codex-native\n' > "$CASE/pi-work/extension-providers"
   printf '%s\ncodex-native openai-codex\n' "$CASE/pi-work" > "$HOME_DIR/config/pi-account"
   out=$(spawn_ship "$id-unlisted" --model codex-native/gpt-6); rc=$?
@@ -298,13 +306,21 @@ test_pi_extension_provider_and_old_pi_fall_back_to_the_model_listing() {
   printf 'openai-codex  gpt-5  128K\n' > "$CASE/pi-work/listed"
   out=$(spawn_ship "$id-old" --model openai-codex/gpt-5); rc=$?
   expect_code 0 "$rc" "a Pi without auth check should launch when the root lists the provider: $out"
+  unset FM_FAKE_TREEHOUSE_QUEUE
   pass "extension providers and a Pi without auth check fall back to an exact model-listing match"
 }
 
 test_a_pin_governs_only_its_own_runner() {
-  local out rc id=acct-scope
+  local out rc id=acct-scope n queue
   new_case scope codex
   mkdir -p "$CASE/work"
+  queue="$CASE/lease-queue"
+  : > "$queue"
+  for n in 1 2; do
+    git -C "$PROJ" worktree add --quiet -b "acct-scope-$n" "$CASE/wt-$n" HEAD
+    printf '%s\n' "$CASE/wt-$n" >> "$queue"
+  done
+  FM_FAKE_TREEHOUSE_QUEUE=$queue
   printf '%s\n' "$CASE/work" > "$HOME_DIR/config/claude-account"
   out=$(spawn_ship "$id-codex"); rc=$?
   expect_code 0 "$rc" "a codex spawn must ignore a Claude pin: $out"
@@ -312,6 +328,7 @@ test_a_pin_governs_only_its_own_runner() {
   out=$(spawn_ship "$id-pi" --harness pi --model gpt-5.5); rc=$?
   expect_code 0 "$rc" "a Pi spawn must ignore a Claude pin: $out"
   assert_absent "$CASE/claude-checks" "no Claude sign-in check may run for another runner"
+  unset FM_FAKE_TREEHOUSE_QUEUE
   pass "a Claude pin leaves codex and Pi launches unchanged"
 }
 

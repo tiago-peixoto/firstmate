@@ -109,9 +109,7 @@ fm_test_fake_tmux_spawn() {
 set -u
 case "$*" in
   *"#{pane_current_path}"*)
-    if [ -n "${FM_FAKE_PANE_PATH:-}" ] && [ -f "${FM_FAKE_PANE_PATH}.lease-last" ]; then
-      cat "${FM_FAKE_PANE_PATH}.lease-last"
-    elif [ -n "${FM_FAKE_TREEHOUSE_QUEUE:-}" ] && [ -f "$FM_FAKE_TREEHOUSE_QUEUE.last" ]; then
+    if [ -n "${FM_FAKE_TREEHOUSE_QUEUE:-}" ] && [ -f "$FM_FAKE_TREEHOUSE_QUEUE.last" ]; then
       cat "$FM_FAKE_TREEHOUSE_QUEUE.last"
     else
       printf '%s\n' "${FM_FAKE_PANE_PATH:-}"

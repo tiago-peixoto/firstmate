@@ -3808,7 +3808,7 @@ spawn_lease_treehouse_worktree() {
         ;;
     esac
     path=$(real_path_or_raw "$path")
-    if owner=$(spawn_live_slot_owner "$path"); then
+    if owner=$(spawn_live_slot_owner "$path") && [ "$owner" != "$ID" ]; then
       echo "warning: treehouse handed out $path which live task $owner already records; leaving it leased so a later get cannot take it" >&2
       if [ "$path" = "${SPAWN_LAST_PROTECTED:-}" ]; then
         echo "error: refusing to launch $ID in $path; live task $owner already records that copy as its worktree" >&2
