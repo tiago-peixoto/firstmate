@@ -420,22 +420,6 @@ if [ "$lease" = 1 ]; then
   fi
   [ -n "$path" ] || path=${FM_FAKE_PANE_PATH:-}
   [ -n "$path" ] || exit 1
-  # A second lease of the same pane path is another task. Mint a sibling
-  # worktree so the occupied-copy refusal does not fail a later spawn in the
-  # same case. Queued paths stay exactly what the test wrote.
-  if [ -z "${FM_FAKE_TREEHOUSE_PATH:-}" ] && [ -z "${FM_FAKE_TREEHOUSE_QUEUE:-}" ]; then
-    handed="$path.lease-handed"
-    if [ -f "$handed" ] && grep -qx "$path" "$handed"; then
-      n=$(wc -l < "$handed" | tr -d '[:space:]')
-      next="$path-lease-$n"
-      git -C "$path" worktree add --quiet -b "lease-$n" "$next" HEAD || exit 1
-      path=$next
-    fi
-    printf '%s\n' "$path" >> "$handed"
-  fi
-  if [ -n "${FM_FAKE_PANE_PATH:-}" ]; then
-    printf '%s\n' "$path" > "${FM_FAKE_PANE_PATH}.lease-last"
-  fi
   if [ -n "${FM_FAKE_TREEHOUSE_QUEUE:-}" ]; then
     printf '%s\n' "$path" > "$FM_FAKE_TREEHOUSE_QUEUE.last"
   fi
