@@ -1,0 +1,24 @@
+== [target] pane foreground: sleep
+== [target] fm_backend_agent_alive tmux lab:fm-held -> alive
+== [target] t+2s WAKE: signal: /tmp/fmlive.tdmUTL/state/held.status
+== [target] watcher still silent at end of window (rc=124; 124 = timed out polling, no further wake)
+== [target] triage log tail:
+[2026-09-24T10:42:54-0300] absorbed stale (paused, awaiting external, age 35s): lab:fm-held
+[2026-09-24T10:42:55-0300] absorbed stale (paused, awaiting external, age 37s): lab:fm-held
+[2026-09-24T10:42:57-0300] absorbed stale (paused, awaiting external, age 39s): lab:fm-held
+[2026-09-24T10:42:59-0300] absorbed stale (paused, awaiting external, age 41s): lab:fm-held
+[2026-09-24T10:43:00-0300] absorbed stale (paused, awaiting external, age 42s): lab:fm-held
+[2026-09-24T10:43:02-0300] absorbed stale (paused, awaiting external, age 44s): lab:fm-held
+[2026-09-24T10:43:04-0300] absorbed stale (paused, awaiting external, age 46s): lab:fm-held
+[2026-09-24T10:43:06-0300] absorbed stale (paused, awaiting external, age 47s): lab:fm-held
+[2026-09-24T10:43:07-0300] absorbed stale (paused, awaiting external, age 49s): lab:fm-held
+[2026-09-24T10:43:09-0300] absorbed stale (paused, awaiting external, age 51s): lab:fm-held
+[2026-09-24T10:43:11-0300] absorbed stale (paused, awaiting external, age 53s): lab:fm-held
+[2026-09-24T10:43:12-0300] absorbed stale (paused, awaiting external, age 54s): lab:fm-held
+[2026-09-24T10:43:14-0300] absorbed stale (paused, awaiting external, age 56s): lab:fm-held
+[2026-09-24T10:43:16-0300] absorbed stale (paused, awaiting external, age 58s): lab:fm-held
+[2026-09-24T10:43:18-0300] absorbed stale (paused, awaiting external, age 60s): lab:fm-held
+== [target] pause markers:
+.paused-lab_fm-held
+.paused-rechecked-lab_fm-held
+.stale-lab_fm-held

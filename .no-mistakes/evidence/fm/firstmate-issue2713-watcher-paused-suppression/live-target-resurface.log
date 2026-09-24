@@ -1,0 +1,28 @@
+== [target-resurface20s] pane foreground: sleep
+== [target-resurface20s] fm_backend_agent_alive tmux lab:fm-held -> alive
+== [target-resurface20s] t+2s WAKE: signal: /tmp/fmlive.LD0diw/state/held.status
+== [target-resurface20s] t+21s WAKE: stale: lab:fm-held (paused 20s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+== [target-resurface20s] t+41s WAKE: stale: lab:fm-held (paused 41s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+== [target-resurface20s] t+61s WAKE: stale: lab:fm-held (paused 61s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+== [target-resurface20s] watcher still silent at end of window (rc=0; 124 = timed out polling, no further wake)
+== [target-resurface20s] triage log tail:
+[2026-09-24T10:43:53-0300] absorbed stale (paused, awaiting external, age 32s): lab:fm-held
+[2026-09-24T10:43:55-0300] absorbed stale (paused, awaiting external, age 34s): lab:fm-held
+[2026-09-24T10:43:56-0300] absorbed stale (paused, awaiting external, age 35s): lab:fm-held
+[2026-09-24T10:43:58-0300] absorbed stale (paused, awaiting external, age 37s): lab:fm-held
+[2026-09-24T10:44:00-0300] absorbed stale (paused, awaiting external, age 39s): lab:fm-held
+[2026-09-24T10:44:04-0300] absorbed stale (paused, awaiting external, age 43s): lab:fm-held
+[2026-09-24T10:44:06-0300] absorbed stale (paused, awaiting external, age 45s): lab:fm-held
+[2026-09-24T10:44:08-0300] absorbed stale (paused, awaiting external, age 47s): lab:fm-held
+[2026-09-24T10:44:10-0300] absorbed stale (paused, awaiting external, age 48s): lab:fm-held
+[2026-09-24T10:44:11-0300] absorbed stale (paused, awaiting external, age 50s): lab:fm-held
+[2026-09-24T10:44:13-0300] absorbed stale (paused, awaiting external, age 52s): lab:fm-held
+[2026-09-24T10:44:15-0300] absorbed stale (paused, awaiting external, age 54s): lab:fm-held
+[2026-09-24T10:44:17-0300] absorbed stale (paused, awaiting external, age 56s): lab:fm-held
+[2026-09-24T10:44:19-0300] absorbed stale (paused, awaiting external, age 57s): lab:fm-held
+[2026-09-24T10:44:20-0300] absorbed stale (paused, awaiting external, age 59s): lab:fm-held
+== [target-resurface20s] pause markers:
+.paused-lab_fm-held
+.paused-rechecked-lab_fm-held
+.paused-resurfaced-lab_fm-held
+.stale-lab_fm-held

@@ -1,0 +1,1 @@
+ok - a parked live worker absorbs pane churn, rechecks once when its declaration ages past the cadence, then absorbs churn again
