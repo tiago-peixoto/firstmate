@@ -1,0 +1,35 @@
+== control: paused: alone
+     | paused: waiting on upstream release
+   => state: paused · source: status-log · waiting on upstream release
+== adversarial: paused: + continuation 'https://github.com/o/r/pull/12'
+     | paused: waiting on upstream release
+     | https://github.com/o/r/pull/12
+   => state: paused · source: status-log · waiting on upstream release
+== adversarial: paused: + continuation 'Reason: upstream is slow'
+     | paused: waiting on upstream release
+     | Reason: upstream is slow
+   => state: paused · source: status-log · waiting on upstream release
+== adversarial: paused: + continuation 'Note: see above'
+     | paused: waiting on upstream release
+     | Note: see above
+   => state: paused · source: status-log · waiting on upstream release
+== adversarial: paused: + continuation 'e.g.: foo'
+     | paused: waiting on upstream release
+     | e.g.: foo
+   => state: paused · source: status-log · waiting on upstream release
+== adversarial: paused: + continuation '10:30 retry scheduled'
+     | paused: waiting on upstream release
+     | 10:30 retry scheduled
+   => state: paused · source: status-log · waiting on upstream release
+== parked: after paused: (new declaration replaces the pause)
+     | paused: waiting on upstream release
+     | parked: waiting for upstream
+   => state: paused · source: status-log · waiting on upstream release
+== done with mismatched corr token after needs-decision
+     | needs-decision [key=kept]: a real decision
+     | done corr=deadbeef: shipped
+   => state: parked · source: status-log · a real decision
+== control: done: shipped
+     | working: x
+     | done: shipped
+   => state: done · source: status-log · shipped

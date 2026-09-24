@@ -2,32 +2,32 @@
    status log:
      | working: still on it
      | parked: waiting for upstream release
-   watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:00+0200] absorbed benign signal: <state>/task.status
+   watcher verdict: SURFACED
+   stdout: signal: <state>/task.status
 == holding: after working:
    status log:
      | working: still on it
      | holding: for captain review
-   watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:03+0200] absorbed benign signal: <state>/task.status
+   watcher verdict: SURFACED
+   stdout: signal: <state>/task.status
 == done with mismatched corr token after working:
    status log:
      | working: still on it
      | done corr=deadbeef: shipped PR #12
-   watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:05+0200] absorbed benign signal: <state>/task.status
+   watcher verdict: SURFACED
+   stdout: signal: <state>/task.status
 == needs-decision with missing corr token
    status log:
      | working: still on it
      | needs-decision corr=: choose A or B
-   watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:08+0200] absorbed benign signal: <state>/task.status
+   watcher verdict: SURFACED
+   stdout: signal: <state>/task.status
 == control: plain working: note (recognized, nonterminal)
    status log:
      | working: step 1
      | working: step 2
    watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:10+0200] absorbed benign signal: <state>/task.status
+   triage: [2026-09-25T01:27:37+0200] absorbed benign signal: <state>/task.status
 == control: done: (recognized terminal)
    status log:
      | working: step 1
@@ -39,34 +39,34 @@
      | working: opened PR
      | https://github.com/o/r/pull/12
    watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:16+0200] absorbed benign signal: <state>/task.status
+   triage: [2026-09-25T01:27:42+0200] absorbed benign signal: <state>/task.status
 == adversarial: working: + continuation 'Reason: upstream is slow'
    status log:
      | working: opened PR
      | Reason: upstream is slow
    watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:18+0200] absorbed benign signal: <state>/task.status
+   triage: [2026-09-25T01:27:45+0200] absorbed benign signal: <state>/task.status
 == adversarial: working: + continuation 'Note: see above'
    status log:
      | working: opened PR
      | Note: see above
    watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:21+0200] absorbed benign signal: <state>/task.status
+   triage: [2026-09-25T01:27:47+0200] absorbed benign signal: <state>/task.status
 == adversarial: working: + continuation 'e.g.: the release notes'
    status log:
      | working: opened PR
      | e.g.: the release notes
    watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:24+0200] absorbed benign signal: <state>/task.status
+   triage: [2026-09-25T01:27:50+0200] absorbed benign signal: <state>/task.status
 == adversarial: working: + continuation '10:30 retry scheduled'
    status log:
      | working: opened PR
      | 10:30 retry scheduled
    watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:26+0200] absorbed benign signal: <state>/task.status
+   triage: [2026-09-25T01:27:52+0200] absorbed benign signal: <state>/task.status
 == adversarial: working: + continuation 'More detail: still waiting.'
    status log:
      | working: opened PR
      | More detail: still waiting.
    watcher verdict: ABSORBED
-   triage: [2026-09-25T01:28:29+0200] absorbed benign signal: <state>/task.status
+   triage: [2026-09-25T01:27:55+0200] absorbed benign signal: <state>/task.status
