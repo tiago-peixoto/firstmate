@@ -1,0 +1,40 @@
+
+ pi v0.87.1
+ escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more
+ Press ctrl+o to show full startup help and loaded resources.
+
+ Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.
+
+[Extensions]
+  driver.ts, fm-calm.ts
+
+
+ Warning: fd not found. Offline mode enabled, skipping download.
+ Warning: ripgrep not found. Offline mode enabled, skipping download.
+
+ Warning: tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+
+
+ WARMUP_treesum
+
+
+ ANSWER_treesum
+
+
+ CAPTAIN_PROMPT_treesum
+
+
+
+ hold_turn
+
+
+  ◿│◣
+▁╲▁▁▁╱▁▁▁▁▁▂▂▃▃▃▄▄▄▄▄▃▃▃▂▂▁▁▁▁▁▁▂▂▂▃▃▃▄▄▄▄▄▄▄▃▃▃▂▂▁▁▁▁▁▁▂▂▂▃▃▃▄▄▄▄▄▃▃▃▂▂▂▁▁▁▁▁▁▂▂▃▃▃▄▄▄▄▄▄▃▃▂▂▁▁▁▁▁▁▂▂▃▃▃▄▄▄▄▄▄▄▃▃▃▂▂▁▁▁▁▁▁▁▂▂▂▃▃▃▄▄▄▄▄▄▃▃▂▂▁▁▁▁▁▂▂▃▃▃▄▄▄▄▄▃▃▃▂▂
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/tmp/fmcalm-live/project (master)
+↑2.0k ↓7 R2.0k W2.0k CH98.7% 49.0%/4.1k (auto)                                                                                                     deterministic
+
+
+

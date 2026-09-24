@@ -1,0 +1,15 @@
+session 01a0d4d5-86a2-7224-b2f7-6669a17b9ae4 parent=undefined 
+model_change 87e2e960 parent=null 
+thinking_level_change a81aaab2 parent=87e2e960 
+model_change a671d2e1 parent=a81aaab2 
+message e5adc19a parent=a671d2e1 system: ""
+message 2859d0de parent=e5adc19a user: "WARMUP_treeold"
+message 02214309 parent=2859d0de assistant: "ANSWER_treeold"
+model_change 80960481 parent=02214309 
+message ce9dd831 parent=80960481 user: "CAPTAIN_PROMPT_treeold"
+message e78076d9 parent=ce9dd831 assistant: ""
+message 959f798e parent=e78076d9 toolResult: "released"
+message 495aff1f parent=959f798e assistant: ""
+message 3e011f64 parent=495aff1f user: "⁣FIRSTMATE_OP: v1 watcher: MONITOR_treeold_ONE"
+branch_summary 605cf9de parent=02214309 "The user explored a different conversation branch before re
+message d5388c34 parent=605cf9de assistant: "MONITOR_HANDLED_treeold"

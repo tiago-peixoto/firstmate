@@ -1,0 +1,2 @@
+ok - Calm hides queued Firstmate rows only on a session that can keep them, keeps hidden ones out of the editor on Escape, delivers them once in order, and leaves unsupported sessions and Calm off stock
+ok - Pi 0.87.1 with Calm on keeps a queued Firstmate notification unlisted, out of the editor on Escape, and delivers it once in a new announced turn, while Calm off stays stock

@@ -1,0 +1,14 @@
+session 01a0d4d4-dcf2-758a-a753-dbbd640d6cf6 parent=undefined 
+model_change 955fd325 parent=null 
+thinking_level_change 094b23f2 parent=955fd325 
+model_change c8c9fa4c parent=094b23f2 
+message a5c2cf82 parent=c8c9fa4c system: ""
+message 5ba74f3a parent=a5c2cf82 user: "WARMUP_tree"
+message 551f910a parent=5ba74f3a assistant: "ANSWER_tree"
+model_change e769ec1d parent=551f910a 
+message 84c9ff40 parent=e769ec1d user: "CAPTAIN_PROMPT_tree"
+message b11eeb20 parent=84c9ff40 assistant: ""
+message d2b2bebb parent=b11eeb20 toolResult: "released"
+message 7b12d2ed parent=d2b2bebb assistant: ""
+message dab82999 parent=551f910a user: "⁣FIRSTMATE_OP: v1 watcher: MONITOR_tree_ONE"
+message b5a2b5c5 parent=dab82999 assistant: "MONITOR_HANDLED_tree"
