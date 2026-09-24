@@ -1,0 +1,79 @@
+## private tmux server: /tmp/fm-cap-live.W5b0Ht/tmux/tmux-1000/default
+
+## S1 no declaration: dispatch stays uncapped (two ships on proj both launch)
+$ fm-spawn.sh a proj ... -> exit 0
+warning: /tmp/fm-cap-live.W5b0Ht/root/data/a/launch-brief.md records no ship branch; defaulting to legacy branch fm/a
+spawned a harness=sh kind=ship mode=no-mistakes yolo=off window=firstmate:fm-a worktree=/home/firstmate/.treehouse/proj-a2d015/1/proj
+   record: present; launch-brief: present; backlog: in_flight; tmux windows: [bash,fm-a]
+$ fm-spawn.sh b proj ... -> exit 0
+warning: /tmp/fm-cap-live.W5b0Ht/root/data/b/launch-brief.md records no ship branch; defaulting to legacy branch fm/b
+spawned b harness=sh kind=ship mode=no-mistakes yolo=off window=firstmate:fm-b worktree=/home/firstmate/.treehouse/proj-a2d015/2/proj
+   record: present; launch-brief: present; backlog: in_flight; tmux windows: [bash,fm-a,fm-b]
+   (tore down b)
+
+## S2 declare 'proj 1' with a holder (a) live: fresh ship c is deferred, nothing created
+$ fm-spawn.sh c proj ... -> exit 75
+deferred: project proj admits 1 worker(s) at once on this machine (/tmp/fm-cap-live.W5b0Ht/root/config/project-capacity) and 1 already hold a place (a); task c was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+   record: absent; launch-brief: absent; backlog: queued; tmux windows: [bash,fm-a]
+   windows before=[bash,fm-a] after=[bash,fm-a]
+
+## S3 fresh scout d is deferred too
+$ fm-spawn.sh d proj ... -> exit 75
+deferred: project proj admits 1 worker(s) at once on this machine (/tmp/fm-cap-live.W5b0Ht/root/config/project-capacity) and 1 already hold a place (a); task d was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+   record: absent; launch-brief: absent; backlog: queued; tmux windows: [bash,fm-a]
+
+## S4 local secondmate home spawning on a same-origin clone with the same dir name is deferred, counting root's holder
+$ fm-spawn.sh m proj ... -> exit 75
+deferred: project proj admits 1 worker(s) at once on this machine (/tmp/fm-cap-live.W5b0Ht/root/config/project-capacity) and 1 already hold a place (a in /tmp/fm-cap-live.W5b0Ht/root); task m was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+   record: absent; launch-brief: absent; backlog: queued; tmux windows: [bash,fm-a]
+
+## S5 same-origin clone under a different dir name finds no declaration and launches
+$ fm-spawn.sh n proj-alt ... -> exit 0
+warning: /tmp/fm-cap-live.W5b0Ht/mate/data/n/launch-brief.md records no ship branch; defaulting to legacy branch fm/n
+spawned n harness=sh kind=ship mode=no-mistakes yolo=off window=firstmate:fm-n worktree=/home/firstmate/.treehouse/proj-alt-a2d015/1/proj-alt
+   record: present; launch-brief: present; backlog: in_flight; tmux windows: [bash,fm-a,fm-n]
+
+## S6 now root has cap 1 but holders are a (root) and n (mate, proj-alt clone): root spawn e deferred naming both
+   (tore down a)
+$ fm-spawn.sh e proj ... -> exit 75
+deferred: project proj admits 1 worker(s) at once on this machine (/tmp/fm-cap-live.W5b0Ht/root/config/project-capacity) and 1 already hold a place (n in /tmp/fm-cap-live.W5b0Ht/mate); task e was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+   record: absent; launch-brief: absent; backlog: queued; tmux windows: [bash,fm-n]
+
+## S7 cleanup frees the place: tear down n, then e launches
+   (tore down n)
+$ fm-spawn.sh e proj ... -> exit 0
+warning: /tmp/fm-cap-live.W5b0Ht/root/data/e/launch-brief.md records no ship branch; defaulting to legacy branch fm/e
+spawned e harness=sh kind=ship mode=no-mistakes yolo=off window=firstmate:fm-e worktree=/home/firstmate/.treehouse/proj-a2d015/1/proj
+   record: present; launch-brief: present; backlog: in_flight; tmux windows: [bash,fm-e]
+
+## S8 recorded PR handoff frees the place: pr= recorded on e, then f launches
+   (appended the pr= line bin/fm-pr-check.sh records)
+$ fm-spawn.sh f proj ... -> exit 0
+warning: /tmp/fm-cap-live.W5b0Ht/root/data/f/launch-brief.md records no ship branch; defaulting to legacy branch fm/f
+spawned f harness=sh kind=ship mode=no-mistakes yolo=off window=firstmate:fm-f worktree=/home/firstmate/.treehouse/proj-a2d015/2/proj
+   record: present; launch-brief: present; backlog: in_flight; tmux windows: [bash,fm-e,fm-f]
+
+## S9 malformed declaration refuses the fresh spawn (exit 1), nothing created
+$ fm-spawn.sh g proj ... -> exit 1
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-cap-live.W5b0Ht/root/config/project-capacity line 1 gives proj a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+   record: absent; launch-brief: absent; backlog: queued; tmux windows: [bash,fm-e,fm-f]
+   (declaration replaced by a directory = unreadable)
+$ fm-spawn.sh g proj ... -> exit 1
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-cap-live.W5b0Ht/root/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+   record: absent; launch-brief: absent; backlog: queued; tmux windows: [bash,fm-e,fm-f]
+
+## S10 secondmate spawn is never counted: at capacity (f holds), a --secondmate spawn still launches
+$ fm-spawn.sh sm2 <home> --secondmate -> exit 0
+   (no deferred/error line)
+   record: present; windows [bash,fm-e,fm-f,fm-sm2]
+
+## S11 relaunch is never counted: f holds the only place; its agent dies; fm-spawn.sh f --relaunch is admitted
+   fm-f pane: cmd=bash cwd=/home/firstmate/.treehouse/proj-a2d015/2/proj
+$ fm-spawn.sh f --relaunch -> exit 0
+spawned f harness=sh kind=ship mode=no-mistakes yolo=off window=firstmate:fm-f worktree=/home/firstmate/.treehouse/proj-a2d015/2/proj
+   fm-f pane after relaunch: 1 line(s) show relaunched-f
+
+## final records
+   root/e.meta: kind=ship pr=https://github.com/example/proj/pull/1
+   root/f.meta: kind=ship pr=
+   root/sm2.meta: kind=secondmate pr=
