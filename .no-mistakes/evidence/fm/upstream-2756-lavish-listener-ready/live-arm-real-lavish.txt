@@ -1,0 +1,80 @@
+$ bin/fm-procevent-lavish.sh arm board.html   # scenario 1: fresh arm
+registered: lavish-1787666762184a3e (lavish)
+armed: lavish-1787666762184a3e
+artifact: /tmp/fm-live-lavish-2756/board.html
+rc=0 elapsed=.905644124s
+$ bin/fm-procevent.sh list
+SOURCE                       ADAPTER      OWNER      PENDING
+lavish-1787666762184a3e      lavish       live       0
+$ pgrep -af "lavish-axi poll"
+
+$ bin/fm-procevent-lavish.sh arm board.html   # scenario 2: re-arm while generation 1 listener is live (FM_PROCEVENT_LAUNCH_CONFIRM_SECONDS=2)
+registered: lavish-1787666762184a3e (lavish)
+still-listening: lavish-1787666762184a3e
+artifact: /tmp/fm-live-lavish-2756/board.html
+note: an earlier listener is still live and serving this board; this registration takes effect only after the source is retired and armed again
+rc=0 elapsed=3.365136956s
+$ bin/fm-procevent.sh list
+SOURCE                       ADAPTER      OWNER      PENDING
+lavish-1787666762184a3e      lavish       live       0
+$ pgrep -af "lavish-axi poll" | wc -l   # still exactly one poller
+1
+$ pgrep -af "board.html"   # the armed listener, now polling the real Lavish server
+2337849 bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3AFKSMGJQ55X00CCQ2N1N98/bin/fm-procevent-lavish.sh poll /tmp/fm-live-lavish-2756/board.html
+2337993 /home/firstmate/.local/share/mise/installs/node/22.23.1/bin/node /home/firstmate/.local/bin/lavish-axi poll /tmp/fm-live-lavish-2756/board.html
+2337994 bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3AFKSMGJQ55X00CCQ2N1N98/bin/fm-procevent-lavish.sh poll /tmp/fm-live-lavish-2756/board.html
+$ lavish-axi end board.html   # end the session so the real poll returns
+session:
+  file: /tmp/fm-live-lavish-2756/board.html
+  status: ended
+$ ls state/procevent-inbox
+lavish-1787666762184a3e.1.adapter
+lavish-1787666762184a3e.1.handled
+lavish-1787666762184a3e.1.result
+$ cat captured result
+session:
+  file: /tmp/fm-live-lavish-2756/board.html
+  status: ended
+  ended_by: agent
+next_step: "This Lavish Editor session for /tmp/fm-live-lavish-2756/board.html has ended. Stop polling. Deliver any remaining updates directly in this conversation, or run `lavish-axi /tmp/fm-live-lavish-2756/board.html` to open a fresh session if the user needs further visual review."
+$ bin/fm-procevent.sh list
+SOURCE                       ADAPTER      OWNER      PENDING
+lavish-1787666762184a3e      lavish       none       0
+
+# scenario 3: documented adoption path - retire, then arm again
+$ bin/fm-procevent-lavish.sh retire board.html
+retired: lavish-1787666762184a3e
+rc=0
+$ bin/fm-procevent-lavish.sh arm board.html
+registered: lavish-1787666762184a3e (lavish)
+armed: lavish-1787666762184a3e
+artifact: /tmp/fm-live-lavish-2756/board.html
+rc=0
+$ bin/fm-procevent.sh list
+SOURCE                       ADAPTER      OWNER      PENDING
+lavish-1787666762184a3e      lavish       live       0
+$ bin/fm-procevent-lavish.sh retire board.html
+retired: lavish-1787666762184a3e
+rc=0
+pollers left: 0
+
+# scenario 4 (adversarial): the listener can never claim (claim path is a directory); confirm window 2s
+registered: lavish-1787666762184a3e (lavish)
+error: listener is not running: lavish-1787666762184a3e
+rc=1 elapsed=2.798099046s
+pollers: 0
+$ ls state/procevent (registration kept because retire refuses an unreadable claim)
+lavish-1787666762184a3e.source
+
+# scenario 5 (adversarial): listener dies before claiming - lavish-axi missing from listener PATH
+retired: lavish-1787666762184a3e
+(driven instead as: claim root made read-only so the runner cannot take its claim; nothing may still own the source)
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3AFKSMGJQ55X00CCQ2N1N98/bin/fm-wake-lib.sh: line 604: [: : integer expected
+bin/fm-procevent-lavish.sh: line 200: 2386229 Segmentation fault         (core dumped) FM_HOME="$FM_HOME" "$SCRIPT_DIR/fm-procevent.sh" register lavish "$id" -- "${listener[@]}"
+rc=1 elapsed=125.429723116s
+pollers: 0
+$ ls state/procevent (unstarted registration removed)
+.owner-lease
+$ bin/fm-procevent.sh list
+no sources registered
+(scenario 5 abandoned as an invalid fixture: with a read-only claim root the pre-existing `register` step - unchanged by this branch - never returned and was killed by the tester after ~125s, so ensure-listening never ran. The "retire an unstarted registration" path is covered by tests/fm-procevent.test.sh instead.)
