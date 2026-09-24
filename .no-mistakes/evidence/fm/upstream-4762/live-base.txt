@@ -1,0 +1,95 @@
+-- idle Claude worker pane (fm-claude), last lines:
+   #  Security guide
+   #  ❯ No, exit
+   #    Yes, I trust this folder
+   #  Enter to confirm · Esc to cancel
+
+== [base] case colorwait
+-- status log before:
+   | needs-decision: which color
+   | paused: waiting on the vendor release
+-- $ fm-send.sh colorwait --resolve-key default blue
+   > ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   > ●  WATCHER DOWN - SUPERVISION IS OFF
+   > ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+   > ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+   > ●  This is a supervision warning only; the requested message WILL still be sent.
+   > ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+   > ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   > fm-send: doorbell not typed because the agent in lab:fm-waiter has exited; the steer is durably recorded at /tmp/fm4762-lab.9wrx9U/home-colorwait/state/colorwait.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+   > exit=0
+-- status log after:
+   | needs-decision: which color
+   | paused: waiting on the vendor release
+   | resolved [key=default] [at=1790290725]: answered: blue
+-- declared-wait read (supervisor view):
+   NO DECLARED WAIT (line: resolved [key=default] [at=1790290725]: answered: blue)
+-- daemon classify_stale:
+   self|transient stale (lab:fm-colorwait): resolved [key=default] [at=1790290725]: answered: blue
+-- $ fm-crew-state.sh colorwait   (meta window now the idle Claude pane)
+   state: unknown · source: pane · harness state unavailable (unknown missing)
+
+== [base] case selfretract
+-- status log before:
+   | paused: waiting on the vendor release
+   | resolved: the vendor shipped
+-- status log after:
+   | paused: waiting on the vendor release
+   | resolved: the vendor shipped
+-- declared-wait read (supervisor view):
+   NO DECLARED WAIT (line: resolved: the vendor shipped)
+-- daemon classify_stale:
+   self|transient stale (lab:fm-selfretract): resolved: the vendor shipped
+-- $ fm-crew-state.sh selfretract   (meta window now the idle Claude pane)
+   state: unknown · source: pane · harness state unavailable (unknown missing)
+
+== [base] case legalkey
+-- status log before:
+   | needs-decision [key=legal]: which counsel
+   | paused: waiting on the vendor release
+-- $ fm-send.sh legalkey --resolve-key legal acme llp
+   > ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   > ●  WATCHER DOWN - SUPERVISION IS OFF
+   > ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+   > ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+   > ●  This is a supervision warning only; the requested message WILL still be sent.
+   > ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+   > ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   > fm-send: doorbell not typed because the agent in lab:fm-waiter has exited; the steer is durably recorded at /tmp/fm4762-lab.9wrx9U/home-legalkey/state/legalkey.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+   > exit=0
+-- status log after:
+   | needs-decision [key=legal]: which counsel
+   | paused: waiting on the vendor release
+   | resolved [key=legal] [at=1790290727]: answered: acme llp
+-- declared-wait read (supervisor view):
+   NO DECLARED WAIT (line: resolved [key=legal] [at=1790290727]: answered: acme llp)
+-- daemon classify_stale:
+   self|transient stale (lab:fm-legalkey): resolved [key=legal] [at=1790290727]: answered: acme llp
+-- $ fm-crew-state.sh legalkey   (meta window now the idle Claude pane)
+   state: unknown · source: pane · harness state unavailable (unknown missing)
+
+== [base] case stateddefault
+-- status log before:
+   | paused [key=default]: named default wait
+   | needs-decision: which color
+-- $ fm-send.sh stateddefault --resolve-key default blue
+   > ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   > ●  WATCHER DOWN - SUPERVISION IS OFF
+   > ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+   > ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+   > ●  This is a supervision warning only; the requested message WILL still be sent.
+   > ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+   > ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   > fm-send: doorbell not typed because the agent in lab:fm-waiter has exited; the steer is durably recorded at /tmp/fm4762-lab.9wrx9U/home-stateddefault/state/stateddefault.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+   > exit=0
+-- status log after:
+   | paused [key=default]: named default wait
+   | needs-decision: which color
+   | resolved [key=default] [at=1790290729]: answered: blue
+-- declared-wait read (supervisor view):
+   NO DECLARED WAIT (line: resolved [key=default] [at=1790290729]: answered: blue)
+-- daemon classify_stale:
+   self|transient stale (lab:fm-stateddefault): resolved [key=default] [at=1790290729]: answered: blue
+-- $ fm-crew-state.sh stateddefault   (meta window now the idle Claude pane)
+   state: unknown · source: pane · harness state unavailable (unknown missing)
+

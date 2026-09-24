@@ -1,0 +1,1 @@
+ok - a foreign resolved line keeps a pause, while the worker's own resolved line retracts it

@@ -1,0 +1,38 @@
+== [target/selfretract] status log fed to the watcher:
+   | paused: waiting on the vendor release
+   | resolved: the vendor shipped
+-- worker pane: pane_current_command=env
+-- watcher polled for 60s across 13 watcher run(s)
+-- watcher stdout (wake lines):
+   > signal: /tmp/fm4762-watch.dXHESV/home/state/waiter.status
+   > stale: lab:fm-waiter
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 1)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 2)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 3, demand-deep-inspection: same pane has wedge-escalated 3 times in a row - do not re-absorb on the run-step/pane state alone)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 4, demand-deep-inspection: same pane has wedge-escalated 4 times in a row - do not re-absorb on the run-step/pane state alone)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 5, demand-deep-inspection: same pane has wedge-escalated 5 times in a row - do not re-absorb on the run-step/pane state alone)
+   > stale: lab:fm-waiter (idle 3s, possible wedge, escalation 6, demand-deep-inspection: same pane has wedge-escalated 6 times in a row - do not re-absorb on the run-step/pane state alone)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 7, demand-deep-inspection: same pane has wedge-escalated 7 times in a row - do not re-absorb on the run-step/pane state alone)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 8, demand-deep-inspection: same pane has wedge-escalated 8 times in a row - do not re-absorb on the run-step/pane state alone)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 9, demand-deep-inspection: same pane has wedge-escalated 9 times in a row - do not re-absorb on the run-step/pane state alone)
+   > stale: lab:fm-waiter (idle 2s, possible wedge, escalation 10, demand-deep-inspection: same pane has wedge-escalated 10 times in a row - do not re-absorb on the run-step/pane state alone)
+-- queued wakes:
+   q signal	waiter.status	signal: /tmp/fm4762-watch.dXHESV/home/state/waiter.status
+   q signal	waiter.status	signal: /tmp/fm4762-watch.dXHESV/home/state/waiter.status
+   q stale	lab:fm-waiter	stale: lab:fm-waiter
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 1)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 2)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 3, demand-deep-inspection: same pane has wedge-escalated 3 times in a row - do not re-absorb on the run-step/pane state alone)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 4, demand-deep-inspection: same pane has wedge-escalated 4 times in a row - do not re-absorb on the run-step/pane state alone)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 5, demand-deep-inspection: same pane has wedge-escalated 5 times in a row - do not re-absorb on the run-step/pane state alone)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 3s, possible wedge, escalation 6, demand-deep-inspection: same pane has wedge-escalated 6 times in a row - do not re-absorb on the run-step/pane state alone)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 7, demand-deep-inspection: same pane has wedge-escalated 7 times in a row - do not re-absorb on the run-step/pane state alone)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 8, demand-deep-inspection: same pane has wedge-escalated 8 times in a row - do not re-absorb on the run-step/pane state alone)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 9, demand-deep-inspection: same pane has wedge-escalated 9 times in a row - do not re-absorb on the run-step/pane state alone)
+   q stale	lab:fm-waiter	stale: lab:fm-waiter (idle 2s, possible wedge, escalation 10, demand-deep-inspection: same pane has wedge-escalated 10 times in a row - do not re-absorb on the run-step/pane state alone)
+-- wedge escalation counter: 10
+-- watcher triage log:
+-- pause / stale / wedge markers:
+   marker .stale-lab_fm-waiter
+   marker .stale-since-lab_fm-waiter
+   marker .wedge-escalations-lab_fm-waiter

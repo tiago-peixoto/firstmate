@@ -1,0 +1,19 @@
+== [target/answered] status log fed to the watcher:
+   | needs-decision: which color
+   | paused: waiting on the vendor release
+   | resolved [key=default] [at=1790290933]: answered: blue
+-- worker pane: pane_current_command=grok
+-- watcher polled for 60s across 3 watcher run(s)
+-- watcher stdout (wake lines):
+   > signal: /tmp/fm4762-watch.SwNpW5/home/state/waiter.status
+   > stale: lab:fm-waiter
+-- queued wakes:
+   q signal	waiter.status	signal: /tmp/fm4762-watch.SwNpW5/home/state/waiter.status
+   q signal	waiter.status	signal: /tmp/fm4762-watch.SwNpW5/home/state/waiter.status
+   q stale	lab:fm-waiter	stale: lab:fm-waiter
+-- wedge escalation counter: none
+-- watcher triage log:
+-- pause / stale / wedge markers:
+   marker .paused-lab_fm-waiter
+   marker .paused-resurfaced-lab_fm-waiter
+   marker .stale-lab_fm-waiter
