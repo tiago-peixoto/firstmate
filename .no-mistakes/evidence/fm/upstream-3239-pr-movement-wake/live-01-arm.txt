@@ -1,0 +1,9 @@
+$ fm-pr-check.sh delivery https://github.com/cli/cli/pull/14485   (isolated FM_HOME, real gh, read-only)
+armed: state/delivery.check.sh
+rc=0
+contributions.check-trust
+contributions.check.sh
+delivery.check.sh
+delivery.meta
+delivery.pr-poll
+delivery.pr-poll-registration

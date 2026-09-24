@@ -1,0 +1,6 @@
+not ok - head movement did not become exactly one pending signal: []
+not ok - ready movement did not become exactly one pending signal: []
+not ok - reviewer movement did not become exactly one pending signal: []
+not ok - team movement did not become exactly one pending signal: []
+not ok - watcher did not surface the replaced head: 
+not ok - 5 contribution regressions

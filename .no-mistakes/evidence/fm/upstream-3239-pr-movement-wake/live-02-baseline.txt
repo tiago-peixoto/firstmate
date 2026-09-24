@@ -1,0 +1,19 @@
+$ bash state/contributions.check.sh   # first real observation (baseline)
+rc=0
+$ jq observation summary
+{
+  "url": "https://github.com/cli/cli/pull/14485",
+  "checked_at": "2026-09-24T21:05:41Z",
+  "error": null,
+  "head": "9719a729742f0c06220a18bcc164184733b7110f",
+  "draft": false,
+  "review_requests": [
+    "niik"
+  ],
+  "pending": [],
+  "seen": []
+}
+$ fm-contributions.sh pending
+[]
+$ wake queue
+(no wake queue)

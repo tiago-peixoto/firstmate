@@ -1,0 +1,50 @@
+# Seed the stored prior observation as it would have been before movement: older head, still draft, no reviewer requested
+{
+  "head": "1111111111111111111111111111111111111111",
+  "draft": true,
+  "review_requests": []
+}
+$ bash state/contributions.check.sh   # second real observation
+contribution-wake: check: contributions delivery 65a6eea07011001ebf96c3022816ec10ef5145d63f75ac01f1f842f9fdb7ec85
+contribution-wake: check: contributions delivery 8dc48f466101f00e7432f8bcde3f33e37e29d237c91f1714b57efc1191e121a9
+contribution-wake: check: contributions delivery 9701b2337ba3faa56c3347681a029d29baf9687aa129530901207e8ddba20167
+rc=0
+$ fm-contributions.sh pending
+[
+  {
+    "token": "head:9719a729742f0c06220a18bcc164184733b7110f:2026-09-24T21:05:52Z",
+    "type": "head",
+    "source": "https://github.com/cli/cli/pull/14485",
+    "head": "9719a729742f0c06220a18bcc164184733b7110f",
+    "body": "head moved from 1111111111111111111111111111111111111111 to 9719a729742f0c06220a18bcc164184733b7110f",
+    "task": "delivery",
+    "url": "https://github.com/cli/cli/pull/14485"
+  },
+  {
+    "token": "ready-for-review:9719a729742f0c06220a18bcc164184733b7110f:2026-09-24T21:05:52Z",
+    "type": "ready-for-review",
+    "source": "https://github.com/cli/cli/pull/14485",
+    "head": "9719a729742f0c06220a18bcc164184733b7110f",
+    "body": "pull request left draft",
+    "task": "delivery",
+    "url": "https://github.com/cli/cli/pull/14485"
+  },
+  {
+    "token": "review-requested:niik:2026-09-24T21:05:52Z",
+    "type": "review-requested",
+    "source": "https://github.com/cli/cli/pull/14485",
+    "head": "9719a729742f0c06220a18bcc164184733b7110f",
+    "body": "review requested from niik",
+    "task": "delivery",
+    "url": "https://github.com/cli/cli/pull/14485"
+  }
+]
+$ wake queue (check wakes)
+1790283956	1	check	contribution-65a6eea07011001ebf96c3022816ec10ef5145d63f75ac01f1f842f9fdb7ec85	check: contributions delivery 65a6eea07011001ebf96c3022816ec10ef5145d63f75ac01f1f842f9fdb7ec85
+1790283956	2	check	contribution-8dc48f466101f00e7432f8bcde3f33e37e29d237c91f1714b57efc1191e121a9	check: contributions delivery 8dc48f466101f00e7432f8bcde3f33e37e29d237c91f1714b57efc1191e121a9
+1790283956	3	check	contribution-9701b2337ba3faa56c3347681a029d29baf9687aa129530901207e8ddba20167	check: contributions delivery 9701b2337ba3faa56c3347681a029d29baf9687aa129530901207e8ddba20167
+$ bash state/contributions.check.sh   # unchanged re-poll
+rc=0
+$ pending count / wake-queue lines
+3
+3

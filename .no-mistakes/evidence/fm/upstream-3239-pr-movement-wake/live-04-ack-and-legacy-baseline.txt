@@ -1,0 +1,23 @@
+# Acknowledge each pending movement token
+$ fm-contributions.sh ack delivery https://github.com/cli/cli/pull/14485 head:9719a729742f0c06220a18bcc164184733b7110f:2026-09-24T21:05:52Z
+rc=0
+$ fm-contributions.sh ack delivery https://github.com/cli/cli/pull/14485 ready-for-review:9719a729742f0c06220a18bcc164184733b7110f:2026-09-24T21:05:52Z
+rc=0
+$ fm-contributions.sh ack delivery https://github.com/cli/cli/pull/14485 review-requested:niik:2026-09-24T21:05:52Z
+rc=0
+$ pending
+[]
+# Seed a legacy stored observation (predates review_requests) with the current head and not draft
+{
+  "head": "9719a729742f0c06220a18bcc164184733b7110f",
+  "draft": false,
+  "has_review_requests": false
+}
+$ bash state/contributions.check.sh
+rc=0
+$ pending (expect [] - existing reviewer niik is the baseline, not movement)
+[]
+wake-queue lines before=3 after=3
+[
+  "niik"
+]
