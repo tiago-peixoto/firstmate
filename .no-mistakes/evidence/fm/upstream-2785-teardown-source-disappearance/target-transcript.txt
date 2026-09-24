@@ -1,0 +1,104 @@
+==================================================================
+[target @ 43a6a18] fm-nm-run-lib.sh deleted (issue repro)
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 1
+--- stdout (tail):
+--- stderr (tail):
+    error: teardown refused: required source fm-nm-run-lib.sh is missing or unreadable; nothing was changed
+--- state after:
+    present: state/task-x1.meta
+    present: state/task-x1.status
+    treehouse return calls: 0
+    tmux kill calls: 0
+==================================================================
+[target @ 43a6a18] fm-operational-input.sh deleted
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 1
+--- stdout (tail):
+--- stderr (tail):
+    error: teardown refused: required source fm-operational-input.sh is missing or unreadable; nothing was changed
+--- state after:
+    present: state/task-x1.meta
+    present: state/task-x1.status
+    treehouse return calls: 0
+    tmux kill calls: 0
+==================================================================
+[target @ 43a6a18] fm-nm-run-lib.sh mode 000
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 1
+--- stdout (tail):
+--- stderr (tail):
+    error: teardown refused: required source fm-nm-run-lib.sh is missing or unreadable; nothing was changed
+--- state after:
+    present: state/task-x1.meta
+    present: state/task-x1.status
+    treehouse return calls: 0
+    tmux kill calls: 0
+==================================================================
+[target @ 43a6a18] tmux task, adapter sibling fm-session-lock-lib.sh deleted
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 1
+--- stdout (tail):
+--- stderr (tail):
+    error: teardown refused: required tmux source is missing or unreadable for task-x1; nothing was changed
+--- state after:
+    present: state/task-x1.meta
+    present: state/task-x1.status
+    treehouse return calls: 0
+    tmux kill calls: 0
+==================================================================
+[target @ 43a6a18] tmux task, adapter backends/tmux.sh deleted
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 1
+--- stdout (tail):
+--- stderr (tail):
+    error: teardown refused: required tmux source is missing or unreadable for task-x1; nothing was changed
+--- state after:
+    present: state/task-x1.meta
+    present: state/task-x1.status
+    treehouse return calls: 0
+    tmux kill calls: 0
+==================================================================
+[target @ 43a6a18] secondmate + herdr child, fm-transition-lib.sh deleted
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 1
+--- stdout (tail):
+--- stderr (tail):
+    error: teardown refused: required herdr source is missing or unreadable for child-herdr; nothing was changed
+--- state after:
+    present: state/task-x1.meta
+    present: state/task-x1.status
+    present: secondmate-home/state/child-herdr.meta
+    present: secondmate-home/state/child-herdr.status
+    present: secondmate-home
+    treehouse return calls: 0
+    tmux kill calls: 0
+    herdr close calls: 0
+==================================================================
+[target @ 43a6a18] zellij secondmate + tmux child, fm-backend-hometag-lib.sh deleted
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 1
+--- stdout (tail):
+--- stderr (tail):
+    error: teardown refused: required zellij source is missing or unreadable for task-x1; nothing was changed
+--- state after:
+    present: state/task-x1.meta
+    present: state/task-x1.status
+    present: secondmate-home/state/child-tmux.meta
+    present: secondmate-home/state/child-tmux.status
+    present: secondmate-home
+    treehouse return calls: 0
+    tmux kill calls: 0
+==================================================================
+[target @ 43a6a18] control: all sources present
+$ bin/fm-teardown.sh task-x1 --force
+--- exit status: 0
+--- stdout (tail):
+    teardown task-x1 complete (window firstmate:fm-task-x1, worktree /tmp/fm-live-td.MlRnkv/s8/wt)
+    Backlog: task-x1 just finished (config/backlog-backend selects manual editing). Update /tmp/fm-live-td.MlRnkv/s8/data/backlog.md - move task-x1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+--- stderr (tail):
+--- state after:
+    GONE:    state/task-x1.meta
+    GONE:    state/task-x1.status
+    treehouse return calls: 1
+    tmux kill calls: 1
