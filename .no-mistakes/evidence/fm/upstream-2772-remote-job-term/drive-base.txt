@@ -1,0 +1,15 @@
+=== [BASE-977a81e] Scenario A: lock directory removed, then TERM ===
+worker pid=1911603 ready; lock pid=1911603
+removed worker.lock (ownership lost)
+before TERM: worker ALIVE
+3s after TERM: worker ALIVE
+lock dir after TERM: absent
+
+=== [BASE-977a81e] Scenario B: replacement owns lock and has a quarantine, then TERM old worker ===
+old worker pid=1916718 ready
+replacement pid=1917072 owns lock (pid file=1917072)
+replacement quarantine written, inode=195468
+old worker: EXITED; replacement: ALIVE
+lock pid now: 1917072
+quarantine: REMOVED
+old worker stderr: 
