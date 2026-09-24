@@ -19,6 +19,6 @@ ok - gemini is refused as a secondmate because it has no primary supervision pro
 ok - codex classifies unknown until a semantic source is verified, never idle or footer-matched
 all fm-busy-adapter-wiring tests passed
 
-real	1m31.180s
-user	0m16.142s
-sys	0m38.321s
+real	1m35.868s
+user	0m19.080s
+sys	0m40.344s
