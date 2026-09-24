@@ -1,0 +1,134 @@
+=== parked-while-busy
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    parked: waiting for upstream
+--- watcher: EXITED and woke the captain with:
+    signal: /tmp/fm-4763-drive.QG0Cbu/parked-while-busy/state/task.status
+--- durable wake queue: has entry
+
+=== holding-while-busy
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    holding: for review
+--- watcher: EXITED and woke the captain with:
+    signal: /tmp/fm-4763-drive.QG0Cbu/holding-while-busy/state/task.status
+--- durable wake queue: has entry
+
+=== bad-token-done-while-busy
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    done corr=deadbeef: shipped
+--- watcher: EXITED and woke the captain with:
+    signal: /tmp/fm-4763-drive.QG0Cbu/bad-token-done-while-busy/state/task.status
+--- durable wake queue: has entry
+
+=== working-while-busy-control
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    working: step 2
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== done-while-busy-control
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    done: shipped
+--- watcher: EXITED and woke the captain with:
+    signal: /tmp/fm-4763-drive.QG0Cbu/done-while-busy-control/state/task.status
+--- durable wake queue: has entry
+
+=== paused-then-continuation-1
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    paused: waiting on upstream release
+    https://github.com/o/r/pull/12
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== working-then-continuation-1
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    working: opened PR
+    https://github.com/o/r/pull/12
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== paused-then-continuation-2
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    paused: waiting on upstream release
+    Reason: upstream is slow
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== working-then-continuation-2
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    working: opened PR
+    Reason: upstream is slow
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== paused-then-continuation-3
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    paused: waiting on upstream release
+    Note: see above
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== working-then-continuation-3
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    working: opened PR
+    Note: see above
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== paused-then-continuation-4
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    paused: waiting on upstream release
+    e.g.: the release notes
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== working-then-continuation-4
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    working: opened PR
+    e.g.: the release notes
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== paused-then-continuation-5
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    paused: waiting on upstream release
+    10:30 retry scheduled
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
+=== working-then-continuation-5
+--- crew verdict: state: working · source: pane · harness busy
+--- status file:
+    working: still on it
+    working: opened PR
+    10:30 retry scheduled
+--- watcher: STILL BLOCKING after 8s (wake absorbed, captain not woken)
+--- durable wake queue: empty
+
