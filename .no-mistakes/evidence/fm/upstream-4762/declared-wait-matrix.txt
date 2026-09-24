@@ -1,0 +1,28 @@
+### base b42d4fa
+A keyless ND, keyless pause, resolved[key=default]         expect=WAIT    got=no-wait cur=resolved [key=default]: answered: blue
+B keyless pause, resolved[key=legal] (foreign key)         expect=WAIT    got=no-wait cur=resolved [key=legal]: counsel answered
+C keyless pause, two foreign resolves stacked              expect=WAIT    got=no-wait cur=resolved [key=default]: y
+D keyless pause, worker keyless resolved (self-retract)    expect=no-wait got=no-wait cur=resolved: the vendor shipped
+E paused[key=vendor], resolved[key=vendor]                 expect=no-wait got=no-wait cur=resolved [key=vendor]: shipped
+F paused[key=vendor], resolved[key=default]                expect=WAIT    got=no-wait cur=resolved [key=default]: answered
+G keyless pause, working line, resolved[key=default]       expect=no-wait got=no-wait cur=resolved [key=default]: answered
+H captain-held, then resolved[key=default]                 expect=no-wait got=no-wait cur=resolved [key=default]: answered
+I keyless pause then done                                  expect=no-wait got=no-wait cur=done: finished
+J keyless pause is latest (unchanged)                      expect=WAIT    got=WAIT    cur=needs-decision [key=default]: x
+K 1500-line log, pause buried under 250 foreign resolves   expect=WAIT    got=no-wait (25ms)
+L 1500-line log, pause + one default answer (poll cost)    expect=WAIT    got=no-wait (20ms)
+
+### fix 46faffa
+A keyless ND, keyless pause, resolved[key=default]         expect=WAIT    got=WAIT    cur=paused: waiting on vendor
+B keyless pause, resolved[key=legal] (foreign key)         expect=WAIT    got=WAIT    cur=paused: waiting on vendor
+C keyless pause, two foreign resolves stacked              expect=WAIT    got=WAIT    cur=paused: waiting on vendor
+D keyless pause, worker keyless resolved (self-retract)    expect=no-wait got=no-wait cur=resolved: the vendor shipped
+E paused[key=vendor], resolved[key=vendor]                 expect=no-wait got=no-wait cur=resolved [key=vendor]: shipped
+F paused[key=vendor], resolved[key=default]                expect=WAIT    got=WAIT    cur=paused [key=vendor]: waiting
+G keyless pause, working line, resolved[key=default]       expect=no-wait got=no-wait cur=resolved [key=default]: answered
+H captain-held, then resolved[key=default]                 expect=no-wait got=no-wait cur=resolved [key=default]: answered
+I keyless pause then done                                  expect=no-wait got=no-wait cur=done: finished
+J keyless pause is latest (unchanged)                      expect=WAIT    got=WAIT    cur=needs-decision [key=default]: x
+K 1500-line log, pause buried under 250 foreign resolves   expect=WAIT    got=WAIT    (478ms)
+L 1500-line log, pause + one default answer (poll cost)    expect=WAIT    got=WAIT    (40ms)
+M stated default pause + default resolve: no-wait (expected)

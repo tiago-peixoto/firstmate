@@ -1,0 +1,35 @@
+=== [base-b42d4fa] status log before answer
+needs-decision: which color
+paused: waiting on the vendor release
+=== [base-b42d4fa] fm-send t1 --resolve-key default 'blue'
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /tmp/fm4762-0XX3/home/state/t1.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+rc=0
+=== [base-b42d4fa] status log after answer
+needs-decision: which color
+paused: waiting on the vendor release
+resolved [key=default] [at=1790292453]: answered: blue
+=== [base-b42d4fa] fm-crew-state.sh t1
+state: unknown · source: pane · harness state unavailable (unknown missing)
+=== [base-b42d4fa] declared-wait read used by the supervisors
+line: resolved [key=default] [at=1790292453]: answered: blue
+DECLARED WAIT: no (wedge ladder applies)
+
+=== [fix-46faffa] status log before answer
+needs-decision: which color
+paused: waiting on the vendor release
+=== [fix-46faffa] fm-send t1 --resolve-key default 'blue'
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /tmp/fm4762-gIEV/home/state/t1.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+rc=0
+=== [fix-46faffa] status log after answer
+needs-decision: which color
+paused: waiting on the vendor release
+resolved [key=default] [at=1790292454]: answered: blue
+=== [fix-46faffa] fm-crew-state.sh t1
+state: unknown · source: pane · harness state unavailable (unknown missing)
+=== [fix-46faffa] declared-wait read used by the supervisors
+line: paused: waiting on the vendor release
+DECLARED WAIT: yes
