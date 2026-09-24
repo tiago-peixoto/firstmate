@@ -1,0 +1,11 @@
+after turn 2 (11s): supervisor=3470619 (previous 3246154, stopped by handover) owner=3166739
+watcher=
+SOURCE                       ADAPTER      OWNER      PENDING
+forever                      lavish       live       0
+30s later: supervisor=3470619 alive=yes
+watcher=3579698
+    PID    PPID COMMAND
+3579594 3470619 bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3A84VB596DGMDSHN35E68QN/.codex-idle-live.manual/project/bin/fm-watch-arm.sh
+3579698 3579594 bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3A84VB596DGMDSHN35E68QN/.codex-idle-live.manual/project/bin/fm-watch.sh
+watcher: started pid=3579698 (beacon fresh)
+ls: cannot access '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3A84VB596DGMDSHN35E68QN/.codex-idle-live.manual/fmhome/state/.codex-idle-continuity-failure-notified': No such file or directory

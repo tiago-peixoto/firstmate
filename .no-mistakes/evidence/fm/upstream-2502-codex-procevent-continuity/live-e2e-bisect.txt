@@ -1,0 +1,8 @@
+FM_CODEX_LIVE_E2E=1 bash tests/fm-codex-idle-continuity-live-e2e.test.sh (codex-cli 0.154.0), idle script swapped per commit:
+b384156  ok
+48b8d42  ok      (62s wall: Stop hook held until its 30s timeout, because `setsid --fork` inherited the hook's stdout)
+290f0bc  not ok - Codex Stop did not re-arm the ownerless source (1 -> 1)
+b5f731d  not ok - Codex Stop did not re-arm the ownerless source (1 -> 1)   (27s wall; failed 3 of 3 runs)
+Cause: the perl detach sends stdio to /dev/null, so the hook returns at once. `codex exec` then exits right after the turn.
+The supervisor sees its owner die within 0.5s and ends supervision before the source relaunch completes (state shows a launch-failed check).
+The earlier passes came only from the hook blocking the turn. An interactive Codex session that stays alive re-arms the source (see interactive-codex-*.txt).

@@ -1,0 +1,46 @@
+Note: switching to 'd1e114df711c3e7d2302b0ec51c26657ccb2e556'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+ok - codex-cli 0.154.0 Stop re-armed an ownerless source while the interactive session idled
+
+real	0m26.360s
+user	0m0.731s
+sys	0m1.722s
+run 1 rc=0
+Note: switching to 'd1e114df711c3e7d2302b0ec51c26657ccb2e556'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+ok - codex-cli 0.154.0 Stop re-armed an ownerless source while the interactive session idled
+
+real	0m23.885s
+user	0m0.588s
+sys	0m1.473s
+run 2 rc=0

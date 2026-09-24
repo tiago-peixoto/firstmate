@@ -1,0 +1,9 @@
+hits (source runs; 1 before Codex started): 9
+supervisor lock:
+  owner=3166739
+  pid=3246154
+  session=01a0d4ad-862c-7fe1-806b-2f61229b3e78
+    PID    PPID     SID COMMAND         COMMAND
+3166739 3166723 3166723 codex           codex --dangerously-bypass-hook-trust --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=low --no-alt-screen
+3246154    5856 3246154 bash            bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3A84VB596DGMDSHN35E68QN/.codex-idle-live.manual/project/bin/fm-codex-idle-continuity.sh --supervise
+watcher lock pid: 

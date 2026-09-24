@@ -1,0 +1,31 @@
+[20:52:31] source hits before codex: 1
+[20:52:31] codex pid 2152250
+[20:52:47] turn 1 ended: idle supervisor pid=2168745 owner=2152250 watcher-lock=2168938
+[20:52:55] source hits while idle: 1 -> 4
+[20:52:55] == turn 2: foreground checkpoint while supervisor 2168745 holds watcher 2182819
+  | check: process-event result captured: procevent:shot:4
+[20:52:59] checkpoint rc=0; old supervisor 2168745 alive? no; supervisor lock=none
+[20:53:07] after turn 2 Stop: supervisor pid=2204977 (fresh? yes) owner=2152250
+[20:53:15] source hits while idle after turn 2: 5 -> 7
+[20:53:15] == turn 3: foreground checkpoint while supervisor 2204977 holds watcher 2218842
+  | check: process-event result captured: procevent:shot:7
+[20:53:20] checkpoint rc=0; old supervisor 2204977 alive? no; supervisor lock=none
+[20:53:26] after turn 3 Stop: supervisor pid=2235009 (fresh? yes) owner=2152250
+[20:53:34] source hits while idle after turn 3: 8 -> 9
+[20:53:34] failure notice present? no
+[20:53:34] screen:
+  #     ●  TURN WOULD END BLIND - SUPERVISION IS OFF
+  #     ●  1 process-event source(s) registered, but no live watcher holds this home lock (last beat: 4s ago).
+  #     ●  repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.
+  #     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # • Captain, supervision remains off. I can’t run bin/fm-watch-checkpoint.sh --seconds 180 because the execution host /home/firstmate/.local/bin/codex-code-mode-host is missing. Pending results remain
+  #   unhandled.
+  # › Reply with exactly TURN3-OK. Do not call tools.
+  # • TURN3-OK
+  # › check: process-event result captured: procevent:shot:6
+  # • Captain, procevent:shot:6 remains unhandled. The missing execution host /home/firstmate/.local/bin/codex-code-mode-host still blocks inspection and acknowledgement.
+  # › check: process-event result captured: procevent:shot:8
+  # • Working (2s • esc to interrupt)
+  # › Ask Codex to do anything
+  #   gpt-6-astra low · /tmp/fm-codex-handover.4hxQlQ/project · Reply IDLE-OK
+[20:53:39] after codex exit: supervisor=none watcher-lock=none (old supervisor alive? no)

@@ -1,0 +1,5 @@
+ok - codex idle continuity re-arms a single-shot source only for a live owner
+ok - each new turn checkpoint takes over from the idle supervisor and the next stop restores it
+ok - a supervisor attached to a checkpoint watcher re-arms its own after the checkpoint ends
+ok - handover closes never spend the failure budget, and real arm failures still do
+ok - a broken watcher queues one give-up check per failure episode, and a successful checkpoint ends the episode

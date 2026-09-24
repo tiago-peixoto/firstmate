@@ -1,0 +1,18 @@
+Note: switching to 'b5f731d94283ec16e22174f2e38f4e95ad1e5f50'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+not ok - Codex Stop did not re-arm the ownerless source (1 -> 1)

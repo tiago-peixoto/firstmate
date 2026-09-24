@@ -1,0 +1,7 @@
+before: supervisor=3246154 watcher=3423389
+$ FM_HOME=fmhome project/bin/fm-watch-checkpoint.sh --seconds 8
+check: rearm-resurface
+checkpoint rc=0
+after: supervisor lock present=no old supervisor alive=no
+SOURCE                       ADAPTER      OWNER      PENDING
+forever                      lavish       live       0
