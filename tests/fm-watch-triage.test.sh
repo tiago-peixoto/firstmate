@@ -207,17 +207,11 @@ record_pi_state() {  # <state-dir> <id> <busy|idle>
     --source pi-ext --event turn-boundary
 }
 
-# Stop an owned watcher. TERM must end it through its EXIT cleanup, so one still
-# alive after the file's standard 100-tick budget fails the case here, with the
-# process evidence wait_for_exit prints, instead of an unbounded wait hanging
-# the whole suite until the CI job timeout.
-reap() {
-  local rc
-  kill "$1" 2>/dev/null || true
-  wait_for_exit "$1" 100
-  rc=$?
-  [ "$rc" -ne 124 ] || fail "watcher pid $1 did not exit within 10s of TERM"
-}
+# Stop an owned watcher. fm_test_reap escalates a dropped TERM to KILL: bash
+# 5.2, which ubuntu-latest runs, can lose a TERM whose trap is pending inside a
+# command substitution, and a bare wait then holds the shard until the job
+# timeout. The escalation line is the evidence that TERM was ignored.
+reap() { fm_test_reap "$1"; }
 
 # --- pure classifier predicates (fm-classify-lib.sh) ------------------------
 
