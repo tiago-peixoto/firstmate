@@ -3263,10 +3263,10 @@ fm_backend_herdr_queued_enter_busy() {  # <target> <allow-rendered>
   fi
 }
 
-# fm_backend_herdr_proof_lines: how many tail rows the pre-Enter payload proof
-# captures. A literal payload wraps, and a tail-only capture of a complete
-# wrap would look like the truncation this proof exists to refuse. The bound
-# stays inside the selected composer extraction; it is not a whole-pane search.
+# fm_backend_herdr_proof_lines: how many Ctrl+U presses a refused proof may
+# spend. Live Claude deletes one wrapped screen row per press, so the bound
+# tracks the payload's wrap instead of a fixed key count. The payload read
+# itself is the visible viewport, not this many rows of history.
 fm_backend_herdr_proof_lines() {  # <text>
   local text=$1 lines
   lines=$(( (${#text} / 40) + 8 ))
@@ -3280,17 +3280,15 @@ fm_backend_herdr_proof_lines() {  # <text>
 }
 
 # fm_backend_herdr_composer_content: the selected composer's visible text.
-# Styled capture is preferred. An empty or failed styled read falls through to
-# the plain capture so a missing ANSI format does not look like an empty draft.
+# The proof reads the viewport (`pane read --source visible`). A short slash
+# command opens a completion menu taller than the 20-line history tail, and
+# that tail drops the composer row sitting above the menu. A missing viewport
+# read is not an empty draft.
 fm_backend_herdr_composer_content() {  # <target> [lines]
   local target=$1 lines=${2:-$FM_COMPOSER_CAPTURE_LINES} cap caps
-  if cap=$(fm_backend_herdr_capture_ansi "$target" "$lines" 2>/dev/null) && [ -n "$cap" ]; then
-    caps=$(printf 'styled=1\ncursor=0\nidentity=0\nrows=%s' "$lines")
-  elif cap=$(fm_backend_herdr_capture "$target" "$lines") && [ -n "$cap" ]; then
-    caps=$(printf 'styled=0\ncursor=0\nidentity=0\nrows=%s' "$lines")
-  else
-    return 1
-  fi
+  cap=$(fm_backend_herdr_visible_capture "$target") || return 1
+  [ -n "$cap" ] || return 1
+  caps=$(printf 'styled=0\ncursor=0\nidentity=0\nrows=%s' "$lines")
   fm_composer_extract_selected_content "$caps" "$cap"
 }
 
@@ -3328,7 +3326,7 @@ fm_backend_herdr_composer_payload_shown() {  # <text> <after>
 # as delete-to-line-start, repeated across lines of a multiline draft; Ctrl+C
 # is not used because it interrupts a running turn. Live Claude deletes one
 # wrapped screen row per press, so a single-line leftover can need several
-# presses. The press count is bounded by the rows the proof capture covers.
+# presses. The press count is fm_backend_herdr_proof_lines.
 # 0 only when the composer is verified empty again.
 fm_backend_herdr_composer_clear() {  # <target> <text>
   local target=$1 text=$2 presses i=0
