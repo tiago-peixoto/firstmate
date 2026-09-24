@@ -1,0 +1,12 @@
+# [S5-alive-paused-long-cadence] code=57d8b3b pane_current_command=grok status='paused: holding for the upstream tool release' FM_PAUSE_RESURFACE_SECS=999
+t+0s round 1 (status signal): signal: /tmp/fmlive.WtRz/state/held.status
+round 2: no wake during 46s of polling (rc=124)
+# watcher triage log (pause decisions):
+[2026-09-24T14:04:38-0300] absorbed stale (paused, awaiting external, age 37s): lab:fm-held
+[2026-09-24T14:04:39-0300] absorbed stale (paused, awaiting external, age 38s): lab:fm-held
+[2026-09-24T14:04:41-0300] absorbed stale (paused, awaiting external, age 40s): lab:fm-held
+[2026-09-24T14:04:43-0300] absorbed stale (paused, awaiting external, age 42s): lab:fm-held
+[2026-09-24T14:04:45-0300] absorbed stale (paused, awaiting external, age 44s): lab:fm-held
+[2026-09-24T14:04:47-0300] absorbed stale (paused, awaiting external, age 46s): lab:fm-held
+[2026-09-24T14:04:48-0300] absorbed stale (paused, awaiting external, age 47s): lab:fm-held
+[2026-09-24T14:04:50-0300] absorbed stale (paused, awaiting external, age 49s): lab:fm-held

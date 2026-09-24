@@ -1,0 +1,39 @@
+== test_status_is_paused_classifier
+ok - status_is_paused: only the leading paused verb matches, paused is not captain-relevant, and the two declared-wait verbs stay separable
+rc=0
+== test_declared_pause_is_absorbed_for_every_agent_liveness_verdict
+ok - a declared pause is absorbed on the bounded cadence for alive, unknown, and dead agent liveness
+rc=0
+== test_exited_declared_pause_is_bounded_and_live_gate_uses_pause_cadence
+ok - exited declared-pause and captain-held panes use bounded pause cadence, and a live decision gate is absorbed on that same cadence
+rc=0
+== test_live_declared_wait_churn_honors_the_resurface_throttle
+ok - a parked live worker absorbs pane churn, rechecks once when its declaration ages past the cadence, then absorbs churn again
+rc=0
+== test_nonterminal_stale_paused_absorbed_then_resurfaced
+ok - a declared pause is absorbed on first sight, then re-surfaced as a recheck past the threshold, never wedge-escalated
+rc=0
+== test_live_paused_until_controls_recheck_time
+ok - a live paused worker stays absorbed until its declared time, then rechecks
+rc=0
+== test_wedge_threshold_defers_to_a_declared_wait_under_a_working_verdict
+ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
+rc=0
+== test_secondmate_paused_resurfaces_in_normal_mode
+ok - a declared paused secondmate re-surfaces on the bounded normal-mode cadence
+rc=0
+== test_secondmate_nonpaused_stale_remains_suppressed
+ok - a non-paused secondmate retains normal stale suppression
+rc=0
+== test_nonterminal_paused_rechecks_authoritative_state
+ok - a declared pause is periodically rechecked against authoritative active-run state
+rc=0
+== test_captain_held_never_rechecked_while_away_record_exists
+ok - a captain-held item is never rechecked while the away-posture record exists, and the recheck returns once the record is archived
+rc=0
+== test_live_captain_held_first_sight_silenced_by_away_record
+ok - a live captain-held pane past the cadence is absorbed on first sight while the away-posture record exists
+rc=0
+== test_paused_until_wrong_year_is_bounded_by_the_cadence
+ok - a wrong-year declared time cannot silence the watcher beyond the recheck cadence
+rc=0

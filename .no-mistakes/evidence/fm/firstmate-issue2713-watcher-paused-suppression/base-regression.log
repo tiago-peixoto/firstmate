@@ -1,0 +1,4 @@
+== BASE test_declared_pause_is_absorbed_for_every_agent_liveness_verdict
+not ok - [alive] declared pause under alive liveness surfaced on first sight: stale: test:fm-held
+== BASE test_live_declared_wait_churn_honors_the_resurface_throttle
+not ok - [paused-pipeline-churn] watcher exited on round 1 instead of absorbing the declared wait: stale: test:fm-parked

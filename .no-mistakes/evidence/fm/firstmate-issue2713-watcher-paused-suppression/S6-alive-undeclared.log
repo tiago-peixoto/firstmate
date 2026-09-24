@@ -1,0 +1,4 @@
+# [S6-alive-undeclared-stale] code=57d8b3b pane_current_command=grok status='working: compiling the release build' FM_PAUSE_RESURFACE_SECS=999
+t+0s round 1 (status signal): signal: /tmp/fmlive.7Mjh/state/held.status
+round 2: WAKE after 7s (status age ~12s): stale: lab:fm-held
+# watcher triage log (pause decisions):

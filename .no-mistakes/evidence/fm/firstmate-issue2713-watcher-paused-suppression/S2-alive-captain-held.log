@@ -1,0 +1,12 @@
+# [S2-alive-captain-held] code=57d8b3b pane_current_command=grok status='captain-held: awaiting captain merge decision on PR' FM_PAUSE_RESURFACE_SECS=25
+t+0s round 1 (status signal): signal: /tmp/fmlive.RXxq/state/held.status
+round 2: WAKE after 21s (status age ~26s): stale: lab:fm-held (captain-held 26s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+# watcher triage log (pause decisions):
+[2026-09-24T14:04:13-0300] absorbed stale (captain-held, awaiting the captain, age 11s): lab:fm-held
+[2026-09-24T14:04:14-0300] absorbed stale (captain-held, awaiting the captain, age 13s): lab:fm-held
+[2026-09-24T14:04:16-0300] absorbed stale (captain-held, awaiting the captain, age 15s): lab:fm-held
+[2026-09-24T14:04:18-0300] absorbed stale (captain-held, awaiting the captain, age 17s): lab:fm-held
+[2026-09-24T14:04:20-0300] absorbed stale (captain-held, awaiting the captain, age 19s): lab:fm-held
+[2026-09-24T14:04:22-0300] absorbed stale (captain-held, awaiting the captain, age 21s): lab:fm-held
+[2026-09-24T14:04:23-0300] absorbed stale (captain-held, awaiting the captain, age 22s): lab:fm-held
+[2026-09-24T14:04:25-0300] absorbed stale (captain-held, awaiting the captain, age 24s): lab:fm-held

@@ -1,0 +1,4 @@
+# [S4-BASE-alive-paused] code=/tmp/fmbase.u55k pane_current_command=grok status='paused: holding for the upstream tool release' FM_PAUSE_RESURFACE_SECS=999
+t+0s round 1 (status signal): signal: /tmp/fmlive.2uEY/state/held.status
+round 2: WAKE after 5s (status age ~12s): stale: lab:fm-held
+# watcher triage log (pause decisions):

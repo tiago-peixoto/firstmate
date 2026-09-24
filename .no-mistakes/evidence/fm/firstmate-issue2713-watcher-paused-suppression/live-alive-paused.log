@@ -1,0 +1,32 @@
+# [alive-paused] pane_current_command: sleep
+t+4s round 1 WAKE: signal: /tmp/fmlive.oLS2/state/held.status
+t+19s round 2 quiet for 12s (rc=124, no wake)
+t+19s round 3 WAKE: check: rearm-resurface
+t+33s round 4 quiet for 12s (rc=124, no wake)
+# triage log tail:
+.
+..
+.count-lab_fm-held
+.hash-lab_fm-held
+.hb-surfaced-held
+.heartbeat-streak
+.held.open-decisions-cursor
+.inactive-outcome-reconcile
+.last-check
+.last-heartbeat
+.last-watcher-beat
+.paused-lab_fm-held
+.paused-rechecked-lab_fm-held
+.secondmate-liveness-tick
+.seen-held_status
+.stale-lab_fm-held
+.status-presentation-cursor
+.wake-queue
+.wake-queue.seq
+.watch-deliveries.log
+.watch-triage.log
+.watcher-down
+held.meta
+held.status
+home-summary.json
+terminal-outcomes
