@@ -1,0 +1,62 @@
+Live: real tmux server (private socket), pane running an interactive bash as the worker, isolated FM_HOME.
+== 1. worker raises its own decision; an automatic sender fires
+needs-decision [key=pick]: ship alpha or beta?
+$ fm-send.sh t1 --automatic 're-read your instructions'
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+exit=4
+inbox records: 0
+pane (nothing typed):
+bash-5.3$
+
+== 2. firstmate answers deliberately
+$ fm-send.sh t1 --resolve-key pick 'use alpha'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /tmp/fmlive.LjHP/home/state/t1.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+pane (doorbell typed):
+bash-5.3$
+status tail:
+resolved [key=pick] [at=1790207326]: answered: use alpha
+
+== 3. automatic send after the decision closed
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /tmp/fmlive.LjHP/home/state/t1.inbox/002.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+pane:
+bash-5.3$
+
+== 4. adversarial: parent-owned keys must not defer
++ blocked [key=pending-reply-0123456789abcdef]: pending-reply-missed: no report
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /tmp/fmlive.LjHP/home/state/t1.inbox/003.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
++ needs-decision [key=captain-hold-t42-1]: captain hold t42: ship?
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /tmp/fmlive.LjHP/home/state/t1.inbox/004.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
++ blocked [key=remote-reply-continuity-t1]: remote reply continuity broke for t1 (gap)
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in sess:fm-t1 has exited; the steer is durably recorded at /tmp/fmlive.LjHP/home/state/t1.inbox/005.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+
+== 5. adversarial: worker's own blocker defers
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: t1 is waiting on its open decision or blocker (ci-red); nothing was sent
+exit=4
+
+== 6. adversarial: --automatic with --resolve-key / explicit target refused
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --automatic cannot accompany --key or --resolve-key
+exit=1
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --automatic needs a task selector resolved through this home's metadata
+exit=1
+
+final inbox: 001.msg 002.msg 003.msg 004.msg 005.msg handled 

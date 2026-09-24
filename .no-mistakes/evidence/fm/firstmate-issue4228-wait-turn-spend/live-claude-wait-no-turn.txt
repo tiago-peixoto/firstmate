@@ -1,0 +1,51 @@
+composer verdict at start: empty (after 2s)
+
+== worker is waiting on its own decision
+needs-decision [key=pick]: ship alpha or beta?
+$ fm-send.sh t1 --automatic 'Firstmate: re-read your brief now'
+deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+exit=4
+RESULT: pane CHANGED
+1c1
+<  ▐▟███▟█   Claude Code v2.1.281
+---
+>  ▐▛███▛█   Claude Code v2.1.281
+4c4
+<                                                                                                                                                                                      ◉ xhigh · /effort
+---
+>                                                                                                   tmux focus-events off · add 'set -g focus-events on' to ~/.tmux.conf and reattach for focus tracking
+inbox records: 0
+--- worker pane while waiting ---
+ ▐▛███▛█   Claude Code v2.1.281
+▝▜██████▀  Fable 5.1 with xhigh effort · Claude Max
+  ▝▝ ▝▝    ~/Workspace
+                                                                                                  tmux focus-events off · add 'set -g focus-events on' to ~/.tmux.conf and reattach for focus tracking
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
+
+== firstmate answers deliberately
+$ fm-send.sh t1 --resolve-key pick '<answer: touch acted, then ack>'
+exit=0
+acted=yes acked=yes after 12s
+status tail: resolved [key=pick] [at=1790207696]: answered: Answer to pick: alpha. Run exactly this shell command now: touch /tmp/fm-waitlive.m9sQ/acted - then follow the mv instruction you were given for this message. Re [truncated]
+--- worker pane after the answer ---
+ ▐▛███▛█   Claude Code v2.1.281
+▝▜██████▀  Fable 5.1 with xhigh effort · Claude Max
+  ▝▝ ▝▝    ~/Workspace
+❯ : Firstmate instruction waiting: list '/tmp/fm-waitlive.m9sQ/home/state/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to
+  '/tmp/fm-waitlive.m9sQ/home/state/t1.inbox'/handled/.
+⏺ I'll list the inbox, then read and act on each message in numeric order.
+  Listed 1 directory
+⏺ One message in the inbox. Reading it now.
+  Read 1 file
+⏺ The message asks for a single touch command, then the mv. Running both now.
+  Creating the acted marker file and moving the handled message
+  ⎿  $ touch /tmp/fm-waitlive.m9sQ/acted && mv '/tmp/fm-waitlive.m9sQ/home/state/t1.inbox/001.msg' '/tmp/fm-waitlive.m9sQ/home/state/t1.inbox/handled/' && ls -la /tmp/fm-waitlive.m9sQ/acted
+     '/tmp/fm-waitlive.m9sQ/home/state/t1.inbox/handled/'
+✢ Calculating… (13s · ↓ 741 tokens)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt
