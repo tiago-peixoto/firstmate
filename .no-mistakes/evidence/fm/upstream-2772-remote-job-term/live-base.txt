@@ -1,0 +1,8 @@
+rev=b42d4fa8a752fad9a5f0235783b02534bce29219 worker pid=1565649 ready=yes lock=/tmp/fm-2772-live.DcbCgB/state/worker.lock
+removed worker.lock while worker stopped; lock now: absent
+heartbeat inode before=1952082 after=1952084 (unowned worker still heartbeating)
+sending TERM to 1565649
+RESULT: worker SURVIVED TERM (state=S); heartbeat inode 1952172 -> 1952191
+worker stderr:
+  mktemp: failed to create file via template '/tmp/fm-2772-live.DcbCgB/state/worker.lock/.quarantine.XXXXXX': No such file or directory
+  remote-job-worker: cannot guard worker ownership for shutdown

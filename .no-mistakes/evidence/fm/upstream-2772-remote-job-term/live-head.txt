@@ -1,0 +1,6 @@
+rev=fa3176fdb9faee865032ab415055a67499cc3974 worker pid=1577221 ready=yes lock=/tmp/fm-2772-live.jYFBin/state/worker.lock
+removed worker.lock while worker stopped; lock now: absent
+heartbeat inode before=1952272 after=1952275 (unowned worker still heartbeating)
+sending TERM to 1577221
+RESULT: worker EXITED on TERM with status 0; heartbeat inode 1952275 -> 1952275 (unchanged=yes); lock=absent
+worker stderr:
