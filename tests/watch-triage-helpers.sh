@@ -24,6 +24,36 @@ FM_WATCH_TRIAGE_HELPERS_SOURCED=1
 WATCH="$ROOT/bin/fm-watch.sh"
 DRAIN="$ROOT/bin/fm-wake-drain.sh"
 
+# Age an existing marker or log by <secs>, so a cadence test does not have to
+# spend the real seconds. BSD and GNU touch disagree on how to spell an absolute
+# time, hence the uname split every caller used to repeat inline.
+backdate() {  # <file> <secs>
+  local f=$1 back
+  back=$(( $(date +%s) - $2 ))
+  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$f"
+  else touch -m -d "@$back" "$f"; fi
+}
+
+age_of_file() {  # <file>
+  echo $(( $(date +%s) - $(file_mtime "$1") ))
+}
+
+record_pi_busy() {  # <state-dir> <id>
+  local state=$1 id=$2 gen
+  gen=$("$ROOT/bin/fm-busy-event.sh" arm "$state" "$id")
+  "$ROOT/bin/fm-busy-event.sh" apply "$state" "$id" busy --gen "$gen" \
+    --source pi-ext --event agent-start
+}
+
+# Flip an already-armed pi incarnation between busy and idle, so one fixture can
+# replay the shape a worker on an external wait really has: turns keep being
+# submitted (a reporter, a poll loop), so its pane reads busy on some polls and
+# idle on others for the whole wait.
+record_pi_state() {  # <state-dir> <id> <busy|idle>
+  "$ROOT/bin/fm-busy-event.sh" apply "$1" "$2" "$3" --current-gen \
+    --source pi-ext --event turn-boundary
+}
+
 ack_stopped_cycle() {  # <state>
   local state=$1 err sequence generation
   err="$state/.test-cycle-drain.err"
