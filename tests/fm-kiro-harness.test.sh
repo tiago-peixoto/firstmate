@@ -418,7 +418,8 @@ echo "fake kiro-cli must never run a chat turn" >&2
 exit 9
 SH
   chmod +x "$fakebin/kiro-cli"
-  fm_fake_exit0 "$fakebin" treehouse gh-axi gh
+  fm_test_fake_treehouse_lease "$fakebin"
+  fm_fake_exit0 "$fakebin" gh-axi gh
   printf '%s\n' "$fakebin"
 }
 
