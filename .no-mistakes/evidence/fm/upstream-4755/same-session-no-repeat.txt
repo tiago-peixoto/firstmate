@@ -1,0 +1,8 @@
+## same session: reminder run directly + a watcher tick
+remind rc=0
+tick rc=0
+queue after:
+(end queue)
+phase=escalated
+surfaced_session=3057600:30aaa61a-5919-46d7-bf83-5a3e6cf2eab7
+blocked lines in parent channel: 1

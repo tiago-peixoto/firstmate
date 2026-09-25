@@ -1,0 +1,38 @@
+schema: fm-bearings.v1
+home: tmp/fm-lab.EFqr8D
+generated: "2026-09-25T08:36:00Z"
+prs: "not_requested (run: /bearings include PRs)"
+contributions: 
+  scope: owned contributions per home
+  known: 0
+  checked: 0
+  counts: 
+    captain: 0
+    fleet: 0
+    maintainer: 0
+    nobody: 0
+  complete: false
+  proven_clear: false
+  unmeasured_homes: 0
+  unreadable_records: 1
+  unmeasured: 0
+  stale_verdicts: 0
+  missing_verdicts: 0
+  captain_omitted: 0
+  captain: []
+in_flight: []
+secondmates: []
+secondmate_reconcile: []
+decisions_open[1]{id,key,verb,summary,owner}:
+  mate,pending-reply-0a702045471965e2,blocked,"pending-reply escalated: task=mate pending-reply-id=0a702045471965e2 request=finish the Q3 report",(main)
+landed: []
+gates: []
+reports: []
+recorded_prs: []
+omitted[6]{surface,reveal}:
+  backlog item bodies,"--fields bodies"
+  task paths,"--fields paths"
+  watch/steer actions,"--fields actions"
+  healthy endpoint detail,"--fields endpoints"
+  full scout-report inventory,"--all-reports"
+  live PR discovery + checks,"--include-prs"
