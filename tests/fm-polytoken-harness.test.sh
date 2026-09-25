@@ -573,7 +573,8 @@ case "\$subcmd" in
 esac
 SH
   chmod +x "$fakebin/polytoken"
-  fm_fake_exit0 "$fakebin" treehouse gh-axi gh
+  fm_test_fake_treehouse_lease "$fakebin"
+  fm_fake_exit0 "$fakebin" gh-axi gh
   printf '%s\n' "$fakebin"
 }
 
