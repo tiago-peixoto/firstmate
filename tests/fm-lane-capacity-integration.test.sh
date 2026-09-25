@@ -107,7 +107,7 @@ case "${1:-}" in
 esac
 exit 0
 SH
-  printf 'printf "treehouse %%s\\n" "$*" >> "$FM_FAKE_CALL_LOG"\nexit 0\n' > "$fakebin/treehouse"
+  printf 'printf "treehouse %%s\\n" "$*" >> "$FM_FAKE_CALL_LOG"\ncase "$*" in "get --lease "*) printf "%%s\\n" "$FM_FAKE_PANE_PATH" ;; esac\nexit 0\n' > "$fakebin/treehouse"
   # Lane probes: 64 cores, a fixed free disk, AC power.
   printf '#!/usr/bin/env bash\n[ "${1:-}" = _NPROCESSORS_ONLN ] && { echo 64; exit 0; }\nexit 1\n' > "$fakebin/getconf"
   cat > "$fakebin/df" <<SH
