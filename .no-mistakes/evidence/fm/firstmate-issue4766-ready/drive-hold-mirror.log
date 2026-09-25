@@ -1,0 +1,91 @@
+=== S1: hold a paused lane, repeat hold, release
+--- state/lab-paused.status
+paused: waiting on upstream
+captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
+last_status_line          = captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
+last_worker_status_line   = paused: waiting on upstream
+status_declared_wait_line = captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
+status_current_line       = captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
+(after release)
+--- state/lab-paused.status
+paused: waiting on upstream
+captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
+resolved [key=captain-hold-lab-paused-1] [at=1790343299]: captain call released by fm-captain-hold
+last_status_line          = paused: waiting on upstream
+last_worker_status_line   = paused: waiting on upstream
+status_declared_wait_line = paused: waiting on upstream
+status_current_line       = paused: waiting on upstream
+
+=== S2: another key answered on top of standing mirror, then release (buried mirror retracted)
+(held, api answered on top)
+--- state/lab-buried.status
+paused: waiting on upstream
+captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
+resolved [key=api]: answered
+last_status_line          = resolved [key=api]: answered
+last_worker_status_line   = resolved [key=api]: answered
+status_declared_wait_line = captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
+status_current_line       = captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
+(after release + replay)
+--- state/lab-buried.status
+paused: waiting on upstream
+captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
+resolved [key=api]: answered
+resolved [key=captain-hold-lab-buried-1] [at=1790343302]: captain call released by fm-captain-hold
+last_status_line          = resolved [key=api]: answered
+last_worker_status_line   = resolved [key=api]: answered
+status_declared_wait_line = paused: waiting on upstream
+status_current_line       = paused: waiting on upstream
+
+=== S3: worker finishes while held (done replaces the mirror)
+--- state/lab-done.status
+working: start
+captain-held [key=captain-hold-lab-done-1] [at=1790343305]: operator review
+done: shipped PR 12
+last_status_line          = done: shipped PR 12
+last_worker_status_line   = done: shipped PR 12
+status_declared_wait_line = 
+status_current_line       = done: shipped PR 12
+(crew-state)
+state: unknown · source: none · worktree gone (torn down?)
+--- state/lab-working.status
+paused: upstream
+captain-held [key=captain-hold-lab-working-1] [at=1790343306]: operator review
+working: resumed
+last_status_line          = working: resumed
+last_worker_status_line   = working: resumed
+status_declared_wait_line = 
+status_current_line       = working: resumed
+
+=== S4: transfer key re-asked after complete stays open after settlement
+--- state/lab-reask.status
+needs-decision [key=route]: north or south
+captain-held [key=route] [at=1790343309]: tracked by lab-route-call
+needs-decision [key=route]: east or west
+last_status_line          = needs-decision [key=route]: east or west
+last_worker_status_line   = needs-decision [key=route]: east or west
+status_declared_wait_line = 
+status_current_line       = needs-decision [key=route]: east or west
+status_open_decisions     = route needs-decision east or west
+
+=== S5: transfer left as last line is retracted on settlement
+(transfer standing)
+--- state/lab-top.status
+needs-decision [key=scope]: wide or narrow
+captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
+last_status_line          = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
+last_worker_status_line   = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
+status_declared_wait_line = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
+status_current_line       = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
+(after settle)
+--- state/lab-top.status
+needs-decision [key=scope]: wide or narrow
+captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
+resolved [key=scope] [at=1790343314]: captain call answered by fm-captain-hold
+last_status_line          = needs-decision [key=scope]: wide or narrow
+last_worker_status_line   = needs-decision [key=scope]: wide or narrow
+status_declared_wait_line = 
+status_current_line       = needs-decision [key=scope]: wide or narrow
+
+diverged: []
+lab removed: yes
