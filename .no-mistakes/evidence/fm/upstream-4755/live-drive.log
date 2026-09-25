@@ -1,0 +1,101 @@
+
+===== session A start (lock acquired) =====
+SESSION START - /tmp/fm-4755-live.jQinX4/home
+LOCK
+lock acquired: harness pid 1645178
+- Lock: held by this session; this session owns normal supervision unless away mode says otherwise.
+   [`watcher-continuity.md`](../watcher-continuity.md) owns the exact session-lock recovery boundary.
+
+===== lock + sidecar =====
+1645178
+sess-A
+
+===== build one escalated record through the public lib ladder, under session A (token from real lock) =====
+corr=bc98bff3df33b78d
+escalated_epoch=4000
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=1645178:sess-A
+
+===== parent channel mate.status =====
+blocked [key=pending-reply-bc98bff3df33b78d] [at=1790299374]: pending-reply-missed: task=mate pending-reply-id=bc98bff3df33b78d request=finish the quarterly report
+
+===== unkeyed resolved line lands on the parent channel (must NOT settle) =====
+resolved: looked at it
+
+===== session A re-runs session start (same session): expect NO reminder =====
+(no pending-reply-escalated line in output)
+
+===== session B start (/clear in same harness process): expect ONE reminder in drain =====
+16:1790299385	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=bc98bff3df33b78d request=finish the quarterly report;
+surfaced_session=1645178:sess-B
+
+===== session B start again (same session re-poll): expect NO new reminder =====
+16:1790299385	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=bc98bff3df33b78d request=finish the quarterly report;
+
+===== watcher tick in session B (fm_pending_reply_tick): queue count stays =====
+queued pending-reply-escalated rows: 1
+blocked lines for key: 1  recovery_sent/phase: phase=escalated
+
+===== Bearings snapshot --json decisions_open (record still escalated) =====
+[
+  {
+    "id": "mate",
+    "key": "pending-reply-bc98bff3df33b78d",
+    "verb": "blocked",
+    "summary": "pending-reply escalated: task=mate pending-reply-id=bc98bff3df33b78d request=finish the quarterly report",
+    "owner": "(main)"
+  }
+]
+
+===== Bearings snapshot rendered (text) =====
+schema: fm-bearings.v1
+home: fm-4755-live.jQinX4/home
+generated: "2026-09-25T01:23:14Z"
+prs: "not_requested (run: /bearings include PRs)"
+contributions: 
+  scope: owned contributions per home
+  known: 0
+  checked: 0
+  counts: 
+    captain: 0
+    fleet: 0
+    maintainer: 0
+    nobody: 0
+  complete: false
+  proven_clear: false
+  unmeasured_homes: 0
+  unreadable_records: 1
+  unmeasured: 0
+  stale_verdicts: 0
+  missing_verdicts: 0
+  captain_omitted: 0
+  captain: []
+in_flight: []
+secondmates: []
+secondmate_reconcile: []
+decisions_open[1]{id,key,verb,summary,owner}:
+  mate,pending-reply-bc98bff3df33b78d,blocked,"pending-reply escalated: task=mate pending-reply-id=bc98bff3df33b78d request=finish the quarterly report",(main)
+landed: []
+gates: []
+reports: []
+recorded_prs: []
+omitted[6]{surface,reveal}:
+  backlog item bodies,"--fields bodies"
+  task paths,"--fields paths"
+  watch/steer actions,"--fields actions"
+  healthy endpoint detail,"--fields endpoints"
+  full scout-report inventory,"--all-reports"
+  live PR discovery + checks,"--include-prs"
+
+===== session C: operator keyed close of pending-reply-bc98bff3df33b78d (the line fm-send --resolve-key writes; fm-send itself is refused under NO_MISTAKES_GATE) =====
+resolved [key=pending-reply-bc98bff3df33b78d]: pending-reply-resolved: task=mate pending-reply-id=bc98bff3df33b78d via=operator-resolve-key ack, handled out of band
+
+===== session D start after operator close: expect NO reminder =====
+(no pending-reply-escalated line in output)
+phase=escalated
+escalation_dismissed_epoch=1790299399
+
+===== Bearings decisions_open after operator close: expect no pending-reply row =====
+[]
+LIVE_HOME=/tmp/fm-4755-live.jQinX4

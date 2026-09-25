@@ -1,0 +1,9 @@
+===== resolve path: new escalation under sess-D, correlated done [corr=] reply, watcher tick, then session E =====
+corr=69f39eff8c6d6f45 phase=phase=escalated
+done [corr=69f39eff8c6d6f45]: the report is in
+phase=resolved
+resolved_via=status
+--- session E start: expect NO reminder
+(no pending-reply-escalated line in output)
+--- bearings pending-reply rows:
+[]
