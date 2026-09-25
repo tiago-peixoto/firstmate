@@ -1,0 +1,24 @@
+== idle  (live pi identity: pi idle)
+──────────────────────────�
+──────────────────────────�
+~/.no-mistakes/worktrees/5284051b2355/01M3CKFXRYF9T65TTV9VKMXAX1 (detached)
+$0.000 (sub) 0.0%/272k (auto)                                                   
+cursorless classifier: BASE=unknown TARGET=empty   tmux live: BASE=empty TARGET=empty
+== typed-text  (live pi identity: pi idle)
+fix the flaky test
+──────────────────────────�
+~/.no-mistakes/worktrees/5284051b2355/01M3CKFXRYF9T65TTV9VKMXAX1 (detached)
+$0.000 (sub) 0.0%/272k (auto)                                                   
+cursorless classifier: BASE=unknown TARGET=pending   tmux live: BASE=pending TARGET=pending
+== typed-cost-string  (live pi identity: pi idle)
+$0.000 (sub) 5.4%/272k (auto)
+──────────────────────────�
+~/.no-mistakes/worktrees/5284051b2355/01M3CKFXRYF9T65TTV9VKMXAX1 (detached)
+$0.000 (sub) 0.0%/272k (auto)                                                   
+cursorless classifier: BASE=unknown TARGET=pending   tmux live: BASE=pending TARGET=pending
+== cleared  (live pi identity: pi idle)
+──────────────────────────�
+──────────────────────────�
+~/.no-mistakes/worktrees/5284051b2355/01M3CKFXRYF9T65TTV9VKMXAX1 (detached)
+$0.000 (sub) 0.0%/272k (auto)                                                   
+cursorless classifier: BASE=unknown TARGET=empty   tmux live: BASE=empty TARGET=empty

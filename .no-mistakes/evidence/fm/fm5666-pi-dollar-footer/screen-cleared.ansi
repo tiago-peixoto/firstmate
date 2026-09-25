@@ -1,0 +1,61 @@
+
+ [1m[38;2;138;190;183mpi[0m[38;2;102;102;102m v0.87.1[39m
+ [38;2;102;102;102mescape[38;2;128;128;128m interrupt · [38;2;102;102;102mctrl+c/ctrl+d[38;2;128;128;128m clear/exit · [38;2;102;102;102m/[38;2;128;128;128m commands · [38;2;102;102;102m![38;2;128;128;128m bash · [38;2;102;102;102mctrl+o[38;2;128;128;128m more[39m
+ [38;2;102;102;102mPress ctrl+o to show full startup help and loaded resources.[39m
+
+ [38;2;102;102;102mPi can explain its own features and look up its docs. Ask it how to use or extend Pi.[39m
+
+
+[38;2;240;198;116m[Context][39m
+[38;2;102;102;102m  ~/.pi/agent/AGENTS.md, AGENTS.md[39m
+
+[38;2;240;198;116m[Skills][39m
+[38;2;102;102;102m  afk, ahoy, ask-user-authority, bearings, bootstrap-diagnostics, captain-hold-lifecycle, decision-hold-lifecycle, diagnostic-reasoning,
+firstmate-codexapp, firstmate-coding-guidelines, firstmate-orca, fmx-respond, harness-adapters, no-mistakes, process-event-sources,
+project-management, quiet, quota-array-dispatch, secondmate-provisioning, stow, stuck-crewmate-recovery, updatefirstmate[39m
+
+[38;2;240;198;116m[Extensions][39m
+[38;2;102;102;102m  fm-branch-supervision.ts, fm-calm.ts, fm-primary-pi-watch.ts, fm-primary-turnend-guard.ts[39m
+
+[38;2;95;135;255m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[39m [1m[38;2;138;190;183mWhat's New[0m
+
+ [1m[38;2;240;198;116m[0.87.1] - 2026-09-22[0m
+
+ [1m[38;2;240;198;116m### New Features[0m
+
+ [38;2;138;190;183m- [1m[39mLatest frontier models[0m — Use Claude Opus 5.5, GPT-6 Sol, and GPT-6 Luna through supported providers, including GitHub Copilot. See
+   [4m[38;2;129;162;190mChoose a Model[0m[38;2;102;102;102m (https://github.com/earendil-works/pi/blob/v0.87.1/packages/coding-agent/docs/models.md#select-a-model)[39m.
+ [38;2;138;190;183m- [1m[39mGrok 4.7 by default for xAI[0m — New xAI sessions now default to Grok 4.7. See [4m[38;2;129;162;190mProvider Authentication[0m[38;2;102;102;102m
+[39m   [38;2;102;102;102m(https://github.com/earendil-works/pi/blob/v0.87.1/packages/coding-agent/docs/providers.md#use-an-api-key-from-the-environment)[39m.
+
+ [1m[38;2;240;198;116m### Added[0m
+
+ [38;2;138;190;183m- [39mAdded inherited Claude Opus 5.5, GPT-6 Sol, and GPT-6 Luna support for GitHub Copilot.
+ [38;2;138;190;183m- [39mAdded inherited GPT-6 Sol and GPT-6 Luna support for OpenAI API keys and OpenAI Codex subscriptions.
+ [38;2;138;190;183m- [39mAdded inherited Claude Opus 5.5 support for Anthropic with adaptive thinking and a 1M context window.
+
+ [1m[38;2;240;198;116m### Changed[0m
+
+ [38;2;138;190;183m- [39mChanged the default xAI model to Grok 4.7.
+
+ [1m[38;2;240;198;116m### Fixed[0m
+
+ [38;2;138;190;183m- [39mFixed split-turn compaction summaries being refused by Claude Fable 5.1 by clearly separating the conversation and using
+   continuation-oriented instructions ([4m[38;2;129;162;190m#9908[0m[38;2;102;102;102m (https://github.com/earendil-works/pi/pull/9908)[39m by [4m[38;2;129;162;190m@davidbrai[0m[38;2;102;102;102m
+[39m   [38;2;102;102;102m(https://github.com/davidbrai)[39m).
+ [38;2;138;190;183m- [39mFixed missing or invalid [38;2;138;190;183m--mode[39m values being silently ignored instead of reporting an error and exiting with a nonzero status ([4m[38;2;129;162;190m#9045[0m[38;2;102;102;102m
+[39m   [38;2;102;102;102m(https://github.com/earendil-works/pi/issues/9045)[39m).
+ [38;2;138;190;183m- [39mFixed inherited image-only user messages being rejected by some OpenAI-compatible providers because they included an empty text part
+   ([4m[38;2;129;162;190m#9797[0m[38;2;102;102;102m (https://github.com/earendil-works/pi/issues/9797)[39m).
+ [38;2;138;190;183m- [39mFixed inherited Anthropic OAuth requests reporting an outdated Claude Code version.
+
+[38;2;95;135;255m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+[39m [38;2;255;255;0mWarning: tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.[39m
+
+[38;2;129;162;190m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[7m[39m [0m
+[38;2;129;162;190m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[38;2;102;102;102m~/.no-mistakes/worktrees/5284051b2355/01M3CKFXRYF9T65TTV9VKMXAX1 (detached)[39m
+[38;2;102;102;102m$0.000 (sub) 0.0%/272k (auto)                                                                              (openai-codex) gpt-6-sol • medium

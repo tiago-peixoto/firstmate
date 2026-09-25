@@ -1,0 +1,4 @@
+session=fm-lab-pi-dollar-699564-28442
+fm-herdr-lab: fleet-state tripwire requires exactly one running default session
+fm-herdr-lab: missing fleet-state tripwire for 'fm-lab-pi-dollar-699564-28442'; refusing destructive calls
+teardown-rc=1

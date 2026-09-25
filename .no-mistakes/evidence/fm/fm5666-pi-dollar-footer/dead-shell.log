@@ -1,0 +1,12 @@
+== dead-shell-bare-dollar (identity: probe-absent)
+transcript
+────────────────────
+────────────────────
+$
+cursorless: BASE=unknown TARGET=unknown | cursorless w/ forced pi-idle identity: BASE=unknown TARGET=unknown | tmux live: BASE=unknown TARGET=unknown
+== dead-shell-dollar-ls (identity: probe-absent)
+transcript
+────────────────────
+────────────────────
+$ ls -la
+cursorless: BASE=unknown TARGET=unknown | cursorless w/ forced pi-idle identity: BASE=unknown TARGET=unknown | tmux live: BASE=unknown TARGET=unknown
