@@ -1,0 +1,14 @@
+[2026-09-25T02:37:12+0200] daemon starting (pid 1485028); target=%0; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=999999s; batch=0s
+[2026-09-25T02:37:14+0200] escalate: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 -> unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 st
+[2026-09-25T02:37:21+0200] escalate: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 -> unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 st
+[2026-09-25T02:37:26+0200] escalate: decision closed already: needs-decision d-42 resolved by captain -> unknown wake: decision closed already: needs-decision d-42 resolved by captain
+[2026-09-25T02:37:35+0200] escalate: signal: /tmp/fm-unk-ack.LKNyzV/home/state/c9.status -> c9.status: done: PR https://example.test/pull/77
+[2026-09-25T02:37:41+0200] escalate: signal: /tmp/fm-unk-ack.LKNyzV/home/state/c9.status -> c9.status: done: PR https://example.test/pull/77
+[2026-09-25T02:37:43+0200] daemon shutting down
+[2026-09-25T02:37:44+0200] daemon starting (pid 1531485); target=%0; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=999999s; batch=0s
+[2026-09-25T02:37:46+0200] escalate: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 -> unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 st
+[2026-09-25T02:37:51+0200] daemon shutting down
+[2026-09-25T02:37:53+0200] daemon starting (pid 1546007); target=%0; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=999999s; batch=0s
+[2026-09-25T02:37:54+0200] escalate: unrecognized widget event: w-9 -> unknown wake: unrecognized widget event: w-9
+[2026-09-25T02:37:56+0200] unknown-wake acknowledgement write failed; a delivered unknown wake may escalate again
+[2026-09-25T02:38:04+0200] daemon shutting down

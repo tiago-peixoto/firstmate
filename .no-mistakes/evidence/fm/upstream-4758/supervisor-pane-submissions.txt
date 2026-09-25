@@ -1,0 +1,6 @@
+⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)
+⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: decision closed already: needs-decision d-42 resolved by captain (pre-read; re-arm not needed — watcher daemon-managed)
+⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): c9.status: done: PR https://example.test/pull/77 (pre-read; re-arm not needed — watcher daemon-managed)
+⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): c9.status: done: PR https://example.test/pull/77 (pre-read; re-arm not needed — watcher daemon-managed)
+⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)
+⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: unrecognized widget event: w-9 (pre-read; re-arm not needed — watcher daemon-managed)

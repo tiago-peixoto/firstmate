@@ -1,0 +1,34 @@
+=== Session 1: fresh away session via bin/fm-afk-start.sh
+submitted lines after first unknown wake:
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)
+PASS: S1 first unknown wake escalates once to supervisor pane
+PASS: S1 delivered unknown wake is recorded in state/.subsuper-unknown-acked
+ack file:
+  > unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1
+PASS: S2 same unknown-wake identity re-presented is NOT escalated again
+PASS: S2 re-presented wake row was drained/acked (not stuck in queue)
+PASS: S3 genuinely new unknown wake still escalates
+PASS: S4 ordinary (non-unknown) escalation still delivered and never written to ack file
+submitted lines at end of session 1:
+=== Session 2: new away session via bin/fm-afk-start.sh (fresh entry clears acknowledgements)
+PASS: S5 fresh away-session entry cleared the acknowledgement file
+PASS: S5 same identity handled in a PRIOR session fires again in the new session
+=== Session 3: acknowledgement write fails after delivery
+PASS: S6 digest delivered exactly once despite ack-write failure (no re-injection)
+PASS: S6 escalation buffer cleared after delivery
+PASS: S6 daemon logged the acknowledgement-write failure
+=== Final supervisor-pane submissions (verbatim)
+=== Daemon log excerpt
+=== RESULTS
+PASS S1 first unknown wake escalates once to supervisor pane
+PASS S1 delivered unknown wake is recorded in state/.subsuper-unknown-acked
+PASS S2 same unknown-wake identity re-presented is NOT escalated again
+PASS S2 re-presented wake row was drained/acked (not stuck in queue)
+PASS S3 genuinely new unknown wake still escalates
+PASS S4 ordinary (non-unknown) escalation still delivered and never written to ack file
+PASS S5 fresh away-session entry cleared the acknowledgement file
+PASS S5 same identity handled in a PRIOR session fires again in the new session
+PASS S6 digest delivered exactly once despite ack-write failure (no re-injection)
+PASS S6 escalation buffer cleared after delivery
+PASS S6 daemon logged the acknowledgement-write failure
+KEPT_WORKDIR=/tmp/fm-unk-ack.LKNyzV

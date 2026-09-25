@@ -1,0 +1,59 @@
+=== Session 1: fresh away session via bin/fm-afk-start.sh
+submitted lines after first unknown wake:
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)
+PASS: S1 first unknown wake escalates once to supervisor pane
+PASS: S1 delivered unknown wake is recorded in state/.subsuper-unknown-acked
+ack file:
+  > unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1
+PASS: S2 same unknown-wake identity re-presented is NOT escalated again
+PASS: S2 re-presented wake row was drained/acked (not stuck in queue)
+PASS: S3 genuinely new unknown wake still escalates
+PASS: S4 ordinary (non-unknown) escalation still delivered and never written to ack file
+submitted lines at end of session 1:
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: decision closed already: needs-decision d-42 resolved by captain (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): c9.status: done: PR https://example.test/pull/77 (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): c9.status: done: PR https://example.test/pull/77 (pre-read; re-arm not needed — watcher daemon-managed)
+=== Session 2: new away session via bin/fm-afk-start.sh (fresh entry clears acknowledgements)
+PASS: S5 fresh away-session entry cleared the acknowledgement file
+PASS: S5 same identity handled in a PRIOR session fires again in the new session
+=== Session 3: acknowledgement write fails after delivery
+PASS: S6 digest delivered exactly once despite ack-write failure (no re-injection)
+PASS: S6 escalation buffer cleared after delivery
+PASS: S6 daemon logged the acknowledgement-write failure
+=== Final supervisor-pane submissions (verbatim)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: decision closed already: needs-decision d-42 resolved by captain (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): c9.status: done: PR https://example.test/pull/77 (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): c9.status: done: PR https://example.test/pull/77 (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 (pre-read; re-arm not needed — watcher daemon-managed)
+  | ⁣FIRSTMATE_OP: v1 away-supervisor: Supervisor escalate (1 event(s)): unknown wake: unrecognized widget event: w-9 (pre-read; re-arm not needed — watcher daemon-managed)
+=== Daemon log excerpt
+.supervise-daemon.log
+.watch-deliveries.log
+  L [2026-09-25T02:37:12+0200] daemon starting (pid 1485028); target=%0; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=999999s; batch=0s
+  L [2026-09-25T02:37:14+0200] escalate: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 -> unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1
+  L [2026-09-25T02:37:21+0200] escalate: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 -> unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1
+  L [2026-09-25T02:37:26+0200] escalate: decision closed already: needs-decision d-42 resolved by captain -> unknown wake: decision closed already: needs-decision d-42 resolved by captain
+  L [2026-09-25T02:37:35+0200] escalate: signal: /tmp/fm-unk-ack.LKNyzV/home/state/c9.status -> c9.status: done: PR https://example.test/pull/77
+  L [2026-09-25T02:37:41+0200] escalate: signal: /tmp/fm-unk-ack.LKNyzV/home/state/c9.status -> c9.status: done: PR https://example.test/pull/77
+  L [2026-09-25T02:37:43+0200] daemon shutting down
+  L [2026-09-25T02:37:44+0200] daemon starting (pid 1531485); target=%0; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=999999s; batch=0s
+  L [2026-09-25T02:37:46+0200] escalate: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1 -> unknown wake: inactive terminal outcome awaiting captain presentation: child=c1 state=done pr=https://example.test/pull/1
+  L [2026-09-25T02:37:51+0200] daemon shutting down
+  L [2026-09-25T02:37:53+0200] daemon starting (pid 1546007); target=%0; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=999999s; batch=0s
+  L [2026-09-25T02:37:54+0200] escalate: unrecognized widget event: w-9 -> unknown wake: unrecognized widget event: w-9
+  L [2026-09-25T02:37:56+0200] unknown-wake acknowledgement write failed; a delivered unknown wake may escalate again
+  L [2026-09-25T02:38:04+0200] daemon shutting down
+=== RESULTS
+PASS S1 first unknown wake escalates once to supervisor pane
+PASS S1 delivered unknown wake is recorded in state/.subsuper-unknown-acked
+PASS S2 same unknown-wake identity re-presented is NOT escalated again
+PASS S2 re-presented wake row was drained/acked (not stuck in queue)
+PASS S3 genuinely new unknown wake still escalates
+PASS S4 ordinary (non-unknown) escalation still delivered and never written to ack file
+PASS S5 fresh away-session entry cleared the acknowledgement file
+PASS S5 same identity handled in a PRIOR session fires again in the new session
+PASS S6 digest delivered exactly once despite ack-write failure (no re-injection)
+PASS S6 escalation buffer cleared after delivery
+PASS S6 daemon logged the acknowledgement-write failure
