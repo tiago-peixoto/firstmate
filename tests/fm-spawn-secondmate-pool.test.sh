@@ -6,9 +6,9 @@
 # pool as the root home's clone, and that pool's slots are worktrees of the root
 # home's clone. A secondmate spawn that took one was refused at Claude trust
 # registration as "not a worktree of project". These tests drive the real spawn
-# path with a fake terminal that answers the typed `treehouse get` the way
-# Treehouse resolves pools: the default root hands out the shared pool's slot,
-# and an explicit --root grows a slot from the pane's clone under that root.
+# path with a fake Treehouse that resolves pools: the default root hands out
+# the shared pool's slot, and an explicit --root grows a slot from the spawning
+# clone under that root.
 set -u
 
 # shellcheck source=tests/fixtures.sh
@@ -56,20 +56,10 @@ case "${1:-}" in
   send-keys)
     text=${4:-}
     case "$text" in
-      'treehouse get')
-        printf '%s\n' "$text" >> "$FM_FAKE_TREEHOUSE_LOG"
-        printf '%s\n' "$FM_FAKE_DEFAULT_SLOT" > "$FM_FAKE_PANE_FILE"
-        ;;
-      "treehouse --root '"*"' get")
-        printf '%s\n' "$text" >> "$FM_FAKE_TREEHOUSE_LOG"
-        root=${text#"treehouse --root '"}
-        root=${root%"' get"}
-        pool="$root/.treehouse/project-pool"
-        slot="$pool/1/project"
-        mkdir -p "$pool"
-        printf '{"worktrees":[]}\n' > "$pool/treehouse-state.json"
-        git -C "$FM_FAKE_PANE_PATH" worktree add --quiet --detach "$slot" >/dev/null 2>&1 || exit 1
-        printf '%s\n' "$slot" > "$FM_FAKE_PANE_FILE"
+      "cd -- '"*"'")
+        path=${text#"cd -- '"}
+        path=${path%"'"}
+        printf '%s\n' "$path" > "$FM_FAKE_PANE_FILE"
         ;;
     esac
     exit 0
@@ -77,7 +67,34 @@ case "${1:-}" in
 esac
 exit 0
 SH
-  chmod +x "$fakebin/tmux"
+  cat > "$fakebin/treehouse" <<'SH'
+#!/usr/bin/env bash
+set -eu
+printf '%s\n' "$*" >> "$FM_FAKE_TREEHOUSE_LOG"
+root=
+if [ "${1:-}" = --root ]; then
+  root=$2
+  shift 2
+fi
+case "${1:-}" in
+  get)
+    [ "${2:-}" = --lease ] && [ "${3:-}" = --lease-holder ] || exit 1
+    if [ -n "$root" ]; then
+      pool="$root/.treehouse/project-pool"
+      slot="$pool/1/project"
+      mkdir -p "$pool"
+      printf '{"worktrees":[]}\n' > "$pool/treehouse-state.json"
+      git -C "$FM_FAKE_PANE_PATH" worktree add --quiet --detach "$slot" >/dev/null 2>&1 || exit 1
+    else
+      slot=$FM_FAKE_DEFAULT_SLOT
+    fi
+    printf '%s\n' "$slot"
+    ;;
+  return) exit 0 ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$fakebin/tmux" "$fakebin/treehouse"
   fm_test_fake_sleep_noop "$fakebin"
   printf '%s\n' "$fakebin"
 }
@@ -188,7 +205,7 @@ test_local_secondmate_spawns_from_its_own_clone_pool() {
   assert_contains "$out" "spawned $id" "the secondmate spawn did not report success"
   assert_not_contains "$out" "not a worktree of project" \
     "the secondmate spawn was handed another clone's slot"
-  [ "$(cat "$case_dir/treehouse.log")" = "treehouse --root '$root' get" ] \
+  [ "$(cat "$case_dir/treehouse.log")" = "--root $root get --lease --lease-holder $id" ] \
     || fail "the secondmate spawn did not root its pool outside the home: $(cat "$case_dir/treehouse.log")"
   wt=$(meta_worktree "$mate" "$id")
   case "$wt" in
@@ -213,7 +230,7 @@ test_root_home_keeps_the_default_pool() {
   out=$(run_pool_spawn "$case_dir" "$main" "$id")
   status=$?
   expect_code 0 "$status" "a root-home spawn should launch from the default pool"$'\n'"$out"
-  [ "$(cat "$case_dir/treehouse.log")" = "treehouse get" ] \
+  [ "$(cat "$case_dir/treehouse.log")" = "get --lease --lease-holder $id" ] \
     || fail "the root-home spawn changed its pool command: $(cat "$case_dir/treehouse.log")"
   assert_grep "worktree=$case_dir/treehouse/project-pool/1/project" "$main/state/$id.meta" \
     "the root-home spawn did not take the default pool's slot"
@@ -232,7 +249,7 @@ test_remote_seeded_home_keeps_the_default_pool() {
 
   out=$(run_pool_spawn "$case_dir" "$mate" "$id")
   status=$?
-  [ "$(cat "$case_dir/treehouse.log")" = "treehouse get" ] \
+  grep -Fx "get --lease --lease-holder $id" "$case_dir/treehouse.log" >/dev/null \
     || fail "a remote-seeded home, the root of its own machine, left the default pool: $(cat "$case_dir/treehouse.log")"
   [ ! -e "$mate/state/treehouse" ] || fail "a remote-seeded home created a home-scoped pool root"
   [ "$status" -ne 0 ] || fail "the shared default slot here belongs to another clone and must still be refused"
