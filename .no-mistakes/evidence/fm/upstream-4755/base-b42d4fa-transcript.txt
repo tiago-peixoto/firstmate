@@ -1,0 +1,71 @@
+
+===== SESSION 1 (d2bb3044-d267-457b-8af7-c5c4b353a8fd): escalate A (to be operator-closed) and B (left open) =====
+A=5808397557f0bee0 B=cf28618931719c5f
+/tmp/fm-4755-base.S9xG/drive.sh: line 42: fm_pending_reply_session_token: command not found
+session token: 
+A surfaced_session=
+parent channel mate.status:
+blocked [key=pending-reply-5808397557f0bee0] [at=1790296317]: pending-reply-missed: task=mate pending-reply-id=5808397557f0bee0 request=request A to be closed by operator
+blocked [key=pending-reply-cf28618931719c5f] [at=1790296317]: pending-reply-missed: task=mate pending-reply-id=cf28618931719c5f request=request B left open
+
+===== SESSION 1: watcher ticks twice in the escalating session =====
+reminder rows queued: 0  (expect 0: escalation wake was this session's surface)
+
+===== SESSION 1: bearings decisions_open (pending-reply rows) =====
+[]
+
+===== Operator: fm-send mate --resolve-key pending-reply-5808397557f0bee0; plus an unkeyed resolved line =====
+fm-send rc=0
+resolved [key=pending-reply-5808397557f0bee0] [at=1790296320]: pending-reply-resolved: task=mate pending-reply-id=5808397557f0bee0 via=operator-resolve-key ack, handled out of band
+resolved: looked at it
+A phase=escalated (operator close is not the mate's reply)
+
+===== SESSION 2: /clear in the same harness -> fm-session-start.sh with a new session id =====
+WAKE QUEUE
+--------------------------------------------------------------------------------
+UNREAD STATUS (new since last drain, not re-printed after this presentation):
+mate resolved [key=pending-reply-5808397557f0bee0] [at=1790296320]: pending-reply-resolved: task=mate pending-reply-id=5808397557f0bee0 via=operator-resolve-key ack, handled out of band
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-cf28618931719c5f] blocked: pending-reply-missed: task=mate pending-reply-id=cf28618931719c5f request=request B left open
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+A dismissed_epoch=
+
+===== SESSION 2: watcher polls three more ticks =====
+reminder rows queued: 0 (expect 1, not re-appended)
+blocked lines for B on parent channel: 1 (expect 1: no second injection)
+recovery attempts on B: 
+
+===== SESSION 2: bearings decisions_open =====
+[]
+
+===== SESSION 2: acknowledge the reminder; re-running session start in the SAME session =====
+WAKE QUEUE
+--------------------------------------------------------------------------------
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-cf28618931719c5f] blocked: pending-reply-missed: task=mate pending-reply-id=cf28618931719c5f request=request B left open
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+
+===== SESSION 3: new session id, still unresolved -> reminded again once =====
+WAKE QUEUE
+--------------------------------------------------------------------------------
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-cf28618931719c5f] blocked: pending-reply-missed: task=mate pending-reply-id=cf28618931719c5f request=request B left open
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+
+===== Mate replies with corr=cf28618931719c5f =====
+B phase=resolved
+
+===== SESSION 4: resolved -> no reminder, no bearings row =====
+WAKE QUEUE
+--------------------------------------------------------------------------------
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+mate done [corr=cf28618931719c5f]: B is finished
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+[]
