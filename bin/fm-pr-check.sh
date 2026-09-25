@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Record a PR-ready task: store one validated canonical pr=<url> and the forge's
-# exact pr_head=<sha> when available, then atomically arm a static merge poll.
+# exact pr_head=<sha> when available, then atomically arm a static movement poll
+# and, on GitHub, seed its baseline reading so only later movement wakes anyone.
 # Refuses when bin/fm-dod-lib.sh will not accept the named head as reachable
 # outside the worker's disposable copy; in no-mistakes mode a forge-reported
 # head is that named head and is already stored on the forge.
@@ -210,6 +211,30 @@ fi
 # The merge-time re-record is not a new review-ready PR, so it writes nothing.
 [ ! -e "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}/fleet-ledger" ] || [ "${FM_PR_CHECK_MERGE:-}" = 1 ] \
   || FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE "$SCRIPT_DIR/fm-fleet-ledger.sh" pr_ready "$ID" "$URL" || true
+
+# Seed the poll's baseline reading with the pull request as it stands right now.
+# Arming happens at the moment firstmate has just looked at this PR, so "now" is
+# exactly what firstmate already knows and nothing here is worth a wake; every
+# later reading is compared against it, so a maintainer acting between arming
+# and the first poll is reported instead of being absorbed as the baseline. The
+# poll itself produces the reading, so the field logic has one owner.
+# Best-effort on purpose: a seed that cannot be taken leaves no coverage
+# evidence, which keeps the timed recheck on for this task and makes the first
+# poll report the state it finds. A merged reading is deliberately not recorded,
+# because a merge is the poll's own terminal path and never a baseline.
+# GitHub only, because only the GitHub branch of the poll returns a movement
+# reading to baseline; arming a GitLab or Gerrit watch stays a purely local
+# operation rather than gaining a forge read whose result would be discarded.
+if [ "$PROVIDER" = github ]; then
+  SEED=$("$SCRIPT_DIR/fm-pr-poll.sh" --validated \
+    "$PROVIDER" "$URL" "$HOST" "$PROJECT_PATH" "$NUMBER" 2>/dev/null) || SEED=
+  case "$SEED" in
+    'moved '*)
+      fm_pr_poll_observed_record "$STATE" "$ID" "$PROVIDER" "$HOST" "$PROJECT_PATH" "$NUMBER" "$SEED" \
+        || echo "warning: PR poll baseline could not be recorded; the first poll will report the state it finds" >&2
+      ;;
+  esac
+fi
 # The contribution observer uses the same authenticated check mechanism and
 # owns verdict freshness, required actors and external feedback separately from
 # the exact merged-state poll. Registration is local and performs no forge read.
