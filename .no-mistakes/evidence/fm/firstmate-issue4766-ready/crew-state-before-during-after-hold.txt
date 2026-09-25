@@ -1,0 +1,16 @@
+log: 'working: mid implementation'
+   before hold: state: working · source: status-log · mid implementation
+   while held:  state: unknown · source: none · no current-state source available
+   after release: state: working · source: status-log · mid implementation
+log: 'paused: waiting on upstream release'
+   before hold: state: paused · source: status-log · waiting on upstream release
+   while held:  state: unknown · source: none · no current-state source available
+   after release: state: paused · source: status-log · waiting on upstream release
+log: 'blocked: need API token'
+   before hold: state: blocked · source: status-log · need API token
+   while held:  state: blocked · source: status-log · need API token
+   after release: state: blocked · source: status-log · need API token
+log: 'needs-decision [key=shape]: which shape'
+   before hold: state: parked · source: status-log · which shape
+   while held:  state: parked · source: status-log · which shape
+   after release: state: parked · source: status-log · which shape

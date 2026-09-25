@@ -1,0 +1,6 @@
+log: 'working: mid implementation'
+   before hold: state: working · source: status-log · mid implementation
+   while held:  state: working · source: status-log · mid implementation
+   after release: state: working · source: status-log · mid implementation
+log: 'paused: waiting on upstream release'
+   before hold: state: paused · source: status-log · waiting on upstream release

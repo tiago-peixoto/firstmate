@@ -1,0 +1,36 @@
+commit: cf18b32
+===== C1: worker done:, then held -> crew state still reports done (hold never changes reported state) =====
+$ fm-captain-hold.sh hold lab-lane-c --reason 'operator review'
+lab-lane-c
+    | working: building
+    | done: report complete
+    | captain-held [key=captain-hold-lab-lane-c-1] [at=1790361677]: operator review
+    fm-crew-state.sh lab-lane-c -> state: done · source: status-log · report complete
+
+===== C2: standing hold, idle pane, worker was working -> crew state reads the worker line, not captain-held =====
+    | working: mid implementation
+    | captain-held [key=captain-hold-lab-lane-d-1] [at=1790361679]: scope question
+    fm-crew-state.sh lab-lane-d -> state: working · source: status-log · mid implementation
+  worker appends failed: while held
+    | working: mid implementation
+    | captain-held [key=captain-hold-lab-lane-d-1] [at=1790361679]: scope question
+    | failed: tests broke
+    fm-crew-state.sh lab-lane-d -> state: failed · source: status-log · tests broke
+
+===== C3: lanes from the classification transcript (settled holds) =====
+    | working: implementing the sample
+    | captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    | resolved [key=api-shape]: answered
+    | done: shipped PR 12
+    | resolved [key=captain-hold-lab-lane-a-1] [at=1790361666]: captain call answered by fm-captain-hold
+    fm-crew-state.sh lab-lane-a -> state: done · source: status-log · shipped PR 12
+    | needs-decision [key=route]: pick north or south
+    | captain-held [key=captain-hold-lab-lane-b-1] [at=1790361668]: route choice
+    | captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    | resolved [key=captain-hold-lab-lane-b-1] [at=1790361671]: captain call released by fm-captain-hold
+    | resolved [key=route] [at=1790361672]: captain call released by fm-captain-hold
+    | working: continuing north
+    | captain-held [key=captain-hold-lab-lane-b-2] [at=1790361673]: second review
+    | failed: build broke
+    | resolved [key=captain-hold-lab-lane-b-2] [at=1790361675]: captain call answered by fm-captain-hold
+    fm-crew-state.sh lab-lane-b -> state: failed · source: status-log · build broke

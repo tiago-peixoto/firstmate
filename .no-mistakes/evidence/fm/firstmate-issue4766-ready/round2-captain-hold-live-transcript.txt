@@ -1,0 +1,137 @@
+commit: cf18b32
+===== S1: hold a working lane -> reads captain-held =====
+
+$ fm-captain-hold.sh hold lab-lane-a --reason operator review
+lab-lane-a
+--- status log (lab-lane-a):
+    working: implementing the sample
+    captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    last_status_line:          captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    status_declared_wait_line: captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    status_current_line:       working: implementing the sample
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-a
+
+===== S2: resolved line of another key lands on the standing mirror =====
+
+$ worker appends: resolved [key=api-shape]: answered
+--- status log (lab-lane-a):
+    working: implementing the sample
+    captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    resolved [key=api-shape]: answered
+    last_status_line:          resolved [key=api-shape]: answered
+    status_declared_wait_line: captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    status_current_line:       resolved [key=api-shape]: answered
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-a
+
+===== S3: worker writes done: while held -> reported done, not captain-held =====
+
+$ worker appends: done: shipped PR 12
+--- status log (lab-lane-a):
+    working: implementing the sample
+    captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    resolved [key=api-shape]: answered
+    done: shipped PR 12
+    last_status_line:          done: shipped PR 12
+    status_declared_wait_line: 
+    status_current_line:       done: shipped PR 12
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-a
+
+===== S4: answer settles the hold -> retraction appended once, readers see worker =====
+
+$ fm-captain-hold.sh answer lab-lane-a --decision-file ok.txt
+answered: lab-lane-a
+
+$ replay: fm-captain-hold.sh answer lab-lane-a --decision-file ok.txt
+    (idempotent retry ok)
+    retraction lines: 1
+--- status log (lab-lane-a):
+    working: implementing the sample
+    captain-held [key=captain-hold-lab-lane-a-1] [at=1790361663]: operator review
+    resolved [key=api-shape]: answered
+    done: shipped PR 12
+    resolved [key=captain-hold-lab-lane-a-1] [at=1790361666]: captain call answered by fm-captain-hold
+    last_status_line:          done: shipped PR 12
+    status_declared_wait_line: 
+    status_current_line:       done: shipped PR 12
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-a
+
+===== S5 (regression 86d95da): earlier settled transfer must not hide a later standing hold =====
+duplicate session: fm-lab
+
+$ fm-captain-hold.sh hold lab-lane-b --reason route choice
+lab-lane-b
+
+$ fm-captain-hold.sh complete lab-lane-b lab-lane-b
+complete: lab-lane-b captain-call inventory reviewed (lab-lane-b)
+--- status log (lab-lane-b):
+    needs-decision [key=route]: pick north or south
+    captain-held [key=captain-hold-lab-lane-b-1] [at=1790361668]: route choice
+    captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    last_status_line:          captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    status_declared_wait_line: captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    status_current_line:       captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-b
+
+$ fm-captain-hold.sh answer lab-lane-b --decision-file north.txt --release
+released: lab-lane-b
+--- status log (lab-lane-b):
+    needs-decision [key=route]: pick north or south
+    captain-held [key=captain-hold-lab-lane-b-1] [at=1790361668]: route choice
+    captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    resolved [key=captain-hold-lab-lane-b-1] [at=1790361671]: captain call released by fm-captain-hold
+    resolved [key=route] [at=1790361672]: captain call released by fm-captain-hold
+    last_status_line:          needs-decision [key=route]: pick north or south
+    status_declared_wait_line: 
+    status_current_line:       needs-decision [key=route]: pick north or south
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-b
+
+$ worker appends: working: continuing north
+
+$ fm-captain-hold.sh hold lab-lane-b --reason second review
+lab-lane-b
+--- status log (lab-lane-b):
+    needs-decision [key=route]: pick north or south
+    captain-held [key=captain-hold-lab-lane-b-1] [at=1790361668]: route choice
+    captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    resolved [key=captain-hold-lab-lane-b-1] [at=1790361671]: captain call released by fm-captain-hold
+    resolved [key=route] [at=1790361672]: captain call released by fm-captain-hold
+    working: continuing north
+    captain-held [key=captain-hold-lab-lane-b-2] [at=1790361673]: second review
+    last_status_line:          captain-held [key=captain-hold-lab-lane-b-2] [at=1790361673]: second review
+    status_declared_wait_line: captain-held [key=captain-hold-lab-lane-b-2] [at=1790361673]: second review
+    status_current_line:       working: continuing north
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-b
+
+===== S6: worker failed: past a standing hold -> failed reported =====
+
+$ worker appends: failed: build broke
+--- status log (lab-lane-b):
+    needs-decision [key=route]: pick north or south
+    captain-held [key=captain-hold-lab-lane-b-1] [at=1790361668]: route choice
+    captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    resolved [key=captain-hold-lab-lane-b-1] [at=1790361671]: captain call released by fm-captain-hold
+    resolved [key=route] [at=1790361672]: captain call released by fm-captain-hold
+    working: continuing north
+    captain-held [key=captain-hold-lab-lane-b-2] [at=1790361673]: second review
+    failed: build broke
+    last_status_line:          failed: build broke
+    status_declared_wait_line: 
+    status_current_line:       failed: build broke
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-b
+
+$ fm-captain-hold.sh answer lab-lane-b --decision-file rel.txt
+answered: lab-lane-b
+--- status log (lab-lane-b):
+    needs-decision [key=route]: pick north or south
+    captain-held [key=captain-hold-lab-lane-b-1] [at=1790361668]: route choice
+    captain-held [key=route] [at=1790361669]: tracked by lab-lane-b
+    resolved [key=captain-hold-lab-lane-b-1] [at=1790361671]: captain call released by fm-captain-hold
+    resolved [key=route] [at=1790361672]: captain call released by fm-captain-hold
+    working: continuing north
+    captain-held [key=captain-hold-lab-lane-b-2] [at=1790361673]: second review
+    failed: build broke
+    resolved [key=captain-hold-lab-lane-b-2] [at=1790361675]: captain call answered by fm-captain-hold
+    last_status_line:          failed: build broke
+    status_declared_wait_line: 
+    status_current_line:       failed: build broke
+    fm-crew-state.sh:          state: unknown · source: none · backend target gone: fm-lab:fm-lab-lane-b
