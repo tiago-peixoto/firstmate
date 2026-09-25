@@ -97,12 +97,8 @@ esac
 case "${1:-}" in display-message) printf 'firstmate\n' ;; esac
 exit 0
 SH
-  cat > "$fakebin/treehouse" <<'SH'
-#!/usr/bin/env bash
-printf 'treehouse %s\n' "$*" >> "$FM_FAKE_CALL_LOG"
-exit 0
-SH
-  chmod +x "$fakebin/tmux" "$fakebin/treehouse"
+  chmod +x "$fakebin/tmux"
+  fm_test_fake_treehouse_lease "$fakebin"
   fm_fake_exit0 "$fakebin" gh gh-axi no-mistakes
   fm_git_init_commit "$case_dir/project"
   fm_git_add_origin "$case_dir/project" "$case_dir/project.origin.git"
@@ -163,7 +159,7 @@ run_spawn() {  # <case-dir> <home> <pane-path> <args...>
     FM_STATE_OVERRIDE='' FM_DATA_OVERRIDE='' FM_PROJECTS_OVERRIDE='' FM_CONFIG_OVERRIDE='' \
     FM_SPAWN_NO_GUARD=1 TMUX="fake,1,0" FM_BACKEND=tmux \
     FM_FAKE_PANE_PATH="$pane" FM_FAKE_CALL_LOG="$case_dir/calls.log" \
-    PATH="$case_dir/fakebin:$PATH" \
+    FM_FAKE_TREEHOUSE_LOG="$case_dir/calls.log" PATH="$case_dir/fakebin:$PATH" \
     "$SPAWN" "$@" 2>&1
 }
 
@@ -357,8 +353,8 @@ test_release_frees_a_place() {
   # Cleanup: the real teardown removes the record, which frees its place.
   rc=0
   out=$(FM_ROOT_OVERRIDE='' FM_HOME="$home" FM_STATE_OVERRIDE='' FM_DATA_OVERRIDE='' FM_CONFIG_OVERRIDE='' \
-    FM_FAKE_CALL_LOG="$case_dir/calls.log" PATH="$case_dir/fakebin:$PATH" \
-    "$TEARDOWN" live-b 2>&1) || rc=$?
+    FM_FAKE_CALL_LOG="$case_dir/calls.log" FM_FAKE_TREEHOUSE_LOG="$case_dir/calls.log" \
+    PATH="$case_dir/fakebin:$PATH" "$TEARDOWN" live-b 2>&1) || rc=$?
   expect_code 0 "$rc" "cleanup of a live worker failed: $out"
   assert_absent "$home/state/live-b.meta" "cleanup left the worker's record"
   rc=0
