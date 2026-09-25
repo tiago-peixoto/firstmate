@@ -1,0 +1,1 @@
+ok - unrecognized status prefixes are visible and recognized prefixes are unchanged

@@ -1,0 +1,17 @@
+parked-after-working               latest='working: still on it'                     -> ABSORBED (watcher kept blocking, no wake)
+holding-after-working              latest='working: still on it'                     -> ABSORBED (watcher kept blocking, no wake)
+bad-corr-done                      latest='working: still on it'                     -> ABSORBED (watcher kept blocking, no wake)
+stamped-parked                     latest='working [at=1]: still on it'              -> ABSORBED (watcher kept blocking, no wake)
+stamped-bad-corr-done              latest='working [at=1]: still on it'              -> ABSORBED (watcher kept blocking, no wake)
+control-done                       latest='done: shipped'                            -> SURFACED: signal: task.status 
+control-working                    latest='working: still on it'                     -> ABSORBED (watcher kept blocking, no wake)
+paused+ 'https://github.com/o/r/pull/12' latest='paused: waiting on upstream release'      -> SURFACED: signal: task.status 
+working+ 'https://github.com/o/r/pull/12' latest='working: opened PR'                       -> ABSORBED (watcher kept blocking, no wake)
+paused+ 'Reason: upstream is slow' latest='paused: waiting on upstream release'      -> SURFACED: signal: task.status 
+working+ 'Reason: upstream is slow' latest='working: opened PR'                       -> ABSORBED (watcher kept blocking, no wake)
+paused+ 'Note: see above'          latest='paused: waiting on upstream release'      -> SURFACED: signal: task.status 
+working+ 'Note: see above'         latest='working: opened PR'                       -> ABSORBED (watcher kept blocking, no wake)
+paused+ 'e.g.: the notes'          latest='paused: waiting on upstream release'      -> SURFACED: signal: task.status 
+working+ 'e.g.: the notes'         latest='working: opened PR'                       -> ABSORBED (watcher kept blocking, no wake)
+paused+ '10:30 retry scheduled'    latest='paused: waiting on upstream release'      -> SURFACED: signal: task.status 
+working+ '10:30 retry scheduled'   latest='working: opened PR'                       -> ABSORBED (watcher kept blocking, no wake)
