@@ -557,7 +557,7 @@ test_busy_pane_repeated_escalation_reaches_demand_deep_inspection() {
 # escalation, proving the discriminator is the worker's own declaration and not a
 # blanket silencing of the escalator (C).
 test_busy_declared_pause_is_rechecked_not_wedge_escalated() {
-  local dir state fakebin out capture_file window key sig pid statusf back
+  local dir state fakebin out capture_file window key sig pid statusf
   dir=$(make_case busy-declared-pause); state="$dir/state"; fakebin="$dir/fakebin"
   out="$dir/watch.out"; capture_file="$dir/pane.txt"; window="test:fm-review-scout"
   statusf="$state/review-scout.status"
@@ -594,9 +594,8 @@ test_busy_declared_pause_is_rechecked_not_wedge_escalated() {
   # settle on one stable hash, so the still-busy pane takes the repeat-hash
   # branch whose pause bookkeeping the bound must not wipe. It re-surfaces once
   # as a recheck, never as a wedge.
-  back=$(( $(date +%s) - 500 ))
-  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$statusf"
-  else touch -m -d "@$back" "$statusf"; fi
+  backdate "$statusf" 500
+  backdate "$state/.paused-since-$key" 500
   sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-review-scout_status"
   printf '%s' "$(hash_text "$(cat "$capture_file")")" > "$state/.hash-$key"
   printf '1\n' > "$state/.count-$key"
