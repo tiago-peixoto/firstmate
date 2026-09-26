@@ -1,0 +1,48 @@
+# live: bin/fm-captain-hold.sh against a disposable lab FM_HOME with real tasks-axi
+## setup: a prior lane decision 'route' was captain-held and answered (settled), worker continued
+ok: added lane -> Queued
+task:
+## $ fm-captain-hold.sh hold lane --reason 'operator review'
+lane
+exit=0
+## lane status log:
+working: start
+needs-decision [key=route]: pick
+captain-held [key=route]: tracked by T
+resolved [key=route]: captain call answered by fm-captain-hold
+working: continuing
+captain-held [key=captain-hold-lane-1] [at=1790440517]: operator review
+  last_status_line        = [captain-held [key=captain-hold-lane-1] [at=1790440517]: operator review]
+  status_declared_wait    = [captain-held [key=captain-hold-lane-1] [at=1790440517]: operator review]
+  status_current_line     = [working: continuing]
+## unrelated keyed answer lands on top (resolved [key=api-shape])
+  last_status_line        = [resolved [key=api-shape]: answered]
+  status_declared_wait    = [captain-held [key=captain-hold-lane-1] [at=1790440517]: operator review]
+  status_current_line     = [resolved [key=api-shape]: answered]
+## $ fm-captain-hold.sh answer lane --decision-file decision.txt --release
+released: lane
+exit=0
+## lane status log:
+working: start
+needs-decision [key=route]: pick
+captain-held [key=route]: tracked by T
+resolved [key=route]: captain call answered by fm-captain-hold
+working: continuing
+captain-held [key=captain-hold-lane-1] [at=1790440517]: operator review
+resolved [key=api-shape]: answered
+resolved [key=captain-hold-lane-1] [at=1790440519]: captain call released by fm-captain-hold
+  last_status_line        = [resolved [key=api-shape]: answered]
+  status_declared_wait    = []
+  status_current_line     = [resolved [key=api-shape]: answered]
+
+## second lane: hold, then the worker itself reports done while held
+ok: added lane2 -> Queued
+task:
+lane2
+exit=0
+working: start
+captain-held [key=captain-hold-lane2-1] [at=1790440521]: operator review
+done: report ready
+  last_status_line        = [done: report ready]
+  status_declared_wait    = []
+  status_current_line     = [done: report ready]

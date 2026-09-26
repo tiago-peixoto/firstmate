@@ -54,4 +54,3 @@ ok - skipped on markdown-only tasks-axi: verify an unresolvable beads legacy id
 ok - skipped on markdown-only tasks-axi: verify a derived pre-collapse key
 ok - captain-hold mutations address the beads backend without a markdown override
 ok - skipped on markdown-only tasks-axi: captain-hold create under due.required without types.custom
-exit=0

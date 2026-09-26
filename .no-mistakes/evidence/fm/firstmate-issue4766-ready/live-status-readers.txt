@@ -1,0 +1,47 @@
+## A: scout done, then a standing captain hold mirror
+working: start
+done: report ready
+captain-held [key=captain-hold-a-1]: operator review
+--> fm-crew-state:
+state: unknown · source: none · backend target gone: fm:fm-a
+last=[captain-held [key=captain-hold-a-1]: operator review]
+wait=[captain-held [key=captain-hold-a-1]: operator review]
+current=[done: report ready]
+
+## B: earlier settled transfer, then worker continues, then a later standing hold
+needs-decision [key=route]: pick
+captain-held [key=route]: tracked by T
+resolved [key=route]: captain call answered by fm-captain-hold
+working: continuing
+captain-held [key=captain-hold-b-2]: operator review
+--> fm-crew-state:
+state: unknown · source: none · backend target gone: fm:fm-b
+last=[captain-held [key=captain-hold-b-2]: operator review]
+wait=[captain-held [key=captain-hold-b-2]: operator review]
+current=[working: continuing]
+
+## C: standing mirror then worker done (adversarial: hold must not mask terminal state)
+working: start
+captain-held [key=captain-hold-c-1]: operator review
+done: shipped report
+--> fm-crew-state:
+state: unknown · source: none · backend target gone: fm:fm-c
+last=[done: shipped report]
+wait=[]
+current=[done: shipped report]
+
+## D: standing mirror then unrelated resolved (mirror stays the declared wait)
+paused: waiting
+captain-held [key=captain-hold-d-1]: operator review
+resolved [key=api-shape]: answered
+last=[resolved [key=api-shape]: answered]
+wait=[captain-held [key=captain-hold-d-1]: operator review]
+current=[resolved [key=api-shape]: answered]
+
+## E: mirror released by its own resolved line
+done: report ready
+captain-held [key=captain-hold-e-1]: review
+resolved [key=captain-hold-e-1]: captain call released by fm-captain-hold
+last=[done: report ready]
+wait=[]
+current=[done: report ready]

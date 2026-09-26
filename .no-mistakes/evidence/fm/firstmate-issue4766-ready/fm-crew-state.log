@@ -196,4 +196,3 @@ ok - inventory-error run selection reports unknown with candidate ids
 ok - selected-error run selection reports unknown with candidate ids
 ok - legacy conflicting run records report unknown
 all fm-crew-state tests passed
-exit=0

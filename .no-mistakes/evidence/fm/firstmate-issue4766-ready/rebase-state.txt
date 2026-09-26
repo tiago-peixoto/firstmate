@@ -1,0 +1,11 @@
+# upstream main (read-only ls-remote)
+e9a6675ed188f3d77639cfe753451e07d68ab6a6	refs/heads/main
+# base commit of this run
+e9a6675ed188f3d77639cfe753451e07d68ab6a6
+# is upstream main an ancestor of HEAD (rebased, no merge commits)?
+yes
+merge commits on branch: 0
+# three-dot diff vs main under .github/workflows (count of paths):
+0
+# ci.yml diff vs main (lines):
+0

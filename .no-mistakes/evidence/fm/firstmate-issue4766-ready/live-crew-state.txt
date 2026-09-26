@@ -1,0 +1,23 @@
+# bin/fm-crew-state.sh on a disposable lab FM_HOME; lanes are live tmux windows on a private fm-lab socket, idle recorded via bin/fm-busy-event.sh (claude stop hook)
+## lane a status log:
+working: start
+done: report ready
+captain-held [key=captain-hold-a-1]: operator review
+--> state: done · source: status-log · report ready
+
+## lane b status log:
+needs-decision [key=route]: pick
+captain-held [key=route]: tracked by T
+resolved [key=route]: captain call answered by fm-captain-hold
+working: continuing
+captain-held [key=captain-hold-b-2]: operator review
+--> state: working · source: status-log · continuing
+
+## lane c status log:
+working: start
+captain-held [key=captain-hold-c-1]: operator review
+done: shipped report
+--> state: done · source: status-log · shipped report
+
+## lane a after the hold is released:
+--> state: done · source: status-log · report ready

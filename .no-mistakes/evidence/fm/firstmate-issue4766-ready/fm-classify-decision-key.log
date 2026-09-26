@@ -26,4 +26,3 @@ ok - a hold settlement is the hold's own only with no worker event between
 ok - a worker event after a standing hold mirror replaces it as the declared wait
 ok - a worker done stays current under a standing mirror, and a later hold survives an earlier settled transfer
 ok - only a colon-bearing or keyed line is a decision transition in the fold
-exit=0
