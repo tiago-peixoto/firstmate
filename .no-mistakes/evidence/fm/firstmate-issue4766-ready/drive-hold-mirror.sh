@@ -1,59 +1,58 @@
 #!/usr/bin/env bash
-# Live drive of fm-captain-hold.sh against a disposable lab FM_HOME.
+# Live drive of fm-captain-hold.sh status-log mirror in a disposable lab home.
 set -u
-R=$PWD
-LAB=$(mktemp -d "${TMPDIR:-/tmp}/fm-lab.XXXXXX"); rmdir "$LAB"
-bin/fm-lab-home.sh create "$LAB" >/dev/null
-cp .tasks.toml "$LAB/.tasks.toml"
+ROOT=$1 LAB=$2
+cp "$ROOT/.tasks.toml" "$LAB/.tasks.toml"
 printf '## In flight\n\n## Queued\n\n## Done\n' > "$LAB/data/backlog.md"
-export FM_HOME="$LAB"
-unset NO_MISTAKES_GATE FM_GATE_REFUSE_BYPASS FM_ROOT_OVERRIDE FM_STATE_OVERRIDE FM_DATA_OVERRIDE FM_CONFIG_OVERRIDE FM_PROJECTS_OVERRIDE
-cap() { "$R/bin/fm-captain-hold.sh" "$@"; }
-tasks() { (cd "$LAB" && tasks-axi "$@"); }
-meta() { printf 'window=firstmate:fm-%s\nworktree=%s/projects/missing\nproject=%s/projects/sample\nharness=codex\nkind=scout\nmode=scout\nspawn_gen=lab-%s\n' "$1" "$LAB" "$LAB" "$1" > "$LAB/state/$1.meta"; }
-rd() { bash -c '. "$1"; "$2" "$3"' _ "$R/bin/fm-classify-lib.sh" "$1" "$LAB/state/$2.status"; }
-show() { echo "--- state/$1.status"; cat "$LAB/state/$1.status"; for f in last_status_line last_worker_status_line status_declared_wait_line status_current_line; do printf '%-26s= %s\n' "$f" "$(rd $f $1)"; done; }
-printf 'Proceed as planned.\n' > "$LAB/go.txt"
+mkdir -p "$LAB/fakebin"
+for b in tmux treehouse no-mistakes gh gh-axi herdr; do printf '#!/bin/sh\nexit 0\n' > "$LAB/fakebin/$b"; chmod +x "$LAB/fakebin/$b"; done
+export PATH="$LAB/fakebin:$PATH" FM_HOME="$LAB"
+unset NO_MISTAKES_GATE FM_GATE_REFUSE_BYPASS FM_ROOT_OVERRIDE FM_STATE_OVERRIDE FM_DATA_OVERRIDE FM_CONFIG_OVERRIDE FM_PROJECTS_OVERRIDE TMUX
+CH="$ROOT/bin/fm-captain-hold.sh"
+meta() { printf '%s\n' "window=firstmate:fm-$1" "worktree=$LAB/projects/missing-$1" "project=$LAB/projects/sample" harness=codex "kind=$2" "mode=$2" "spawn_gen=lab-$1" > "$LAB/state/$1.meta"; }
+lib() { bash -c '. "$1"; shift; "$@"' _ "$ROOT/bin/fm-classify-lib.sh" "$@"; }
+show() { # <id>
+  local f="$LAB/state/$1.status"
+  echo "  --- $1.status ---"; sed 's/^/  | /' "$f"
+  echo "  last_status_line         = $(lib last_status_line "$f")"
+  echo "  status_declared_wait_line= $(lib status_declared_wait_line "$f")"
+  echo "  status_current_line      = $(lib status_current_line "$f")"
+  echo "  crew-state row           = $("$ROOT/bin/fm-crew-state.sh" 2>&1 | grep -F "$1" | head -1)"
+}
+step() { echo; echo "### $*"; }
+cd "$LAB"
 
-echo "=== S1: hold a paused lane, repeat hold, release"
-id=lab-paused; tasks add $id "Lab paused lane" --kind scout --repo sample >/dev/null; meta $id
-printf 'paused: waiting on upstream\n' > "$LAB/state/$id.status"
-cap hold $id --reason "operator review" >/dev/null; cap hold $id --reason "operator review" >/dev/null; show $id
-cap answer $id --decision-file "$LAB/go.txt" --release >/dev/null; echo "(after release)"; show $id
+step "S1: hold a ship lane whose worker last wrote paused:"
+id=lab-gated; tasks-axi add $id "Gated lab work" --kind ship --repo sample >/dev/null; meta $id ship
+printf 'working: mid implementation\nneeds-decision [key=api-shape]: which API shape\npaused: waiting on upstream release\n' > state/$id.status
+"$CH" hold $id --reason "operator review pending"; echo "exit=$?"
+show $id
+step "S1b: repeat the hold (must not duplicate)"
+"$CH" hold $id --reason "operator review pending" >/dev/null; echo "captain-held lines: $(grep -c '^captain-held' state/$id.status)"
+step "S2: another key's answer lands on top -> mirror stays declared wait"
+echo 'resolved [key=other-q]: answered elsewhere' >> state/$id.status
+show $id
+step "S3: release the hold -> retraction; lane reads back as worker's paused; api-shape stays open"
+printf 'Proceed.\n' > go.txt; "$CH" answer $id --decision-file go.txt --release; echo "exit=$?"
+show $id
+echo "  open decisions: $(lib status_open_decisions state/$id.status | tr '\t' ' ')"
 
-echo; echo "=== S2: another key answered on top of standing mirror, then release (buried mirror retracted)"
-id=lab-buried; tasks add $id "Lab buried lane" --kind scout --repo sample >/dev/null; meta $id
-printf 'paused: waiting on upstream\n' > "$LAB/state/$id.status"
-cap hold $id --reason "operator review" >/dev/null
-printf 'resolved [key=api]: answered\n' >> "$LAB/state/$id.status"; echo "(held, api answered on top)"; show $id
-cap answer $id --decision-file "$LAB/go.txt" --release >/dev/null; cap answer $id --decision-file "$LAB/go.txt" --release >/dev/null
-echo "(after release + replay)"; show $id
+step "S4: worker writes done: while held -> crew state/current report done, not captain-held"
+id2=lab-finisher; tasks-axi add $id2 "Finisher" --kind ship --repo sample >/dev/null; meta $id2 ship
+printf 'working: start\n' > state/$id2.status
+"$CH" hold $id2 --reason "operator review" >/dev/null
+echo 'done: shipped PR 12' >> state/$id2.status
+show $id2
+step "S5: worker done: BEFORE the hold -> current reads done past standing mirror; declared wait is mirror"
+id3=lab-done-first; tasks-axi add $id3 "Done first" --kind ship --repo sample >/dev/null; meta $id3 ship
+printf 'working: start\ndone: PR ready\n' > state/$id3.status
+"$CH" hold $id3 --reason "captain to merge" >/dev/null
+show $id3
 
-echo; echo "=== S3: worker finishes while held (done replaces the mirror)"
-id=lab-done; tasks add $id "Lab done lane" --kind scout --repo sample >/dev/null; meta $id
-printf 'working: start\n' > "$LAB/state/$id.status"
-cap hold $id --reason "operator review" >/dev/null
-printf 'done: shipped PR 12\n' >> "$LAB/state/$id.status"; show $id
-echo "(crew-state)"; FM_CREW_STATE_NO_FORGE=1 "$R/bin/fm-crew-state.sh" $id 2>&1 | head -3
-id=lab-working; tasks add $id "Lab working lane" --kind scout --repo sample >/dev/null; meta $id
-printf 'paused: upstream\n' > "$LAB/state/$id.status"
-cap hold $id --reason "operator review" >/dev/null
-printf 'working: resumed\n' >> "$LAB/state/$id.status"; show $id
-
-echo; echo "=== S4: transfer key re-asked after complete stays open after settlement"
-id=lab-reask; tasks add $id "Lab reask lane" --kind scout --repo sample >/dev/null; meta $id
-printf 'needs-decision [key=route]: north or south\n' > "$LAB/state/$id.status"
-cap hold lab-route-call --title "Choose lab route" --reason "route pending" >/dev/null
-cap complete $id lab-route-call >/dev/null
-printf 'needs-decision [key=route]: east or west\n' >> "$LAB/state/$id.status"
-cap answer lab-route-call --decision-file "$LAB/go.txt" >/dev/null; show $id
-printf 'status_open_decisions     = %s\n' "$(rd status_open_decisions $id | tr '\t' ' ')"
-
-echo; echo "=== S5: transfer left as last line is retracted on settlement"
-id=lab-top; tasks add $id "Lab top lane" --kind scout --repo sample >/dev/null; meta $id
-printf 'needs-decision [key=scope]: wide or narrow\n' > "$LAB/state/$id.status"
-cap hold lab-scope-call --title "Choose lab scope" --reason "scope pending" >/dev/null
-cap complete $id lab-scope-call >/dev/null; echo "(transfer standing)"; show $id
-cap answer lab-scope-call --decision-file "$LAB/go.txt" >/dev/null; echo "(after settle)"; show $id
-echo; echo "diverged: [$(cap diverged)]"
-rm -rf "$LAB"; echo "lab removed: $([ -e "$LAB" ] && echo no || echo yes)"
+step "S6 (adversarial): earlier settled transfer must not hide a later standing hold"
+id4=lab-late-hold; tasks-axi add $id4 "Late hold" --kind ship --repo sample >/dev/null; meta $id4 ship
+printf 'needs-decision [key=route]: pick\ncaptain-held [key=route]: tracked by T\nresolved [key=route]: captain call answered by fm-captain-hold\nworking: continuing\n' > state/$id4.status
+"$CH" hold $id4 --reason "operator review later" >/dev/null
+show $id4
+step "S7: decision-only hold (no lane meta) creates no status log"
+"$CH" hold lab-question --title "Pick a colour" --reason "captain picks" >/dev/null; echo "exit=$? status file exists: $([ -e state/lab-question.status ] && echo yes || echo no)"

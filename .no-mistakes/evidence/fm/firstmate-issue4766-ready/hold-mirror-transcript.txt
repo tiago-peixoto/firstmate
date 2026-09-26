@@ -1,0 +1,79 @@
+
+### S1: hold a ship lane whose worker last wrote paused:
+lab-gated
+exit=0
+  --- lab-gated.status ---
+  | working: mid implementation
+  | needs-decision [key=api-shape]: which API shape
+  | paused: waiting on upstream release
+  | captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
+  last_status_line         = captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
+  status_declared_wait_line= captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
+  status_current_line      = needs-decision [key=api-shape]: which API shape
+  crew-state row           = 
+
+### S1b: repeat the hold (must not duplicate)
+captain-held lines: 1
+
+### S2: another key's answer lands on top -> mirror stays declared wait
+  --- lab-gated.status ---
+  | working: mid implementation
+  | needs-decision [key=api-shape]: which API shape
+  | paused: waiting on upstream release
+  | captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
+  | resolved [key=other-q]: answered elsewhere
+  last_status_line         = resolved [key=other-q]: answered elsewhere
+  status_declared_wait_line= captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
+  status_current_line      = needs-decision [key=api-shape]: which API shape
+  crew-state row           = 
+
+### S3: release the hold -> retraction; lane reads back as worker's paused; api-shape stays open
+released: lab-gated
+exit=0
+  --- lab-gated.status ---
+  | working: mid implementation
+  | needs-decision [key=api-shape]: which API shape
+  | paused: waiting on upstream release
+  | captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
+  | resolved [key=other-q]: answered elsewhere
+  | resolved [key=captain-hold-lab-gated-1] [at=1790390249]: captain call released by fm-captain-hold
+  last_status_line         = resolved [key=other-q]: answered elsewhere
+  status_declared_wait_line= paused: waiting on upstream release
+  status_current_line      = needs-decision [key=api-shape]: which API shape
+  crew-state row           = 
+  open decisions: api-shape needs-decision which API shape
+
+### S4: worker writes done: while held -> crew state/current report done, not captain-held
+  --- lab-finisher.status ---
+  | working: start
+  | captain-held [key=captain-hold-lab-finisher-1] [at=1790390251]: operator review
+  | done: shipped PR 12
+  last_status_line         = done: shipped PR 12
+  status_declared_wait_line= 
+  status_current_line      = done: shipped PR 12
+  crew-state row           = 
+
+### S5: worker done: BEFORE the hold -> current reads done past standing mirror; declared wait is mirror
+  --- lab-done-first.status ---
+  | working: start
+  | done: PR ready
+  | captain-held [key=captain-hold-lab-done-first-1] [at=1790390252]: captain to merge
+  last_status_line         = captain-held [key=captain-hold-lab-done-first-1] [at=1790390252]: captain to merge
+  status_declared_wait_line= captain-held [key=captain-hold-lab-done-first-1] [at=1790390252]: captain to merge
+  status_current_line      = done: PR ready
+  crew-state row           = 
+
+### S6 (adversarial): earlier settled transfer must not hide a later standing hold
+  --- lab-late-hold.status ---
+  | needs-decision [key=route]: pick
+  | captain-held [key=route]: tracked by T
+  | resolved [key=route]: captain call answered by fm-captain-hold
+  | working: continuing
+  | captain-held [key=captain-hold-lab-late-hold-1] [at=1790390254]: operator review later
+  last_status_line         = captain-held [key=captain-hold-lab-late-hold-1] [at=1790390254]: operator review later
+  status_declared_wait_line= captain-held [key=captain-hold-lab-late-hold-1] [at=1790390254]: operator review later
+  status_current_line      = working: continuing
+  crew-state row           = 
+
+### S7: decision-only hold (no lane meta) creates no status log
+exit=0 status file exists: no

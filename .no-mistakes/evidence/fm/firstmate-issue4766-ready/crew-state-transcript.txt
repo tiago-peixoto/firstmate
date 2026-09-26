@@ -1,0 +1,5 @@
+# fm-crew-state.sh per lab lane (claude harness, idle via fm-busy-event stop hook record)
+lab-gated        state: parked · source: status-log · which API shape
+lab-finisher     state: done · source: status-log · shipped PR 12
+lab-done-first   state: done · source: status-log · PR ready
+lab-late-hold    state: working · source: status-log · continuing
