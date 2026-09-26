@@ -1,0 +1,235 @@
+##### BASE 503ba82 #####
+=== LOCAL (fm-config-push.sh) ===
+--- S1 first inherit
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed
+quarantines=0
+--- S2 re-push unchanged
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: unchanged
+quarantines=0
+--- S3 primary-only edit (v2)
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+SECONDMATE_SYNC: secondmate home <W>/sm: quarantined data/captain-shared.md drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212559Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212559Z.3b869148ba7f755d2749fd40ca16d462efad4f15dd006eac46b38a563048501d
+quarantines=1
+converged=yes
+mode=444
+--- S4 secondmate local edit + primary v3 (real divergence)
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+SECONDMATE_SYNC: secondmate home <W>/sm: quarantined data/captain-shared.md drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212600Z.fa8b43d57ed9a7d8d868ea9101304dc52efc485a9f7f361bca4cdd301ca08f64
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212600Z.fa8b43d57ed9a7d8d868ea9101304dc52efc485a9f7f361bca4cdd301ca08f64
+quarantines=2
+recovery-copy-has-local-edit=yes
+converged=yes
+--- S5 interrupted publication: receipt lost, dest holds partial/other bytes, primary v4
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+SECONDMATE_SYNC: secondmate home <W>/sm: quarantined data/captain-shared.md drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212601Z.4257590d5b393025e6e1046689b2693de70b7cade4e732d271cd17de3e82d5db
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212601Z.4257590d5b393025e6e1046689b2693de70b7cade4e732d271cd17de3e82d5db
+quarantines=3
+recovery-copy-has-partial=yes
+--- S6 corrupt receipt + untouched dest, primary v5 (no usable receipt => still refused quietly? expect quarantine)
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+SECONDMATE_SYNC: secondmate home <W>/sm: quarantined data/captain-shared.md drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212602Z.01de18911189c74f3c6dc19a92106d646258437b1ca38e5b16901dae6a89e069
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212602Z.01de18911189c74f3c6dc19a92106d646258437b1ca38e5b16901dae6a89e069
+quarantines=4
+=== REMOTE (fm-remote-inherit.sh) ===
+--- R1 first put
+pushed: data/captain-shared.md
+quarantines=0
+--- R2 source-only edit
+quarantined: data/captain-shared.md.remote-quarantine-20260926T212602Z-168873 (replaced)
+pushed: data/captain-shared.md
+quarantines=1
+--- R3 remote local edit + v3
+quarantined: data/captain-shared.md.remote-quarantine-20260926T212602Z-169109 (replaced)
+pushed: data/captain-shared.md
+quarantines=2
+recovery-copy-has-local-edit=yes
+--- R4 stale generation replay (gen 2) refused
+error: inheritance write generation is superseded
+rc=1
+dest-still-v3=1
+
+##### TARGET 42e441f #####
+=== LOCAL (fm-config-push.sh) ===
+--- S1 first inherit
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed
+quarantines=0
+--- S2 re-push unchanged
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: unchanged
+quarantines=0
+--- S3 primary-only edit (v2)
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed
+quarantines=0
+converged=yes
+mode=444
+--- S4 secondmate local edit + primary v3 (real divergence)
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+SECONDMATE_SYNC: secondmate home <W>/sm: quarantined data/captain-shared.md drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212605Z.fa8b43d57ed9a7d8d868ea9101304dc52efc485a9f7f361bca4cdd301ca08f64
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212605Z.fa8b43d57ed9a7d8d868ea9101304dc52efc485a9f7f361bca4cdd301ca08f64
+quarantines=1
+recovery-copy-has-local-edit=yes
+converged=yes
+--- S5 interrupted publication: receipt lost, dest holds partial/other bytes, primary v4
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+SECONDMATE_SYNC: secondmate home <W>/sm: quarantined data/captain-shared.md drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212606Z.4257590d5b393025e6e1046689b2693de70b7cade4e732d271cd17de3e82d5db
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212606Z.4257590d5b393025e6e1046689b2693de70b7cade4e732d271cd17de3e82d5db
+quarantines=2
+recovery-copy-has-partial=yes
+--- S6 corrupt receipt + untouched dest, primary v5 (no usable receipt => still refused quietly? expect quarantine)
+config-push: <W>/home -> live secondmate homes
+secondmate sm (<W>/sm):
+SECONDMATE_SYNC: secondmate home <W>/sm: quarantined data/captain-shared.md drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212607Z.01de18911189c74f3c6dc19a92106d646258437b1ca38e5b16901dae6a89e069
+  crew-dispatch.json: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  lavish-axi-host: unchanged
+  data/captain-shared.md: pushed - quarantined local drift at <W>/sm/data/.captain-shared.md.quarantine.20260926T212607Z.01de18911189c74f3c6dc19a92106d646258437b1ca38e5b16901dae6a89e069
+quarantines=3
+=== REMOTE (fm-remote-inherit.sh) ===
+--- R1 first put
+pushed: data/captain-shared.md
+quarantines=0
+--- R2 source-only edit
+pushed: data/captain-shared.md
+quarantines=0
+--- R3 remote local edit + v3
+quarantined: data/captain-shared.md.remote-quarantine-20260926T212607Z-173565 (replaced)
+pushed: data/captain-shared.md
+quarantines=1
+recovery-copy-has-local-edit=yes
+--- R4 stale generation replay (gen 2) refused
+error: inheritance write generation is superseded
+rc=1
+dest-still-v3=1
