@@ -1,10 +1,13 @@
 actionable: inactive terminal outcome awaiting captain presentation: child=child state=done pr=https://example.test/owner/repo/pull/1
 ok - main direct terminal presentation has a durable receipt
+actionable: inactive terminal outcome awaiting captain presentation: child=child state=done pr=https://example.test/owner/repo/pull/1
+ok - a branch-actor acknowledgement retires the inactive-outcome receipt and later scans stay quiet
 ok - unpushed CI-ready ship done: is not published upstream
 ok - a delivered ship done: skips the git gate on later polls
 ok - secondmate delivers a child's terminal ledger line once, on the next poll, from the ledger alone
 ok - multiline terminal outcomes are reported once before or during a state read
 ok - an unterminated continuation line does not withhold a proven child outcome
+ok - later status prose does not change the inactive terminal receipt identity
 ok - busy child locks do not starve later ledger outcomes
 ok - ledger delivery carries the report pointer, the failed verb, and each new terminal line
 ok - pr= requires the recorded PR or a ready-signal terminal line, whatever its stamp, and never a scout
@@ -45,3 +48,4 @@ ok - reconciliation makes zero forge or PR API calls
 actionable: inactive terminal outcome awaiting captain presentation: child=child state=done pr=https://example.test/owner/repo/pull/1
 ok - reconciliation state reads set no-forge mode
 all inactive reconciliation tests passed
+exit=0

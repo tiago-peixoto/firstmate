@@ -5,6 +5,7 @@ ok - span classification from an offset keeps closed decisions closed and live o
 ok - a malformed seen signature causes the whole status log to be classified
 ok - stale_is_terminal: terminal status surfaces, non-terminal and no-status are benign
 ok - classifier primitives: keyed decisions and activity phases, captain relevance, window-to-task, and overrides
+ok - unrecognized status prefixes are visible and recognized prefixes are unchanged
 ok - crew_is_provably_working: only working+run-step/pane is provable; idle/finished/parked/failed/unknown surface
 ok - status_is_paused: only the leading paused verb matches, paused is not captain-relevant, and the two declared-wait verbs stay separable
 ok - crew_absorb_class: working/paused/none from one read; crew_is_paused and crew_is_provably_working agree
@@ -13,7 +14,7 @@ ok - an empty FM_WORKTREE_WRITE_PRUNE widens the probe to the whole depth-bounde
 ok - an empty FM_WORKTREE_WRITE_PRUNE exported into the environment prunes nothing, widening the probe
 ok - the worktree write probe is wall-clock bounded, and hitting the bound reads as no write evidence
 ok - signal_crew_provably_working: benign only when every referenced crew is provably working
-ok - a secondmate's status signal is never absorbed as provably working; crewmates are unaffected
+ok - a secondmate's unmarked routine progress absorbs when provably working; routed, terminal, note, marked, and unknown lines surface
 ok - a no-verb signal whose crew is provably working is absorbed (no exit, no queue, suppressor advanced, beacon present)
 ok - a bare turn-end whose crew is provably working (busy pane) is absorbed
 ok - a bare turn-end whose crew is not provably working is surfaced (the swallowed-finish fix)
@@ -39,6 +40,7 @@ ok - invalid existing pane-churn deadlines surface without mutation
 ok - a surfaced batch opens no partial pane-churn deadline
 ok - a no-verb working: note whose crew is idle with no running pipeline is surfaced
 ok - a secondmate's status note surfaces even while its own agent is busy
+ok - a busy secondmate's routine working: is absorbed while its later note: still surfaces
 ok - a secondmate blocker wakes despite busy evidence and later unrelated appends
 ok - a self-announced close never wakes its own home, and the next real note still does
 ok - a close after OPEN DECISIONS fold never wakes its own home, and the next real note still does
@@ -87,10 +89,12 @@ ok - a settled hold mirror over a paused lane resurfaces once per cadence, never
 ok - a hold and its release recorded by firstmate keep the stale throttle and suppressor they found
 ok - an answered complete transfer reads back to its decision and leaves the surfaced lane inert
 ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
+ok - own-work waits keep one first alert, then bounded rechecks without wedges; undeclared idle still alarms
 ok - absorbed paused and captain-held replacements each start their own re-surface cadence
 ok - a parked live worker surfaces once, absorbs pane churn for the whole re-surface window, then re-surfaces when it elapses
 ok - a live paused worker stays absorbed until its declared time, then rechecks
 ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
+ok - a default-key answer leaves a keyless wait standing, while the worker's own keyless resolved line retracts it
 ok - a captain-held lane is rechecked as a hold on the captain, never as an external wait, and never at all while the captain is away
 ok - a gate awaiting firstmate's decision for its own run is rechecked on the long cadence in either posture, while a crewmate-owed gate, an unrelated open decision and a runless verdict keep the unchanged ladder
 ok - a parked human-owed gate is deferred only while its decision is still open, so an answered-but-unrelayed gate, an unescalated one, and one holding only a blocker all keep the unchanged ladder
@@ -119,11 +123,11 @@ ok - an unacknowledged process-event result re-drains until handling is acknowle
 ok - complete process-event queue keys map to distinct seen markers
 ok - process-event queue keys surface under their own headlines
 ok - every launch-failure episode is delivered under the failed-to-start headline
-WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 45110.1790200164.UrMxbm
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 3813611.1790454882.am0gIB
 ok - queue revalidation, proactive output, and marker commit serialize with drain
-/Users/tiago/.no-mistakes/worktrees/762e4773438f/01M37Z338ZZBTHJ53P22P64X96/bin/fm-push-transition-lib.sh: line 96: echo: write error: Broken pipe
-tests/wake-helpers.sh: line 310: 51584 Killed: 9                  PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_PROCEVENT_CLAIM_ROOT="$dir/claims" FM_CREW_STATE_BIN="$dir/fakebin/fm-crew-state.sh" FM_POLL=0.2 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out"
-tests/wake-helpers.sh: line 310: 54356 Killed: 9                  PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_PROCEVENT_CLAIM_ROOT="$dir/claims" FM_CREW_STATE_BIN="$dir/fakebin/fm-crew-state.sh" FM_POLL=0.2 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out"
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3FN8Y68EFXK5JYZ2E1S2GTW/bin/fm-push-transition-lib.sh: line 100: echo: write error: Broken pipe
+tests/wake-helpers.sh: line 319: 3817703 Killed                     PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_PROCEVENT_CLAIM_ROOT="$dir/claims" FM_CREW_STATE_BIN="$dir/fakebin/fm-crew-state.sh" FM_POLL=0.2 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out"
+tests/wake-helpers.sh: line 319: 3819352 Killed                     PATH="$dir/fakebin:$PATH" FM_HOME="$dir" FM_PROCEVENT_CLAIM_ROOT="$dir/claims" FM_CREW_STATE_BIN="$dir/fakebin/fm-crew-state.sh" FM_POLL=0.2 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out"
 ok - surfacing failures replay until post-handling acknowledgement
 ok - marker failure exits through the shared wake owner, releases its lock, and replays later
 ok - a heartbeat with no captain-relevant change is absorbed and backs off the cadence
@@ -140,3 +144,4 @@ ok - the daemon-owned one-shot never hands off a captain-held pane while the awa
 ok - a declared wait naming a near-future until time stays quiet until that time
 ok - a wrong-year declared time cannot silence the watcher beyond the recheck cadence
 ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence
+exit=0

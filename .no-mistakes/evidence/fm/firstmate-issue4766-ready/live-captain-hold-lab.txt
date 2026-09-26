@@ -1,0 +1,82 @@
+===== S1: hold a working lane -> mirror declared, lane reads captain-held
+lab-lane-1
+hold exit=0
+--- /tmp/fm-lab.LgL0RS/state/lab-lane-1.status:
+    working: start
+    captain-held [key=captain-hold-lab-lane-1-1] [at=1790453431]: operator review
+  last_status_line:          captain-held [key=captain-hold-lab-lane-1-1] [at=1790453431]: operator review
+  status_declared_wait_line: captain-held [key=captain-hold-lab-lane-1-1] [at=1790453431]: operator review
+  status_current_line:       working: start
+  fm-crew-state.sh:          state: unknown · source: none · worktree gone (torn down?)
+===== S2: another key answered on top of the standing mirror -> declared wait stays the mirror
+--- /tmp/fm-lab.LgL0RS/state/lab-lane-1.status:
+    working: start
+    captain-held [key=captain-hold-lab-lane-1-1] [at=1790453431]: operator review
+    resolved [key=api-shape]: use v2
+  last_status_line:          resolved [key=api-shape]: use v2
+  status_declared_wait_line: captain-held [key=captain-hold-lab-lane-1-1] [at=1790453431]: operator review
+  status_current_line:       resolved [key=api-shape]: use v2
+  fm-crew-state.sh:          state: unknown · source: none · worktree gone (torn down?)
+===== S3 (adversarial R2): worker writes done: past the standing mirror -> done wins everywhere
+--- /tmp/fm-lab.LgL0RS/state/lab-lane-1.status:
+    working: start
+    captain-held [key=captain-hold-lab-lane-1-1] [at=1790453431]: operator review
+    resolved [key=api-shape]: use v2
+    done: shipped PR 12
+  last_status_line:          done: shipped PR 12
+  status_declared_wait_line: 
+  status_current_line:       done: shipped PR 12
+  fm-crew-state.sh:          state: unknown · source: none · worktree gone (torn down?)
+===== S4: answer the hold -> keyed retraction appended, reader returns to worker event
+released: lab-lane-1
+answer exit=0
+--- /tmp/fm-lab.LgL0RS/state/lab-lane-1.status:
+    working: start
+    captain-held [key=captain-hold-lab-lane-1-1] [at=1790453431]: operator review
+    resolved [key=api-shape]: use v2
+    done: shipped PR 12
+    resolved [key=captain-hold-lab-lane-1-1] [at=1790453434]: captain call released by fm-captain-hold
+  last_status_line:          done: shipped PR 12
+  status_declared_wait_line: 
+  status_current_line:       done: shipped PR 12
+  fm-crew-state.sh:          state: unknown · source: none · worktree gone (torn down?)
+===== S4b: replay the answer -> no duplicate retraction
+replay exit=0 lines before=5 after=5
+===== S5 (adversarial, round-1 fix): earlier settled transfer, then later standing hold -> mirror is the declared wait
+lab-lane-2
+hold exit=0
+--- /tmp/fm-lab.LgL0RS/state/lab-lane-2.status:
+    needs-decision [key=route]: pick
+    captain-held [key=route]: tracked by T
+    resolved [key=route]: captain call answered by fm-captain-hold
+    working: continuing
+    captain-held [key=captain-hold-lab-lane-2-1] [at=1790453437]: operator review
+  last_status_line:          captain-held [key=captain-hold-lab-lane-2-1] [at=1790453437]: operator review
+  status_declared_wait_line: captain-held [key=captain-hold-lab-lane-2-1] [at=1790453437]: operator review
+  status_current_line:       working: continuing
+  fm-crew-state.sh:          state: unknown · source: none · worktree gone (torn down?)
+===== S6 (adversarial): working: after the hold replaces the declared wait
+--- /tmp/fm-lab.LgL0RS/state/lab-lane-2.status:
+    needs-decision [key=route]: pick
+    captain-held [key=route]: tracked by T
+    resolved [key=route]: captain call answered by fm-captain-hold
+    working: continuing
+    captain-held [key=captain-hold-lab-lane-2-1] [at=1790453437]: operator review
+    working: resumed after nudge
+  last_status_line:          working: resumed after nudge
+  status_declared_wait_line: 
+  status_current_line:       working: resumed after nudge
+  fm-crew-state.sh:          state: unknown · source: none · worktree gone (torn down?)
+===== S7: paused lane held then released -> the pre-hold pause is found again
+lab-lane-3
+released: lab-lane-3
+answer exit=0
+--- /tmp/fm-lab.LgL0RS/state/lab-lane-3.status:
+    paused: waiting on the sample upstream
+    captain-held [key=captain-hold-lab-lane-3-1] [at=1790453440]: upstream choice
+    resolved [key=other]: x
+    resolved [key=captain-hold-lab-lane-3-1] [at=1790453442]: captain call released by fm-captain-hold
+  last_status_line:          resolved [key=other]: x
+  status_declared_wait_line: paused: waiting on the sample upstream
+  status_current_line:       paused: waiting on the sample upstream
+  fm-crew-state.sh:          state: unknown · source: none · worktree gone (torn down?)

@@ -5,6 +5,8 @@ ok - the completion gate attests captain-held inventory and transfers open statu
 ok - answer records the captain's words, closes idempotently, and releases routed work
 ok - release frees held work with the captain's words recorded and the body preserved
 ok - hold and release mirror the hold on the status log the classifier reads
+ok - release and close retract a hold mirror buried under a later answer
+ok - settling a transferred call leaves a re-asked transfer key open
 ok - captain holds become visible only after their hold-set timestamp is durable
 ok - an interrupted answer preserves its hold age until close retry
 ok - a deferred captain call leaves the live Captain's Call until its date and stays answerable
@@ -52,3 +54,4 @@ ok - skipped on markdown-only tasks-axi: verify an unresolvable beads legacy id
 ok - skipped on markdown-only tasks-axi: verify a derived pre-collapse key
 ok - captain-hold mutations address the beads backend without a markdown override
 ok - skipped on markdown-only tasks-axi: captain-hold create under due.required without types.custom
+exit=0

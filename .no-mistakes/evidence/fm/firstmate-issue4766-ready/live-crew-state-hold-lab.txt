@@ -1,0 +1,10 @@
+== before hold: state: done · source: status-log · report ready
+hold exit=0
+    done: report ready
+    captain-held [key=captain-hold-lab-scout-1] [at=1790453462]: captain review pending
+== while held:  state: done · source: status-log · report ready
+release exit=0
+    done: report ready
+    captain-held [key=captain-hold-lab-scout-1] [at=1790453462]: captain review pending
+    resolved [key=captain-hold-lab-scout-1] [at=1790453465]: captain call released by fm-captain-hold
+== after release: state: done · source: status-log · report ready
