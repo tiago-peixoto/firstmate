@@ -1,0 +1,11 @@
+# adversarial: ledger path is a dangling symlink (unwritable), teardown must warn and continue
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8MTR6l/home
+fm-pipeline-spend: cannot write /tmp/fm-lab.8MTR6l/home/data/pipeline-spend.jsonl: [Errno 40] Too many levels of symbolic links: '/tmp/fm-lab.8MTR6l/home/data/pipeline-spend.jsonl'
+fm-pipeline-spend: could not build the pipeline spend record for task-x2
+warning: could not record task-x2's no-mistakes pipeline spend; cleanup continues
+/tmp/fm-lab.8MTR6l/project: already current
+teardown task-x2 complete (window firstmate:fm-task-x2, worktree /tmp/fm-lab.8MTR6l/wt2)
+Backlog: task-x2 just finished (this home keeps no markdown backlog at /tmp/fm-lab.8MTR6l/home/data/backlog.md). Update /tmp/fm-lab.8MTR6l/home/data/backlog.md - move task-x2 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+task-x2.meta present: no
+branch fm/task-x2: 

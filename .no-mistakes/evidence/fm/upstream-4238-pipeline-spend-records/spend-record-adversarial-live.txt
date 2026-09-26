@@ -1,0 +1,21 @@
+db sha before: 4 runs; 46daf45b6642ae2b2fe40f91691a674ce730ec3b57608978b250c3df04da8fe5  -
+$ record task  # new incarnation (relaunch spawn_gen)
+recorded task s999.2.relaunch
+exit=0
+db sha after:  46daf45b6642ae2b2fe40f91691a674ce730ec3b57608978b250c3df04da8fe5  -
+$ ledger lines (task, spawn_gen, invocations):
+["task","s1790303437.1.abc",5]
+["task","s999.2.relaunch",5]
+$ record nosuch
+fm-pipeline-spend: no task record for nosuch
+exit=1
+$ record sm  # secondmate
+fm-pipeline-spend: sm is a secondmate, not a task
+exit=1
+$ record ../x  # path-unsafe id
+fm-pipeline-spend: invalid task id
+exit=2
+$ record u  # task copy in a repo no-mistakes never initialized
+recorded u s1.1.u
+exit=0
+{"task":"u","spawn_gen":"s1.1.u","recorded_at":"2026-09-26T04:54:19Z","source":"unavailable","reason":"no-mistakes resolved no repository for the task copy: error: repo not initialized (run 'no-mistakes init' first)","repo":null,"branch":"fm/u","since":"2026-09-26T04:54:19Z","total":null,"runs":[],"purposes":[]}

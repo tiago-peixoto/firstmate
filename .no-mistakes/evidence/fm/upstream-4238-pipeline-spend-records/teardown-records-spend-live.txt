@@ -1,0 +1,23 @@
+# before teardown
+task-x1.meta
++ fm/task-x1
+$ FM_HOME=<lab> NM_HOME=<disposable> bin/fm-teardown.sh task-x1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8MTR6l/home
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/tmp/fm-lab.8MTR6l/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree /tmp/fm-lab.8MTR6l/wt)
+Backlog: task-x1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.8MTR6l/home/data/backlog.md). Update /tmp/fm-lab.8MTR6l/home/data/backlog.md - move task-x1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+# after teardown
+state: home-summary.json
+terminal-outcomes
+branches: 
+wt exists: yes
+$ jq . data/pipeline-spend.jsonl
+{"task":"task-x1","spawn_gen":"lab-live-task-x1","recorded_at":"2026-09-26T04:54:54Z","source":"no-mistakes-state","reason":null,"repo":"/tmp/fm-lab.8MTR6l/project","branch":"fm/task-x1","since":"2026-09-26T04:54:45Z","total":{"invocations":3,"exit":{"ok":2,"cancelled":1},"duration_ms":3000,"input_tokens":{"total":300,"unknown":1},"output_tokens":{"total":30,"unknown":1},"cache_read_tokens":{"total":150,"unknown":1},"cache_creation_tokens":{"total":7,"unknown":2}},"runs":[{"id":"01RUN","status":"completed","created_at":"2026-09-26T04:54:45Z","invocations":3,"exit":{"ok":2,"cancelled":1},"duration_ms":3000,"input_tokens":{"total":300,"unknown":1},"output_tokens":{"total":30,"unknown":1},"cache_read_tokens":{"total":150,"unknown":1},"cache_creation_tokens":{"total":7,"unknown":2}}],"purposes":[{"purpose":"review","invocations":3,"exit":{"ok":2,"cancelled":1},"duration_ms":3000,"input_tokens":{"total":300,"unknown":1},"output_tokens":{"total":30,"unknown":1},"cache_read_tokens":{"total":150,"unknown":1},"cache_creation_tokens":{"total":7,"unknown":2}}]}
