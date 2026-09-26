@@ -1,0 +1,44 @@
+=== commit ef595d8 ===
+--- S1: first inheritance (primary v1)
+  data/captain-shared.md: pushed
+   dest: pref v1  mode=444  quarantine-copies=0
+--- S2: captain edits ONLY the primary source (v2) and pushes
+SECONDMATE_SYNC: secondmate home /tmp/fm-3745.BMe9zG/sm: quarantined data/captain-shared.md drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032811Z.f1a195a15b0242e9d756b5c137ea307b18182ecef0f4a9b78344db3a2a9c12c3
+  data/captain-shared.md: pushed - quarantined local drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032811Z.f1a195a15b0242e9d756b5c137ea307b18182ecef0f4a9b78344db3a2a9c12c3
+   dest: pref v2  mode=444  quarantine-copies=1
+--- S3: secondmate edits its copy locally, primary moves to v3
+SECONDMATE_SYNC: secondmate home /tmp/fm-3745.BMe9zG/sm: quarantined data/captain-shared.md drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032812Z.bde67f7eea0c1e8e0ac7048bf462f1bc5f46bb317b0abfff349e17597b803f71
+  data/captain-shared.md: pushed - quarantined local drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032812Z.bde67f7eea0c1e8e0ac7048bf462f1bc5f46bb317b0abfff349e17597b803f71
+   dest: pref v3  mode=444  quarantine-copies=2
+   recovery copy .captain-shared.md.quarantine.20260926T032811Z.f1a195a15b0242e9d756b5c137ea307b18182ecef0f4a9b78344db3a2a9c12c3: pref v1
+   recovery copy .captain-shared.md.quarantine.20260926T032812Z.bde67f7eea0c1e8e0ac7048bf462f1bc5f46bb317b0abfff349e17597b803f71: LOCAL secondmate edit
+--- S4: interrupted publication: receipt says v3 but dest bytes are a torn/partial write, primary v4
+SECONDMATE_SYNC: secondmate home /tmp/fm-3745.BMe9zG/sm: quarantined data/captain-shared.md drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032813Z.c70503e5f22b9f355623f6d07dac33b00c1e7c55d81c1963abe4351cae276402
+  data/captain-shared.md: pushed - quarantined local drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032813Z.c70503e5f22b9f355623f6d07dac33b00c1e7c55d81c1963abe4351cae276402
+   dest: pref v4  mode=444  quarantine-copies=3
+--- S5: receipt deleted (no usable receipt), dest untouched v4, primary v5
+SECONDMATE_SYNC: secondmate home /tmp/fm-3745.BMe9zG/sm: quarantined data/captain-shared.md drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032814Z.3e3f74986876bb6482ef4347424ab5bc8da4c47299e9c415775342efdddffa31
+  data/captain-shared.md: pushed - quarantined local drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032814Z.3e3f74986876bb6482ef4347424ab5bc8da4c47299e9c415775342efdddffa31
+   dest: pref v5  mode=444  quarantine-copies=4
+--- S6: forged receipt (garbage), dest v5, primary v6
+SECONDMATE_SYNC: secondmate home /tmp/fm-3745.BMe9zG/sm: quarantined data/captain-shared.md drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032814Z.0c922d745c6f9e863d383f5161713a0b77685a7fed9f83df85644538e778641e
+  data/captain-shared.md: pushed - quarantined local drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032814Z.0c922d745c6f9e863d383f5161713a0b77685a7fed9f83df85644538e778641e
+   dest: pref v6  mode=444  quarantine-copies=5
+--- S7: primary removes shared file -> absence mirrored after quarantine
+SECONDMATE_SYNC: secondmate home /tmp/fm-3745.BMe9zG/sm: quarantined data/captain-shared.md drift at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032815Z.f3101841fa6115ead172e1c471b28189b07fe67f01dc6cf459970faa18bdf3a9
+  data/captain-shared.md: pushed - mirrored primary absence after quarantining local copy at /tmp/fm-3745.BMe9zG/sm/data/.captain-shared.md.quarantine.20260926T032815Z.f3101841fa6115ead172e1c471b28189b07fe67f01dc6cf459970faa18bdf3a9
+   dest exists? no receipt exists? yes quarantine-copies=6
+=== remote receiver (fm-remote-inherit.sh) ===
+--- R1: first put v1
+pushed: data/captain-shared.md
+   quarantine-copies=0
+--- R2: source-only edit v2
+quarantined: data/captain-shared.md.remote-quarantine-20260926T032816Z-2955979 (replaced)
+pushed: data/captain-shared.md
+   dest: remote v2 quarantine-copies=1
+--- R3: local remote edit, then v3
+quarantined: data/captain-shared.md.remote-quarantine-20260926T032816Z-2956276 (replaced)
+pushed: data/captain-shared.md
+   dest: remote v3 quarantine-copies=2
+   recovery copy: remote v1
+   recovery copy: REMOTE local edit
