@@ -1,0 +1,113 @@
+######## target
+== case: paused-alive  src=5601df1
+pane foreground: grok
+fm_backend_agent_state: alive  -> agent_alive: alive
+status: paused: holding for the upstream tool release
+watcher: STILL RUNNING after 25s (no wake)
+wake-queue:
+  (empty)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .stale-lab_fm-held 
+triage log:
+  [2026-09-26T06:05:36+0200] absorbed stale (paused, awaiting external, age 18s): lab:fm-held
+  [2026-09-26T06:05:38+0200] absorbed stale (paused, awaiting external, age 20s): lab:fm-held
+  [2026-09-26T06:05:40+0200] absorbed stale (paused, awaiting external, age 22s): lab:fm-held
+  [2026-09-26T06:05:42+0200] absorbed stale (paused, awaiting external, age 24s): lab:fm-held
+  [2026-09-26T06:05:44+0200] absorbed stale (paused, awaiting external, age 26s): lab:fm-held
+
+######## base-ea7c7f7
+== case: paused-alive  src=<base>
+pane foreground: grok
+fm_backend_agent_state: alive  -> agent_alive: alive
+status: paused: holding for the upstream tool release
+watcher: EXITED after 6s rc=0 -> woke supervisor: stale: lab:fm-held
+wake-queue:
+  1790395551	1	stale	lab:fm-held	stale: lab:fm-held
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .paused-resurfaced-lab_fm-held .stale-lab_fm-held 
+triage log:
+
+######## target
+== case: paused-unknown  src=5601df1
+pane foreground: sleep
+fm_backend_agent_state: ambiguous  -> agent_alive: unknown
+status: paused: holding for the upstream tool release
+watcher: STILL RUNNING after 25s (no wake)
+wake-queue:
+  (empty)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .stale-lab_fm-held 
+triage log:
+  [2026-09-26T06:06:10+0200] absorbed stale (paused, awaiting external, age 18s): lab:fm-held
+  [2026-09-26T06:06:12+0200] absorbed stale (paused, awaiting external, age 20s): lab:fm-held
+  [2026-09-26T06:06:14+0200] absorbed stale (paused, awaiting external, age 22s): lab:fm-held
+  [2026-09-26T06:06:16+0200] absorbed stale (paused, awaiting external, age 24s): lab:fm-held
+  [2026-09-26T06:06:18+0200] absorbed stale (paused, awaiting external, age 25s): lab:fm-held
+
+######## base-ea7c7f7
+== case: paused-unknown  src=<base>
+pane foreground: sleep
+fm_backend_agent_state: ambiguous  -> agent_alive: unknown
+status: paused: holding for the upstream tool release
+watcher: EXITED after 6s rc=0 -> woke supervisor: stale: lab:fm-held
+wake-queue:
+  1790395585	1	stale	lab:fm-held	stale: lab:fm-held
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .paused-resurfaced-lab_fm-held .stale-lab_fm-held 
+triage log:
+
+######## target
+== case: paused-dead  src=5601df1
+pane foreground: bash
+fm_backend_agent_state: dead  -> agent_alive: dead
+status: paused: holding for the upstream tool release
+watcher: STILL RUNNING after 25s (no wake)
+wake-queue:
+  (empty)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .stale-lab_fm-held 
+triage log:
+  [2026-09-26T06:06:43+0200] absorbed stale (paused, awaiting external, age 17s): lab:fm-held
+  [2026-09-26T06:06:45+0200] absorbed stale (paused, awaiting external, age 19s): lab:fm-held
+  [2026-09-26T06:06:47+0200] absorbed stale (paused, awaiting external, age 21s): lab:fm-held
+  [2026-09-26T06:06:49+0200] absorbed stale (paused, awaiting external, age 23s): lab:fm-held
+  [2026-09-26T06:06:51+0200] absorbed stale (paused, awaiting external, age 25s): lab:fm-held
+
+######## base-ea7c7f7
+== case: paused-dead  src=<base>
+pane foreground: bash
+fm_backend_agent_state: dead  -> agent_alive: dead
+status: paused: holding for the upstream tool release
+watcher: STILL RUNNING after 25s (no wake)
+wake-queue:
+  (empty)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .stale-lab_fm-held 
+triage log:
+  [2026-09-26T06:07:09+0200] absorbed stale (paused, awaiting external, age 16s): lab:fm-held
+  [2026-09-26T06:07:11+0200] absorbed stale (paused, awaiting external, age 18s): lab:fm-held
+  [2026-09-26T06:07:14+0200] absorbed stale (paused, awaiting external, age 21s): lab:fm-held
+  [2026-09-26T06:07:16+0200] absorbed stale (paused, awaiting external, age 23s): lab:fm-held
+  [2026-09-26T06:07:18+0200] absorbed stale (paused, awaiting external, age 25s): lab:fm-held
+
+######## target
+== case: captainheld-alive  src=5601df1
+pane foreground: grok
+fm_backend_agent_state: alive  -> agent_alive: alive
+status: captain-held [key=route]: awaiting the captain on the routing call
+watcher: STILL RUNNING after 25s (no wake)
+wake-queue:
+  (empty)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .stale-lab_fm-held 
+triage log:
+  [2026-09-26T06:07:37+0200] absorbed stale (captain-held, awaiting the captain, age 17s): lab:fm-held
+  [2026-09-26T06:07:39+0200] absorbed stale (captain-held, awaiting the captain, age 18s): lab:fm-held
+  [2026-09-26T06:07:40+0200] absorbed stale (captain-held, awaiting the captain, age 20s): lab:fm-held
+  [2026-09-26T06:07:42+0200] absorbed stale (captain-held, awaiting the captain, age 22s): lab:fm-held
+  [2026-09-26T06:07:44+0200] absorbed stale (captain-held, awaiting the captain, age 24s): lab:fm-held
+
+######## base-ea7c7f7
+== case: captainheld-alive  src=<base>
+pane foreground: grok
+fm_backend_agent_state: alive  -> agent_alive: alive
+status: captain-held [key=route]: awaiting the captain on the routing call
+watcher: EXITED after 6s rc=0 -> woke supervisor: stale: lab:fm-held
+wake-queue:
+  1790395672	1	stale	lab:fm-held	stale: lab:fm-held
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .paused-resurfaced-lab_fm-held .stale-lab_fm-held 
+triage log:
+

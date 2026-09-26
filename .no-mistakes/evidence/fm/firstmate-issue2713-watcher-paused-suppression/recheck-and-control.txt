@@ -1,0 +1,50 @@
+== case: paused-alive-aged-recheck  src=5601df1
+pane foreground: grok
+fm_backend_agent_state: alive  -> agent_alive: alive
+status: paused: holding for the upstream tool release  (declared 2000s ago)
+watcher: EXITED after 2s rc=0 -> woke supervisor: stale: lab:fm-held (paused 2002s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+wake-queue:
+  1790395902	1	stale	lab:fm-held	stale: lab:fm-held (paused 2002s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .paused-resurfaced-lab_fm-held .stale-lab_fm-held 
+triage log:
+
+== case: paused-ambiguous-aged-recheck  src=5601df1
+pane foreground: sleep
+fm_backend_agent_state: ambiguous  -> agent_alive: unknown
+status: paused: holding for the upstream tool release  (declared 2000s ago)
+watcher: EXITED after 2s rc=0 -> woke supervisor: stale: lab:fm-held (paused 2002s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+wake-queue:
+  1790395905	1	stale	lab:fm-held	stale: lab:fm-held (paused 2002s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .paused-resurfaced-lab_fm-held .stale-lab_fm-held 
+triage log:
+
+== case: paused-dead-aged-recheck  src=5601df1
+pane foreground: bash
+fm_backend_agent_state: dead  -> agent_alive: dead
+status: paused: holding for the upstream tool release  (declared 2000s ago)
+watcher: EXITED after 2s rc=0 -> woke supervisor: stale: lab:fm-held (paused 2002s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+wake-queue:
+  1790395909	1	stale	lab:fm-held	stale: lab:fm-held (paused 2002s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .paused-resurfaced-lab_fm-held .stale-lab_fm-held 
+triage log:
+
+== case: captainheld-alive-aged-recheck  src=5601df1
+pane foreground: grok
+fm_backend_agent_state: alive  -> agent_alive: alive
+status: captain-held [key=route]: awaiting the captain on the routing call  (declared 2000s ago)
+watcher: EXITED after 2s rc=0 -> woke supervisor: stale: lab:fm-held (captain-held 2001s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+wake-queue:
+  1790395912	1	stale	lab:fm-held	stale: lab:fm-held (captain-held 2001s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+pause markers: .paused-lab_fm-held .paused-rechecked-lab_fm-held .paused-resurfaced-lab_fm-held .stale-lab_fm-held 
+triage log:
+
+== case: control-no-declaration-alive  src=5601df1
+pane foreground: grok
+fm_backend_agent_state: alive  -> agent_alive: alive
+status: working: implementing the parser change
+watcher: EXITED after 6s rc=0 -> woke supervisor: stale: lab:fm-held
+wake-queue:
+  1790395919	1	stale	lab:fm-held	stale: lab:fm-held
+pause markers: .stale-lab_fm-held 
+triage log:
+
