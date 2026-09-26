@@ -1,0 +1,86 @@
+=== S1 register real PR via fm-pr-check.sh, first observation is baseline (https://github.com/kunchenguid/firstmate/pull/5341)
+armed: state/delivery.check.sh
+(fm-pr-check rc=0)
+contributions.check.sh
+delivery.check.sh
+$ fm-contributions.sh poll
+(rc=0)
+$ fm-contributions.sh poll
+(rc=0)
+{"head":"7774b5fcfdec420c9326107e5cdfba39c22c077a","draft":false,"state":"open","review_requests":[]}
+--- pending:
+--- durable check wakes queued: 0
+
+=== S2 head movement: stored head rewound to 2e9fd9f1f43960c8c97d1ee8b02c4ae8d304d93a, real forge head differs
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 5cadea241cf7f260a94f5689d756017c5f28fef04d8112c9f68ad46cf5508f4c
+(rc=0)
+--- pending:
+{"type":"head","body":"head moved from 2e9fd9f1f43960c8c97d1ee8b02c4ae8d304d93a to 7774b5fcfdec420c9326107e5cdfba39c22c077a","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+--- durable check wakes queued: 1
+re-poll unchanged:
+$ fm-contributions.sh poll
+(rc=0)
+--- pending:
+{"type":"head","body":"head moved from 2e9fd9f1f43960c8c97d1ee8b02c4ae8d304d93a to 7774b5fcfdec420c9326107e5cdfba39c22c077a","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+--- durable check wakes queued: 1
+
+=== S3 leaving draft: stored observation draft=true, real PR is ready
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 877ebc11b52ecf04039eedd9c55fad7a31a6e7b369efcd12a1ef93e9ef4891f1
+(rc=0)
+--- pending:
+{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+--- durable check wakes queued: 1
+$ fm-contributions.sh poll
+(rc=0)
+--- pending:
+{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+--- durable check wakes queued: 1
+
+=== S4 newly requested reviewer: stored review_requests=[], real PR requests niik (https://github.com/cli/cli/pull/14485)
+$ fm-contributions.sh poll
+(rc=0)
+["niik"]
+--- pending:
+--- durable check wakes queued: 0
+$ fm-contributions.sh poll
+contribution-wake: check: contributions rr 282644aed26522a1fbfe6bad544b4e6ae143bfd8de9017b757d7bab0d1d9599e
+(rc=0)
+--- pending:
+{"type":"review-requested","body":"review requested from niik","source":"https://github.com/cli/cli/pull/14485"}
+--- durable check wakes queued: 1
+$ fm-contributions.sh poll
+(rc=0)
+--- pending:
+{"type":"review-requested","body":"review requested from niik","source":"https://github.com/cli/cli/pull/14485"}
+--- durable check wakes queued: 1
+
+=== S5 adversarial: legacy stored observation without review_requests must not infer movement
+$ fm-contributions.sh poll
+(rc=0)
+["niik"]
+--- pending:
+--- durable check wakes queued: 0
+
+=== S6 adversarial: stored draft=false while forge is draft=true (convert-to-draft) must not wake
+$ fm-contributions.sh poll
+(rc=0)
+true
+--- pending:
+--- durable check wakes queued: 0
+
+=== S7 watcher surfaces a real head movement once (fm-watch-checkpoint.sh)
+$ fm-watch-checkpoint.sh --seconds 60
+check: contributions delivery 860edc4de5d9b6e06638826bfee7ce057ac9fcc1f953d62d3c42f5cf48e2bb6f
+
+(rc=0)
+--- pending:
+{"type":"head","body":"head moved from 2e9fd9f1f43960c8c97d1ee8b02c4ae8d304d93a to 7774b5fcfdec420c9326107e5cdfba39c22c077a","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+--- durable check wakes queued: 1
+$ fm-watch-checkpoint.sh --seconds 25 (repeat, expect quiet timeout 124)
+checkpoint: no actionable wake within 25s
+(rc=124)
+--- pending:
+{"type":"head","body":"head moved from 2e9fd9f1f43960c8c97d1ee8b02c4ae8d304d93a to 7774b5fcfdec420c9326107e5cdfba39c22c077a","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+--- durable check wakes queued: 1
