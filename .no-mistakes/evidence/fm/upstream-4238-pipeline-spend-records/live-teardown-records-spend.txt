@@ -1,0 +1,24 @@
+$ git -C project show-ref fm/spend-task (before)
+0de58fb513bfb7db5d6d9df96bcd0de4e5199a9e refs/heads/fm/spend-task
+$ ls state (before)
+spend-task.meta
+$ bin/fm-teardown.sh spend-task
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-spend-live.xVj6CB/lab
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/tmp/fm-spend-live.xVj6CB/project: already current
+teardown spend-task complete (window firstmate:fm-spend-task, worktree /tmp/fm-spend-live.xVj6CB/wt)
+Backlog: spend-task just finished (this home keeps no markdown backlog at /tmp/fm-spend-live.xVj6CB/lab/data/backlog.md). Update /tmp/fm-spend-live.xVj6CB/lab/data/backlog.md - move spend-task to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ git -C project show-ref fm/spend-task (after)
+(branch deleted)
+$ ls state (after)
+home-summary.json
+terminal-outcomes
+$ ledger line for teardown-live-1
+{"task":"spend-task","spawn_gen":"teardown-live-1","source":"no-mistakes-state","branch":"fm/spend-task","runs":["01RUNA","01RUNB"],"total":{"invocations":5,"exit":{"ok":3,"error":1,"cancelled":1},"input":{"total":2800,"unknown":1},"cache_creation":{"total":52,"unknown":2}}}

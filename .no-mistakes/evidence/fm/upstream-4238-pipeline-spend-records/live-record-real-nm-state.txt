@@ -1,0 +1,178 @@
+$ no-mistakes stats --run 01RUNB   # real CLI rendering of the resumed-session rows
+get agent invocations: scan agent invocation: sql: Scan error on column index 6, name "model": converting NULL to string is unsupported
+
+$ FM_HOME=$LAB bin/fm-pipeline-spend.sh record spend-task
+recorded spend-task s1.1.abc
+exit=0
+$ (again) bin/fm-pipeline-spend.sh record spend-task
+already recorded spend-task s1.1.abc
+exit=0
+$ wc -l data/pipeline-spend.jsonl; stat -c %a
+1
+600
+$ jq . data/pipeline-spend.jsonl
+{
+  "task": "spend-task",
+  "spawn_gen": "s1.1.abc",
+  "recorded_at": "2026-09-26T14:42:31Z",
+  "source": "no-mistakes-state",
+  "reason": null,
+  "repo": "/tmp/fm-spend-live.xVj6CB/project",
+  "branch": "fm/spend-task",
+  "since": "2026-09-26T14:25:42Z",
+  "total": {
+    "invocations": 5,
+    "exit": {
+      "ok": 3,
+      "error": 1,
+      "cancelled": 1
+    },
+    "duration_ms": 12300,
+    "input_tokens": {
+      "total": 2800,
+      "unknown": 1
+    },
+    "output_tokens": {
+      "total": 280,
+      "unknown": 1
+    },
+    "cache_read_tokens": {
+      "total": 1350,
+      "unknown": 1
+    },
+    "cache_creation_tokens": {
+      "total": 52,
+      "unknown": 2
+    }
+  },
+  "runs": [
+    {
+      "id": "01RUNA",
+      "status": "failed",
+      "created_at": "2026-09-26T14:27:22Z",
+      "invocations": 3,
+      "exit": {
+        "ok": 1,
+        "error": 1,
+        "cancelled": 1
+      },
+      "duration_ms": 3300,
+      "input_tokens": {
+        "total": 300,
+        "unknown": 1
+      },
+      "output_tokens": {
+        "total": 30,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 50,
+        "unknown": 1
+      },
+      "cache_creation_tokens": {
+        "total": 12,
+        "unknown": 1
+      }
+    },
+    {
+      "id": "01RUNB",
+      "status": "completed",
+      "created_at": "2026-09-26T14:29:02Z",
+      "invocations": 2,
+      "exit": {
+        "ok": 2
+      },
+      "duration_ms": 9000,
+      "input_tokens": {
+        "total": 2500,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 250,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 1300,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 40,
+        "unknown": 1
+      }
+    }
+  ],
+  "purposes": [
+    {
+      "purpose": "review",
+      "invocations": 3,
+      "exit": {
+        "ok": 3
+      },
+      "duration_ms": 10000,
+      "input_tokens": {
+        "total": 2600,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 260,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 1350,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 45,
+        "unknown": 1
+      }
+    },
+    {
+      "purpose": "review-fix",
+      "invocations": 1,
+      "exit": {
+        "error": 1
+      },
+      "duration_ms": 2000,
+      "input_tokens": {
+        "total": 200,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 20,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 7,
+        "unknown": 0
+      }
+    },
+    {
+      "purpose": "test",
+      "invocations": 1,
+      "exit": {
+        "cancelled": 1
+      },
+      "duration_ms": 300,
+      "input_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "output_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "cache_creation_tokens": {
+        "total": 0,
+        "unknown": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+$ git -C project show-ref fm/spend-task2 (before)
+a2667065ecb3f9a0c00e8e1f17a0d1305afd53ea refs/heads/fm/spend-task2
+$ ls state (before)
+home-summary.json
+spend-task2.meta
+terminal-outcomes
+$ bin/fm-teardown.sh spend-task2
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-spend-live.xVj6CB/lab
+fm-pipeline-spend: cannot write /tmp/fm-spend-live.xVj6CB/lab/data/pipeline-spend.jsonl: [Errno 40] Too many levels of symbolic links: '/tmp/fm-spend-live.xVj6CB/lab/data/pipeline-spend.jsonl'
+fm-pipeline-spend: could not build the pipeline spend record for spend-task2
+warning: could not record spend-task2's no-mistakes pipeline spend; cleanup continues
+/tmp/fm-spend-live.xVj6CB/project: already current
+teardown spend-task2 complete (window firstmate:fm-spend-task2, worktree /tmp/fm-spend-live.xVj6CB/wt2)
+Backlog: spend-task2 just finished (this home keeps no markdown backlog at /tmp/fm-spend-live.xVj6CB/lab/data/backlog.md). Update /tmp/fm-spend-live.xVj6CB/lab/data/backlog.md - move spend-task2 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ git -C project show-ref fm/spend-task2 (after)
+(branch deleted)
+$ ls state (after)
+home-summary.json
+terminal-outcomes
+$ ledger line for teardown-live-1
+lrwxrwxrwx 1 firstmate firstmate 41 Sep 26 16:43 /tmp/fm-spend-live.xVj6CB/lab/data/pipeline-spend.jsonl -> /tmp/fm-spend-live.xVj6CB/elsewhere.jsonl
+ls: cannot access '/tmp/fm-spend-live.xVj6CB/elsewhere.jsonl': No such file or directory

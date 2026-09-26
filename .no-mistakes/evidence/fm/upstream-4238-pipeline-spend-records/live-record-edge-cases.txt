@@ -1,0 +1,19 @@
+# new incarnation (relaunch mints spawn_gen s2) appends a second line
+recorded spend-task s2.1.def
+exit=0 lines=2
+# NM_HOME without a state database: unavailable, never zero, and no database is created
+(driving via a task copy whose repo is not registered with no-mistakes instead)
+recorded unreg u1
+exit=0
+{"task":"unreg","source":"unavailable","reason":"no-mistakes resolved no repository for the task copy: error: repo not initialized (run 'no-mistakes init' first)","total":null}
+# secondmate / missing task / unsafe id refused
+fm-pipeline-spend: sm is a secondmate, not a task
+exit=1
+fm-pipeline-spend: no task record for nosuch
+exit=1
+fm-pipeline-spend: invalid task id
+exit=2
+state db unchanged by reads: yes
+{"task":"spend-task","spawn_gen":"s1.1.abc","source":"no-mistakes-state","inv":5}
+{"task":"spend-task","spawn_gen":"s2.1.def","source":"no-mistakes-state","inv":5}
+{"task":"unreg","spawn_gen":"u1","source":"unavailable","inv":null}
