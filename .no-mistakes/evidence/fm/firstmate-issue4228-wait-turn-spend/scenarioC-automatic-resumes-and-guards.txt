@@ -1,0 +1,40 @@
+$ cat state/t1.status
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick] [at=1790538073]: answered: Ship alpha. Write the word alpha into /tmp/fm-lab.VUxtM2/work/choice.txt.
+blocked [key=pending-reply-0123456789abcdef]: pending-reply-missed: no report
+$ fm-send.sh t1 --automatic "Automatic re-read: write reread into /tmp/fm-lab.VUxtM2/work/reread.txt."
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.VUxtM2
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+exit=0
+--- worker pane ---
+     /tmp/fm-lab.VUxtM2/state/t1.inbox:
+     handled
+     … +4 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● There was one new message, 002.msg. As it asked, I wrote reread to /tmp/fm-lab.VUxtM2/work/reread.txt and checked the file. I moved the message into handled/, and the inbox has no messages left.
+✻ Sautéed for 8s · done 9:42 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Firstmate instruction waiting: check the inbox again
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+$ ls state/t1.inbox/handled
+001.msg
+002.msg
+$ cat work/reread.txt
+reread
+
+=== adversarial: a blocked: line of the worker own, no key ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.VUxtM2
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: t1 is waiting on its open decision or blocker (default); nothing was sent
+exit=4
+ls: cannot access '/tmp/fm-lab.VUxtM2/state/t1.inbox/*.msg': No such file or directory
+=== adversarial: --automatic with an explicit backend target / --resolve-key ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.VUxtM2
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --automatic needs a task selector resolved through this home's metadata
+exit=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.VUxtM2
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --automatic cannot accompany --key or --resolve-key
+exit=1

@@ -1,0 +1,24 @@
+$ cat state/t1.status
+needs-decision [key=pick]: ship alpha or beta?
+$ fm-send.sh t1 --automatic "Re-read your instructions (config changed)."
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.VUxtM2
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+exit=4
+$ ls state/t1.inbox
+ls: cannot access '/tmp/fm-lab.VUxtM2/state/t1.inbox': No such file or directory
+--- worker pane after automatic send ---
+  /tmp/fm-lab.VUxtM2/state/t1.inbox/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it into /tmp/fm-lab.VUxtM2/state/t1.inbox/handled/. You
+  already asked firstmate 'ship alpha or beta?' and are waiting. Reply only with the word WAITING now and end your turn.
+● WAITING
+✻ Crunched for 2s · done 9:40 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
