@@ -1,0 +1,15 @@
+# Ambient invoker env is signed in: CLAUDE_CONFIG_DIR=/tmp/fm-lab.luawBP/accounts/claude-a and ANTHROPIC_API_KEY set; still no config/claude-account
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.luawBP
+error: config/claude-account is absent, so this claude launch has no explicit account selection: ask the captain to create /tmp/fm-lab.luawBP/config/claude-account with 'ordinary' or one absolute account directory (see docs/configuration.md "Worker account pin"); Firstmate does not spend an ambient or ~/.claude with CLAUDE_CONFIG_DIR unset login when that file is absent
+exit=1
+# raw launch command 'FOO=1 claude' with no account file
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.luawBP
+error: config/claude-account is absent, so this claude launch has no explicit account selection: ask the captain to create /tmp/fm-lab.luawBP/config/claude-account with 'ordinary' or one absolute account directory (see docs/configuration.md "Worker account pin"); Firstmate does not spend an ambient or ~/.claude with CLAUDE_CONFIG_DIR unset login when that file is absent
+exit=1
+# Pi launch with no config/pi-account
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.luawBP
+error: config/pi-account is absent, so this pi launch has no explicit account selection: ask the captain to create /tmp/fm-lab.luawBP/config/pi-account with 'ordinary' or one absolute account directory on line 1 and the providers this home may spend on line 2 (see docs/configuration.md "Worker account pin"); Firstmate does not spend an ambient or ~/.pi/agent login when that file is absent
+exit=1
+$ ls /tmp/fm-lab.luawBP/state
+.fm-lab-tmux-dir
+primary:bash

@@ -1,0 +1,9 @@
+$ ls /tmp/fm-lab.luawBP/config   # no claude-account
+$ fm-spawn.sh scout-claude /tmp/fm-lab.luawBP/projects/demo --scout --harness claude
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.luawBP
+error: config/claude-account is absent, so this claude launch has no explicit account selection: ask the captain to create /tmp/fm-lab.luawBP/config/claude-account with 'ordinary' or one absolute account directory (see docs/configuration.md "Worker account pin"); Firstmate does not spend an ambient or ~/.claude with CLAUDE_CONFIG_DIR unset login when that file is absent
+exit=1
+$ ls /tmp/fm-lab.luawBP/state
+.fm-lab-tmux-dir
+$ tmux -L fm-lab list-windows -a
+primary:bash

@@ -1,0 +1,12 @@
+# config/claude-account names an empty (signed-out) root
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.luawBP
+error: config/claude-account pins Claude workers to /tmp/fm-lab.luawBP/accounts/claude-empty, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-lab.luawBP/accounts/claude-empty claude, then /login, or change the pin
+exit=1
+# config/claude-account names signed-in root claude-a; invoker has ambient CLAUDE_CONFIG_DIR=/tmp/fm-lab.luawBP/ambient-claude
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.luawBP
+spawned scout-pinned harness=claude kind=scout window=primary:fm-scout-pinned worktree=/tmp/fm-lab.luawBP/uhome/.treehouse/demo-406a8b/1/demo account=/tmp/fm-lab.luawBP/accounts/claude-a
+exit=0
+$ grep account /tmp/fm-lab.luawBP/state/scout-pinned.meta
+harness=claude
+kind=scout
+account=/tmp/fm-lab.luawBP/accounts/claude-a

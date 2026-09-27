@@ -1,0 +1,6 @@
+# no claude-account / pi-account present:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.luawBP
+spawned scout-codex harness=codex kind=scout window=primary:fm-scout-codex worktree=/tmp/fm-lab.luawBP/uhome/.treehouse/demo-406a8b/2/demo
+exit=0
+0
+(no account= line in codex task record)
