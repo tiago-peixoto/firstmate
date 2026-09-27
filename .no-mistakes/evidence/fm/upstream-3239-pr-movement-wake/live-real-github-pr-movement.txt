@@ -1,0 +1,65 @@
+## 1. first live observation of https://github.com/cli/cli/pull/14485 (baseline)
+{
+  "checked_at": "2026-09-27T22:14:49Z",
+  "obs": {
+    "head": "9719a729742f0c06220a18bcc164184733b7110f",
+    "draft": false,
+    "review_requests": [
+      "niik"
+    ]
+  },
+  "pending": []
+}
+
+## 2. unchanged re-poll
+poll rc=0
+pending:
+[]
+wake queue check entries: 0
+
+## 3. simulate prior observation: other head, draft=true, no review requests
+contribution-wake: check: contributions watchpr 87e816de0816d9e94ea77b72a13c69a1792c33dc622d4e729347f065518fb0bb
+contribution-wake: check: contributions watchpr 8db3dfa1b3990a390e0bfe6e48fbd33037028a13373ddb328bb07ed38c52b29e
+contribution-wake: check: contributions watchpr 206cad8d1331da387c2406a8506ba5bca214412be42bab93ca895d8f51838533
+poll rc=0
+pending:
+[
+  {
+    "type": "head",
+    "body": "head moved from 0000000000000000000000000000000000000001 to 9719a729742f0c06220a18bcc164184733b7110f",
+    "token": "head:9719a729742f0c06220a18bcc164184733b7110f:2026-09-27T22:15:09Z",
+    "source": "https://github.com/cli/cli/pull/14485"
+  },
+  {
+    "type": "ready-for-review",
+    "body": "pull request left draft",
+    "token": "ready-for-review:9719a729742f0c06220a18bcc164184733b7110f:2026-09-27T22:15:09Z",
+    "source": "https://github.com/cli/cli/pull/14485"
+  },
+  {
+    "type": "review-requested",
+    "body": "review requested from niik",
+    "token": "review-requested:niik:2026-09-27T22:15:09Z",
+    "source": "https://github.com/cli/cli/pull/14485"
+  }
+]
+wake queue check entries: 3
+
+## 4. unchanged re-poll after movement (no re-ring)
+poll rc=0
+pending count: 3
+wake queue check entries: 3
+
+## 5. adversarial: prior draft=false -> current (real) draft=false, and a legacy prior lacking review_requests
+poll rc=0
+pending count: 3
+wake queue check entries: 3
+[
+  "niik"
+]
+## 6. acknowledge only the head token
+ack rc=0
+[
+  "ready-for-review",
+  "review-requested"
+]

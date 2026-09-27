@@ -33,6 +33,8 @@ ok - watcher surfaces one newly durable contribution signal without re-ringing i
 ok - watcher stays quiet on an unchanged pull request and surfaces its movement once
 ok - parent consumes measured child coverage and refuses expired child silence
 ok - unreadable pending signals refuse an empty-inbox claim
+ok - record task identity is the directory dirname/basename named
+ok - snapshot and pending create nothing in a home without state
 ok - budget exhausted mid-observation (exhaust) keeps the prior record and stays silent
 ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
 ok - a genuine forge failure inside the budget still records the error and wakes
@@ -42,9 +44,9 @@ ok - a late owner inherits a terminal observation without a forge read or wake
 ok - an open PR linked from a done task keeps being observed
 ok - a later URL waits when fewer than fifteen seconds remain for its observation
 ok - eight 3-second PR reads complete fresh within one 20-second poll cycle
+ok - a read killed at the five-second bound is budget refusal and stays silent
+ok - rotation preserves timed-out records and refreshes every slow PR on successive cycles
+ok - the effective budget is cut down to the watcher per-check bound with margin
+ok - generated checks enforce configured and inherited budgets at runtime
 ok - a genuinely unavailable forge records an error and wakes once per failure episode
 ok - a late owner does not restart a shared forge failure episode
-
-real	1m42.001s
-user	0m27.932s
-sys	0m59.141s
