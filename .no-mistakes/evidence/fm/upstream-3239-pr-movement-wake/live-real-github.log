@@ -1,0 +1,56 @@
+## poll 1 (first observation, real GitHub)
+rc=0
+## stored observation
+{
+  "url": "https://github.com/kubernetes/kubernetes/pull/142453",
+  "checked_at": "2026-09-27T15:06:42Z",
+  "error": null,
+  "observation": {
+    "head": "67ad9d30ec606d33eb7e76489fe92795f63c437f",
+    "draft": false,
+    "state": "open",
+    "review_requests": [
+      "apelisse",
+      "bart0sh",
+      "jpbetz",
+      "matthyx"
+    ]
+  }
+}
+## pending after first observation
+[]
+## wake queue
+(none)
+
+## rewind stored prior: head=0000..., draft=true, review_requests minus matthyx (real PR unchanged)
+## poll 2 (real GitHub)
+contribution-wake: check: contributions watch 1c8b9be837102317de54e36bc7a37cc7102aaa2f71c8e7b6fe0b52667aafa8b0
+contribution-wake: check: contributions watch 70f7ed4a69dd43b5d523b9bddceaf1b94bd041740face8cf1b802cdc2b0af9f7
+contribution-wake: check: contributions watch 0dab42aa6b42a199871c5690b62da5e26a357e6adbc8c4acc5c46a9266ce7621
+rc=0
+## pending
+{"type":"head","body":"head moved from 0000000000000000000000000000000000000000 to 67ad9d30ec606d33eb7e76489fe92795f63c437f","source":"https://github.com/kubernetes/kubernetes/pull/142453"}
+{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kubernetes/kubernetes/pull/142453"}
+{"type":"review-requested","body":"review requested from matthyx","source":"https://github.com/kubernetes/kubernetes/pull/142453"}
+## durable check wakes queued
+3
+## poll 3 (unchanged re-poll)
+rc=0
+## pending count
+3
+## durable check wakes queued
+3
+## ack the head signal
+rc=0
+["ready-for-review","review-requested"]
+
+## adversarial: prior draft=false -> current draft=false, and a reviewer removed (prior had an extra one)
+rc=0
+["ready-for-review","review-requested"]
+3
+
+## adversarial: legacy prior without review_requests field
+rc=0
+["ready-for-review","review-requested"]
+3
+["apelisse","bart0sh","jpbetz","matthyx"]

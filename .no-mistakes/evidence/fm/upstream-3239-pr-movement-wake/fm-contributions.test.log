@@ -42,5 +42,9 @@ ok - a late owner inherits a terminal observation without a forge read or wake
 ok - an open PR linked from a done task keeps being observed
 ok - a later URL waits when fewer than fifteen seconds remain for its observation
 ok - eight 3-second PR reads complete fresh within one 20-second poll cycle
+ok - a read killed at the five-second bound is budget refusal and stays silent
+ok - rotation preserves timed-out records and refreshes every slow PR on successive cycles
+ok - the effective budget is cut down to the watcher per-check bound with margin
+ok - generated checks enforce configured and inherited budgets at runtime
 ok - a genuinely unavailable forge records an error and wakes once per failure episode
 ok - a late owner does not restart a shared forge failure episode
