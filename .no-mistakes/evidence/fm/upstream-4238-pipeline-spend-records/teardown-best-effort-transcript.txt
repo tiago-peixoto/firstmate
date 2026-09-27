@@ -1,0 +1,12 @@
+# ledger replaced by a symlink: the record write is refused (O_NOFOLLOW); teardown must warn and still clean up
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-spend-live.3TpiEf/home
+fm-pipeline-spend: cannot write /tmp/fm-spend-live.3TpiEf/home/data/pipeline-spend.jsonl: [Errno 40] Too many levels of symbolic links: '/tmp/fm-spend-live.3TpiEf/home/data/pipeline-spend.jsonl'
+fm-pipeline-spend: could not build the pipeline spend record for task-fail
+warning: could not record task-fail's no-mistakes pipeline spend; cleanup continues
+/tmp/fm-spend-live.3TpiEf/project: already current
+teardown task-fail complete (window firstmate:fm-task-fail, worktree /tmp/fm-spend-live.3TpiEf/wt2)
+Backlog: task-fail just finished (this home keeps no markdown backlog at /tmp/fm-spend-live.3TpiEf/home/data/backlog.md). Update /tmp/fm-spend-live.3TpiEf/home/data/backlog.md - move task-fail to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+meta present? no
+branch present? no
+symlink target lines with task-fail: 0

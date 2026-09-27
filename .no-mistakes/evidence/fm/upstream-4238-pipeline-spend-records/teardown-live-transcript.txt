@@ -1,0 +1,22 @@
+$ fm-teardown.sh task-live   (lab FM_HOME, disposable NM_HOME)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-spend-live.3TpiEf/home
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  4 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+/tmp/fm-spend-live.3TpiEf/project: already current
+teardown task-live complete (window firstmate:fm-task-live, worktree /tmp/fm-spend-live.3TpiEf/wt)
+Backlog: task-live just finished (this home keeps no markdown backlog at /tmp/fm-spend-live.3TpiEf/home/data/backlog.md). Update /tmp/fm-spend-live.3TpiEf/home/data/backlog.md - move task-live to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+--- after teardown
+meta present? no
+branch present? no
+worktree present? yes
+--- ledger lines for task-live
+{"spawn_gen":"s1790400000.1.live","source":"no-mistakes-state","branch":"fm/task-live","runs":["01A","01B"],"total":{"invocations":4,"exit":{"ok":2,"error":1,"cancelled":1},"input":{"total":280,"unknown":1},"cache_creation":{"total":5,"unknown":2}}}
+{"spawn_gen":"s1790500000.2.relaunch","source":"no-mistakes-state","branch":"fm/task-live","runs":["01A","01B"],"total":{"invocations":4,"exit":{"ok":2,"error":1,"cancelled":1},"input":{"total":280,"unknown":1},"cache_creation":{"total":5,"unknown":2}}}
+{"spawn_gen":"s1790600000.3.teardown","source":"no-mistakes-state","branch":"fm/task-live","runs":["01A","01B"],"total":{"invocations":4,"exit":{"ok":2,"error":1,"cancelled":1},"input":{"total":280,"unknown":1},"cache_creation":{"total":5,"unknown":2}}}

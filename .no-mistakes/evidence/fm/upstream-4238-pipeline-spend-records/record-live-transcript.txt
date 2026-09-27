@@ -1,0 +1,174 @@
+$ fm-pipeline-spend.sh record task-live   # first
+recorded task-live s1790400000.1.live
+exit=0
+$ fm-pipeline-spend.sh record task-live   # retry
+already recorded task-live s1790400000.1.live
+exit=0
+$ wc -l data/pipeline-spend.jsonl
+1
+mode=600
+$ jq . data/pipeline-spend.jsonl
+{
+  "task": "task-live",
+  "spawn_gen": "s1790400000.1.live",
+  "recorded_at": "2026-09-27T07:52:48Z",
+  "source": "no-mistakes-state",
+  "reason": null,
+  "repo": "/tmp/fm-spend-live.3TpiEf/project",
+  "branch": "fm/task-live",
+  "since": "2026-09-26T04:05:54Z",
+  "total": {
+    "invocations": 4,
+    "exit": {
+      "ok": 2,
+      "error": 1,
+      "cancelled": 1
+    },
+    "duration_ms": 3800,
+    "input_tokens": {
+      "total": 280,
+      "unknown": 1
+    },
+    "output_tokens": {
+      "total": 28,
+      "unknown": 1
+    },
+    "cache_read_tokens": {
+      "total": 120,
+      "unknown": 1
+    },
+    "cache_creation_tokens": {
+      "total": 5,
+      "unknown": 2
+    }
+  },
+  "runs": [
+    {
+      "id": "01A",
+      "status": "failed",
+      "created_at": "2026-09-26T04:07:34Z",
+      "invocations": 3,
+      "exit": {
+        "ok": 2,
+        "error": 1
+      },
+      "duration_ms": 3500,
+      "input_tokens": {
+        "total": 250,
+        "unknown": 1
+      },
+      "output_tokens": {
+        "total": 25,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 120,
+        "unknown": 1
+      },
+      "cache_creation_tokens": {
+        "total": 5,
+        "unknown": 2
+      }
+    },
+    {
+      "id": "01B",
+      "status": "completed",
+      "created_at": "2026-09-26T04:09:14Z",
+      "invocations": 1,
+      "exit": {
+        "cancelled": 1
+      },
+      "duration_ms": 300,
+      "input_tokens": {
+        "total": 30,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 3,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 0,
+        "unknown": 0
+      }
+    }
+  ],
+  "purposes": [
+    {
+      "purpose": "review",
+      "invocations": 2,
+      "exit": {
+        "ok": 2
+      },
+      "duration_ms": 3000,
+      "input_tokens": {
+        "total": 250,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 25,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 120,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 5,
+        "unknown": 1
+      }
+    },
+    {
+      "purpose": "review-fix",
+      "invocations": 1,
+      "exit": {
+        "error": 1
+      },
+      "duration_ms": 500,
+      "input_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "output_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "cache_creation_tokens": {
+        "total": 0,
+        "unknown": 1
+      }
+    },
+    {
+      "purpose": "test",
+      "invocations": 1,
+      "exit": {
+        "cancelled": 1
+      },
+      "duration_ms": 300,
+      "input_tokens": {
+        "total": 30,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 3,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 0,
+        "unknown": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+run 01A (failed), parked at gates 0s total
+"-" means the field was not reported for that invocation (unknown), which is distinct from a recorded 0.
+
+STEP        ROUND  PURPOSE     AGENT  MODEL  SESSION  KEY  DURATION  MODEL  SUBPROC  RT  TOOLS (w/t/e/r/g/o)  FIND  WORK (f/l)  FALLBACK  EXIT
+review      1      review      codex  gpt-5  cold     k    1s        -      -        -   -                    -     -           -         ok
+review      1      review      codex  gpt-5  resumed  k    2s        -      -        -   -                    -     -           -         ok
+review-fix  1      review-fix  codex  gpt-5  started  k    500ms     -      -        -   -                    -     -           -         error
+
+STEP        ROUND  PURPOSE     SESSION  Δ IN (round)  Δ OUT  Δ CACHE RD  IN (raw)  OUT (raw)  CACHE RD (raw)  CACHE WR  FRESH IN  REASON
+review      1      review      cold     100           10     50          100       10         50              5         -         -
+review      1      review      resumed  150           15     70          250       25         120             7         -         -
+review-fix  1      review-fix  started  -             -      -           -         -          -               -         -         -

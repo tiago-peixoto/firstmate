@@ -1,0 +1,24 @@
+# relaunch mints a new spawn_gen -> a second incarnation line
+db sha before: 1ea5b6cd1b31794b
+recorded task-live s1790500000.2.relaunch
+exit=0
+db sha after:  1ea5b6cd1b31794b
+["task-live","s1790400000.1.live","no-mistakes-state",4]
+["task-live","s1790500000.2.relaunch","no-mistakes-state",4]
+# secondmate record is refused
+fm-pipeline-spend: sm1 is a secondmate, not a task
+exit=1
+# unknown task
+fm-pipeline-spend: no task record for nope
+exit=1
+# unsafe id
+fm-pipeline-spend: invalid task id
+exit=2
+# task copy gone -> unavailable, still recorded, total null (never zero)
+recorded gone g1
+exit=0
+# repo not registered with no-mistakes (real CLI error surfaces)
+recorded unreg u1
+exit=0
+["gone","unavailable","the task copy /tmp/fm-spend-live.3TpiEf/gone is gone",null,[]]
+["unreg","unavailable","no-mistakes resolved no repository for the task copy: error: repo not initialized (run 'no-mistakes init' first)",null,[]]
