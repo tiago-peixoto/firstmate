@@ -1,0 +1,20 @@
+== macos-fullpath: parent pid=973300 real comm='/x/codex/codex' host-opt=no
+   supervisor lock owner: 973300
+   ownerless source runs before stop=1, after idle gap=1
+   lock after owner exit: gone
+== bare-codex: parent pid=1007199 real comm='codex' host-opt=no
+   supervisor lock owner: 1007199
+   ownerless source runs before stop=1, after idle gap=1
+   lock after owner exit: gone
+== adversarial-suffix: parent pid=1031599 real comm='/x/notcodex' host-opt=no
+   supervisor lock owner: none
+   ownerless source runs before stop=1, after idle gap=1
+   lock after owner exit: gone
+== adversarial-prefix: parent pid=1056579 real comm='/codex/x/node' host-opt=no
+   supervisor lock owner: none
+   ownerless source runs before stop=1, after idle gap=1
+   lock after owner exit: gone
+== host-opted-fullpath: parent pid=1091035 real comm='/x/codex/codex' host-opt=host
+   supervisor lock owner: none
+   ownerless source runs before stop=1, after idle gap=1
+   lock after owner exit: gone
