@@ -1,0 +1,126 @@
+=== D. worker's composer holds unsent draft text; worker has an open decision of its own ===
+✻ Baked for 6s · done 10:51 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ draft text the captain is typing
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
+
+=== E. fire-and-forget steer while composer holds text ===
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.hM9ziz/state/t1.inbox/002.msg and the watcher will ring it once more
+exit=0
+retry mark: 002.msg
+002.msg
+handled
+=== F. real bin/fm-watch.sh (poll 5s, inbox grace 5s) while decision q2 is still open ===
+watcher rc=0
+signal: /tmp/fm-lab.hM9ziz/state/t1.status
+retry mark still owed: 002.msg
+unhandled: 002.msg
+pane (no doorbell expected):
+✻ Baked for 6s · done 10:51 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+
+=== G. decision q2 closes; run watcher again ===
+watcher rc=0
+check: rearm-resurface
+retry mark after: 002.msg
+pane:
+  ⎿  (No output)
+● I've added the decision request to my status file: needs-decision [key=pick]: ship alpha or beta?. Nothing more happens until the answer comes in. Then I'll write the chosen word to choice.txt and
+  add done: chose <word> to the status file.
+✻ Sautéed for 6s · done 10:49 AM
+❯ : Firstmate instruction waiting: list '/tmp/fm-lab.hM9ziz/state/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to
+  '/tmp/fm-lab.hM9ziz/state/t1.inbox'/handled/.
+● Bash(cd '/tmp/fm-lab.hM9ziz/state/t1.inbox' && for f in $(ls *.msg | sort -n); do echo "== $f"; cat "$f"; done)
+  ⎿  == 001.msg
+     schema=fm-task-inbox.v1
+     at=2026-09-28T08:51:35Z
+     … +2 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /tmp/fm-lab.hM9ziz/work
+● Bash(echo beta > /tmp/fm-lab.hM9ziz/work/choice.txt && echo 'done: chose beta' >> /tmp/fm-lab.hM9ziz/state/t1.status && mkdir -p /tmp/fm-lab.hM9ziz/state/t1.inbox/ha…)
+  ⎿  beta
+     resolved [key=pick] [at=1790585495]: answered: Ship beta.
+     done: chose beta
+● The answer came in as "Ship beta." I wrote beta to choice.txt, added done: chose beta to the status file, and moved 001.msg into handled/ to acknowledge it. I'm stopping here, as the brief says.
+✻ Baked for 6s · done 10:51 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+--- status:
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick] [at=1790585495]: answered: Ship beta.
+done: chose beta
+needs-decision [key=q2]: keep the old name?
+resolved [key=q2] [at=1790585621]: answered: yes keep it
+--- inbox unhandled: 1; handled: 001.msg
+
+=== H. watcher cycles for 60s while the worker's own decision q3 is open (retry owed for 002.msg) ===
+watcher wake: check: rearm-resurface
+  (acked wake: --ack-through 0 --recovery-generation 1688487.1790585713.6F0d8P)
+watcher wake: signal: /tmp/fm-lab.hM9ziz/state/t1.status
+  (acked wake: --ack-through 4 --recovery-generation 1763161.1790585740.XjFryL)
+watcher wake: Terminated                 sleep "$POLL"
+retry mark: 002.msg
+triage log steer-inbox lines: 0
+pane (no doorbell expected):
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+
+=== H2. steady-state: 35 more seconds of watcher polling with q3 still open ===
+watcher wake: check: rearm-resurface
+  (acked wake: --ack-through 0 --recovery-generation 1772348.1790585795.WAdV4g)
+watcher wake: Terminated                 sleep "$POLL"
+retry mark: 002.msg; pane last line: ❯ Read brief.md in this directory and follow it exactly.
+❯ : Firstmate instruction waiting: list '/tmp/fm-lab.hM9ziz/state/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to
+❯ 
+
+=== I. decision q3 closes (resolved line); watcher cycles for 60s ===
+watcher wake: check: rearm-resurface
+  (acked wake: --ack-through 0 --recovery-generation 1846713.1790585840.Zp2Ix8)
+watcher wake: signal: /tmp/fm-lab.hM9ziz/state/t1.status
+  (acked wake: --ack-through 6 --recovery-generation 1900114.1790585844.ptrmq4)
+watcher wake: signal: /tmp/fm-lab.hM9ziz/state/t1.status
+  (acked wake: --ack-through 8 --recovery-generation 1907574.1790585856.r5Mk6n)
+watcher wake: Terminated                 sleep "$POLL"
+retry mark: none (spent)
+triage log:
+[2026-09-28T10:57:29+0200] steer-inbox retry ring: t1 002.msg result=0
+pane:
+  '/tmp/fm-lab.hM9ziz/state/t1.inbox'/handled/.
+● Bash(cd '/tmp/fm-lab.hM9ziz/state/t1.inbox' && ls; for f in $(ls *.msg 2>/dev/null | sort -n); do echo "== $f"; cat "$f"; done)
+  ⎿  002.msg
+     handled
+     == 002.msg
+     … +5 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /tmp/fm-lab.hM9ziz/work
+● Bash(echo 'ff: seen' >> /tmp/fm-lab.hM9ziz/state/t1.status && mv /tmp/fm-lab.hM9ziz/state/t1.inbox/002.msg /tmp/fm-lab.hM9ziz/state/t1.inbox/handled/ && tail -1 /tmp…)
+  ⎿  ff: seen
+● 002.msg asked me to add ff: seen to my status file and keep waiting. I added the line and moved the message to handled/. The task itself was already done (beta chosen), so I'm idle until another
+  instruction arrives.
+✻ Brewed for 6s · done 10:57 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+--- status:
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick] [at=1790585495]: answered: Ship beta.
+done: chose beta
+needs-decision [key=q2]: keep the old name?
+resolved [key=q2] [at=1790585621]: answered: yes keep it
+needs-decision [key=q3]: rename the flag?
+resolved [key=q3] [at=1790585840]: answered: yes rename
+ff: seen
+--- inbox unhandled: 0; handled: 001.msg 002.msg
+
+=== J. retry is spent: 30 more seconds of polling do not ring again ===
+watcher wake: check: rearm-resurface
+  (acked wake: --ack-through 0 --recovery-generation 1922372.1790585900.F0r5OH)
+watcher wake: Terminated                 sleep "$POLL"
+steer-inbox retry lines total: 1

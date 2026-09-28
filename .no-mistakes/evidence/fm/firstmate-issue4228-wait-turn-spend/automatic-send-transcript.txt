@@ -1,0 +1,61 @@
+
+=== 1. worker t1 opens a decision ===
+working: implementing
+needs-decision [key=pick]: ship alpha or beta?
+
+=== 2. automatic re-read nudge while decision is open ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hM9ziz
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+exit=4
+inbox records: 0
+pane after deferred send:
+
+=== 3. adversarial: --automatic combined with --resolve-key is refused ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hM9ziz
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --automatic cannot accompany --key or --resolve-key
+exit=1
+
+=== 4. firstmate's deliberate answer (--resolve-key pick) still wakes the worker ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hM9ziz
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in lab:fm-t1 has exited; the steer is durably recorded at /tmp/fm-lab.hM9ziz/state/t1.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+001.msg
+handled
+status now:
+working: implementing
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick] [at=1790585342]: answered: use alpha
+pane after answer:
+
+=== 5. automatic nudge after decision closed is delivered ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hM9ziz
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in lab:fm-t1 has exited; the steer is durably recorded at /tmp/fm-lab.hM9ziz/state/t1.inbox/002.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+001.msg
+002.msg
+handled
+pane:
+
+=== 6. an open blocker also defers an automatic nudge ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hM9ziz
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: t1 is waiting on its open decision or blocker (ci); nothing was sent
+exit=4
+inbox records: 2
+
+=== 7. a captain-hold relayed decision does NOT defer (not the worker's own wait) ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hM9ziz
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in lab:fm-t1 has exited; the steer is durably recorded at /tmp/fm-lab.hM9ziz/state/t1.inbox/003.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+inbox records: 3

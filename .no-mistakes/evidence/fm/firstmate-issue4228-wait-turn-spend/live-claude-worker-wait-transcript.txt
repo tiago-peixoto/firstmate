@@ -1,0 +1,54 @@
+=== A. worker pane after it opened needs-decision [key=pick] ===
+ ▝▝   ▝▝   /tmp/fm-lab.hM9ziz/work
+❯ Read brief.md in this directory and follow it exactly.
+  Listed 1 directory (ctrl+o to expand)
+● Bash(echo 'needs-decision [key=pick]: ship alpha or beta?' >> /tmp/fm-lab.hM9ziz/state/t1.status)
+  ⎿  (No output)
+● I've added the decision request to my status file: needs-decision [key=pick]: ship alpha or beta?. Nothing more happens until the answer comes in. Then I'll write the chosen word to choice.txt and
+  add done: chose <word> to the status file.
+✻ Sautéed for 6s · done 10:49 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+
+=== B. automatic re-read nudge while the decision is open ===
+deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+exit=4
+inbox: 
+pane unchanged 60s after deferred nudge: yes
+
+=== C. firstmate's deliberate answer ===
+exit=0
+--- worker pane after the answer:
+❯ Read brief.md in this directory and follow it exactly.
+  Listed 1 directory (ctrl+o to expand)
+● Bash(echo 'needs-decision [key=pick]: ship alpha or beta?' >> /tmp/fm-lab.hM9ziz/state/t1.status)
+  ⎿  (No output)
+● I've added the decision request to my status file: needs-decision [key=pick]: ship alpha or beta?. Nothing more happens until the answer comes in. Then I'll write the chosen word to choice.txt and
+  add done: chose <word> to the status file.
+✻ Sautéed for 6s · done 10:49 AM
+❯ : Firstmate instruction waiting: list '/tmp/fm-lab.hM9ziz/state/t1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to
+  '/tmp/fm-lab.hM9ziz/state/t1.inbox'/handled/.
+● Bash(cd '/tmp/fm-lab.hM9ziz/state/t1.inbox' && for f in $(ls *.msg | sort -n); do echo "== $f"; cat "$f"; done)
+  ⎿  == 001.msg
+     schema=fm-task-inbox.v1
+     at=2026-09-28T08:51:35Z
+     … +2 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /tmp/fm-lab.hM9ziz/work
+● Bash(echo beta > /tmp/fm-lab.hM9ziz/work/choice.txt && echo 'done: chose beta' >> /tmp/fm-lab.hM9ziz/state/t1.status && mkdir -p /tmp/fm-lab.hM9ziz/state/t1.inbox/ha…)
+  ⎿  beta
+     resolved [key=pick] [at=1790585495]: answered: Ship beta.
+     done: chose beta
+● The answer came in as "Ship beta." I wrote beta to choice.txt, added done: chose beta to the status file, and moved 001.msg into handled/ to acknowledge it. I'm stopping here, as the brief says.
+✻ Baked for 6s · done 10:51 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+--- status file:
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick] [at=1790585495]: answered: Ship beta.
+done: chose beta
+--- choice.txt: beta
+--- inbox unhandled: 0; handled: 001.msg
