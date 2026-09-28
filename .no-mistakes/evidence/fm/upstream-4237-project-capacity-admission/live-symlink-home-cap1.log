@@ -1,0 +1,4 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-cap-lablink
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: project capproj admits 1 worker(s) at once on this machine (/tmp/fm-cap-lablink/config/project-capacity) and 1 already hold a place (cap-a); task cap-b was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+rc=75

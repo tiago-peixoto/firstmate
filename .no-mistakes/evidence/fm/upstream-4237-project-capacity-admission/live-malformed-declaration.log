@@ -1,0 +1,4 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8jG5gq
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.8jG5gq/config/project-capacity line 1 gives capproj a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+rc=1

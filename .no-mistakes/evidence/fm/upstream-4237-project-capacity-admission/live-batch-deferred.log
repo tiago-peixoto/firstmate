@@ -1,0 +1,5 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8jG5gq
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8jG5gq
+deferred: project capproj admits 2 worker(s) at once on this machine (/tmp/fm-lab.8jG5gq/config/project-capacity) and 2 already hold a place (cap-m in /tmp/fm-lab.8jG5gq/mate, cap-n in /tmp/fm-lab.8jG5gq/mate); task cap-c was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+batch: DEFERRED cap-c (/tmp/fm-lab.8jG5gq/projects/capproj) - its project is at capacity, so it stays queued
+rc=75

@@ -1,0 +1,5 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8jG5gq
+warning: /tmp/fm-lab.8jG5gq/data/cap-c/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-c
+notice: cap-c ships mode=local-only while the standing posture for capproj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-c harness=codex kind=ship mode=local-only yolo=off window=firstmate:fm-cap-c worktree=/tmp/fm-lab.8jG5gq/pool/.treehouse/capproj-c4a154/2/capproj
+rc=0

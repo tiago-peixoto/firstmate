@@ -1,0 +1,6 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8jG5gq/mate
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+warning: /tmp/fm-lab.8jG5gq/mate/data/cap-m/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-m
+notice: cap-m ships mode=local-only while the standing posture for capproj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-m harness=codex kind=ship mode=local-only yolo=off window=firstmate:fm-cap-m worktree=/tmp/fm-lab.8jG5gq/pool/.treehouse/capproj-c4a154/1/capproj
+rc=0

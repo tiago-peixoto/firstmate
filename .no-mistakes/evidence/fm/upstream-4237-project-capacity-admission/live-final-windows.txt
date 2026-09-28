@@ -1,0 +1,4 @@
+bash
+fm-cap-m
+fm-cap-c
+fm-cap-n

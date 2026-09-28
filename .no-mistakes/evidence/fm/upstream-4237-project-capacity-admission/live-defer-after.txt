@@ -1,0 +1,22 @@
+== windows
+bash
+fm-cap-a
+== state
+cap-a.git-hooks
+cap-a.meta
+home-summary.json
+== data/cap-b
+brief.md
+== pool
+1     in-use       /tmp/fm-lab.8jG5gq/pool/.treehouse/capproj-c4a154/1/capproj
+                   bash (3130377), codex (3135072)
+== backlog
+# Backlog
+
+## In flight
+- [ ] cap-a - lab item cap-a (kind: ship) (since 2026-09-28)
+
+## Queued
+- [ ] cap-b - lab item cap-b (kind: ship) (since 2026-09-28)
+- [ ] cap-c - lab item cap-c (kind: ship) (since 2026-09-28)
+## Done

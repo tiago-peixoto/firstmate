@@ -1,0 +1,48 @@
+## lab: /tmp/fm-lab.nV1Ney (tmux socket /tmp/fm-lab.nV1Ney/tmux/tmux-1000/fm-lab)
+
+## S1 capacity 1 declared, live-a holds it: spawn task-b
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.nV1Ney
+deferred: project heavy admits 1 worker(s) at once on this machine (/tmp/fm-lab.nV1Ney/config/project-capacity) and 1 already hold a place (live-a); task task-b was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+exit=75; task-b.meta exists? no; launch-brief? no; backlog state=queued; tmux windows: bash ; treehouse pool entries: 0
+
+## S2 malformed declaration refuses
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.nV1Ney
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.nV1Ney/config/project-capacity line 1 gives heavy a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+exit=1; task-b.meta? no; backlog=queued
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.nV1Ney
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.nV1Ney/config/project-capacity line 2 names heavy a second time); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+exit=1
+
+## S3 symlinked FM_HOME, capacity 2, one holder -> must be admitted (not double-counted)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.nV1Ney.link
+warning: /tmp/fm-lab.nV1Ney.link/data/task-b/launch-brief.md records no ship branch; defaulting to legacy branch fm/task-b
+notice: task-b ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned task-b harness=codex kind=ship mode=local-only yolo=off window=firstmate:fm-task-b worktree=/tmp/fm-lab.nV1Ney/th/.treehouse/heavy-cea26c/1/heavy
+exit=0; task-b.meta? yes; backlog=in_flight; tmux windows: bash fm-task-b 
+
+## S4 now 2 of 2 held (live-a, task-b): spawn task-c through symlinked home -> deferred
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.nV1Ney.link
+deferred: project heavy admits 2 worker(s) at once on this machine (/tmp/fm-lab.nV1Ney.link/config/project-capacity) and 2 already hold a place (live-a, task-b); task task-c was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+exit=75; task-c.meta? no; backlog=queued
+
+## S5 live-a records ready PR (pr=) -> frees place; task-c admitted? (check only up to admission via capacity 2 count)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.nV1Ney
+warning: /tmp/fm-lab.nV1Ney/data/task-c/launch-brief.md records no ship branch; defaulting to legacy branch fm/task-c
+notice: task-c ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned task-c harness=codex kind=ship mode=local-only yolo=off window=firstmate:fm-task-c worktree=/tmp/fm-lab.nV1Ney/th/.treehouse/heavy-cea26c/2/heavy
+exit=0; task-c.meta? yes; backlog=in_flight
+
+## S6 relaunch not counted: capacity 1 with two live holders, relaunch task-b
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.nV1Ney
+error: task task-b's endpoint reads 'alive'; a relaunch requires a positively agent-free endpoint (stop the agent first with bin/fm-control.sh task-b exit)
+exit=1
+
+## S7 undeclared -> uncapped (no file): check with no file, occupant count irrelevant
+(verified by task-c admission path if file absent; see automated test)
+
+## teardown
+teardown task-b complete (window firstmate:fm-task-b, worktree /tmp/fm-lab.nV1Ney/th/.treehouse/heavy-cea26c/1/heavy)
+Backlog: task-b is closed in /tmp/fm-lab.nV1Ney/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+teardown task-c complete (window firstmate:fm-task-c, worktree /tmp/fm-lab.nV1Ney/th/.treehouse/heavy-cea26c/2/heavy)
+Backlog: task-c is closed in /tmp/fm-lab.nV1Ney/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+lab removed: yes

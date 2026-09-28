@@ -1,0 +1,11 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.8jG5gq
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for cap-b: 3189957 3194193
+teardown: force-killing leaked worktree process(es) for cap-b: 3189957
+A new version of treehouse is available: v2.3.0 → v3.1.0
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown cap-b complete (window firstmate:fm-cap-b, worktree /tmp/fm-lab.8jG5gq/pool/.treehouse/capproj-c4a154/2/capproj)
+Backlog: cap-b is closed in /tmp/fm-lab.8jG5gq/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+rc=0
