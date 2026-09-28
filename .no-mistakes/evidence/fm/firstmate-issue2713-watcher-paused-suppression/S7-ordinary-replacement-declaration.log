@@ -1,0 +1,21 @@
+== scenario: S7-ordinary-replacement-declaration  kind=ship pane=alive resurface=40s
+== backend liveness probe: alive
+== t=0 appended status: paused: waiting on the validation run
+== pane:
+   | grok idle, parked on external wait
+   [t=4s] WAKE: signal: /tmp/fm-lab.qcwpGu/state/t1.status 
+   [t=8s] WAKE: stale: lab:crew (paused 7s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   [t=12s] appended replacement declaration: paused: now waiting on a different upstream fix
+   [t=12s] WAKE: stale: lab:crew (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   [t=17s] WAKE: signal: /tmp/fm-lab.qcwpGu/state/t1.status 
+   [t=52s] observation window closed
+== watcher triage log (absorb decisions):
+   [2026-09-28T18:41:25+0200] absorbed stale (paused, awaiting external, age 28s): lab:crew
+   [2026-09-28T18:41:27+0200] absorbed stale (paused, awaiting external, age 30s): lab:crew
+   [2026-09-28T18:41:28+0200] absorbed stale (paused, awaiting external, age 31s): lab:crew
+   [2026-09-28T18:41:30+0200] absorbed stale (paused, awaiting external, age 33s): lab:crew
+   [2026-09-28T18:41:32+0200] absorbed stale (paused, awaiting external, age 34s): lab:crew
+   [2026-09-28T18:41:33+0200] absorbed stale (paused, awaiting external, age 36s): lab:crew
+   [2026-09-28T18:41:35+0200] absorbed stale (paused, awaiting external, age 38s): lab:crew
+   [2026-09-28T18:41:36+0200] absorbed stale (paused, awaiting external, age 39s): lab:crew
+== end

@@ -1,0 +1,20 @@
+== scenario: S3-ordinary-dead-captain-held  kind=ship pane=dead resurface=25s
+== backend liveness probe: dead
+== t=0 appended status: captain-held: awaiting captain sign-off on the release
+== pane:
+   | agent exited; shell left
+   | bash-5.3$
+   [t=3s] WAKE: signal: /tmp/fm-lab.bnsnlz/state/t1.status 
+   [t=6s] WAKE: stale: lab:crew (captain-held 6s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+   [t=32s] WAKE: stale: lab:crew (captain-held 32s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+   [t=37s] observation window closed
+== watcher triage log (absorb decisions):
+   [2026-09-28T18:40:10+0200] absorbed stale (captain-held, awaiting the captain, age 22s): lab:crew
+   [2026-09-28T18:40:11+0200] absorbed stale (captain-held, awaiting the captain, age 23s): lab:crew
+   [2026-09-28T18:40:13+0200] absorbed stale (captain-held, awaiting the captain, age 25s): lab:crew
+   [2026-09-28T18:40:15+0200] absorbed stale (captain-held, awaiting the captain, age 27s): lab:crew
+   [2026-09-28T18:40:17+0200] absorbed stale (captain-held, awaiting the captain, age 29s): lab:crew
+   [2026-09-28T18:40:18+0200] absorbed stale (captain-held, awaiting the captain, age 30s): lab:crew
+   [2026-09-28T18:40:23+0200] absorbed stale (captain-held, awaiting the captain, age 35s): lab:crew
+   [2026-09-28T18:40:24+0200] absorbed stale (captain-held, awaiting the captain, age 36s): lab:crew
+== end

@@ -1,0 +1,19 @@
+== scenario: S2-ordinary-unknown-paused  kind=ship pane=unknown resurface=25s
+== backend liveness probe: unknown
+== t=0 appended status: paused: waiting on the upstream release
+== pane:
+   | something idle, parked on external wait
+   [t=3s] WAKE: signal: /tmp/fm-lab.CH02UM/state/t1.status 
+   [t=6s] WAKE: stale: lab:crew (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   [t=32s] WAKE: stale: lab:crew (paused 32s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   [t=37s] observation window closed
+== watcher triage log (absorb decisions):
+   [2026-09-28T18:40:10+0200] absorbed stale (paused, awaiting external, age 22s): lab:crew
+   [2026-09-28T18:40:11+0200] absorbed stale (paused, awaiting external, age 23s): lab:crew
+   [2026-09-28T18:40:13+0200] absorbed stale (paused, awaiting external, age 25s): lab:crew
+   [2026-09-28T18:40:15+0200] absorbed stale (paused, awaiting external, age 27s): lab:crew
+   [2026-09-28T18:40:17+0200] absorbed stale (paused, awaiting external, age 29s): lab:crew
+   [2026-09-28T18:40:18+0200] absorbed stale (paused, awaiting external, age 30s): lab:crew
+   [2026-09-28T18:40:23+0200] absorbed stale (paused, awaiting external, age 35s): lab:crew
+   [2026-09-28T18:40:24+0200] absorbed stale (paused, awaiting external, age 36s): lab:crew
+== end

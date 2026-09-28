@@ -1,0 +1,18 @@
+== scenario: S6-secondmate-churning-pane-paused  kind=secondmate pane=churn resurface=25s
+== backend liveness probe: alive
+== t=0 appended status: paused: awaiting the upstream release
+== pane:
+   | grok idle, parked on external wait (tick 1)
+   [t=4s] WAKE: signal: /tmp/fm-lab.0PqDGx/state/t1.status 
+   [t=27s] WAKE: stale: lab:crew (paused 26s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   [t=37s] observation window closed
+== watcher triage log (absorb decisions):
+   [2026-09-28T18:41:03+0200] absorbed stale (paused, awaiting external, age 18s): lab:crew
+   [2026-09-28T18:41:04+0200] absorbed stale (paused, awaiting external, age 19s): lab:crew
+   [2026-09-28T18:41:06+0200] absorbed stale (paused, awaiting external, age 21s): lab:crew
+   [2026-09-28T18:41:10+0200] absorbed stale (paused, awaiting external, age 24s): lab:crew
+   [2026-09-28T18:41:14+0200] absorbed stale (paused, awaiting external, age 29s): lab:crew
+   [2026-09-28T18:41:18+0200] absorbed stale (paused, awaiting external, age 32s): lab:crew
+   [2026-09-28T18:41:19+0200] absorbed stale (paused, awaiting external, age 34s): lab:crew
+   [2026-09-28T18:41:21+0200] absorbed stale (paused, awaiting external, age 36s): lab:crew
+== end

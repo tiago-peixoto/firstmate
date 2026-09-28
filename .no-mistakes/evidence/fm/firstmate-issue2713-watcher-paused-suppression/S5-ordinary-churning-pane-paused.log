@@ -1,0 +1,19 @@
+== scenario: S5-ordinary-churning-pane-paused  kind=ship pane=churn resurface=25s
+== backend liveness probe: alive
+== t=0 appended status: paused: waiting on the validation run
+== pane:
+   | grok idle, parked on external wait (tick 1)
+   [t=4s] WAKE: signal: /tmp/fm-lab.nIw1XN/state/t1.status 
+   [t=7s] WAKE: stale: lab:crew (paused 7s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   [t=33s] WAKE: stale: lab:crew (paused 32s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+   [t=37s] observation window closed
+== watcher triage log (absorb decisions):
+   [2026-09-28T18:41:04+0200] absorbed stale (paused, awaiting external, age 19s): lab:crew
+   [2026-09-28T18:41:05+0200] absorbed stale (paused, awaiting external, age 20s): lab:crew
+   [2026-09-28T18:41:07+0200] absorbed stale (paused, awaiting external, age 22s): lab:crew
+   [2026-09-28T18:41:09+0200] absorbed stale (paused, awaiting external, age 24s): lab:crew
+   [2026-09-28T18:41:10+0200] absorbed stale (paused, awaiting external, age 25s): lab:crew
+   [2026-09-28T18:41:12+0200] absorbed stale (paused, awaiting external, age 27s): lab:crew
+   [2026-09-28T18:41:16+0200] absorbed stale (paused, awaiting external, age 30s): lab:crew
+   [2026-09-28T18:41:20+0200] absorbed stale (paused, awaiting external, age 35s): lab:crew
+== end

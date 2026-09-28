@@ -1,0 +1,9 @@
+== scenario: B2-BASE-ordinary-churning-pane-paused  kind=ship pane=churn resurface=25s
+== backend liveness probe: alive
+== t=0 appended status: paused: waiting on the validation run
+== pane:
+   | grok idle, parked on external wait (tick 1)
+   [t=4s] WAKE: signal: /tmp/fm-lab.asMJYp/state/t1.status 
+   [t=37s] observation window closed
+== watcher triage log (absorb decisions):
+== end
