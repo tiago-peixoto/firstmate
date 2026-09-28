@@ -1,0 +1,23 @@
+== arm contributions observer ==
+registered: state/contributions.check.sh
+arm rc=0
+contributions.check-trust
+contributions.check.sh
+== quiet watcher on unchanged live PR (first observation = baseline) ==
+watcher rc=124 (124 = quiet expiry)
+stdout:
+checkpoint: no actionable wake within 20s
+stderr:
+{"head":"73bcf4d5175f922b16d898da10fa370114c22c34","draft":false,"review_requests":[],"pending":0}
+== stored prior head rewritten to stand in for a force-push; successor watcher ==
+watcher rc=0
+stdout:
+check: contributions openpr 2ce11d6af0d71d5e20354513f50d24980445e8094107eaf5467d6ff477801691
+
+stderr:
+{"task":"openpr","type":"head","body":"head moved from 1111111111111111111111111111111111111111 to 73bcf4d5175f922b16d898da10fa370114c22c34"}
+== repeat watcher: already-surfaced head must not re-ring ==
+watcher rc=124
+stdout:
+checkpoint: no actionable wake within 20s
+queued check wakes: 1

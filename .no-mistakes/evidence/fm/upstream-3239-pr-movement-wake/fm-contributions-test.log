@@ -40,6 +40,7 @@ ok - budget exhausted mid-observation (hang) keeps the prior record and stays si
 ok - a genuine forge failure inside the budget still records the error and wakes
 ok - a URL owned by two tasks is observed once and every owner receives the result
 ok - a merged or closed contribution settles once, is not re-read, and never wakes again
+ok - a head change observed as merged or closed settles without a movement wake
 ok - a late owner inherits a terminal observation without a forge read or wake
 ok - an open PR linked from a done task keeps being observed
 ok - a later URL waits when fewer than fifteen seconds remain for its observation
