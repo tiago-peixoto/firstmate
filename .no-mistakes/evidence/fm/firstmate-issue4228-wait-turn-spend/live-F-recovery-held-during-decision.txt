@@ -1,0 +1,33 @@
+# sm1 finished its re-read turn without a correlated report; its own decision [key=scope] is still open
+needs-decision [key=scope]: widen scope?
+$ fm_pending_reply_send_recovery state 4c87bb865f6cd884
+send_recovery rc=1
+phase=awaiting_report
+recovery_attempted_epoch=
+recovery_sent_epoch=
+inbox: handled 
+
+$ printf 'resolved [key=scope]: answered: narrow' >> state/sm1.status
+$ fm_pending_reply_send_recovery state 4c87bb865f6cd884
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.7zPA7q
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+send_recovery rc=0
+recovery_attempted_epoch=1790604036
+recovery_sent_epoch=1790604036
+phase=recovery_sent
+inbox: 003.msg handled 
+$ fm_pending_reply_send_recovery state 4c87bb865f6cd884   # again: must not re-send
+send_recovery rc=1
+recovery_attempted_epoch=1790604036
+recovery_sent_epoch=1790604036
+phase=recovery_sent
+inbox: 003.msg handled 
+--- worker pane:
+     … +9 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /tmp/fm-lab.7zPA7q/work
+  ⎿  Allowed by auto mode classifier
+✻ Orbiting… (4s · ↓ 50 tokens)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · esc to interrupt · ← for agents

@@ -10,8 +10,6 @@ ok - T8 bootstrap sweeps live homes and sends exactly one marked nudge for the i
 ok - T8a bootstrap nudge send respects FM_STATE_OVERRIDE
 ok - T8f bootstrap nudge retry rejects malformed marker ids
 ok - T8c failed bootstrap nudge is surfaced and recorded for retry
-ok - T8g bootstrap defers the re-read nudge while the mate waits on its decision
-ok - T8h a deferred nudge is classified by exit status, not by the first line of output
 ok - T8d bootstrap nudge retry is idempotent after success
 ok - T8e bootstrap nudge retry refuses a changed home instead of guessing
 ok - T8b a stale herdr endpoint cannot lose a durably enqueued nudge, and fm-<id> resolves through post-respawn metadata

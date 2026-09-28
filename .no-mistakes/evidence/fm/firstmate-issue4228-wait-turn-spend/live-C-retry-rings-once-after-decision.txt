@@ -1,0 +1,23 @@
+$ printf 'resolved [key=pick]: alpha' >> state/sm1.status   # firstmate answered
+$ (watcher poll) inbox_steer_check lab:fm-t1 sm1
+check rc=0
+retry mark: spent (absent)
+$ (second watcher poll)
+check rc=0
+$ (third watcher poll)
+check rc=0
+--- triage log:
+[2026-09-28T15:48:45+0200] steer-inbox retry ring: sm1 001.msg result=0
+--- worker pane:
+ ▐▛███▛█   Claude Code v2.1.283
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.7zPA7q/work
+❯ : Firstmate instruction waiting: list '/tmp/fm-lab.7zPA7q/state/sm1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to
+  '/tmp/fm-lab.7zPA7q/state/sm1.inbox'/handled/.
+● Bash(cd '/tmp/fm-lab.7zPA7q/state/sm1.inbox' && ls -1 *.msg | sort -n; for f in $(ls -1 *.msg | sort -n); do echo "=== $f"; cat "$f"; done)
+  ⎿  Waiting…
+✢ Sock-hopping… (4s · ↓ 50 tokens)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · esc to interrupt · ← for agents

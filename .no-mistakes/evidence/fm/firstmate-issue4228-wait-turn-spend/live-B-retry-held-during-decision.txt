@@ -1,0 +1,13 @@
+$ printf 'needs-decision [key=pick]: ship alpha or beta?' >> state/sm1.status   # worker waits on its own decision
+$ (watcher poll) inbox_steer_check lab:fm-t1 sm1  x2
+check rc=0
+check rc=0
+retry mark still present: 001.msg
+--- worker pane after two polls (no doorbell expected):
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.7zPA7q/work
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Try "create a util logging.py that..."
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+--- triage log:

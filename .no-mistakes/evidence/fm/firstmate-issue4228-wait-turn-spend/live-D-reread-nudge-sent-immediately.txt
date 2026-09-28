@@ -1,0 +1,21 @@
+$ printf 'needs-decision [key=scope]: widen scope?' >> state/sm1.status   # mate waits on its own decision
+$ bin/fm-send.sh fm-sm1 "$FM_SECOND_MATE_NUDGE_MESSAGE"   # the instruction re-read nudge
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.7zPA7q
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+rc=0
+$ ls -A state/sm1.inbox
+002.msg
+handled
+--- worker pane (doorbell expected immediately):
+  Everything is consistent, so I didn't change any files or append anything to sm1.status. If firstmate meant a different ledger by "books", I'll need to be told which one.
+✻ Brewed for 31s · done 3:49 PM
+❯ : Firstmate instruction waiting: list '/tmp/fm-lab.7zPA7q/state/sm1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to
+  '/tmp/fm-lab.7zPA7q/state/sm1.inbox'/handled/.
+● Bash(cd '/tmp/fm-lab.7zPA7q/state/sm1.inbox' && for f in $(ls -1 *.msg 2>/dev/null | sort -n); do echo "=== $f"; cat "$f"; done; ls -R)
+  ⎿  Waiting…
+✻ Recombobulating… (4s · ↓ 50 tokens)
+  ⎿  Tip: Name your conversations with /rename to find them easily in /resume later
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · esc to interrupt · ← for agents

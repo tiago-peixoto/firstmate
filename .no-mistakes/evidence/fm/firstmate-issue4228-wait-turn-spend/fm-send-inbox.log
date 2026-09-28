@@ -12,4 +12,3 @@ ok - fm-send inbox: lost reply bookkeeping never invites a resend, and the deliv
 ok - fm-send inbox: metadata lock contention fails bounded without enqueue
 ok - fm-send inbox: an unwritable record is a loud local failure that leaves no false expectation
 ok - fm-send: an empty or whitespace-only text steer refuses before marking, recording, or typing
-ok - fm-send inbox: an automatic send defers while the worker's own decision is open, and the answer still wakes it
