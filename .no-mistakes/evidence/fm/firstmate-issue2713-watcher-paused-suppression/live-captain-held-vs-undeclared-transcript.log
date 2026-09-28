@@ -1,0 +1,63 @@
+[t+3s] WATCHER EXITED rc=0, stdout:
+signal: /tmp/fm-lab.3A21kP/state/held.status /tmp/fm-lab.3A21kP/state/plain.status
+    queue: 1790568191	16	signal	held.status	needs-decision: /tmp/fm-lab.3A21kP/state/held.status /tmp/fm-lab.3A21kP/state/plain.status
+    queue: 1790568191	17	signal	plain.status	signal: /tmp/fm-lab.3A21kP/state/held.status /tmp/fm-lab.3A21kP/state/plain.status
+    queue: wake annotation: latest wake-EVENT observed at drain, not current state: held.status: captain-held: merge-policy question handed to the captain
+    queue: wake annotation: latest wake-EVENT observed at drain, not current state: plain.status: working: tidying the test fixtures
+    (acked through 17)
+[t+12s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-held
+    queue: 1790568201	18	stale	lab:fm-held	stale: lab:fm-held
+    (acked through 18)
+[t+15s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+    queue: 1790568204	19	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 19)
+[t+18s] churned all three panes (pane text changed, no new status line)
+[t+25s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+    queue: 1790568213	20	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 20)
+[t+27s] churned all three panes (pane text changed, no new status line)
+[t+34s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+    queue: 1790568223	21	stale	lab:fm-plain	stale: lab:fm-plain
+[t+36s] churned all three panes (pane text changed, no new status line)
+    (acked through 21)
+[t+44s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+[t+45s] churned all three panes (pane text changed, no new status line)
+    queue: 1790568232	22	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 22)
+[t+54s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+[t+54s] churned all three panes (pane text changed, no new status line)
+    queue: 1790568242	23	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 23)
+[t+63s] churned all three panes (pane text changed, no new status line)
+[t+69s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+    queue: 1790568258	24	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 24)
+[t+72s] churned all three panes (pane text changed, no new status line)
+[t+73s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-held (captain-held 74s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+    queue: 1790568262	25	stale	lab:fm-held	stale: lab:fm-held (captain-held 74s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+    (acked through 25)
+[t+81s] churned all three panes (pane text changed, no new status line)
+[t+89s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+[t+90s] churned all three panes (pane text changed, no new status line)
+    queue: 1790568278	26	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 26)
+[t+98s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+[t+99s] churned all three panes (pane text changed, no new status line)
+    queue: 1790568287	27	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 27)
+[t+108s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-plain
+[t+108s] churned all three panes (pane text changed, no new status line)
+    queue: 1790568296	28	stale	lab:fm-plain	stale: lab:fm-plain
+    (acked through 28)
+[t+110s] watcher still running at end of window (no further wake)

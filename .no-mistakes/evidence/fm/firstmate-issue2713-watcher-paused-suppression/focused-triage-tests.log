@@ -1,0 +1,5 @@
+ok - a resurfaced declared wait whose crew resumes provable work on a new hash clears pause tracking without a recheck
+ok - declared waits alert once, then recheck on the bounded cadence for alive, unknown, and dead agents
+ok - a declared pause alerts once on first stale sight, then re-surfaces on the bounded cadence without wedge escalation
+ok - a parked live worker alerts once, absorbs pane churn until the cadence recheck, then absorbs churn again
+ok - a paused status overridden by authoritative working preserves its wedge timer, is rechecked rather than wedge-escalated while the declaration stands, and escalates once it is lifted

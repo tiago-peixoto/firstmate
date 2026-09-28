@@ -1,0 +1,30 @@
+== lab=/tmp/fm-lab.FvxKQ2 mode=dead verb=paused pane_cmd=bash
+== pane:
+held$
+    t+0s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+3s] WAKE: signal: /tmp/fm-lab.FvxKQ2/state/held.status 
+    queued: 1790568799	2	signal	held.status	signal: /tmp/fm-lab.FvxKQ2/state/held.status
+    queued: wake annotation: latest wake-EVENT observed at drain, not current state: held.status: paused: waiting on upstream tool release
+    t+4s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+10s] WAKE: stale: crew:fm-held 
+    queued: 1790568806	3	stale	crew:fm-held	stale: crew:fm-held
+    t+11s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+11s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+16s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+21s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+26s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+31s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+[t+35s] WAKE: stale: crew:fm-held (paused 35s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+    queued: 1790568832	4	stale	crew:fm-held	stale: crew:fm-held (paused 35s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    t+37s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+37s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+42s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+47s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+52s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+57s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+[t+61s] WAKE: stale: crew:fm-held (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+    queued: 1790568857	5	stale	crew:fm-held	stale: crew:fm-held (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    t+62s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+62s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+67s state: paused=y resurfaced=y wedge-timer(.stale-since)=n

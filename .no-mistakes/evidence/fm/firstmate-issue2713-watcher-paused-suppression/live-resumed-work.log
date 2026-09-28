@@ -1,0 +1,27 @@
+== lab=/tmp/fm-lab.4Q4lai mode=dead verb=paused pane_cmd=bash
+== pane:
+held$
+    t+0s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+3s] WAKE: signal: /tmp/fm-lab.4Q4lai/state/held.status 
+    queued: 1790568968	2	signal	held.status	signal: /tmp/fm-lab.4Q4lai/state/held.status
+    queued: wake annotation: latest wake-EVENT observed at drain, not current state: held.status: paused: waiting on upstream tool release
+    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+9s] WAKE: stale: crew:fm-held 
+    queued: 1790568974	3	stale	crew:fm-held	stale: crew:fm-held
+    t+10s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+10s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+15s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+20s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+25s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+30s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+[t+34s] WAKE: stale: crew:fm-held (paused 34s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+    queued: 1790568999	4	stale	crew:fm-held	stale: crew:fm-held (paused 34s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    t+35s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+35s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+== [t+40s] crew resumes provable work (new pane output; crew-state reports working via run-step), no new status line
+    t+40s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+[t+40s] WAKE: check: rearm-resurface 
+    t+40s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+45s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+50s state: paused=n resurfaced=n wedge-timer(.stale-since)=y

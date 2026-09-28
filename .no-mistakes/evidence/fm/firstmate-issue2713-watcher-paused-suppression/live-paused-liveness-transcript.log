@@ -1,0 +1,51 @@
+[t+5s] WATCHER EXITED rc=0, stdout:
+signal: /tmp/fm-lab.3A21kP/state/alive.status /tmp/fm-lab.3A21kP/state/dead.status /tmp/fm-lab.3A21kP/state/unknown.status
+    queue: 1790568037	4	signal	alive.status	signal: /tmp/fm-lab.3A21kP/state/alive.status /tmp/fm-lab.3A21kP/state/dead.status /tmp/fm-lab.3A21kP/state/unknown.status
+    queue: 1790568037	5	signal	dead.status	signal: /tmp/fm-lab.3A21kP/state/alive.status /tmp/fm-lab.3A21kP/state/dead.status /tmp/fm-lab.3A21kP/state/unknown.status
+    queue: 1790568037	6	signal	unknown.status	signal: /tmp/fm-lab.3A21kP/state/alive.status /tmp/fm-lab.3A21kP/state/dead.status /tmp/fm-lab.3A21kP/state/unknown.status
+    queue: wake annotation: latest wake-EVENT observed at drain, not current state: alive.status: paused: waiting on upstream CI for alive
+    queue: wake annotation: latest wake-EVENT observed at drain, not current state: dead.status: paused: waiting on upstream CI for dead
+    queue: wake annotation: latest wake-EVENT observed at drain, not current state: unknown.status: paused: waiting on upstream CI for unknown
+    (acked through 6)
+[t+15s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-alive
+    queue: 1790568048	7	stale	lab:fm-alive	stale: lab:fm-alive
+    (acked through 7)
+[t+18s] churned all three panes (pane text changed, no new status line)
+[t+26s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-dead
+    queue: 1790568058	8	stale	lab:fm-dead	stale: lab:fm-dead
+[t+27s] churned all three panes (pane text changed, no new status line)
+    (acked through 8)
+[t+36s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-unknown
+[t+36s] churned all three panes (pane text changed, no new status line)
+    queue: 1790568069	9	stale	lab:fm-unknown	stale: lab:fm-unknown
+    (acked through 9)
+[t+45s] churned all three panes (pane text changed, no new status line)
+[t+54s] churned all three panes (pane text changed, no new status line)
+[t+63s] churned all three panes (pane text changed, no new status line)
+[t+72s] churned all three panes (pane text changed, no new status line)
+[t+75s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-alive (paused 136s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    queue: 1790568108	10	stale	lab:fm-alive	stale: lab:fm-alive (paused 136s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    (acked through 10)
+[t+81s] churned all three panes (pane text changed, no new status line)
+[t+89s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-dead (paused 150s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t+90s] churned all three panes (pane text changed, no new status line)
+    queue: 1790568122	11	stale	lab:fm-dead	stale: lab:fm-dead (paused 150s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    (acked through 11)
+[t+100s] churned all three panes (pane text changed, no new status line)
+[t+100s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-unknown (paused 161s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    queue: 1790568133	12	stale	lab:fm-unknown	stale: lab:fm-unknown (paused 161s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    (acked through 12)
+[t+109s] churned all three panes (pane text changed, no new status line)
+[t+118s] churned all three panes (pane text changed, no new status line)
+[t+127s] churned all three panes (pane text changed, no new status line)
+[t+136s] churned all three panes (pane text changed, no new status line)
+[t+138s] WATCHER EXITED rc=0, stdout:
+stale: lab:fm-alive (paused 198s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    queue: 1790568171	13	stale	lab:fm-alive	stale: lab:fm-alive (paused 198s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    (acked through 13)

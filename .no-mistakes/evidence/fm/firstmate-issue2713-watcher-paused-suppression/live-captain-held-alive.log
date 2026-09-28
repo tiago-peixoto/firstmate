@@ -1,0 +1,29 @@
+== lab=/tmp/fm-lab.CKqzmi mode=alive verb=captain pane_cmd=claude
+== pane:
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Accessing workspace:
+ /tmp/fm-lab.CKqzmi/work
+ Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source
+ project, or work from your team). If not, take a moment to review what's in this folder first.
+ Claude Code'll be able to read, edit, and execute files here.
+ Security guide
+ ❯ No, exit
+    t+0s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+3s] WAKE: signal: /tmp/fm-lab.CKqzmi/state/held.status 
+    queued: 1790568879	2	signal	held.status	needs-decision: /tmp/fm-lab.CKqzmi/state/held.status
+    queued: wake annotation: latest wake-EVENT observed at drain, not current state: held.status: captain-held: needs captain sign-off on the release plan
+    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+    t+10s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+10s] WAKE: stale: crew:fm-held 
+    queued: 1790568886	3	stale	crew:fm-held	stale: crew:fm-held
+    t+11s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+15s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+20s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+25s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+30s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+35s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+[t+37s] WAKE: stale: crew:fm-held (captain-held 36s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+    queued: 1790568912	4	stale	crew:fm-held	stale: crew:fm-held (captain-held 36s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+    t+38s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+40s state: paused=y resurfaced=y wedge-timer(.stale-since)=n

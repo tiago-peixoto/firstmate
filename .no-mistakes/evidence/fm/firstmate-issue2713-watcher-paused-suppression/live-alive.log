@@ -1,0 +1,37 @@
+== lab=/tmp/fm-lab.kimhB5 mode=alive verb=paused pane_cmd=claude
+== pane:
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Accessing workspace:
+ /tmp/fm-lab.kimhB5/work
+ Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source
+ project, or work from your team). If not, take a moment to review what's in this folder first.
+ Claude Code'll be able to read, edit, and execute files here.
+ Security guide
+ ❯ No, exit
+    t+0s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+3s] WAKE: signal: /tmp/fm-lab.kimhB5/state/held.status 
+    queued: 1790568879	2	signal	held.status	signal: /tmp/fm-lab.kimhB5/state/held.status
+    queued: wake annotation: latest wake-EVENT observed at drain, not current state: held.status: paused: waiting on upstream tool release
+    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+    t+10s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
+[t+10s] WAKE: stale: crew:fm-held 
+    queued: 1790568886	3	stale	crew:fm-held	stale: crew:fm-held
+    t+11s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+15s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+20s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+25s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+30s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+35s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+[t+37s] WAKE: stale: crew:fm-held (paused 36s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+    queued: 1790568912	4	stale	crew:fm-held	stale: crew:fm-held (paused 36s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    t+39s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+40s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+45s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+50s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+55s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+60s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+[t+62s] WAKE: stale: crew:fm-held (paused 62s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+    queued: 1790568938	5	stale	crew:fm-held	stale: crew:fm-held (paused 62s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    t+64s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
+    t+65s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
