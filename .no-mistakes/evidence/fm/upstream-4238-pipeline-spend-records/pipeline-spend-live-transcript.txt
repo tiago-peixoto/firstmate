@@ -1,0 +1,554 @@
+=== Scenario A: flag absent (default) ===
+$ ls /tmp/fm-lab.L0dI4Q/config
+[exit 0]
+$ env SHIM_REPO=/tmp/fm-lab.L0dI4Q/proj env -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE FM_HOME=/tmp/fm-lab.L0dI4Q NM_HOME=/tmp/fm-lab.L0dI4Q/nm PATH=/tmp/fm-lab.L0dI4Q/shim:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/go/bin:/home/firstmate/.cargo/bin:/home/firstmate/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/snap/bin /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3MQCJDMQ8RZGQW5TZKBY2QE/bin/fm-pipeline-spend.sh record ps-demo
+[exit 0]
+$ ls /tmp/fm-lab.L0dI4Q/data
+[exit 0]
+$ bash -c cat /tmp/fm-lab.L0dI4Q/nm-calls.log 2>/dev/null || echo '(no no-mistakes calls)'
+(no no-mistakes calls)
+[exit 0]
+=== Scenario B: opt in, real no-mistakes CLI, repo not initialized -> unavailable ===
+$ touch /tmp/fm-lab.L0dI4Q/config/pipeline-spend
+[exit 0]
+$ env -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE FM_HOME=/tmp/fm-lab.L0dI4Q NM_HOME=/tmp/fm-lab.L0dI4Q/nm PATH=/tmp/fm-lab.L0dI4Q/shim:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/go/bin:/home/firstmate/.cargo/bin:/home/firstmate/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/snap/bin /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3MQCJDMQ8RZGQW5TZKBY2QE/bin/fm-pipeline-spend.sh record ps-real
+recorded ps-real sREAL.1
+[exit 0]
+=== Scenario C: opt in, spend attributed from real-schema state db ===
+$ env SHIM_REPO=/tmp/fm-lab.L0dI4Q/proj env -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE FM_HOME=/tmp/fm-lab.L0dI4Q NM_HOME=/tmp/fm-lab.L0dI4Q/nm PATH=/tmp/fm-lab.L0dI4Q/shim:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/go/bin:/home/firstmate/.cargo/bin:/home/firstmate/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/snap/bin /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3MQCJDMQ8RZGQW5TZKBY2QE/bin/fm-pipeline-spend.sh record ps-demo
+recorded ps-demo s1790623344.1.abc
+[exit 0]
+=== Scenario D: repeat record is deduplicated; new incarnation appends ===
+$ env SHIM_REPO=/tmp/fm-lab.L0dI4Q/proj env -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE FM_HOME=/tmp/fm-lab.L0dI4Q NM_HOME=/tmp/fm-lab.L0dI4Q/nm PATH=/tmp/fm-lab.L0dI4Q/shim:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/go/bin:/home/firstmate/.cargo/bin:/home/firstmate/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/snap/bin /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3MQCJDMQ8RZGQW5TZKBY2QE/bin/fm-pipeline-spend.sh record ps-demo
+already recorded ps-demo s1790623344.1.abc
+[exit 0]
+$ wc -l /tmp/fm-lab.L0dI4Q/data/pipeline-spend.jsonl
+2 /tmp/fm-lab.L0dI4Q/data/pipeline-spend.jsonl
+[exit 0]
+$ env SHIM_REPO=/tmp/fm-lab.L0dI4Q/proj env -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE FM_HOME=/tmp/fm-lab.L0dI4Q NM_HOME=/tmp/fm-lab.L0dI4Q/nm PATH=/tmp/fm-lab.L0dI4Q/shim:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/go/bin:/home/firstmate/.cargo/bin:/home/firstmate/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/snap/bin /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3MQCJDMQ8RZGQW5TZKBY2QE/bin/fm-pipeline-spend.sh record ps-demo
+recorded ps-demo s1790623344.1.abc-relaunch
+[exit 0]
+$ wc -l /tmp/fm-lab.L0dI4Q/data/pipeline-spend.jsonl
+3 /tmp/fm-lab.L0dI4Q/data/pipeline-spend.jsonl
+[exit 0]
+=== Scenario E: state db untouched (read-only) ===
+$ sha256sum -c /tmp/fm-lab.L0dI4Q/db.sha
+/tmp/fm-lab.L0dI4Q/nm/state.sqlite: OK
+[exit 0]
+=== Scenario F: flag removed again leaves existing ledger untouched ===
+$ rm /tmp/fm-lab.L0dI4Q/config/pipeline-spend
+[exit 0]
+$ env SHIM_REPO=/tmp/fm-lab.L0dI4Q/proj env -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE FM_HOME=/tmp/fm-lab.L0dI4Q NM_HOME=/tmp/fm-lab.L0dI4Q/nm PATH=/tmp/fm-lab.L0dI4Q/shim:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/.local/share/mise/shims:/home/firstmate/.local/bin:/home/firstmate/.local/bin:/home/firstmate/go/bin:/home/firstmate/.cargo/bin:/home/firstmate/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/snap/bin /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3MQCJDMQ8RZGQW5TZKBY2QE/bin/fm-pipeline-spend.sh record ps-demo
+[exit 0]
+$ sha256sum -c /tmp/fm-lab.L0dI4Q/ledger.sha
+/tmp/fm-lab.L0dI4Q/data/pipeline-spend.jsonl: OK
+[exit 0]
+=== Ledger contents ===
+{
+ "task": "ps-real",
+ "spawn_gen": "sREAL.1",
+ "recorded_at": "2026-09-28T19:22:24Z",
+ "source": "no-mistakes-state",
+ "reason": null,
+ "repo": "/tmp/fm-lab.L0dI4Q/proj",
+ "branch": "fm/ps-demo",
+ "since": "2026-09-28T19:21:52Z",
+ "total": {
+  "invocations": 5,
+  "exit": {
+   "ok": 3,
+   "error": 1,
+   "cancelled": 1
+  },
+  "duration_ms": 5300,
+  "input_tokens": {
+   "total": 640,
+   "unknown": 1
+  },
+  "output_tokens": {
+   "total": 64,
+   "unknown": 1
+  },
+  "cache_read_tokens": {
+   "total": 6000,
+   "unknown": 1
+  },
+  "cache_creation_tokens": {
+   "total": 125,
+   "unknown": 2
+  }
+ },
+ "runs": [
+  {
+   "id": "run1",
+   "status": "failed",
+   "created_at": "2026-09-28T19:22:02Z",
+   "invocations": 2,
+   "exit": {
+    "ok": 1,
+    "error": 1
+   },
+   "duration_ms": 1500,
+   "input_tokens": {
+    "total": 100,
+    "unknown": 1
+   },
+   "output_tokens": {
+    "total": 10,
+    "unknown": 1
+   },
+   "cache_read_tokens": {
+    "total": 1000,
+    "unknown": 1
+   },
+   "cache_creation_tokens": {
+    "total": 50,
+    "unknown": 1
+   }
+  },
+  {
+   "id": "run2",
+   "status": "completed",
+   "created_at": "2026-09-28T19:22:12Z",
+   "invocations": 3,
+   "exit": {
+    "ok": 2,
+    "cancelled": 1
+   },
+   "duration_ms": 3800,
+   "input_tokens": {
+    "total": 540,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 54,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 5000,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 75,
+    "unknown": 1
+   }
+  }
+ ],
+ "purposes": [
+  {
+   "purpose": "review",
+   "invocations": 3,
+   "exit": {
+    "ok": 3
+   },
+   "duration_ms": 4500,
+   "input_tokens": {
+    "total": 600,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 60,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 6000,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 120,
+    "unknown": 1
+   }
+  },
+  {
+   "purpose": "review-fix",
+   "invocations": 1,
+   "exit": {
+    "error": 1
+   },
+   "duration_ms": 500,
+   "input_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "output_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "cache_read_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "cache_creation_tokens": {
+    "total": 0,
+    "unknown": 1
+   }
+  },
+  {
+   "purpose": "test",
+   "invocations": 1,
+   "exit": {
+    "cancelled": 1
+   },
+   "duration_ms": 300,
+   "input_tokens": {
+    "total": 40,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 4,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 0,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 5,
+    "unknown": 0
+   }
+  }
+ ]
+}
+{
+ "task": "ps-demo",
+ "spawn_gen": "s1790623344.1.abc",
+ "recorded_at": "2026-09-28T19:22:24Z",
+ "source": "no-mistakes-state",
+ "reason": null,
+ "repo": "/tmp/fm-lab.L0dI4Q/proj",
+ "branch": "fm/ps-demo",
+ "since": "2026-09-28T19:21:52Z",
+ "total": {
+  "invocations": 5,
+  "exit": {
+   "ok": 3,
+   "error": 1,
+   "cancelled": 1
+  },
+  "duration_ms": 5300,
+  "input_tokens": {
+   "total": 640,
+   "unknown": 1
+  },
+  "output_tokens": {
+   "total": 64,
+   "unknown": 1
+  },
+  "cache_read_tokens": {
+   "total": 6000,
+   "unknown": 1
+  },
+  "cache_creation_tokens": {
+   "total": 125,
+   "unknown": 2
+  }
+ },
+ "runs": [
+  {
+   "id": "run1",
+   "status": "failed",
+   "created_at": "2026-09-28T19:22:02Z",
+   "invocations": 2,
+   "exit": {
+    "ok": 1,
+    "error": 1
+   },
+   "duration_ms": 1500,
+   "input_tokens": {
+    "total": 100,
+    "unknown": 1
+   },
+   "output_tokens": {
+    "total": 10,
+    "unknown": 1
+   },
+   "cache_read_tokens": {
+    "total": 1000,
+    "unknown": 1
+   },
+   "cache_creation_tokens": {
+    "total": 50,
+    "unknown": 1
+   }
+  },
+  {
+   "id": "run2",
+   "status": "completed",
+   "created_at": "2026-09-28T19:22:12Z",
+   "invocations": 3,
+   "exit": {
+    "ok": 2,
+    "cancelled": 1
+   },
+   "duration_ms": 3800,
+   "input_tokens": {
+    "total": 540,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 54,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 5000,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 75,
+    "unknown": 1
+   }
+  }
+ ],
+ "purposes": [
+  {
+   "purpose": "review",
+   "invocations": 3,
+   "exit": {
+    "ok": 3
+   },
+   "duration_ms": 4500,
+   "input_tokens": {
+    "total": 600,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 60,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 6000,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 120,
+    "unknown": 1
+   }
+  },
+  {
+   "purpose": "review-fix",
+   "invocations": 1,
+   "exit": {
+    "error": 1
+   },
+   "duration_ms": 500,
+   "input_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "output_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "cache_read_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "cache_creation_tokens": {
+    "total": 0,
+    "unknown": 1
+   }
+  },
+  {
+   "purpose": "test",
+   "invocations": 1,
+   "exit": {
+    "cancelled": 1
+   },
+   "duration_ms": 300,
+   "input_tokens": {
+    "total": 40,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 4,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 0,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 5,
+    "unknown": 0
+   }
+  }
+ ]
+}
+{
+ "task": "ps-demo",
+ "spawn_gen": "s1790623344.1.abc-relaunch",
+ "recorded_at": "2026-09-28T19:22:25Z",
+ "source": "no-mistakes-state",
+ "reason": null,
+ "repo": "/tmp/fm-lab.L0dI4Q/proj",
+ "branch": "fm/ps-demo",
+ "since": "2026-09-28T19:21:52Z",
+ "total": {
+  "invocations": 5,
+  "exit": {
+   "ok": 3,
+   "error": 1,
+   "cancelled": 1
+  },
+  "duration_ms": 5300,
+  "input_tokens": {
+   "total": 640,
+   "unknown": 1
+  },
+  "output_tokens": {
+   "total": 64,
+   "unknown": 1
+  },
+  "cache_read_tokens": {
+   "total": 6000,
+   "unknown": 1
+  },
+  "cache_creation_tokens": {
+   "total": 125,
+   "unknown": 2
+  }
+ },
+ "runs": [
+  {
+   "id": "run1",
+   "status": "failed",
+   "created_at": "2026-09-28T19:22:02Z",
+   "invocations": 2,
+   "exit": {
+    "ok": 1,
+    "error": 1
+   },
+   "duration_ms": 1500,
+   "input_tokens": {
+    "total": 100,
+    "unknown": 1
+   },
+   "output_tokens": {
+    "total": 10,
+    "unknown": 1
+   },
+   "cache_read_tokens": {
+    "total": 1000,
+    "unknown": 1
+   },
+   "cache_creation_tokens": {
+    "total": 50,
+    "unknown": 1
+   }
+  },
+  {
+   "id": "run2",
+   "status": "completed",
+   "created_at": "2026-09-28T19:22:12Z",
+   "invocations": 3,
+   "exit": {
+    "ok": 2,
+    "cancelled": 1
+   },
+   "duration_ms": 3800,
+   "input_tokens": {
+    "total": 540,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 54,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 5000,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 75,
+    "unknown": 1
+   }
+  }
+ ],
+ "purposes": [
+  {
+   "purpose": "review",
+   "invocations": 3,
+   "exit": {
+    "ok": 3
+   },
+   "duration_ms": 4500,
+   "input_tokens": {
+    "total": 600,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 60,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 6000,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 120,
+    "unknown": 1
+   }
+  },
+  {
+   "purpose": "review-fix",
+   "invocations": 1,
+   "exit": {
+    "error": 1
+   },
+   "duration_ms": 500,
+   "input_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "output_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "cache_read_tokens": {
+    "total": 0,
+    "unknown": 1
+   },
+   "cache_creation_tokens": {
+    "total": 0,
+    "unknown": 1
+   }
+  },
+  {
+   "purpose": "test",
+   "invocations": 1,
+   "exit": {
+    "cancelled": 1
+   },
+   "duration_ms": 300,
+   "input_tokens": {
+    "total": 40,
+    "unknown": 0
+   },
+   "output_tokens": {
+    "total": 4,
+    "unknown": 0
+   },
+   "cache_read_tokens": {
+    "total": 0,
+    "unknown": 0
+   },
+   "cache_creation_tokens": {
+    "total": 5,
+    "unknown": 0
+   }
+  }
+ ]
+}
+$ stat -c %a %n /tmp/fm-lab.L0dI4Q/data/pipeline-spend.jsonl
+600 /tmp/fm-lab.L0dI4Q/data/pipeline-spend.jsonl
+[exit 0]
+=== Scenario B note: real no-mistakes axi (no shim) from the task copy resolves the repo from the seeded state db ===
+[33mA new version of no-mistakes is available: v1.83.2 -> v1.84.0
+Run "no-mistakes update" to update[0m
+bin: ~/.local/bin/no-mistakes
+description: "Validate your code changes through the no-mistakes pipeline - automated code review, tests, lint, docs, push, PR, and CI - before they reach the configured push target. Use when the user asks to run no-mistakes, gate or ship or validate their changes, push safely, asks you to do a task and then validate it, or invokes /no-mistakes."
+repo: /tmp/fm-lab.L0dI4Q/proj
+=== Scenario G: opt in, real no-mistakes CLI, unregistered repo -> source unavailable, never zero ===
+recorded ps-unreg sU.1
+[exit 0]
+{"task":"ps-unreg","spawn_gen":"sU.1","recorded_at":"2026-09-28T19:22:36Z","source":"unavailable","reason":"no-mistakes resolved no repository for the task copy: error: repo not initialized (run 'no-mistakes init' first)","repo":null,"branch":"fm/ps-unreg","since":"2026-09-28T19:22:35Z","total":null,"runs":[],"purposes":[]}
