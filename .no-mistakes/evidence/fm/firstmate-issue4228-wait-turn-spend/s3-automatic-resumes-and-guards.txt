@@ -1,0 +1,12 @@
+$ fm-send.sh t1 --automatic --resolve-key pick "x"
+error: --automatic cannot accompany --key or --resolve-key
+exit=1
+$ fm-send.sh fleet:fm-t1 --automatic "x"   # explicit backend target, no ledger
+error: --automatic needs a task selector resolved through this home's metadata
+exit=1
+# append a relayed captain hold (not the worker's own wait)
+$ fm-send.sh t1 --automatic "Automatic nudge: reply with just the word NUDGED."
+exit=0
+$ ls state/t1.inbox
+002.msg
+handled

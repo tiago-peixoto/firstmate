@@ -1,0 +1,10 @@
+  ⎿  Allowed by auto mode classifier
+● Bash(mv '/tmp/fm-lab.v2eYFg/state/t1.inbox/002.msg' '/tmp/fm-lab.v2eYFg/state/t1.inbox/handled/')
+  ⎿  Done
+  ⎿  Allowed by auto mode classifier
+● NUDGED
+✻ Crunched for 7s · done 7:42 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

@@ -1,0 +1,42 @@
+## 07:43:52 worker has raised its decision and ended its turn:
+working: started
+needs-decision [key=colour]: red or blue?
+  ⎿  Allowed by auto mode classifier
+● I've asked which colour to use, red or blue, by adding the decision line to the status file. Once the answer arrives, I'll write the chosen colour to
+  /tmp/fm-lab.v2eYFg/work/colour.txt.
+✻ Brewed for 9s · done 7:43 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+## 07:43:52 automatic re-read nudge while it waits:
+deferred: t1 is waiting on its open decision or blocker (colour); nothing was sent
+exit=4
+## 07:44:53 pane 60s later (no new turn expected; still 'done 7:43'):
+  ⎿  Allowed by auto mode classifier
+● I've asked which colour to use, red or blue, by adding the decision line to the status file. Once the answer arrives, I'll write the chosen colour to
+  /tmp/fm-lab.v2eYFg/work/colour.txt.
+✻ Brewed for 9s · done 7:43 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+## inbox pending records:
+ls: cannot access '/tmp/fm-lab.v2eYFg/state/t1.inbox/*.msg': No such file or directory
+## 07:44:53 firstmate answers:
+exit=0
+## 07:45:25 pane after answer:
+  ⎿  (what this command changed; a convenience view, not a review or audit of the command)
+  ⎿  Allowed by auto mode classifier
+● The answer was blue, so I wrote blue to /tmp/fm-lab.v2eYFg/work/colour.txt and moved the message to handled/.
+✻ Worked for 9s · done 7:45 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+## colour.txt:
+blue
+## status:
+working: started
+needs-decision [key=colour]: red or blue?
+resolved [key=colour] [at=1790574293]: answered: blue

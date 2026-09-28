@@ -1,0 +1,14 @@
+     === 001.msg
+     schema=fm-task-inbox.v1
+     … +3 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /tmp/fm-lab.v2eYFg/work
+  ⎿  Allowed by auto mode classifier
+● Bash(mkdir -p '/tmp/fm-lab.v2eYFg/state/t1.inbox/handled' && mv '/tmp/fm-lab.v2eYFg/state/t1.inbox/001.msg' '/tmp/fm-lab.v2eYFg/state/t1.inbox/handled/')
+  ⎿  Done
+  ⎿  Allowed by auto mode classifier
+● OK
+✻ Cooked for 8s · done 7:42 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

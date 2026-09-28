@@ -1,0 +1,13 @@
+$ fm-send.sh t1 --automatic "re-read your instructions"   # t1 status has open needs-decision [key=pick]
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.v2eYFg
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+deferred: t1 is waiting on its open decision or blocker (pick); nothing was sent
+exit=4
+$ ls state/t1.inbox
+ls: cannot access '/tmp/fm-lab.v2eYFg/state/t1.inbox': No such file or directory

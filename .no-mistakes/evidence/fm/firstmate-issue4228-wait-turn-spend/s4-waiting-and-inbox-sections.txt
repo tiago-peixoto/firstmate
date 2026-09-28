@@ -1,0 +1,51 @@
+== ship1
+# Waiting
+Every turn you take resends your whole context, so a wait must cost no turns.
+After you append `needs-decision:` or `blocked:`, end your turn at once: do not check the inbox, the status file, or anything else, because the answer arrives as a terminal message that starts your next turn.
+Wait on anything external - a pipeline gate, PR checks, a heavy-test slot - with ONE blocking shell command that returns when the state changes: `no-mistakes axi run` or `respond` with `--wait`, `gh pr checks <pr> --watch`, or `until <condition>; do sleep 30; done` for anything else.
+Never spend turns on `sleep` followed by a status check, and never background a command in order to poll it.
+In Claude Code that `until` loop in a single Bash call is the sanctioned foreground wait: when the harness refuses a sleep-then-check command and points you at backgrounding instead, reissue the wait as the loop rather than accepting the background.
+Bound that command by what your harness lets one command run: in Pi pass the bash tool a `timeout` of at most 2700 seconds, because Pi sets none by default; in Claude Code pass the Bash tool its maximum `timeout` of 600000 ms, because its default is 2 minutes; in Codex keep waiting on a still-running command with empty `write_stdin` polls of up to 300000 ms; elsewhere pass your shell tool its largest timeout and assume at most 10 minutes.
+Give any `--wait` a duration a little under that bound.
+When the bound passes with nothing changed, run the same blocking command again, with no status check in between.
+The one exception is `respond`: it sent its answer before it began waiting, so reattach with `no-mistakes axi run --wait` instead, and never send the same `respond` again, because it would answer whichever gate parks next without you reading it.
+A wait your shell can watch this way needs no `paused:` line, except your own pipeline run, a long foreground command, or your own validation round, which you declare once just before its blocking hold: append `paused:` once just before its first blocking command, then stay in the command, and never append it again as you reissue that command.
+
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.v2eYFg/state/ship1.inbox'.
+When a terminal message says an instruction is waiting there, list '/tmp/fm-lab.v2eYFg/state/ship1.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm-lab.v2eYFg/state/ship1.inbox'/NNN.msg '/tmp/fm-lab.v2eYFg/state/ship1.inbox'/handled/`.
+The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+Every waiting instruction rings, so never list the inbox on your own.
+
+# Project memory
+== scout1
+# Waiting
+Every turn you take resends your whole context, so a wait must cost no turns.
+After you append `needs-decision:` or `blocked:`, end your turn at once: do not check the inbox, the status file, or anything else, because the answer arrives as a terminal message that starts your next turn.
+Wait on anything external - a pipeline gate, PR checks, a heavy-test slot - with ONE blocking shell command that returns when the state changes: `no-mistakes axi run` or `respond` with `--wait`, `gh pr checks <pr> --watch`, or `until <condition>; do sleep 30; done` for anything else.
+Never spend turns on `sleep` followed by a status check, and never background a command in order to poll it.
+In Claude Code that `until` loop in a single Bash call is the sanctioned foreground wait: when the harness refuses a sleep-then-check command and points you at backgrounding instead, reissue the wait as the loop rather than accepting the background.
+Bound that command by what your harness lets one command run: in Pi pass the bash tool a `timeout` of at most 2700 seconds, because Pi sets none by default; in Claude Code pass the Bash tool its maximum `timeout` of 600000 ms, because its default is 2 minutes; in Codex keep waiting on a still-running command with empty `write_stdin` polls of up to 300000 ms; elsewhere pass your shell tool its largest timeout and assume at most 10 minutes.
+Give any `--wait` a duration a little under that bound.
+When the bound passes with nothing changed, run the same blocking command again, with no status check in between.
+The one exception is `respond`: it sent its answer before it began waiting, so reattach with `no-mistakes axi run --wait` instead, and never send the same `respond` again, because it would answer whichever gate parks next without you reading it.
+A wait your shell can watch this way needs no `paused:` line, except your own pipeline run, a long foreground command, or your own validation round, which you declare once just before its blocking hold: append `paused:` once just before its first blocking command, then stay in the command, and never append it again as you reissue that command.
+
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.v2eYFg/state/scout1.inbox'.
+When a terminal message says an instruction is waiting there, list '/tmp/fm-lab.v2eYFg/state/scout1.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm-lab.v2eYFg/state/scout1.inbox'/NNN.msg '/tmp/fm-lab.v2eYFg/state/scout1.inbox'/handled/`.
+The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+Every waiting instruction rings, so never list the inbox on your own.
+
+# Definition of done
+43:   Before ending your turn with your own background shell or monitor still running, or before waiting on your own pipeline run or a long foreground command, append `paused [at=<epoch>]: {job and completion condition}` to the status file.
+69:     the daemon accepts `respond` immediately and runs the round in the background, so a killed or
+86:Never spend turns on `sleep` followed by a status check, and never background a command in order to poll it.
+87:In Claude Code that `until` loop in a single Bash call is the sanctioned foreground wait: when the harness refuses a sleep-then-check command and points you at backgrounding instead, reissue the wait as the loop rather than accepting the background.
+92:A wait your shell can watch this way needs no `paused:` line, except your own pipeline run, a long foreground command, or your own validation round, which you declare once just before its blocking hold: append `paused:` once just before its first blocking command, then stay in the command, and never append it again as you reissue that command.
+124:Drive the run with ONE foreground `no-mistakes axi run` and let it block.
+126:Declare that wait using the brief's status-reporting rule before the foreground drive call.
+127:Never background a wait, and never arm a timer to stand in for one: a backgrounded call returns in milliseconds, so it does not wait at all, and every timer left behind fires later as a paid wake for nothing.
+129:Whenever a drive call returns without a gate or an outcome - its own wait elapsed, or it was killed or timed out - that is not a failure: reattach at once by re-running `no-mistakes axi run` without flags, and issue the same foreground call again, one at a time, until a gate or outcome comes back; once checks are green it returns `checks-passed` immediately, and if it refuses because no run is active, read the finished outcome from `no-mistakes axi status`.
+130:A killed or timed-out call is never evidence the daemon died: the daemon accepts your response immediately and runs the round in the background, so the call was only ever waiting for a read while the run kept working.
+140:After /no-mistakes reports CI green (the CI-ready return point - do not wait for it to keep monitoring in the background until merge), read the PR back from the forge and confirm it is not a draft (`gh-axi pr view <number>` must print `draft: no`, where <number> is the PR number from your PR URL); if it is a draft, mark it ready with `gh-axi pr ready <number>`.

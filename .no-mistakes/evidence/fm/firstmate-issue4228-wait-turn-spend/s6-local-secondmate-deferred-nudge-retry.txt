@@ -1,0 +1,35 @@
+## (driven from a git-archive copy of HEAD /tmp/fm-lab-root.Xy5QgV, outside the gate worktree)
+## local secondmate sm1 (pane fleet:fm-t1) has open needs-decision [key=scope2]; instruction-nudge marker pending:
+sm1.pending
+## 07:54:07 automatic instruction nudge (as bootstrap sends it):
+deferred: sm1 is waiting on its open decision or blocker (scope2); nothing was sent
+exit=4
+flagged: sm1
+## 07:54:08 watcher poll (fm-config-push.sh --retry-deferred) while the decision is still open:
+exit=0
+flag: sm1  marker: sm1.pending
+● Bash(mv '/tmp/fm-lab.v2eYFg/state/sm1.inbox/001.msg' '/tmp/fm-lab.v2eYFg/state/sm1.inbox/handled/')
+  ⎿  Done
+  ⎿  Allowed by auto mode classifier
+● The sm1 inbox had one message, 001.msg: a probe (corr=72be56f4e3207ecf) with no instruction in it, so there was nothing to do. I moved it to handled/.
+✻ Worked for 8s · done 7:53 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+## 07:54:11 firstmate answers; decision closes
+## 07:54:11 watcher poll again:
+exit=0
+flag: ''  marker: ''
+inbox records:
+/tmp/fm-lab.v2eYFg/state/sm1.inbox/002.msg
+## 07:54:38 pane:
+  anywhere under /tmp/fm-lab.v2eYFg, or in ~/.claude, so no new instructions were picked up.
+  I moved the message to handled/. If the updated AGENTS.md lives somewhere else, send me its path and I'll read it.
+✻ Brewed for 16s · done 7:54 AM
+● How is Claude doing this session? (optional)
+  1: Bad    2: Fine   3: Good   0: Dismiss
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

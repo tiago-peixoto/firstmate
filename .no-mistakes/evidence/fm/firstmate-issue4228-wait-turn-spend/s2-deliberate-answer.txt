@@ -1,0 +1,15 @@
+$ fm-send.sh t1 --automatic --resolve-key pick "x"   # adversarial: automatic may not answer
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.v2eYFg
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --automatic cannot accompany --key or --resolve-key
+exit=0
+$ fm-send.sh t1 --resolve-key pick "Use alpha. Reply with just the word OK and nothing else."
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.v2eYFg
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+exit=0
+$ tail -2 state/t1.status
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick] [at=1790574111]: answered: Use alpha. Reply with just the word OK and nothing else.
+$ ls state/t1.inbox
+001.msg
+handled

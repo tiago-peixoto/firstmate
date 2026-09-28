@@ -1,29 +1,47 @@
-### tests/fm-send-inbox.test.sh
-ok - fm-send inbox: the payload is recorded durably and only the doorbell is typed
+=== fm-send-inbox
+ok - fm-send inbox: metadata lock contention fails bounded without enqueue
+ok - fm-send inbox: an unwritable record is a loud local failure that leaves no false expectation
+ok - fm-send: an empty or whitespace-only text steer refuses before marking, recording, or typing
 ok - fm-send inbox: an automatic send defers while the worker's own decision is open, and the answer still wakes it
-exit=
-### tests/fm-secondmate-sync.test.sh
+rc=0
+=== fm-secondmate-sync
+ok - R8 session start converges a remote home on the primary's default-branch commit
+ok - R10 a host too old for a parent-targeted sync is reported with the command that fixes it
+ok - R9 a remote launch leaves the home on the parent's commit while an ordinary spawn follows its own checkout
+# all fm-secondmate-sync tests passed
+rc=0
+=== fm-task-inbox
+ok - watcher: a fire-and-forget retry waits out the worker's own decision, then rings once
+ok - watcher: a spent ring budget emits exactly one ordinary stale wake for recovery
+ok - watcher: a positively dead pane is never typed into and surfaces exactly one stale wake
+ok - watcher: dead-pane recovery overrides stale busy state
+rc=0
+=== fm-brief
+ok - fm-brief.sh: --branch-prefix value is validated against embedded spaces and a leading dash
+Switched to a new branch '$(touch${IFS}/tmp/fm-brief.mPlNGc/branch-prefix-shell-safe-marker)brief-branch-safe-g3'
+ok - fm-brief.sh: ref-format-valid shell metacharacters stay literal in generated branch commands
+ok - fm-brief.sh: every crewmate scaffold forbids administering the shared worktree pool
+rc=0
+=== fm-pending-reply
+ok - remote parent-replies.status is not classified as wrong-home
+ok - local parent-replies.status remains wrong-home evidence
+ok - an escalated correlation stays retryable only while undelivered
+ok - all pending-reply tests passed
+rc=0
+=== fm-secondmate-reconcile
+ok - a legitimately markerless persistent remote secondmate is nudged once per window
+ok - a stale remote-route snapshot cannot ask or silence a replacement mate
+ok - a route replacement between reconcile and fm-send cannot receive a stale ask
+ok - a row with neither a spawn generation nor a host fails loudly instead of vanishing
+rc=0
+ok - T8f bootstrap nudge retry rejects malformed marker ids
 ok - T8c failed bootstrap nudge is surfaced and recorded for retry
 ok - T8g bootstrap defers the re-read nudge while the mate waits on its decision
+ok - T8i the watcher retry delivers a deferred local nudge once the decision closes
 ok - T8h a deferred nudge is classified by exit status, not by the first line of output
 ok - T8d bootstrap nudge retry is idempotent after success
-# all fm-secondmate-sync tests passed
-exit=
-### tests/fm-secondmate-harness.test.sh
-ok - B16 config reread isolation, ABSENT, generation safety, send failure, and retry
-ok - config-push defers a local reread while the mate waits on its decision, then delivers it
-# all fm-secondmate-harness tests passed
-exit=
-### tests/fm-secondmate-reconcile.test.sh
-ok - the reconcile ask waits while the mate waits on its decision, then is delivered
-ok - the reconcile ask expects no reply and stays out of a ladder that still rings ordinary steers
-exit=
-### tests/fm-pending-reply.test.sh
-ok - completed turn with no report triggers exactly one recovery
-ok - recovery never pokes a mate waiting on its own decision, and runs once it closes
-ok - all pending-reply tests passed
-exit=
-### tests/fm-brief.test.sh
-ok - fm-brief.sh: ship and scout scaffolds declare a validation-round pause once, then hold it
-ok - fm-brief: workers end the turn on a decision, wait in one bounded shell command, and never poll
-exit=
+ok - T8e bootstrap nudge retry refuses a changed home instead of guessing
+ok - inbox: fire-and-forget records stay durable and outside the ladder
+ok - inbox: a fire-and-forget record whose ring did not land is owed exactly one retry
+ok - watcher: a fire-and-forget record's owed retry rings exactly once and never escalates
+ok - watcher: a fire-and-forget retry waits out the worker's own decision, then rings once
