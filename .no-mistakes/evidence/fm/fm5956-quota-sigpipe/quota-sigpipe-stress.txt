@@ -1,0 +1,9 @@
+# SIGPIPE-ignored stress: 4 parallel x 4000 x 3 lookups (claude, codex, muse)
+base fa48367: stderr lines=171
+    171 base-lib.sh: line 138: printf: write error: Broken pipe
+target a1608f1: stderr lines=0
+
+# tests/fm-dispatch-resolve.test.sh with SIGPIPE ignored (target)
+# all fm-dispatch-resolve tests passed
+# all fm-dispatch-resolve tests passed
+# all fm-dispatch-resolve tests passed
