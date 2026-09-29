@@ -1,0 +1,14 @@
+## held, mirror is last line:
+state: paused · source: status-log · waiting on vendor
+## held + unrelated resolved:
+state: paused · source: status-log · waiting on vendor
+## fm-captain-hold.sh answer --release:
+released: lab-rel-lane
+--- status log:
+working: start
+paused: waiting on vendor
+captain-held [key=captain-hold-lab-rel-lane-1] [at=1790645810]: operator review
+resolved [key=api-shape]: use v2
+resolved [key=captain-hold-lab-rel-lane-1] [at=1790645811]: captain call released by fm-captain-hold
+## after release:
+state: paused · source: status-log · waiting on vendor

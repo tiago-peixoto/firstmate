@@ -1,0 +1,58 @@
+=== S1: held paused lane + unrelated resolved answer (recorded review-round-2 fix) ===
+--- state/held-lane.status:
+    working: start
+    paused: waiting on vendor
+    captain-held [key=captain-hold-held-lane-1] [at=1790646485]: operator review
+    resolved [key=api-shape]: use v2
+  fm-crew-state.sh (HEAD):     state: paused · source: status-log · waiting on vendor
+  watcher declared wait (HEAD): captain-held [key=captain-hold-held-lane-1] [at=1790646485]: operator review
+  fm-crew-state.sh (pre-fix ec15519^): state: unknown · source: none · no current-state source available
+
+=== S3: scout done, then held -> still reports done while held ===
+--- state/done-lane.status:
+    working: start
+    done: report ready
+    captain-held [key=captain-hold-done-lane-1] [at=1790646529]: captain review pending
+  fm-crew-state.sh (HEAD):     state: done · source: status-log · report ready
+  watcher declared wait (HEAD): captain-held [key=captain-hold-done-lane-1] [at=1790646529]: captain review pending
+
+=== S4: held lane, worker later writes working: -> working replaces hold wait ===
+--- state/work-lane.status:
+    paused: waiting on vendor
+    captain-held [key=captain-hold-work-lane-1] [at=1790646531]: operator review
+    resolved [key=api-shape]: use v2
+  fm-crew-state.sh (HEAD):     state: paused · source: status-log · waiting on vendor
+  watcher declared wait (HEAD): captain-held [key=captain-hold-work-lane-1] [at=1790646531]: operator review
+--- state/work-lane.status:
+    paused: waiting on vendor
+    captain-held [key=captain-hold-work-lane-1] [at=1790646531]: operator review
+    resolved [key=api-shape]: use v2
+    working: resumed
+  fm-crew-state.sh (HEAD):     state: working · source: status-log · resumed
+  watcher declared wait (HEAD): 
+
+=== S5 (adversarial): settled transfer earlier must not hide a later standing hold ===
+xfer-lane
+--- state/xfer-lane.status:
+    needs-decision [key=route]: pick north or south
+    captain-held [key=captain-hold-xfer-lane-1] [at=1790646533]: route choice
+    captain-held [key=route] [at=1790646534]: tracked by xfer-lane
+    resolved [key=captain-hold-xfer-lane-1] [at=1790646535]: captain call answered by fm-captain-hold
+    resolved [key=route] [at=1790646536]: captain call answered by fm-captain-hold
+    working: continuing
+    captain-held [key=captain-hold-xfer-lane-2] [at=1790646537]: operator review again
+  fm-crew-state.sh (HEAD):     state: working · source: status-log · continuing
+  watcher declared wait (HEAD): captain-held [key=captain-hold-xfer-lane-2] [at=1790646537]: operator review again
+=== S2: release hold via real CLI (answer --release) -> retraction appended, lane still paused ===
+$ fm-captain-hold.sh answer held-lane --decision-file rel.txt --release
+released: held-lane
+$ (retry, idempotent)
+released: held-lane
+--- state/held-lane.status:
+    working: start
+    paused: waiting on vendor
+    captain-held [key=captain-hold-held-lane-1] [at=1790646485]: operator review
+    resolved [key=api-shape]: use v2
+    resolved [key=captain-hold-held-lane-1] [at=1790646548]: captain call released by fm-captain-hold
+  fm-crew-state.sh (HEAD):     state: paused · source: status-log · waiting on vendor
+  watcher declared wait (HEAD): paused: waiting on vendor

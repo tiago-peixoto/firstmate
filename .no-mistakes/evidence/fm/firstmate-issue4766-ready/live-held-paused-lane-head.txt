@@ -1,0 +1,20 @@
+## [head] step 1: worker paused; crew state:
+state: paused · source: status-log · waiting on vendor
+## [head] step 2: fm-captain-hold.sh hold lab-head-lane
+lab-head-lane
+## [head] step 3: firstmate answers an unrelated key on the lane log
+--- status log:
+working: start
+paused: waiting on vendor
+captain-held [key=captain-hold-lab-head-lane-1] [at=1790645792]: operator review
+resolved [key=api-shape]: use v2
+--- crew state:
+state: paused · source: status-log · waiting on vendor
+--- classify: declared_wait / current:
+wait=captain-held [key=captain-hold-lab-head-lane-1] [at=1790645792]: operator review
+current=paused: waiting on vendor
+## [head] step 4: worker declares done while still held
+--- crew state:
+state: done · source: status-log · shipped PR 12
+wait=
+current=done: shipped PR 12

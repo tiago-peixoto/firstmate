@@ -1,0 +1,26 @@
+$ cat state/held-lane.status   # before hold
+working: start
+paused: waiting on vendor
+$ fm-crew-state.sh held-lane
+state: unknown · source: none · worktree gone (torn down?)
+
+$ fm-captain-hold.sh hold held-lane --reason "operator review"
+held-lane
+$ cat state/held-lane.status
+working: start
+paused: waiting on vendor
+captain-held [key=captain-hold-held-lane-1] [at=1790646485]: operator review
+$ fm-crew-state.sh held-lane
+state: unknown · source: none · worktree gone (torn down?)
+
+# worker/firstmate appends an unrelated resolved answer: resolved [key=api-shape]: use v2
+$ cat state/held-lane.status
+working: start
+paused: waiting on vendor
+captain-held [key=captain-hold-held-lane-1] [at=1790646485]: operator review
+resolved [key=api-shape]: use v2
+$ fm-crew-state.sh held-lane
+state: unknown · source: none · worktree gone (torn down?)
+$ status_declared_wait_line / last_status_line (watcher view)
+declared_wait: captain-held [key=captain-hold-held-lane-1] [at=1790646485]: operator review
+current_line: paused: waiting on vendor
