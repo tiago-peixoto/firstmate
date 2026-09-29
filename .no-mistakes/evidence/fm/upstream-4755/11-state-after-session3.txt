@@ -1,0 +1,11 @@
+lock pid: 2110663  lock-session: 1f11eb94-c916-4fb4-afe2-c9c6793b7c1d
+--- /tmp/fm-lab.lLkWwg/state/pending-replies/54aba2935ff7da10
+phase=escalated
+surfaced_session=2110663:dc9f65c9-41bb-4b34-8d61-a602409bff94
+escalation_dismissed_epoch=1790721526
+--- /tmp/fm-lab.lLkWwg/state/pending-replies/9bb8f976fd7d6e78
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=2110663:1f11eb94-c916-4fb4-afe2-c9c6793b7c1d
+--- wake queue
+1790721527	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=9bb8f976fd7d6e78 request=confirm the api shape;

@@ -1,0 +1,15 @@
+A=54aba2935ff7da10 B=9bb8f976fd7d6e78
+--- record 54aba2935ff7da10
+request_summary=finish the quarterly report
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=s-prev
+--- record 9bb8f976fd7d6e78
+request_summary=confirm the api shape
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=s-prev
+--- mate.status
+blocked [key=pending-reply-54aba2935ff7da10] [at=1790720981]: pending-reply-missed: task=mate pending-reply-id=54aba2935ff7da10 request=finish the quarterly report
+blocked [key=pending-reply-9bb8f976fd7d6e78] [at=1790720982]: pending-reply-missed: task=mate pending-reply-id=9bb8f976fd7d6e78 request=confirm the api shape
+--- wake queue after escalation

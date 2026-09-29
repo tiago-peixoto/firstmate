@@ -1,12 +1,23 @@
 ok - normal correlated reply resolves once (idempotent)
 ok - completed turn with no report triggers exactly one recovery
+ok - recovery grace is measured from the request turn's completion, not delivery
+ok - one fresh status read immediately before firing catches a just-landed reply, any verb
+ok - a resolve that fails after committing resolved still blocks repost and escalation
+ok - missed-report escalation grace is measured from the recovery turn's completion
 ok - recovery attempts reconcile without reinjection
 ok - recovery reply resolves the original expectation
 ok - second missed turn escalates once and remains durable
 ok - an escalated pending reply is reminded once per later session until it resolves
 ok - an operator-closed escalation is neither reminded nor listed, an open one still is
 ok - only the operator's keyed close dismisses an escalation
-ok - the reminder skips the session lookup when nothing needs reminding
+ok - the reminder leaves records and queue alone when nothing needs reminding
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QMG798FR5KTGCA5ADYKZZV/bin/fm-pending-reply-lib.sh: line 523: /tmp/fm-pending-reply.5nOGmE/remind-stub-482/fm-wake-lib.sh: No such file or directory
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QMG798FR5KTGCA5ADYKZZV/bin/fm-pending-reply-lib.sh: line 523: /tmp/fm-pending-reply.5nOGmE/remind-stub-482/fm-wake-lib.sh: No such file or directory
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QMG798FR5KTGCA5ADYKZZV/bin/fm-pending-reply-lib.sh: line 523: /tmp/fm-pending-reply.5nOGmE/remind-stub-482/fm-wake-lib.sh: No such file or directory
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QMG798FR5KTGCA5ADYKZZV/bin/fm-pending-reply-lib.sh: line 523: /tmp/fm-pending-reply.5nOGmE/remind-stub-482/fm-wake-lib.sh: No such file or directory
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QMG798FR5KTGCA5ADYKZZV/bin/fm-pending-reply-lib.sh: line 523: /tmp/fm-pending-reply.5nOGmE/remind-stub-482/fm-wake-lib.sh: No such file or directory
+/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QMG798FR5KTGCA5ADYKZZV/bin/fm-pending-reply-lib.sh: line 523: /tmp/fm-pending-reply.5nOGmE/remind-stub-482/fm-wake-lib.sh: No such file or directory
+ok - the tick starts the reminder only when a record is escalated
 ok - a new session in the same harness process is reminded once
 ok - escalations and replies wake; the home's own escalation close stays quiet
 ok - failed escalation publication remains retryable and publishes once
@@ -30,6 +41,7 @@ ok - backend busy/idle observation covers Pi/Claude paths without conversation s
 ok - tmux and zellij unknown states use bounded capture fallback
 ok - pending replies scope Kimi capture fallback by recorded harness
 ok - tick skips terminal records and reuses target observations
+ok - the tick leaves settled records alone and still does the selected records' work
 ok - correlations are reused only for matching open task records
 ok - tick end-to-end: miss -> one recovery -> escalate -> durable
 ok - failed transport discards undelivered expectation only
@@ -43,7 +55,4 @@ ok - remote parent-replies.status is not classified as wrong-home
 ok - local parent-replies.status remains wrong-home evidence
 ok - an escalated correlation stays retryable only while undelivered
 ok - all pending-reply tests passed
-
-real	1m1.455s
-user	0m15.754s
-sys	1m3.836s
+exit=0
