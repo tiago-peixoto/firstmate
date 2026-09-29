@@ -1,0 +1,28 @@
+== S1: re-poll unchanged real PR #5341 (baseline already recorded)
+poll stdout: []
+check wakes queued: 0
+{"pending":[],"obs":{"head":"41221533f9c47df57ac76dd6140c8c4f077276f1","state":"open","draft":false,"review_requests":[]}}
+
+== S2: seed prior observation = older head, draft=true, prior reviewer 'ghost' (since removed); re-poll real PR
+poll stdout: [contribution-wake: check: contributions movement 7788d89734a8c096cc9a707a8fb0ec65af57b69dc9361a2202c43037e0f28108
+contribution-wake: check: contributions movement 9d10aca86742081438cde3f83a309bf2365d5475505219e7249d9a26629fec6c]
+check wakes queued: 2
+{"pending":[{"type":"head","body":"head moved from 1f2c9548f4680efeda76fabe9f057b4021b97272 to 41221533f9c47df57ac76dd6140c8c4f077276f1"},{"type":"ready-for-review","body":"pull request left draft"}],"obs":{"head":"41221533f9c47df57ac76dd6140c8c4f077276f1","state":"open","draft":false,"review_requests":[]}}
+-- pending view:
+{"type":"head","body":"head moved from 1f2c9548f4680efeda76fabe9f057b4021b97272 to 41221533f9c47df57ac76dd6140c8c4f077276f1","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+
+== S3: re-poll again with no forge change -> no new wake, pending retained
+poll stdout: []
+check wakes queued: 2
+2
+
+== S4: ack each pending token -> inbox empty
+acked head:41221533f9c47df57ac76dd6140c8c4f077276f1:2026-09-29T19:20:43Z
+acked ready-for-review:41221533f9c47df57ac76dd6140c8c4f077276f1:2026-09-29T19:20:43Z
+[]
+
+== S5: legacy observation (no review_requests field) -> baseline, no movement
+poll stdout: []
+check wakes queued: 2
+{"pending":[],"obs":{"head":"41221533f9c47df57ac76dd6140c8c4f077276f1","state":"open","draft":false,"review_requests":[]}}
