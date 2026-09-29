@@ -1,0 +1,45 @@
+check: rearm-resurface
+  └ (no output)
+
+• Captain, the wake queue is drained and acknowledged. The test fixture remains registered and unchanged.
+
+  Worked for 1m 23s · 10:33 PM
+
+
+› check: process-event result captured: procevent:shot:2
+
+
+• Captain, I’ll drain the wake queue and check the captured result.
+
+• Ran bin/fm-wake-drain.sh
+  └ ●  After draining queued wakes, repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + Show details
+
+• Ran bin/fm-procevent-lavish.sh read /tmp/fm-codex-idle-probe.ximCco/fmhome/state/procevent-inbox/shot.6.result
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + Show details
+
+• Ran bin/fm-procevent.sh handled shot 6
+  └ handled: shot 6
+
+• Ran bin/fm-wake-drain.sh --ack-through 66 --recovery-generation 1950902.1790714006.C2qxER
+  └ wake drain: acknowledged wakes through 66 (4 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_AC…
+    + Show details
+
+• Ran bin/fm-wake-drain.sh
+  └ WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 70 --recovery-generation 1967355.1790714021.bdRMYn
+    WARNING: watcher still down (same stale episode; last beat: 1s ago, grace 300s) - full banner already printed this episode.
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + Show details
+
+• Working (24s • esc to interrupt)
+
+
+› Ask Codex to do anything
+
+  GPT-6-Astra low · /tmp/fm-codex-idle-probe.ximCco/project · Return IDLE-OK
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

@@ -1,0 +1,31 @@
+Note: switching to '1d8bd851f728bd2a1ace5f9c539640dfc0684025'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+not ok - an actionable close never reached the Codex thread
+#       + Show details
+#   • Ran bin/fm-procevent-lavish.sh read "$FM_HOME/state/procevent-inbox/shot.14.result"
+#     └
+#       ANNOTATIONS: (none)
+#       END LAVISH RESULT (0 of 0)
+#       + Show details
+#   • Ran bin/fm-wake-drain.sh --ack-through 532 --recovery-generation 717591.1790713062.X2q775
+#     └ (no output)
+#   • Working (17s • esc to interrupt) · 1 background terminal running · /ps to view · /stop to close
+#   › Ask Codex to do anything
+#     GPT-6-Astra low · ~/.no-mistakes/worktrees/5284051b2355/01M3QCKV74XYAWBVJQQCTXP8RW/.codex-idle-live.251982/project · Reply with IDLE-OK
+#     ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view
+exit=1

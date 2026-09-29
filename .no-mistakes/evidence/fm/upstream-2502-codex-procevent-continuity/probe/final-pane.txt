@@ -1,0 +1,45 @@
+check: rearm-resurface
+• Ran bin/fm-wake-drain.sh
+  └ WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 422 --recovery-generation 1673696.1790713802.eyEqPr
+    WARNING: watcher still down (same stale episode; last beat: 7s ago, grace 300s) - full banner already printed this episode.
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + Show details
+
+• Ran bin/fm-procevent-lavish.sh read "$FM_HOME/state/procevent-inbox/shot.11.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + Show details
+
+• Ran bin/fm-wake-drain.sh --ack-through 422 --recovery-generation 1673696.1790713802.eyEqPr
+  └ (no output)
+
+• Captain, acknowledged wakes through 422 and started the checkpoint. The eleventh result contained no annotations; the fixture remains unchanged.
+
+  10:30 PM
+
+
+› check: rearm-resurface
+
+
+• Captain, I’ll drain the resurfaced wakes without changing the fixture.
+
+• Ran bin/fm-watch-checkpoint.sh --seconds 180
+  └ check: process-event result captured: procevent:shot:11
+
+• Ran bin/fm-wake-drain.sh
+  └ WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 453 --recovery-generation 1697724.1790713818.SN9Hu4
+    WARNING: watcher still down (same stale episode; last beat: 6s ago, grace 300s) - full banner already printed this episode.
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + Show details
+
+• Ran bin/fm-wake-drain.sh --ack-through 453 --recovery-generation 1697724.1790713818.SN9Hu4
+  └ (no output)
+
+• Working (10s • esc to interrupt) · 1 background terminal running · /ps to view · /stop to close
+
+
+› Ask Codex to do anything
+
+  GPT-6-Astra low · /tmp/fm-codex-idle-probe.rgsngl/project · Return IDLE-OK
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

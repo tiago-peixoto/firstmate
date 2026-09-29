@@ -1,0 +1,67 @@
+bash: line 1: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QCKV74XYAWBVJQQCTXP8RW/.codex-idle-live.2886875/hits: No such file or directory
+== 22:44:04 owner= hits= busy=1 captures=0
+bash: line 1: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QCKV74XYAWBVJQQCTXP8RW/.codex-idle-live.2886875/hits: No such file or directory
+== 22:44:06 owner= hits= busy=0 captures=0
+== 22:44:08 owner= hits=1 busy=0 captures=0
+== 22:44:10 owner= hits=1 busy=1 captures=0
+== 22:44:12 owner= hits=1 busy=0 captures=0
+== 22:44:14 owner= hits=1 busy=1 captures=0
+== 22:44:16 owner= hits=1 busy=1 captures=0
+== 22:44:18 owner= hits=1 busy=1 captures=0
+== 22:44:20 owner= hits=1 busy=1 captures=0
+== 22:44:22 owner= hits=1 busy=1 captures=0
+== 22:44:24 owner= hits=1 busy=1 captures=0
+== 22:44:26 owner= hits=1 busy=1 captures=0
+== 22:44:28 owner= hits=1 busy=1 captures=0
+== 22:44:30 owner= hits=2 busy=1 captures=1
+== 22:44:32 owner= hits=2 busy=1 captures=1
+== 22:44:34 owner= hits=2 busy=1 captures=1
+== 22:44:36 owner= hits=2 busy=1 captures=1
+== 22:44:38 owner= hits=2 busy=1 captures=1
+== 22:44:40 owner=2887126 hits=2 busy=0 captures=1
+   arm: watcher: started pid=2925302 (beacon fresh)
+== 22:44:42 owner=2887126 hits=2 busy=0 captures=1
+   arm: watcher: started pid=2926824 (beacon fresh) recovery-generation=2925880.1790714681.b1g34B
+== 22:44:44 owner=2887126 hits=2 busy=0 captures=1
+   arm: watcher: started pid=2926824 (beacon fresh) recovery-generation=2925880.1790714681.b1g34B
+== 22:44:46 owner=2887126 hits=2 busy=1 captures=1
+   arm: watcher: started pid=2926824 (beacon fresh) recovery-generation=2925880.1790714681.b1g34B
+== 22:44:49 owner=2887126 hits=2 busy=1 captures=1
+   arm: watcher: started pid=2926824 (beacon fresh) recovery-generation=2925880.1790714681.b1g34B
+== 22:44:51 owner=2887126 hits=2 busy=1 captures=1
+   arm: watcher: started pid=2926824 (beacon fresh) recovery-generation=2925880.1790714681.b1g34B
+== 22:44:53 owner=2887126 hits=3 busy=1 captures=0
+== 22:44:55 owner=2887126 hits=3 busy=1 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:44:57 owner=2887126 hits=3 busy=1 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:44:59 owner=2887126 hits=3 busy=1 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:01 owner=2887126 hits=3 busy=1 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:03 owner=2887126 hits=3 busy=0 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:05 owner=2887126 hits=3 busy=0 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:07 owner=2887126 hits=3 busy=0 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:09 owner=2887126 hits=3 busy=0 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:11 owner=2887126 hits=3 busy=0 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:13 owner=2887126 hits=3 busy=0 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+== 22:45:15 owner=2887126 hits=4 busy=0 captures=1
+   arm: watcher: started pid=2943261 (beacon fresh) recovery-generation=2927177.1790714682.SH7WIY
+   arm: check: process-event result captured: procevent:shot:3
+== 22:45:17 owner=2887126 hits=4 busy=1 captures=2
+   arm: watcher: started pid=2984171 (beacon fresh) recovery-generation=2943844.1790714693.ekIeZJ
+== 22:45:19 owner=2887126 hits=4 busy=1 captures=2
+   arm: watcher: started pid=2984171 (beacon fresh) recovery-generation=2943844.1790714693.ekIeZJ
+== 22:45:21 owner=2887126 hits=4 busy=1 captures=2
+   arm: watcher: started pid=2984171 (beacon fresh) recovery-generation=2943844.1790714693.ekIeZJ
+== 22:45:23 owner=2887126 hits=4 busy=1 captures=2
+   arm: watcher: started pid=2984171 (beacon fresh) recovery-generation=2943844.1790714693.ekIeZJ
+== 22:45:25 owner=2887126 hits=4 busy=1 captures=2
+   arm: watcher: started pid=2984171 (beacon fresh) recovery-generation=2943844.1790714693.ekIeZJ
+== 22:45:27 owner= hits=4 busy=0 captures=0

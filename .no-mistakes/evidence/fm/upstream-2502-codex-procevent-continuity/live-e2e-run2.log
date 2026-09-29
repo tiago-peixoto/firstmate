@@ -1,0 +1,31 @@
+Note: switching to '1d8bd851f728bd2a1ace5f9c539640dfc0684025'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+not ok - the idle supervisor did not re-arm the ownerless source (15 hits)
+#       WARNING: watcher still down (same stale episode; last beat: 3s ago, grace 300s) - full banner already printed this episode.
+#       WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+#       + Show details
+#   • Ran bin/fm-procevent-lavish.sh read "$FM_HOME/state/procevent-inbox/shot.14.result"
+#     └
+#       ANNOTATIONS: (none)
+#       END LAVISH RESULT (0 of 0)
+#       + Show details
+#   • Working (12s • esc to interrupt)
+#   › Ask Codex to do anything
+#     GPT-6-Astra low · ~/.no-mistakes/worktrees/5284051b2355/01M3QCKV74XYAWBVJQQCTXP8RW/.codex-idle-live.771971/project · Reply with IDLE-OK
+#     ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view
+exit=1

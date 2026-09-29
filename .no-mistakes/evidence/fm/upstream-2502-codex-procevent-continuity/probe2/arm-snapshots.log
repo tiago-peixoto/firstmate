@@ -1,0 +1,186 @@
+--- 22:31:51
+watcher: started pid=1810379 (beacon fresh)
+--- 22:31:52
+watcher: started pid=1810379 (beacon fresh)
+check: rearm-resurface
+--- 22:31:53
+watcher: started pid=1814442 (beacon fresh)
+--- 22:31:54
+watcher: started pid=1814442 (beacon fresh)
+--- 22:31:55
+watcher: started pid=1817777 (beacon fresh)
+--- 22:31:56
+watcher: started pid=1817777 (beacon fresh)
+check: rearm-resurface
+--- 22:31:58
+watcher: started pid=1820626 (beacon fresh)
+check: rearm-resurface
+--- 22:32:00
+watcher: started pid=1823297 (beacon fresh)
+--- 22:32:02
+watcher: started pid=1825997 (beacon fresh)
+--- 22:32:04
+watcher: started pid=1829028 (beacon fresh)
+--- 22:32:06
+watcher: started pid=1832504 (beacon fresh)
+--- 22:32:07
+watcher: started pid=1832504 (beacon fresh)
+check: rearm-resurface
+--- 22:32:08
+watcher: started pid=1836246 (beacon fresh)
+--- 22:32:09
+watcher: started pid=1836246 (beacon fresh)
+check: rearm-resurface
+--- 22:32:11
+watcher: started pid=1840590 (beacon fresh)
+--- 22:32:12
+watcher: started pid=1844796 (beacon fresh)
+--- 22:32:13
+watcher: started pid=1844796 (beacon fresh)
+--- 22:32:15
+watcher: started pid=1849131 (beacon fresh)
+--- 22:32:17
+watcher: started pid=1849131 (beacon fresh)
+check: process-event result captured: procevent:shot:3
+--- 22:32:18
+watcher: started pid=1854219 (beacon fresh)
+--- 22:32:19
+watcher: started pid=1854219 (beacon fresh)
+check: rearm-resurface
+--- 22:32:20
+watcher: started pid=1857987 (beacon fresh)
+--- 22:32:21
+watcher: started pid=1857987 (beacon fresh)
+--- 22:32:22
+watcher: started pid=1862069 (beacon fresh)
+--- 22:32:23
+watcher: started pid=1862069 (beacon fresh)
+check: rearm-resurface
+--- 22:32:24
+watcher: started pid=1865166 (beacon fresh)
+--- 22:32:25
+watcher: started pid=1865166 (beacon fresh)
+check: rearm-resurface
+--- 22:32:26
+watcher: started pid=1869092 (beacon fresh)
+--- 22:32:27
+watcher: started pid=1869092 (beacon fresh)
+check: rearm-resurface
+--- 22:32:30
+watcher: started pid=1877771 (beacon fresh)
+--- 22:32:32
+watcher: started pid=1880704 (beacon fresh)
+check: rearm-resurface
+--- 22:32:33
+watcher: started pid=1883322 (beacon fresh)
+--- 22:32:35
+watcher: started pid=1885481 (beacon fresh)
+check: rearm-resurface
+--- 22:32:37
+watcher: started pid=1887649 (beacon fresh)
+--- 22:32:38
+watcher: started pid=1887649 (beacon fresh)
+check: process-event result captured: procevent:shot:4
+--- 22:32:39
+watcher: started pid=1891480 (beacon fresh)
+--- 22:32:42
+watcher: started pid=1894192 (beacon fresh)
+check: rearm-resurface
+--- 22:32:43
+watcher: started pid=1896879 (beacon fresh)
+--- 22:32:45
+watcher: started pid=1899044 (beacon fresh)
+--- 22:32:47
+watcher: started pid=1901123 (beacon fresh)
+check: rearm-resurface
+--- 22:32:48
+watcher: started pid=1903149 (beacon fresh)
+--- 22:32:50
+watcher: started pid=1904990 (beacon fresh)
+--- 22:32:52
+watcher: started pid=1906429 (beacon fresh)
+check: rearm-resurface
+--- 22:32:53
+watcher: started pid=1907853 (beacon fresh)
+--- 22:32:55
+watcher: started pid=1909294 (beacon fresh)
+check: rearm-resurface
+--- 22:32:56
+watcher: started pid=1910729 (beacon fresh)
+--- 22:32:58
+watcher: started pid=1912291 (beacon fresh)
+--- 22:32:59
+watcher: started pid=1912291 (beacon fresh)
+check: process-event result captured: procevent:shot:5
+--- 22:33:00
+watcher: started pid=1916308 (beacon fresh)
+--- 22:33:01
+watcher: started pid=1916308 (beacon fresh)
+check: rearm-resurface
+--- 22:33:02
+watcher: started pid=1919507 (beacon fresh)
+--- 22:33:04
+watcher: started pid=1921814 (beacon fresh)
+--- 22:33:05
+watcher: started pid=1924457 (beacon fresh)
+--- 22:33:07
+watcher: started pid=1924457 (beacon fresh)
+check: rearm-resurface
+--- 22:33:08
+watcher: started pid=1926311 (beacon fresh)
+--- 22:33:10
+watcher: started pid=1927896 (beacon fresh)
+--- 22:33:12
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:13
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:14
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:15
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:16
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:17
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:18
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:19
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:20
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:21
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:22
+watcher: started pid=1929580 (beacon fresh)
+--- 22:33:23
+watcher: started pid=1929580 (beacon fresh)
+check: process-event result captured: procevent:shot:6
+--- 22:33:24
+watcher: started pid=1945924 (beacon fresh)
+--- 22:33:26
+watcher: started pid=1949519 (beacon fresh)
+--- 22:33:28
+watcher: started pid=1954263 (beacon fresh)
+--- 22:33:29
+watcher: started pid=1956462 (beacon fresh)
+--- 22:33:30
+watcher: started pid=1956462 (beacon fresh)
+check: rearm-resurface
+--- 22:33:32
+watcher: started pid=1958313 (beacon fresh)
+--- 22:33:34
+watcher: started pid=1959813 (beacon fresh)
+--- 22:33:35
+watcher: started pid=1961671 (beacon fresh)
+--- 22:33:37
+watcher: started pid=1962976 (beacon fresh)
+check: rearm-resurface
+--- 22:33:39
+watcher: started pid=1964240 (beacon fresh)
+check: rearm-resurface
+--- 22:33:40
+watcher: started pid=1965616 (beacon fresh)
+--- 22:33:42
+watcher: started pid=1967355 (beacon fresh)
+--- 22:33:44
+watcher: started pid=1969616 (beacon fresh)

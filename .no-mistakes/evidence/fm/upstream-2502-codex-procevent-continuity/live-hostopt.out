@@ -1,0 +1,48 @@
+Note: switching to '5e3a28cf1078c887ea8ea432e50c74afc8acd5b5'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+hits during idle gap: 2
+state: .
+state: ..
+state: .guard-watcher-stale-banner
+state: .heartbeat-streak
+state: .inactive-outcome-reconcile
+state: .last-check
+state: .last-heartbeat
+state: .last-watcher-beat
+state: .lock
+state: .secondmate-liveness-tick
+state: .seen-procevent-70726f636576656e743a73686f743a31
+state: .session-start-agents-baseline
+state: .session-start-complete
+state: .startup-network.delivered
+state: .startup-network.report
+state: .startup-network.status
+state: .startup-network.timings
+state: .supervision-host.log
+state: .trace-context-effective
+state: .wake-queue
+state: .wake-queue.seq
+state: .watch-cycle-exits.log
+state: .watch-deliveries.log
+state: .watcher-down
+state: home-summary.json
+state: procevent
+state: procevent-inbox
+state: terminal-outcomes
+ok - codex-cli 0.157.1 host-opted Codex home: allowing Stop started no idle supervisor
+exit=0
