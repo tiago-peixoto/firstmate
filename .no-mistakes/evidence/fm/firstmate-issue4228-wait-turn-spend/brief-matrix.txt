@@ -1,0 +1,6 @@
+ship       off waiting=0 nopoll=0 checkpoint=1 neverlist=0 foreground=0 background=1
+ship       on  waiting=1 nopoll=1 checkpoint=1 neverlist=0 foreground=1 background=0
+scout      off waiting=0 nopoll=0 checkpoint=1 neverlist=0 foreground=0 background=0
+scout      on  waiting=1 nopoll=1 checkpoint=1 neverlist=0 foreground=0 background=0
+sm         off waiting=0 nopoll=0 checkpoint=1 neverlist=0 foreground=0 background=0
+sm         on  waiting=0 nopoll=1 checkpoint=1 neverlist=0 foreground=0 background=0

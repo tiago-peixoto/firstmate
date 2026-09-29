@@ -11,6 +11,7 @@ ok - inbox: a writer retries when a competing lock vanishes after its failed cla
 ok - inbox: ladder bookkeeping ignores a concurrently removed inbox
 ok - inbox: fire-and-forget records stay durable and outside the ladder
 ok - inbox: a fire-and-forget record whose ring did not land is owed exactly one retry
+ok - inbox: without config/wait-no-turns a fire-and-forget retry mark stays quiet
 ok - inbox: the re-ring ladder paces by grace, escalates once, and resets on ack
 ok - watcher: an unhandled aged message on an idle pane re-rings without waking firstmate, and the ack silences it
 ok - watcher: a busy pane just waits - the record is durable and no doorbell is typed

@@ -1,6 +1,7 @@
 ok - normal correlated reply resolves once (idempotent)
 ok - completed turn with no report triggers exactly one recovery
 ok - recovery never pokes a mate waiting on its own decision, and runs once it closes
+ok - recovery sends during an open decision when config/wait-no-turns is absent
 ok - recovery attempts reconcile without reinjection
 ok - recovery reply resolves the original expectation
 ok - second missed turn escalates once and remains durable

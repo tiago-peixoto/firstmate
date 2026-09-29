@@ -1,0 +1,16 @@
+== decision resolved: first watcher inbox check
+check_rc=0
+retry-ring after: cat: /tmp/fm-lab.GQFNYP/state/domain.inbox/.retry-ring: No such file or directory
+pane:
+● Bash(cd /tmp/fm-lab.GQFNYP/state/domain.inbox && ls; for f in $(ls *.msg 2>/dev/null | sort -n); do echo "== $f"; cat "$f"; done)
+  ⎿  001.msg
+     handled
+     == 001.msg
+     … +5 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to /tmp/fm-lab.GQFNYP/smhome
+  ⎿  Allowed by auto mode classifier
+✶ Mulling… (4s · ↓ 136 tokens)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · esc to interrupt · ← for agents
