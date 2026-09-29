@@ -1,0 +1,217 @@
+
+
+
+
+
+
+
+20:12:46 codex codex-cli 0.157.1 pid=3517926 mode=owner
+20:12:57 first turn idle; state/.lock=3517926
+20:12:58 registered ownerless source; hits=0
+20:12:59 sent prompt OK2 (the only user prompt after startup)
+20:12:59 turn=busy sup_owner=- sup_pid=- lock=3517926 hits=1
+20:13:15 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=1
+20:13:16   supervisor arm.out: watcher: started pid=3540109 (beacon fresh)|
+20:13:20 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=2
+20:13:20   supervisor arm.out: 
+20:13:21   supervisor arm.out: watcher: started pid=3544785 (beacon fresh)|check: rearm-resurface|
+20:13:22   supervisor arm.out: watcher: started pid=3546836 (beacon fresh)|
+20:13:23   supervisor arm.out: 
+20:13:25   supervisor arm.out: watcher: started pid=3549209 (beacon fresh)|
+20:13:26   supervisor arm.out: 
+20:13:27 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=2
+20:13:27   supervisor arm.out: watcher: started pid=3551448 (beacon fresh)|check: rearm-resurface|
+20:13:28   supervisor arm.out: watcher: started pid=3553933 (beacon fresh)|
+20:13:29   supervisor arm.out: 
+20:13:30 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=2
+20:13:30   supervisor arm.out: watcher: started pid=3557268 (beacon fresh)|check: rearm-resurface|
+20:13:31 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=2
+20:13:31   supervisor arm.out: watcher: started pid=3560288 (beacon fresh)|
+20:13:32   supervisor arm.out: watcher: started pid=3560288 (beacon fresh)|check: rearm-resurface|
+20:13:33   supervisor arm.out: watcher: started pid=3563316 (beacon fresh)|
+20:13:34   supervisor arm.out: 
+20:13:35   supervisor arm.out: watcher: started pid=3566654 (beacon fresh)|check: rearm-resurface|
+20:13:36   supervisor arm.out: watcher: started pid=3570407 (beacon fresh)|
+20:13:37   supervisor arm.out: 
+20:13:38   supervisor arm.out: watcher: started pid=3574201 (beacon fresh)|
+20:13:39   supervisor arm.out: 
+20:13:40   supervisor arm.out: watcher: started pid=3578613 (beacon fresh)|check: rearm-resurface|
+20:13:41   supervisor arm.out: watcher: started pid=3582934 (beacon fresh)|
+20:13:43 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=3
+20:13:43   supervisor arm.out: watcher: started pid=3588318 (beacon fresh)|
+20:13:44   supervisor arm.out: watcher: started pid=3588318 (beacon fresh)|check: rearm-resurface|
+20:13:45   supervisor arm.out: watcher: started pid=3591835 (beacon fresh)|
+20:13:46   supervisor arm.out: 
+20:13:47   supervisor arm.out: watcher: started pid=3594951 (beacon fresh)|
+20:13:48   supervisor arm.out: watcher: started pid=3597939 (beacon fresh)|
+20:13:49   supervisor arm.out: 
+20:13:50   supervisor arm.out: watcher: started pid=3600715 (beacon fresh)|
+20:13:51   supervisor arm.out: watcher: started pid=3600715 (beacon fresh)|check: rearm-resurface|
+20:13:52   supervisor arm.out: watcher: started pid=3604313 (beacon fresh)|
+20:13:53   supervisor arm.out: 
+20:13:54   supervisor arm.out: watcher: started pid=3607280 (beacon fresh)|check: rearm-resurface|
+20:13:55   supervisor arm.out: watcher: started pid=3610761 (beacon fresh)|
+20:13:57   supervisor arm.out: 
+20:13:58   supervisor arm.out: watcher: started pid=3612842 (beacon fresh)|
+20:13:59   supervisor arm.out: 
+20:14:00   supervisor arm.out: watcher: started pid=3614906 (beacon fresh)|check: rearm-resurface|
+20:14:01   supervisor arm.out: watcher: started pid=3617358 (beacon fresh)|
+20:14:02   supervisor arm.out: 
+20:14:03   supervisor arm.out: watcher: started pid=3620025 (beacon fresh)|
+20:14:05 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=4
+20:14:05   supervisor arm.out: 
+20:14:06   supervisor arm.out: watcher: started pid=3630340 (beacon fresh)|
+20:14:07   supervisor arm.out: 
+20:14:08   supervisor arm.out: watcher: started pid=3634610 (beacon fresh)|check: rearm-resurface|
+20:14:09   supervisor arm.out: watcher: started pid=3638397 (beacon fresh)|
+20:14:10   supervisor arm.out: 
+20:14:11   supervisor arm.out: watcher: started pid=3640672 (beacon fresh)|
+20:14:12   supervisor arm.out: 
+20:14:13   supervisor arm.out: watcher: started pid=3643820 (beacon fresh)|
+20:14:14   supervisor arm.out: 
+20:14:15   supervisor arm.out: watcher: started pid=3646426 (beacon fresh)|
+20:14:16   supervisor arm.out: 
+20:14:17   supervisor arm.out: watcher: started pid=3654290 (beacon fresh)|
+20:14:18   supervisor arm.out: 
+20:14:19   supervisor arm.out: watcher: started pid=3659806 (beacon fresh)|
+20:14:20   supervisor arm.out: watcher: started pid=3663231 (beacon fresh)|
+20:14:21   supervisor arm.out: watcher: started pid=3663231 (beacon fresh)|check: rearm-resurface|
+20:14:22   supervisor arm.out: watcher: started pid=3665738 (beacon fresh)|
+20:14:23   supervisor arm.out: 
+20:14:24   supervisor arm.out: watcher: started pid=3668088 (beacon fresh)|check: rearm-resurface|
+20:14:26   supervisor arm.out: watcher: started pid=3671015 (beacon fresh)|
+20:14:27 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=5
+20:14:28   supervisor arm.out: watcher: started pid=3675130 (beacon fresh)|
+20:14:29   supervisor arm.out: watcher: started pid=3675130 (beacon fresh)|check: rearm-resurface|
+20:14:30   supervisor arm.out: watcher: started pid=3677082 (beacon fresh)|
+20:14:31   supervisor arm.out: 
+20:14:32   supervisor arm.out: watcher: started pid=3678958 (beacon fresh)|check: rearm-resurface|
+20:14:33   supervisor arm.out: watcher: started pid=3681070 (beacon fresh)|
+20:14:34   supervisor arm.out: 
+20:14:35   supervisor arm.out: watcher: started pid=3683808 (beacon fresh)|
+20:14:36   supervisor arm.out: 
+20:14:37 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=5
+20:14:37   supervisor arm.out: watcher: started pid=3687052 (beacon fresh)|check: rearm-resurface|
+20:14:38   supervisor arm.out: watcher: started pid=3690168 (beacon fresh)|
+20:14:39 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=5
+20:14:39   supervisor arm.out: 
+20:14:40   supervisor arm.out: watcher: started pid=3696134 (beacon fresh)|check: rearm-resurface|
+20:14:41 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=5
+20:14:41   supervisor arm.out: watcher: started pid=3699343 (beacon fresh)|
+20:14:42 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=5
+20:14:42   supervisor arm.out: watcher: started pid=3699343 (beacon fresh)|check: rearm-resurface|
+20:14:43   supervisor arm.out: watcher: started pid=3702604 (beacon fresh)|
+20:14:44   supervisor arm.out: 
+20:14:45   supervisor arm.out: watcher: started pid=3705513 (beacon fresh)|check: rearm-resurface|
+20:14:46   supervisor arm.out: watcher: started pid=3707251 (beacon fresh)|
+20:14:47   supervisor arm.out: 
+20:14:48   supervisor arm.out: watcher: started pid=3709160 (beacon fresh)|
+20:14:49 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=6
+20:14:49   supervisor arm.out: watcher: started pid=3709160 (beacon fresh)|check: process-event result captured: procevent:shot:5|
+20:14:50   supervisor arm.out: watcher: started pid=3711540 (beacon fresh)|
+20:14:51   supervisor arm.out: 
+20:14:52   supervisor arm.out: watcher: started pid=3714306 (beacon fresh)|check: rearm-resurface|
+20:14:53   supervisor arm.out: watcher: started pid=3716677 (beacon fresh)|
+20:14:54   supervisor arm.out: 
+20:14:55   supervisor arm.out: watcher: started pid=3718765 (beacon fresh)|
+20:14:57   supervisor arm.out: 
+20:14:58   supervisor arm.out: watcher: started pid=3721057 (beacon fresh)|check: rearm-resurface|
+20:14:59   supervisor arm.out: watcher: started pid=3722486 (beacon fresh)|
+20:15:00   supervisor arm.out: 
+20:15:01   supervisor arm.out: watcher: started pid=3724653 (beacon fresh)|check: rearm-resurface|
+20:15:02   supervisor arm.out: watcher: started pid=3726336 (beacon fresh)|
+20:15:03   supervisor arm.out: 
+20:15:04   supervisor arm.out: watcher: started pid=3727453 (beacon fresh)|check: rearm-resurface|
+20:15:05   supervisor arm.out: watcher: started pid=3729215 (beacon fresh)|
+20:15:06   supervisor arm.out: 
+20:15:07   supervisor arm.out: watcher: started pid=3731276 (beacon fresh)|
+20:15:11 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=7
+20:15:11   supervisor arm.out: 
+20:15:12   supervisor arm.out: watcher: started pid=3736232 (beacon fresh)|
+20:15:13 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=7
+20:15:13   supervisor arm.out: 
+20:15:14 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=7
+20:15:14   supervisor arm.out: watcher: started pid=3738335 (beacon fresh)|check: rearm-resurface|
+20:15:15   supervisor arm.out: watcher: started pid=3739887 (beacon fresh)|
+20:15:16 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=7
+20:15:16   supervisor arm.out: 
+20:15:17 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=7
+20:15:17   supervisor arm.out: watcher: started pid=3741611 (beacon fresh)|check: rearm-resurface|
+20:15:18   supervisor arm.out: 
+20:15:19   supervisor arm.out: watcher: started pid=3743148 (beacon fresh)|check: rearm-resurface|
+20:15:20   supervisor arm.out: watcher: started pid=3745426 (beacon fresh)|
+20:15:21   supervisor arm.out: 
+20:15:22   supervisor arm.out: watcher: started pid=3746893 (beacon fresh)|check: rearm-resurface|
+20:15:23   supervisor arm.out: watcher: started pid=3748597 (beacon fresh)|
+20:15:24   supervisor arm.out: 
+20:15:25   supervisor arm.out: watcher: started pid=3750682 (beacon fresh)|
+20:15:26   supervisor arm.out: watcher: started pid=3750682 (beacon fresh)|check: rearm-resurface|
+20:15:27   supervisor arm.out: watcher: started pid=3758126 (beacon fresh)|
+20:15:28   supervisor arm.out: 
+20:15:30   supervisor arm.out: watcher: started pid=3762786 (beacon fresh)|check: rearm-resurface|
+20:15:31   supervisor arm.out: watcher: started pid=3766413 (beacon fresh)|
+20:15:33 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=8
+20:15:33   supervisor arm.out: watcher: started pid=3771694 (beacon fresh)|
+20:15:34   supervisor arm.out: watcher: started pid=3771694 (beacon fresh)|check: rearm-resurface|
+20:15:35   supervisor arm.out: watcher: started pid=3774403 (beacon fresh)|
+20:15:36   supervisor arm.out: 
+20:15:37   supervisor arm.out: watcher: started pid=3776958 (beacon fresh)|
+20:15:38   supervisor arm.out: 
+20:15:39   supervisor arm.out: watcher: started pid=3781386 (beacon fresh)|check: rearm-resurface|
+20:15:40   supervisor arm.out: watcher: started pid=3784995 (beacon fresh)|
+20:15:41   supervisor arm.out: watcher: started pid=3784995 (beacon fresh)|check: rearm-resurface|
+20:15:42   supervisor arm.out: watcher: started pid=3787540 (beacon fresh)|
+20:15:43   supervisor arm.out: 
+20:15:44   supervisor arm.out: watcher: started pid=3790374 (beacon fresh)|check: rearm-resurface|
+20:15:45   supervisor arm.out: watcher: started pid=3794458 (beacon fresh)|
+20:15:53 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=9
+20:15:53   supervisor arm.out: watcher: started pid=3794458 (beacon fresh)|check: process-event result captured: procevent:shot:8|
+20:15:54 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=9
+20:15:54   supervisor arm.out: watcher: started pid=3808854 (beacon fresh)|
+20:15:55   supervisor arm.out: 
+20:15:56   supervisor arm.out: watcher: started pid=3811102 (beacon fresh)|
+20:15:57   supervisor arm.out: 
+20:15:58 turn=idle sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=9
+20:15:58   supervisor arm.out: watcher: started pid=3812945 (beacon fresh)|check: rearm-resurface|
+20:15:59 turn=busy sup_owner=3517926 sup_pid=3540032 lock=3517926 hits=9
+20:15:59   supervisor arm.out: watcher: started pid=3814764 (beacon fresh)|
+20:16:00   supervisor arm.out: 
+20:16:01   supervisor arm.out: watcher: started pid=3816573 (beacon fresh)|
+20:16:02   supervisor arm.out: watcher: started pid=3818958 (beacon fresh)|
+20:16:04   supervisor arm.out: watcher: started pid=3818958 (beacon fresh)|check: rearm-resurface|
+---- idle-continuity log lines (state) ----
+.codex-idle-continuity.lock
+queued-into-thread user entries (› check:/signal:/stale:): 0
+---- final pane ----
+check: rearm-resurface
+  └ wake drain: acknowledged wakes through 83 (4 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_AC…
+    + Show details
+• Ran bin/fm-wake-drain.sh
+  └ 1790705743    88    check    procevent:shot:7    check: procevent lavish shot 7
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 88 --recovery-generation 3791038.1790705743.iLHrc9
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+• Ran bin/fm-procevent.sh handled shot 7
+  └ already-handled: shot 7
+• Ran bin/fm-wake-drain.sh --ack-through 88 --recovery-generation 3791038.1790705743.iLHrc9
+  └ (no output)
+• Ran bin/fm-wake-drain.sh
+  └ (no output)
+• Captain, results 6–7 contained no feedback and are acknowledged. The wake queue is empty; the test source remains unchanged.
+• Blocked by hook
+  └ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ●  TURN WOULD END BLIND - SUPERVISION IS OFF
+    ●  1 process-event source(s) registered, but no live watcher holds this home lock (last beat: 2s ago).
+    ●  repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Captain, I’ll run the requested supervision checkpoint without changing the test source.
+• Ran bin/fm-wake-drain.sh
+  └ 1790705759    94    check    procevent:shot:8    check: procevent lavish shot 8
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 94 --recovery-generation 3815349.1790705759.avZEyX
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+• Explored
+  └ Read fm-watch-checkpoint.sh
+    + Show details
+• Working (51s • esc to interrupt)
+› Ask Codex to do anything
+  GPT-6-Astra low · /tmp/fm-lab.E4vQSS/project · Acknowledge idle status
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

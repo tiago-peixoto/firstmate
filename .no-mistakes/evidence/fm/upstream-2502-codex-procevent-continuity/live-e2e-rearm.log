@@ -1,0 +1,4698 @@
++ set -u
+++ dirname tests/fm-codex-idle-continuity-live-e2e.test.sh
++ . tests/lib.sh
+++ '[' -n '' ']'
+++ FM_TEST_LIB_SOURCED=1
+++ umask 022
++++ dirname tests/lib.sh
+++ . tests/git-config-helpers.sh
++++ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
++++ GIT_CONFIG_GLOBAL=/dev/null
++++ GIT_CONFIG_NOSYSTEM=1
+++ export FM_GATE_REFUSE_BYPASS=1
+++ FM_GATE_REFUSE_BYPASS=1
+++ export FM_TEST_SEAM=1
+++ FM_TEST_SEAM=1
+++ unset FM_TASK_ID
+++ unset TASKS_AXI_FILE TASKS_AXI_BACKEND
+++++ dirname tests/lib.sh
++++ cd tests/..
++++ pwd
+++ ROOT=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W
+++ FM_TEST_CLEANUP_DIRS=()
++++ mktemp /tmp/.fm-test-cleanup.1757024.XXXXXX
+++ FM_TEST_CLEANUP_REGISTRY=/tmp/.fm-test-cleanup.1757024.eUo1Du
++++ fm_test_pid_identity 1757024
++++ local pid=1757024
++++ FM_STATE_OVERRIDE=/tmp
++++ bash -c '. "$1"; fm_pid_identity "$2"' _ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/bin/fm-wake-lib.sh 1757024
+++ FM_TEST_OWNER_IDENTITY='linux-starttime=48420935 cmdline-hex=62617368002d780074657374732f666d2d636f6465782d69646c652d636f6e74696e756974792d6c6976652d6532652e746573742e736800'
++++ mktemp /tmp/.fm-test-procevent.1757024.XXXXXX
+++ FM_TEST_PROCEVENT_REGISTRY=/tmp/.fm-test-procevent.1757024.7UThaP
++++ mktemp /tmp/.fm-test-watcher.1757024.XXXXXX
+++ FM_TEST_WATCHER_REGISTRY=/tmp/.fm-test-watcher.1757024.0sYHK6
+++ FM_TEST_STUB_MAX_BLOCK_SECONDS=120
+++ export FM_TEST_STUB_MAX_BLOCK_SECONDS
+++ trap fm_test_cleanup EXIT
+++ trap 'fm_test_cleanup; exit 130' INT
+++ trap 'fm_test_cleanup; exit 143' TERM
+++ trap 'fm_test_cleanup; exit 129' HUP
+++ trap 'fm_test_cleanup; exit 131' QUIT
+++ FM_TEST_ORPHAN_MAX_AGE_SECONDS=3600
+++ '[' 0 '!=' 1 ']'
+++ fm_test_reap_orphans
+++ local marker dir mtime now owner_pid owner_identity current_identity
++++ date +%s
+++ now=1790704194
+++ for marker in "${TMPDIR:-/tmp}"/fm-*/.fm-test-fixture
+++ '[' -e '/tmp/fm-*/.fm-test-fixture' ']'
+++ continue
++ fm_live_gate opt-in FM_CODEX_LIVE_E2E codex tmux
++ local policy=opt-in vars=FM_CODEX_LIVE_E2E
++ shift 2
++ local var value rest primary requested=0 disabled_by= tool
++ var_list=()
++ local -a var_list
++ case "$policy" in
++ rest=FM_CODEX_LIVE_E2E
++ '[' -n FM_CODEX_LIVE_E2E ']'
++ var=FM_CODEX_LIVE_E2E
++ '[' FM_CODEX_LIVE_E2E = FM_CODEX_LIVE_E2E ']'
++ rest=
++ '[' -n FM_CODEX_LIVE_E2E ']'
++ var_list+=("$var")
++ '[' -n '' ']'
++ '[' 1 -gt 0 ']'
++ primary=FM_CODEX_LIVE_E2E
++ for var in "${var_list[@]}"
++ value=1
++ case "$value" in
++ requested=1
++ '[' 1 -eq 0 ']'
++ for tool in "$@"
++ command -v codex
++ continue
++ for tool in "$@"
++ command -v tmux
++ continue
++ export DISABLE_AUTOUPDATER=1
++ DISABLE_AUTOUPDATER=1
++ return 0
++++ dirname tests/fm-codex-idle-continuity-live-e2e.test.sh
+++ cd tests/..
+++ pwd
++ ROOT=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W
++ LAB=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024
++ PROJECT=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project
++ HOME_DIR=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome
++ LAB_CODEX_HOME=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/codex-home
++ LOG=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits
++ SRC=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/source.sh
++ SOCKET=fm-codex-idle-continuity-1757024
+++ codex --version
++ CODEX_VERSION='codex-cli 0.157.1'
++ trap cleanup EXIT
++ AUTH=/home/firstmate/.codex/auth.json
++ '[' -f /home/firstmate/.codex/auth.json ']'
++ mkdir -p /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024 /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/codex-home
++ git clone -q /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project
+Note: switching to '5571d58dc7ccf10f319dbbc97237c1aa518356cb'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
++ cp /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/bin/fm-codex-idle-continuity.sh /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project/bin/fm-codex-idle-continuity.sh
++ cp /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex/hooks.json /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project/.codex/hooks.json
++ chmod +x /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project/bin/fm-codex-idle-continuity.sh
++ cp /home/firstmate/.codex/auth.json /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/codex-home/auth.json
+++ cd /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project
+++ pwd -P
++ printf '[projects."%s"]\ntrust_level = "trusted"\n' /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project
++ cat
++ chmod +x /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/source.sh
++ fm_test_track_procevent_home /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome
++ '[' -n /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome ']'
++ printf '%s\t%s\n' /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome ''
++ tmux -L fm-codex-idle-continuity-1757024 new-session -d -s idle -x 160 -y 45 -c /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project -- env CODEX_HOME=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/codex-home FM_HOME=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome FM_POLL=1 codex --dangerously-bypass-hook-trust --dangerously-bypass-approvals-and-sandbox -c 'model_reasoning_effort="low"' 'Reply with exactly IDLE-OK. Do not call tools.'
+++ tmux -L fm-codex-idle-continuity-1757024 display-message -p -t idle '#{pane_pid}'
++ codex_pid=1757354
++ first_done=0
+++ seq 1 180
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F IDLE-OK
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F IDLE-OK
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ sleep 1
++ for _ in $(seq 1 180)
++ kill -0 1757354
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F IDLE-OK
++ first_done=1
++ break
++ '[' 1 = 1 ']'
++ FM_HOME=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome
++ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/bin/fm-procevent.sh register lavish shot -- /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/source.sh
++ FM_HOME=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome
++ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/bin/fm-procevent.sh reconcile
+++ seq 1 30
++ for _ in $(seq 1 30)
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ printf '0\n'
++ '[' 0 -ge 1 ']'
++ sleep 0.5
++ for _ in $(seq 1 30)
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ '[' 1 -ge 1 ']'
++ break
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ '[' 1 -ge 1 ']'
++ send_prompt 'Reply with exactly OK2. Do not retire, register, or modify any process-event source; it is an intentional test fixture. Follow the normal wake drain protocol otherwise.'
++ tmux -L fm-codex-idle-continuity-1757024 send-keys -t idle 'Reply with exactly OK2. Do not retire, register, or modify any process-event source; it is an intentional test fixture. Follow the normal wake drain protocol otherwise.'
++ sleep 1
++ tmux -L fm-codex-idle-continuity-1757024 send-keys -t idle Enter
++ supervised=0
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ last=1
++ rearmed=0
+++ seq 1 360
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=1
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=1
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ tr -d ' '
+++ wc -l
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=2
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=2
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 3 -gt 3 ']'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=3
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=3
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=4
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=4
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=5
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=5
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
+++ true
++ '[' '' = 1757354 ']'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 6 -gt 6 ']'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=6
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=6
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ tr -d ' '
+++ wc -l
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=7
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=7
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=8
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=8
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=9
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=9
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 10 -gt 10 ']'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=10
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=10
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=11
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=11
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ grep -F 'esc to interrupt'
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=12
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=12
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 13 -gt 13 ']'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=13
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
+++ supervisor_owner
+++ cat /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state/.codex-idle-continuity.lock/owner
++ '[' 1757354 = 1757354 ']'
++ supervised=1
++ '[' 13 -gt 13 ']'
++ last=13
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=14
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=14
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=15
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=15
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ for _ in $(seq 1 360)
++ kill -0 1757354
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ now=16
++ turn_idle
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep -F 'esc to interrupt'
++ last=16
++ sleep 1
++ '[' 1 = 1 ']'
++ '[' 0 = 1 ']'
+++ hits
+++ '[' -f /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/hits ']'
+++ wc -l
+++ tr -d ' '
++ fail 'the idle supervisor did not re-arm the ownerless source (16 hits)'
++ printf 'not ok - %s\n' 'the idle supervisor did not re-arm the ownerless source (16 hits)'
+not ok - the idle supervisor did not re-arm the ownerless source (16 hits)
++ tmux -L fm-codex-idle-continuity-1757024 capture-pane -p -t idle
++ grep '[^[:space:]]'
++ tail -12
++ sed 's/^/#   /'
+#       ANNOTATIONS: (none)
+#       END LAVISH RESULT (0 of 0)
+#       + Show details
+#   • Ran bin/fm-procevent.sh handled shot 15
+#     └ handled: shot 15
+#   • Ran bin/fm-wake-drain.sh --ack-through 121 --recovery-generation 2301496.1790704557.I36HVE
+#     └ wake drain: acknowledged wakes through 121 (3 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_A…
+#       + Show details
+#   • Working (1m 04s • esc to interrupt)
+#   › Ask Codex to do anything
+#     GPT-6-Astra low · ~/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/project · Return IDLE-OK
+#     ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view
++ exit 1
++ cleanup
++ tmux -L fm-codex-idle-continuity-1757024 kill-server
++ '[' -d /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome/state ']'
++ FM_HOME=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome
++ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/bin/fm-codex-idle-continuity.sh --handover
++ FM_HOME=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024/fmhome
++ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/bin/fm-procevent.sh sweep-home
++ rm -rf /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3Q3C9VS7TSGHXXGT8D7FM2W/.codex-idle-live.1757024
+rc=1

@@ -1,0 +1,151 @@
+
+
+
+
+
+
+
+20:08:49 codex codex-cli 0.157.1 pid=3198947 mode=owner
+20:09:01 first turn idle; state/.lock=3198947
+20:09:01 registered ownerless source; hits=0
+20:09:02 sent prompt OK2 (the only user prompt after startup)
+20:09:02 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=1
+20:09:03 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=1
+20:09:08 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=1
+20:09:10 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=1
+20:09:12 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=1
+20:09:13 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=1
+20:09:25 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=2
+20:09:26 turn=idle sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=2
+20:09:26   supervisor arm.out: watcher: started pid=3233069 (beacon fresh)|
+20:09:27   supervisor arm.out: 
+20:09:28   supervisor arm.out: watcher: started pid=3235500 (beacon fresh)|
+20:09:29   supervisor arm.out: 
+20:09:30 turn=busy sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=2
+20:09:30   supervisor arm.out: watcher: started pid=3237605 (beacon fresh)|check: rearm-resurface|
+20:09:31   supervisor arm.out: watcher: started pid=3240185 (beacon fresh)|
+20:09:32 turn=idle sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=2
+20:09:32   supervisor arm.out: 
+20:09:33 turn=busy sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=2
+20:09:33   supervisor arm.out: watcher: started pid=3242477 (beacon fresh)|
+20:09:34   supervisor arm.out: watcher: started pid=3245062 (beacon fresh)|
+20:09:35   supervisor arm.out: watcher: started pid=3245062 (beacon fresh)|check: rearm-resurface|
+20:09:36   supervisor arm.out: watcher: started pid=3248159 (beacon fresh)|
+20:09:37   supervisor arm.out: 
+20:09:38   supervisor arm.out: watcher: started pid=3250523 (beacon fresh)|check: rearm-resurface|
+20:09:39   supervisor arm.out: watcher: started pid=3252658 (beacon fresh)|
+20:09:40 turn=idle sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=2
+20:09:40   supervisor arm.out: 
+20:09:41 turn=busy sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=2
+20:09:41   supervisor arm.out: watcher: started pid=3255090 (beacon fresh)|
+20:09:42   supervisor arm.out: 
+20:09:43   supervisor arm.out: watcher: started pid=3257323 (beacon fresh)|check: rearm-resurface|
+20:09:44   supervisor arm.out: watcher: started pid=3259746 (beacon fresh)|
+20:09:46 turn=busy sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=3
+20:09:46   supervisor arm.out: watcher: started pid=3259746 (beacon fresh)|check: process-event result captured: procevent:shot:2|
+20:09:47   supervisor arm.out: watcher: started pid=3265068 (beacon fresh)|
+20:09:49   supervisor arm.out: 
+20:09:50   supervisor arm.out: watcher: started pid=3266593 (beacon fresh)|
+20:09:51   supervisor arm.out: 
+20:09:52   supervisor arm.out: watcher: started pid=3268260 (beacon fresh)|check: rearm-resurface|
+20:09:53   supervisor arm.out: watcher: started pid=3270300 (beacon fresh)|
+20:09:54   supervisor arm.out: watcher: started pid=3270300 (beacon fresh)|check: rearm-resurface|
+20:09:55   supervisor arm.out: watcher: started pid=3272594 (beacon fresh)|
+20:09:56   supervisor arm.out: watcher: started pid=3272594 (beacon fresh)|check: rearm-resurface|
+20:09:57   supervisor arm.out: watcher: started pid=3274739 (beacon fresh)|
+20:09:58   supervisor arm.out: 
+20:09:59   supervisor arm.out: watcher: started pid=3276905 (beacon fresh)|check: rearm-resurface|
+20:10:00   supervisor arm.out: watcher: started pid=3279053 (beacon fresh)|
+20:10:01   supervisor arm.out: watcher: started pid=3279053 (beacon fresh)|check: rearm-resurface|
+20:10:02   supervisor arm.out: watcher: started pid=3282398 (beacon fresh)|
+20:10:03   supervisor arm.out: watcher: started pid=3282398 (beacon fresh)|check: rearm-resurface|
+20:10:04   supervisor arm.out: watcher: started pid=3286334 (beacon fresh)|
+20:10:05   supervisor arm.out: 
+20:10:06   supervisor arm.out: watcher: started pid=3290235 (beacon fresh)|check: rearm-resurface|
+20:10:07   supervisor arm.out: watcher: started pid=3293354 (beacon fresh)|
+20:10:08 turn=busy sup_owner=3198947 sup_pid=3233002 lock=3198947 hits=4
+20:10:08   supervisor arm.out: watcher: started pid=3293354 (beacon fresh)|check: process-event result captured: procevent:shot:3|
+20:10:09   supervisor arm.out: watcher: started pid=3298653 (beacon fresh)|
+20:10:10   supervisor arm.out: watcher: started pid=3298653 (beacon fresh)|check: rearm-resurface|
+20:10:11   supervisor arm.out: watcher: started pid=3302094 (beacon fresh)|
+20:10:12 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=4
+20:10:29 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=4
+20:10:30 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=4
+20:10:32 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=4
+20:10:33 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=4
+20:10:36 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=5
+20:10:53 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=5
+20:10:54 turn=busy sup_owner=3198947 sup_pid=3364376 lock=3198947 hits=5
+20:10:54   supervisor arm.out: watcher: attached pid=3356443 (beacon 0s)|
+20:10:58 turn=idle sup_owner=3198947 sup_pid=3364376 lock=3198947 hits=6
+20:10:59 turn=busy sup_owner=3198947 sup_pid=3364376 lock=3198947 hits=6
+20:11:09 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=6
+20:11:12 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=6
+20:11:14 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=6
+20:11:21 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=7
+20:11:37 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=7
+20:11:38 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=7
+20:11:41 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=7
+20:11:42 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=8
+20:11:44 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=8
+20:11:45 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=8
+20:12:02 turn=idle sup_owner=- sup_pid=- lock=3198947 hits=8
+20:12:04 turn=busy sup_owner=3198947 sup_pid=3448936 lock=3198947 hits=9
+20:12:04   supervisor arm.out: 
+20:12:05   supervisor arm.out: watcher: started pid=3449146 (beacon fresh)|check: rearm-resurface|
+20:12:06 turn=idle sup_owner=3198947 sup_pid=3448936 lock=3198947 hits=9
+20:12:06   supervisor arm.out: watcher: started pid=3452675 (beacon fresh)|
+20:12:07 turn=busy sup_owner=3198947 sup_pid=3448936 lock=3198947 hits=9
+20:12:07   supervisor arm.out: 
+20:12:08   supervisor arm.out: watcher: started pid=3455782 (beacon fresh)|
+20:12:09   supervisor arm.out: 
+20:12:10   supervisor arm.out: watcher: started pid=3461005 (beacon fresh)|
+20:12:11   supervisor arm.out: 
+20:12:12   supervisor arm.out: watcher: started pid=3465008 (beacon fresh)|check: rearm-resurface|
+20:12:13   supervisor arm.out: watcher: started pid=3468723 (beacon fresh)|
+20:12:14   supervisor arm.out: 
+20:12:15   supervisor arm.out: watcher: started pid=3471836 (beacon fresh)|
+20:12:16   supervisor arm.out: 
+20:12:17   supervisor arm.out: watcher: started pid=3475903 (beacon fresh)|check: rearm-resurface|
+20:12:18   supervisor arm.out: 
+20:12:19   supervisor arm.out: watcher: started pid=3479339 (beacon fresh)|check: rearm-resurface|
+20:12:20   supervisor arm.out: watcher: started pid=3482945 (beacon fresh)|
+20:12:21   supervisor arm.out: 
+20:12:22   supervisor arm.out: watcher: started pid=3486044 (beacon fresh)|check: rearm-resurface|
+20:12:23   supervisor arm.out: watcher: started pid=3487741 (beacon fresh)|
+20:12:24   supervisor arm.out: 
+20:12:25   supervisor arm.out: watcher: started pid=3490288 (beacon fresh)|
+20:12:26 turn=busy sup_owner=- sup_pid=- lock=3198947 hits=10
+---- idle-continuity log lines (state) ----
+---- final pane ----
+• Captain, I’ll drain the wake queue without changing the fixture.
+• Ran bin/fm-wake-drain.sh
+  └ 1790705525    43    check    procevent:shot:8    check: procevent lavish shot 8
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 43 --recovery-generation 3453622.1790705525.oEskgu
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+• Ran bin/fm-procevent-lavish.sh read /tmp/fm-lab.6B2JEI/fmhome/state/procevent-inbox/shot.8.result
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + Show details
+• Ran bin/fm-procevent.sh handled shot 8
+  └ handled: shot 8
+• Ran bin/fm-wake-drain.sh --ack-through 43 --recovery-generation 3453622.1790705525.oEskgu
+  └ wake drain: acknowledged wakes through 43 (4 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_AC…
+    + Show details
+• Ran bin/fm-wake-drain.sh
+  └ ●  After draining queued wakes, repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + Show details
+• Ran bin/fm-procevent.sh handled shot 8
+  └ already-handled: shot 8
+• Ran bin/fm-wake-drain.sh --ack-through 48 --recovery-generation 3479339.1790705538.R4LUlW
+  └ wake drain: acknowledged wakes through 48 (5 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_AC…
+    + Show details
+• Ran bin/fm-watch-checkpoint.sh --seconds 180
+  └ check: rearm-resurface
+• Working (24s • esc to interrupt)
+› Ask Codex to do anything
+  GPT-6-Astra low · /tmp/fm-lab.6B2JEI/project · Reply with IDLE-OK
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

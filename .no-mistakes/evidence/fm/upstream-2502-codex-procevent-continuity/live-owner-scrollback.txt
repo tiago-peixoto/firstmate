@@ -1,0 +1,45 @@
+check: rearm-resurface                                                                                                                                          
+  └ wake drain: acknowledged wakes through 83 (4 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_AC…
+    + Show details                                                                                                                                              
+                                                                                                                                                                
+• Ran bin/fm-wake-drain.sh                                                                                                                                      
+  └ 1790705743    88    check    procevent:shot:7    check: procevent lavish shot 7                                                                             
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 88 --recovery-generation 3791038.1790705743.iLHrc9                       
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.                                                                  
+                                                                                                                                                                
+• Ran bin/fm-procevent.sh handled shot 7                                                                                                                        
+  └ already-handled: shot 7                                                                                                                                     
+                                                                                                                                                                
+• Ran bin/fm-wake-drain.sh --ack-through 88 --recovery-generation 3791038.1790705743.iLHrc9                                                                     
+  └ (no output)                                                                                                                                                 
+                                                                                                                                                                
+• Ran bin/fm-wake-drain.sh                                                                                                                                      
+  └ (no output)                                                                                                                                                 
+                                                                                                                                                                
+• Captain, results 6–7 contained no feedback and are acknowledged. The wake queue is empty; the test source remains unchanged.                                  
+                                                                                                                                                                
+• Blocked by hook                                                                                                                                               
+  └ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                                                                                    
+    ●  TURN WOULD END BLIND - SUPERVISION IS OFF                                                                                                                
+    ●  1 process-event source(s) registered, but no live watcher holds this home lock (last beat: 2s ago).                                                      
+    ●  repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.                                               
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                                                                                    
+                                                                                                                                                                
+• Captain, I’ll run the requested supervision checkpoint without changing the test source.                                                                      
+                                                                                                                                                                
+• Ran bin/fm-wake-drain.sh                                                                                                                                      
+  └ 1790705759    94    check    procevent:shot:8    check: procevent lavish shot 8                                                                             
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 94 --recovery-generation 3815349.1790705759.avZEyX                       
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.                                                                  
+                                                                                                                                                                
+• Explored                                                                                                                                                      
+  └ Read fm-watch-checkpoint.sh                                                                                                                                 
+    + Show details                                                                                                                                              
+                                                                                                                                                               
+• Working (51s • esc to interrupt)                                                                                                                              
+                                                                                                                                                               
+                                                                                                                                                               
+› Ask Codex to do anything
+
+  GPT-6-Astra low · /tmp/fm-lab.E4vQSS/project · Acknowledge idle status
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

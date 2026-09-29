@@ -1,0 +1,53 @@
+
+
+
+
+
+
+
+20:16:17 codex codex-cli 0.157.1 pid=3832803 mode=owner
+20:16:27 first turn idle; state/.lock=3832803
+20:16:28 registered ownerless source; hits=0
+20:16:29 sent prompt OK2 (the only user prompt after startup)
+20:16:29 turn=idle sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:30 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:32 turn=idle sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:33 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:38 turn=idle sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:40 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:41 turn=idle sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:42 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=1
+20:16:54 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=2
+20:17:03 turn=idle sup_owner=- sup_pid=- lock=3832803 hits=2
+20:17:04 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=2
+20:17:14 turn=idle sup_owner=3832803 sup_pid=3892206 lock=3832803 hits=2
+20:17:15   supervisor arm.out: watcher: started pid=3892314 (beacon fresh)|
+20:17:16 turn=idle sup_owner=3832803 sup_pid=3892206 lock=3832803 hits=3
+20:17:16   supervisor arm.out: watcher: started pid=3892314 (beacon fresh)|check: process-event result captured: procevent:shot:2|
+20:17:17   supervisor arm.out: watcher: started pid=3894940 (beacon fresh)|
+20:17:18 turn=busy sup_owner=3832803 sup_pid=3892206 lock=3832803 hits=3
+20:17:18   supervisor arm.out: 
+20:17:19   supervisor arm.out: watcher: started pid=3896443 (beacon fresh)|
+20:17:20 turn=idle sup_owner=3832803 sup_pid=3892206 lock=3832803 hits=3
+20:17:20   supervisor arm.out: watcher: started pid=3898384 (beacon fresh)|
+20:17:21 turn=busy sup_owner=3832803 sup_pid=3892206 lock=3832803 hits=3
+20:17:21   supervisor arm.out: 
+20:17:23   supervisor arm.out: watcher: started pid=3900135 (beacon fresh)|
+20:17:24   supervisor arm.out: watcher: started pid=3900135 (beacon fresh)|check: rearm-resurface|
+20:17:25   supervisor arm.out: watcher: started pid=3902378 (beacon fresh)|
+20:17:26   supervisor arm.out: 
+20:17:27   supervisor arm.out: watcher: started pid=3904214 (beacon fresh)|
+20:17:28   supervisor arm.out: watcher: started pid=3905912 (beacon fresh)|
+20:17:29   supervisor arm.out: 
+20:17:30   supervisor arm.out: watcher: started pid=3907906 (beacon fresh)|
+20:17:31   supervisor arm.out: 
+20:17:32   supervisor arm.out: watcher: started pid=3909490 (beacon fresh)|check: rearm-resurface|
+20:17:33   supervisor arm.out: watcher: started pid=3911172 (beacon fresh)|
+20:17:34   supervisor arm.out: 
+20:17:35   supervisor arm.out: watcher: started pid=3912806 (beacon fresh)|
+20:17:36   supervisor arm.out: watcher: started pid=3914606 (beacon fresh)|
+20:17:38 turn=busy sup_owner=3832803 sup_pid=3892206 lock=3832803 hits=4
+20:17:38   supervisor arm.out: watcher: started pid=3914606 (beacon fresh)|check: process-event result captured: procevent:shot:3|
+20:17:39 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=4
+20:17:57 turn=idle sup_owner=- sup_pid=- lock=3832803 hits=4
+20:17:58 turn=busy sup_owner=- sup_pid=- lock=3832803 hits=4

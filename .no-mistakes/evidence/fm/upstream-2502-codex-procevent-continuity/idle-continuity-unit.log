@@ -6,4 +6,10 @@ ok - handover closes never spend the failure budget, and real arm failures still
 ok - a broken watcher queues one give-up check per failure episode, and a successful checkpoint ends the episode
 ok - a close that returns after away mode started is not queued and leaves the watcher alone
 ok - a home opted into the supervision host starts no idle supervisor
-exit=0
+ok - a home whose supervision-host file says off still starts the idle supervisor
+ok - a session that does not own the home lock starts no idle supervisor
+ok - a dead recorded session owner is reclaimed before the idle supervisor starts
+
+real	1m6.088s
+user	0m4.865s
+sys	0m11.313s
