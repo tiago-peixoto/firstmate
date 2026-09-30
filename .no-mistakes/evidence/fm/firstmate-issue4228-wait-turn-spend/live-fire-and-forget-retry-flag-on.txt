@@ -1,0 +1,19 @@
+== config/wait-no-turns present (Claude Code worker in lab pane primary:fm-domain)
+$ fm-send.sh domain --fire-and-forget 2123456789abcdef 'lab steer three'   # composer holds text
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.6ZE0v0/state/domain.inbox/003.msg and the watcher will ring it once more
+rc=0
+$ cat state/domain.inbox/.retry-ring
+003.msg
+$ echo 'needs-decision [key=pick2]: ...' >> state/domain.status
+fm-watch rc=0 (signal: /tmp/fm-lab.6ZE0v0/state/domain.status)
+fm-watch rc=124 (Terminated                 sleep "$POLL")
+doorbells before=1 after=1   (open decision: expect no new ring)
+retry mark: 003.msg
+$ echo 'resolved [key=pick2]: beta' >> state/domain.status
+fm-watch rc=0 (signal: /tmp/fm-lab.6ZE0v0/state/domain.status)
+fm-watch rc=124 (Terminated                 sleep "$POLL")
+fm-watch rc=124 (Terminated                 sleep "$POLL")
+doorbells before=1 after=2   (decision closed: expect exactly one new ring)
+retry mark: GONE
+[2026-09-30T16:41:27+0200] steer-inbox retry ring: domain 001.msg result=0
+[2026-09-30T16:43:18+0200] steer-inbox retry ring: domain 003.msg result=0

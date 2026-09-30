@@ -1,3 +1,6 @@
-ship flag-off vs base fba81cb: diff lines=0
-scout flag-off vs base fba81cb: diff lines=0
-sm flag-off vs base fba81cb: diff lines=0
+== ship base vs flag-off: IDENTICAL
+
+== scout base vs flag-off: IDENTICAL
+
+== mate base vs flag-off: IDENTICAL
+

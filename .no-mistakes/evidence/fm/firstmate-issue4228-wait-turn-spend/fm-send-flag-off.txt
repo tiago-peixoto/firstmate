@@ -1,0 +1,12 @@
+$ ls config/wait-no-turns
+ls: cannot access '/tmp/fm-lab.6ZE0v0/config/wait-no-turns': No such file or directory
+$ fm-send.sh domain --fire-and-forget 1123456789abcdef "second lab steer" (composer holds "another draft")
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.6ZE0v0/state/domain.inbox/002.msg and the watcher will re-ring
+rc=0
+$ ls -A state/domain.inbox
+002.msg
+handled
+flag absent, fire-and-forget 002.msg unrung and aged; 12s of fm-watch.sh polling
+doorbell lines in worker pane before=1 after=1
+002.msg
+handled

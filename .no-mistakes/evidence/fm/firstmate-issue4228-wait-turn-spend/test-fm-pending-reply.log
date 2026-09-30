@@ -2,6 +2,10 @@ ok - normal correlated reply resolves once (idempotent)
 ok - completed turn with no report triggers exactly one recovery
 ok - recovery never pokes a mate waiting on its own decision, and runs once it closes
 ok - recovery sends during an open decision when config/wait-no-turns is absent
+ok - recovery grace is measured from the request turn's completion, not delivery
+ok - one fresh status read immediately before firing catches a just-landed reply, any verb
+ok - a resolve that fails after committing resolved still blocks repost and escalation
+ok - missed-report escalation grace is measured from the recovery turn's completion
 ok - recovery attempts reconcile without reinjection
 ok - recovery reply resolves the original expectation
 ok - second missed turn escalates once and remains durable
@@ -27,6 +31,7 @@ ok - backend busy/idle observation covers Pi/Claude paths without conversation s
 ok - tmux and zellij unknown states use bounded capture fallback
 ok - pending replies scope Kimi capture fallback by recorded harness
 ok - tick skips terminal records and reuses target observations
+ok - the tick leaves settled records alone and still does the selected records' work
 ok - correlations are reused only for matching open task records
 ok - tick end-to-end: miss -> one recovery -> escalate -> durable
 ok - failed transport discards undelivered expectation only
