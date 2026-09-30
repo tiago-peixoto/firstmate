@@ -1,0 +1,267 @@
+## Scenario 1: recording is off by default (no $LAB/config/pipeline-spend)
+$ bin/fm-pipeline-spend.sh record task-x1
+[exit 0]
+ledger present? no
+## Scenario 2: opt in, then real teardown of owned ship task task-x1 (real no-mistakes axi, real-schema state db)
+$ bin/fm-teardown.sh task-x1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.WCpm4Q
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/tmp/fm-spend-live.BnTEwe/proj: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree /tmp/fm-spend-live.BnTEwe/wt)
+Backlog: task-x1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.WCpm4Q/data/backlog.md). Update /tmp/fm-lab.WCpm4Q/data/backlog.md - move task-x1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+meta present? no; branch present? no; worktree dir present? yes
+ledger:
+{
+  "branch": "fm/task-x1",
+  "purposes": [
+    {
+      "cache_creation_tokens": {
+        "total": 1,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 0
+      },
+      "duration_ms": 250,
+      "exit": {
+        "cancelled": 1
+      },
+      "input_tokens": {
+        "total": 40,
+        "unknown": 0
+      },
+      "invocations": 1,
+      "output_tokens": {
+        "total": 4,
+        "unknown": 0
+      },
+      "purpose": "ci"
+    },
+    {
+      "cache_creation_tokens": {
+        "total": 5,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 50,
+        "unknown": 0
+      },
+      "duration_ms": 1000,
+      "exit": {
+        "ok": 1
+      },
+      "input_tokens": {
+        "total": 100,
+        "unknown": 0
+      },
+      "invocations": 1,
+      "output_tokens": {
+        "total": 10,
+        "unknown": 0
+      },
+      "purpose": "review"
+    },
+    {
+      "cache_creation_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 100,
+        "unknown": 0
+      },
+      "duration_ms": 2000,
+      "exit": {
+        "ok": 1
+      },
+      "input_tokens": {
+        "total": 200,
+        "unknown": 0
+      },
+      "invocations": 1,
+      "output_tokens": {
+        "total": 20,
+        "unknown": 0
+      },
+      "purpose": "review-fix"
+    },
+    {
+      "cache_creation_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "duration_ms": 500,
+      "exit": {
+        "error": 1
+      },
+      "input_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "invocations": 1,
+      "output_tokens": {
+        "total": 0,
+        "unknown": 1
+      },
+      "purpose": "test"
+    }
+  ],
+  "reason": null,
+  "recorded_at": "2026-09-30T22:35:04Z",
+  "repo": "/tmp/fm-spend-live.BnTEwe/proj",
+  "runs": [
+    {
+      "cache_creation_tokens": {
+        "total": 5,
+        "unknown": 2
+      },
+      "cache_read_tokens": {
+        "total": 150,
+        "unknown": 1
+      },
+      "created_at": "2026-09-30T21:35:45Z",
+      "duration_ms": 3500,
+      "exit": {
+        "error": 1,
+        "ok": 2
+      },
+      "id": "01RUNA",
+      "input_tokens": {
+        "total": 300,
+        "unknown": 1
+      },
+      "invocations": 3,
+      "output_tokens": {
+        "total": 30,
+        "unknown": 1
+      },
+      "status": "completed"
+    },
+    {
+      "cache_creation_tokens": {
+        "total": 1,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 0,
+        "unknown": 0
+      },
+      "created_at": "2026-09-30T21:44:45Z",
+      "duration_ms": 250,
+      "exit": {
+        "cancelled": 1
+      },
+      "id": "01RUNB",
+      "input_tokens": {
+        "total": 40,
+        "unknown": 0
+      },
+      "invocations": 1,
+      "output_tokens": {
+        "total": 4,
+        "unknown": 0
+      },
+      "status": "failed"
+    }
+  ],
+  "since": "2026-09-30T21:34:45Z",
+  "source": "no-mistakes-state",
+  "spawn_gen": "s1790804085.1.live",
+  "task": "task-x1",
+  "total": {
+    "cache_creation_tokens": {
+      "total": 6,
+      "unknown": 2
+    },
+    "cache_read_tokens": {
+      "total": 150,
+      "unknown": 1
+    },
+    "duration_ms": 3750,
+    "exit": {
+      "cancelled": 1,
+      "error": 1,
+      "ok": 2
+    },
+    "input_tokens": {
+      "total": 340,
+      "unknown": 1
+    },
+    "invocations": 4,
+    "output_tokens": {
+      "total": 34,
+      "unknown": 1
+    }
+  }
+}
+## Scenario 3: opt-in teardown of owned ship task task-x2 whose worktree is already gone
+$ bin/fm-teardown.sh task-x2
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.WCpm4Q
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/tmp/fm-spend-live.BnTEwe/proj: already current
+teardown task-x2 complete (window firstmate:fm-task-x2, worktree /tmp/fm-spend-live.BnTEwe/gone-task-x2)
+Backlog: task-x2 just finished (this home keeps no markdown backlog at /tmp/fm-lab.WCpm4Q/data/backlog.md). Update /tmp/fm-lab.WCpm4Q/data/backlog.md - move task-x2 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+meta present? no
+{"task":"task-x2","spawn_gen":"gen-task-x2","source":"unavailable","reason":"the task copy /tmp/fm-spend-live.BnTEwe/gone-task-x2 is gone","total":null,"runs":[],"purposes":[]}
+## Scenario 4: repeated record for one incarnation (task-x3) appends once, and a later teardown does not duplicate it
+$ bin/fm-pipeline-spend.sh record task-x3
+recorded task-x3 gen-task-x3
+[exit 0]
+$ bin/fm-pipeline-spend.sh record task-x3
+already recorded task-x3 gen-task-x3
+[exit 0]
+$ bin/fm-teardown.sh task-x3
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.WCpm4Q
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/tmp/fm-spend-live.BnTEwe/proj: already current
+teardown task-x3 complete (window firstmate:fm-task-x3, worktree /tmp/fm-spend-live.BnTEwe/gone-task-x3)
+Backlog: task-x3 just finished (this home keeps no markdown backlog at /tmp/fm-lab.WCpm4Q/data/backlog.md). Update /tmp/fm-lab.WCpm4Q/data/backlog.md - move task-x3 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task-x3 ledger lines: 1
+## Scenario 5: opt-out again (flag removed); teardown of task-x4 writes no spend line
+$ bin/fm-teardown.sh task-x4
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.WCpm4Q
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/tmp/fm-spend-live.BnTEwe/proj: already current
+teardown task-x4 complete (window firstmate:fm-task-x4, worktree /tmp/fm-spend-live.BnTEwe/gone-task-x4)
+Backlog: task-x4 just finished (this home keeps no markdown backlog at /tmp/fm-lab.WCpm4Q/data/backlog.md). Update /tmp/fm-lab.WCpm4Q/data/backlog.md - move task-x4 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+ledger lines before=3 after=3; task-x4 lines: 0; meta present? no
+## Scenario 6: state db resolution with NM_HOME and HOME both unset
+$ env -u NM_HOME -u HOME bash -c '. bin/fm-nm-run-lib.sh; fm_nm_state_db /some/wt'
+/home/firstmate/.no-mistakes/state.sqlite
+account home from passwd: /home/firstmate
+$ NM_HOME=rel/nm fm_nm_state_db /some/wt -> /some/wt/rel/nm/state.sqlite
+## treehouse shim calls
+treehouse return --force /tmp/fm-spend-live.BnTEwe/wt
