@@ -1,0 +1,71 @@
+
+=== Session one: two requests to secondmate 'mate' go unanswered through recovery and escalate
+corr A=7b23eec34b436f86 phase=phase=escalated surfaced_session=3514145:session-one
+corr B=ea1a19e4d93975ac phase=phase=escalated surfaced_session=3514145:session-one
+parent status log (mate.status):
+  | blocked [key=pending-reply-7b23eec34b436f86] [at=1790733223]: pending-reply-missed: task=mate pending-reply-id=7b23eec34b436f86 request=ship the report
+  | blocked [key=pending-reply-ea1a19e4d93975ac] [at=1790733224]: pending-reply-missed: task=mate pending-reply-id=ea1a19e4d93975ac request=answer the api question
+
+=== Session one: Bearings snapshot lists both unresolved escalations in decisions_open
+[
+  {
+    "id": "mate",
+    "key": "pending-reply-7b23eec34b436f86",
+    "verb": "blocked",
+    "summary": "pending-reply escalated: task=mate pending-reply-id=7b23eec34b436f86 request=ship the report",
+    "owner": "(main)"
+  },
+  {
+    "id": "mate",
+    "key": "pending-reply-ea1a19e4d93975ac",
+    "verb": "blocked",
+    "summary": "pending-reply escalated: task=mate pending-reply-id=ea1a19e4d93975ac request=answer the api question",
+    "owner": "(main)"
+  }
+]
+record A unchanged by Bearings (read-only): yes
+
+=== Session one: reminder runs again (same session token) -> no new wake
+reminder rows in wake queue: 0
+
+=== Session two (new session id): reminder enqueues exactly one check wake naming both
+reminder rows in wake queue: 1
+  queue: 1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=7b23eec34b436f86 request=ship the report; task=mate pending-reply-id=ea1a19e4d93975ac request=answer the api question;
+A surfaced_session=3514145:session-two
+
+=== Session two: watcher polls repeatedly -> still one reminder, no extra status lines
+reminder rows in wake queue: 1
+blocked lines for A in mate.status: 1
+
+=== Session two: the primary drains its wake queue (fm-wake-drain.sh)
+  drain| 1790733225	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=7b23eec34b436f86 request=ship the report; task=mate pending-reply-id=ea1a19e4d93975ac request=answer the api question;
+  drain| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 3519801.1790733225.vgTCGJ
+  drain| OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  drain| mate [key=pending-reply-7b23eec34b436f86] blocked: pending-reply-missed: task=mate pending-reply-id=7b23eec34b436f86 request=ship the report
+  drain| mate [key=pending-reply-ea1a19e4d93975ac] blocked: pending-reply-missed: task=mate pending-reply-id=ea1a19e4d93975ac request=answer the api question
+  drain| OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  drain| WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+acked the drain (--ack-through 1 --recovery-generation 3519801.1790733225.vgTCGJ); reminder rows now: 0
+after drain + re-run in same session, reminder rows: 0
+
+=== Operator dismisses escalation A with fm-send --resolve-key pending-reply-7b23eec34b436f86
+fm-send exit=0
+  | resolved [key=pending-reply-7b23eec34b436f86] [at=1790733231]: pending-reply-resolved: task=mate pending-reply-id=7b23eec34b436f86 via=operator-resolve-key ack, handled out of band
+
+=== Bearings after dismissal: only B remains
+{"key":"pending-reply-ea1a19e4d93975ac","verb":"blocked","owner":"(main)"}
+
+=== Session three: reminder names only B; A gets escalation_dismissed_epoch
+  queue: 2	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=ea1a19e4d93975ac request=answer the api question;
+A escalation_dismissed_epoch=1790733232
+
+=== Adversarial: another process holds B's record lock while Bearings and the reminder run
+Bearings returned in 1s while lock held; record B unchanged: yes
+while lock held, reminder wrote B's scan cache: no
+reminder exit after lock release=0
+B escalation_dismiss_scan=44:19455197:518:1790733232:1790733232 open
+
+=== Secondmate finally reports with corr=ea1a19e4d93975ac; watcher tick resolves it
+B phase=resolved
+session five reminder rows: 0
+Bearings pending-reply rows: []
