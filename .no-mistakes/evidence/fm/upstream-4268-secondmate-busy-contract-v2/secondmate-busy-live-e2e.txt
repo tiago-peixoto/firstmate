@@ -1,60 +1,11 @@
-# claude 2.1.282 (Claude Code): real process stayed up; pane tail classify=busy fm-spawn
-ok - claude 2.1.282 (Claude Code): a tmux secondmate spawn arms a busy verdict the active-turn gate can see
+# claude 2.1.285 (Claude Code): real process stayed up; pane tail classify=busy fm-spawn
+ok - claude 2.1.285 (Claude Code): a tmux secondmate spawn arms a busy verdict the active-turn gate can see
 # skip: opencode is not installed on this machine, so its secondmate busy contract is unverified here
-# pi 0.87.1: real process stayed up; pane tail classify=unknown launch-prompt
-ok - pi 0.87.1: a tmux secondmate spawn arms a busy verdict the active-turn gate can see
+# pi 0.99.1: real process stayed up; pane tail classify=unknown launch-prompt
+ok - pi 0.99.1: a tmux secondmate spawn arms a busy verdict the active-turn gate can see
 # skip: pi-signed is not installed on this machine, so its secondmate busy contract is unverified here
 # skip: omp is not installed on this machine, so its secondmate busy contract is unverified here
 # skip: grok is not installed on this machine, so its secondmate busy contract is unverified here
-ok - codex codex-cli 0.154.0: secondmate spawn stays unarmed and does not emit a parent turn-end
+ok - codex codex-cli 0.157.1: secondmate spawn stays unarmed and does not emit a parent turn-end
 # checked 3 harness(es); absent: opencode pi-signed omp grok
 ok - secondmate busy contract live guard checked every installed harness
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/sendemail-validate': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/pre-auto-gc': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/post-rewrite': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/pre-push': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/post-merge': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/post-checkout': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/pre-rebase': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/post-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/prepare-commit-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/pre-merge-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/pre-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/post-applypatch': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/pre-applypatch': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/applypatch-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/codex/primary/state/sm-codex.git-hooks/commit-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/sendemail-validate': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/pre-auto-gc': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/post-rewrite': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/pre-push': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/post-merge': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/post-checkout': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/pre-rebase': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/post-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/prepare-commit-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/pre-merge-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/pre-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/post-applypatch': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/pre-applypatch': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/applypatch-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/pi/primary/state/sm-pi.git-hooks/commit-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/sendemail-validate': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/pre-auto-gc': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/post-rewrite': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/pre-push': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/post-merge': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/post-checkout': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/pre-rebase': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/post-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/prepare-commit-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/pre-merge-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/pre-commit': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/post-applypatch': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/pre-applypatch': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/applypatch-msg': Permission denied
-rm: cannot remove '/tmp/fm-secondmate-busy-live.PtBNFm/claude/primary/state/sm-claude.git-hooks/commit-msg': Permission denied
-
-real	0m17.873s
-user	0m3.820s
-sys	0m6.285s
