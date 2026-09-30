@@ -1,0 +1,33 @@
+# flag PRESENT; real fm-send of a reply-bearing request to secondmate w1 (real Claude pane)
+$ fm-send.sh w1 "status of phase 8"
+exit=0
+
+# mate turn completed without a correlated report (turn completion recorded via fm_pending_reply_observe_busy busy->idle)
+# mate has its OWN open decision:
+needs-decision [key=scope]: narrow or wide?
+$ fm_pending_reply_send_recovery state 243992077ded08a5
+rc=1
+phase=phase=awaiting_report  recovery_attempted_epoch=
+$ ls state/w1.inbox (no new record expected)
+handled
+
+# decision answered:
+$ fm_pending_reply_send_recovery state 243992077ded08a5
+rc=1
+phase=phase=awaiting_report
+$ ls state/w1.inbox
+handled
+
+# RE-RUN with grace elapsed (FM_PENDING_REPLY_NOW = completion + 600s > grace 120s)
+# mate has open decision key=scope2
+$ fm_pending_reply_send_recovery (decision open)
+rc=1
+phase=awaiting_report; inbox:
+handled
+# decision key=scope2 answered
+$ fm_pending_reply_send_recovery (decision closed)
+rc=0
+phase=recovery_sent; inbox:
+004.msg
+handled
+[fm-from-firstmate]⁣corr=243992077ded08a5 REPOST REQUIRED: previous marked request had no correlated parent report. Reply on the parent status channel including corr=243992077ded08a5. Original request: status of phase 8

@@ -1,0 +1,10 @@
+# flag ABSENT (config/wait-no-turns removed); composer holds "another draft in progress"
+$ fm-send.sh w1 --fire-and-forget 1123456789abcdef "reconcile your books"
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.Axz16a/state/w1.inbox/002.msg and the watcher will re-ring
+exit=0
+$ ls -A state/w1.inbox
+002.msg
+handled
+$ (watcher pass, composer cleared) inbox_steer_check lab:fm-w1 w1
+inbox_steer_check rc=0
+doorbell count in pane history (was 1): 1

@@ -1,0 +1,14 @@
+# flag PRESENT (config/wait-no-turns); real Claude Code pane lab:fm-w1 (secondmate w1) composer holds "draft I am still typing"
+$ fm-send.sh w1 --fire-and-forget 0123456789abcdef "please rebase onto main"
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.Axz16a/state/w1.inbox/001.msg and the watcher will ring it once more
+exit=0
+$ ls -A state/w1.inbox; cat state/w1.inbox/.retry-ring
+.retry-ring
+001.msg
+handled
+001.msg
+# pane after send:
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ draft I am still typing
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle)

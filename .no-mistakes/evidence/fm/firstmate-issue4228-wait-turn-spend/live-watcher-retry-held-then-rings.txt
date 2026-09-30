@@ -1,0 +1,35 @@
+# composer cleared; worker w1 has its OWN open decision:
+needs-decision [key=pick]: ship alpha or beta?
+$ (watcher pass) inbox_steer_check lab:fm-w1 w1   x2
+inbox_steer_check rc=0
+inbox_steer_check rc=0
+$ ls -A state/w1.inbox
+.retry-ring
+001.msg
+handled
+# pane (no doorbell expected):
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Try "create a util logging.py that..."
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents                                                                                                                     Ctrl+Y to paste deleted text
+
+# decision answered:
+needs-decision [key=pick]: ship alpha or beta?
+resolved [key=pick]: alpha
+$ (watcher pass) inbox_steer_check lab:fm-w1 w1
+inbox_steer_check rc=0
+$ ls -A state/w1.inbox
+001.msg
+handled
+# pane (doorbell expected):
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-work.npTKxN
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'w1.inbox' steering inbox, read and act on each in numeric order, then mv each into its handled/.
+✶ Osmosing…
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · esc to interrupt · ← for agents
+$ (watcher pass again - mark spent, expect no second ring)
+inbox_steer_check rc=0
+doorbell count in pane history: 1
