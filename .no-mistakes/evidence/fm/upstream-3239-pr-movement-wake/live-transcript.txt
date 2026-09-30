@@ -1,0 +1,44 @@
+### Poll 1 (first observation = baseline)
+rc=0
+--- live-open
+{"url":"https://github.com/cli/cli/pull/14556","error":null,"state":"open","head":"304ee5dce5a72ab7b003090ea2e3dfab20dbe55a","draft":false,"review_requests":["BagToad"],"pending":[]}
+--- live-5341
+{"url":"https://github.com/kunchenguid/firstmate/pull/5341","error":null,"state":"open","head":"d32d6c259fa5eaa732077d77df50a7b621f86fd2","draft":false,"review_requests":[],"pending":[]}
+--- live-merged
+{"url":"https://github.com/kunchenguid/firstmate/pull/6192","error":null,"state":"merged","head":"049a21dc2e4910f3bb323447afe6d648ba93047d","draft":false,"review_requests":[],"pending":[]}
+pending:
+[]
+wake-queue check rows: 0
+
+### Rewound stored prior observations (simulated earlier forge state):
+  cli/cli#14556: head=1111111111111111111111111111111111111111 draft=true review_requests=[]
+  firstmate#5341: head=1111111111111111111111111111111111111111, legacy record without review_requests
+  firstmate#6192 (actually merged): head=1111111111111111111111111111111111111111 state=open
+### Poll 2 (real forge read)
+contribution-wake: check: contributions live-open 9b964a7785d8886a20062726d51d2c777d4321bf76e663537ae2a9b5fbce7f39
+contribution-wake: check: contributions live-open 5f0263a3df1300fc0726dfa45089672117779fd8d535c22141291c000af8b3dc
+contribution-wake: check: contributions live-open ed46f5a36b88a7ea9aa37d16c7ef4b6b442702dd0bd00d338ee1025282d41947
+contribution-wake: check: contributions live-5341 52add6d52deec2854ebb58e1c353dc5d5d9bff06efc281d39c396cc968ac3fb5
+rc=0
+pending:
+{"task":"live-5341","url":"https://github.com/kunchenguid/firstmate/pull/5341","type":"head","body":"head moved from 1111111111111111111111111111111111111111 to d32d6c259fa5eaa732077d77df50a7b621f86fd2"}
+{"task":"live-open","url":"https://github.com/cli/cli/pull/14556","type":"head","body":"head moved from 1111111111111111111111111111111111111111 to 304ee5dce5a72ab7b003090ea2e3dfab20dbe55a"}
+{"task":"live-open","url":"https://github.com/cli/cli/pull/14556","type":"ready-for-review","body":"pull request left draft"}
+{"task":"live-open","url":"https://github.com/cli/cli/pull/14556","type":"review-requested","body":"review requested from BagToad"}
+--- live-open pending count: 3 state=open
+--- live-5341 pending count: 1 state=open
+--- live-merged pending count: 0 state=merged
+wake-queue check rows: 4
+### Poll 3 (unchanged re-poll)
+rc=0
+pending count: 4
+wake-queue check rows: 4
+### ack live-5341 head token head:d32d6c259fa5eaa732077d77df50a7b621f86fd2:2026-09-30T14:41:36Z
+rc=0
+remaining pending:
+{"task":"live-open","type":"head"}
+{"task":"live-open","type":"ready-for-review"}
+{"task":"live-open","type":"review-requested"}
+### Poll 4 after ack
+rc=0
+pending count: 3; wake rows: 4

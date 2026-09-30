@@ -42,6 +42,7 @@ ok - a URL owned by two tasks is observed once and every owner receives the resu
 ok - a merged or closed contribution settles once, is not re-read, and never wakes again
 ok - a head change observed as merged or closed settles without a movement wake
 ok - a late owner inherits a terminal observation without a forge read or wake
+ok - a retry converges every owner whose saved row is not terminal, keeping its own acknowledgement state
 ok - an open PR linked from a done task keeps being observed
 ok - a later URL waits when fewer than fifteen seconds remain for its observation
 ok - eight 3-second PR reads complete fresh within one 20-second poll cycle
