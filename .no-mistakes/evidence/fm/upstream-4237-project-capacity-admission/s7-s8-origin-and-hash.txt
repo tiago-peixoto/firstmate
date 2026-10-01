@@ -1,0 +1,41 @@
+### declaration:
+#
+# heavy-proj 9
+#hash-proj 1
+heavy-proj 2
+### S7: different-dir same-origin clone heavy-proj-alt (undeclared) is admitted
+== s7a-alt-clone rc=0
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+warning: /tmp/fm-lab.rGYmmL/data/cap-t4/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-t4
+notice: cap-t4 ships mode=local-only while the standing posture for heavy-proj-alt is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-t4 harness=codex kind=ship mode=local-only yolo=off window=firstmate:fm-cap-t4 worktree=/tmp/fm-lab.rGYmmL/pool/.treehouse/heavy-proj-alt-523171/1/heavy-proj-alt
+### S7: heavy-proj (cap 2) now sees cap-t2 + alt clone's cap-t4 as holders
+== s7b-capped-counts-alt rc=75
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+deferred: project heavy-proj admits 2 worker(s) at once on this machine (/tmp/fm-lab.rGYmmL/config/project-capacity) and 2 already hold a place (cap-t2, cap-t4); task cap-t3 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+### S8: #hash-proj declared at 1 is admitted once
+== s8a-hash-admit rc=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+warning: /tmp/fm-lab.rGYmmL/data/cap-t5/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-t5
+notice: cap-t5 ships mode=local-only while the standing posture for #hash-proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: treehouse get did not enter an isolated worktree within 60s (last seen '/home/firstmate': it is not inside a git worktree; spawning project '/tmp/fm-lab.rGYmmL/projects/#hash-proj'); inspect window firstmate:fm-cap-t5
+### S8: second #hash-proj spawn is deferred
+== s8b-hash-defer rc=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+warning: /tmp/fm-lab.rGYmmL/data/cap-t6/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-t6
+notice: cap-t6 ships mode=local-only while the standing posture for #hash-proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: treehouse get did not enter an isolated worktree within 60s (last seen '/home/firstmate': it is not inside a git worktree; spawning project '/tmp/fm-lab.rGYmmL/projects/#hash-proj'); inspect window firstmate:fm-cap-t6
+### state:
+cap-t2.git-hooks
+cap-t2.meta
+cap-t4.git-hooks
+cap-t4.meta
+home-summary.json
+terminal-outcomes
+tasks[6]{id,state,kind,repo,title}:
+  cap-t4,in_flight,ship,"-",item cap-t4
+  cap-t2,in_flight,ship,"-",item cap-t2
+  cap-t3,queued,ship,"-",item cap-t3
+  cap-t5,queued,ship,"-",item cap-t5
+  cap-t6,queued,ship,"-",item cap-t6
+  cap-t1,done,ship,"-",item cap-t1

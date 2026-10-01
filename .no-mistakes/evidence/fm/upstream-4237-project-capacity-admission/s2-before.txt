@@ -1,0 +1,24 @@
+### config/project-capacity
+# heavy suite serves one worker
+heavy-proj 1
+### BEFORE
+--- state:
+cap-t1.git-hooks
+cap-t1.meta
+home-summary.json
+--- data/cap-t2:
+brief.md
+--- windows:
+bash
+fm-cap-t1
+--- pool:
+A new version of treehouse is available: v2.3.0 → v3.1.0
+1     in-use       /tmp/fm-lab.rGYmmL/pool/.treehouse/heavy-proj-523171/1/heavy-proj
+--- git worktrees:
+/tmp/fm-lab.rGYmmL/projects/heavy-proj                            014ed44 [main]
+/tmp/fm-lab.rGYmmL/pool/.treehouse/heavy-proj-523171/1/heavy-proj 014ed44 (detached HEAD)
+--- backlog:
+tasks[3]{id,state,kind,repo,title}:
+  cap-t1,in_flight,ship,"-",item cap-t1
+  cap-t2,queued,ship,"-",item cap-t2
+  cap-t3,queued,ship,"-",item cap-t3

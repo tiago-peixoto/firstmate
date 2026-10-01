@@ -1,0 +1,14 @@
+### declaration: heavy-proj two
+== s3-malformed rc=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.rGYmmL/config/project-capacity line 1 gives heavy-proj a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+### declaration: mode 000
+== s4-unreadable rc=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.rGYmmL/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+### state after:
+cap-t1.git-hooks
+cap-t1.meta
+home-summary.json
+brief.md
+  state: queued

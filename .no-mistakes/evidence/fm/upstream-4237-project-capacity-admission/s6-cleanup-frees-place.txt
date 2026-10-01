@@ -1,0 +1,19 @@
+### declaration:
+heavy-proj 1
+== s6b-admit-after-cleanup rc=0
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+warning: /tmp/fm-lab.rGYmmL/data/cap-t2/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-t2
+notice: cap-t2 ships mode=local-only while the standing posture for heavy-proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-t2 harness=codex kind=ship mode=local-only yolo=off window=firstmate:fm-cap-t2 worktree=/tmp/fm-lab.rGYmmL/pool/.treehouse/heavy-proj-523171/1/heavy-proj
+== s6c-next-deferred rc=75
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+deferred: project heavy-proj admits 1 worker(s) at once on this machine (/tmp/fm-lab.rGYmmL/config/project-capacity) and 1 already hold a place (cap-t2); task cap-t3 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+### state:
+cap-t2.git-hooks
+cap-t2.meta
+home-summary.json
+terminal-outcomes
+tasks[3]{id,state,kind,repo,title}:
+  cap-t2,in_flight,ship,"-",item cap-t2
+  cap-t3,queued,ship,"-",item cap-t3
+  cap-t1,done,ship,"-",item cap-t1

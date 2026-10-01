@@ -1,0 +1,29 @@
+### declaration:
+#
+# heavy-proj 9
+#hash-proj 1
+heavy-proj 2
+### holders of heavy-proj origin: cap-t2 (agent stopped, pane back in its worktree), cap-t4 -> capacity 2 is full
+== s9-relaunch-direct rc=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  2 task(s) in flight, but no watcher has a fresh beacon (last beat: 309s ago, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+warning: /tmp/fm-lab.rGYmmL/data/cap-t2/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-t2
+notice: cap-t2 ships mode=local-only while the standing posture for heavy-proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+can't find window: fm-cap-t2
+### state:
+cap-t2.control-relaunch
+cap-t2.control-relaunch.brief-prior
+cap-t2.control-relaunch.meta-prior
+cap-t2.control-relaunch.note
+cap-t2.git-hooks
+cap-t2.meta
+cap-t4.git-hooks
+cap-t4.meta
+home-summary.json
+terminal-outcomes

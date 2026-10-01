@@ -1,0 +1,7 @@
+### declaration:
+heavy-proj 1
+== s5-restart-same-id rc=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+warning: /tmp/fm-lab.rGYmmL/data/cap-t1/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-t1
+notice: cap-t1 ships mode=local-only while the standing posture for heavy-proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: window firstmate:fm-cap-t1 already exists

@@ -1,0 +1,17 @@
+### declaration:
+#
+# heavy-proj 9
+#hash-proj 1
+heavy-proj 2
+### holder record state/cap-t5.meta (project=#hash-proj)
+== s8c-hash-defer rc=75
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.rGYmmL
+deferred: project #hash-proj admits 1 worker(s) at once on this machine (/tmp/fm-lab.rGYmmL/config/project-capacity) and 1 already hold a place (cap-t5); task cap-t6 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+cap-t2.git-hooks
+cap-t2.meta
+cap-t4.git-hooks
+cap-t4.meta
+cap-t5.meta
+home-summary.json
+terminal-outcomes
+brief.md
