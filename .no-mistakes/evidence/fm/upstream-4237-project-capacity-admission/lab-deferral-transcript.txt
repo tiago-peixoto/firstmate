@@ -1,0 +1,51 @@
+=== config/project-capacity
+# heavy suite note 3
+#heavy 1
+heavy 1
+=== holder: task-a.meta (live codex worker on projects/heavy)
+window=primary:fm-task-a
+project=/tmp/fm-lab.D5ykwx/projects/heavy
+kind=ship
+
+=== $ bin/fm-spawn.sh task-b "$FM_HOME/projects/heavy" --mode local-only --yolo off
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.D5ykwx
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+deferred: project heavy admits 1 worker(s) at once on this machine (/tmp/fm-lab.D5ykwx/config/project-capacity) and 1 already hold a place (task-a); task task-b was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+exit=75
+--- side effects vs before:
+(none: no window, record, brief, worktree, pool slot; backlog item still queued)
+
+=== $ bin/fm-spawn.sh task-b "$FM_HOME/projects/#heavy" --mode local-only --yolo off   (separate clone, same origin, name begins with #)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.D5ykwx
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: project #heavy admits 1 worker(s) at once on this machine (/tmp/fm-lab.D5ykwx/config/project-capacity) and 1 already hold a place (task-a); task task-b was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+exit=75
+--- side effects vs before:
+(none)
+
+=== before snapshot
+windows:
+primary:bash
+primary:fm-task-a
+state:
+home-summary.json
+task-a.git-hooks
+task-a.meta
+pool:
+/tmp/fm-lab.D5ykwx/pool/.treehouse/heavy-23ffb2/1
+/tmp/fm-lab.D5ykwx/pool/.treehouse/heavy-23ffb2/1/heavy
+task-b data:
+brief.md
+task-b backlog:
+  state: queued
+worktrees heavy:
+/tmp/fm-lab.D5ykwx/projects/heavy                       411b552 [main]
+/tmp/fm-lab.D5ykwx/pool/.treehouse/heavy-23ffb2/1/heavy 411b552 (detached HEAD)
+worktrees #heavy:
+/tmp/fm-lab.D5ykwx/projects/#heavy 411b552 [main]

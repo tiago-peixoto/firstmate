@@ -1,0 +1,22 @@
+=== config/project-capacity:
+heavy two
+$ bin/fm-spawn.sh task-b "$FM_HOME/projects/heavy" --mode local-only --yolo off
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.D5ykwx/config/project-capacity line 1 gives heavy a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+exit=1  task-b.meta: No such file or directory  backlog: queued
+
+=== config/project-capacity:
+heavy 0
+$ bin/fm-spawn.sh task-b "$FM_HOME/projects/heavy" --mode local-only --yolo off
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.D5ykwx/config/project-capacity line 1 gives heavy a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+exit=1  task-b.meta: No such file or directory  backlog: queued
+
+=== config/project-capacity:
+heavy 1
+heavy 2
+$ bin/fm-spawn.sh task-b "$FM_HOME/projects/heavy" --mode local-only --yolo off
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.D5ykwx/config/project-capacity line 2 names heavy a second time); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+exit=1  task-b.meta: No such file or directory  backlog: queued
+
+=== config/project-capacity made unreadable (chmod 000)
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.D5ykwx/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+exit=1
