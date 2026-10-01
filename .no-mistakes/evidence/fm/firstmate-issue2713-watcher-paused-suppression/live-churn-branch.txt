@@ -1,0 +1,15 @@
+## [branch] mode=churn window=lab:crew agent_alive=unknown
+## pane foreground: watch
+[r1 t=03:33:43] watcher EXITED with wake:
+    signal	crew.status	signal: /tmp/fm-lab.mUzPEx/state/crew.status
+    signal	crew.status	signal: /tmp/fm-lab.mUzPEx/state/crew.status
+[r2 t=03:33:46] watcher EXITED with wake:
+    stale	lab:crew	stale: lab:crew (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[r3 t=03:34:00] watcher still running after 12s: NO WAKE (absorbed)
+[r4-within-cadence t=03:34:12] watcher still running after 12s: NO WAKE (absorbed)
+## sleeping until status age and throttle pass FM_PAUSE_RESURFACE_SECS=45
+[r5-after-cadence t=03:34:44] watcher EXITED with wake:
+    stale	lab:crew	stale: lab:crew (paused 63s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[r6-after-resurface t=03:34:56] watcher still running after 10s: NO WAKE (absorbed)
+## state markers: .paused-lab_crew .paused-rechecked-lab_crew .paused-resurfaced-lab_crew .stale-lab_crew 
+## triage log tail:

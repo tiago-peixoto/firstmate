@@ -1,0 +1,15 @@
+## [branch-captain-held] mode=alive window=lab:crew agent_alive=alive
+## pane foreground: claude
+[r1 t=03:35:41] watcher EXITED with wake:
+    signal	crew.status	needs-decision: /tmp/fm-lab.j0H2bC/state/crew.status
+    signal	crew.status	needs-decision: /tmp/fm-lab.j0H2bC/state/crew.status
+[r2 t=03:35:44] watcher EXITED with wake:
+    stale	lab:crew	stale: lab:crew (captain-held 6s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[r3 t=03:35:59] watcher still running after 12s: NO WAKE (absorbed)
+[r4-within-cadence t=03:36:11] watcher still running after 12s: NO WAKE (absorbed)
+## sleeping until status age and throttle pass FM_PAUSE_RESURFACE_SECS=45
+[r5-after-cadence t=03:36:42] watcher EXITED with wake:
+    stale	lab:crew	stale: lab:crew (captain-held 64s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[r6-after-resurface t=03:36:54] watcher still running after 10s: NO WAKE (absorbed)
+## state markers: .paused-lab_crew .paused-rechecked-lab_crew .paused-resurfaced-lab_crew .stale-lab_crew 
+## triage log tail:

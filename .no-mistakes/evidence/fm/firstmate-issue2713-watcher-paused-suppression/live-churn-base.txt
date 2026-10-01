@@ -1,0 +1,13 @@
+## [base-fd325b1b] mode=churn window=lab:crew agent_alive=unknown
+## pane foreground: watch
+[r1 t=03:33:45] watcher EXITED with wake:
+    signal	crew.status	signal: /tmp/fm-lab.SR3Awv/state/crew.status
+    signal	crew.status	signal: /tmp/fm-lab.SR3Awv/state/crew.status
+[r2 t=03:33:59] watcher still running after 12s: NO WAKE (absorbed)
+[r3 t=03:34:11] watcher still running after 12s: NO WAKE (absorbed)
+[r4-within-cadence t=03:34:24] watcher still running after 12s: NO WAKE (absorbed)
+## sleeping until status age and throttle pass FM_PAUSE_RESURFACE_SECS=45
+[r5-after-cadence t=03:35:09] watcher still running after 15s: NO WAKE (absorbed)
+[r6-after-resurface t=03:35:20] watcher still running after 10s: NO WAKE (absorbed)
+## state markers: 
+## triage log tail:

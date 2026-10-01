@@ -1,0 +1,15 @@
+## [base-fd325b1b] mode=alive window=lab:crew agent_alive=alive
+## pane foreground: claude
+[r1 t=03:32:05] watcher EXITED with wake:
+    signal	crew.status	signal: /tmp/fm-lab.WrQGPt/state/crew.status
+    signal	crew.status	signal: /tmp/fm-lab.WrQGPt/state/crew.status
+[r2 t=03:32:11] watcher EXITED with wake:
+    stale	lab:crew	stale: lab:crew
+[r3 t=03:32:26] watcher still running after 12s: NO WAKE (absorbed)
+[r4-within-cadence t=03:32:38] watcher still running after 12s: NO WAKE (absorbed)
+## sleeping until status age and throttle pass FM_PAUSE_RESURFACE_SECS=45
+[r5-after-cadence t=03:33:09] watcher EXITED with wake:
+    stale	lab:crew	stale: lab:crew (paused 66s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[r6-after-resurface t=03:33:22] watcher still running after 10s: NO WAKE (absorbed)
+## state markers: .paused-lab_crew .paused-resurfaced-lab_crew .stale-lab_crew 
+## triage log tail:

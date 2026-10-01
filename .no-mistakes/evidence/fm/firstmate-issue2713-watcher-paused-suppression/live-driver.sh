@@ -1,52 +1,62 @@
 #!/usr/bin/env bash
-# Live driver: real fm-watch.sh + real fm-crew-state.sh + real isolated tmux server.
+# drive.sh <repo-root> <mode:alive|dead|unknown> <label>
 set -u
-S=$1; BIN=$2; LABEL=$3; WIN=$4; STATUS=$5; AGE=${6:-0}; RESURFACE=${7:-999}; OBSERVE=${8:-12}; ARM3=${9:-}
-export TMUX_TMPDIR=$S/tmux; unset TMUX
-C=$S/cases/$LABEL; rm -rf "$C"; mkdir -p "$C/state" "$C/home/config"
-st=$C/state; task=parked
-printf 'window=%s\nkind=ship\nharness=grok\nbackend=tmux\nworktree=%s\n' "$WIN" "$S/wt" > "$st/$task.meta"
-printf '%s\n' "$STATUS" > "$st/$task.status"
-if [ "$AGE" -gt 0 ]; then touch -t "$(date -r $(( $(date +%s) - AGE )) +%Y%m%d%H%M.%S)" "$st/$task.status"; fi
-envs=(FM_HOME="$C/home" FM_STATE_OVERRIDE="$st" FM_POLL=1 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 FM_PAUSE_RESURFACE_SECS="$RESURFACE")
-run_watch() {  # <limit-secs> <outfile> -> prints exited|running
-  local limit=$1 out=$2 pid i=0
-  env "${envs[@]}" "$BIN/fm-watch.sh" > "$out" 2>>"$C/watch.err" &
+REPO=$1 MODE=$2 LABEL=$3
+LAB=$(mktemp -d "${TMPDIR:-/tmp}/fm-lab.XXXXXX")
+"$REPO/bin/fm-lab-home.sh" create "$LAB" >/dev/null
+mkdir -p "$LAB/tmux"
+export TMUX_TMPDIR="$LAB/tmux"
+T="tmux -L fm-lab"
+WORK=$(mktemp -d)
+case $MODE in
+  alive) CMD="cd $WORK && claude" ;;
+  dead) CMD="bash --norc --noprofile" ;;
+  unknown) CMD="sleep 99999" ;;
+  churn) CMD="watch -n1 date +%T.%N" ;;
+esac
+$T new-session -d -s lab -n crew -x 160 -y 40 "$CMD"
+sleep 8
+SOCK=$($T display-message -p '#{socket_path}')
+export TMUX="$SOCK,0,0"
+WIN=lab:crew
+STATE=$LAB/state
+printf 'window=%s\nkind=ship\nharness=claude\nbackend=tmux\n' "$WIN" > "$STATE/crew.meta"
+printf '%s\n' "${STATUS_LINE:-paused: waiting on the upstream validation run}" > "$STATE/crew.status"
+echo "## [$LABEL] mode=$MODE window=$WIN agent_alive=$(. $REPO/bin/fm-backend.sh; fm_backend_agent_alive tmux $WIN)"
+echo "## pane foreground: $($T display-message -p -t $WIN '#{pane_current_command}')"
+run_round() {  # <label> <secs>
+  local lbl=$1 secs=$2 pid i=0 before after
+  before=$(cat "$STATE/.wake-queue" 2>/dev/null | wc -l || echo 0)
+  env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE \
+    FM_HOME="$LAB" FM_POLL=1 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
+    FM_PAUSE_RESURFACE_SECS=45 FM_STALE_ESCALATE_SECS=900 FM_WATCH_HANDLING_SUCCESSOR=1 \
+    "$REPO/bin/fm-watch.sh" > "$LAB/watch.out" 2>&1 &
   pid=$!
-  while [ "$i" -lt $((limit * 10)) ]; do
-    kill -0 "$pid" 2>/dev/null || { wait "$pid" 2>/dev/null; echo exited; return; }
-    sleep 0.1; i=$((i + 1))
-  done
-  kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; echo running
+  while [ $i -lt $((secs*10)) ] && kill -0 $pid 2>/dev/null; do sleep 0.1; i=$((i+1)); done
+  if kill -0 $pid 2>/dev/null; then
+    kill $pid 2>/dev/null; wait $pid 2>/dev/null
+    echo "[$lbl t=$(date +%T)] watcher still running after ${secs}s: NO WAKE (absorbed)"
+  else
+    wait $pid
+    echo "[$lbl t=$(date +%T)] watcher EXITED with wake:"
+    tail -n +$((before+1)) "$STATE/.wake-queue" | cut -f3- | sed 's/^/    /'
+    # acknowledge like firstmate does
+    err=$LAB/drain.err
+    FM_HOME="$LAB" "$REPO/bin/fm-wake-drain.sh" >/dev/null 2>"$err"
+    seq=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through \([0-9][0-9]*\) --recovery-generation .*$/\1/p' "$err")
+    gen=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--recovery-generation \([A-Za-z0-9._-]*\)$/\1/p' "$err")
+    [ -n "$seq" ] && FM_HOME="$LAB" "$REPO/bin/fm-wake-drain.sh" --ack-through "$seq" --recovery-generation "$gen" >/dev/null 2>&1
+  fi
 }
-ack() {
-  local err=$C/drain.err seq gen
-  FM_STATE_OVERRIDE="$st" "$BIN/fm-wake-drain.sh" > "$C/drain.out" 2> "$err" || true
-  seq=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through \([0-9][0-9]*\) --recovery-generation.*$/\1/p' "$err")
-  gen=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--recovery-generation \([A-Za-z0-9._-]*\)$/\1/p' "$err")
-  [ -n "$seq" ] && FM_STATE_OVERRIDE="$st" "$BIN/fm-wake-drain.sh" --ack-through "$seq" --recovery-generation "$gen" >/dev/null 2>&1
-}
-echo "=== [$LABEL] code=$(basename "$(dirname "$BIN")") window=$WIN liveness=$(cd "$BIN/.." && bash -c ". bin/fm-backend.sh; fm_backend_agent_alive tmux '$WIN'")"
-echo "    pane foreground command: $(tmux display-message -p -t "$WIN" '#{pane_current_command}')"
-echo "    last status line: $(tail -1 "$st/$task.status")  (status age ${AGE}s, FM_PAUSE_RESURFACE_SECS=$RESURFACE)"
-r=$(run_watch 20 "$C/arm1.out")
-echo "--- arm 1 (worker just declared the wait): watcher $r; printed: $(tr '\n' ' ' < "$C/arm1.out")"
-drained=$(FM_STATE_OVERRIDE="$st" "$BIN/fm-wake-drain.sh" 2>/dev/null | tr '\n' ' '); ack
-echo "    firstmate drained + acked: $drained"
-r=$(run_watch "$OBSERVE" "$C/arm2.out")
-echo "--- arm 2 (re-armed, pane left idle ${OBSERVE}s): watcher $r; printed: $(tr '\n' ' ' < "$C/arm2.out")"
-echo "    wake queue rows: $(awk -F '\t' '{print $3" | "$5}' "$st/.wake-queue" 2>/dev/null | tr '\n' ';')"
-echo "    triage log (stale lines):"; grep -i 'stale' "$st/.watch-triage.log" 2>/dev/null | sed 's/^/      /' | tail -5
-key=$(printf '%s' "$WIN" | tr ':/.' '___')
-echo "    pause flag .paused-$key: $([ -e "$st/.paused-$key" ] && echo present || echo absent); wedge timer .stale-since: $([ -e "$st/.stale-since-$key" ] && echo present || echo absent)"
-if [ -n "$ARM3" ]; then
-  ack; : > "$C/q.before"; cp "$st/.wake-queue" "$C/q.before" 2>/dev/null
-  tmux send-keys -t "$WIN" -l "x" 2>/dev/null; sleep 1
-  r=$(run_watch "$ARM3" "$C/arm3.out")
-  echo "--- arm 3 (recheck acked, pane churned, re-armed ${ARM3}s): watcher $r; printed: $(tr '\n' ' ' < "$C/arm3.out")"
-  echo "    wake queue rows now: $(awk -F '\t' '{print $3" | "$5}' "$st/.wake-queue" 2>/dev/null | tr '\n' ';')"
-  echo "    pane after churn: $(tmux capture-pane -p -t "$WIN" | tr -s '\n' ' ')"
-  echo "    triage log (last stale lines):"; grep -i 'stale' "$st/.watch-triage.log" 2>/dev/null | sed 's/^/      /' | tail -3
-fi
-[ -s "$C/watch.err" ] && { echo "    watcher stderr:"; sed 's/^/      /' "$C/watch.err" | tail -5; }
-true
+run_round r1 12
+run_round r2 12
+run_round r3 12
+run_round r4-within-cadence 12
+echo "## sleeping until status age and throttle pass FM_PAUSE_RESURFACE_SECS=45"
+sleep 30
+run_round r5-after-cadence 15
+run_round r6-after-resurface 10
+echo "## state markers: $(ls -a $STATE | grep -E 'paused|stale' | tr '\n' ' ')"
+echo "## triage log tail:"; grep -h 'absorbed stale\|stale' "$STATE"/.triage* 2>/dev/null | tail -8 | sed 's/^/    /'
+$T kill-server 2>/dev/null
+rm -rf "$LAB" "$WORK"
