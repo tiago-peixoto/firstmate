@@ -1,0 +1,82 @@
+# Live lab: real bin/fm-watch.sh on private tmux socket (fm-lab), pane lab:crew idle; FM_STALE_ESCALATE_SECS=15 FM_PAUSE_RESURFACE_SECS=45 FM_POLL=1
+# T0=1790865787 (pause declared, [at=T0]); backend agent liveness for pane: unknown
+## watcher wake timeline
+T0+2 WAKE stale: lab:crew (paused 2s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+T0+4 CYCLE-END
+T0+22 UNRELATED-APPEND
+T0+48 WAKE stale: lab:crew (paused 48s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+T0+50 CYCLE-END
+T0+94 WAKE stale: lab:crew (paused 94s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+T0+96 CYCLE-END
+T0+108 REDECLARE-IDENTICAL
+T0+110 WAKE stale: lab:crew (paused 2s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+T0+112 CYCLE-END
+T0+135 CREWSTATE->WORKING
+T0+160 WAKE stale: lab:crew (idle 16s, waiting 52s - declared wait, awaiting external, rechecked on a long cadence not a wedge; confirm the wait still holds)
+T0+162 CYCLE-END
+T0+191 CAPTAIN-HELD-DECLARED (crew-state real)
+T0+192 WAKE stale: lab:crew (captain-held 1s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+T0+194 CYCLE-END
+T0+238 WAKE stale: lab:crew (captain-held 46s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+T0+240 CYCLE-END
+T0+283 WAKE stale: lab:crew (captain-held 92s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+T0+286 CYCLE-END
+## crew-state invocations (wrapper -> real bin/fm-crew-state.sh; 'working' canned between T0+135 and T0+191)
+T0+1 pausecrew
+T0+16 pausecrew
+T0+33 pausecrew
+T0+51 pausecrew
+T0+66 pausecrew
+T0+81 pausecrew
+T0+98 pausecrew
+T0+113 pausecrew
+T0+128 pausecrew
+T0+144 pausecrew
+T0+145 pausecrew
+T0+147 pausecrew
+T0+148 pausecrew
+T0+150 pausecrew
+T0+152 pausecrew
+T0+153 pausecrew
+T0+155 pausecrew
+T0+156 pausecrew
+T0+158 pausecrew
+T0+159 pausecrew
+T0+163 pausecrew
+T0+165 pausecrew
+T0+166 pausecrew
+T0+168 pausecrew
+T0+170 pausecrew
+T0+171 pausecrew
+T0+173 pausecrew
+T0+174 pausecrew
+T0+176 pausecrew
+T0+177 pausecrew
+T0+179 pausecrew
+T0+181 pausecrew
+T0+182 pausecrew
+T0+184 pausecrew
+T0+185 pausecrew
+T0+187 pausecrew
+T0+189 pausecrew
+T0+190 pausecrew
+T0+192 pausecrew
+T0+207 pausecrew
+T0+223 pausecrew
+T0+241 pausecrew
+T0+256 pausecrew
+T0+272 pausecrew
+T0+287 pausecrew
+## status log
+paused [at=1790865787]: awaiting the upstream release
+resolved [key=other] [at=1790865809]: unrelated phase completed
+resolved [at=1790865895]: upstream release landed
+paused [at=1790865895]: awaiting the upstream release
+captain-held [key=route] [at=1790865978]: awaiting the captain
+## triage log summary
+     77 absorbed stale (paused, awaiting external, age Ns): lab:crew
+      1 absorbed non-terminal stale (provably working after a declared pause) timer reset: lab:crew
+     18 absorbed non-terminal stale (provably working): lab:crew
+      1 absorbed non-terminal stale (provably working after a declared pause) (declared wait explains the quiet, idle Ns): lab:crew
+     10 absorbed non-terminal stale (provably working): lab:crew
+     60 absorbed stale (captain-held, awaiting the captain, age Ns): lab:crew

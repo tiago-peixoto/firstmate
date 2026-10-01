@@ -1,15 +1,24 @@
-ok - a fresh pause recheck marker cannot hide resumed provable work
+== test_standing_pause_reads_crew_state_only_on_the_recheck_cadence
+ok - a standing pause reads crew state on first sight and the recheck cadence, never every idle poll
+== test_redeclared_identical_pause_gets_a_new_first_sight
 ok - a resolved-then-identical re-declared pause gets its own first-sight alert
+== test_pause_recheck_cadence_ignores_unrelated_status_updates
 ok - unrelated status updates do not reset a declared pause's bounded recheck cadence
-ok - a declared pause is periodically rechecked against authoritative active-run state
+== test_paused_until_anchor_is_the_declaration_stamp
+ok - a declared pause's recheck is anchored on its own stamp, not a later unrelated status event
+== test_exited_declared_pause_is_bounded_but_live_gate_surfaces
 ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
-wait_for_exit: owned pid 939541 exceeded 100 polls; sending TERM
- 939541  929183 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
-not ok - watcher did not re-surface a declared pause past the threshold
-wait_for_exit: owned pid 1003401 exceeded 100 polls; sending TERM
-1003401  957612 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
-not ok - [paused-alive] declared wait did not re-surface once its cadence elapsed
-wait_for_exit: owned pid 1029517 exceeded 100 polls; sending TERM
-1029517 1018120 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
-not ok - [paused-stable] secondmate did not re-surface after the cadence
+== test_nonterminal_stale_paused_absorbed_then_resurfaced
+ok - a declared pause surfaces once on first sight, is absorbed, then re-surfaced as a recheck past the threshold, never wedge-escalated
+== test_live_declared_wait_churn_honors_the_resurface_throttle
+ok - a declared wait surfaces once on first sight, absorbs churn inside the cadence, then re-surfaces, for alive, unknown, and dead agents
+== test_secondmate_declared_wait_first_sight_is_absorbed
+ok - a secondmate's fresh declared wait absorbs its first stale sight on stable and new-hash paths, then re-surfaces on the cadence
+== test_paused_authoritative_working_preserves_wedge_timer
 ok - a paused status overridden by authoritative working preserves its wedge timer, is rechecked rather than wedge-escalated while the declaration stands, and escalates once it is lifted
+== test_nonterminal_paused_rechecks_authoritative_state
+ok - a declared pause is periodically rechecked against authoritative active-run state
+== test_paused_until_wrong_year_is_bounded_by_the_cadence
+ok - a wrong-year declared time cannot silence the watcher beyond the recheck cadence
+== test_own_work_wait_keeps_first_alert_then_long_cadence
+ok - own-work waits keep one first alert, then bounded rechecks without wedges; undeclared idle still alarms
