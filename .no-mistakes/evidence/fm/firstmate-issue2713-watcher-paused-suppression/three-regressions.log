@@ -1,0 +1,9 @@
+== test_paused_fresh_recheck_marker_does_not_mask_working
+ok - a fresh pause recheck marker cannot hide resumed provable work
+exit=0
+== test_redeclared_identical_pause_gets_a_new_first_sight
+ok - a resolved-then-identical re-declared pause gets its own first-sight alert
+exit=0
+== test_pause_recheck_cadence_ignores_unrelated_status_updates
+not ok - an unrelated status update reset the pause throttle and caused an early wake: stale: test:fm-pause-unrelated-status (paused 5s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+exit=1

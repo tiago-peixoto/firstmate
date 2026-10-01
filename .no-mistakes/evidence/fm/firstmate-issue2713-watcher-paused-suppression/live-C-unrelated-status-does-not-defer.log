@@ -1,0 +1,8 @@
+[14:35:05 +0s] lab=/tmp/fm-lab.1gVAne window=crew:fm-pause declared: paused [at=1790858105]: awaiting the upstream release
+[14:35:08 +3s] watcher rc=0 stdout: signal: /tmp/fm-lab.1gVAne/state/pz.status 
+[14:35:11 +6s] watcher rc=0 stdout: stale: crew:fm-pause (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:35:21 +16s] --- appended unrelated resolved [key=other] at +16s; declaration-bounded recheck due ~+36s (first alert+30), status-mtime-based would be +46s
+[14:35:24 +19s] watcher rc=0 stdout: signal: /tmp/fm-lab.1gVAne/state/pz.status 
+[14:35:42 +37s] watcher rc=0 stdout: stale: crew:fm-pause (paused 37s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:35:44 +39s] markers: .paused-since-crew_fm-pause(mtime=1790858105 content=declared:1:500840099) .paused-resurfaced-crew_fm-pause(mtime=1790858142 content=declared:1:500840099) 
+[14:35:44 +39s] lab torn down

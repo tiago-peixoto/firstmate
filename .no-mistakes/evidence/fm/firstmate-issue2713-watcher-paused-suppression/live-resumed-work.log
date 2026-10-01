@@ -1,27 +1,17 @@
-== lab=/tmp/fm-lab.4Q4lai mode=dead verb=paused pane_cmd=bash
-== pane:
-held$
-    t+0s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
-[t+3s] WAKE: signal: /tmp/fm-lab.4Q4lai/state/held.status 
-    queued: 1790568968	2	signal	held.status	signal: /tmp/fm-lab.4Q4lai/state/held.status
-    queued: wake annotation: latest wake-EVENT observed at drain, not current state: held.status: paused: waiting on upstream tool release
-    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
-    t+5s state: paused=n resurfaced=n wedge-timer(.stale-since)=n
-[t+9s] WAKE: stale: crew:fm-held 
-    queued: 1790568974	3	stale	crew:fm-held	stale: crew:fm-held
-    t+10s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+10s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+15s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+20s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+25s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+30s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-[t+34s] WAKE: stale: crew:fm-held (paused 34s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
-    queued: 1790568999	4	stale	crew:fm-held	stale: crew:fm-held (paused 34s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
-    t+35s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+35s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-== [t+40s] crew resumes provable work (new pane output; crew-state reports working via run-step), no new status line
-    t+40s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-[t+40s] WAKE: check: rearm-resurface 
-    t+40s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+45s state: paused=y resurfaced=y wedge-timer(.stale-since)=n
-    t+50s state: paused=n resurfaced=n wedge-timer(.stale-since)=y
+[14:17:07 +0s] SCENARIO D: crew declares paused (pane idle, harness state unknown) - FM_PAUSE_RESURFACE_SECS=600, FM_STALE_ESCALATE_SECS=20
+[14:17:11 +4s] watcher exited: signal: /tmp/fm-lab.lCS1Xp/state/pw.status 
+[14:17:14 +7s] watcher exited: stale: lab:fm-lab-w (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:17:15 +8s] markers: .paused-lab_fm-lab-w(age 2s) .paused-rechecked-lab_fm-lab-w(age 2s) .paused-resurfaced-lab_fm-lab-w(age 1s) .paused-since-lab_fm-lab-w(age 8s) 
+[14:17:16 +9s] crew-state now: state: unknown · source: pane · harness state unavailable (unknown missing)
+[14:17:16 +9s] crew resumes provable work (busy record armed, as the harness hook does); paused: line stays latest
+[14:17:16 +9s] crew-state now: state: working · source: pane · harness busy (fm-spawn)
+[14:17:22 +15s] watcher still running after 6s (no wake)
+[14:17:22 +15s] markers: 
+[14:17:22 +15s] keep watching: provable-working pane frozen; expect wedge escalation ~20s after resume, not the 600s pause cadence
+[14:17:23 +16s] watcher exited: check: rearm-resurface 
+[14:17:25 +18s] markers: 
+[14:18:06 +59s] watcher still running after 40s (no wake)
+[14:18:07 +60s] markers: 
+[14:18:49 +102s] watcher still running after 40s (no wake)
+[14:18:50 +103s] markers: 
+[14:18:50 +103s] lab torn down

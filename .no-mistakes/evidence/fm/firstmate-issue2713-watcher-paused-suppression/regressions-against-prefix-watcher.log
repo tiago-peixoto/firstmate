@@ -1,0 +1,9 @@
+== test_pause_recheck_cadence_ignores_unrelated_status_updates (pre-fix 795a6cc8 watcher)
+not ok - an unrelated status update reset the pause throttle and caused an early wake: stale: test:fm-pause-unrelated-status (paused 2s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+exit=1
+== test_redeclared_identical_pause_gets_a_new_first_sight (pre-fix 795a6cc8 watcher)
+ok - a resolved-then-identical re-declared pause gets its own first-sight alert
+exit=0
+== test_paused_fresh_recheck_marker_does_not_mask_working (pre-fix 795a6cc8 watcher)
+not ok - provably working crew was hidden by a fresh pause recheck marker: stale: test:fm-pause-fresh-recheck (paused 1s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+exit=1

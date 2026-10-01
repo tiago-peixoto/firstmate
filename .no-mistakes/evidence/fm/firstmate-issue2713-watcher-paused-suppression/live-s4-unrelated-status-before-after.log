@@ -1,0 +1,38 @@
+# Live lab: paused declaration on a dead-agent crew; unrelated 'resolved [key=other-N]' appended every 15s; FM_PAUSE_RESURFACE_SECS=45
+## branch HEAD 9e2b24a1
+t+4s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+8s stale: lab:w-dead (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+15s appended resolved [key=other-1]
+t+18s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+30s appended resolved [key=other-2]
+t+35s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+45s appended resolved [key=other-3]
+t+49s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+52s stale: lab:w-dead (paused 45s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+60s appended resolved [key=other-4]
+t+63s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+75s appended resolved [key=other-5]
+t+80s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+90s appended resolved [key=other-6]
+t+95s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+99s stale: lab:w-dead (paused 91s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+105s appended resolved [key=other-7]
+t+110s driver end
+
+## base fd325b1b (same scenario)
+t+3s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+15s appended resolved [key=other-1]
+t+20s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+30s appended resolved [key=other-2]
+t+34s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+45s appended resolved [key=other-3]
+t+48s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+60s appended resolved [key=other-4]
+t+63s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+75s appended resolved [key=other-5]
+t+80s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+90s appended resolved [key=other-6]
+t+94s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+105s appended resolved [key=other-7]
+t+108s signal: /tmp/fm-lab.YOsxfK/state/c-dead.status 
+t+110s driver end

@@ -1,0 +1,59 @@
+== test_nonterminal_stale_paused_absorbed_then_resurfaced
+ok - a declared pause surfaces once on first sight, is absorbed, then re-surfaced as a recheck past the threshold, never wedge-escalated
+rc=0
+== test_exited_declared_pause_is_bounded_but_live_gate_surfaces
+ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
+rc=0
+== test_live_declared_wait_churn_honors_the_resurface_throttle
+ok - a declared wait surfaces once on first sight, absorbs churn inside the cadence, then re-surfaces, for alive, unknown, and dead agents
+rc=0
+== test_live_paused_until_controls_recheck_time
+ok - a live paused worker stays absorbed until its declared time, then rechecks
+rc=0
+== test_reheld_captain_call_starts_its_own_resurface_window
+ok - a released-then-re-held task is a distinct captain call whose first sight still alarms
+rc=0
+== test_secondmate_paused_resurfaces_in_normal_mode
+wait_for_exit: owned pid 3305966 exceeded 100 polls; sending TERM
+3305966 3305750 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - watcher did not re-surface a paused secondmate
+rc=1
+== test_secondmate_captain_held_resurfaces_in_normal_mode
+wait_for_exit: owned pid 3336149 exceeded 100 polls; sending TERM
+3336149 3335533 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - watcher did not re-surface a captain-held secondmate
+rc=1
+== test_secondmate_declared_wait_first_sight_is_absorbed
+ok - a secondmate's fresh declared wait absorbs its first stale sight on stable and new-hash paths, then re-surfaces on the cadence
+rc=0
+== test_secondmate_unpause_clears_pause_tracking
+ok - a resumed secondmate clears pause and stale tracking before stale exemption
+rc=0
+== test_nonterminal_stale_pause_transitions_reclassify_unchanged_hash
+ok - unchanged stale hashes reclassify when a crew enters or leaves pause
+rc=0
+== test_nonterminal_paused_rechecks_authoritative_state
+ok - a declared pause is periodically rechecked against authoritative active-run state
+rc=0
+== test_paused_fresh_recheck_marker_does_not_mask_working
+ok - a fresh pause recheck marker cannot hide resumed provable work
+rc=0
+== test_redeclared_identical_pause_gets_a_new_first_sight
+ok - a resolved-then-identical re-declared pause gets its own first-sight alert
+rc=0
+== test_pause_recheck_cadence_ignores_unrelated_status_updates
+ok - unrelated status updates do not reset a declared pause's bounded recheck cadence
+rc=0
+== test_paused_authoritative_working_preserves_wedge_timer
+ok - a paused status overridden by authoritative working preserves its wedge timer, is rechecked rather than wedge-escalated while the declaration stands, and escalates once it is lifted
+rc=0
+== test_busy_declared_pause_is_rechecked_not_wedge_escalated
+wait_for_exit: owned pid 3485701 exceeded 100 polls; sending TERM
+3485701 3478861 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - a declared pause past the long cadence was never rechecked
+rc=1
+== test_paused_until_wrong_year_is_bounded_by_the_cadence
+wait_for_exit: owned pid 3501309 exceeded 100 polls; sending TERM
+3501309 3500819 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - a wrong-year declared time silenced the wait beyond the recheck cadence
+rc=1

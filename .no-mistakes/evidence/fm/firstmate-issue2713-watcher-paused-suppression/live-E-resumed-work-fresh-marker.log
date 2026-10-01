@@ -1,0 +1,12 @@
+[14:40:52] claude idle again: v1 gen=g1790858255.673143.17089 seq=6 state=idle source=claude-hook event=stop t
+[14:40:52] settle run 1 -> 'check: rearm-resurface '
+[14:40:57] settle run 2 -> 'signal: /tmp/fm-lab.WALCOM/state/cl.turn-ended '
+[14:41:06] settle run 3 -> ''
+[14:41:08] fresh recheck marker at 1790858468; markers: .paused-crew_fm-pause .paused-rechecked-crew_fm-pause .paused-resurfaced-crew_fm-pause .paused-since-crew_fm-pause .stale-crew_fm-pause 
+[14:41:13] busy=busy wake='' rechecked=GONE paused-flag=gone resurfaced=gone stale-since=none
+[14:41:18] busy=busy wake='' rechecked=GONE paused-flag=gone resurfaced=gone stale-since=none
+[14:41:24] busy=busy wake='' rechecked=GONE paused-flag=gone resurfaced=gone stale-since=none
+[14:41:29] busy=busy wake='' rechecked=GONE paused-flag=gone resurfaced=gone stale-since=none
+[14:41:35] busy=busy wake='' rechecked=GONE paused-flag=gone resurfaced=gone stale-since=none
+[14:41:41] busy=busy wake='' rechecked=GONE paused-flag=gone resurfaced=gone stale-since=none
+[14:41:46] busy=busy wake='' rechecked=GONE paused-flag=gone resurfaced=gone stale-since=none

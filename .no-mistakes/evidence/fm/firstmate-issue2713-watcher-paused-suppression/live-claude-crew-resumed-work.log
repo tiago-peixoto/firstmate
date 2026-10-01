@@ -1,0 +1,63 @@
+== Scenario: real Claude crew (alive, idle) declares paused -> first-sight stale alert
+[14:54:43] fm-crew-state: state: paused · source: status-log · awaiting the upstream release
+[14:54:43] watcher cycle start (cadence 30s)
+[14:54:44] watcher exited rc=0 after 1s; stdout:
+    check: rearm-resurface
+  drain:
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2176406.1790859185.NvYV57
+  acked (--ack-through 0 --recovery-generation 2176406.1790859185.NvYV57)
+[14:54:46] watcher cycle start (cadence 30s)
+[14:54:49] watcher exited rc=0 after 3s; stdout:
+    signal: /tmp/fm-lab.0SIqkd/state/crew2.status
+  drain:
+    1790859289	11	signal	crew2.status	signal: /tmp/fm-lab.0SIqkd/state/crew2.status
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 11 --recovery-generation 2389575.1790859289.6uy5H4
+    wake annotation: latest wake-EVENT observed at drain, not current state: crew2.status: paused [at=1790859283]: awaiting the upstream release
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 11 --recovery-generation 2389575.1790859289.6uy5H4)
+[14:54:55] watcher cycle start (cadence 30s)
+[14:54:57] watcher exited rc=0 after 2s; stdout:
+    stale: lab:fm-crew2 (paused 13s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+  drain:
+    1790859296	12	stale	lab:fm-crew2	stale: lab:fm-crew2 (paused 13s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 12 --recovery-generation 2405294.1790859296.743nUJ
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 12 --recovery-generation 2405294.1790859296.743nUJ)
+== Scenario (Greptile ci-1): crew resumes provable work while paused: line is still latest and .paused-rechecked marker is fresh (13s old, FM_STALE_ESCALATE_SECS=240)
+[14:55:15] fm-crew-state: state: paused · source: status-log · awaiting the upstream release
+[14:55:15] status tail: paused [at=1790859283]: awaiting the upstream release
+[14:55:15] watcher cycle start (cadence 30s)
+[14:55:18] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:21] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:25] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:27] watcher exited rc=0 after 12s; stdout:
+    stale: lab:fm-crew2 (paused 44s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[14:55:28] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+  drain:
+    1790859327	13	stale	lab:fm-crew2	stale: lab:fm-crew2 (paused 44s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 13 --recovery-generation 2446605.1790859327.0nYbEZ
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 13 --recovery-generation 2446605.1790859327.0nYbEZ)
+[14:55:31] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:34] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:37] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:40] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:43] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:46] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:49] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+[14:55:52] markers: .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 
+== Retry ci-1 (first prompt was not submitted; second was backgrounded by Claude): long foreground generation turn
+[14:56:31] before: markers .paused-lab_fm-crew2 .paused-rechecked-lab_fm-crew2 .paused-resurfaced-lab_fm-crew2 .paused-since-lab_fm-crew2 ; .paused-rechecked age 95s (< FM_STALE_ESCALATE_SECS=240, i.e. fresh); status tail: paused [at=1790859283]: awaiting the upstream release
+[14:56:36] fm-crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:56:36] watcher cycle start (cadence 30s)
+[14:56:39] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:56:42] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:56:45] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:56:49] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:56:52] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:56:55] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:56:58] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:57:01] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:57:05] markers:  | crew-state: state: working · source: pane · harness busy (claude-hook)
+[14:57:06] watcher exited rc=124 after 30s; stdout:
+    (no wake within 30s)

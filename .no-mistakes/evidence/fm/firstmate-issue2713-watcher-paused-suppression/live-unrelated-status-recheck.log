@@ -1,0 +1,8 @@
+[06:11:32] crew declared: paused: awaiting the upstream release  | crew-state: state: unknown · source: pane · harness state unavailable (unknown missing)
+[06:11:35] watch[status-signal] rc=0 after 3s -> signal: /tmp/fm-lab.dCcrb9/state/crew1.status
+[06:11:39] watch[first-sight] rc=0 after 2s -> stale: lab:fm-crew1 (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[06:11:41] declaration anchor at 06:11:38; recheck due at 06:12:08
+[06:11:53] appended unrelated: resolved [key=other] (status mtime reset; mtime-based recheck would be due 06:12:23)
+[06:11:56] watch[unrelated-status-signal] rc=0 after 3s -> signal: /tmp/fm-lab.dCcrb9/state/crew1.status
+[06:12:11] watch[bounded-recheck] rc=0 after 14s -> stale: lab:fm-crew1 (paused 32s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[06:12:12] recheck fired 34s after the declaration anchor (bound 30s)

@@ -1,0 +1,19 @@
+== crew-state for lab crew: state: unknown · source: none · worktree gone (torn down?)
+[14:15:02 +1s] SCENARIO A: crew declares 'paused [at=T0]' on an idle pane whose agent is not alive (pane runs sleep)
+[14:15:04 +3s] watcher exited: signal: /tmp/fm-lab.tGSdKA/state/pz.status 
+[14:15:06 +5s] -- stale first sight expected: one stale alert
+[14:15:08 +7s] watcher exited: stale: lab:fm-lab-pause (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:15:10 +9s] anchor .paused-since mtime=1790856901 (T0=1790856901)
+[14:15:10 +9s] SCENARIO C: at +~10s append unrelated 'resolved [key=other]' (status mtime moves later)
+[14:15:18 +17s] watcher exited: signal: /tmp/fm-lab.tGSdKA/state/pz.status 
+[14:15:20 +19s] -- recheck must land ~T0+25 (not appended-time+25); watching up to 60s
+[14:15:32 +31s] watcher exited: stale: lab:fm-lab-pause (paused 31s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:15:34 +33s] anchor .paused-since mtime=1790856901 (T0=1790856901)
+[14:15:34 +33s] -- immediately after recheck: within cadence, expect no wake for 12s
+[14:15:46 +45s] watcher still running after 12s (no wake)
+[14:15:48 +47s] SCENARIO B: resolve then identical 'paused:' redeclared between polls
+[14:15:51 +50s] watcher exited: signal: /tmp/fm-lab.tGSdKA/state/pz.status 
+[14:15:52 +51s] -- new wait: expect a fresh first-sight stale alert right away
+[14:15:54 +53s] watcher exited: stale: lab:fm-lab-pause (paused 5s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:15:55 +54s] throttle identity now: declared:4:622193438
+[14:15:55 +54s] lab torn down

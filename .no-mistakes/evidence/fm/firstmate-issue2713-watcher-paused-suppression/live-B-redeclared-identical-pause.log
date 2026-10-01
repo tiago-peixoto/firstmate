@@ -1,0 +1,10 @@
+[14:34:40 +0s] lab=/tmp/fm-lab.l5ftvK window=crew:fm-pause declared: paused [at=1790858080]: awaiting the upstream release
+[14:34:40 +0s] rewrote declaration unstamped: byte-identical text will be re-declared
+[14:34:43 +3s] watcher rc=0 stdout: signal: /tmp/fm-lab.l5ftvK/state/pz.status 
+[14:34:46 +6s] watcher rc=0 stdout: stale: crew:fm-pause (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:34:48 +8s] throttle after first sight: declared:1:622193438
+[14:34:48 +8s] --- appended resolved + byte-identical paused line; status now: paused: awaiting the upstream release|resolved: upstream release landed|paused: awaiting the upstream release|
+[14:34:51 +11s] watcher rc=0 stdout: signal: /tmp/fm-lab.l5ftvK/state/pz.status 
+[14:34:55 +15s] watcher rc=0 stdout: stale: crew:fm-pause (paused 7s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:34:57 +17s] markers: .paused-since-crew_fm-pause(mtime=1790858088 content=declared:3:622193438) .paused-resurfaced-crew_fm-pause(mtime=1790858095 content=declared:3:622193438) 
+[14:34:57 +17s] lab torn down

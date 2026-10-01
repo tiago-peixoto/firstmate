@@ -1,0 +1,78 @@
+== test_afk_paused_changed_pane_hands_off_plain_stale exit=0
+ok - AFK changed paused panes hand off plain stale identities for daemon-owned pause triage
+== test_afk_one_shot_never_hands_off_captain_held_under_away_record exit=0
+ok - the daemon-owned one-shot never hands off a captain-held pane while the away-posture record exists
+== test_afk_busy_declared_pause_hands_off_plain_stale exit=0
+ok - away mode hands a busy declared pause to the daemon as a plain stale, and lifting the declaration restores the wedge escalation
+== test_captain_held_never_rechecked_while_away_record_exists exit=0
+ok - a captain-held item is never rechecked while the away-posture record exists, and the recheck returns once the record is archived
+== test_busy_declared_pause_is_rechecked_not_wedge_escalated exit=0
+ok - a busy pane under a declared pause is rechecked on the long cadence, and lifting the pause restores the wedge escalation
+== test_afk_busy_declared_pause_ticking_pane_hands_off_once exit=0
+ok - away mode wakes the daemon once per declaration for a busy pane whose footer ticks on every capture
+== test_captain_held_signal_payload_marked_for_branch_exclusion exit=0
+ok - a captain-held signal stays actionable while the crew is still working
+== test_captain_held_rechecked_under_a_quiet_record exit=0
+ok - quiet mode's record silences no captain-held recheck, on the watcher's cadence or through a quiet daemon's one-shot
+== test_backlog_hold_never_rechecked_while_away_record_exists exit=0
+ok - a delivery the captain already holds is never rechecked while the away-posture record exists
+== test_live_captain_held_first_sight_silenced_by_away_record exit=0
+ok - a live captain-held pane is absorbed on first sight while the away-posture record exists
+== test_exited_declared_pause_is_bounded_but_live_gate_surfaces exit=0
+ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
+== test_nonterminal_paused_rechecks_authoritative_state exit=0
+ok - a declared pause is periodically rechecked against authoritative active-run state
+== test_nonterminal_stale_not_working_surfaced exit=0
+ok - a not-provably-working non-terminal stale is surfaced immediately (never left to wait out the timer)
+== test_nonterminal_stale_pause_transitions_reclassify_unchanged_hash exit=0
+ok - unchanged stale hashes reclassify when a crew enters or leaves pause
+== test_nonterminal_stale_paused_absorbed_then_resurfaced exit=0
+ok - a declared pause surfaces once on first sight, is absorbed, then re-surfaced as a recheck past the threshold, never wedge-escalated
+== test_nonterminal_stale_repairs_missing_or_corrupt_timer exit=0
+ok - matching non-terminal stale suppressors repair missing or corrupt stale-since timers
+== test_nonterminal_stale_provably_working_absorbed_then_escalated exit=0
+ok - provably-working non-terminal stale is absorbed on first sight, then wedge-escalated past the threshold
+== test_paused_authoritative_working_preserves_wedge_timer exit=0
+ok - a paused status overridden by authoritative working preserves its wedge timer, is rechecked rather than wedge-escalated while the declaration stands, and escalates once it is lifted
+== test_live_paused_until_controls_recheck_time exit=0
+ok - a live paused worker stays absorbed until its declared time, then rechecks
+== test_paused_fresh_recheck_marker_does_not_mask_working exit=0
+ok - a fresh pause recheck marker cannot hide resumed provable work
+== test_paused_until_near_future_is_quiet_before_the_cadence exit=0
+ok - a declared wait naming a near-future until time stays quiet until that time
+== test_paused_until_wrong_year_is_bounded_by_the_cadence exit=0
+ok - a wrong-year declared time cannot silence the watcher beyond the recheck cadence
+== test_paused_until_that_passed_is_rechecked_before_the_cadence exit=0
+ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence
+== test_pause_recheck_cadence_ignores_unrelated_status_updates exit=0
+ok - unrelated status updates do not reset a declared pause's bounded recheck cadence
+== test_redeclared_identical_pause_gets_a_new_first_sight exit=0
+ok - a resolved-then-identical re-declared pause gets its own first-sight alert
+== test_procevent_unacknowledged_result_redrains_until_handled exit=0
+ok - an unacknowledged process-event result re-drains until handling is acknowledged
+== test_secondmate_captain_held_resurfaces_in_normal_mode exit=0
+ok - a captain-held secondmate re-surfaces on the bounded normal-mode cadence
+== test_secondmate_nonpaused_stale_remains_suppressed exit=0
+ok - a non-paused secondmate retains normal stale suppression
+== test_secondmate_paused_resurfaces_in_normal_mode exit=0
+ok - a declared paused secondmate re-surfaces on the bounded normal-mode cadence
+== test_own_work_wait_keeps_first_alert_then_long_cadence exit=0
+ok - own-work waits keep one first alert, then bounded rechecks without wedges; undeclared idle still alarms
+== test_status_is_paused_classifier exit=0
+ok - status_is_paused: only the leading paused verb matches, paused is not captain-relevant, and the two declared-wait verbs stay separable
+== test_secondmate_unpause_clears_pause_tracking exit=0
+ok - a resumed secondmate clears pause and stale tracking before stale exemption
+== test_wedge_threshold_parked_gate_is_off_until_armed exit=0
+ok - with config/wedge-defer-parked-gate absent a parked gate keeps the unchanged ladder, wording and reads
+== test_secondmate_declared_wait_first_sight_is_absorbed exit=0
+ok - a secondmate's fresh declared wait absorbs its first stale sight on stable and new-hash paths, then re-surfaces on the cadence
+== test_wedge_threshold_defers_to_a_declared_wait_under_a_working_verdict exit=0
+ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
+== test_wedge_threshold_recheck_names_the_captain_for_a_held_lane exit=0
+ok - a captain-held lane is rechecked as a hold on the captain, never as an external wait, and never at all while the captain is away
+== test_live_declared_wait_churn_honors_the_resurface_throttle exit=0
+ok - a declared wait surfaces once on first sight, absorbs churn inside the cadence, then re-surfaces, for alive, unknown, and dead agents
+
+real	4m14.351s
+user	2m45.809s
+sys	7m35.726s

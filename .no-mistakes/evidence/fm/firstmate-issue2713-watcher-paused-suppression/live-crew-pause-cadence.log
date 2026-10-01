@@ -1,0 +1,65 @@
+== Scenario: idle crew (liveness unknown, real fm-crew-state) declares paused; first-sight alert then bounded recheck; unrelated resolved [key=other] must not defer recheck
+[14:51:44] crew1 declared: paused [at=1790859104]: awaiting the upstream release
+[14:51:44] watcher cycle start (cadence 30s)
+[14:51:47] watcher exited rc=0 after 3s; stdout:
+    signal: /tmp/fm-lab.0SIqkd/state/crew1.status
+  drain:
+    1790859107	2	signal	crew1.status	signal: /tmp/fm-lab.0SIqkd/state/crew1.status
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 2061945.1790859107.0f0amh
+    wake annotation: latest wake-EVENT observed at drain, not current state: crew1.status: paused [at=1790859104]: awaiting the upstream release
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 2 --recovery-generation 2061945.1790859107.0f0amh)
+[14:51:49] watcher cycle start (cadence 30s)
+[14:51:50] watcher exited rc=0 after 1s; stdout:
+    stale: lab:fm-crew1 (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+  drain:
+    1790859110	3	stale	lab:fm-crew1	stale: lab:fm-crew1 (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 3 --recovery-generation 2072909.1790859110.btV2wD
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 3 --recovery-generation 2072909.1790859110.btV2wD)
+[14:51:59] appended unrelated event at T0+15s: resolved [key=other] [at=1790859119]: unrelated phase completed
+[14:51:59] watcher cycle start (cadence 30s)
+[14:52:02] watcher exited rc=0 after 3s; stdout:
+    signal: /tmp/fm-lab.0SIqkd/state/crew1.status
+  drain:
+    1790859121	5	signal	crew1.status	signal: /tmp/fm-lab.0SIqkd/state/crew1.status
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 5 --recovery-generation 2089931.1790859121.N3dH2p
+    wake annotation: latest wake-EVENT observed at drain, not current state: crew1.status: resolved [key=other] [at=1790859119]: unrelated phase completed
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 5 --recovery-generation 2089931.1790859121.N3dH2p)
+[14:52:04] watcher cycle start (cadence 30s)
+[14:52:21] watcher exited rc=0 after 17s; stdout:
+    stale: lab:fm-crew1 (paused 37s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+  drain:
+    1790859141	6	stale	lab:fm-crew1	stale: lab:fm-crew1 (paused 37s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 6 --recovery-generation 2098085.1790859141.DoWB0K
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 6 --recovery-generation 2098085.1790859141.DoWB0K)
+[14:52:23] (T0+39s)
+== Scenario: resolved then identical paused text redeclared between polls -> a new wait gets its own first-sight alert (throttle from previous alert is only 11s old of 30s)
+  throttle before: declared:1:3516839209
+    resolved [at=1790859152]: upstream release landed
+    paused [at=1790859152]: awaiting the upstream release
+[14:52:32] watcher cycle start (cadence 30s)
+[14:52:35] watcher exited rc=0 after 3s; stdout:
+    signal: /tmp/fm-lab.0SIqkd/state/crew1.status
+  drain:
+    1790859154	8	signal	crew1.status	signal: /tmp/fm-lab.0SIqkd/state/crew1.status
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 8 --recovery-generation 2153025.1790859154.OnMVKU
+    wake annotation: unread wake-EVENT since last drain, not current state: crew1.status: resolved [at=1790859152]: upstream release landed
+    wake annotation: latest wake-EVENT observed at drain, not current state: crew1.status: paused [at=1790859152]: awaiting the upstream release
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 8 --recovery-generation 2153025.1790859154.OnMVKU)
+[14:52:37] watcher cycle start (cadence 30s)
+[14:52:39] watcher exited rc=0 after 2s; stdout:
+    stale: lab:fm-crew1 (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+  drain:
+    1790859158	9	stale	lab:fm-crew1	stale: lab:fm-crew1 (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 9 --recovery-generation 2163164.1790859158.3uQllC
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 9 --recovery-generation 2163164.1790859158.3uQllC)
+  throttle after: declared:4:842085667
+== Scenario: after the redeclared wait's first alert, no repeat wake inside the 30s cadence
+[14:52:45] watcher cycle start (cadence 30s)
+[14:53:05] watcher exited rc=124 after 20s; stdout:
+    (no wake within 20s)

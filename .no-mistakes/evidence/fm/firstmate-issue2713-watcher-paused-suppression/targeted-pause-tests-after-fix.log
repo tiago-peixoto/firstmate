@@ -1,0 +1,71 @@
+== test_secondmate_paused_resurfaces_in_normal_mode
+ok - a declared paused secondmate re-surfaces on the bounded normal-mode cadence
+rc=0
+== test_secondmate_captain_held_resurfaces_in_normal_mode
+ok - a captain-held secondmate re-surfaces on the bounded normal-mode cadence
+rc=0
+== test_busy_declared_pause_is_rechecked_not_wedge_escalated
+ok - a busy pane under a declared pause is rechecked on the long cadence, and lifting the pause restores the wedge escalation
+rc=0
+== test_paused_until_wrong_year_is_bounded_by_the_cadence
+ok - a wrong-year declared time cannot silence the watcher beyond the recheck cadence
+rc=0
+== test_paused_until_near_future_is_quiet_before_the_cadence
+ok - a declared wait naming a near-future until time stays quiet until that time
+rc=0
+== test_paused_until_that_passed_is_rechecked_before_the_cadence
+ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence
+rc=0
+== test_afk_busy_declared_pause_hands_off_plain_stale
+ok - away mode hands a busy declared pause to the daemon as a plain stale, and lifting the declaration restores the wedge escalation
+rc=0
+== test_afk_busy_declared_pause_ticking_pane_hands_off_once
+ok - away mode wakes the daemon once per declaration for a busy pane whose footer ticks on every capture
+rc=0
+== test_captain_held_rechecked_under_a_quiet_record
+wait_for_exit: owned pid 3715156 exceeded 100 polls; sending TERM
+3715156 3714490 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - a captain-held item was not rechecked beside quiet mode's record
+rc=1
+== test_captain_held_never_rechecked_while_away_record_exists
+wait_for_exit: owned pid 3742024 exceeded 100 polls; sending TERM
+3742024 3727920 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - archiving the away-posture record did not restore the captain-held recheck
+rc=1
+== test_live_captain_held_first_sight_silenced_by_away_record
+ok - a live captain-held pane is absorbed on first sight while the away-posture record exists
+rc=0
+== test_afk_paused_changed_pane_hands_off_plain_stale
+ok - AFK changed paused panes hand off plain stale identities for daemon-owned pause triage
+rc=0
+== test_wedge_threshold_defers_to_a_declared_wait_under_a_working_verdict
+ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
+rc=0
+== test_wedge_threshold_recheck_names_the_captain_for_a_held_lane
+ok - a captain-held lane is rechecked as a hold on the captain, never as an external wait, and never at all while the captain is away
+rc=0
+== test_secondmate_nonpaused_stale_remains_suppressed
+ok - a non-paused secondmate retains normal stale suppression
+rc=0
+== test_captain_held_rechecked_under_a_quiet_record
+wait_for_exit: owned pid 3998972 exceeded 100 polls; sending TERM
+3998972 3998140 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - a captain-held item was not rechecked beside quiet mode's record
+rc=1
+== test_captain_held_never_rechecked_while_away_record_exists
+wait_for_exit: owned pid 4030655 exceeded 100 polls; sending TERM
+4030655 4017962 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - archiving the away-posture record did not restore the captain-held recheck
+rc=1
+== test_backlog_hold_never_rechecked_while_away_record_exists
+ok - a delivery the captain already holds is never rechecked while the away-posture record exists
+rc=0
+== test_afk_one_shot_never_hands_off_captain_held_under_away_record
+ok - the daemon-owned one-shot never hands off a captain-held pane while the away-posture record exists
+rc=0
+== test_captain_held_rechecked_under_a_quiet_record (retry)
+ok - quiet mode's record silences no captain-held recheck, on the watcher's cadence or through a quiet daemon's one-shot
+rc=0
+== test_captain_held_never_rechecked_while_away_record_exists (retry)
+ok - a captain-held item is never rechecked while the away-posture record exists, and the recheck returns once the record is archived
+rc=0

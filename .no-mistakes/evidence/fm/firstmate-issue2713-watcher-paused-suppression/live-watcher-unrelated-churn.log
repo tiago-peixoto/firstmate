@@ -1,0 +1,24 @@
+lab home: /tmp/fm-lab.PcazBs  cadence FM_PAUSE_RESURFACE_SECS=15
+real fm-crew-state.sh verdict: state: unknown · source: none · worktree gone (torn down?)
+[t=2] ACTOR: declared paused: awaiting the upstream release
+[t=3] WAKE: signal: $LAB/state/crew1.status
+[t=6] WAKE: stale: lab:fm-crew1 (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=21] WAKE: stale: lab:fm-crew1 (paused 15s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=36] ACTOR: appended unrelated resolved [key=other36]
+[t=36] WAKE: stale: lab:fm-crew1 (paused 30s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=40] ACTOR: appended unrelated resolved [key=other40]
+[t=41] WAKE: signal: $LAB/state/crew1.status
+[t=44] ACTOR: appended unrelated resolved [key=other44]
+[t=47] WAKE: signal: $LAB/state/crew1.status
+[t=48] ACTOR: appended unrelated resolved [key=other48]
+[t=52] ACTOR: appended unrelated resolved [key=other52]
+[t=52] WAKE: signal: $LAB/state/crew1.status
+[t=56] ACTOR: appended unrelated resolved [key=other56]
+[t=57] WAKE: signal: $LAB/state/crew1.status
+[t=60] ACTOR: appended unrelated resolved [key=other60]
+[t=63] WAKE: signal: $LAB/state/crew1.status
+[t=67] WAKE: stale: lab:fm-crew1 (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=69] ACTOR: resolved the pause and re-declared the IDENTICAL paused line
+[t=73] WAKE: signal: $LAB/state/crew1.status
+05:35:50
+--- triage log (pause-related lines) ---

@@ -1,0 +1,9 @@
+[14:33:21 +0s] lab=/tmp/fm-lab.6rQ9vX window=crew:fm-pause declared: paused [at=1790858001]: awaiting the upstream release
+[14:33:24 +3s] watcher rc=0 stdout: signal: /tmp/fm-lab.6rQ9vX/state/pz.status 
+[14:33:27 +6s] watcher rc=0 stdout: stale: crew:fm-pause (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:33:29 +8s] --- third run: expect NO wake before declaration+20s, then exactly one bounded recheck
+[14:33:48 +27s] watcher rc=0 stdout: stale: crew:fm-pause (paused 27s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:33:50 +29s] --- fourth run: next recheck only after another 20s window
+[14:34:09 +48s] watcher rc=0 stdout: stale: crew:fm-pause (paused 47s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:34:11 +50s] markers: .paused-since-crew_fm-pause(mtime=1790858001 content=declared:1:1489433495) .paused-resurfaced-crew_fm-pause(mtime=1790858049 content=declared:1:1489433495) 
+[14:34:11 +50s] lab torn down

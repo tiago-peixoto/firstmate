@@ -1,9 +1,15 @@
-ok - a paused status overridden by authoritative working preserves its wedge timer, is rechecked rather than wedge-escalated while the declaration stands, and escalates once it is lifted
-ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
-ok - unchanged stale hashes reclassify when a crew enters or leaves pause
-ok - a busy pane under a declared pause is rechecked on the long cadence, and lifting the pause restores the wedge escalation
+ok - a fresh pause recheck marker cannot hide resumed provable work
+ok - a resolved-then-identical re-declared pause gets its own first-sight alert
+ok - unrelated status updates do not reset a declared pause's bounded recheck cadence
+ok - a declared pause is periodically rechecked against authoritative active-run state
 ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
-ok - a secondmate's fresh declared wait absorbs its first stale sight on stable and new-hash paths, then re-surfaces on the cadence
-ok - a declared wait surfaces once on first sight, absorbs churn inside the cadence, then re-surfaces, for alive, unknown, and dead agents
-ok - absorbed paused and captain-held replacements each start their own re-surface cadence
-ok - a declared pause surfaces once on first sight, is absorbed, then re-surfaced as a recheck past the threshold, never wedge-escalated
+wait_for_exit: owned pid 939541 exceeded 100 polls; sending TERM
+ 939541  929183 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - watcher did not re-surface a declared pause past the threshold
+wait_for_exit: owned pid 1003401 exceeded 100 polls; sending TERM
+1003401  957612 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - [paused-alive] declared wait did not re-surface once its cadence elapsed
+wait_for_exit: owned pid 1029517 exceeded 100 polls; sending TERM
+1029517 1018120 S    bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3TNWFX6ME2KBQ46S1F43M96/bin/fm-watch.sh
+not ok - [paused-stable] secondmate did not re-surface after the cadence
+ok - a paused status overridden by authoritative working preserves its wedge timer, is rechecked rather than wedge-escalated while the declaration stands, and escalates once it is lifted

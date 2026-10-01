@@ -1,0 +1,45 @@
+lab home: /tmp/fm-lab.J1q2xk  cadence FM_PAUSE_RESURFACE_SECS=15
+real fm-crew-state.sh verdict: state: unknown · source: none · worktree gone (torn down?)
+[t=2] ACTOR: declared paused: awaiting the upstream release
+[t=4] WAKE: signal: $LAB/state/crew1.status
+[t=7] WAKE: stale: lab:fm-crew1 (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=24] WAKE: stale: lab:fm-crew1 (paused 16s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=36] ACTOR: appended unrelated resolved [key=other36]
+[t=39] WAKE: signal: $LAB/state/crew1.status
+[t=40] ACTOR: appended unrelated resolved [key=other40]
+[t=44] ACTOR: appended unrelated resolved [key=other44]
+[t=44] WAKE: signal: $LAB/state/crew1.status
+[t=48] ACTOR: appended unrelated resolved [key=other48]
+[t=50] WAKE: signal: $LAB/state/crew1.status
+[t=52] ACTOR: appended unrelated resolved [key=other52]
+[t=56] ACTOR: appended unrelated resolved [key=other56]
+[t=57] WAKE: signal: $LAB/state/crew1.status
+[t=60] ACTOR: appended unrelated resolved [key=other60]
+[t=63] WAKE: signal: $LAB/state/crew1.status
+[t=67] WAKE: stale: lab:fm-crew1 (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=69] ACTOR: resolved the pause and re-declared the IDENTICAL paused line
+[t=73] WAKE: signal: $LAB/state/crew1.status
+[t=77] WAKE: stale: lab:fm-crew1 (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[t=92] ACTOR: declared captain-held [key=route]
+[t=92] WAKE: stale: lab:fm-crew1 (captain-held 0s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[t=97] WAKE: signal: $LAB/state/crew1.status
+--- triage log (pause-related lines) ---
+[2026-10-01T05:28:11+0200] absorbed stale (paused, awaiting external, age 5s): lab:fm-crew1
+[2026-10-01T05:28:13+0200] absorbed stale (paused, awaiting external, age 7s): lab:fm-crew1
+[2026-10-01T05:28:15+0200] absorbed stale (paused, awaiting external, age 9s): lab:fm-crew1
+[2026-10-01T05:28:17+0200] absorbed stale (paused, awaiting external, age 11s): lab:fm-crew1
+[2026-10-01T05:28:18+0200] absorbed stale (paused, awaiting external, age 12s): lab:fm-crew1
+[2026-10-01T05:28:20+0200] absorbed stale (paused, awaiting external, age 14s): lab:fm-crew1
+[2026-10-01T05:28:26+0200] absorbed stale (paused, awaiting external, age 20s): lab:fm-crew1
+[2026-10-01T05:28:28+0200] absorbed stale (paused, awaiting external, age 22s): lab:fm-crew1
+[2026-10-01T05:28:29+0200] absorbed stale (paused, awaiting external, age 23s): lab:fm-crew1
+[2026-10-01T05:28:31+0200] absorbed stale (paused, awaiting external, age 25s): lab:fm-crew1
+[2026-10-01T05:28:33+0200] absorbed stale (paused, awaiting external, age 27s): lab:fm-crew1
+[2026-10-01T05:28:35+0200] absorbed stale (paused, awaiting external, age 29s): lab:fm-crew1
+[2026-10-01T05:29:19+0200] absorbed stale (paused, awaiting external, age 4s): lab:fm-crew1
+[2026-10-01T05:29:21+0200] absorbed stale (paused, awaiting external, age 6s): lab:fm-crew1
+[2026-10-01T05:29:23+0200] absorbed stale (paused, awaiting external, age 8s): lab:fm-crew1
+[2026-10-01T05:29:25+0200] absorbed stale (paused, awaiting external, age 10s): lab:fm-crew1
+[2026-10-01T05:29:27+0200] absorbed stale (paused, awaiting external, age 12s): lab:fm-crew1
+[2026-10-01T05:29:29+0200] absorbed stale (paused, awaiting external, age 14s): lab:fm-crew1
+[2026-10-01T05:29:40+0200] absorbed stale (captain-held, awaiting the captain, age 9s): lab:fm-crew1

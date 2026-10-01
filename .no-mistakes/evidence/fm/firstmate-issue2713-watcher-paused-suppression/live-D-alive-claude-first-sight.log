@@ -1,0 +1,5 @@
+[14:38:00] crew-state: state: paused · source: status-log · awaiting the upstream release  status: paused [at=1790858225]: awaiting the upstream release
+[14:38:03] watcher run 1 rc=0 -> signal: /tmp/fm-lab.WALCOM/state/cl.status 
+[14:38:06] watcher run 2 rc=0 -> stale: crew:fm-pause (paused 61s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[14:38:08] markers: .paused-crew_fm-pause .paused-rechecked-crew_fm-pause .paused-resurfaced-crew_fm-pause .paused-since-crew_fm-pause .stale-crew_fm-pause 
+[14:38:23] third run (15s, cadence 600s) rc=124 -> '' (expect silence: bounded cadence, no repeat)

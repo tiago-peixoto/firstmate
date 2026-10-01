@@ -1,0 +1,34 @@
+== Scenario: crew whose agent is gone (fm_backend_agent_state=dead, pane shell remains) with a standing paused: line -> first-sight paused alert, then bounded rechecks at FM_PAUSE_RESURFACE_SECS=15 (not a gone/dead report, not silence)
+[14:57:33] declared: paused [at=1790859453]: awaiting the upstream release
+[14:57:33] watcher cycle start (cadence 15s)
+[14:57:33] watcher exited rc=0 after 0s; stdout:
+    check: rearm-resurface
+  drain:
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2588035.1790859426.Sbn45C
+  acked (--ack-through 0 --recovery-generation 2588035.1790859426.Sbn45C)
+[14:57:35] watcher cycle start (cadence 15s)
+[14:57:38] watcher exited rc=0 after 3s; stdout:
+    signal: /tmp/fm-lab.0SIqkd/state/crew2.status
+  drain:
+    1790859458	15	signal	crew2.status	signal: /tmp/fm-lab.0SIqkd/state/crew2.status
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 15 --recovery-generation 2695870.1790859458.bW1sG4
+    wake annotation: unread wake-EVENT since last drain, not current state: crew2.status: resolved [at=1790859453]: prior wait over
+    wake annotation: latest wake-EVENT observed at drain, not current state: crew2.status: paused [at=1790859453]: awaiting the upstream release
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 15 --recovery-generation 2695870.1790859458.bW1sG4)
+[14:57:40] watcher cycle start (cadence 15s)
+[14:57:42] watcher exited rc=0 after 2s; stdout:
+    stale: lab:fm-crew2 (paused 9s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+  drain:
+    1790859462	16	stale	lab:fm-crew2	stale: lab:fm-crew2 (paused 9s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 16 --recovery-generation 2705874.1790859462.ycOFwT
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 16 --recovery-generation 2705874.1790859462.ycOFwT)
+[14:57:44] watcher cycle start (cadence 15s)
+[14:57:57] watcher exited rc=0 after 13s; stdout:
+    stale: lab:fm-crew2 (paused 24s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+  drain:
+    1790859477	17	stale	lab:fm-crew2	stale: lab:fm-crew2 (paused 24s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 17 --recovery-generation 2716415.1790859477.IE7pwm
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 17 --recovery-generation 2716415.1790859477.IE7pwm)

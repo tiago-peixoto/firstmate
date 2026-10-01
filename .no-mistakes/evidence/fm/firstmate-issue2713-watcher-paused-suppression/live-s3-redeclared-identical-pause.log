@@ -1,0 +1,7 @@
+# Live lab: paused declaration, then 'resolved: ...' + identical 'paused: ...' appended in one write between polls; FM_PAUSE_RESURFACE_SECS=120
+t+3s signal: /tmp/fm-lab.YOsxfK/state/c-alive.status 
+t+7s stale: lab:w-alive (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+22s appended (one write): resolved + identical 'paused: awaiting the upstream release'
+t+26s signal: /tmp/fm-lab.YOsxfK/state/c-alive.status 
+t+29s stale: lab:w-alive (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+55s driver end

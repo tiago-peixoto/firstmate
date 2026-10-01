@@ -88,14 +88,5 @@ ok - away mode wakes the daemon once per declaration for a busy pane whose foote
 ok - a not-provably-working non-terminal stale is surfaced immediately (never left to wait out the timer)
 ok - a declared pause surfaces once on first sight, is absorbed, then re-surfaced as a recheck past the threshold, never wedge-escalated
 ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
-ok - own-work waits keep one first alert, then bounded rechecks without wedges; undeclared idle still alarms
-ok - absorbed paused and captain-held replacements each start their own re-surface cadence
-ok - a declared wait surfaces once on first sight, absorbs churn inside the cadence, then re-surfaces, for alive, unknown, and dead agents
-ok - a live paused worker stays absorbed until its declared time, then rechecks
-ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
-ok - a default-key answer leaves a keyless wait standing, while the worker's own keyless resolved line retracts it
-ok - a captain-held lane is rechecked as a hold on the captain, never as an external wait, and never at all while the captain is away
-ok - a gate awaiting firstmate's decision for its own run is rechecked on the long cadence in either posture, while a crewmate-owed gate, an unrelated open decision and a runless verdict keep the unchanged ladder
-ok - a parked human-owed gate is deferred only while its decision is still open, so an answered-but-unrelayed gate, an unescalated one, and one holding only a blocker all keep the unchanged ladder
 Terminated                 sleep 0.1
-Terminated                 sleep "$POLL"
+--- run stopped by 600s tool time limit after the tests above (no failures) ---

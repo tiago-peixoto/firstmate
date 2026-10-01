@@ -1,0 +1,16 @@
+# Live lab: real fm-watch.sh on private tmux socket fm-lab; FM_PAUSE_RESURFACE_SECS=45, FM_POLL=2
+# liveness (real tmux backend): w-alive=claude -> alive, w-unknown=sleep -> unknown, w-dead=bash -> dead
+# real fm-crew-state.sh for each: state: unknown · source: pane
+# status for each crew: paused: awaiting the upstream release
+t+5s signal: /tmp/fm-lab.YOsxfK/state/c-alive.status /tmp/fm-lab.YOsxfK/state/c-dead.status /tmp/fm-lab.YOsxfK/state/c-unknown.status 
+t+9s stale: lab:w-alive (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+14s stale: lab:w-dead (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+18s stale: lab:w-unknown (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+55s stale: lab:w-alive (paused 45s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+60s stale: lab:w-dead (paused 46s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+64s stale: lab:w-unknown (paused 46s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+101s stale: lab:w-alive (paused 91s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+106s stale: lab:w-dead (paused 92s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+111s stale: lab:w-unknown (paused 93s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+148s stale: lab:w-alive (paused 139s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+t+151s driver end

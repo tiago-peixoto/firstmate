@@ -1,0 +1,11 @@
+# Live lab: real fm-watch.sh, captain-held [key=route] on alive/unknown/dead crews, FM_PAUSE_RESURFACE_SECS=40
+t+4s signal: /tmp/fm-lab.YOsxfK/state/c-alive.status /tmp/fm-lab.YOsxfK/state/c-dead.status /tmp/fm-lab.YOsxfK/state/c-unknown.status 
+t+9s stale: lab:w-alive (captain-held 0s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+13s stale: lab:w-dead (captain-held 0s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+18s stale: lab:w-unknown (captain-held 0s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+51s stale: lab:w-alive (captain-held 42s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+56s stale: lab:w-dead (captain-held 43s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+61s stale: lab:w-unknown (captain-held 43s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+94s stale: lab:w-alive (captain-held 85s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+99s stale: lab:w-dead (captain-held 86s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+t+102s driver end

@@ -1,0 +1,16 @@
+[06:12:40] crew declared paused; meta has no harness -> crew-state: state: unknown · source: pane · harness state unavailable (unknown missing)
+[06:12:43] watch[status-signal] rc=0 after 3s -> signal: /tmp/fm-lab.ybrN3y/state/crew1.status
+[06:12:46] watch[first-sight] rc=0 after 1s -> stale: lab:fm-crew1 (paused 0s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[06:12:48] pause files: .paused-lab_fm-crew1 .paused-rechecked-lab_fm-crew1 .paused-resurfaced-lab_fm-crew1 .paused-since-lab_fm-crew1 .stale-lab_fm-crew1 
+[06:12:48] recheck marker age: 2s (fresh, << FM_STALE_ESCALATE_SECS=999)
+[06:12:48] == crew resumes provable work (harness=agy busy marker now authoritative), paused: still latest line, pane hash unchanged
+[06:12:48] crew-state now: state: working · source: pane · harness busy (agy-regex); latest status: paused: awaiting the upstream release
+[06:12:49] t+1s pause files: .paused-lab_fm-crew1 .paused-rechecked-lab_fm-crew1 .paused-resurfaced-lab_fm-crew1 .paused-since-lab_fm-crew1 .stale-lab_fm-crew1 
+[06:12:50] t+2s pause files: .paused-lab_fm-crew1 .paused-rechecked-lab_fm-crew1 .paused-resurfaced-lab_fm-crew1 .paused-since-lab_fm-crew1 .stale-lab_fm-crew1 
+[06:12:51] t+3s pause files: 
+[06:12:52] t+4s pause files: 
+[06:12:53] t+5s pause files: 
+[06:12:54] t+6s pause files: 
+[06:12:55] t+7s pause files: 
+[06:12:57] t+8s pause files: 
+[06:12:57] watcher output (expect no wake): 

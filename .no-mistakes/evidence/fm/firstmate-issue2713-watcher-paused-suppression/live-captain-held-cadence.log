@@ -1,0 +1,35 @@
+== Scenario: idle crew (liveness ambiguous/unknown) with standing captain-held line -> one first-sight alert then bounded recheck at FM_PAUSE_RESURFACE_SECS=15
+[14:58:11] declared: captain-held [key=route] [at=1790859491]: awaiting the captain
+[14:58:11] watcher cycle start (cadence 15s)
+[14:58:15] watcher exited rc=0 after 4s; stdout:
+    signal: /tmp/fm-lab.0SIqkd/state/crew1.status
+  drain:
+    1790859494	19	signal	crew1.status	needs-decision: /tmp/fm-lab.0SIqkd/state/crew1.status
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 19 --recovery-generation 2756374.1790859494.ebWfCy
+    wake annotation: latest wake-EVENT observed at drain, not current state: crew1.status: captain-held [key=route] [at=1790859491]: awaiting the captain
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 19 --recovery-generation 2756374.1790859494.ebWfCy)
+[14:58:17] watcher cycle start (cadence 15s)
+[14:58:19] watcher exited rc=0 after 2s; stdout:
+    stale: lab:fm-crew1 (captain-held 7s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+  drain:
+    1790859498	20	stale	lab:fm-crew1	stale: lab:fm-crew1 (captain-held 7s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 20 --recovery-generation 2772679.1790859498.dp7MEx
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 20 --recovery-generation 2772679.1790859498.dp7MEx)
+[14:58:21] watcher cycle start (cadence 15s)
+[14:58:35] watcher exited rc=0 after 14s; stdout:
+    stale: lab:fm-crew1 (captain-held 24s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+  drain:
+    1790859515	21	stale	lab:fm-crew1	stale: lab:fm-crew1 (captain-held 24s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 21 --recovery-generation 2787999.1790859515.h6qgLw
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 21 --recovery-generation 2787999.1790859515.h6qgLw)
+[14:58:37] watcher cycle start (cadence 15s)
+[14:58:50] watcher exited rc=0 after 13s; stdout:
+    stale: lab:fm-crew1 (captain-held 39s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+  drain:
+    1790859530	22	stale	lab:fm-crew1	stale: lab:fm-crew1 (captain-held 39s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 22 --recovery-generation 2818954.1790859530.YEAvJG
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  acked (--ack-through 22 --recovery-generation 2818954.1790859530.YEAvJG)
