@@ -1,0 +1,13 @@
+ok - a replaced pull request head wakes once and stays pending until acknowledged
+ok - a pull request leaving draft wakes once and stays pending until acknowledged
+ok - a newly requested reviewer wakes once and stays pending until acknowledged
+ok - a newly requested review team wakes once and stays pending until acknowledged
+ok - review requests present at the first observation are its baseline, not movement
+ok - review requests present at the legacy observation are its baseline, not movement
+ok - a head change observed as merged or closed settles without a movement wake
+ok - a current forge observation refreshes a verdict after a replacement
+ok - new maintainer comment wakes once and stays pending until acknowledged
+ok - new maintainer review wakes once and stays pending until acknowledged
+ok - new maintainer inline wakes once and stays pending until acknowledged
+ok - watcher stays quiet on an unchanged pull request and surfaces its movement once
+failures=0

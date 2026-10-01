@@ -1,60 +1,47 @@
 #!/usr/bin/env bash
-# Live driver: real bin/fm-contributions.sh against real GitHub (read-only gh
-# API reads) inside a disposable marked lab home. Prior observations are
-# rewritten locally to stand in for the earlier forge state a real movement
-# would have left behind; the current state is always the live forge read.
+# Live driver: real bin/fm-contributions.sh + real authenticated gh against
+# real GitHub pull requests (read-only), inside disposable lab homes.
 set -u
-WT=${WT:?}
-LAB=$(mktemp -d "${TMPDIR:-/tmp}/fm-lab.XXXXXX")
-trap 'rm -rf "$LAB"' EXIT
-"$WT/bin/fm-lab-home.sh" create "$LAB" >/dev/null
-run() { env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE FM_HOME="$LAB" "$@"; }
-C="$WT/bin/fm-contributions.sh"
-OPEN=https://github.com/kunchenguid/firstmate/pull/5341        # open, no reviewers (the PR this change keeps mergeable)
-REV=https://github.com/cli/cli/pull/14540                      # open, reviewer requested
-DRAFT=https://github.com/kubernetes/kubernetes/pull/142474     # open draft with reviewers
-MERGED=https://github.com/kunchenguid/firstmate/pull/5916      # merged
-printf "# Backlog\n\n## Queued\n" > "$LAB/data/backlog.md"
-cat >> "$LAB/data/backlog.md" <<B
-- [ ] openpr - Keep PR mergeable $OPEN (repo: sample) (kind: ship)
-- [ ] revpr - Reviewer requested $REV (repo: sample) (kind: ship)
-- [ ] draftpr - Draft PR $DRAFT (repo: sample) (kind: ship)
-- [ ] mergedpr - Merged PR $MERGED (repo: sample) (kind: ship)
-B
-queued() { [ -f "$LAB/state/.wake-queue" ] && awk -F '\t' 'NF>=5 && $3=="check"{c++} END{print c+0}' "$LAB/state/.wake-queue" || echo 0; }
-poll_all() { # poll until every task has an observation (budget rotation)
-  local i
-  for i in 1 2 3 4 5 6; do
-    run "$C" poll
-    n=$(cat "$LAB"/data/*/contributions.json 2>/dev/null | jq -s '[.[].records[] | select(.checked_at != null and .error == null)] | length')
-    [ "$n" -ge "${1:-4}" ] && return 0
-  done
+WT=$1
+ZERO=0000000000000000000000000000000000000000
+fc() { env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE \
+  -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE FM_HOME="$LAB" "$WT/bin/fm-contributions.sh" "$@"; }
+wakes() { [ -f "$LAB/state/.wake-queue" ] && awk -F '\t' 'NF>=5 && $3=="check"{c++} END{print c+0}' "$LAB/state/.wake-queue" || echo 0; }
+lab() { # task url
+  LAB=$(mktemp -d "${TMPDIR:-/tmp}/fm-lab.XXXXXX"); "$WT/bin/fm-lab-home.sh" create "$LAB" >/dev/null
+  printf '# Backlog\n\n## Queued\n- [ ] %s - Live contribution %s (repo: sample) (kind: ship)\n' "$1" "$2" > "$LAB/data/backlog.md"
+  mkdir -p "$LAB/data/$1"
 }
-show() { for t in openpr revpr draftpr mergedpr; do jq -c --arg t $t '.records[0] | {task:$t,state:.observation.state,draft:.observation.draft,head:(.observation.head[0:12]),review_requests:.observation.review_requests,pending:[.pending[]|{type,body}]}' "$LAB/data/$t/contributions.json"; done; echo "durable check wakes queued: $(queued)"; }
-echo "== 1. first live observation (baseline) =="
-poll_all 4
-show
-echo "== 2. unchanged re-observation =="
-: > "$LAB/stamp"; before=$(queued)
-# force every URL to be re-read by spending several polls
-for t in openpr revpr draftpr; do jq '.records[0].checked_at="2000-01-01T00:00:00Z"' "$LAB/data/$t/contributions.json" > "$LAB/x" && mv "$LAB/x" "$LAB/data/$t/contributions.json"; done
-for i in 1 2 3; do run "$C" poll; done
-show
-echo "== 3. prior state rewritten: openpr old head, revpr no reviewers, draftpr prior non-draft, mergedpr prior open w/ old head =="
-mut() { jq "$2" "$LAB/data/$1/contributions.json" > "$LAB/x" && mv "$LAB/x" "$LAB/data/$1/contributions.json"; }
-mut openpr '.records[0].observation.head="1111111111111111111111111111111111111111" | .records[0].observation.draft=true'
-mut revpr '.records[0].observation.review_requests=[]'
-mut draftpr '.records[0].observation.draft=false | .records[0].observation.review_requests=[.records[0].observation.review_requests[0]]'
-mut mergedpr '.records[0].observation.state="open" | .records[0].observation.head="2222222222222222222222222222222222222222"'
-for i in 1 2 3; do run "$C" poll; done
-show
-echo "== 4. pending view =="
-run "$C" pending | jq -c '.[] | {task,type,body,source}'
-echo "== 5. re-poll after movement (no new wakes expected) =="
-w=$(queued); for i in 1 2 3; do run "$C" poll; done; echo "wakes before=$w after=$(queued)"
-echo "== 6. ack head signal on openpr =="
-tok=$(run "$C" pending | jq -r '.[] | select(.task=="openpr" and .type=="head") | .token')
-run "$C" ack openpr "$OPEN" "$tok" && echo "acked $tok"
-run "$C" pending | jq -c '[.[] | {task,type}]'
-echo "== wake queue =="
-cut -f3- "$LAB/state/.wake-queue"
+mut() { jq "$2" "$LAB/data/$1/contributions.json" > "$LAB/m.json" && mv "$LAB/m.json" "$LAB/data/$1/contributions.json"; }
+show() { echo "--- poll stdout:"; echo "$1"; echo "--- record:"; jq -c '.records[0] | {url,error,state:.observation.state,head:.observation.head,draft:.observation.draft,review_requests:.observation.review_requests,pending:[.pending[]|{type,body}]}' "$LAB/data/$2/contributions.json"; echo "--- durable check wakes: $(wakes)"; }
+
+echo "===== S1/S2: real open PR kunchenguid/firstmate#5341 - baseline, then head replaced + left draft"
+lab fm https://github.com/kunchenguid/firstmate/pull/5341
+show "$(fc poll 2>&1)" fm
+echo ">> rewrite prior observation: head=$ZERO, draft=true (simulates movement since last poll)"
+mut fm ".records[0].observation.head=\"$ZERO\" | .records[0].observation.draft=true"
+show "$(FM_CONTRIBUTIONS_NOW=$(date -u -d '+1 min' +%Y-%m-%dT%H:%M:%SZ) fc poll 2>&1)" fm
+echo "--- pending view:"; fc pending | jq -c '.[] | {task,type,body,source}'
+echo ">> unchanged re-poll"
+show "$(FM_CONTRIBUTIONS_NOW=$(date -u -d '+2 min' +%Y-%m-%dT%H:%M:%SZ) fc poll 2>&1)" fm
+rm -rf "$LAB"
+
+echo; echo "===== S3/S4: real PR cli/cli#14485 with a requested reviewer - first observation baseline, new reviewer, legacy record"
+lab rv https://github.com/cli/cli/pull/14485
+show "$(fc poll 2>&1)" rv
+echo ">> rewrite prior observation: review_requests=[] (reviewer newly requested since last poll)"
+mut rv '.records[0].observation.review_requests=[]'
+show "$(FM_CONTRIBUTIONS_NOW=$(date -u -d '+1 min' +%Y-%m-%dT%H:%M:%SZ) fc poll 2>&1)" rv
+echo ">> ack the reviewer signal, then rewrite prior observation as legacy (no review_requests field)"
+tok=$(fc pending | jq -r '.[0].token'); fc ack rv https://github.com/cli/cli/pull/14485 "$tok" && echo "acked $tok"
+mut rv '.records[0].observation |= del(.review_requests)'
+show "$(FM_CONTRIBUTIONS_NOW=$(date -u -d '+2 min' +%Y-%m-%dT%H:%M:%SZ) fc poll 2>&1)" rv
+rm -rf "$LAB"
+
+echo; echo "===== S5: real merged PR kunchenguid/firstmate#6306 - prior open observation on another head"
+lab st https://github.com/kunchenguid/firstmate/pull/6306
+show "$(fc poll 2>&1)" st
+echo ">> rewrite prior observation: state=open, head=$ZERO, draft=true, review_requests=[] (forces a re-read)"
+mut st ".records[0].observation.state=\"open\" | .records[0].observation.head=\"$ZERO\" | .records[0].observation.draft=true | .records[0].observation.review_requests=[]"
+show "$(FM_CONTRIBUTIONS_NOW=$(date -u -d '+1 min' +%Y-%m-%dT%H:%M:%SZ) fc poll 2>&1)" st
+rm -rf "$LAB"

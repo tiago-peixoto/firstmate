@@ -1,49 +1,55 @@
-== 1. first live observation (baseline) ==
-contribution-wake: check: contributions mergedpr 7edd59e0c255f75ea904fc0f01be36f6696951c5cfc7b31017e5faff9a2d0c32
-contribution-wake: check: contributions mergedpr 2a6796c47bbc8bcf60161d969630bf1bb2e45515413cb1c2cb29954e1435ae99
-contribution-wake: check: contributions mergedpr e5ee4408a07a692f042a7b7a4d2475e87572b0a7d375c6162121bb435b81a96c
-contribution-wake: check: contributions mergedpr a34ba535580ede197f89682dd2d9f4232f216f43a6060e5f9977bd92c3d58ea1
-{"task":"openpr","state":"open","draft":false,"head":"73bcf4d5175f","review_requests":[],"pending":[]}
-{"task":"revpr","state":"open","draft":false,"head":"35f6001c47f2","review_requests":["babakks"],"pending":[]}
-{"task":"draftpr","state":"open","draft":true,"head":"d73e7aa1858a","review_requests":["smarterclayton","wojtek-t"],"pending":[]}
-{"task":"mergedpr","state":"merged","draft":false,"head":"f199b61dff62","review_requests":[],"pending":[{"type":"comment","body":"Speaking as Kun's firstmate: whole thread read (body; greptile P1s; author review notes). Diff reviewed vs main `3d14792a089fa6009290cd17f812ecfd8874c73f`.\n\n<!-- triage: 2026-09-27T22:17:35Z outcome=waiting-author class=restore attestation=MATCH head=cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65 ci=none nm=none merge=DIRTY firstmate-flag=no workflow-approved=no -->\n\n**HEAD** `cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65`. MERGEABLE=CONFLICTING / DIRTY vs main `3d14792a089fa6009290cd17f812ecfd8874c73f` (c"},{"type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:17:53Z outcome=waiting-ci class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648 nm=36360359386 firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Verdict:** Whole thread re-read (prior waiting-author slim ask; author slim + `Fixes #4991` body; greptile outside-diff + author replies). Diff reviewed vs main `3c2a91d7…`. Tip `f199b61dff621d8350f53fc2a136229676e87be5` is now a "},{"type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:19:04Z outcome=waiting-author class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648-in_progress nm=36360359386-FAILURE firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Update after fork-CI approve:** Slim tip `f199b61…` still **MERGEABLE** (6 files). Attestation HTML **MATCH** that HEAD. Workflow approvals this pass: CI `36359269648` (in_progress), body-compliance/NM `363"},{"type":"comment","body":"Speaking as Kun's firstmate:\n\nThank you — merged via squash as restore (recorded-worktree enter + pre-launch cwd assert). Merge `fa48367394c61a167893a46cbdfd2c81769692d5`. Closes #4991.\n\n<!-- triage: 2026-09-28T06:26:45Z outcome=merged class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648:SUCCESS nm=36370621909:SUCCESS merge=fa48367394c61a167893a46cbdfd2c81769692d5 firstmate-flag=no workflow-approved=36370621909 -->"}]}
-durable check wakes queued: 4
-== 2. unchanged re-observation ==
-{"task":"openpr","state":"open","draft":false,"head":"73bcf4d5175f","review_requests":[],"pending":[]}
-{"task":"revpr","state":"open","draft":false,"head":"35f6001c47f2","review_requests":["babakks"],"pending":[]}
-{"task":"draftpr","state":"open","draft":true,"head":"d73e7aa1858a","review_requests":["smarterclayton","wojtek-t"],"pending":[]}
-{"task":"mergedpr","state":"merged","draft":false,"head":"f199b61dff62","review_requests":[],"pending":[{"type":"comment","body":"Speaking as Kun's firstmate: whole thread read (body; greptile P1s; author review notes). Diff reviewed vs main `3d14792a089fa6009290cd17f812ecfd8874c73f`.\n\n<!-- triage: 2026-09-27T22:17:35Z outcome=waiting-author class=restore attestation=MATCH head=cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65 ci=none nm=none merge=DIRTY firstmate-flag=no workflow-approved=no -->\n\n**HEAD** `cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65`. MERGEABLE=CONFLICTING / DIRTY vs main `3d14792a089fa6009290cd17f812ecfd8874c73f` (c"},{"type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:17:53Z outcome=waiting-ci class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648 nm=36360359386 firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Verdict:** Whole thread re-read (prior waiting-author slim ask; author slim + `Fixes #4991` body; greptile outside-diff + author replies). Diff reviewed vs main `3c2a91d7…`. Tip `f199b61dff621d8350f53fc2a136229676e87be5` is now a "},{"type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:19:04Z outcome=waiting-author class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648-in_progress nm=36360359386-FAILURE firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Update after fork-CI approve:** Slim tip `f199b61…` still **MERGEABLE** (6 files). Attestation HTML **MATCH** that HEAD. Workflow approvals this pass: CI `36359269648` (in_progress), body-compliance/NM `363"},{"type":"comment","body":"Speaking as Kun's firstmate:\n\nThank you — merged via squash as restore (recorded-worktree enter + pre-launch cwd assert). Merge `fa48367394c61a167893a46cbdfd2c81769692d5`. Closes #4991.\n\n<!-- triage: 2026-09-28T06:26:45Z outcome=merged class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648:SUCCESS nm=36370621909:SUCCESS merge=fa48367394c61a167893a46cbdfd2c81769692d5 firstmate-flag=no workflow-approved=36370621909 -->"}]}
-durable check wakes queued: 4
-== 3. prior state rewritten: openpr old head, revpr no reviewers, draftpr prior non-draft, mergedpr prior open w/ old head ==
-contribution-wake: check: contributions draftpr 601e638bf593f8955f7d0d50f649d2aefe39d52664a3e0d80d2414c0087117e5
-contribution-wake: check: contributions openpr db070a9ad3e4e7946a7727e638649d385b543f562dd6a8830dc198d2ab585471
-contribution-wake: check: contributions openpr ef710dd655d86f0464d34b78b5de62e9c228cab362fbdfdc8b9abac57e1b9748
-contribution-wake: check: contributions revpr d53c9f188e282ea97164c409ba3729786c069756007a8f37958b5e6c0c302fba
-{"task":"openpr","state":"open","draft":false,"head":"73bcf4d5175f","review_requests":[],"pending":[{"type":"head","body":"head moved from 1111111111111111111111111111111111111111 to 73bcf4d5175f922b16d898da10fa370114c22c34"},{"type":"ready-for-review","body":"pull request left draft"}]}
-{"task":"revpr","state":"open","draft":false,"head":"35f6001c47f2","review_requests":["babakks"],"pending":[{"type":"review-requested","body":"review requested from babakks"}]}
-{"task":"draftpr","state":"open","draft":true,"head":"d73e7aa1858a","review_requests":["smarterclayton","wojtek-t"],"pending":[{"type":"review-requested","body":"review requested from wojtek-t"}]}
-{"task":"mergedpr","state":"merged","draft":false,"head":"f199b61dff62","review_requests":[],"pending":[{"type":"comment","body":"Speaking as Kun's firstmate: whole thread read (body; greptile P1s; author review notes). Diff reviewed vs main `3d14792a089fa6009290cd17f812ecfd8874c73f`.\n\n<!-- triage: 2026-09-27T22:17:35Z outcome=waiting-author class=restore attestation=MATCH head=cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65 ci=none nm=none merge=DIRTY firstmate-flag=no workflow-approved=no -->\n\n**HEAD** `cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65`. MERGEABLE=CONFLICTING / DIRTY vs main `3d14792a089fa6009290cd17f812ecfd8874c73f` (c"},{"type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:17:53Z outcome=waiting-ci class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648 nm=36360359386 firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Verdict:** Whole thread re-read (prior waiting-author slim ask; author slim + `Fixes #4991` body; greptile outside-diff + author replies). Diff reviewed vs main `3c2a91d7…`. Tip `f199b61dff621d8350f53fc2a136229676e87be5` is now a "},{"type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:19:04Z outcome=waiting-author class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648-in_progress nm=36360359386-FAILURE firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Update after fork-CI approve:** Slim tip `f199b61…` still **MERGEABLE** (6 files). Attestation HTML **MATCH** that HEAD. Workflow approvals this pass: CI `36359269648` (in_progress), body-compliance/NM `363"},{"type":"comment","body":"Speaking as Kun's firstmate:\n\nThank you — merged via squash as restore (recorded-worktree enter + pre-launch cwd assert). Merge `fa48367394c61a167893a46cbdfd2c81769692d5`. Closes #4991.\n\n<!-- triage: 2026-09-28T06:26:45Z outcome=merged class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648:SUCCESS nm=36370621909:SUCCESS merge=fa48367394c61a167893a46cbdfd2c81769692d5 firstmate-flag=no workflow-approved=36370621909 -->"}]}
-durable check wakes queued: 8
-== 4. pending view ==
-{"task":"draftpr","type":"review-requested","body":"review requested from wojtek-t","source":"https://github.com/kubernetes/kubernetes/pull/142474"}
-{"task":"mergedpr","type":"comment","body":"Speaking as Kun's firstmate: whole thread read (body; greptile P1s; author review notes). Diff reviewed vs main `3d14792a089fa6009290cd17f812ecfd8874c73f`.\n\n<!-- triage: 2026-09-27T22:17:35Z outcome=waiting-author class=restore attestation=MATCH head=cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65 ci=none nm=none merge=DIRTY firstmate-flag=no workflow-approved=no -->\n\n**HEAD** `cc1ced71fa881f6e7df093eb9e3a9f88f1fcbf65`. MERGEABLE=CONFLICTING / DIRTY vs main `3d14792a089fa6009290cd17f812ecfd8874c73f` (c","source":"https://github.com/kunchenguid/firstmate/pull/5916#issuecomment-5860348997"}
-{"task":"mergedpr","type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:17:53Z outcome=waiting-ci class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648 nm=36360359386 firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Verdict:** Whole thread re-read (prior waiting-author slim ask; author slim + `Fixes #4991` body; greptile outside-diff + author replies). Diff reviewed vs main `3c2a91d7…`. Tip `f199b61dff621d8350f53fc2a136229676e87be5` is now a ","source":"https://github.com/kunchenguid/firstmate/pull/5916#issuecomment-5862120379"}
-{"task":"mergedpr","type":"comment","body":"Speaking as Kun's firstmate:\n\n<!-- triage: 2026-09-28T02:19:04Z outcome=waiting-author class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648-in_progress nm=36360359386-FAILURE firstmate-flag=no workflow-approved=36359269648,36359269649,36360359386 -->\n\n**Update after fork-CI approve:** Slim tip `f199b61…` still **MERGEABLE** (6 files). Attestation HTML **MATCH** that HEAD. Workflow approvals this pass: CI `36359269648` (in_progress), body-compliance/NM `363","source":"https://github.com/kunchenguid/firstmate/pull/5916#issuecomment-5862132103"}
-{"task":"mergedpr","type":"comment","body":"Speaking as Kun's firstmate:\n\nThank you — merged via squash as restore (recorded-worktree enter + pre-launch cwd assert). Merge `fa48367394c61a167893a46cbdfd2c81769692d5`. Closes #4991.\n\n<!-- triage: 2026-09-28T06:26:45Z outcome=merged class=restore attestation=MATCH head=f199b61dff621d8350f53fc2a136229676e87be5 ci=36359269648:SUCCESS nm=36370621909:SUCCESS merge=fa48367394c61a167893a46cbdfd2c81769692d5 firstmate-flag=no workflow-approved=36370621909 -->","source":"https://github.com/kunchenguid/firstmate/pull/5916#issuecomment-5864647603"}
-{"task":"openpr","type":"head","body":"head moved from 1111111111111111111111111111111111111111 to 73bcf4d5175f922b16d898da10fa370114c22c34","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
-{"task":"openpr","type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
-{"task":"revpr","type":"review-requested","body":"review requested from babakks","source":"https://github.com/cli/cli/pull/14540"}
-== 5. re-poll after movement (no new wakes expected) ==
-wakes before=8 after=8
-== 6. ack head signal on openpr ==
-acked head:73bcf4d5175f922b16d898da10fa370114c22c34:2026-09-28T09:48:39Z
-[{"task":"draftpr","type":"review-requested"},{"task":"mergedpr","type":"comment"},{"task":"mergedpr","type":"comment"},{"task":"mergedpr","type":"comment"},{"task":"mergedpr","type":"comment"},{"task":"openpr","type":"ready-for-review"},{"task":"revpr","type":"review-requested"}]
-== wake queue ==
-check	contribution-7edd59e0c255f75ea904fc0f01be36f6696951c5cfc7b31017e5faff9a2d0c32	check: contributions mergedpr 7edd59e0c255f75ea904fc0f01be36f6696951c5cfc7b31017e5faff9a2d0c32
-check	contribution-2a6796c47bbc8bcf60161d969630bf1bb2e45515413cb1c2cb29954e1435ae99	check: contributions mergedpr 2a6796c47bbc8bcf60161d969630bf1bb2e45515413cb1c2cb29954e1435ae99
-check	contribution-e5ee4408a07a692f042a7b7a4d2475e87572b0a7d375c6162121bb435b81a96c	check: contributions mergedpr e5ee4408a07a692f042a7b7a4d2475e87572b0a7d375c6162121bb435b81a96c
-check	contribution-a34ba535580ede197f89682dd2d9f4232f216f43a6060e5f9977bd92c3d58ea1	check: contributions mergedpr a34ba535580ede197f89682dd2d9f4232f216f43a6060e5f9977bd92c3d58ea1
-check	contribution-601e638bf593f8955f7d0d50f649d2aefe39d52664a3e0d80d2414c0087117e5	check: contributions draftpr 601e638bf593f8955f7d0d50f649d2aefe39d52664a3e0d80d2414c0087117e5
-check	contribution-db070a9ad3e4e7946a7727e638649d385b543f562dd6a8830dc198d2ab585471	check: contributions openpr db070a9ad3e4e7946a7727e638649d385b543f562dd6a8830dc198d2ab585471
-check	contribution-ef710dd655d86f0464d34b78b5de62e9c228cab362fbdfdc8b9abac57e1b9748	check: contributions openpr ef710dd655d86f0464d34b78b5de62e9c228cab362fbdfdc8b9abac57e1b9748
-check	contribution-d53c9f188e282ea97164c409ba3729786c069756007a8f37958b5e6c0c302fba	check: contributions revpr d53c9f188e282ea97164c409ba3729786c069756007a8f37958b5e6c0c302fba
+===== S1/S2: real open PR kunchenguid/firstmate#5341 - baseline, then head replaced + left draft
+--- poll stdout:
+
+--- record:
+{"url":"https://github.com/kunchenguid/firstmate/pull/5341","error":null,"state":"open","head":"14f032cade41f05deb48b92247ad91642422e9a5","draft":false,"review_requests":[],"pending":[]}
+--- durable check wakes: 0
+>> rewrite prior observation: head=0000000000000000000000000000000000000000, draft=true (simulates movement since last poll)
+--- poll stdout:
+contribution-wake: check: contributions fm 7d489beb65c6a1fb20a096e52aa094cb4cfc3ece25cf3cc07d7adc262389d884
+contribution-wake: check: contributions fm a2d54ef3a443ccb7c2682289770af7589d3e80125d71830f699d49660f54753b
+--- record:
+{"url":"https://github.com/kunchenguid/firstmate/pull/5341","error":null,"state":"open","head":"14f032cade41f05deb48b92247ad91642422e9a5","draft":false,"review_requests":[],"pending":[{"type":"head","body":"head moved from 0000000000000000000000000000000000000000 to 14f032cade41f05deb48b92247ad91642422e9a5"},{"type":"ready-for-review","body":"pull request left draft"}]}
+--- durable check wakes: 2
+--- pending view:
+{"task":"fm","type":"head","body":"head moved from 0000000000000000000000000000000000000000 to 14f032cade41f05deb48b92247ad91642422e9a5","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+{"task":"fm","type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kunchenguid/firstmate/pull/5341"}
+>> unchanged re-poll
+--- poll stdout:
+
+--- record:
+{"url":"https://github.com/kunchenguid/firstmate/pull/5341","error":null,"state":"open","head":"14f032cade41f05deb48b92247ad91642422e9a5","draft":false,"review_requests":[],"pending":[{"type":"head","body":"head moved from 0000000000000000000000000000000000000000 to 14f032cade41f05deb48b92247ad91642422e9a5"},{"type":"ready-for-review","body":"pull request left draft"}]}
+--- durable check wakes: 2
+
+===== S3/S4: real PR cli/cli#14485 with a requested reviewer - first observation baseline, new reviewer, legacy record
+--- poll stdout:
+
+--- record:
+{"url":"https://github.com/cli/cli/pull/14485","error":null,"state":"open","head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[]}
+--- durable check wakes: 0
+>> rewrite prior observation: review_requests=[] (reviewer newly requested since last poll)
+--- poll stdout:
+contribution-wake: check: contributions rv 37e8540aba88bfc49bf62a8fff1cacab4322269991f62c1fc87c53248ec68921
+--- record:
+{"url":"https://github.com/cli/cli/pull/14485","error":null,"state":"open","head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[{"type":"review-requested","body":"review requested from niik"}]}
+--- durable check wakes: 1
+>> ack the reviewer signal, then rewrite prior observation as legacy (no review_requests field)
+acked review-requested:niik:2026-10-01T14:40:05Z
+--- poll stdout:
+
+--- record:
+{"url":"https://github.com/cli/cli/pull/14485","error":null,"state":"open","head":"9719a729742f0c06220a18bcc164184733b7110f","draft":false,"review_requests":["niik"],"pending":[]}
+--- durable check wakes: 1
+
+===== S5: real merged PR kunchenguid/firstmate#6306 - prior open observation on another head
+--- poll stdout:
+contribution-wake: check: contributions st 05a8d4429b581f818e026b9e350a98193d5144f8db32fc5be1facefc23164082
+--- record:
+{"url":"https://github.com/kunchenguid/firstmate/pull/6306","error":null,"state":"merged","head":"b41fdc607a145b297d7207b2917cba45c72d3786","draft":false,"review_requests":[],"pending":[{"type":"comment","body":"<!-- triage: 2026-10-01T14:24:37Z outcome=merged class=restore attestation=MATCH merge=8f756bbc287c5bdfacc64a7cc09e8516c64fc919 -->\nSpeaking as Kun's firstmate: this is merged. Thank you @mremond — really appreciate you taking the time on this.\n\n**contract-class: restore** — clone-root guard already promised to accept the real clone directory; string `!=` broke that on case-insensitive volumes / alternate spellings. Switching to `[ \"$proj_top\" -ef \"$proj_abs\" ]` restores the guard's identity int"}]}
+--- durable check wakes: 1
+>> rewrite prior observation: state=open, head=0000000000000000000000000000000000000000, draft=true, review_requests=[] (forces a re-read)
+--- poll stdout:
+
+--- record:
+{"url":"https://github.com/kunchenguid/firstmate/pull/6306","error":null,"state":"merged","head":"b41fdc607a145b297d7207b2917cba45c72d3786","draft":false,"review_requests":[],"pending":[{"type":"comment","body":"<!-- triage: 2026-10-01T14:24:37Z outcome=merged class=restore attestation=MATCH merge=8f756bbc287c5bdfacc64a7cc09e8516c64fc919 -->\nSpeaking as Kun's firstmate: this is merged. Thank you @mremond — really appreciate you taking the time on this.\n\n**contract-class: restore** — clone-root guard already promised to accept the real clone directory; string `!=` broke that on case-insensitive volumes / alternate spellings. Switching to `[ \"$proj_top\" -ef \"$proj_abs\" ]` restores the guard's identity int"}]}
+--- durable check wakes: 1
