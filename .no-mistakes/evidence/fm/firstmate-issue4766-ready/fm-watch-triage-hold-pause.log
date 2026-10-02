@@ -1,0 +1,30 @@
+## test_settled_hold_mirror_over_done_lane_never_wedge_escalates
+ok - a settled hold mirror over a done lane surfaces one terminal stale, then stays inert and never wedge-escalates
+exit=0
+## test_settled_hold_mirror_over_paused_lane_resurfaces_once_per_cadence
+ok - a settled hold mirror over a paused lane resurfaces once per cadence, never once per relaunch
+exit=0
+## test_hold_mirror_transition_keeps_the_stale_throttle
+ok - a hold and its release recorded by firstmate keep the stale throttle and suppressor they found
+exit=0
+## test_settled_transfer_keeps_the_stale_suppressor
+ok - an answered complete transfer reads back to its decision and leaves the surfaced lane inert
+exit=0
+## test_status_is_paused_classifier
+ok - status_is_paused: only the leading paused verb matches, paused is not captain-relevant, and the two declared-wait verbs stay separable
+exit=0
+## test_nonterminal_stale_paused_absorbed_then_resurfaced
+ok - a declared pause is absorbed on first sight, then re-surfaced as a recheck past the threshold, never wedge-escalated
+exit=0
+## test_captain_held_signal_payload_marked_for_branch_exclusion
+ok - a captain-held signal stays actionable while the crew is still working
+exit=0
+## test_wedge_threshold_recheck_names_the_captain_for_a_held_lane
+ok - a captain-held lane is rechecked as a hold on the captain, never as an external wait, and never at all while the captain is away
+exit=0
+## test_open_captain_call_bounds_stale_churn
+ok - work under an open captain call surfaces once, absorbs pane churn, then re-surfaces when the window elapses
+exit=0
+## test_reheld_captain_call_starts_its_own_resurface_window
+ok - a released-then-re-held task is a distinct captain call whose first sight still alarms
+exit=0

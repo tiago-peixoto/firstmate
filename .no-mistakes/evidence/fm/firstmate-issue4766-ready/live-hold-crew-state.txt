@@ -1,0 +1,85 @@
+# Live lab run at 05e0c5ac: disposable FM_HOME=/tmp/fm-lab.6w23XO (fm-lab-home.sh), private tmux socket -L fm-lab, real tasks-axi backlog
+# Lane setup: tasks-axi add lane-live; status log 'working' then 'paused'; then: bin/fm-captain-hold.sh hold lane-live --reason 'operator review'
+===== S1 paused lane held by fm-captain-hold.sh hold -> mirror is the declared wait, crew-state still reports paused
+--- lane-live.status:
+    working: implementing
+    paused: waiting on vendor release
+    captain-held [key=captain-hold-lane-live-1] [at=1790915671]: operator review
+--- fm-crew-state.sh lane-live:
+    state: paused · source: status-log · waiting on vendor release
+--- classifier reads (bin/fm-classify-lib.sh + bin/fm-hold-status-lib.sh):
+    last_status_line:          captain-held [key=captain-hold-lane-live-1] [at=1790915671]: operator review
+    status_declared_wait_line: captain-held [key=captain-hold-lane-live-1] [at=1790915671]: operator review
+    status_current_line:       paused: waiting on vendor release
+    last_worker_status_line:   paused: waiting on vendor release
+===== S2 a resolved line of another key lands on top of the standing mirror -> current stays paused, never the resolved line
+--- lane-live.status:
+    working: implementing
+    paused: waiting on vendor release
+    captain-held [key=captain-hold-lane-live-1] [at=1790915671]: operator review
+    resolved [key=api-shape]: use v2
+--- fm-crew-state.sh lane-live:
+    state: paused · source: status-log · waiting on vendor release
+--- classifier reads (bin/fm-classify-lib.sh + bin/fm-hold-status-lib.sh):
+    last_status_line:          resolved [key=api-shape]: use v2
+    status_declared_wait_line: captain-held [key=captain-hold-lane-live-1] [at=1790915671]: operator review
+    status_current_line:       paused: waiting on vendor release
+    last_worker_status_line:   resolved [key=api-shape]: use v2
+===== S3 worker writes done: while held -> crew-state reports done; declared wait no longer the mirror
+--- lane-live.status:
+    working: implementing
+    paused: waiting on vendor release
+    captain-held [key=captain-hold-lane-live-1] [at=1790915671]: operator review
+    resolved [key=api-shape]: use v2
+    done: shipped PR 12
+--- fm-crew-state.sh lane-live:
+    state: done · source: status-log · shipped PR 12
+--- classifier reads (bin/fm-classify-lib.sh + bin/fm-hold-status-lib.sh):
+    last_status_line:          done: shipped PR 12
+    status_declared_wait_line: 
+    status_current_line:       done: shipped PR 12
+    last_worker_status_line:   done: shipped PR 12
+===== S4 $ bin/fm-captain-hold.sh answer lane-live --decision-file answer.txt --release
+    released: lane-live
+    exit=0
+===== S4 after release -> mirror retracted by a resolved line, lane reports its own done
+--- lane-live.status:
+    working: implementing
+    paused: waiting on vendor release
+    captain-held [key=captain-hold-lane-live-1] [at=1790915671]: operator review
+    resolved [key=api-shape]: use v2
+    done: shipped PR 12
+    resolved [key=captain-hold-lane-live-1] [at=1790915736]: captain call released by fm-captain-hold
+--- fm-crew-state.sh lane-live:
+    state: done · source: status-log · shipped PR 12
+--- classifier reads (bin/fm-classify-lib.sh + bin/fm-hold-status-lib.sh):
+    last_status_line:          done: shipped PR 12
+    status_declared_wait_line: 
+    status_current_line:       done: shipped PR 12
+    last_worker_status_line:   done: shipped PR 12
+
+# Second lane lane-two: status 'working', then: bin/fm-captain-hold.sh hold lane-two --reason 'second operator review'
+hold exit=0
+===== S5 working lane held -> mirror is the declared wait, crew-state still reports working
+--- lane-two.status:
+    working: mid implementation
+    captain-held [key=captain-hold-lane-two-1] [at=1790915751]: second operator review
+--- fm-crew-state.sh lane-two:
+    state: working · source: status-log · mid implementation
+--- classifier reads (bin/fm-classify-lib.sh + bin/fm-hold-status-lib.sh):
+    last_status_line:          captain-held [key=captain-hold-lane-two-1] [at=1790915751]: second operator review
+    status_declared_wait_line: captain-held [key=captain-hold-lane-two-1] [at=1790915751]: second operator review
+    status_current_line:       working: mid implementation
+    last_worker_status_line:   working: mid implementation
+===== S6 adversarial: worker working: lands after the mirror -> working replaces the mirror as declared wait
+--- lane-two.status:
+    working: mid implementation
+    captain-held [key=captain-hold-lane-two-1] [at=1790915751]: second operator review
+    working: continuing step 2
+--- fm-crew-state.sh lane-two:
+    state: working · source: status-log · continuing step 2
+--- classifier reads (bin/fm-classify-lib.sh + bin/fm-hold-status-lib.sh):
+    last_status_line:          working: continuing step 2
+    status_declared_wait_line: 
+    status_current_line:       working: continuing step 2
+    last_worker_status_line:   working: continuing step 2
