@@ -1,0 +1,7 @@
+ok - host+hook: a successor closed before exit_to_main does not suppress the branch-outcome rewake
+not ok - the Stop hook must rewake main after the successor closed: expected exit 2, got 0
+
+real	0m17.127s
+user	0m7.130s
+sys	0m16.701s
+not ok - the Stop hook must notify main when neither hand-back nor downtime restoration commits: expected exit 2, got 0

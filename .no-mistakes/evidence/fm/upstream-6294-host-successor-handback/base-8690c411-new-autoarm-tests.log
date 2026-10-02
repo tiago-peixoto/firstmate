@@ -1,0 +1,2 @@
+ok - auto-arm: a host rewake refused on an acknowledged marker opens no failure episode
+not ok - a lost hand-back must reach main: expected exit 2, got 0
