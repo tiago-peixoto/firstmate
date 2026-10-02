@@ -1,0 +1,20 @@
+### find output
+fm-lint.sh: ShellCheck 0.11.0 (pinned 0.11.0)
+fm-lint.sh: full ShellCheck extended analysis enabled
+fm-lint: bin/fm-zz-probe-finding.sh hit the memory ceiling with --external-sources (reason=memory rc=251); retried without it; fallback reason=findings rc=1
+
+In bin/fm-zz-probe-finding.sh line 3858:
+fm_probe_unquoted() { local x=$1; printf "%s\n" $x; }
+                                                ^-- SC2086 (info): Double quote to prevent globbing and word splitting.
+
+Did you mean:
+fm_probe_unquoted() { local x=$1; printf "%s\n" "$x"; }
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2086 -- Double quote to prevent globbing ...
+rc=1
+### find roots log end record
+end	1	bin/fm-zz-probe-finding.sh	0	full	1790974839685	1790974906084	66399	1	findings	5594148	0
+### find telemetry source/rss
+source_followed_directives	0
+max_worker_rss_kib	5594148

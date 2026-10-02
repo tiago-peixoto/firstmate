@@ -1,0 +1,10 @@
+### to output
+fm-lint.sh: ShellCheck 0.11.0 (pinned 0.11.0)
+fm-lint.sh: full ShellCheck extended analysis enabled
+fm-lint: end bin/fm-teardown.sh reason=timeout rc=124 duration_ms=5096 rss_kib=unavailable
+rc=124
+### to roots log end record
+end	1	bin/fm-teardown.sh	0	full	1790974839683	1790974844779	5096	124	timeout	unavailable	1
+### to telemetry source/rss
+source_followed_directives	16
+max_worker_rss_kib	8404

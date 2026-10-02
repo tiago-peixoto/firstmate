@@ -1,0 +1,13 @@
+### fb output
+fm-lint.sh: ShellCheck 0.11.0 (pinned 0.11.0)
+fm-lint.sh: full ShellCheck extended analysis enabled
+fm-lint: bin/fm-teardown.sh hit the memory ceiling with --external-sources (reason=memory rc=251); retried without it; fallback passed with cross-file codes excluded (SC1091,SC2034,SC2153,SC2329)
+
+real	1m11.719s
+user	1m5.768s
+sys	0m3.976s
+### fb roots log end record
+end	1	bin/fm-teardown.sh	0	full	1790974755665	1790974824944	69279	0	memory-fallback	5594212	0
+### fb telemetry source/rss
+source_followed_directives	0
+max_worker_rss_kib	5594212

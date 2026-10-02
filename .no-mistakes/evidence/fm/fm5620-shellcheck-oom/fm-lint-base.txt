@@ -1,0 +1,12 @@
+### base output
+fm-lint.sh: ShellCheck 0.11.0 (pinned 0.11.0)
+fm-lint.sh: full ShellCheck extended analysis enabled
+
+real	1m25.771s
+user	1m18.025s
+sys	0m5.813s
+### base roots log end record
+end	1	bin/fm-teardown.sh	0	full	1790974662853	1790974746187	83334	0	ok	8381404	1
+### base telemetry source/rss
+source_followed_directives	16
+max_worker_rss_kib	8381404

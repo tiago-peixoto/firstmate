@@ -1,0 +1,12 @@
+### low1048576 output
+fm-lint.sh: ShellCheck 0.11.0 (pinned 0.11.0)
+fm-lint.sh: full ShellCheck extended analysis enabled
+fm-lint: end bin/fm-teardown.sh reason=memory rc=251 duration_ms=19433 rss_kib=705892
+fm-lint: bin/fm-teardown.sh hit the memory ceiling with --external-sources (reason=memory rc=251); retried without it; fallback reason=memory rc=251
+shellcheck: out of memory
+rc=251
+### low1048576 roots log end record
+end	1	bin/fm-teardown.sh	0	full	1790974914949	1790974934382	19433	251	memory	705892	0
+### low1048576 telemetry source/rss
+source_followed_directives	0
+max_worker_rss_kib	705892
