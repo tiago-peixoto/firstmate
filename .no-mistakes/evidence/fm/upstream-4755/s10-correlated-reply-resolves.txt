@@ -1,0 +1,10 @@
+# secondmate's correlated reply appended: done [corr=b823ac1bfed609ae]
+# record after watcher tick:
+phase=resolved
+resolved_epoch=1790960110
+resolved_via=status
+# wake queue (must not contain pending-reply-escalated):
+# bearings decisions_open:
+decisions_open: []
+landed: []
+# watcher log:

@@ -1,0 +1,12 @@
+== FM_HOME=/tmp/fm-lab.wQp2hw  resurface flag: present
+$ bin/fm-bearings-snapshot.sh   (TOON default)
+decisions_open[1]{id,key,verb,summary,owner}:
+  mate,pending-reply-fb71cab993883979,blocked,"pending-reply escalated: task=mate pending-reply-id=fb71cab993883979 request=finish the report",(main)
+landed: []
+gates: []
+== FM_HOME=/tmp/fm-lab.cDtJQW  resurface flag: absent
+$ bin/fm-bearings-snapshot.sh   (TOON default)
+decisions_open: []
+landed: []
+gates: []
+reports: []

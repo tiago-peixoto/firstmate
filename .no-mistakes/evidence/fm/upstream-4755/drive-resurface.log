@@ -1,0 +1,35 @@
+
+== SCENARIO 1: flag ABSENT (default home) - escalation surfaced once only
+record phase: escalated
+escalation status lines in parent log: 1
+reminder wakes queued after later sessions s2,s3: 0
+Bearings --decisions rows: []
+reminder wakes after watcher tick in s4: 0
+
+== SCENARIO 2: flag PRESENT - one reminder per later live session
+escalated in s1, surfaced_session=s1
+same session s1 reminder wakes: 0
+later session s2 reminder wakes: 1
+queued wake row:
+1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=9ade59f91f41c298 request=ship the parser fix;
+repeat poll in s2 reminder wakes: 1
+after drain, s2 again: 0
+0
+watcher tick in new session s3 reminder wakes: 1
+escalation status lines in parent log (no re-injection): 1
+Bearings --decisions rows: [{"id":"mate","key":"pending-reply-9ade59f91f41c298","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=9ade59f91f41c298 request=ship the parser fix","owner":"(main)"}]
+
+== SCENARIO 3: correlated reply arrives - reminder and row stop
+phase now: resolved
+session s5 reminder wakes: 0
+0
+Bearings --decisions rows: []
+
+== SCENARIO 4 (adversarial): operator keyed close vs unkeyed resolved
+after UNKEYED resolved, s2 reminder wakes: 1 rows: 1
+after KEYED operator close, s3 reminder wakes: 0
+0
+escalation_dismissed_epoch set: yes
+Bearings --decisions rows: []
+watcher tick s6 reminder wakes: 0
+0

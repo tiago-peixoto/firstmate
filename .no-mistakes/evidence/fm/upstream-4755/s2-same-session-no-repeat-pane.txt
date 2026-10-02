@@ -1,0 +1,15 @@
+❯ Run exactly these Bash commands and nothing else, then stop: bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2606593.1790959535.nSTYFw; bin/fm-session-start.sh >/dev/null 2>&1; echo
+  QUEUE-BEGIN; cat $FM_HOME/state/.wake-queue; echo QUEUE-END
+● Bash(bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2606593.1790959535.nSTYFw; bin/fm-session-start.sh >/dev/null 2>&1; echo QUEUE-BEGIN; cat $FM_HOME/st…)
+  ⎿  QUEUE-BEGIN
+     QUEUE-END
+  ⎿  Allowed by auto mode classifier
+● Captain, I ran those commands and stopped. The missed-reply notification is cleared, and running session start again did not bring it back: the queue is empty.
+  The acknowledgement printed nothing, and session start's output was hidden as you asked, so the empty queue is the only evidence.
+  One thing is still open: clearing the notification did not answer the mate. The test home's records should still list "finish the report" as unanswered until someone replies with bin/fm-send.sh mate
+  --resolve-key pending-reply-fb71cab993883979 '<answer>'. I didn't run that, and I didn't recheck the open decisions after this run.
+✻ Cooked for 13s · done 6:49 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

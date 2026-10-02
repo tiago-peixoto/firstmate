@@ -1,0 +1,21 @@
+❯ Run exactly this Bash command and nothing else, then stop: bin/fm-send.sh mate --resolve-key pending-reply-fb71cab993883979 "never mind, closing this request" ; echo RC=$?; tail -3
+  $FM_HOME/state/mate.status
+● Bash(bin/fm-send.sh mate --resolve-key pending-reply-fb71cab993883979 "never mind, closing this request" ; echo RC=$?; tail -3 $FM_HOME/state/mate.status)
+  ⎿  fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.wQp2hw
+     ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ●  WATCHER DOWN - SUPERVISION IS OFF
+     … +9 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, the message to the second mate went through and the request to "finish the report" is now closed. The command exited with code 0, and the mate's record shows the open blocker followed by a
+  matching resolution entry: "never mind, closing this request".
+  Some of the output conflicts with that result:
+  - Refusal line: the first line printed was fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.wQp2hw. Despite it, the send and the resolution both went through, so the
+    refusal seems to have blocked some other step, not this message. I haven't looked into which step.
+  - No monitoring: a warning says supervision is off. One task is under way and no monitor has ever checked in.
+  - Notification still waiting: the escalation notification from your previous command is still in the queue and hasn't been acknowledged.
+  As you instructed, I've stopped there without draining the queue, restarting monitoring, or checking the refusal.
+✻ Sautéed for 10s · done 6:53 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

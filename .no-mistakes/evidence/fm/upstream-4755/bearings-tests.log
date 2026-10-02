@@ -32,6 +32,7 @@ ok - --all-landed keeps the complete global landed output
 ok - landed stays bounded with per-home + overall caps and omitted[] disclosure
 ok - Bearings keeps a live blocker in structured live state and never converts it to Charted Next queue work
 ok - bearings lists an escalated pending reply until it resolves
+ok - escalated pending replies are exempt from the decision limit
 ok - action-free items (working/done/queued/landed) do not leak into Captain's Call
 ok - main orphan in-flight stays out of Underway and is disclosed in omitted/gates
 ok - main unstructured current is disclosed while structured siblings still project
@@ -59,4 +60,3 @@ ok - revealed deferred holds display their deferral reason while live calls stay
 ok - live PR enrichment caps repositories with counted expansion
 ok - per-repository open-PR caps are disclosed with an expansion knob
 ok - projection and TOON rendering failures exit nonzero with diagnostics
-rc=0

@@ -1,0 +1,10 @@
+# watcher tick with session-3 lock live; escalation b823ac1bfed609ae surfaced by an earlier session
+# wake queue:
+1790960097	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=b823ac1bfed609ae request=rebase onto main;
+# record:
+phase=escalated
+surfaced_session=3252870:6758f065-58fa-4c0a-9cee-7bddb178d050
+# lock-session: 6758f065-58fa-4c0a-9cee-7bddb178d050
+# watcher log:
+check: rearm-resurface
+EXIT=0

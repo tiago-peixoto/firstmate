@@ -1,0 +1,16 @@
+ ▐▛███▛█   Claude Code v2.1.287
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M3YQHC669APD7CB5ZHDZ003C
+❯ Run exactly this one Bash command and nothing else, then stop: bin/fm-session-start.sh >/dev/null 2>&1; echo QUEUE-BEGIN; cat $FM_HOME/state/.wake-queue; echo QUEUE-END; echo FM_HOME=$FM_HOME
+● Bash(bin/fm-session-start.sh >/dev/null 2>&1; echo QUEUE-BEGIN; cat $FM_HOME/state/.wake-queue; echo QUEUE-END; echo FM_HOME=$FM_HOME)
+  ⎿  QUEUE-BEGIN
+     QUEUE-END
+     FM_HOME=/tmp/fm-lab.cDtJQW
+  ⎿  Allowed by auto mode classifier
+● Captain, the command ran, and the wake queue is empty: nothing was printed between the start and end markers. The home is /tmp/fm-lab.cDtJQW.
+  The session-start output was sent to /dev/null, so I haven't seen its digest. I stopped there, as you instructed.
+✻ Sautéed for 13s · done 6:53 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

@@ -1,0 +1,14 @@
+== A: home WITHOUT config/pending-reply-resurface
+session-start mentions pending-reply-escalated: 0
+bearings pending-reply rows: []
+== B: home WITH config/pending-reply-resurface
+session-start lines mentioning the reminder:
+  16:1790960346	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=5e80d19fa7415df0 request=approve the migration plan;
+  19:mate [key=pending-reply-5e80d19fa7415df0] blocked: pending-reply-missed: task=mate pending-reply-id=5e80d19fa7415df0 request=approve the migration plan
+  118:blocked [key=pending-reply-5e80d19fa7415df0]: pending-reply-missed: task=mate pending-reply-id=5e80d19fa7415df0 request=approve the migration plan
+record surfaced_session now: 3518333:9c6fec88-069a-4487-a6d2-43ae80928bba
+bearings pending-reply rows: [{"id":"mate","key":"pending-reply-5e80d19fa7415df0","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=5e80d19fa7415df0 request=approve the migration plan","owner":"(main)"}]
+bearings human view excerpt:
+  26-decisions_open[1]{id,key,verb,summary,owner}:
+  27:  mate,pending-reply-5e80d19fa7415df0,blocked,"pending-reply escalated: task=mate pending-reply-id=5e80d19fa7415df0 request=approve the migration plan",(main)
+  28-landed: []

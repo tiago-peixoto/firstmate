@@ -1,0 +1,10 @@
+# record after session 1 start
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=2572722:4e71db48-7ca1-44df-a37b-9b022360984a
+# .lock / .lock-session
+2572722
+4e71db48-7ca1-44df-a37b-9b022360984a
+
+# wake queue
+1790959535	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=fb71cab993883979 request=finish the report;

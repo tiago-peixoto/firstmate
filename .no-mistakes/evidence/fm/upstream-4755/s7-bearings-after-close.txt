@@ -1,0 +1,9 @@
+== after operator close (fm-send --resolve-key), FM_HOME=/tmp/fm-lab.wQp2hw flag present
+$ bin/fm-bearings-snapshot.sh | grep -A2 decisions_open
+decisions_open: []
+landed: []
+gates: []
+# record after bearings (read-only path must not mutate):
+phase=escalated
+escalation_dismissed_epoch=
+escalation_dismiss_scan=44:29553677:154:1790959503:1790959503 open
