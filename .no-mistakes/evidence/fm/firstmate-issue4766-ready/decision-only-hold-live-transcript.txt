@@ -1,0 +1,5 @@
+=== B1: decision-only hold (no worker lane meta) creates no status log ===
+$ fm-captain-hold.sh hold lab-question --title 'Pick a vendor' --reason 'captain must pick' --repo sample
+  lab-question
+$ ls state/lab-question.status
+  ls: cannot access '/tmp/fm-lab.65TpeH/state/lab-question.status': No such file or directory

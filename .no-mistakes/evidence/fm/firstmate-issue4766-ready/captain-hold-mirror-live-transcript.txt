@@ -1,0 +1,118 @@
+=== S1: hold a paused worker lane mirrors a declaration; crew state stays paused ===
+worker appends to lane-a: working: start
+worker appends to lane-a: paused: waiting on vendor
+$ fm-captain-hold.sh hold lane-a --reason operator review
+  lane-a
+-- status log (lane-a):
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-lane-a-1] [at=1790900444]: operator review
+  last_status_line        => captain-held [key=captain-hold-lane-a-1] [at=1790900444]: operator review
+  status_declared_wait    => captain-held [key=captain-hold-lane-a-1] [at=1790900444]: operator review
+  status_current_line     => paused: waiting on vendor
+$ fm-crew-state.sh lane-a
+  state: unknown · source: none · worktree gone (torn down?)
+
+=== S2 (adversarial, review r2): an unrelated resolved line lands on top of the standing hold ===
+worker appends to lane-a: resolved [key=api-shape]: use v2
+-- status log (lane-a):
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-lane-a-1] [at=1790900444]: operator review
+  | resolved [key=api-shape]: use v2
+  last_status_line        => resolved [key=api-shape]: use v2
+  status_declared_wait    => captain-held [key=captain-hold-lane-a-1] [at=1790900444]: operator review
+  status_current_line     => paused: waiting on vendor
+$ fm-crew-state.sh lane-a
+  state: unknown · source: none · worktree gone (torn down?)
+
+=== S3 (adversarial, review r6): worker writes done while held ===
+worker appends to lane-a: done: shipped PR 12
+-- status log (lane-a):
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-lane-a-1] [at=1790900444]: operator review
+  | resolved [key=api-shape]: use v2
+  | done: shipped PR 12
+  last_status_line        => done: shipped PR 12
+  status_declared_wait    => 
+  status_current_line     => done: shipped PR 12
+$ fm-crew-state.sh lane-a
+  state: unknown · source: none · worktree gone (torn down?)
+
+=== S4: release settles the hold; retraction appended, reads go back to worker ===
+$ fm-captain-hold.sh answer lane-a --decision-file /tmp/fm-lab.65TpeH/go.txt --release
+  released: lane-a
+-- status log (lane-a):
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-lane-a-1] [at=1790900444]: operator review
+  | resolved [key=api-shape]: use v2
+  | done: shipped PR 12
+  | resolved [key=captain-hold-lane-a-1] [at=1790900446]: captain call released by fm-captain-hold
+  last_status_line        => done: shipped PR 12
+  status_declared_wait    => 
+  status_current_line     => done: shipped PR 12
+$ fm-crew-state.sh lane-a
+  state: unknown · source: none · worktree gone (torn down?)
+
+=== S5 (adversarial, review r1): earlier settled transfer must not hide a later standing hold ===
+worker appends to lane-b: working: start
+worker appends to lane-b: needs-decision [key=route]: pick a route
+$ fm-captain-hold.sh hold lane-b-call --title Sibling call for lane-b --reason captain picks route --repo sample --origin lane-b
+  lane-b-call
+$ fm-captain-hold.sh complete lane-b lane-b-call
+  complete: lane-b captain-call inventory reviewed (lane-b-call)
+-- status log (lane-b):
+  | working: start
+  | needs-decision [key=route]: pick a route
+  | captain-held [key=route] [at=1790900449]: tracked by lane-b-call
+  last_status_line        => captain-held [key=route] [at=1790900449]: tracked by lane-b-call
+  status_declared_wait    => captain-held [key=route] [at=1790900449]: tracked by lane-b-call
+  status_current_line     => captain-held [key=route] [at=1790900449]: tracked by lane-b-call
+$ fm-crew-state.sh lane-b
+  state: unknown · source: none · worktree gone (torn down?)
+$ fm-captain-hold.sh answer lane-b-call --decision-file /tmp/fm-lab.65TpeH/north.txt
+  answered: lane-b-call
+worker appends to lane-b: working: continuing
+-- status log (lane-b):
+  | working: start
+  | needs-decision [key=route]: pick a route
+  | captain-held [key=route] [at=1790900449]: tracked by lane-b-call
+  | resolved [key=route] [at=1790900451]: captain call answered by fm-captain-hold
+  | working: continuing
+  last_status_line        => working: continuing
+  status_declared_wait    => 
+  status_current_line     => working: continuing
+$ fm-crew-state.sh lane-b
+  state: unknown · source: none · worktree gone (torn down?)
+$ fm-captain-hold.sh hold lane-b --reason operator review of lane b
+  lane-b
+-- status log (lane-b):
+  | working: start
+  | needs-decision [key=route]: pick a route
+  | captain-held [key=route] [at=1790900449]: tracked by lane-b-call
+  | resolved [key=route] [at=1790900451]: captain call answered by fm-captain-hold
+  | working: continuing
+  | captain-held [key=captain-hold-lane-b-1] [at=1790900453]: operator review of lane b
+  last_status_line        => captain-held [key=captain-hold-lane-b-1] [at=1790900453]: operator review of lane b
+  status_declared_wait    => captain-held [key=captain-hold-lane-b-1] [at=1790900453]: operator review of lane b
+  status_current_line     => working: continuing
+$ fm-crew-state.sh lane-b
+  state: unknown · source: none · worktree gone (torn down?)
+
+=== S6: worker working line after hold replaces the declared wait ===
+worker appends to lane-b: working: resumed after review
+-- status log (lane-b):
+  | working: start
+  | needs-decision [key=route]: pick a route
+  | captain-held [key=route] [at=1790900449]: tracked by lane-b-call
+  | resolved [key=route] [at=1790900451]: captain call answered by fm-captain-hold
+  | working: continuing
+  | captain-held [key=captain-hold-lane-b-1] [at=1790900453]: operator review of lane b
+  | working: resumed after review
+  last_status_line        => working: resumed after review
+  status_declared_wait    => 
+  status_current_line     => working: resumed after review
+$ fm-crew-state.sh lane-b
+  state: unknown · source: none · worktree gone (torn down?)

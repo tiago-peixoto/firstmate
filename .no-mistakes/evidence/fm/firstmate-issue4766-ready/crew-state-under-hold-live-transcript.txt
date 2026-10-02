@@ -1,0 +1,62 @@
+=== C0 control: paused lane, no hold ===
+worker appends: working: start
+worker appends: paused: waiting on vendor
+-- log:
+  | working: start
+  | paused: waiting on vendor
+$ fm-crew-state.sh crew-p
+  => state: paused · source: status-log · waiting on vendor
+
+=== C1: hold the paused lane (real hold command) ===
+$ fm-captain-hold.sh hold crew-p --reason operator review
+  crew-p
+-- log:
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-crew-p-1] [at=1790900485]: operator review
+$ fm-crew-state.sh crew-p
+  => state: paused · source: status-log · waiting on vendor
+
+=== C2 (adversarial r2 fix): unrelated resolved line on top of standing hold -> still paused, never resolved/unknown ===
+worker appends: resolved [key=api-shape]: use v2
+-- log:
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-crew-p-1] [at=1790900485]: operator review
+  | resolved [key=api-shape]: use v2
+$ fm-crew-state.sh crew-p
+  => state: paused · source: status-log · waiting on vendor
+
+=== C3: worker done after the hold -> crew state done ===
+worker appends: done: report ready
+-- log:
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-crew-p-1] [at=1790900485]: operator review
+  | resolved [key=api-shape]: use v2
+  | done: report ready
+$ fm-crew-state.sh crew-p
+  => state: done · source: status-log · report ready
+
+=== C4: release appends retraction; crew state stays done ===
+$ fm-captain-hold.sh answer crew-p --decision-file /tmp/fm-lab.65TpeH/go2.txt --release
+  released: crew-p
+-- log:
+  | working: start
+  | paused: waiting on vendor
+  | captain-held [key=captain-hold-crew-p-1] [at=1790900485]: operator review
+  | resolved [key=api-shape]: use v2
+  | done: report ready
+  | resolved [key=captain-hold-crew-p-1] [at=1790900488]: captain call released by fm-captain-hold
+$ fm-crew-state.sh crew-p
+  => state: done · source: status-log · report ready
+
+=== C5: a lane that finished before it was held keeps reporting done while held ===
+worker appends: done: report ready
+$ fm-captain-hold.sh hold crew-d --reason captain review pending
+  crew-d
+-- log:
+  | done: report ready
+  | captain-held [key=captain-hold-crew-d-1] [at=1790900490]: captain review pending
+$ fm-crew-state.sh crew-d
+  => state: done · source: status-log · report ready
