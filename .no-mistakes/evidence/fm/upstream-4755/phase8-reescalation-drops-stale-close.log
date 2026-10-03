@@ -1,0 +1,53 @@
+
+### Session E, flag present: a send whose delivery is unknown escalates
+live session token: 1172245:d4ad5bf8-6294-4a28-86cc-f410eaf0b246
+corr_id=0b4cc7d30219a52b
+escalation_dismiss_scan=
+resolved_via=
+phase=escalated
+surfaced_session=1172245:d4ad5bf8-6294-4a28-86cc-f410eaf0b246
+escalation_dismissed_epoch=
+
+### Operator closes it; the reminder pass records the close
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-send.sh mate --resolve-key pending-reply-0b4cc7d30219a52b ack, will resend
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.THKWfa
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in primary:fm-mate has exited; the steer is durably recorded at /tmp/fm-lab.THKWfa/state/mate.inbox/002.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+[exit 0]
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+escalation_dismissed_epoch=1790997375
+
+### The send is reset and resent, the flag is removed, and the record escalates again as missed
+reset exit 0
+second escalation exit 0
+corr_id=0b4cc7d30219a52b
+escalation_dismiss_scan=
+resolved_via=
+phase=escalated
+surfaced_session=1172245:d4ad5bf8-6294-4a28-86cc-f410eaf0b246
+escalation_dismissed_epoch=
+6006:blocked [key=pending-reply-0b4cc7d30219a52b] [at=1790997373]: pending-reply-delivery-unknown: task=mate pending-reply-id=0b4cc7d30219a52b request
+6007:resolved [key=pending-reply-0b4cc7d30219a52b] [at=1790997374]: pending-reply-resolved: task=mate pending-reply-id=0b4cc7d30219a52b via=operator-r
+6008:blocked [key=pending-reply-0b4cc7d30219a52b] [at=1790997388]: pending-reply-missed: task=mate pending-reply-id=0b4cc7d30219a52b request=wake afte
+
+### The flag is added back
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+wake queue:
+  (empty)
+
+### Session F (new real claude primary) ran bin/fm-session-start.sh with the flag present
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-lock.sh status
+lock: held by live harness pid 1333834
+[exit 0]
+live session token: 1333834:7df72d52-9823-4514-99bb-37e4d92ce152
+wake queue:
+  1790997411	4	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=0b4cc7d30219a52b request=wake after lost transport; task=mate pending-reply-id=5b0e2a2d393d2dd1 request=confirm the release date;
+corr_id=0b4cc7d30219a52b
+resolved_via=
+phase=escalated
+escalation_dismissed_epoch=
+escalation_dismiss_scan=44:30875245:143023:1790997388:1790997388 open
+surfaced_session=1333834:7df72d52-9823-4514-99bb-37e4d92ce152
+Bearings pending-reply rows: ["pending-reply-0b4cc7d30219a52b","pending-reply-5b0e2a2d393d2dd1"]

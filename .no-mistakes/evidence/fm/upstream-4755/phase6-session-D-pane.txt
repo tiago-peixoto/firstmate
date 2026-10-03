@@ -1,0 +1,19 @@
+ ▐▛███▛█   Claude Code v2.1.288
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ
+❯ Run the command bin/fm-session-start.sh once, then print only its WAKE QUEUE section verbatim. Do nothing else.
+● Bash(bin/fm-session-start.sh)
+  ⎿  ================================================================================
+     SESSION START - /tmp/fm-lab.THKWfa
+     ================================================================================
+     … +161 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● WAKE QUEUE
+  --------------------------------------------------------------------------------
+  WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 885047.1790997091.Lf5Jsa
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+✻ Cooked for 12s · done 5:14 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ run the wake ack command
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

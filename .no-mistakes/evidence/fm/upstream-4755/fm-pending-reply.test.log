@@ -1,5 +1,7 @@
 ok - normal correlated reply resolves once (idempotent)
 ok - completed turn with no report triggers exactly one recovery
+ok - recovery never pokes a mate waiting on its own decision, and runs once it closes
+ok - recovery sends during an open decision when config/wait-no-turns is absent
 ok - recovery grace is measured from the request turn's completion, not delivery
 ok - one fresh status read immediately before firing catches a just-landed reply, any verb
 ok - a resolve that fails after committing resolved still blocks repost and escalation
@@ -10,19 +12,17 @@ ok - second missed turn escalates once and remains durable
 ok - an escalated pending reply is reminded once per later session until it resolves
 ok - an operator-closed escalation is neither reminded nor listed, an open one still is
 ok - only the operator's keyed close dismisses an escalation
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 527: /tmp/fm-pending-reply.DT1aMa/remind-stub-12695/fm-wake-lib.sh: No such file or directory
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 679: /tmp/fm-pending-reply.DT1aMa/remind-stub-12695/fm-wake-lib.sh: No such file or directory
 ok - a same-session operator close is recorded and stops the reminder
 ok - an unchanged status log is not re-read for dismissal
 ok - the dismissal scan is saved only under the record lock
+ok - an escalated pending reply is not re-surfaced unless the home opts in
+ok - the resurface flag is read from FM_CONFIG_OVERRIDE or FM_HOME/config
+ok - a mid-session opt-in does not repeat the reminder
+ok - a re-escalation without the flag is not hidden by an earlier close
+ok - a dismissal scan finds a close after a long status log
+ok - a failed dismissal read is not cached as open
 ok - a queued reminder does not mark an escalation it does not name
 ok - the reminder leaves records and queue alone when nothing needs reminding
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 527: /tmp/fm-pending-reply.DT1aMa/remind-stub-29741/fm-wake-lib.sh: No such file or directory
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 527: /tmp/fm-pending-reply.DT1aMa/remind-stub-29741/fm-wake-lib.sh: No such file or directory
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 527: /tmp/fm-pending-reply.DT1aMa/remind-stub-29741/fm-wake-lib.sh: No such file or directory
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 527: /tmp/fm-pending-reply.DT1aMa/remind-stub-29741/fm-wake-lib.sh: No such file or directory
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 527: /tmp/fm-pending-reply.DT1aMa/remind-stub-29741/fm-wake-lib.sh: No such file or directory
-/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3QZ99BBS8SVAQBF3TH28R61/bin/fm-pending-reply-lib.sh: line 527: /tmp/fm-pending-reply.DT1aMa/remind-stub-29741/fm-wake-lib.sh: No such file or directory
 ok - the tick starts the reminder only when a record is escalated
 ok - a new session in the same harness process is reminded once
 ok - escalations and replies wake; the home's own escalation close stays quiet

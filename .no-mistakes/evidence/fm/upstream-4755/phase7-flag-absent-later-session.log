@@ -1,0 +1,40 @@
+
+### Session D: remove the flag, then a third request escalates
+startup-memory-budget
+live session token: 1082293:58f5a964-3d85-48e4-9fae-a64d0e912d83
+corr_id=5b0e2a2d393d2dd1
+escalation_dismiss_scan=
+resolved_via=
+phase=escalated
+surfaced_session=1082293:58f5a964-3d85-48e4-9fae-a64d0e912d83
+escalation_dismissed_epoch=
+
+### Session E (new real claude primary) ran bin/fm-session-start.sh with the flag ABSENT
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-lock.sh status
+lock: held by live harness pid 1172245
+[exit 0]
+live session token: 1172245:d4ad5bf8-6294-4a28-86cc-f410eaf0b246
+wake queue:
+  (empty)
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+watcher tick exit 0
+reminder rows in queue: 0
+corr_id=5b0e2a2d393d2dd1
+escalation_dismiss_scan=
+resolved_via=
+phase=escalated
+surfaced_session=1082293:58f5a964-3d85-48e4-9fae-a64d0e912d83
+escalation_dismissed_epoch=
+Bearings pending-reply rows: []
+blocked status lines for this escalation (the single surface): 1
+
+### Session E opts in: this is a later session than the one that received the escalation, so it is reminded once
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+wake queue:
+  1790997364	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=5b0e2a2d393d2dd1 request=confirm the release date;
+surfaced_session=1172245:d4ad5bf8-6294-4a28-86cc-f410eaf0b246
+Bearings pending-reply rows: ["pending-reply-5b0e2a2d393d2dd1"]

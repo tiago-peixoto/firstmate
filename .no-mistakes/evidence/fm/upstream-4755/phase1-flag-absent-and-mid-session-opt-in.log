@@ -1,0 +1,38 @@
+
+### Session A holds the lab lock; config/pending-reply-resurface is ABSENT
+startup-memory-budget
+live session token: 760784:b50a6638-a211-4bef-8b69-ce4e3a17eecb
+
+### Record after escalation (flag absent)
+corr_id=43af62f0a3009ef4
+escalation_dismiss_scan=
+resolved_via=
+phase=escalated
+surfaced_session=760784:b50a6638-a211-4bef-8b69-ce4e3a17eecb
+escalation_dismissed_epoch=
+
+### Parent status log
+blocked [key=pending-reply-43af62f0a3009ef4] [at=1790997058]: pending-reply-missed: task=mate pending-reply-id=43af62f0a3009ef4 request=finish the quarterly report
+
+### Flag absent: reminder pass and Bearings input
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+watcher tick exit 0
+reminder rows in queue: 0
+remind --decisions: []
+
+### Opt in mid-session: touch config/pending-reply-resurface (same session A)
+live session token: 760784:b50a6638-a211-4bef-8b69-ce4e3a17eecb
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+watcher tick exit 0
+reminder rows in queue: 0
+corr_id=43af62f0a3009ef4
+resolved_via=
+phase=escalated
+surfaced_session=760784:b50a6638-a211-4bef-8b69-ce4e3a17eecb
+escalation_dismissed_epoch=
+escalation_dismiss_scan=44:30875245:164:1790997058:1790997058 open
+remind --decisions: [{"id":"mate","key":"pending-reply-43af62f0a3009ef4","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=43af62f0a3009ef4 request=finish the quarterly report","owner":"(main)"}]
+wake queue:
+  (empty)

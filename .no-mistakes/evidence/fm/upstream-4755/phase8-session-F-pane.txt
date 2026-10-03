@@ -1,0 +1,28 @@
+ ▐▛███▛█   Claude Code v2.1.288
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ
+❯ Run the command bin/fm-session-start.sh once, then print only its WAKE QUEUE section verbatim. Do nothing else.
+● Bash(bin/fm-session-start.sh)
+  ⎿  ================================================================================
+     SESSION START - /tmp/fm-lab.THKWfa
+     ================================================================================
+     … +169 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● WAKE QUEUE
+  --------------------------------------------------------------------------------
+  1790997411    4       check   pending-reply-escalated pending-reply-escalated: task=mate pending-reply-id=0b4cc7d30219a52b request=wake after lost transport; task=mate
+  pending-reply-id=5b0e2a2d393d2dd1 request=confirm the release date;
+  WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 4 --recovery-generation 885047.1790997091.Lf5Jsa
+  UNREAD STATUS (new since last drain, not re-printed after this presentation):
+  mate resolved [key=pending-reply-0b4cc7d30219a52b] [at=1790997374]: pending-reply-resolved: task=mate pending-reply-id=0b4cc7d30219a52b via=operator-resolve-key ack, will resend
+  OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  mate [key=pending-reply-5b0e2a2d393d2dd1] blocked: pending-reply-missed: task=mate pending-reply-id=5b0e2a2d393d2dd1 request=confirm the release date
+  mate [key=pending-reply-0b4cc7d30219a52b] blocked: pending-reply-missed: task=mate pending-reply-id=0b4cc7d30219a52b request=wake after lost transport
+  OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+✻ Brewed for 17s · done 5:17 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ run bin/fm-wake-drain.sh and print its output verbatim
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

@@ -1,0 +1,29 @@
+
+### Session B (real claude primary on the lab tmux socket) ran bin/fm-session-start.sh
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-lock.sh status
+lock: held by live harness pid 858141
+[exit 0]
+live session token: 858141:b2cb7c04-023f-4dd2-b3da-16b14f649b5a
+corr_id=43af62f0a3009ef4
+resolved_via=
+phase=escalated
+escalation_dismissed_epoch=
+escalation_dismiss_scan=44:30875245:164:1790997058:1790997058 open
+surfaced_session=858141:b2cb7c04-023f-4dd2-b3da-16b14f649b5a
+wake queue:
+  1790997091	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=43af62f0a3009ef4 request=finish the quarterly report;
+blocked status lines for this escalation: 1
+
+### Same session B polls again (reminder script and watcher tick)
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+watcher tick exit 0
+reminder rows in queue: 1
+
+### Session B acknowledges the wake, then polls again
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+wake queue:
+  (empty)
+blocked status lines for this escalation: 1
+phase=escalated

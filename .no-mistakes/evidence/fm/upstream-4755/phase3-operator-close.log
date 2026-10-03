@@ -1,0 +1,35 @@
+
+### Session B: a second request escalates and is left open
+corr_id=762d8e12562dd579
+escalation_dismiss_scan=
+resolved_via=
+phase=escalated
+surfaced_session=858141:b2cb7c04-023f-4dd2-b3da-16b14f649b5a
+escalation_dismissed_epoch=
+
+### Pad the status log with 4000 unrelated lines so the close sits far from the escalation
+4002 /tmp/fm-lab.THKWfa/state/mate.status
+
+### Operator closes the first escalation with fm-send --resolve-key
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-send.sh mate --resolve-key pending-reply-43af62f0a3009ef4 ack, handled out of band
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.THKWfa
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in primary:fm-mate has exited; the steer is durably recorded at /tmp/fm-lab.THKWfa/state/mate.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+[exit 0]
+1:blocked [key=pending-reply-43af62f0a3009ef4] [at=1790997058]: pending-reply-missed: task=mate pending-reply-id=43af62f0a3009ef4 request=finish the quarterly report
+4003:resolved [key=pending-reply-43af62f0a3009ef4] [at=1790997126]: pending-reply-resolved: task=mate pending-reply-id=43af62f0a3009ef4 via=operator-resolve-key ack, handled out of band
+
+### Same session B reminder pass records the close
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+corr_id=43af62f0a3009ef4
+resolved_via=
+phase=escalated
+escalation_dismiss_scan=44:30875245:164:1790997058:1790997058 open
+surfaced_session=858141:b2cb7c04-023f-4dd2-b3da-16b14f649b5a
+escalation_dismissed_epoch=1790997127
+wake queue:
+  (empty)
+
+### Bearings: only the open escalation keeps a row
+{"key":"pending-reply-762d8e12562dd579","verb":"blocked","owner":"(main)"}

@@ -1,0 +1,32 @@
+
+### Session D (new real claude primary) ran bin/fm-session-start.sh after the reply resolved the record
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-lock.sh status
+lock: held by live harness pid 1082293
+[exit 0]
+live session token: 1082293:58f5a964-3d85-48e4-9fae-a64d0e912d83
+wake queue:
+  (empty)
+reminder rows in queue: 0
+corr_id=43af62f0a3009ef4
+resolved_via=
+phase=escalated
+escalation_dismiss_scan=44:30875245:164:1790997058:1790997058 open
+surfaced_session=858141:b2cb7c04-023f-4dd2-b3da-16b14f649b5a
+escalation_dismissed_epoch=1790997127
+
+corr_id=762d8e12562dd579
+escalation_dismissed_epoch=
+escalation_dismiss_scan=44:30875245:142293:1790997126:1790997126 open
+surfaced_session=934808:2f32c90a-592b-43ae-b548-797ac7ad2b5f
+phase=resolved
+resolved_via=status
+
+
+### Reminder pass and watcher tick in session D
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-pending-reply-remind.sh /tmp/fm-lab.THKWfa/state
+[exit 0]
+watcher tick exit 0
+reminder rows in queue: 0
+
+### Bearings decisions_open
+[]

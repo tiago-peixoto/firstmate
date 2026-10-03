@@ -1,0 +1,25 @@
+
+### Session C (new real claude primary) ran bin/fm-session-start.sh
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M3ZSZ7NW8V6V6X4SV5WHY3TZ/bin/fm-lock.sh status
+lock: held by live harness pid 934808
+[exit 0]
+live session token: 934808:2f32c90a-592b-43ae-b548-797ac7ad2b5f
+wake queue:
+  1790997150	2	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=762d8e12562dd579 request=review the migration plan;
+closed by operator:
+corr_id=43af62f0a3009ef4
+resolved_via=
+phase=escalated
+escalation_dismiss_scan=44:30875245:164:1790997058:1790997058 open
+surfaced_session=858141:b2cb7c04-023f-4dd2-b3da-16b14f649b5a
+escalation_dismissed_epoch=1790997127
+left open:
+corr_id=762d8e12562dd579
+resolved_via=
+phase=escalated
+escalation_dismissed_epoch=
+escalation_dismiss_scan=44:30875245:142293:1790997126:1790997126 open
+surfaced_session=934808:2f32c90a-592b-43ae-b548-797ac7ad2b5f
+
+### Bearings rows
+{"key":"pending-reply-762d8e12562dd579","verb":"blocked","owner":"(main)"}

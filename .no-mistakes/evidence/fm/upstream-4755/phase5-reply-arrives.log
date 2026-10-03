@@ -1,0 +1,11 @@
+
+### Session C: the mate's correlated reply arrives on the parent status log
+watcher tick exit 0
+corr_id=762d8e12562dd579
+escalation_dismissed_epoch=
+escalation_dismiss_scan=44:30875245:142293:1790997126:1790997126 open
+surfaced_session=934808:2f32c90a-592b-43ae-b548-797ac7ad2b5f
+phase=resolved
+resolved_via=status
+note: later line 2000
+done [corr=762d8e12562dd579]: the migration plan review is in
