@@ -654,6 +654,55 @@ test_secondmate_claude_older_home_guard_keeps_the_stop_idle_hook() {
   pass "a claude secondmate whose home guard predates .fm-busy-stop keeps the Stop idle hook"
 }
 
+# A secondmate home outlives its agent, so a spawn into one finds whatever
+# Claude Code and the captain saved in settings.local.json.
+test_secondmate_claude_spawn_keeps_the_home_settings() {
+  local case_dir id=sm-claude-keep primary sm state settings fakebin out cmd
+  case_dir="$TMP_ROOT/sm-claude-keep"
+  primary="$case_dir/primary"
+  sm="$case_dir/sm"
+  mkdir -p "$case_dir"
+  fakebin=$(make_spawn_fakebin "$case_dir/fake" claude)
+  fm_test_spawn_home "$primary" claude
+  seed_secondmate_home "$sm" "$id"
+  settings="$sm/.claude/settings.local.json"
+  mkdir -p "$sm/.claude"
+  cat > "$settings" <<'JSON'
+{
+  "permissions": {"allow": ["Bash(git status:*)"]},
+  "hooks": {
+    "UserPromptSubmit": [
+      {"hooks": [{"type": "command", "command": "echo captain-submit"}]}
+    ]
+  }
+}
+JSON
+  out=$(FM_BACKEND=tmux fm_test_run_spawn "$primary" "$sm" "$fakebin" "$id" "$sm" claude --secondmate) \
+    || fail "claude secondmate spawn failed: $out"
+  state="$primary/state"
+  [ "$(jq -c '.permissions' "$settings")" = '{"allow":["Bash(git status:*)"]}' ] \
+    || fail "a secondmate spawn dropped the saved permissions: $(cat "$settings")"
+  jq -e '[.hooks.UserPromptSubmit[].hooks[].command] | index("echo captain-submit")' "$settings" >/dev/null \
+    || fail "a secondmate spawn dropped the captain's own hook: $(cat "$settings")"
+  jq -r '.hooks.UserPromptSubmit[].hooks[].command' "$settings" \
+    | while IFS= read -r cmd; do sh -c "$cmd" >/dev/null; done
+  out=$(classify claude "$id" "$state")
+  [ "$out" = "busy claude-hook" ] || fail "the merged busy hook must write the busy record, got '$out'"
+
+  id=sm-claude-bad
+  sm="$case_dir/sm-bad"
+  seed_secondmate_home "$sm" "$id"
+  settings="$sm/.claude/settings.local.json"
+  mkdir -p "$sm/.claude"
+  printf 'not json\n' > "$settings"
+  out=$(FM_BACKEND=tmux fm_test_run_spawn "$primary" "$sm" "$fakebin" "$id" "$sm" claude --secondmate) \
+    && fail "a spawn must refuse a settings file it cannot merge into: $out"
+  assert_contains "$out" "could not merge the busy-state hooks" \
+    "the refusal should name the settings merge"
+  [ "$(cat "$settings")" = "not json" ] || fail "a refused merge changed the settings file: $(cat "$settings")"
+  pass "a claude secondmate spawn merges its busy hooks into the home's saved settings and never truncates them"
+}
+
 test_secondmate_pi_extension_reports_busy_without_a_parent_turnend() {
   local case_dir id=sm-pi primary state ext launch out
   case_dir="$TMP_ROOT/sm-pi"
@@ -762,6 +811,7 @@ test_secondmate_codex_and_grok_do_not_arm_a_parent_turnend() {
 test_secondmate_claude_spawn_arms_busy_for_the_stall_gate
 test_secondmate_claude_stop_guard_owns_the_stop_verdict
 test_secondmate_claude_older_home_guard_keeps_the_stop_idle_hook
+test_secondmate_claude_spawn_keeps_the_home_settings
 test_secondmate_pi_extension_reports_busy_without_a_parent_turnend
 test_secondmate_omp_extension_reports_busy_without_a_parent_turnend
 test_secondmate_opencode_plugin_closes_without_a_parent_turnend

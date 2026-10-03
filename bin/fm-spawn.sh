@@ -1423,6 +1423,40 @@ spawn_herdr_presentation_order_lock_acquire() {
   return 1
 }
 
+# A secondmate home is a persistent clone, so its .claude/settings.local.json
+# also holds what Claude Code or the captain saved there (permission rules,
+# other hooks). Firstmate owns only the hook groups that run fm-busy-event.sh:
+# this replaces them with <hooks-json> ('{}' retires them) and keeps every
+# other key, deleting the file only when nothing else is left. A file that is
+# not one JSON object, or that exists on a host without jq, is left untouched
+# and fails the caller.
+set_secondmate_claude_busy_hooks() {  # <settings-file> <hooks-json>
+  local file=$1 hooks=$2 merged tmp
+  if [ ! -e "$file" ]; then
+    [ "$hooks" = '{}' ] || printf '{"hooks":%s}\n' "$hooks" >"$file"
+    return
+  fi
+  merged=$(jq -s --argjson new "$hooks" '
+    def ours: any(.hooks[]?; (.command // "") | contains("/bin/fm-busy-event.sh"));
+    (if length == 0 then {}
+     elif length == 1 and (.[0] | type) == "object" then .[0]
+     else error("not a single JSON object") end)
+    | .hooks = ((.hooks // {}) | with_entries(.value |= map(select(ours | not))))
+    | reduce ($new | to_entries[]) as $e (.; .hooks[$e.key] += $e.value)
+    | .hooks |= with_entries(select(.value | length > 0))
+    | if (.hooks | length) == 0 then del(.hooks) else . end
+  ' "$file") || return 1
+  if [ "$merged" = '{}' ]; then
+    rm -f -- "$file" || return 1
+    return 0
+  fi
+  tmp=$(mktemp "$file.XXXXXX") || return 1
+  printf '%s\n' "$merged" >"$tmp" && mv -f -- "$tmp" "$file" || {
+    rm -f -- "$tmp"
+    return 1
+  }
+}
+
 clear_relaunch_harness_wiring() {
   local harness=$1 wt=$2 state=$3 id=$4 token_path token auth_path path
   # The wiring arms above match on harness PREFIXES, because a task launched
@@ -1444,6 +1478,10 @@ clear_relaunch_harness_wiring() {
   fi
   while IFS= read -r path; do
     [ -n "$path" ] || continue
+    if [ "$KIND" = secondmate ] && [ "$path" = "$wt/.claude/settings.local.json" ]; then
+      set_secondmate_claude_busy_hooks "$path" '{}' || return 1
+      continue
+    fi
     rm -f -- "$path" || return 1
   done <<EOF
 $(fm_control_harness_wiring_paths "$harness" "$wt" "$state" "$id")
@@ -4552,9 +4590,15 @@ BUSY_GEN=
       j_stop=$(json_escape "${stop_turnend}$busy_cmd_prefix idle $busy_suffix --event stop 2>/dev/null || true")
       stop_entry="\"Stop\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_stop\"}]}],"
     fi
-    cat >"$WT/.claude/settings.local.json" <<EOF
-{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"$j_submit"}]}],${stop_entry}"StopFailure":[{"hooks":[{"type":"command","command":"$j_stopfail"}]}],"SessionEnd":[{"hooks":[{"type":"command","command":"$j_sessionend"}]}]}}
-EOF
+    busy_hooks="{\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_submit\"}]}],${stop_entry}\"StopFailure\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_stopfail\"}]}],\"SessionEnd\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_sessionend\"}]}]}"
+    if [ "$KIND" = secondmate ]; then
+      set_secondmate_claude_busy_hooks "$WT/.claude/settings.local.json" "$busy_hooks" || {
+        echo "error: could not merge the busy-state hooks into $WT/.claude/settings.local.json; the file is left as it was" >&2
+        exit 1
+      }
+    else
+      printf '{"hooks":%s}\n' "$busy_hooks" >"$WT/.claude/settings.local.json"
+    fi
     exclude_path '.claude/settings.local.json'
     ;;
   devin)

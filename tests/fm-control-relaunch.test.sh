@@ -1052,6 +1052,122 @@ test_explicit_secondmate_harness_ignores_configured_profile_axes() {
   pass "fm-control relaunch: explicit secondmate harness resets unnamed profile axes"
 }
 
+# A secondmate home is a persistent clone: its .claude/settings.local.json also
+# carries what Claude Code and the captain saved there. A relaunch owns only
+# the busy-state hook groups in it.
+test_secondmate_claude_relaunch_keeps_the_home_settings() {
+  local dir home settings out rc busy_cmds
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "skip - merging into an existing settings.local.json needs jq"
+    return 0
+  fi
+  dir=$(new_case smsettings sm8)
+  home="$dir/home"
+  mkdir -p "$home/data/sm8"
+  printf '# secondmate brief\n' > "$home/data/sm8/brief.md"
+  fm_git_worktree "$dir/proj" "$dir/smhome" sm-branch
+  mkdir -p "$dir/smhome/state" "$dir/smhome/data" "$dir/smhome/bin" "$dir/smhome/.claude"
+  cp "$ROOT/bin/fm-turnend-guard.sh" "$dir/smhome/bin/fm-turnend-guard.sh"
+  printf 'sm8\n' > "$dir/smhome/.fm-secondmate-home"
+  printf '# agents\n' > "$dir/smhome/AGENTS.md"
+  {
+    echo "window=fmses:fm-sm8"
+    echo "endpoint_task_id=sm8"
+    echo "worktree=$dir/smhome"
+    echo "project=$dir/smhome"
+    echo "harness=claude"
+    echo "kind=secondmate"
+    echo "mode=secondmate"
+    echo "yolo=off"
+    echo "model=default"
+    echo "effort=default"
+    echo "home=$dir/smhome"
+  } > "$home/state/sm8.meta"
+  printf '%s\n' "fm-sm8" > "$dir/fake/windows"
+  printf '%s' "$dir/smhome" > "$dir/fake/cwd"
+  settings="$dir/smhome/.claude/settings.local.json"
+  # The retired incarnation's busy hook beside a saved permission rule and a
+  # hook the captain added.
+  cat > "$settings" <<'JSON'
+{
+  "permissions": {"allow": ["Bash(git status:*)"]},
+  "hooks": {
+    "UserPromptSubmit": [
+      {"hooks": [{"type": "command", "command": "'/old/bin/fm-busy-event.sh' apply '/old/state' 'sm8' busy --gen 'retired' --source claude-hook"}]}
+    ],
+    "Stop": [
+      {"hooks": [{"type": "command", "command": "echo captain-stop"}]}
+    ]
+  }
+}
+JSON
+
+  out=$(run_control "$dir" sm8 relaunch --harness claude); rc=$?
+  expect_code 0 "$rc" "a claude secondmate relaunch should succeed"$'\n'"$out"
+  [ "$(jq -c '.permissions' "$settings")" = '{"allow":["Bash(git status:*)"]}' ] \
+    || fail "a relaunch dropped the saved permissions: $(cat "$settings")"
+  [ "$(jq -r '[.hooks.Stop[].hooks[].command] | join("|")' "$settings")" = "echo captain-stop" ] \
+    || fail "a relaunch must keep the captain's Stop hook and add none of its own: $(cat "$settings")"
+  busy_cmds=$(jq -r '.hooks.UserPromptSubmit[].hooks[].command' "$settings")
+  assert_not_contains "$busy_cmds" "retired" "a relaunch left the retired generation's busy hook"
+  assert_contains "$busy_cmds" "--gen '$(cat "$home/state/sm8.busy-gen")'" \
+    "a relaunch should arm the replacement generation's busy hook"
+  [ "$(printf '%s\n' "$busy_cmds" | wc -l)" -eq 1 ] \
+    || fail "a relaunch should leave exactly one UserPromptSubmit busy hook: $busy_cmds"
+  [ -e "$dir/smhome/.fm-busy-stop" ] || fail "a claude secondmate relaunch should write the Stop pointer"
+
+  printf 'codex' > "$dir/fake/becomes"
+  out=$(run_control "$dir" sm8 relaunch --harness codex); rc=$?
+  expect_code 0 "$rc" "a secondmate harness switch should succeed"$'\n'"$out"
+  [ "$(jq -cS . "$settings")" = '{"hooks":{"Stop":[{"hooks":[{"command":"echo captain-stop","type":"command"}]}]},"permissions":{"allow":["Bash(git status:*)"]}}' ] \
+    || fail "retiring claude must remove only the busy hooks: $(cat "$settings")"
+  [ ! -e "$dir/smhome/.fm-busy-stop" ] \
+    || fail "the retired generation's Stop pointer must be cleared with the rest of the wiring"
+  pass "fm-control relaunch: a claude secondmate's saved settings survive relaunch, and retirement removes only the busy hooks"
+}
+
+test_secondmate_claude_retirement_deletes_a_settings_file_it_alone_filled() {
+  local dir home settings out rc
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "skip - retiring hooks from an existing settings.local.json needs jq"
+    return 0
+  fi
+  dir=$(new_case smsettingsonly sm9)
+  home="$dir/home"
+  mkdir -p "$home/data/sm9"
+  printf '# secondmate brief\n' > "$home/data/sm9/brief.md"
+  fm_git_worktree "$dir/proj" "$dir/smhome" sm-branch
+  mkdir -p "$dir/smhome/state" "$dir/smhome/data" "$dir/smhome/bin"
+  printf 'sm9\n' > "$dir/smhome/.fm-secondmate-home"
+  printf '# agents\n' > "$dir/smhome/AGENTS.md"
+  {
+    echo "window=fmses:fm-sm9"
+    echo "endpoint_task_id=sm9"
+    echo "worktree=$dir/smhome"
+    echo "project=$dir/smhome"
+    echo "harness=claude"
+    echo "kind=secondmate"
+    echo "mode=secondmate"
+    echo "yolo=off"
+    echo "model=default"
+    echo "effort=default"
+    echo "home=$dir/smhome"
+  } > "$home/state/sm9.meta"
+  printf '%s\n' "fm-sm9" > "$dir/fake/windows"
+  printf '%s' "$dir/smhome" > "$dir/fake/cwd"
+  settings="$dir/smhome/.claude/settings.local.json"
+
+  out=$(run_control "$dir" sm9 relaunch --harness claude); rc=$?
+  expect_code 0 "$rc" "a claude secondmate relaunch should succeed"$'\n'"$out"
+  [ -e "$settings" ] || fail "a claude secondmate relaunch should write its busy hooks"
+  printf 'codex' > "$dir/fake/becomes"
+  out=$(run_control "$dir" sm9 relaunch --harness codex); rc=$?
+  expect_code 0 "$rc" "a secondmate harness switch should succeed"$'\n'"$out"
+  [ ! -e "$settings" ] \
+    || fail "a settings file holding only the busy hooks must go with them: $(cat "$settings")"
+  pass "fm-control relaunch: retiring claude deletes a secondmate settings file that held nothing else"
+}
+
 test_ship_relaunch_ignores_the_crew_harness_config() {
   local dir out
   dir=$(new_case crewcfg rl20)
@@ -2412,6 +2528,8 @@ test_secondmate_relaunch_picks_up_the_configured_harness_pin
 test_secondmate_relaunch_ignores_invalid_configured_effort_before_stop
 test_secondmate_relaunch_onto_a_crewmate_only_adapter_refuses_before_stop
 test_explicit_secondmate_harness_ignores_configured_profile_axes
+test_secondmate_claude_relaunch_keeps_the_home_settings
+test_secondmate_claude_retirement_deletes_a_settings_file_it_alone_filled
 test_ship_relaunch_ignores_the_crew_harness_config
 test_spawn_relaunch_without_a_harness_reuses_the_recorded_one
 test_spawn_relaunch_of_promoted_scout_uses_the_recorded_branch
