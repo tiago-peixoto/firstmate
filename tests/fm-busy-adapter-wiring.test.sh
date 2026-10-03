@@ -703,6 +703,35 @@ JSON
   pass "a claude secondmate spawn merges its busy hooks into the home's saved settings and never truncates them"
 }
 
+# Without jq the spawn cannot merge into a settings file that already exists.
+# It must not overwrite the file or refuse: the mate launches unarmed.
+test_secondmate_claude_spawn_without_jq_leaves_existing_settings() {
+  local case_dir id=sm-claude-nojq primary sm state settings fakebin nojq out before
+  case_dir="$TMP_ROOT/sm-claude-nojq"
+  primary="$case_dir/primary"
+  sm="$case_dir/sm"
+  mkdir -p "$case_dir"
+  fakebin=$(make_spawn_fakebin "$case_dir/fake" claude)
+  nojq="$case_dir/nojq-path"
+  fm_test_path_without "$nojq" jq
+  fm_test_spawn_home "$primary" claude
+  seed_secondmate_home "$sm" "$id"
+  settings="$sm/.claude/settings.local.json"
+  mkdir -p "$sm/.claude"
+  printf '{"permissions":{"allow":["Bash(git status:*)"]}}\n' > "$settings"
+  before=$(cat "$settings")
+  out=$(PATH="$nojq" FM_BACKEND=tmux fm_test_run_spawn "$primary" "$sm" "$fakebin" "$id" "$sm" claude --secondmate) \
+    || fail "a claude secondmate spawn without jq must still launch: $out"
+  state="$primary/state"
+  assert_contains "$out" "warning: jq is not installed" "the unarmed launch should say why on stderr"
+  [ "$(cat "$settings")" = "$before" ] || fail "a spawn without jq changed the settings file: $(cat "$settings")"
+  assert_present "$state/$id.meta" "the spawn without jq did not record the task"
+  assert_absent "$state/$id.busy-gen" "an unarmed launch left a busy generation nothing can close"
+  assert_absent "$state/$id.busy-state" "an unarmed launch left a busy record nothing can close"
+  assert_absent "$sm/.fm-busy-stop" "an unarmed launch wrote a Stop pointer"
+  pass "a claude secondmate spawn without jq leaves an existing settings file untouched and launches unarmed with a warning"
+}
+
 test_secondmate_pi_extension_reports_busy_without_a_parent_turnend() {
   local case_dir id=sm-pi primary state ext launch out
   case_dir="$TMP_ROOT/sm-pi"
@@ -812,6 +841,7 @@ test_secondmate_claude_spawn_arms_busy_for_the_stall_gate
 test_secondmate_claude_stop_guard_owns_the_stop_verdict
 test_secondmate_claude_older_home_guard_keeps_the_stop_idle_hook
 test_secondmate_claude_spawn_keeps_the_home_settings
+test_secondmate_claude_spawn_without_jq_leaves_existing_settings
 test_secondmate_pi_extension_reports_busy_without_a_parent_turnend
 test_secondmate_omp_extension_reports_busy_without_a_parent_turnend
 test_secondmate_opencode_plugin_closes_without_a_parent_turnend

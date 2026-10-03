@@ -1428,14 +1428,16 @@ spawn_herdr_presentation_order_lock_acquire() {
 # other hooks). Firstmate owns only the hook groups that run fm-busy-event.sh:
 # this replaces them with <hooks-json> ('{}' retires them) and keeps every
 # other key, deleting the file only when nothing else is left. A file that is
-# not one JSON object, or that exists on a host without jq, is left untouched
-# and fails the caller.
+# not one JSON object is left untouched and fails the caller. An existing file
+# on a host without jq is left untouched too and returns 2, so the caller can
+# launch without the busy hooks instead of refusing.
 set_secondmate_claude_busy_hooks() {  # <settings-file> <hooks-json>
   local file=$1 hooks=$2 merged tmp
   if [ ! -e "$file" ]; then
     [ "$hooks" = '{}' ] || printf '{"hooks":%s}\n' "$hooks" >"$file"
     return
   fi
+  command -v jq >/dev/null 2>&1 || return 2
   merged=$(jq -s --argjson new "$hooks" '
     def ours: any(.hooks[]?; (.command // "") | contains("/bin/fm-busy-event.sh"));
     (if length == 0 then {}
@@ -1458,7 +1460,7 @@ set_secondmate_claude_busy_hooks() {  # <settings-file> <hooks-json>
 }
 
 clear_relaunch_harness_wiring() {
-  local harness=$1 wt=$2 state=$3 id=$4 token_path token auth_path path
+  local harness=$1 wt=$2 state=$3 id=$4 token_path token auth_path path rc
   # The wiring arms above match on harness PREFIXES, because a task launched
   # from a raw command records that command's basename rather than the exact
   # adapter name. The retirement tables are keyed by the exact adapter, so the
@@ -1479,7 +1481,13 @@ clear_relaunch_harness_wiring() {
   while IFS= read -r path; do
     [ -n "$path" ] || continue
     if [ "$KIND" = secondmate ] && [ "$path" = "$wt/.claude/settings.local.json" ]; then
-      set_secondmate_claude_busy_hooks "$path" '{}' || return 1
+      rc=0
+      set_secondmate_claude_busy_hooks "$path" '{}' || rc=$?
+      case "$rc" in
+        0) ;;
+        2) echo "warning: jq is not installed, so $path is left as it is; any busy-state hooks in it belong to a retired generation and are ignored" >&2 ;;
+        *) return 1 ;;
+      esac
       continue
     fi
     rm -f -- "$path" || return 1
@@ -4574,14 +4582,9 @@ BUSY_GEN=
     j_stopfail=$(json_escape "$busy_cmd_prefix idle $busy_suffix --event stop-failure 2>/dev/null || true")
     j_sessionend=$(json_escape "$busy_cmd_prefix idle $busy_suffix --event session-end 2>/dev/null || true")
     stop_entry=
+    stop_pointer=false
     if [ "$KIND" = secondmate ] && grep -qF '.fm-busy-stop' "$WT/bin/fm-turnend-guard.sh" 2>/dev/null; then
-      {
-        printf 'writer=%s\n' "$FM_ROOT/bin/fm-busy-event.sh"
-        printf 'state=%s\n' "$STATE_REAL"
-        printf 'id=%s\n' "$ID"
-        printf 'gen=%s\n' "$BUSY_GEN"
-      } >"$WT/.fm-busy-stop"
-      exclude_path '.fm-busy-stop'
+      stop_pointer=true
     else
       stop_turnend=
       if [ "$busy_notify_turnend" = true ]; then
@@ -4592,10 +4595,37 @@ BUSY_GEN=
     fi
     busy_hooks="{\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_submit\"}]}],${stop_entry}\"StopFailure\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_stopfail\"}]}],\"SessionEnd\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_sessionend\"}]}]}"
     if [ "$KIND" = secondmate ]; then
-      set_secondmate_claude_busy_hooks "$WT/.claude/settings.local.json" "$busy_hooks" || {
-        echo "error: could not merge the busy-state hooks into $WT/.claude/settings.local.json; the file is left as it was" >&2
-        exit 1
-      }
+      merge_rc=0
+      set_secondmate_claude_busy_hooks "$WT/.claude/settings.local.json" "$busy_hooks" || merge_rc=$?
+      case "$merge_rc" in
+        0)
+          if [ "$stop_pointer" = true ]; then
+            {
+              printf 'writer=%s\n' "$FM_ROOT/bin/fm-busy-event.sh"
+              printf 'state=%s\n' "$STATE_REAL"
+              printf 'id=%s\n' "$ID"
+              printf 'gen=%s\n' "$BUSY_GEN"
+            } >"$WT/.fm-busy-stop"
+            exclude_path '.fm-busy-stop'
+          fi
+          ;;
+        2)
+          # Hooks that cannot be merged would leave the seeded busy record
+          # with no writer to reopen or close it, so the launch goes ahead
+          # unarmed and the mate classifies unknown.
+          echo "warning: jq is not installed, so the busy-state hooks cannot be merged into the existing $WT/.claude/settings.local.json; it is left as it is and $ID launches without the busy contract (install jq and relaunch to arm it)" >&2
+          "$FM_ROOT/bin/fm-busy-event.sh" retire "$STATE_REAL" "$ID" --gen "$BUSY_GEN" || {
+            echo "error: could not retire the unarmed busy generation for $ID" >&2
+            exit 1
+          }
+          BUSY_GEN=
+          RELAUNCH_REPLACEMENT_BUSY_GEN=
+          ;;
+        *)
+          echo "error: could not merge the busy-state hooks into $WT/.claude/settings.local.json; the file is left as it was" >&2
+          exit 1
+          ;;
+      esac
     else
       printf '{"hooks":%s}\n' "$busy_hooks" >"$WT/.claude/settings.local.json"
     fi

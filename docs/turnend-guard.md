@@ -271,6 +271,7 @@ The registrations in detail:
   A home whose guard predates `.fm-busy-stop` cannot close the turn, so that launch keeps the ordinary `Stop` idle hook instead.
   A secondmate home is a persistent clone, so the spawn merges its busy hooks into the home's existing `.claude/settings.local.json` and keeps every other key, such as saved permission rules.
   A relaunch removes only those busy hooks and the `.fm-busy-stop` pointer, and deletes the settings file only when nothing else is left in it.
+  That merge needs `jq` once the settings file exists: without it the spawn or relaunch leaves the file untouched, warns on stderr, and starts the mate without the busy contract, so the mate classifies unknown until a relaunch with `jq` installed.
   [Runtime backend verification](verification/runtime-backends.md#secondmate-busy-contract) owns the live evidence.
 - Codex registers a `Stop` hook in `.codex/hooks.json`, anchors the executable to the hook process working directory, verifies a Firstmate-shaped hook-bearing root, and passes the original payload to the shared guard.
 - OpenCode listens for `session.idle` in `.opencode/plugins/fm-primary-turnend-guard.js`, lets the watcher coordinator act first, and calls `client.session.promptAsync` once when the guard returns 2.

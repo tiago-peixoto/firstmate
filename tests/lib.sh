@@ -407,6 +407,27 @@ fm_fakebin() {
   printf '%s\n' "$fakebin"
 }
 
+# fm_test_path_without <dir> <tool>
+# Fills <dir> with a symlink to every tool on the current PATH except <tool>, so
+# PATH=<dir> hides that one tool whatever directory the host installed it in.
+fm_test_path_without() {
+  local dir=$1 omit=$2 bindir entry name
+  mkdir -p "$dir"
+  while IFS= read -r bindir; do
+    [ -d "$bindir" ] || continue
+    for entry in "$bindir"/*; do
+      [ -e "$entry" ] || continue
+      name=${entry##*/}
+      [ "$name" = "$omit" ] && continue
+      [ -e "$dir/$name" ] || ln -s "$entry" "$dir/$name" 2>/dev/null
+    done
+  done <<EOF
+$(printf '%s\n' "$PATH" | tr ':' '\n')
+EOF
+  ! PATH="$dir" command -v "$omit" >/dev/null 2>&1 \
+    || fail "the $omit-free search path still resolved $omit"
+}
+
 fm_fake_exit0() {
   local fakebin=$1 tool
   shift

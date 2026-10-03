@@ -1168,6 +1168,61 @@ test_secondmate_claude_retirement_deletes_a_settings_file_it_alone_filled() {
   pass "fm-control relaunch: retiring claude deletes a secondmate settings file that held nothing else"
 }
 
+# The first launch into a fresh home needs no jq, so a host without it can end
+# up with a settings file it cannot edit. A later relaunch must neither
+# overwrite that file nor strand the mate with no agent.
+test_secondmate_claude_relaunch_without_jq_leaves_existing_settings() {
+  local dir home settings nojq out rc before
+  dir=$(new_case smnojq sm10)
+  home="$dir/home"
+  nojq="$dir/nojq-path"
+  fm_test_path_without "$nojq" jq
+  mkdir -p "$home/data/sm10"
+  printf '# secondmate brief\n' > "$home/data/sm10/brief.md"
+  fm_git_worktree "$dir/proj" "$dir/smhome" sm-branch
+  mkdir -p "$dir/smhome/state" "$dir/smhome/data" "$dir/smhome/bin"
+  cp "$ROOT/bin/fm-turnend-guard.sh" "$dir/smhome/bin/fm-turnend-guard.sh"
+  printf 'sm10\n' > "$dir/smhome/.fm-secondmate-home"
+  printf '# agents\n' > "$dir/smhome/AGENTS.md"
+  {
+    echo "window=fmses:fm-sm10"
+    echo "endpoint_task_id=sm10"
+    echo "worktree=$dir/smhome"
+    echo "project=$dir/smhome"
+    echo "harness=claude"
+    echo "kind=secondmate"
+    echo "mode=secondmate"
+    echo "yolo=off"
+    echo "model=default"
+    echo "effort=default"
+    echo "home=$dir/smhome"
+  } > "$home/state/sm10.meta"
+  printf '%s\n' "fm-sm10" > "$dir/fake/windows"
+  printf '%s' "$dir/smhome" > "$dir/fake/cwd"
+  settings="$dir/smhome/.claude/settings.local.json"
+
+  out=$(PATH="$nojq" run_control "$dir" sm10 relaunch --harness claude); rc=$?
+  expect_code 0 "$rc" "a first claude launch into a fresh home needs no jq"$'\n'"$out"
+  [ -e "$settings" ] || fail "the first launch should write its busy hooks"
+  [ -e "$home/state/sm10.busy-gen" ] || fail "the first launch should arm the busy contract"
+  before=$(cat "$settings")
+
+  out=$(PATH="$nojq" run_control "$dir" sm10 relaunch --harness claude); rc=$?
+  expect_code 0 "$rc" "a relaunch without jq must still start the replacement"$'\n'"$out"
+  [ "$(cat "$settings")" = "$before" ] || fail "a relaunch without jq changed the settings file: $(cat "$settings")"
+  [ "$(cat "$dir/fake/command")" = claude ] || fail "a relaunch without jq left the mate with no agent"
+  [ ! -e "$home/state/sm10.busy-gen" ] \
+    || fail "an unarmed relaunch left a busy generation nothing can close"
+  [ ! -e "$dir/smhome/.fm-busy-stop" ] || fail "an unarmed relaunch left a Stop pointer"
+
+  printf 'codex' > "$dir/fake/becomes"
+  out=$(PATH="$nojq" run_control "$dir" sm10 relaunch --harness codex); rc=$?
+  expect_code 0 "$rc" "a harness switch without jq must still succeed"$'\n'"$out"
+  [ "$(cat "$settings")" = "$before" ] || fail "retiring claude without jq changed the settings file: $(cat "$settings")"
+  [ "$(meta_field "$dir" sm10 harness)" = codex ] || fail "the record should follow the switch"
+  pass "fm-control relaunch: without jq a claude secondmate's existing settings file is left untouched and the relaunch still succeeds"
+}
+
 test_ship_relaunch_ignores_the_crew_harness_config() {
   local dir out
   dir=$(new_case crewcfg rl20)
@@ -2530,6 +2585,7 @@ test_secondmate_relaunch_onto_a_crewmate_only_adapter_refuses_before_stop
 test_explicit_secondmate_harness_ignores_configured_profile_axes
 test_secondmate_claude_relaunch_keeps_the_home_settings
 test_secondmate_claude_retirement_deletes_a_settings_file_it_alone_filled
+test_secondmate_claude_relaunch_without_jq_leaves_existing_settings
 test_ship_relaunch_ignores_the_crew_harness_config
 test_spawn_relaunch_without_a_harness_reuses_the_recorded_one
 test_spawn_relaunch_of_promoted_scout_uses_the_recorded_branch
