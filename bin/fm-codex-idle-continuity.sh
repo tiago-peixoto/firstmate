@@ -28,9 +28,11 @@
 # Only the session that owns state/.lock, as bin/fm-session-lock-lib.sh
 # decides it, starts or repairs a supervisor; a dead recorded owner is
 # reclaimed through bin/fm-lock.sh first, as bin/fm-claude-stop-autoarm.sh
-# does. An idle home, away mode, a child worktree, or a stop that is still the
+# does. A supervisor counts as live only while its recorded pid is alive and
+# still has the recorded pid identity; `--live` reports that verdict. An idle home, away mode, a child worktree, or a stop that is still the
 # first one in the turn does not start a supervisor. A live supervisor is
-# left in place. This script never prints on the spawn path: the guard's
+# left in place, and an allowing stop from another thread of the same owner
+# only replaces its recorded thread id. This script never prints on the spawn path: the guard's
 # stdout and stderr are the hook output.
 #
 # The supervisor owns only the idle gap. bin/fm-watch-checkpoint.sh runs
@@ -91,11 +93,17 @@ codex_ancestor() {
 }
 
 supervisor_live() {
-  local pid
+  local pid identity
   [ -f "$LOCK/pid" ] || return 1
+  # shellcheck source=bin/fm-wake-lib.sh
+  . "$SCRIPT_DIR/fm-wake-lib.sh"
   IFS= read -r pid < "$LOCK/pid" || return 1
-  case "$pid" in ''|*[!0-9]*) return 1 ;; esac
-  kill -0 "$pid" 2>/dev/null
+  [ -f "$LOCK/pid-identity" ] || return 1
+  IFS= read -r identity < "$LOCK/pid-identity" || return 1
+  fm_pid_alive "$pid" || return 1
+  # A pid the kernel reused after an unclean supervisor death is alive but is
+  # not the supervisor.
+  [ -n "$identity" ] && [ "$(fm_pid_identity "$pid" 2>/dev/null)" = "$identity" ]
 }
 
 reclaim_stale_lock() {
@@ -115,7 +123,7 @@ reclaim_stale_lock() {
 }
 
 stop_home_supervisor() {
-  local pid identity i starter
+  local pid i starter
   if [ ! -s "$LOCK/pid" ] && [ -f "$LOCK/starting" ]; then
     IFS= read -r starter < "$LOCK/starting" || starter=
     i=0
@@ -127,21 +135,12 @@ stop_home_supervisor() {
       sleep 0.1
       i=$((i + 1))
     done
-    if [ ! -s "$LOCK/pid" ]; then
-      case "$starter" in
-        ''|*[!0-9]*) return 0 ;;
-      esac
-      kill -0 "$starter" 2>/dev/null && return 1
-      return 0
-    fi
   fi
-  [ -f "$LOCK/pid" ] || return 0
-  # shellcheck source=bin/fm-wake-lib.sh
-  . "$SCRIPT_DIR/fm-wake-lib.sh"
+  if ! supervisor_live; then
+    reclaim_stale_lock
+    return
+  fi
   IFS= read -r pid < "$LOCK/pid" || return 0
-  IFS= read -r identity < "$LOCK/pid-identity" || return 0
-  fm_pid_alive "$pid" || return 0
-  [ "$(fm_pid_identity "$pid" 2>/dev/null)" = "$identity" ] || return 0
   kill -TERM "$pid" 2>/dev/null || true
   i=0
   while [ "$i" -lt 150 ] && fm_pid_alive "$pid"; do
@@ -185,6 +184,11 @@ ensure_supervisor() {  # <session-id>
   fi
   owner=$(codex_ancestor) || return 0
   if supervisor_live; then
+    # The supervisor outlives a thread: a new thread in the same Codex process
+    # must become the one queue_text targets.
+    if [ -n "$session" ] && [ "$(cat "$LOCK/session" 2>/dev/null)" != "$session" ]; then
+      printf '%s\n' "$session" > "$LOCK/session.new" && mv -f "$LOCK/session.new" "$LOCK/session"
+    fi
     return 0
   fi
   reclaim_stale_lock || true
@@ -335,6 +339,7 @@ supervise() {
 case "${1:-}" in
   --supervise) supervise ;;
   --handover) stop_home_supervisor; exit $? ;;
+  --live) supervisor_live; exit $? ;;
 esac
 
 PAYLOAD=$(cat 2>/dev/null || true)

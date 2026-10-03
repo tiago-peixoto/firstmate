@@ -275,8 +275,8 @@ chmod +x "$STUB/bin/fm-watch-arm.sh"
 printf '#!/bin/sh\ncat >> %s\n' "$STUB/queue" > "$STUB/queue.sh"
 chmod +x "$STUB/queue.sh"
 arms() { wc -l < "$STUB/arms" 2>/dev/null | tr -d ' ' || printf '0\n'; }
-stub_stop() {
-  printf '%s' "$payload" | FM_ROOT_OVERRIDE="$STUB" FM_HOME="$STUB" \
+stub_stop() {  # [payload]
+  printf '%s' "${1:-$payload}" | FM_ROOT_OVERRIDE="$STUB" FM_HOME="$STUB" \
     FM_CODEX_IDLE_OWNER_PID="$owner" FM_CODEX_IDLE_QUEUE="$STUB/queue.sh" \
     as_lock_owner "$STUB" "$STUB/bin/fm-codex-idle-continuity.sh" >/dev/null 2>&1 || true
 }
@@ -378,6 +378,7 @@ sleep 2
 [ ! -d "$SLOCK" ] || fail "a session that does not own the home lock started an idle supervisor"
 [ "$(arms)" -eq 0 ] || fail "a session that does not own the home lock armed $(arms) times"
 [ "$(cat "$SSTATE/.lock")" = "$other" ] || fail "a non-owning session replaced the live session lock"
+pkill -P "$other" 2>/dev/null || true
 kill "$other" 2>/dev/null || true
 wait "$other" 2>/dev/null || true
 printf 'ok - a session that does not own the home lock starts no idle supervisor\n'
@@ -414,6 +415,55 @@ wait_until 75 pid_in_live "$SLOCK/pid" || fail "a startup lock whose hook pid ha
 FM_ROOT_OVERRIDE="$STUB" FM_HOME="$STUB" "$STUB/bin/fm-codex-idle-continuity.sh" --handover </dev/null \
   || fail "handover of the reclaimed startup supervisor failed"
 printf 'ok - a startup lock is not reclaimed or handed over until the supervisor pid is recorded\n'
+
+# An unclean supervisor death leaves the lock behind, and the kernel can hand
+# its pid to an unrelated process.
+stub_live() { FM_ROOT_OVERRIDE="$STUB" FM_HOME="$STUB" "$STUB/bin/fm-codex-idle-continuity.sh" --live </dev/null; }
+stale_lock() {  # <pid> [identity]
+  rm -rf "$SLOCK"
+  mkdir "$SLOCK"
+  printf '%s\n' "$1" > "$SLOCK/pid"
+  printf '%s\n' "$owner" > "$SLOCK/owner"
+  [ "$#" -lt 2 ] || printf '%s\n' "$2" > "$SLOCK/pid-identity"
+}
+sleep 600 &
+recycled=$!
+printf 'handover\n' > "$STUB/mode"
+stale_lock "$recycled"
+! stub_live || fail "a live pid with no recorded identity counted as a live supervisor"
+FM_ROOT_OVERRIDE="$STUB" FM_HOME="$STUB" "$STUB/bin/fm-codex-idle-continuity.sh" --handover </dev/null \
+  || fail "handover of a lock with no recorded identity failed"
+[ ! -d "$SLOCK" ] || fail "handover left a lock with no recorded identity in place"
+kill -0 "$recycled" 2>/dev/null || fail "handover signalled a pid with no recorded identity"
+stale_lock "$recycled" 'identity of the supervisor that died'
+! stub_live || fail "a recycled pid whose identity does not match counted as a live supervisor"
+: > "$STUB/arms"
+stub_stop
+wait_until 75 at_least_arms 1 || fail "an allowing stop started no supervisor over a recycled pid"
+wait_until 50 stub_live || fail "the supervisor started over a recycled pid is not live"
+[ "$(cat "$SLOCK/pid")" != "$recycled" ] || fail "the lock still names the recycled pid"
+kill -0 "$recycled" 2>/dev/null || fail "reclaiming the stale lock signalled the recycled pid"
+FM_ROOT_OVERRIDE="$STUB" FM_HOME="$STUB" "$STUB/bin/fm-codex-idle-continuity.sh" --handover </dev/null \
+  || fail "handover of the supervisor started over a recycled pid failed"
+kill "$recycled" 2>/dev/null || true
+wait "$recycled" 2>/dev/null || true
+printf 'ok - a recycled pid whose identity does not match is not a live supervisor, and the next allowing stop starts one\n'
+
+printf 'hold\n' > "$STUB/mode"
+stub_stop
+wait_until 50 stub_live || fail "the first thread's allowing stop started no supervisor"
+[ "$(cat "$SLOCK/session")" = thread-test ] || fail "the supervisor did not record the first thread: $(cat "$SLOCK/session")"
+first_pid=$(cat "$SLOCK/pid")
+stub_stop "$(jq -cn '{stop_hook_active:true,session_id:"thread-next"}')"
+[ "$(cat "$SLOCK/session")" = thread-next ] \
+  || fail "an allowing stop from a new thread left the recorded thread at $(cat "$SLOCK/session")"
+stub_stop "$(jq -cn '{stop_hook_active:true}')"
+[ "$(cat "$SLOCK/session")" = thread-next ] || fail "a stop with no session id replaced the recorded thread"
+[ "$(cat "$SLOCK/pid")" = "$first_pid" ] || fail "an allowing stop from a new thread restarted the supervisor"
+stub_live || fail "the retargeted supervisor is no longer live"
+FM_ROOT_OVERRIDE="$STUB" FM_HOME="$STUB" "$STUB/bin/fm-codex-idle-continuity.sh" --handover </dev/null \
+  || fail "handover of the retargeted supervisor failed"
+printf 'ok - an allowing stop from a new thread retargets the live supervisor without restarting it\n'
 
 rm -f "$SSTATE/.codex-idle-continuity-failure-notified"
 printf 'stall\n' > "$STUB/mode"
