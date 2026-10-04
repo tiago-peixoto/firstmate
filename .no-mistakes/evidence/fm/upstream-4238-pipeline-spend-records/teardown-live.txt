@@ -1,0 +1,49 @@
+## A. teardown of task-b in an opted-in lab home (real tmux lab socket, real treehouse pool, real no-mistakes CLI)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home <LAB>/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for task-b: 3288975
+teardown: force-killing leaked worktree process(es) for task-b: 3288975
+A new version of treehouse is available: v2.3.0 → v3.1.1
+Run "treehouse update" to update
+🌳 Worktree returned to pool.
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+<LAB>/project: already current
+teardown task-b complete (window fm-lab:fm-task-b, worktree <LAB>/treehouse/.treehouse/project-b40fa4/1/project)
+Backlog: task-b just finished (this home keeps no markdown backlog at <LAB>/home/data/backlog.md). Update <LAB>/home/data/backlog.md - move task-b to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+rc=0
+## B. teardown of task-d: owned ship task whose worktree path is gone
+fm-gate-refuse: gate agent lifecycle permitted only against lab home <LAB>/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+<LAB>/project: already current
+teardown task-d complete (window fm-lab:fm-task-d, worktree <LAB>/treehouse/never-existed)
+Backlog: task-d just finished (this home keeps no markdown backlog at <LAB>/home/data/backlog.md). Update <LAB>/home/data/backlog.md - move task-d to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+rc=0
+## ledger lines written by teardown (home/data/pipeline-spend.jsonl, lines 2-3)
+{"task":"task-b","spawn_gen":"s1790991471.1.task-b","source":"no-mistakes-state","reason":null,"repo":"<LAB>/project","branch":"fm/task-b","since":"2026-10-02T23:41:11Z","total":{"invocations":1,"exit":{"ok":1},"duration_ms":88888,"input_tokens":{"total":800000,"unknown":0},"output_tokens":{"total":800000,"unknown":0},"cache_read_tokens":{"total":800000,"unknown":0},"cache_creation_tokens":{"total":800000,"unknown":0}},"runs":["RUN-OTHERBRANCH"]}
+{"task":"task-d","spawn_gen":"s1790991471.1.task-d","source":"unavailable","reason":"the task copy <LAB>/treehouse/never-existed is gone","repo":null,"branch":null,"since":null,"total":null,"runs":[]}
+## after teardown: task records and task branches
+task-b.meta and task-d.meta are gone (task-u.meta is the fixture for step D, written after the teardowns)
+no fm/* branches remain
+## C. teardown of task-c in a lab home WITHOUT config/pipeline-spend (run RUN-C exists for its branch)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home <LAB>/home2
+teardown: reaping leaked worktree process(es) for task-c: 3288982
+teardown: force-killing leaked worktree process(es) for task-c: 3288982
+A new version of treehouse is available: v2.3.0 → v3.1.1
+Run "treehouse update" to update
+🌳 Worktree returned to pool.
+<LAB>/project: already current
+teardown task-c complete (window fm-lab:fm-task-c, worktree <LAB>/treehouse/.treehouse/project-b40fa4/2/project)
+Backlog: task-c just finished (this home keeps no markdown backlog at <LAB>/home2/data/backlog.md). Update <LAB>/home2/data/backlog.md - move task-c to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+rc=0
+home2/data contents:
+(empty - no ledger created)
+## D. recorder against a repository the real no-mistakes CLI does not know
+recorded task-u s1.1.u
+exit=0
+{"task":"task-u","spawn_gen":"s1.1.u","recorded_at":"2026-10-04T03:29:31Z","source":"unavailable","reason":"no-mistakes resolved no repository for the task copy: error: repo not initialized (run 'no-mistakes init' first)","repo":null,"branch":"fm/task-u","since":"2026-10-04T03:29:31Z","total":null,"runs":[],"purposes":[]}
+## E. bad usage and missing task
+fm-pipeline-spend: invalid task id
+exit=2
+fm-pipeline-spend: no task record for no-such-task
+exit=1
+ledger lines: 4

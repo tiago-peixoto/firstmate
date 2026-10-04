@@ -1,0 +1,182 @@
+## 1. opt-in flag absent: record task-a
+exit=0
+total 0
+drwxrwxr-x 2 firstmate firstmate  40 Oct  4 05:27 .
+drwxrwxr-x 6 firstmate firstmate 140 Oct  4 05:27 ..
+## 2. opt in (touch config/pipeline-spend), record task-a
+recorded task-a s1790989471.1.abc
+exit=0
+## ledger
+{
+  "task": "task-a",
+  "spawn_gen": "s1790989471.1.abc",
+  "recorded_at": "2026-10-04T03:27:52Z",
+  "source": "no-mistakes-state",
+  "reason": null,
+  "repo": "<LAB>/project",
+  "branch": "fm/task-a",
+  "since": "2026-10-02T23:41:11Z",
+  "total": {
+    "invocations": 6,
+    "exit": {
+      "ok": 4,
+      "error": 1,
+      "cancelled": 1
+    },
+    "duration_ms": 18300,
+    "input_tokens": {
+      "total": 2800,
+      "unknown": 1
+    },
+    "output_tokens": {
+      "total": 230,
+      "unknown": 1
+    },
+    "cache_read_tokens": {
+      "total": 1410,
+      "unknown": 1
+    },
+    "cache_creation_tokens": {
+      "total": 18,
+      "unknown": 3
+    }
+  },
+  "runs": [
+    {
+      "id": "RUN-1",
+      "status": "failed",
+      "created_at": "2026-10-02T23:57:51Z",
+      "invocations": 3,
+      "exit": {
+        "ok": 1,
+        "error": 1,
+        "cancelled": 1
+      },
+      "duration_ms": 3300,
+      "input_tokens": {
+        "total": 300,
+        "unknown": 1
+      },
+      "output_tokens": {
+        "total": 30,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 110,
+        "unknown": 1
+      },
+      "cache_creation_tokens": {
+        "total": 11,
+        "unknown": 1
+      }
+    },
+    {
+      "id": "RUN-2",
+      "status": "completed",
+      "created_at": "2026-10-03T00:14:31Z",
+      "invocations": 3,
+      "exit": {
+        "ok": 3
+      },
+      "duration_ms": 15000,
+      "input_tokens": {
+        "total": 2500,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 200,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 1300,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 7,
+        "unknown": 2
+      }
+    }
+  ],
+  "purposes": [
+    {
+      "purpose": "review",
+      "invocations": 3,
+      "exit": {
+        "ok": 3
+      },
+      "duration_ms": 11000,
+      "input_tokens": {
+        "total": 1800,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 150,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 950,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 12,
+        "unknown": 1
+      }
+    },
+    {
+      "purpose": "review-fix",
+      "invocations": 1,
+      "exit": {
+        "ok": 1
+      },
+      "duration_ms": 5000,
+      "input_tokens": {
+        "total": 800,
+        "unknown": 0
+      },
+      "output_tokens": {
+        "total": 60,
+        "unknown": 0
+      },
+      "cache_read_tokens": {
+        "total": 400,
+        "unknown": 0
+      },
+      "cache_creation_tokens": {
+        "total": 0,
+        "unknown": 1
+      }
+    },
+    {
+      "purpose": "test",
+      "invocations": 2,
+      "exit": {
+        "error": 1,
+        "cancelled": 1
+      },
+      "duration_ms": 2300,
+      "input_tokens": {
+        "total": 200,
+        "unknown": 1
+      },
+      "output_tokens": {
+        "total": 20,
+        "unknown": 1
+      },
+      "cache_read_tokens": {
+        "total": 60,
+        "unknown": 1
+      },
+      "cache_creation_tokens": {
+        "total": 6,
+        "unknown": 1
+      }
+    }
+  ]
+}
+600 <LAB>/home/data/pipeline-spend.jsonl
+## 3. record again (same incarnation)
+already recorded task-a s1790989471.1.abc
+exit=0
+ledger lines: 1
+## 4. state database unchanged by reads
+logical dump identical: True
