@@ -1,9 +1,15 @@
-$ fm-pr-check.sh delivery https://github.com/cli/cli/pull/14485   (isolated FM_HOME, real gh, read-only)
+$ fm-pr-check.sh delivery https://github.com/kunchenguid/firstmate/pull/5341   (real gh, read-only)
 armed: state/delivery.check.sh
-rc=0
+exit=0
 contributions.check-trust
 contributions.check.sh
 delivery.check.sh
 delivery.meta
 delivery.pr-poll
 delivery.pr-poll-registration
+--- contributions.check.sh
+#!/usr/bin/env bash
+export FM_HOME=/tmp/fm-live-3239.Yu0iKb
+export FM_STATE_OVERRIDE=/tmp/fm-live-3239.Yu0iKb/state
+export FM_DATA_OVERRIDE=/tmp/fm-live-3239.Yu0iKb/data
+exec /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M42JDRDMR8VXTXH54T0AKC2H/bin/fm-contributions.sh poll

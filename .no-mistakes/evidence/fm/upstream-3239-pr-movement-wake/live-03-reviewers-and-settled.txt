@@ -1,0 +1,24 @@
+## A. real PR with reviewers already requested: https://github.com/kubernetes/kubernetes/pull/142656
+$ fm-contributions.sh poll   (first observation)
+exit=0
+{"error":null,"obs":{"state":"open","draft":false,"review_requests":["SataQiu","carlory","neolit123"]}}
+movement pending: []
+
+## B. legacy stored observation (no review_requests field) is a baseline too
+exit=0
+movement pending: []
+["SataQiu","carlory","neolit123"]
+
+## C. stored prior observation lacks the first requested reviewer -> real forge read reports it as newly requested
+contribution-wake: check: contributions delivery 901bf736bb0557a9d8a562c416cda6cd4ceae624e31774768e56948c122e3bdd
+removed from prior: SataQiu
+movement pending: [{"type":"review-requested","body":"review requested from SataQiu"}]
+new durable wakes: 1
+0
+re-poll new durable wakes: 0
+
+## D. adversarial: settled PR. Stored prior says open/draft/other head/no reviewers; real forge says merged: https://github.com/kunchenguid/firstmate/pull/6530
+exit=0
+{"error":null,"obs":{"head":"8548d9ed43889e2c1bc0f745102f164262799272","state":"merged","draft":false}}
+movement pending: []
+durable check wakes carrying movement: 0

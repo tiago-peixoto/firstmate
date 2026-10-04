@@ -18,6 +18,7 @@ ok - mixed freshness retains measured captain work and discloses the gap
 ok - malformed durable evidence cannot prove silence
 ok - a transient ready-for-pr label wakes and its exact acknowledgement survives replay
 ok - recorded judgment keeps its exact head and is stale immediately on a published replacement
+ok - verdict help and refusal name exactly the actors the command accepts
 ok - a current forge observation refreshes a verdict after a replacement
 ok - an unavailable current head leaves verdict freshness unknown
 ok - away yolo delivery is fleet work without granting merge authority
@@ -52,3 +53,4 @@ ok - the effective budget is cut down to the watcher per-check bound with margin
 ok - generated checks enforce configured and inherited budgets at runtime
 ok - a genuinely unavailable forge records an error and wakes once per failure episode
 ok - a late owner does not restart a shared forge failure episode
+exit=0

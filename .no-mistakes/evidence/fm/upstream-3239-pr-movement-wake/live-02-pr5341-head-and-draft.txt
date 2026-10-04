@@ -1,0 +1,46 @@
+## 1. first observation of real PR 5341 (baseline)
+$ bash state/contributions.check.sh
+exit=0
+{"checked_at":"2026-10-04T04:26:18Z","error":null,"obs":{"head":"c548b970b64ed053675cff0772914c644b064e5c","state":"open","draft":false,"mergeable":"mergeable","review_requests":[]},"pending":[]}
+movement signals pending: 0
+durable check wakes: 0
+
+## 2. unchanged re-poll
+exit=0
+durable check wakes: 0 (was 0)
+
+## 3. rewind the STORED prior observation to this PR's earlier real head 6e1483fd and draft=true, then poll the real forge
+contribution-wake: check: contributions delivery 2539edaa19da0ddf67754d9709125cd682815830b618f7672040da72c3abd6dd
+contribution-wake: check: contributions delivery 08accdd516e326c34733b7057b6305e2e9bab66ab445a1e23af0cc4b2d59d683
+exit=0
+$ fm-contributions.sh pending | movement only
+[
+  {
+    "token": "head:c548b970b64ed053675cff0772914c644b064e5c:2026-10-04T04:26:24Z",
+    "type": "head",
+    "source": "https://github.com/kunchenguid/firstmate/pull/5341",
+    "head": "c548b970b64ed053675cff0772914c644b064e5c",
+    "body": "head moved from 6e1483fd100fbe931f77527e530be3deca36bedd to c548b970b64ed053675cff0772914c644b064e5c",
+    "task": "delivery",
+    "url": "https://github.com/kunchenguid/firstmate/pull/5341"
+  },
+  {
+    "token": "ready-for-review:c548b970b64ed053675cff0772914c644b064e5c:2026-10-04T04:26:24Z",
+    "type": "ready-for-review",
+    "source": "https://github.com/kunchenguid/firstmate/pull/5341",
+    "head": "c548b970b64ed053675cff0772914c644b064e5c",
+    "body": "pull request left draft",
+    "task": "delivery",
+    "url": "https://github.com/kunchenguid/firstmate/pull/5341"
+  }
+]
+durable check wakes: 2 (was 0)
+
+## 4. unchanged re-poll after movement
+exit=0
+durable check wakes: 2 (was 2)
+movement signals pending: 2
+
+## 5. converting TO draft is not movement: stored draft=false, forge draft=false stays quiet (covered by 4); ack the head token
+ack exit=0
+after ack + re-poll, movement pending: ["ready-for-review"]; wakes: 2

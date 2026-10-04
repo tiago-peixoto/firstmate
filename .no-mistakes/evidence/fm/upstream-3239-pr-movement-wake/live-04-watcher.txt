@@ -1,0 +1,20 @@
+$ fm-pr-check.sh delivery https://github.com/kunchenguid/firstmate/pull/5341
+armed: state/delivery.check.sh
+
+## 1. watcher on an unchanged real PR (20s checkpoint): expect quiet expiry 124
+checkpoint: no actionable wake within 20s
+watcher exit=124
+durable check wakes: 0
+{"head":"c548b970b64ed053675cff0772914c644b064e5c","draft":false,"review_requests":[]}
+
+## 2. stored prior head rewound to earlier real head 6e1483fd; watcher must surface the movement
+check: contributions delivery df74e8a344291eccd9742995f988363b8ccb7137eb5c9f95f5586f432766ed36
+
+watcher exit=0
+durable check wakes: 1
+{"type":"head","body":"head moved from 6e1483fd100fbe931f77527e530be3deca36bedd to c548b970b64ed053675cff0772914c644b064e5c"}
+
+## 3. watcher again, nothing changed: expect quiet expiry 124, no second wake
+checkpoint: no actionable wake within 12s
+watcher exit=124
+durable check wakes: 1
