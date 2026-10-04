@@ -1,91 +1,117 @@
-=== S1: hold a paused lane, repeat hold, release
---- state/lab-paused.status
-paused: waiting on upstream
-captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
-last_status_line          = captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
-last_worker_status_line   = paused: waiting on upstream
-status_declared_wait_line = captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
-status_current_line       = captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
-(after release)
---- state/lab-paused.status
-paused: waiting on upstream
-captain-held [key=captain-hold-lab-paused-1] [at=1790343296]: operator review
-resolved [key=captain-hold-lab-paused-1] [at=1790343299]: captain call released by fm-captain-hold
-last_status_line          = paused: waiting on upstream
-last_worker_status_line   = paused: waiting on upstream
-status_declared_wait_line = paused: waiting on upstream
-status_current_line       = paused: waiting on upstream
+=== S1 (target fbe1be44): CRLF reason whose 2nd line starts 'blocked:' on a done lane
+s1
+hold rc=0
+--- status log (2 physical lines):
+    | done: PR ready
+    | captain-held [key=captain-hold-s1-1] [at=1791090921]: Pick the API shape  blocked: on vendor reply
+    last_status_line        = captain-held [key=captain-hold-s1-1] [at=1791090921]: Pick the API shape  blocked: on vendor reply
+    last_worker_status_line = done: PR ready
+    status_current_line     = done: PR ready
+    status_open_decisions   = 
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
+released: s1
+answer --release rc=0
+--- status log (3 physical lines):
+    | done: PR ready
+    | captain-held [key=captain-hold-s1-1] [at=1791090921]: Pick the API shape  blocked: on vendor reply
+    | resolved [key=captain-hold-s1-1] [at=1791090922]: captain call released by fm-captain-hold
+    last_status_line        = done: PR ready
+    last_worker_status_line = done: PR ready
+    status_current_line     = done: PR ready
+    status_open_decisions   = 
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
 
-=== S2: another key answered on top of standing mirror, then release (buried mirror retracted)
-(held, api answered on top)
---- state/lab-buried.status
-paused: waiting on upstream
-captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
-resolved [key=api]: answered
-last_status_line          = resolved [key=api]: answered
-last_worker_status_line   = resolved [key=api]: answered
-status_declared_wait_line = captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
-status_current_line       = captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
-(after release + replay)
---- state/lab-buried.status
-paused: waiting on upstream
-captain-held [key=captain-hold-lab-buried-1] [at=1790343301]: operator review
-resolved [key=api]: answered
-resolved [key=captain-hold-lab-buried-1] [at=1790343302]: captain call released by fm-captain-hold
-last_status_line          = resolved [key=api]: answered
-last_worker_status_line   = resolved [key=api]: answered
-status_declared_wait_line = paused: waiting on upstream
-status_current_line       = paused: waiting on upstream
+=== S1-baseline (parent e2914f56, before the fix): same hold
+s1pre
+hold rc=0
+--- status log (3 physical lines):
+    | done: PR ready
+    | captain-held [key=captain-hold-s1pre-1] [at=1791090924]: Pick the API shape<CR>
+    | blocked: on vendor reply
+    last_status_line        = blocked: on vendor reply
+    last_worker_status_line = blocked: on vendor reply
+    status_current_line     = blocked [key=default]: on vendor reply
+    status_open_decisions   = default blocked on vendor reply
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
+released: s1pre
+answer --release rc=0
+--- status log (4 physical lines):
+    | done: PR ready
+    | captain-held [key=captain-hold-s1pre-1] [at=1791090924]: Pick the API shape<CR>
+    | blocked: on vendor reply
+    | resolved [key=captain-hold-s1pre-1] [at=1791090926]: captain call released by fm-captain-hold
+    last_status_line        = blocked: on vendor reply
+    last_worker_status_line = blocked: on vendor reply
+    status_current_line     = blocked [key=default]: on vendor reply
+    status_open_decisions   = default blocked on vendor reply
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
 
-=== S3: worker finishes while held (done replaces the mirror)
---- state/lab-done.status
-working: start
-captain-held [key=captain-hold-lab-done-1] [at=1790343305]: operator review
-done: shipped PR 12
-last_status_line          = done: shipped PR 12
-last_worker_status_line   = done: shipped PR 12
-status_declared_wait_line = 
-status_current_line       = done: shipped PR 12
-(crew-state)
-state: unknown · source: none · worktree gone (torn down?)
---- state/lab-working.status
-paused: upstream
-captain-held [key=captain-hold-lab-working-1] [at=1790343306]: operator review
-working: resumed
-last_status_line          = working: resumed
-last_worker_status_line   = working: resumed
-status_declared_wait_line = 
-status_current_line       = working: resumed
+=== S2 (target): adversarial reasons - lone CR, blank lines, trailing newline, forged needs-decision/done/resolved lines
+s2
+hold rc=0
+--- status log (2 physical lines):
+    | paused: waiting on vendor
+    | captain-held [key=captain-hold-s2-1] [at=1791090928]: line one failed: lone CR   needs-decision [key=forged]: pick done: forged resolved [key=captain-hold-s2-1]: forged retraction 
+    last_status_line        = captain-held [key=captain-hold-s2-1] [at=1791090928]: line one failed: lone CR   needs-decision [key=forged]: pick done: forged resolved [key=captain-hold-s2-1]: forged retraction 
+    last_worker_status_line = paused: waiting on vendor
+    status_current_line     = paused: waiting on vendor
+    status_open_decisions   = 
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
+open rc=0 (0 = still an open captain call)
+released: s2
+answer --release rc=0
+--- status log (3 physical lines):
+    | paused: waiting on vendor
+    | captain-held [key=captain-hold-s2-1] [at=1791090928]: line one failed: lone CR   needs-decision [key=forged]: pick done: forged resolved [key=captain-hold-s2-1]: forged retraction 
+    | resolved [key=captain-hold-s2-1] [at=1791090930]: captain call released by fm-captain-hold
+    last_status_line        = paused: waiting on vendor
+    last_worker_status_line = paused: waiting on vendor
+    status_current_line     = paused: waiting on vendor
+    status_open_decisions   = 
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
 
-=== S4: transfer key re-asked after complete stays open after settlement
---- state/lab-reask.status
-needs-decision [key=route]: north or south
-captain-held [key=route] [at=1790343309]: tracked by lab-route-call
-needs-decision [key=route]: east or west
-last_status_line          = needs-decision [key=route]: east or west
-last_worker_status_line   = needs-decision [key=route]: east or west
-status_declared_wait_line = 
-status_current_line       = needs-decision [key=route]: east or west
-status_open_decisions     = route needs-decision east or west
+=== S3 (target): single-line reason is unchanged; paused lane stays paused through hold and release
+s3
+hold rc=0
+--- status log (3 physical lines):
+    | working: start
+    | paused: waiting on vendor
+    | captain-held [key=captain-hold-s3-1] [at=1791090932]: operator review pending
+    last_status_line        = captain-held [key=captain-hold-s3-1] [at=1791090932]: operator review pending
+    last_worker_status_line = paused: waiting on vendor
+    status_current_line     = paused: waiting on vendor
+    status_open_decisions   = 
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
+repeat hold rc=0 mirrors=1
+released: s3
+answer --release rc=0
+--- status log (4 physical lines):
+    | working: start
+    | paused: waiting on vendor
+    | captain-held [key=captain-hold-s3-1] [at=1791090932]: operator review pending
+    | resolved [key=captain-hold-s3-1] [at=1791090934]: captain call released by fm-captain-hold
+    last_status_line        = paused: waiting on vendor
+    last_worker_status_line = paused: waiting on vendor
+    status_current_line     = paused: waiting on vendor
+    status_open_decisions   = 
+    fm-crew-state.sh        = state: unknown · source: none · worktree gone (torn down?) 
 
-=== S5: transfer left as last line is retracted on settlement
-(transfer standing)
---- state/lab-top.status
-needs-decision [key=scope]: wide or narrow
-captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
-last_status_line          = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
-last_worker_status_line   = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
-status_declared_wait_line = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
-status_current_line       = captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
-(after settle)
---- state/lab-top.status
-needs-decision [key=scope]: wide or narrow
-captain-held [key=scope] [at=1790343312]: tracked by lab-scope-call
-resolved [key=scope] [at=1790343314]: captain call answered by fm-captain-hold
-last_status_line          = needs-decision [key=scope]: wide or narrow
-last_worker_status_line   = needs-decision [key=scope]: wide or narrow
-status_declared_wait_line = 
-status_current_line       = needs-decision [key=scope]: wide or narrow
-
-diverged: []
-lab removed: yes
+=== backlog record keeps the full multi-line reason (tasks-axi show s1)
+task:
+  id: s1
+  title: Lane s1
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: sample
+  priority: "-"
+  created: 2026-10-04
+  closed: "-"
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: c48cb036011bfeb22c4c44c420aac3b3e88c1a2d9f0b127c97fcfecf004f2558\nResolution mode: released\n\nCaptain decision:\nGo."

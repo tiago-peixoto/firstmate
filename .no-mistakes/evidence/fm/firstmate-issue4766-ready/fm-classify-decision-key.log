@@ -27,4 +27,3 @@ ok - a worker event after a standing hold mirror replaces it as the declared wai
 ok - a worker done stays current under a standing mirror, and a later hold survives an earlier settled transfer
 ok - a held paused lane stays paused when an unrelated answer lands on the mirror
 ok - only a colon-bearing or keyed line is a decision transition in the fold
-exit=0

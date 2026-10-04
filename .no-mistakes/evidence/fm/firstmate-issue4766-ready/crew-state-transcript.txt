@@ -1,5 +1,36 @@
-# fm-crew-state.sh per lab lane (claude harness, idle via fm-busy-event stop hook record)
-lab-gated        state: parked · source: status-log · which API shape
-lab-finisher     state: done · source: status-log · shipped PR 12
-lab-done-first   state: done · source: status-log · PR ready
-lab-late-hold    state: working · source: status-log · continuing
+
+=== done lane before hold
+state: done · source: status-log · report ready
+hold rc=0
+
+=== done lane held with a two-line reason whose 2nd line starts 'blocked:'
+    | done: report ready
+    | captain-held [key=captain-hold-done-lane-1] [at=T]: Pick the API shape blocked: on vendor reply
+state: done · source: status-log · report ready
+release rc=0
+
+=== done lane after release
+    | done: report ready
+    | captain-held [key=captain-hold-done-lane-1] [at=T]: Pick the API shape blocked: on vendor reply
+    | resolved [key=captain-hold-done-lane-1] [at=T]: captain call released by fm-captain-hold
+state: done · source: status-log · report ready
+
+=== paused lane before hold
+state: paused · source: status-log · waiting on vendor
+hold rc=0
+
+=== paused lane held, with an answer for another key on top
+    | working: start
+    | paused: waiting on vendor
+    | captain-held [key=captain-hold-paused-lane-1] [at=T]: operator review
+    | resolved [key=api-shape]: use v2
+state: paused · source: status-log · waiting on vendor
+release rc=0
+
+=== paused lane after release
+    | working: start
+    | paused: waiting on vendor
+    | captain-held [key=captain-hold-paused-lane-1] [at=T]: operator review
+    | resolved [key=api-shape]: use v2
+    | resolved [key=captain-hold-paused-lane-1] [at=T]: captain call released by fm-captain-hold
+state: paused · source: status-log · waiting on vendor

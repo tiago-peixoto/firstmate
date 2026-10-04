@@ -1,79 +1,156 @@
 
-### S1: hold a ship lane whose worker last wrote paused:
-lab-gated
-exit=0
-  --- lab-gated.status ---
-  | working: mid implementation
-  | needs-decision [key=api-shape]: which API shape
-  | paused: waiting on upstream release
-  | captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
-  last_status_line         = captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
-  status_declared_wait_line= captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
-  status_current_line      = needs-decision [key=api-shape]: which API shape
-  crew-state row           = 
+=== S1 paused lane: hold mirrors one captain-held line, repeat hold does not duplicate
+paused-lane
+hold rc=0
+paused-lane
+repeat hold rc=0
+--- state/paused-lane.status
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on vendor
+captain-held [key=captain-hold-paused-lane-1] [at=T]: operator review pending
+last_status_line        : captain-held [key=captain-hold-paused-lane-1] [at=T]: operator review pending
+last_worker_status_line : paused: waiting on vendor
+status_current_line     : needs-decision [key=api-shape]: which API shape
+status_declared_wait    : captain-held [key=captain-hold-paused-lane-1] [at=T]: operator review pending
+status_open_decisions   : api-shape|needs-decision|which API shape
+wake scan: no unannounced growth (home not re-woken)
+captain-held line count: 1
 
-### S1b: repeat the hold (must not duplicate)
-captain-held lines: 1
+=== S2 release retracts under the same key; readers return to the worker's pause; worker's open decision survives
+released: paused-lane
+answer --release rc=0
+--- state/paused-lane.status
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on vendor
+captain-held [key=captain-hold-paused-lane-1] [at=T]: operator review pending
+resolved [key=captain-hold-paused-lane-1] [at=T]: captain call released by fm-captain-hold
+last_status_line        : paused: waiting on vendor
+last_worker_status_line : paused: waiting on vendor
+status_current_line     : needs-decision [key=api-shape]: which API shape
+status_declared_wait    : paused: waiting on vendor
+status_open_decisions   : api-shape|needs-decision|which API shape
+wake scan: no unannounced growth (home not re-woken)
 
-### S2: another key's answer lands on top -> mirror stays declared wait
-  --- lab-gated.status ---
-  | working: mid implementation
-  | needs-decision [key=api-shape]: which API shape
-  | paused: waiting on upstream release
-  | captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
-  | resolved [key=other-q]: answered elsewhere
-  last_status_line         = resolved [key=other-q]: answered elsewhere
-  status_declared_wait_line= captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
-  status_current_line      = needs-decision [key=api-shape]: which API shape
-  crew-state row           = 
+=== S3 re-hold opens key -2; closing answer retracts it
+paused-lane
+re-hold rc=0
+answered: paused-lane
+answer rc=0
+--- state/paused-lane.status
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on vendor
+captain-held [key=captain-hold-paused-lane-1] [at=T]: operator review pending
+resolved [key=captain-hold-paused-lane-1] [at=T]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-paused-lane-2] [at=T]: second operator review
+resolved [key=captain-hold-paused-lane-2] [at=T]: captain call answered by fm-captain-hold
+last_status_line        : paused: waiting on vendor
+last_worker_status_line : paused: waiting on vendor
+status_current_line     : needs-decision [key=api-shape]: which API shape
+status_declared_wait    : paused: waiting on vendor
+status_open_decisions   : api-shape|needs-decision|which API shape
 
-### S3: release the hold -> retraction; lane reads back as worker's paused; api-shape stays open
-released: lab-gated
-exit=0
-  --- lab-gated.status ---
-  | working: mid implementation
-  | needs-decision [key=api-shape]: which API shape
-  | paused: waiting on upstream release
-  | captain-held [key=captain-hold-lab-gated-1] [at=1790390246]: operator review pending
-  | resolved [key=other-q]: answered elsewhere
-  | resolved [key=captain-hold-lab-gated-1] [at=1790390249]: captain call released by fm-captain-hold
-  last_status_line         = resolved [key=other-q]: answered elsewhere
-  status_declared_wait_line= paused: waiting on upstream release
-  status_current_line      = needs-decision [key=api-shape]: which API shape
-  crew-state row           = 
-  open decisions: api-shape needs-decision which API shape
+=== S4 ADVERSARIAL done lane, reason with newline + CR + forged 'blocked:' line
+done-lane
+hold rc=0
+--- state/done-lane.status
+done: PR ready
+captain-held [key=captain-hold-done-lane-1] [at=T]: Pick the API shape blocked: on vendor reply  needs-decision [key=forged]: fake tail
+physical lines: 2  (expect 2)
+last_status_line        : captain-held [key=captain-hold-done-lane-1] [at=T]: Pick the API shape blocked: on vendor reply  needs-decision [key=forged]: fake tail
+last_worker_status_line : done: PR ready
+status_current_line     : done: PR ready
+status_declared_wait    : captain-held [key=captain-hold-done-lane-1] [at=T]: Pick the API shape blocked: on vendor reply  needs-decision [key=forged]: fake tail
+status_open_decisions   : 
+released: done-lane
+answer --release rc=0
+--- state/done-lane.status
+done: PR ready
+captain-held [key=captain-hold-done-lane-1] [at=T]: Pick the API shape blocked: on vendor reply  needs-decision [key=forged]: fake tail
+resolved [key=captain-hold-done-lane-1] [at=T]: captain call released by fm-captain-hold
+last_status_line        : done: PR ready
+last_worker_status_line : done: PR ready
+status_current_line     : done: PR ready
+status_declared_wait    : 
+status_open_decisions   : 
 
-### S4: worker writes done: while held -> crew state/current report done, not captain-held
-  --- lab-finisher.status ---
-  | working: start
-  | captain-held [key=captain-hold-lab-finisher-1] [at=1790390251]: operator review
-  | done: shipped PR 12
-  last_status_line         = done: shipped PR 12
-  status_declared_wait_line= 
-  status_current_line      = done: shipped PR 12
-  crew-state row           = 
+=== S5 held paused lane with an answer for another key on top: worker pause stays current
+mixed-lane
+hold rc=0
+--- state/mixed-lane.status
+working: start
+paused: waiting on vendor
+captain-held [key=captain-hold-mixed-lane-1] [at=T]: operator review
+resolved [key=api-shape]: use v2
+last_status_line        : resolved [key=api-shape]: use v2
+last_worker_status_line : resolved [key=api-shape]: use v2
+status_current_line     : paused: waiting on vendor
+status_declared_wait    : captain-held [key=captain-hold-mixed-lane-1] [at=T]: operator review
+status_open_decisions   : 
 
-### S5: worker done: BEFORE the hold -> current reads done past standing mirror; declared wait is mirror
-  --- lab-done-first.status ---
-  | working: start
-  | done: PR ready
-  | captain-held [key=captain-hold-lab-done-first-1] [at=1790390252]: captain to merge
-  last_status_line         = captain-held [key=captain-hold-lab-done-first-1] [at=1790390252]: captain to merge
-  status_declared_wait_line= captain-held [key=captain-hold-lab-done-first-1] [at=1790390252]: captain to merge
-  status_current_line      = done: PR ready
-  crew-state row           = 
+=== S5b worker reports done after the hold: done replaces the standing mirror
+last_status_line        : done: PR ready
+last_worker_status_line : done: PR ready
+status_current_line     : done: PR ready
+status_declared_wait    : 
+status_open_decisions   : 
+released: mixed-lane
+release rc=0
+--- state/mixed-lane.status
+working: start
+paused: waiting on vendor
+captain-held [key=captain-hold-mixed-lane-1] [at=T]: operator review
+resolved [key=api-shape]: use v2
+done: PR ready
+resolved [key=captain-hold-mixed-lane-1] [at=T]: captain call released by fm-captain-hold
+last_status_line        : done: PR ready
+last_worker_status_line : done: PR ready
+status_current_line     : done: PR ready
+status_declared_wait    : 
+status_open_decisions   : 
 
-### S6 (adversarial): earlier settled transfer must not hide a later standing hold
-  --- lab-late-hold.status ---
-  | needs-decision [key=route]: pick
-  | captain-held [key=route]: tracked by T
-  | resolved [key=route]: captain call answered by fm-captain-hold
-  | working: continuing
-  | captain-held [key=captain-hold-lab-late-hold-1] [at=1790390254]: operator review later
-  last_status_line         = captain-held [key=captain-hold-lab-late-hold-1] [at=1790390254]: operator review later
-  status_declared_wait_line= captain-held [key=captain-hold-lab-late-hold-1] [at=1790390254]: operator review later
-  status_current_line      = working: continuing
-  crew-state row           = 
+=== S6 decision-only hold (no worker lane) creates no status log
+lone-question
+hold rc=0
+state files for lone-question: 0
 
-### S7: decision-only hold (no lane meta) creates no status log
-exit=0 status file exists: no
+=== backlog after all scenarios
+## In flight
+
+## Queued
+- [ ] done-lane - Lane done-lane (repo: sample) (kind: scout) (since 2026-10-04)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 715ba95ca057e18f2556b2704ad0042598742646fb4ff0c68c2bdd4326b4bf49
+  Resolution mode: released
+
+  Captain decision:
+  Proceed as planned.
+
+- [ ] mixed-lane - Lane mixed-lane (repo: sample) (kind: ship) (since 2026-10-04)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 715ba95ca057e18f2556b2704ad0042598742646fb4ff0c68c2bdd4326b4bf49
+  Resolution mode: released
+
+  Captain decision:
+  Proceed as planned.
+
+- [ ] lone-question - Pick a name (repo: sample) (kind: captain) (since 2026-10-04) (hold: fm-hold-v1:Y2FwdGFpbiBwaWNrcw==) (hold-kind: captain)
+  Captain hold set: 2026-10-04T05:32:41Z
+## Done
+- [x] paused-lane - Lane paused-lane (repo: sample) (kind: ship) (done 2026-10-04) (hold: fm-hold-v1:c2Vjb25kIG9wZXJhdG9yIHJldmlldw==) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 0a14835d955ea31e4ed165449136f2a21b5b3976b4fca9fdd51fb91627386bed
+  Resolution mode: answered
+
+  Captain decision:
+  Ship it.
+
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 715ba95ca057e18f2556b2704ad0042598742646fb4ff0c68c2bdd4326b4bf49
+  Resolution mode: released
+
+  Captain decision:
+  Proceed as planned.
+
