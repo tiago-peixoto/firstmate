@@ -1,0 +1,29 @@
+# Real bin/fm-watch.sh + real bin/fm-crew-state.sh on lab:fm-work (bare shell). FM_PAUSE_RESURFACE_SECS=25 FM_STALE_ESCALATE_SECS=6 FM_POLL=1.
+# The only stand-in is the external no-mistakes CLI, which serves a run object for the crew's branch.
+t+  0s CREW appends: paused: awaiting the upstream release
+t+  0s crew state: state: unknown · source: pane · harness state unavailable (unknown missing)
+t+  4s WAKE rc=0: signal: /tmp/fm-lab.3RSOfV/state/work.status
+t+  7s WAKE rc=0: stale: lab:fm-work (paused 7s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+  9s the crew resumes: a no-mistakes run is now executing on its branch; the paused line is still the latest status
+t+  9s crew state: state: working · source: run-step · validating (running)
+# expectation: within about FM_STALE_ESCALATE_SECS the watcher stops treating the pane as paused and applies the working wedge timer (escalation after 6s), instead of staying silent for the 25s pause cadence
+t+ 28s WAKE rc=0: stale: lab:fm-work (idle 6s, waiting 27s - declared wait, awaiting external, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 41s watcher quiet for 12s (no wake)
+# watcher triage log:
+#   [2026-10-04T05:33:43+0200] absorbed stale (paused, awaiting external, age 12s): lab:fm-work
+#   [2026-10-04T05:33:45+0200] absorbed non-terminal stale (provably working after a declared pause) timer reset: lab:fm-work
+#   [2026-10-04T05:33:45+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:33:47+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:33:50+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:33:52+0200] absorbed non-terminal stale (provably working after a declared pause) (declared wait explains the quiet, idle 7s): lab:fm-work
+#   [2026-10-04T05:33:52+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:33:54+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:33:56+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:34:02+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:34:04+0200] absorbed non-terminal stale (provably working after a declared pause) (declared wait explains the quiet, idle 6s): lab:fm-work
+#   [2026-10-04T05:34:04+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:34:06+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:34:09+0200] absorbed non-terminal stale (provably working): lab:fm-work
+#   [2026-10-04T05:34:11+0200] absorbed non-terminal stale (provably working after a declared pause) (declared wait explains the quiet, idle 7s): lab:fm-work
+#   [2026-10-04T05:34:11+0200] absorbed non-terminal stale (provably working): lab:fm-work
+# pause markers left: 

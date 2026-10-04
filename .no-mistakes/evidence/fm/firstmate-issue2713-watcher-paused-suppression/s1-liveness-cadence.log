@@ -1,0 +1,52 @@
+# Product under test: real bin/fm-watch.sh + real bin/fm-crew-state.sh + real tmux backend, in a disposable lab home.
+# Knobs: FM_PAUSE_RESURFACE_SECS=25 FM_STALE_ESCALATE_SECS=6 FM_POLL=1. Each WAKE is acknowledged with bin/fm-wake-drain.sh, then the watcher is re-armed.
+# Panes and the liveness the real probe (fm_backend_agent_alive) reports for each:
+#   lab:fm-dead  foreground=bash  liveness=dead
+#   lab:fm-unk  foreground=sleep  liveness=unknown
+#   lab:fm-alive  foreground=claude  liveness=alive
+# t+0: every crew appends: paused [at=1791084530]: awaiting the upstream release
+t+  5s WAKE rc=0: signal: /tmp/fm-lab.3RSOfV/state/alive.status /tmp/fm-lab.3RSOfV/state/dead.status /tmp/fm-lab.3RSOfV/state/unk.status
+t+ 10s WAKE rc=0: stale: lab:fm-alive (paused 9s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 14s WAKE rc=0: stale: lab:fm-dead (paused 14s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 19s WAKE rc=0: stale: lab:fm-unk (paused 18s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 36s WAKE rc=0: stale: lab:fm-alive (paused 35s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 40s WAKE rc=0: stale: lab:fm-dead (paused 40s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 45s WAKE rc=0: stale: lab:fm-unk (paused 44s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 61s WAKE rc=0: stale: lab:fm-alive (paused 61s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 66s WAKE rc=0: stale: lab:fm-dead (paused 66s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+# pipeline-CLI reads made by fm-crew-state.sh during the whole run: 28
+# watcher triage log:
+#   [2026-10-04T05:29:08+0200] absorbed stale (paused, awaiting external, age 18s): lab:fm-alive
+#   [2026-10-04T05:29:12+0200] absorbed stale (paused, awaiting external, age 22s): lab:fm-alive
+#   [2026-10-04T05:29:13+0200] absorbed stale (paused, awaiting external, age 23s): lab:fm-dead
+#   [2026-10-04T05:29:15+0200] absorbed stale (paused, awaiting external, age 25s): lab:fm-alive
+#   [2026-10-04T05:29:15+0200] absorbed stale (paused, awaiting external, age 25s): lab:fm-dead
+#   [2026-10-04T05:29:16+0200] absorbed stale (paused, awaiting external, age 26s): lab:fm-unk
+#   [2026-10-04T05:29:18+0200] absorbed stale (paused, awaiting external, age 28s): lab:fm-alive
+#   [2026-10-04T05:29:18+0200] absorbed stale (paused, awaiting external, age 28s): lab:fm-dead
+#   [2026-10-04T05:29:18+0200] absorbed stale (paused, awaiting external, age 28s): lab:fm-unk
+#   [2026-10-04T05:29:20+0200] absorbed stale (paused, awaiting external, age 30s): lab:fm-alive
+#   [2026-10-04T05:29:20+0200] absorbed stale (paused, awaiting external, age 30s): lab:fm-dead
+#   [2026-10-04T05:29:21+0200] absorbed stale (paused, awaiting external, age 31s): lab:fm-unk
+#   [2026-10-04T05:29:23+0200] absorbed stale (paused, awaiting external, age 33s): lab:fm-alive
+#   [2026-10-04T05:29:23+0200] absorbed stale (paused, awaiting external, age 33s): lab:fm-dead
+#   [2026-10-04T05:29:23+0200] absorbed stale (paused, awaiting external, age 33s): lab:fm-unk
+#   [2026-10-04T05:29:29+0200] absorbed stale (paused, awaiting external, age 39s): lab:fm-alive
+#   [2026-10-04T05:29:34+0200] absorbed stale (paused, awaiting external, age 44s): lab:fm-alive
+#   [2026-10-04T05:29:34+0200] absorbed stale (paused, awaiting external, age 44s): lab:fm-dead
+#   [2026-10-04T05:29:38+0200] absorbed stale (paused, awaiting external, age 48s): lab:fm-alive
+#   [2026-10-04T05:29:39+0200] absorbed stale (paused, awaiting external, age 49s): lab:fm-dead
+#   [2026-10-04T05:29:39+0200] absorbed stale (paused, awaiting external, age 49s): lab:fm-unk
+#   [2026-10-04T05:29:41+0200] absorbed stale (paused, awaiting external, age 51s): lab:fm-alive
+#   [2026-10-04T05:29:41+0200] absorbed stale (paused, awaiting external, age 51s): lab:fm-dead
+#   [2026-10-04T05:29:41+0200] absorbed stale (paused, awaiting external, age 51s): lab:fm-unk
+#   [2026-10-04T05:29:43+0200] absorbed stale (paused, awaiting external, age 53s): lab:fm-alive
+#   [2026-10-04T05:29:44+0200] absorbed stale (paused, awaiting external, age 54s): lab:fm-dead
+#   [2026-10-04T05:29:44+0200] absorbed stale (paused, awaiting external, age 54s): lab:fm-unk
+#   [2026-10-04T05:29:46+0200] absorbed stale (paused, awaiting external, age 56s): lab:fm-alive
+#   [2026-10-04T05:29:46+0200] absorbed stale (paused, awaiting external, age 56s): lab:fm-dead
+#   [2026-10-04T05:29:47+0200] absorbed stale (paused, awaiting external, age 57s): lab:fm-unk
+#   [2026-10-04T05:29:49+0200] absorbed stale (paused, awaiting external, age 59s): lab:fm-alive
+#   [2026-10-04T05:29:49+0200] absorbed stale (paused, awaiting external, age 59s): lab:fm-dead
+#   [2026-10-04T05:29:49+0200] absorbed stale (paused, awaiting external, age 59s): lab:fm-unk
+#   [2026-10-04T05:29:55+0200] absorbed stale (paused, awaiting external, age 65s): lab:fm-alive

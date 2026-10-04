@@ -1,0 +1,18 @@
+# Real bin/fm-watch.sh. lab:fm-alive = real idle claude (liveness alive), lab:fm-held = bare shell (liveness dead).
+# FM_PAUSE_RESURFACE_SECS=25 FM_STALE_ESCALATE_SECS=6 FM_POLL=1. No away-posture record exists (captain attended).
+t+  0s CREW alive appends: captain-held [key=route]: tracked by held-decision-route
+t+  0s CREW held appends: captain-held [key=route]: tracked by held-decision-route
+t+  3s WAKE rc=0: signal: /tmp/fm-lab.3RSOfV/state/alive.status /tmp/fm-lab.3RSOfV/state/held.status
+t+  8s WAKE rc=0: stale: lab:fm-alive (captain-held 7s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 12s WAKE rc=0: stale: lab:fm-held (captain-held 11s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 33s WAKE rc=0: stale: lab:fm-alive (captain-held 33s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 38s WAKE rc=0: stale: lab:fm-held (captain-held 37s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 59s WAKE rc=0: stale: lab:fm-alive (captain-held 58s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 63s WAKE rc=0: stale: lab:fm-held (captain-held 62s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+# watcher triage log (tail):
+#   [2026-10-04T05:33:06+0200] absorbed stale (captain-held, awaiting the captain, age 52s): lab:fm-held
+#   [2026-10-04T05:33:08+0200] absorbed stale (captain-held, awaiting the captain, age 54s): lab:fm-alive
+#   [2026-10-04T05:33:08+0200] absorbed stale (captain-held, awaiting the captain, age 54s): lab:fm-held
+#   [2026-10-04T05:33:10+0200] absorbed stale (captain-held, awaiting the captain, age 56s): lab:fm-alive
+#   [2026-10-04T05:33:10+0200] absorbed stale (captain-held, awaiting the captain, age 56s): lab:fm-held
+#   [2026-10-04T05:33:16+0200] absorbed stale (captain-held, awaiting the captain, age 62s): lab:fm-alive

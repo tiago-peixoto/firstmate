@@ -1,0 +1,9 @@
+# Real bin/fm-watch.sh + real bin/fm-crew-state.sh on lab:fm-dead under a standing pause. FM_POLL=1 FM_STALE_ESCALATE_SECS=10 FM_PAUSE_RESURFACE_SECS=600.
+# One fm-crew-state.sh read makes 1 call(s) to the no-mistakes CLI (measured by running it once); the CLI stand-in logs every call.
+t+  3s WAKE rc=0: signal: /tmp/fm-lab.3RSOfV/state/dead.status
+t+  7s WAKE rc=0: stale: lab:fm-dead (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+  8s first-sight alert acknowledged; counting from here
+t+ 54s watcher quiet for 45s (no wake)
+# idle polls that absorbed the standing pause in 45s: 25
+# no-mistakes CLI calls in the same 45s: 4  => crew-state reads: 4  (bound: one per FM_STALE_ESCALATE_SECS=10s => about 4-5; a read on every poll would be 25)
+# call timestamps (seconds since counting began): 0 11 21 32 

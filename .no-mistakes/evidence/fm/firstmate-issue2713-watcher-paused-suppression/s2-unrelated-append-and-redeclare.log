@@ -1,0 +1,32 @@
+# Real bin/fm-watch.sh on lab:fm-dead (bare shell). FM_PAUSE_RESURFACE_SECS=25 FM_STALE_ESCALATE_SECS=6 FM_POLL=1.
+# Each WAKE is acknowledged with bin/fm-wake-drain.sh and the watcher is re-armed, as firstmate does.
+t+  0s CREW appends: paused: awaiting the upstream release
+t+  3s WAKE rc=0: signal: /tmp/fm-lab.3RSOfV/state/dead.status
+t+  7s WAKE rc=0: stale: lab:fm-dead (paused 7s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+  9s CREW appends: resolved [key=other]: unrelated phase completed
+# expectation: the unrelated append causes no early stale wake and does not restart the 25s cadence (recheck due ~25s after the declaration/first alert)
+t+ 12s WAKE rc=0: signal: /tmp/fm-lab.3RSOfV/state/dead.status
+t+ 32s WAKE rc=0: stale: lab:fm-dead (paused 32s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 34s CREW appends: resolved: upstream release landed
+t+ 34s CREW appends: paused: awaiting the upstream release
+# expectation: the identical re-declaration is a new declaration, so its first stale sight alerts at once instead of waiting 25s
+t+ 37s WAKE rc=0: signal: /tmp/fm-lab.3RSOfV/state/dead.status
+t+ 41s WAKE rc=0: stale: lab:fm-dead (paused 6s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+# expectation: after that alert the re-declared pause is quiet again until its own cadence
+t+ 55s watcher quiet for 12s (no wake)
+# watcher triage log:
+#   [2026-10-04T05:31:29+0200] absorbed stale (paused, awaiting external, age 17s): lab:fm-dead
+#   [2026-10-04T05:31:31+0200] absorbed stale (paused, awaiting external, age 19s): lab:fm-dead
+#   [2026-10-04T05:31:33+0200] absorbed stale (paused, awaiting external, age 21s): lab:fm-dead
+#   [2026-10-04T05:31:35+0200] absorbed stale (paused, awaiting external, age 23s): lab:fm-dead
+#   [2026-10-04T05:31:37+0200] absorbed stale (paused, awaiting external, age 25s): lab:fm-dead
+#   [2026-10-04T05:31:38+0200] absorbed stale (paused, awaiting external, age 26s): lab:fm-dead
+#   [2026-10-04T05:31:40+0200] absorbed stale (paused, awaiting external, age 28s): lab:fm-dead
+#   [2026-10-04T05:31:42+0200] absorbed stale (paused, awaiting external, age 30s): lab:fm-dead
+#   [2026-10-04T05:31:56+0200] absorbed stale (paused, awaiting external, age 10s): lab:fm-dead
+#   [2026-10-04T05:31:57+0200] absorbed stale (paused, awaiting external, age 11s): lab:fm-dead
+#   [2026-10-04T05:31:59+0200] absorbed stale (paused, awaiting external, age 13s): lab:fm-dead
+#   [2026-10-04T05:32:01+0200] absorbed stale (paused, awaiting external, age 15s): lab:fm-dead
+#   [2026-10-04T05:32:03+0200] absorbed stale (paused, awaiting external, age 17s): lab:fm-dead
+#   [2026-10-04T05:32:05+0200] absorbed stale (paused, awaiting external, age 19s): lab:fm-dead
+#   [2026-10-04T05:32:06+0200] absorbed stale (paused, awaiting external, age 20s): lab:fm-dead
