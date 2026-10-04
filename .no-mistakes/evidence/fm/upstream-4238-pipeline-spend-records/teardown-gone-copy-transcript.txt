@@ -1,0 +1,12 @@
+### S6: owned ship task whose task copy is already gone, home opted in
+config dir: [pipeline-spend]  task copy exists: no
+before: task records=[task-s3.meta ] ledger lines=2
+$ fm-teardown.sh task-s3   (inside the lab tmux pane; FM_HOME=lab home, NM_HOME=disposable)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0rlYSt
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+/tmp/fm-spend-fx.p77Bi5/project: already current
+teardown task-s3 complete (window none, worktree /tmp/fm-spend-fx.p77Bi5/missing-wt, legacy record accepted without spawn_gen: endpoint missing, incarnation legacy-20261004T045312Z-3640114)
+exit=0
+after:  task records=[] ledger lines=3
+new ledger line:
+{"task":"task-s3","spawn_gen":"legacy-20261004T045312Z-3640114","recorded_at":"2026-10-04T04:53:12Z","source":"unavailable","reason":"the task copy /tmp/fm-spend-fx.p77Bi5/missing-wt is gone","repo":null,"branch":null,"since":null,"total":null,"runs":[],"purposes":[]}

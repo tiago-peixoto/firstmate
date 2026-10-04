@@ -1,0 +1,23 @@
+### S8: recorder cannot write the ledger; teardown must still clean up
+ledger path is: lrwxrwxrwx 1 firstmate firstmate 41 Oct  4 06:53 /tmp/fm-lab.0rlYSt/data/pipeline-spend.jsonl -> /tmp/fm-lab.0rlYSt/data/ledger-kept.jsonl
+$ fm-teardown.sh task-s5   (inside the lab tmux pane; FM_HOME=lab home, NM_HOME=disposable)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0rlYSt
+teardown: reaping leaked worktree process(es) for task-s5: 3673679
+teardown: force-killing leaked worktree process(es) for task-s5: 3673679
+fm-pipeline-spend: cannot write /tmp/fm-lab.0rlYSt/data/pipeline-spend.jsonl: [Errno 40] Too many levels of symbolic links: '/tmp/fm-lab.0rlYSt/data/pipeline-spend.jsonl'
+fm-pipeline-spend: could not build the pipeline spend record for task-s5
+warning: could not record task-s5's no-mistakes pipeline spend; cleanup continues
+🌳 Worktree returned to pool.
+/tmp/fm-spend-fx.p77Bi5/project: already current
+teardown task-s5 complete (window firstmate:fm-task-s5, worktree /tmp/fm-spend-fx.p77Bi5/pool/.treehouse/project-89d55b/1/project)
+exit=0
+after: task records=[] project branches=[main ]
+symlink target sha256 before: 8764b791bb7f5eed72a4ef9459b1f9626640ce4734bd16431c565717684745ce
+symlink target sha256 after:  8764b791bb7f5eed72a4ef9459b1f9626640ce4734bd16431c565717684745ce
+
+### S9: state database location with NM_HOME and HOME both unset
+account home from the password database: /home/firstmate
+$ env -u NM_HOME -u HOME bash -c ". bin/fm-nm-run-lib.sh; fm_nm_state_db /some/worktree"
+/home/firstmate/.no-mistakes/state.sqlite
+$ NM_HOME=rel/nm ... fm_nm_state_db /some/worktree
+/some/worktree/rel/nm/state.sqlite

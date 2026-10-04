@@ -1,0 +1,39 @@
+### S5: teardown of an owned ship task, home opted in (config/pipeline-spend present)
+before: task records=[task-s2.meta ] project branches=[fm/task-s2 main ] ledger lines=1
+$ fm-teardown.sh task-s2   (inside the lab tmux pane; FM_HOME=lab home, NM_HOME=disposable)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0rlYSt
+teardown: reaping leaked worktree process(es) for task-s2: 3578842
+teardown: force-killing leaked worktree process(es) for task-s2: 3578842
+🌳 Worktree returned to pool.
+/tmp/fm-spend-fx.p77Bi5/project: already current
+teardown task-s2 complete (window firstmate:fm-task-s2, worktree /tmp/fm-spend-fx.p77Bi5/pool/.treehouse/project-89d55b/1/project)
+exit=0
+after:  task records=[] project branches=[main ] ledger lines=2
+new ledger line:
+{"task":"task-s2","spawn_gen":"s1791089548.1.task-s2","source":"no-mistakes-state","branch":"fm/task-s2","since":"2026-10-04T04:52:28Z","runs":["RUN-task-s2"],"total":{"invocations":3,"exit":{"ok":2,"cancelled":1},"duration_ms":300,"input_tokens":{"total":400,"unknown":1},"output_tokens":{"total":80,"unknown":1},"cache_read_tokens":{"total":150,"unknown":1},"cache_creation_tokens":{"total":5,"unknown":2}}}
+
+### S6: owned ship task whose task copy is already gone, home opted in
+before: task records=[task-s3.meta ] project branches=[main ] ledger lines=2
+$ fm-teardown.sh task-s3   (inside the lab tmux pane; FM_HOME=lab home, NM_HOME=disposable)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0rlYSt
+REFUSED: task task-s3 has a missing, empty, or ambiguous window endpoint; preserving task state.
+exit=1
+after:  task records=[task-s3.meta ] project branches=[main ] ledger lines=2
+new ledger line:
+{"task":"task-s2","spawn_gen":"s1791089548.1.task-s2","recorded_at":"2026-10-04T04:52:32Z","source":"no-mistakes-state","reason":null,"repo":"/tmp/fm-spend-fx.p77Bi5/project","branch":"fm/task-s2","since":"2026-10-04T04:52:28Z","total":{"invocations":3,"exit":{"ok":2,"cancelled":1},"duration_ms":300,"input_tokens":{"total":400,"unknown":1},"output_tokens":{"total":80,"unknown":1},"cache_read_tokens":{"total":150,"unknown":1},"cache_creation_tokens":{"total":5,"unknown":2}},"runs":[{"id":"RUN-task-s2","status":"completed","created_at":"2026-10-04T04:52:29Z","invocations":3,"exit":{"ok":2,"cancelled":1},"duration_ms":300,"input_tokens":{"total":400,"unknown":1},"output_tokens":{"total":80,"unknown":1},"cache_read_tokens":{"total":150,"unknown":1},"cache_creation_tokens":{"total":5,"unknown":2}}],"purposes":[{"purpose":"review","invocations":3,"exit":{"ok":2,"cancelled":1},"duration_ms":300,"input_tokens":{"total":400,"unknown":1},"output_tokens":{"total":80,"unknown":1},"cache_read_tokens":{"total":150,"unknown":1},"cache_creation_tokens":{"total":5,"unknown":2}}]}
+
+### S7: same teardown with the opt-in flag removed
+config dir: []
+before: task records=[task-s3.meta task-s4.meta ] project branches=[fm/task-s4 main ] ledger lines=2
+$ fm-teardown.sh task-s4   (inside the lab tmux pane; FM_HOME=lab home, NM_HOME=disposable)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0rlYSt
+teardown: reaping leaked worktree process(es) for task-s4: 3589775
+teardown: force-killing leaked worktree process(es) for task-s4: 3589775
+🌳 Worktree returned to pool.
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+/tmp/fm-spend-fx.p77Bi5/project: already current
+teardown task-s4 complete (window firstmate:fm-task-s4, worktree /tmp/fm-spend-fx.p77Bi5/pool/.treehouse/project-89d55b/1/project)
+exit=0
+after:  task records=[task-s3.meta ] project branches=[main ] ledger lines=2
+ledger sha256 before: ce42279387b822e3e281e07edfaf359706f53670ae105b77c4882bcb685284ce
+ledger sha256 after:  ce42279387b822e3e281e07edfaf359706f53670ae105b77c4882bcb685284ce

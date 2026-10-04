@@ -1,0 +1,12 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.0rlYSt
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for task-s1: 3507160
+teardown: force-killing leaked worktree process(es) for task-s1: 3507160
+A new version of treehouse is available: v2.3.0 → v3.1.1
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+/tmp/fm-spend-fx.p77Bi5/project: already current
+teardown task-s1 complete (window firstmate:fm-task-s1, worktree /tmp/fm-spend-fx.p77Bi5/pool/.treehouse/project-89d55b/1/project)
+Backlog: task-s1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.0rlYSt/data/backlog.md). Update /tmp/fm-lab.0rlYSt/data/backlog.md - move task-s1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
