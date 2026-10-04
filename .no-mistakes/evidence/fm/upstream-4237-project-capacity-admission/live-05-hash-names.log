@@ -1,0 +1,69 @@
+## S8: # handling. heavy currently has 2 holders: cap-a.meta cap-c.meta cap-x1.meta mate-z.meta  (cap-a handed off with pr=)
+config/project-capacity:
+  | #
+  | # heavy 1
+  | #note
+  | #hash 1
+-- '# heavy 1' is a comment: heavy stays uncapped, a third holder is admitted
+$ bin/fm-spawn.sh cap-d /tmp/fm-lab.cpLOCm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-d/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-d
+notice: cap-d ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-d harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-d worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/4/heavy
+[exit 0]
+-- '#hash 1' declares the project whose clone directory is named #hash: first worker admitted, second deferred
+$ bin/fm-spawn.sh cap-h1 '/tmp/fm-lab.cpLOCm/projects/#hash' --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-h1/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-h1
+notice: cap-h1 ships mode=local-only while the standing posture for #hash is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: treehouse get did not enter an isolated worktree within 60s (last seen '/home/firstmate': it is not inside a git worktree; spawning project '/tmp/fm-lab.cpLOCm/projects/#hash'); inspect window firstmate:fm-cap-h1
+[exit 1]
+$ bin/fm-spawn.sh cap-h2 '/tmp/fm-lab.cpLOCm/projects/#hash' --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-h2/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-h2
+notice: cap-h2 ships mode=local-only while the standing posture for #hash is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: treehouse get did not enter an isolated worktree within 60s (last seen '/home/firstmate': it is not inside a git worktree; spawning project '/tmp/fm-lab.cpLOCm/projects/#hash'); inspect window firstmate:fm-cap-h2
+[exit 1]
+created for cap-h2: record=none window=1 brief=/tmp/fm-lab.cpLOCm/data/cap-h2/launch-brief.md backlog=  state: queued
+-- adversarial: with '# #hash 1' (hash then whitespace) the same line is a comment and #hash is uncapped
+  | # #hash 1
+$ bin/fm-spawn.sh cap-h2 '/tmp/fm-lab.cpLOCm/projects/#hash' --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-h2/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-h2
+notice: cap-h2 ships mode=local-only while the standing posture for #hash is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: window firstmate:fm-cap-h2 already exists
+[exit 1]
+
+## S8 re-driven with a clone directory named #repo (tmux expands '#h' in a window start path, so the '#hash' directory above never reached its worktree; that is the tmux backend, not capacity admission)
+config/project-capacity:
+  | #
+  | # heavy 1
+  | #note
+  | #repo 1
+-- '#repo 1' declares the project whose clone directory is named #repo: first worker admitted, second deferred
+$ bin/fm-spawn.sh cap-h1 '/tmp/fm-lab.cpLOCm/projects/#repo' --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-h1/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-h1
+notice: cap-h1 ships mode=local-only while the standing posture for #repo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-h1 harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-h1 worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/#repo-f1cef8/1/#repo
+[exit 0]
+$ bin/fm-spawn.sh cap-h2 '/tmp/fm-lab.cpLOCm/projects/#repo' --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+deferred: project #repo admits 1 worker(s) at once on this machine (/tmp/fm-lab.cpLOCm/config/project-capacity) and 1 already hold a place (cap-h1); task cap-h2 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+created for cap-h2: record=none window=0 brief=none backlog=  state: queued
+-- adversarial: '# #repo 1' (hash, then whitespace) is a comment, so #repo is uncapped and the second worker is admitted
+  | # #repo 1
+  | #
+$ bin/fm-spawn.sh cap-h2 '/tmp/fm-lab.cpLOCm/projects/#repo' --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-h2/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-h2
+notice: cap-h2 ships mode=local-only while the standing posture for #repo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-h2 harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-h2 worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/#repo-f1cef8/2/#repo
+[exit 0]
+-- adversarial: '#repo 0' is a declaration, not a comment, so it refuses
+  | #repo 0
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/projects/other --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.cpLOCm/config/project-capacity line 1 gives #repo a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]

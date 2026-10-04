@@ -1,0 +1,43 @@
+## S5: cleanup of cap-b frees one place; a kind=secondmate record on the project takes none
+$ bin/fm-teardown.sh cap-b
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  2 task(s) in flight, but no live watcher process holds this home lock (last beat: 84s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair missing watcher supervision according to the session-start block for this harness; do not use shell &.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown: reaping leaked worktree process(es) for cap-b: 786287 797420
+teardown: force-killing leaked worktree process(es) for cap-b: 786287
+A new version of treehouse is available: v2.3.0 → v3.1.1
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown cap-b complete (window firstmate:fm-cap-b, worktree /tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy)
+Backlog: cap-b is closed in /tmp/fm-lab.cpLOCm/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+records: cap-a.meta mate-z.meta   (mate-z.meta is a hand-written kind=secondmate record)
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.cpLOCm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-c/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-c
+notice: cap-c ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-c harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-c worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy
+[exit 0]
+-- now cap-a + cap-c hold both places; next worker is deferred again
+$ bin/fm-spawn.sh cap-b /tmp/fm-lab.cpLOCm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+deferred: project heavy admits 2 worker(s) at once on this machine (/tmp/fm-lab.cpLOCm/config/project-capacity) and 2 already hold a place (cap-a, cap-c); task cap-b was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+## S6: a recorded ready PR (pr= line, the line bin/fm-pr-check.sh records; appended by hand here) frees a place
+$ bin/fm-spawn.sh cap-x1 /tmp/fm-lab.cpLOCm/clones/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-x1/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-x1
+notice: cap-x1 ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-x1 harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-x1 worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/3/heavy
+[exit 0]
+cap-a.meta
+cap-c.meta
+cap-x1.meta
+mate-z.meta

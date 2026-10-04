@@ -1,0 +1,57 @@
+## S7: malformed or unreadable declaration refuses a fresh spawn, even on an undeclared project (other)
+config/project-capacity (664):
+  | heavy two
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/projects/other --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.cpLOCm/config/project-capacity line 1 gives heavy a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+created: record=none window=0 brief=none backlog=  state: queued
+
+config/project-capacity (664):
+  | heavy 0
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/projects/other --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.cpLOCm/config/project-capacity line 1 gives heavy a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+created: record=none window=0 brief=none backlog=  state: queued
+
+config/project-capacity (664):
+  | heavy 2
+  | heavy 3
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/projects/other --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.cpLOCm/config/project-capacity line 2 names heavy a second time); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+created: record=none window=0 brief=none backlog=  state: queued
+
+config/project-capacity (664):
+  | heavy 1234567
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/projects/other --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.cpLOCm/config/project-capacity line 1 gives heavy a capacity longer than six digits); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+created: record=none window=0 brief=none backlog=  state: queued
+
+config/project-capacity (664):
+  | heavy
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/projects/other --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.cpLOCm/config/project-capacity line 1 is not '<project-name> <capacity>'); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+created: record=none window=0 brief=none backlog=  state: queued
+
+config/project-capacity (0):
+  | cat: /tmp/fm-lab.cpLOCm/config/project-capacity: Permission denied
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/projects/other --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.cpLOCm/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+created: record=none window=0 brief=none backlog=  state: queued
+
+-- relaunch of an existing worker is not refused by the malformed declaration
+$ bin/fm-spawn.sh cap-c --relaunch --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-c/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-c
+notice: cap-c ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-c harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-c worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy
+[exit 0]

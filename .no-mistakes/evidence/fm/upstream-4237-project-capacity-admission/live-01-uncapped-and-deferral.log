@@ -1,0 +1,60 @@
+## S1: no config/project-capacity file -> uncapped
+backend
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-a/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-a
+notice: cap-a ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-a harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-a worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/1/heavy
+$ bin/fm-spawn.sh cap-b /tmp/fm-lab.cpLOCm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-b/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-b
+notice: cap-b ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-b harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-b worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy
+[exit 0]
+
+## S2: declare 'heavy 2' with 2 holders -> third spawn deferred
+config/project-capacity:
+heavy 2
+BEFORE
+--- snapshot: state records
+cap-a.meta
+cap-b.meta
+--- tmux windows
+main
+fm-cap-a
+fm-cap-b
+--- treehouse pool
+1     in-use       /tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/1/heavy
+2     in-use       /tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy
+--- git worktrees
+/tmp/fm-lab.cpLOCm/projects/heavy                            7d21424 [main]
+/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/1/heavy 7d21424 (detached HEAD)
+/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy 7d21424 (detached HEAD)
+--- backlog
+cap-a   state: in_flight
+cap-b   state: in_flight
+cap-c   state: queued
+--- launch brief for cap-c: ls: cannot access '/tmp/fm-lab.cpLOCm/data/cap-c/launch-brief.md': No such file or directory
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.cpLOCm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+deferred: project heavy admits 2 worker(s) at once on this machine (/tmp/fm-lab.cpLOCm/config/project-capacity) and 2 already hold a place (cap-a, cap-b); task cap-c was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+AFTER
+--- snapshot: state records
+cap-a.meta
+cap-b.meta
+--- tmux windows
+main
+fm-cap-a
+fm-cap-b
+--- treehouse pool
+1     in-use       /tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/1/heavy
+2     in-use       /tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy
+--- git worktrees
+/tmp/fm-lab.cpLOCm/projects/heavy                            7d21424 [main]
+/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/1/heavy 7d21424 (detached HEAD)
+/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/2/heavy 7d21424 (detached HEAD)
+--- backlog
+cap-a   state: in_flight
+cap-b   state: in_flight
+cap-c   state: queued
+--- launch brief for cap-c: ls: cannot access '/tmp/fm-lab.cpLOCm/data/cap-c/launch-brief.md': No such file or directory

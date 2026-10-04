@@ -1,0 +1,16 @@
+## S3: second clone of the same origin, same directory name (clones/heavy), 2 holders in projects/heavy
+origins: /tmp/fm-lab.cpLOCm/projects/heavy.origin.git | /tmp/fm-lab.cpLOCm/projects/heavy.origin.git
+$ bin/fm-spawn.sh cap-x1 /tmp/fm-lab.cpLOCm/clones/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+deferred: project heavy admits 2 worker(s) at once on this machine (/tmp/fm-lab.cpLOCm/config/project-capacity) and 2 already hold a place (cap-a, cap-b); task cap-x1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+cap-a.meta
+cap-b.meta
+
+## S4: relaunch of a worker that already holds a place, at full capacity
+$ bin/fm-spawn.sh cap-a --relaunch --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-a/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-a
+notice: cap-a ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-a harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-a worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/1/heavy
+[exit 0]

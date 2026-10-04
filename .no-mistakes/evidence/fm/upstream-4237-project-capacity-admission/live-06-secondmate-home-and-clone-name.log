@@ -1,0 +1,33 @@
+## S9: a local secondmate home shares the root home's declaration and counts the root home's holders
+root config/project-capacity: heavy 3   | secondmate home has no declaration: backend
+root holders on heavy: cap-c cap-x1 cap-d (cap-a handed off with pr=)
+$ FM_HOME=/tmp/fm-lab.hk4pjm bin/fm-spawn.sh mate-t1 /tmp/fm-lab.hk4pjm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hk4pjm
+deferred: project heavy admits 3 worker(s) at once on this machine (/tmp/fm-lab.cpLOCm/config/project-capacity) and 3 already hold a place (cap-c in /tmp/fm-lab.cpLOCm, cap-d in /tmp/fm-lab.cpLOCm, cap-x1 in /tmp/fm-lab.cpLOCm); task mate-t1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+secondmate home after: records=0 brief=none backlog=  state: queued
+
+## S10: matching is by clone directory name. A clone of the same origin named heavy-alt finds no declaration and is admitted past the cap, and its worker still counts for heavy
+$ bin/fm-spawn.sh cap-o1 /tmp/fm-lab.cpLOCm/clones/heavy-alt --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+warning: /tmp/fm-lab.cpLOCm/data/cap-o1/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-o1
+notice: cap-o1 ships mode=local-only while the standing posture for heavy-alt is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-o1 harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-cap-o1 worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-alt-6de783/1/heavy-alt
+[exit 0]
+root config/project-capacity: heavy 4
+$ FM_HOME=/tmp/fm-lab.hk4pjm bin/fm-spawn.sh mate-t1 /tmp/fm-lab.hk4pjm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hk4pjm
+deferred: project heavy admits 4 worker(s) at once on this machine (/tmp/fm-lab.cpLOCm/config/project-capacity) and 4 already hold a place (cap-c in /tmp/fm-lab.cpLOCm, cap-d in /tmp/fm-lab.cpLOCm, cap-o1 in /tmp/fm-lab.cpLOCm, cap-x1 in /tmp/fm-lab.cpLOCm); task mate-t1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+## S9b: raising the cap to 5 admits the secondmate home's worker, which then holds a place for the root home
+$ FM_HOME=/tmp/fm-lab.hk4pjm bin/fm-spawn.sh mate-t1 /tmp/fm-lab.hk4pjm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.hk4pjm
+warning: /tmp/fm-lab.hk4pjm/data/mate-t1/launch-brief.md records no ship branch; defaulting to legacy branch fm/mate-t1
+notice: mate-t1 ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned mate-t1 harness=cat kind=ship mode=local-only yolo=off window=firstmate:fm-mate-t1 worktree=/tmp/fm-lab.cpLOCm/treehouse/.treehouse/heavy-6de783/5/heavy
+[exit 0]
+$ bin/fm-spawn.sh cap-b /tmp/fm-lab.cpLOCm/projects/heavy --mode local-only --yolo off --harness 'cat -u'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.cpLOCm
+deferred: project heavy admits 5 worker(s) at once on this machine (/tmp/fm-lab.cpLOCm/config/project-capacity) and 5 already hold a place (cap-c, cap-d, cap-o1, cap-x1, mate-t1 in /tmp/fm-lab.hk4pjm); task cap-b was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
