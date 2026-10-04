@@ -1,0 +1,22 @@
+### S5 relaunch at full capacity (project 3, holders a1 a2 a3): a2's agent process is stopped, then a2 is relaunched
+before: pane_dead=0 cmd=sleep
+after stop: pane_dead=0 cmd=bash
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh a2 --relaunch --harness sleep\ 3600
+warning: /tmp/fm-lab.l8u4tY/data/a2/launch-brief.md records no ship branch; defaulting to legacy branch fm/a2
+notice: a2 ships mode=local-only while the standing posture for project is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned a2 harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-a2 worktree=/home/firstmate/.treehouse/project-64f641/2/project
+[exit 0]
+-- records: a1.meta a2.meta a3.meta 
+-- launch briefs: a1/launch-brief.md a2/launch-brief.md a3/launch-brief.md 
+-- tmux windows: bash fm-a1 fm-a2 fm-a3 
+-- git worktrees: 4
+-- backlog:
+   ## In flight
+   - [ ] a3 - item for a3 (kind: ship) (since 2026-10-04)
+   - [ ] a2 - item for a2 (kind: ship) (since 2026-10-04)
+   - [ ] a1 - item for a1 (kind: ship) (since 2026-10-04)
+   ## Queued
+   - [ ] a4 - item for a4 (kind: ship) (since 2026-10-04)
+   - [ ] h1 - item for h1 (kind: ship) (since 2026-10-04)
+   - [ ] h2 - item for h2 (kind: ship) (since 2026-10-04)
+   ## Done

@@ -1,0 +1,46 @@
+### S9 matching is by clone directory name: origin holders a2 a4 h1 fill 'project 3'; clone '#repo' of the same origin has no line, so it is not capped
+   | #project two
+   | # project 1
+   | #
+   | project 3
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/#repo --mode local-only --yolo off --harness sleep\ 3600
+warning: /tmp/fm-lab.l8u4tY/data/h2/launch-brief.md records no ship branch; defaulting to legacy branch fm/h2
+notice: h2 ships mode=local-only while the standing posture for #repo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned h2 harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-h2 worktree=/home/firstmate/.treehouse/#repo-64f641/1/#repo
+[exit 0]
+
+### S10 declare '#repo 1' (the # written against the name): the next spawn on '#repo' is deferred and counts holders from every clone of the origin
+   | #project two
+   | # project 1
+   | #
+   | project 3
+   | #repo 1
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh r1 /tmp/fm-lab.l8u4tY/projects/#repo --mode local-only --yolo off --harness sleep\ 3600
+deferred: project #repo admits 1 worker(s) at once on this machine (/tmp/fm-lab.l8u4tY/config/project-capacity) and 4 already hold a place (a2, a4, h1, h2); task r1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+### S11 '# repo 1' (# then whitespace) is a comment: '#repo' is uncapped again and r1 launches
+   | #project two
+   | # project 1
+   | #
+   | project 3
+   | # repo 1
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh r1 /tmp/fm-lab.l8u4tY/projects/#repo --mode local-only --yolo off --harness sleep\ 3600
+warning: /tmp/fm-lab.l8u4tY/data/r1/launch-brief.md records no ship branch; defaulting to legacy branch fm/r1
+notice: r1 ships mode=local-only while the standing posture for #repo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned r1 harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-r1 worktree=/home/firstmate/.treehouse/#repo-64f641/2/#repo
+[exit 0]
+-- records: a1.meta a2.meta a4.meta h1.meta h2.meta r1.meta 
+-- launch briefs: a1/launch-brief.md a2/launch-brief.md a3/launch-brief.md a4/launch-brief.md h1/launch-brief.md h2/launch-brief.md r1/launch-brief.md 
+-- tmux windows: bash fm-a1 fm-a2 fm-h1 fm-a4 fm-h2 fm-r1 
+-- git worktrees: 5
+-- backlog:
+   ## In flight
+   - [ ] r1 - item for r1 (kind: ship) (since 2026-10-04)
+   - [ ] h2 - item for h2 (kind: ship) (since 2026-10-04)
+   - [ ] h1 - item for h1 (kind: ship) (since 2026-10-04)
+   - [ ] a4 - item for a4 (kind: ship) (since 2026-10-04)
+   - [ ] a2 - item for a2 (kind: ship) (since 2026-10-04)
+   - [ ] a1 - item for a1 (kind: ship) (since 2026-10-04)
+   ## Queued
+   ## Done

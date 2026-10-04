@@ -1,0 +1,47 @@
+### S6 release: project 3, holders a1 a2 a3; a4 is deferred
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh a4 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+deferred: project project admits 3 worker(s) at once on this machine (/tmp/fm-lab.l8u4tY/config/project-capacity) and 3 already hold a place (a1, a2, a3); task a4 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+### S6a ready-PR handoff: append the pr= line that bin/fm-pr-check.sh records to a1's record (written by hand here; no GitHub PR exists for a lab origin)
+pr=https://github.com/o/r/pull/7
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh a4 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+warning: /tmp/fm-lab.l8u4tY/data/a4/launch-brief.md records no ship branch; defaulting to legacy branch fm/a4
+notice: a4 ships mode=local-only while the standing posture for project is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned a4 harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-a4 worktree=/home/firstmate/.treehouse/project-64f641/4/project
+[exit 0]
+
+### S6b the single freed place admits only one worker: h1 is deferred
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h1 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+deferred: project project admits 3 worker(s) at once on this machine (/tmp/fm-lab.l8u4tY/config/project-capacity) and 3 already hold a place (a2, a3, a4); task h1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+### S6c cleanup: real bin/fm-teardown.sh a3, then h1 is admitted
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-teardown.sh a3
+teardown: reaping leaked worktree process(es) for a3: 3743612 3756619
+teardown: force-killing leaked worktree process(es) for a3: 3743612
+A new version of treehouse is available: v2.3.0 → v3.1.1
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown a3 complete (window primary:fm-a3, worktree /home/firstmate/.treehouse/project-64f641/3/project)
+Backlog: a3 is closed in /tmp/fm-lab.l8u4tY/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h1 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+warning: /tmp/fm-lab.l8u4tY/data/h1/launch-brief.md records no ship branch; defaulting to legacy branch fm/h1
+notice: h1 ships mode=local-only while the standing posture for project is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned h1 harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-h1 worktree=/home/firstmate/.treehouse/project-64f641/3/project
+[exit 0]
+-- records: a1.meta a2.meta a4.meta h1.meta 
+-- launch briefs: a1/launch-brief.md a2/launch-brief.md a3/launch-brief.md a4/launch-brief.md h1/launch-brief.md 
+-- tmux windows: bash fm-a1 fm-a2 fm-h1 fm-a4 
+-- git worktrees: 5
+-- backlog:
+   ## In flight
+   - [ ] h1 - item for h1 (kind: ship) (since 2026-10-04)
+   - [ ] a4 - item for a4 (kind: ship) (since 2026-10-04)
+   - [ ] a2 - item for a2 (kind: ship) (since 2026-10-04)
+   - [ ] a1 - item for a1 (kind: ship) (since 2026-10-04)
+   ## Queued
+   - [ ] h2 - item for h2 (kind: ship) (since 2026-10-04)
+   ## Done

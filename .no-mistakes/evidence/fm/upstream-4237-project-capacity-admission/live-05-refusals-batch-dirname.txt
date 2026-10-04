@@ -1,0 +1,92 @@
+### S7 a malformed or unreadable declaration refuses every fresh spawn (task h2, even on a project the bad line does not name)
+
+--- non-numeric capacity on another project
+   | project 9
+   | other two
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.l8u4tY/config/project-capacity line 2 gives other a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+
+--- zero capacity
+   | project 0
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.l8u4tY/config/project-capacity line 1 gives project a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+
+--- missing capacity
+   | project
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.l8u4tY/config/project-capacity line 1 is not '<project-name> <capacity>'); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+
+--- trailing text
+   | project 9 # suite
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.l8u4tY/config/project-capacity line 1 gives project 9 # a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+
+--- named twice
+   | project 9
+   | project 8
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.l8u4tY/config/project-capacity line 2 names project a second time); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+
+--- control: '#' lines that are comments do not refuse (h2 would be admitted at 9; use batch form to show it and then it holds a place)
+   | #project two
+   | project 9
+   | #project 2x
+   | # 5
+   | #
+
+--- unreadable file (mode 0)
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.l8u4tY/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+
+--- declaration path is a directory
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.l8u4tY/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+-- records: a1.meta a2.meta a4.meta h1.meta 
+-- launch briefs: a1/launch-brief.md a2/launch-brief.md a3/launch-brief.md a4/launch-brief.md h1/launch-brief.md 
+-- tmux windows: bash fm-a1 fm-a2 fm-h1 fm-a4 
+-- git worktrees: 5
+-- backlog:
+   ## In flight
+   - [ ] h1 - item for h1 (kind: ship) (since 2026-10-04)
+   - [ ] a4 - item for a4 (kind: ship) (since 2026-10-04)
+   - [ ] a2 - item for a2 (kind: ship) (since 2026-10-04)
+   - [ ] a1 - item for a1 (kind: ship) (since 2026-10-04)
+   ## Queued
+   - [ ] h2 - item for h2 (kind: ship) (since 2026-10-04)
+   ## Done
+
+### S8 batch form at capacity, and matching by clone directory name
+   | #project two
+   | # project 1
+   | #
+   | project 3
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2=/tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+deferred: project project admits 3 worker(s) at once on this machine (/tmp/fm-lab.l8u4tY/config/project-capacity) and 3 already hold a place (a2, a4, h1); task h2 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+batch: DEFERRED h2 (/tmp/fm-lab.l8u4tY/projects/project) - its project is at capacity, so it stays queued
+[exit 75]
+--- same origin, clone directory '#hashproj' has no declaration line now: not capped
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h2 /tmp/fm-lab.l8u4tY/projects/#hashproj --mode local-only --yolo off --harness sleep\ 3600
+warning: /tmp/fm-lab.l8u4tY/data/h2/launch-brief.md records no ship branch; defaulting to legacy branch fm/h2
+notice: h2 ships mode=local-only while the standing posture for #hashproj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: treehouse get did not enter an isolated worktree within 60s (last seen '/home/firstmate': it is not inside a git worktree; spawning project '/tmp/fm-lab.l8u4tY/projects/#hashproj'); inspect window primary:fm-h2
+[exit 1]
+-- records: a1.meta a2.meta a4.meta h1.meta 
+-- launch briefs: a1/launch-brief.md a2/launch-brief.md a3/launch-brief.md a4/launch-brief.md h1/launch-brief.md h2/launch-brief.md 
+-- tmux windows: bash fm-a1 fm-a2 fm-h1 fm-a4 fm-h2 
+-- git worktrees: 5
+-- backlog:
+   ## In flight
+   - [ ] h1 - item for h1 (kind: ship) (since 2026-10-04)
+   - [ ] a4 - item for a4 (kind: ship) (since 2026-10-04)
+   - [ ] a2 - item for a2 (kind: ship) (since 2026-10-04)
+   - [ ] a1 - item for a1 (kind: ship) (since 2026-10-04)
+   ## Queued
+   - [ ] h2 - item for h2 (kind: ship) (since 2026-10-04)
+   ## Done

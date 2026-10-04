@@ -1,0 +1,47 @@
+### S3 '#'-prefixed project name: clone '#hashproj' of the same origin is declared '#hashproj 1'; a1 and a2 (in clone 'project') hold its places
+origins: project=/tmp/fm-lab.l8u4tY/work/origin.git  #hashproj=/tmp/fm-lab.l8u4tY/work/origin.git
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh h1 /tmp/fm-lab.l8u4tY/projects/#hashproj --mode local-only --yolo off --harness sleep\ 3600
+deferred: project #hashproj admits 1 worker(s) at once on this machine (/tmp/fm-lab.l8u4tY/config/project-capacity) and 2 already hold a place (a1, a2); task h1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+-- records: a1.meta a2.meta 
+-- launch briefs: a1/launch-brief.md a2/launch-brief.md 
+-- tmux windows: bash fm-a1 fm-a2 
+-- git worktrees: 3
+-- backlog:
+   ## In flight
+   - [ ] a2 - item for a2 (kind: ship) (since 2026-10-04)
+   - [ ] a1 - item for a1 (kind: ship) (since 2026-10-04)
+   ## Queued
+   - [ ] a3 - item for a3 (kind: ship) (since 2026-10-04)
+   - [ ] a4 - item for a4 (kind: ship) (since 2026-10-04)
+   - [ ] h1 - item for h1 (kind: ship) (since 2026-10-04)
+   - [ ] h2 - item for h2 (kind: ship) (since 2026-10-04)
+   ## Done
+
+### S4 local secondmate home /tmp/fm-lab.yRxT6c (registered under root /tmp/fm-lab.l8u4tY) spawns on its own clone of the same origin; declaration comes from the root home
+$ FM_HOME=/tmp/fm-lab.yRxT6c bin/fm-spawn.sh m1 /tmp/fm-lab.yRxT6c/projects/project --mode local-only --yolo off --harness sleep\ 3600
+deferred: project project admits 2 worker(s) at once on this machine (/tmp/fm-lab.l8u4tY/config/project-capacity) and 2 already hold a place (a1 in /tmp/fm-lab.l8u4tY, a2 in /tmp/fm-lab.l8u4tY); task m1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+-- mate records: 
+-- mate launch brief: brief.md
+
+### S4b a secondmate record on the project does not hold a place: capacity raised to 3, two workers plus one kind=secondmate record
+$ FM_HOME=/tmp/fm-lab.l8u4tY bin/fm-spawn.sh a3 /tmp/fm-lab.l8u4tY/projects/project --mode local-only --yolo off --harness sleep\ 3600
+warning: /tmp/fm-lab.l8u4tY/data/a3/launch-brief.md records no ship branch; defaulting to legacy branch fm/a3
+notice: a3 ships mode=local-only while the standing posture for project is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned a3 harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-a3 worktree=/home/firstmate/.treehouse/project-64f641/3/project
+[exit 0]
+-- records: a1.meta a2.meta a3.meta 
+-- launch briefs: a1/launch-brief.md a2/launch-brief.md a3/launch-brief.md 
+-- tmux windows: bash fm-a1 fm-a2 fm-a3 
+-- git worktrees: 4
+-- backlog:
+   ## In flight
+   - [ ] a3 - item for a3 (kind: ship) (since 2026-10-04)
+   - [ ] a2 - item for a2 (kind: ship) (since 2026-10-04)
+   - [ ] a1 - item for a1 (kind: ship) (since 2026-10-04)
+   ## Queued
+   - [ ] a4 - item for a4 (kind: ship) (since 2026-10-04)
+   - [ ] h1 - item for h1 (kind: ship) (since 2026-10-04)
+   - [ ] h2 - item for h2 (kind: ship) (since 2026-10-04)
+   ## Done
