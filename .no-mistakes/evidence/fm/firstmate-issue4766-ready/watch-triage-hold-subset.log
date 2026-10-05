@@ -1,0 +1,10 @@
+ok - a settled hold mirror over a done lane surfaces one terminal stale, then stays inert and never wedge-escalates
+ok - a settled hold mirror over a paused lane resurfaces once per cadence, never once per relaunch
+ok - a hold and its release recorded by firstmate keep the stale throttle and suppressor they found
+ok - a captain-held lane is rechecked as a hold on the captain, never as an external wait, and never at all while the captain is away
+ok - a released-then-re-held task is a distinct captain call whose first sight still alarms
+ok - a wake that never reached the durable queue arms no re-surface throttle
+
+real	2m23.430s
+user	0m30.148s
+sys	1m9.607s

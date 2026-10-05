@@ -1,0 +1,249 @@
+
+==================== S1 paused lane: hold mirrors one line, repeat hold does not duplicate, crew state stays paused
+
+$ bin/fm-crew-state.sh s1
+state: parked · source: status-log · which sample API shape
+[rc=0]
+
+$ bin/fm-captain-hold.sh hold s1 --reason operator review pending
+s1
+[rc=0]
+
+$ bin/fm-captain-hold.sh hold s1 --reason operator review pending
+s1
+[rc=0]
+--- state/s1.status
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-s1-1] [at=1791213631]: operator review pending
+last_status_line -> captain-held [key=captain-hold-s1-1] [at=1791213631]: operator review pending
+
+last_worker_status_line -> paused: waiting on the sample upstream release
+
+status_current_line -> needs-decision [key=api-shape]: which sample API shape
+
+status_declared_wait_line -> captain-held [key=captain-hold-s1-1] [at=1791213631]: operator review pending
+
+status_open_decisions -> api-shape	needs-decision	which sample API shape
+
+$ bin/fm-crew-state.sh s1
+state: parked · source: status-log · which sample API shape
+[rc=0]
+
+==================== S2 release retracts with no worker alive; re-hold uses key -2; closing answer retracts; replay appends nothing
+
+$ bin/fm-captain-hold.sh answer s1 --decision-file $LAB/go.txt --release
+released: s1
+[rc=0]
+--- state/s1.status
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-s1-1] [at=1791213631]: operator review pending
+resolved [key=captain-hold-s1-1] [at=1791213634]: captain call released by fm-captain-hold
+last_status_line -> paused: waiting on the sample upstream release
+
+status_open_decisions -> api-shape	needs-decision	which sample API shape
+
+$ bin/fm-crew-state.sh s1
+state: parked · source: status-log · which sample API shape
+[rc=0]
+
+$ bin/fm-captain-hold.sh hold s1 --reason second operator review
+s1
+[rc=0]
+--- state/s1.status
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-s1-1] [at=1791213631]: operator review pending
+resolved [key=captain-hold-s1-1] [at=1791213634]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-s1-2] [at=1791213636]: second operator review
+
+$ bin/fm-captain-hold.sh answer s1 --decision-file $LAB/ship.txt
+answered: s1
+[rc=0]
+
+$ bin/fm-captain-hold.sh answer s1 --decision-file $LAB/ship.txt
+answered: s1
+[rc=0]
+--- state/s1.status
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-s1-1] [at=1791213631]: operator review pending
+resolved [key=captain-hold-s1-1] [at=1791213634]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-s1-2] [at=1791213636]: second operator review
+resolved [key=captain-hold-s1-2] [at=1791213637]: captain call answered by fm-captain-hold
+last_status_line -> paused: waiting on the sample upstream release
+
+
+$ bin/fm-crew-state.sh s1
+state: parked · source: status-log · which sample API shape
+[rc=0]
+
+==================== S3 adversarial: multi-line reason whose second line is 'blocked: on vendor reply' on a done lane
+
+$ bin/fm-crew-state.sh s3
+state: done · source: status-log · report ready
+[rc=0]
+
+$ bin/fm-captain-hold.sh hold s3 --reason Pick the API shape
+blocked: on vendor reply
+third line
+s3
+[rc=0]
+--- state/s3.status
+done: report ready
+captain-held [key=captain-hold-s3-1] [at=1791213640]: Pick the API shape blocked: on vendor reply  third line
+physical lines: 2
+last_worker_status_line -> done: report ready
+
+status_current_line -> done: report ready
+
+status_open_decisions -> 
+
+$ bin/fm-crew-state.sh s3
+state: done · source: status-log · report ready
+[rc=0]
+
+==================== S4 adversarial: paused lane held, then an answer for another key lands on top
+
+$ bin/fm-captain-hold.sh hold s4 --reason operator review
+s4
+[rc=0]
+--- state/s4.status
+working: start
+paused: waiting on vendor
+captain-held [key=captain-hold-s4-1] [at=1791213642]: operator review
+resolved [key=api-shape]: use v2
+status_declared_wait_line -> captain-held [key=captain-hold-s4-1] [at=1791213642]: operator review
+
+status_current_line -> paused: waiting on vendor
+
+
+$ bin/fm-crew-state.sh s4
+state: paused · source: status-log · waiting on vendor
+[rc=0]
+
+==================== S5 adversarial: decision already answered, then held (keyed and keyless)
+
+$ bin/fm-crew-state.sh s5
+state: unknown · source: none · no current-state source available
+[rc=0]
+
+$ bin/fm-captain-hold.sh hold s5 --reason review
+s5
+[rc=0]
+--- state/s5.status
+needs-decision [key=q]: pick
+resolved [key=q]: use a
+captain-held [key=captain-hold-s5-1] [at=1791213644]: review
+status_current_line -> captain-held [key=captain-hold-s5-1] [at=1791213644]: review
+
+status_open_decisions -> 
+
+$ bin/fm-crew-state.sh s5
+state: unknown · source: none · no current-state source available
+[rc=0]
+
+$ bin/fm-crew-state.sh s5b
+state: unknown · source: none · no current-state source available
+[rc=0]
+
+$ bin/fm-captain-hold.sh hold s5b --reason review
+s5b
+[rc=0]
+status_current_line -> captain-held [key=captain-hold-s5b-1] [at=1791213646]: review
+
+
+$ bin/fm-crew-state.sh s5b
+state: unknown · source: none · no current-state source available
+[rc=0]
+
+==================== S6 worker reports after the hold: its line replaces the mirror
+
+$ bin/fm-captain-hold.sh hold s6 --reason review
+s6
+[rc=0]
+last_status_line -> blocked [key=tok]: token expired
+
+status_declared_wait_line -> 
+
+$ bin/fm-crew-state.sh s6
+state: blocked · source: status-log · token expired
+[rc=0]
+
+==================== S7 decision-only hold (no lane) creates no status log
+
+$ bin/fm-captain-hold.sh hold s7-call --title Pick a vendor --reason captain must pick --repo sample
+s7-call
+[rc=0]
+--- state/s7-call.status
+(no status log)
+
+==================== S8 failed lane held: return brief still lists the failure
+
+$ bin/fm-captain-hold.sh hold t1 --reason retry or drop?
+t1
+[rc=0]
+--- state/t1.status
+working: start
+failed: build broke
+captain-held [key=captain-hold-t1-1] [at=1791213651]: retry or drop?
+
+$ bin/fm-crew-state.sh t1
+state: failed · source: status-log · build broke
+[rc=0]
+
+$ bin/fm-afk-contract.sh enter --words keep the fleet moving
+Away posture recorded at 2026-10-05T15:20:52Z: hold-for-return only. No phone channel is configured; anything that needs you waits for your return. Your away instructions are recorded verbatim; the away session will carry them out where it can, and anything it is unsure of, or that needs you, waits for your return. Destructive, irreversible, and security-sensitive actions are never pre-authorizable, whatever the words say. Expected return: not given. Spend cap: 4 concurrent workers.
+Away posture (recorded):
+  entered: 2026-10-05T15:20:52Z
+  expected return: not given
+  spend cap: 4 concurrent workers
+  reach: hold-for-return only. No phone channel is configured; anything that needs you waits for your return.
+  your words (verbatim):
+    keep the fleet moving
+[rc=0]
+
+$ bin/fm-afk-return.sh begin
+fm-afk-launch: away-posture record archived at $LAB/state/afk-contracts/1791213652.afk-contract
+fm-afk-launch: away mode stopped; no daemon terminal was running, .afk cleared, and the posture record archived
+=== Return brief (away 2026-10-05T15:20:52Z -> 2026-10-05T15:20:56Z, 4s) ===
+Supervisor health:
+  - supervision ran through the away window with no detected gap (watcher beat 0s old at return)
+Your instructions:
+  your words at entry:
+    keep the fleet moving
+  the away session took no action under them.
+Waiting on you:
+  held in the backlog:
+    tasks[7]{id,state,kind,repo,title,hold_kind,hold_reason,hold_until}:
+      s3,queued,scout,sample,Lane s3,captain,"Pick the API shape\nblocked: on vendor reply\r\nthird line","-"
+      s4,queued,scout,sample,Lane s4,captain,"operator review","-"
+      s5,queued,scout,sample,Lane s5,captain,"review","-"
+      s5b,queued,scout,sample,Lane s5b,captain,"review","-"
+      s6,queued,scout,sample,Lane s6,captain,"review","-"
+      s7-call,queued,captain,sample,Pick a vendor,captain,"captain must pick","-"
+      t1,queued,ship,sample,Lane t1,captain,"retry or drop?","-"
+  - s1 [key=api-shape] needs your decision: which sample API shape
+Tried and failed, or could not be fixed:
+  - s6 [key=tok] still blocked, firstmate remediates before ordinary work: token expired
+  - t1: failed: build broke
+Landed, cleanup due:
+  (nothing)
+Handled while away:
+  0 outcome(s) handled by the away session (0 routine, 0 escalated above)
+  (no routine outcomes recorded in the store for this window)
+Cost: 0 supervision outcome(s) recorded (0 routine, 0 captain); 7 task(s) live at return.
+fm-afk-return: catch-up must finish before the captain request
+catch-up health: supervision ran through the away window with no detected gap (watcher beat 0s old at return)
+catch-up wake: OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+catch-up wake: s1 [key=api-shape] needs-decision: which sample API shape
+catch-up wake: s6 [key=tok] blocked: token expired
+catch-up wake: OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+firstmate-actionable blocker: s6 [key=tok] token expired
+fm-afk-return: handle each blocker now, or close it with resolved [key=...] and append a durable reclassification reason, then run bin/fm-afk-return.sh check
+[rc=3]

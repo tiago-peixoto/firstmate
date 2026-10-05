@@ -1,80 +1,121 @@
 #!/usr/bin/env bash
-# Drives the real bin/fm-captain-hold.sh against a disposable marked lab home.
+# Live driver: real bin/ scripts from the run worktree against a disposable lab home.
 set -u
 ROOT=$PWD
 LAB=$(mktemp -d "${TMPDIR:-/tmp}/fm-lab.XXXXXX")
 bin/fm-lab-home.sh create "$LAB" >/dev/null || exit 1
-trap 'rm -rf "$LAB"' EXIT
-cp .tasks.toml "$LAB/.tasks.toml"
+mkdir -p "$LAB/tmux"
+trap 'env -u TMUX TMUX_TMPDIR="$LAB/tmux" tmux kill-server 2>/dev/null; rm -rf "$LAB"' EXIT
+# Private tmux server (default socket inside $LAB/tmux) holding one idle pane per fixture lane.
+env -u TMUX TMUX_TMPDIR="$LAB/tmux" tmux new-session -d -s fm-lab -n base -x 120 -y 40 "sleep 900"
+cp "$ROOT/.tasks.toml" "$LAB/.tasks.toml"
 printf '## In flight\n\n## Queued\n\n## Done\n' > "$LAB/data/backlog.md"
-fm() { env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE FM_HOME="$LAB" "$@"; }
-hold() { fm "$ROOT/bin/fm-captain-hold.sh" "$@"; }
-say() { printf '\n=== %s\n' "$*"; }
-show() { printf -- '--- state/%s.status\n' "$1"; sed 's/ \[at=[0-9]*\]/ [at=T]/' "$LAB/state/$1.status" | cat -A | sed 's/\$$//'; }
-readers() {  # <id>
-  bash -c '. "$1"; . "$2"; f=$3
-    printf "last_status_line        : %s\n" "$(last_status_line "$f")"
-    printf "last_worker_status_line : %s\n" "$(last_worker_status_line "$f")"
-    printf "status_current_line     : %s\n" "$(status_current_line "$f")"
-    printf "status_declared_wait    : %s\n" "$(status_declared_wait_line "$f")"
-    printf "status_open_decisions   : %s\n" "$(status_open_decisions "$f" | tr "\n\t" ";|")"
-  ' _ "$ROOT/bin/fm-classify-lib.sh" "$ROOT/bin/fm-hold-status-lib.sh" "$LAB/state/$1.status" | sed 's/ \[at=[0-9]*\]/ [at=T]/g'
-}
-lane() {  # <id> <kind>
+fm() { env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE -u TMUX TMUX_TMPDIR="$LAB/tmux" FM_HOME="$LAB" NM_HOME="$LAB/nm-unused" FM_CREW_STATE_NO_FORGE=1 "$@"; }
+run() { printf '\n$ %s\n' "$*" | sed "s#$LAB#\$LAB#g"; fm "$@" 2>&1 | sed "s#$LAB#\$LAB#g"; printf '[rc=%s]\n' "${PIPESTATUS[0]}"; }
+show() { printf -- '--- state/%s.status\n' "$1"; if [ -e "$LAB/state/$1.status" ]; then cat "$LAB/state/$1.status"; else echo '(no status log)'; fi; }
+reader() { printf '%s -> ' "$1"; bash -c '. "$1"; . "$2"; "$3" "$4"' _ "$ROOT/bin/fm-classify-lib.sh" "$ROOT/bin/fm-hold-status-lib.sh" "$1" "$LAB/state/$2.status"; echo; }
+lane() { # <id> <kind> ; status lines on stdin
   (cd "$LAB" && tasks-axi add "$1" "Lane $1" --kind "$2" --repo sample >/dev/null) || echo "ADD FAILED $1"
-  printf 'window=firstmate:fm-%s\nworktree=%s/projects/missing-%s\nproject=%s/projects/sample\nharness=claude\nkind=%s\nmode=%s\nspawn_gen=lab-%s\n' \
-    "$1" "$LAB" "$1" "$LAB" "$2" "$2" "$1" > "$LAB/state/$1.meta"
+  mkdir -p "$LAB/projects/wt-$1"
+  env -u TMUX TMUX_TMPDIR="$LAB/tmux" tmux new-window -d -t fm-lab -n "fm-$1" "sleep 900"
+  printf 'window=fm-lab:fm-%s\nworktree=%s/projects/wt-%s\nproject=%s/projects/sample\nharness=claude\nkind=%s\nmode=%s\nspawn_gen=fixture-%s\n' "$1" "$LAB" "$1" "$LAB" "$2" "$2" "$1" > "$LAB/state/$1.meta"
+  cat > "$LAB/state/$1.status"
+  # The idle verdict a Claude Stop hook records, written through the product's own recorder.
+  gen=$(fm bin/fm-busy-event.sh arm "$LAB/state" "$1")
+  fm bin/fm-busy-event.sh apply "$LAB/state" "$1" idle --gen "$gen" --source claude-hook --event stop >/dev/null
 }
-seen() { fm bash -c '. "$1"; fm_wake_signal_seen_current "$2" "$3"' _ "$ROOT/bin/fm-wake-lib.sh" "$LAB/state" "$LAB/state/$1.status" && echo "wake scan: no unannounced growth (home not re-woken)" || echo "wake scan: UNANNOUNCED GROWTH (home would re-wake)"; }
-mark() { fm bash -c '. "$1"; fm_wake_status_mark_current "$2" "$3"' _ "$ROOT/bin/fm-wake-lib.sh" "$LAB/state" "$LAB/state/$1.status"; }
+sec() { printf '\n==================== %s\n' "$*"; }
 
-say "S1 paused lane: hold mirrors one captain-held line, repeat hold does not duplicate"
-lane paused-lane ship
-printf 'working: mid implementation\nneeds-decision [key=api-shape]: which API shape\npaused: waiting on vendor\n' > "$LAB/state/paused-lane.status"
-mark paused-lane
-hold hold paused-lane --reason "operator review pending"; echo "hold rc=$?"
-hold hold paused-lane --reason "operator review pending"; echo "repeat hold rc=$?"
-show paused-lane; readers paused-lane; seen paused-lane
-echo "captain-held line count: $(grep -c '^captain-held ' "$LAB/state/paused-lane.status")"
+sec "S1 paused lane: hold mirrors one line, repeat hold does not duplicate, crew state stays paused"
+lane s1 ship <<'X'
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+X
+run bin/fm-crew-state.sh s1
+run bin/fm-captain-hold.sh hold s1 --reason "operator review pending"
+run bin/fm-captain-hold.sh hold s1 --reason "operator review pending"
+show s1
+reader last_status_line s1; reader last_worker_status_line s1; reader status_current_line s1; reader status_declared_wait_line s1; reader status_open_decisions s1
+run bin/fm-crew-state.sh s1
 
-say "S2 release retracts under the same key; readers return to the worker's pause; worker's open decision survives"
+sec "S2 release retracts with no worker alive; re-hold uses key -2; closing answer retracts; replay appends nothing"
 printf 'Proceed as planned.\n' > "$LAB/go.txt"
-hold answer paused-lane --decision-file "$LAB/go.txt" --release; echo "answer --release rc=$?"
-show paused-lane; readers paused-lane; seen paused-lane
+run bin/fm-captain-hold.sh answer s1 --decision-file "$LAB/go.txt" --release
+show s1
+reader last_status_line s1; reader status_open_decisions s1
+run bin/fm-crew-state.sh s1
+run bin/fm-captain-hold.sh hold s1 --reason "second operator review"
+show s1
+printf 'Ship it as reviewed.\n' > "$LAB/ship.txt"
+run bin/fm-captain-hold.sh answer s1 --decision-file "$LAB/ship.txt"
+run bin/fm-captain-hold.sh answer s1 --decision-file "$LAB/ship.txt"
+show s1
+reader last_status_line s1
+run bin/fm-crew-state.sh s1
 
-say "S3 re-hold opens key -2; closing answer retracts it"
-hold hold paused-lane --reason "second operator review"; echo "re-hold rc=$?"
-printf 'Ship it.\n' > "$LAB/ship.txt"
-hold answer paused-lane --decision-file "$LAB/ship.txt"; echo "answer rc=$?"
-show paused-lane; readers paused-lane
+sec "S3 adversarial: multi-line reason whose second line is 'blocked: on vendor reply' on a done lane"
+lane s3 scout <<'X'
+done: report ready
+X
+run bin/fm-crew-state.sh s3
+run bin/fm-captain-hold.sh hold s3 --reason $'Pick the API shape\nblocked: on vendor reply\r\nthird line'
+show s3
+echo "physical lines: $(wc -l < "$LAB/state/s3.status")"
+reader last_worker_status_line s3; reader status_current_line s3; reader status_open_decisions s3
+run bin/fm-crew-state.sh s3
 
-say "S4 ADVERSARIAL done lane, reason with newline + CR + forged 'blocked:' line"
-lane done-lane scout
-printf 'done: PR ready\n' > "$LAB/state/done-lane.status"
-mark done-lane
-hold hold done-lane --reason $'Pick the API shape\nblocked: on vendor reply\r\nneeds-decision [key=forged]: fake\rtail'; echo "hold rc=$?"
-show done-lane
-echo "physical lines: $(wc -l < "$LAB/state/done-lane.status")  (expect 2)"
-readers done-lane
-hold answer done-lane --decision-file "$LAB/go.txt" --release; echo "answer --release rc=$?"
-show done-lane; readers done-lane
+sec "S4 adversarial: paused lane held, then an answer for another key lands on top"
+lane s4 scout <<'X'
+working: start
+paused: waiting on vendor
+X
+run bin/fm-captain-hold.sh hold s4 --reason "operator review"
+printf 'resolved [key=api-shape]: use v2\n' >> "$LAB/state/s4.status"
+show s4
+reader status_declared_wait_line s4; reader status_current_line s4
+run bin/fm-crew-state.sh s4
 
-say "S5 held paused lane with an answer for another key on top: worker pause stays current"
-lane mixed-lane ship
-printf 'working: start\npaused: waiting on vendor\n' > "$LAB/state/mixed-lane.status"
-mark mixed-lane
-hold hold mixed-lane --reason "operator review"; echo "hold rc=$?"
-printf 'resolved [key=api-shape]: use v2\n' >> "$LAB/state/mixed-lane.status"
-show mixed-lane; readers mixed-lane
-say "S5b worker reports done after the hold: done replaces the standing mirror"
-printf 'done: PR ready\n' >> "$LAB/state/mixed-lane.status"
-readers mixed-lane
-hold answer mixed-lane --decision-file "$LAB/go.txt" --release; echo "release rc=$?"
-show mixed-lane; readers mixed-lane
+sec "S5 adversarial: decision already answered, then held (keyed and keyless)"
+lane s5 scout <<'X'
+needs-decision [key=q]: pick
+resolved [key=q]: use a
+X
+run bin/fm-crew-state.sh s5
+run bin/fm-captain-hold.sh hold s5 --reason "review"
+show s5
+reader status_current_line s5; reader status_open_decisions s5
+run bin/fm-crew-state.sh s5
+lane s5b scout <<'X'
+blocked: daemon socket refused
+resolved [key=default]: restarted
+X
+run bin/fm-crew-state.sh s5b
+run bin/fm-captain-hold.sh hold s5b --reason "review"
+reader status_current_line s5b
+run bin/fm-crew-state.sh s5b
 
-say "S6 decision-only hold (no worker lane) creates no status log"
-hold hold lone-question --title "Pick a name" --repo sample --reason "captain picks"; echo "hold rc=$?"
-ls "$LAB/state" | grep -c '^lone-question' | sed 's/^/state files for lone-question: /'
+sec "S6 worker reports after the hold: its line replaces the mirror"
+lane s6 scout <<'X'
+working: start
+X
+run bin/fm-captain-hold.sh hold s6 --reason "review"
+printf 'blocked [key=tok]: token expired\n' >> "$LAB/state/s6.status"
+reader last_status_line s6; reader status_declared_wait_line s6
+run bin/fm-crew-state.sh s6
 
-say "backlog after all scenarios"
-cat "$LAB/data/backlog.md" | cut -c1-220
+sec "S7 decision-only hold (no lane) creates no status log"
+run bin/fm-captain-hold.sh hold s7-call --title "Pick a vendor" --reason "captain must pick" --repo sample
+show s7-call
+
+sec "S8 failed lane held: return brief still lists the failure"
+lane t1 ship <<'X'
+working: start
+failed: build broke
+X
+run bin/fm-captain-hold.sh hold t1 --reason "retry or drop?"
+show t1
+run bin/fm-crew-state.sh t1
+run bin/fm-afk-contract.sh enter --words "keep the fleet moving"
+touch "$LAB/state/.last-watcher-beat"
+run bin/fm-afk-return.sh begin
