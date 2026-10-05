@@ -4204,7 +4204,7 @@ test_reheld_captain_call_starts_its_own_resurface_window() {
 
 
 test_secondmate_paused_resurfaces_in_normal_mode() {
-  local dir state fakebin out capture_file statusf window key pane_hash sig pid back
+  local dir state fakebin out capture_file statusf window key pane_hash sig pid back throttle
   dir=$(make_case secondmate-paused-resurface); state="$dir/state"; fakebin="$dir/fakebin"
   out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/secondmate-held.status"
   window="test:fm-secondmate-held"
@@ -4216,6 +4216,11 @@ test_secondmate_paused_resurfaces_in_normal_mode() {
   else touch -m -d "@$back" "$statusf"; fi
   sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-secondmate-held_status"
   key=$(printf '%s' "$window" | tr '.:/' '___')
+  throttle="$state/.paused-resurfaced-$key"
+  sig=$(FM_STATE_OVERRIDE="$state" bash -c '. "$1"; fm_wake_signal_sig "$2"' _ "$ROOT/bin/fm-wake-lib.sh" "$statusf")
+  printf 'declared:%s' "$sig" > "$throttle"
+  set_mtime "$(( $(date +%s) - 500 ))" "$throttle"
+  : > "$state/.paused-$key"
   pane_hash=$(hash_text "idle awaiting external")
   printf '%s' "$pane_hash" > "$state/.hash-$key"
   printf '1\n' > "$state/.count-$key"
@@ -4238,7 +4243,7 @@ test_secondmate_paused_resurfaces_in_normal_mode() {
 # The bounded re-surface must still reach it, or a mate's hold rots invisibly:
 # nothing else re-reads a quiet mate's endpoint.
 test_secondmate_captain_held_resurfaces_in_normal_mode() {
-  local dir state fakebin out capture_file statusf window key pane_hash sig pid back
+  local dir state fakebin out capture_file statusf window key pane_hash sig pid back throttle
   dir=$(make_case secondmate-held-resurface); state="$dir/state"; fakebin="$dir/fakebin"
   out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/secondmate-hold.status"
   window="test:fm-secondmate-hold"
@@ -4250,6 +4255,11 @@ test_secondmate_captain_held_resurfaces_in_normal_mode() {
   else touch -m -d "@$back" "$statusf"; fi
   sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-secondmate-hold_status"
   key=$(printf '%s' "$window" | tr '.:/' '___')
+  throttle="$state/.paused-resurfaced-$key"
+  sig=$(FM_STATE_OVERRIDE="$state" bash -c '. "$1"; fm_wake_signal_sig "$2"' _ "$ROOT/bin/fm-wake-lib.sh" "$statusf")
+  printf 'declared:%s' "$sig" > "$throttle"
+  set_mtime "$(( $(date +%s) - 500 ))" "$throttle"
+  : > "$state/.paused-$key"
   pane_hash=$(hash_text "idle awaiting the captain")
   printf '%s' "$pane_hash" > "$state/.hash-$key"
   printf '1\n' > "$state/.count-$key"
