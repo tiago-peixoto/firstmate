@@ -2439,14 +2439,13 @@ test_nonterminal_stale_not_working_surfaced() {
   pass "a not-provably-working non-terminal stale is surfaced immediately (never left to wait out the timer)"
 }
 
-# --- non-terminal stale, crew DECLARED a pause: absorbed, re-surfaced on a long
+# --- non-terminal stale, crew DECLARED a pause: one first alert, then the long
 #     cadence, never wedge-escalated ------------------------------------------
 # The live 2026-07-09/10 case: a crew intentionally held awaiting an upstream tool
 # release (paused: ...) whose idle pane tripped repeated possible-wedge escalations
-# all day. With the paused verb, its stale is absorbed like a working crew but never
-# uses the wedge timer; it re-surfaces once past PAUSE_RESURFACE_SECS (anchored on
-# the pause's own status-file age, so a churny idle pane cannot reset the cadence)
-# for a recheck, so a forgotten pause cannot rot invisibly.
+# all day. With the paused verb, first sight alerts once; later stale sights are
+# absorbed like a working crew but never use the wedge timer. The pause resurfaces
+# once past PAUSE_RESURFACE_SECS, so a forgotten pause cannot rot invisibly.
 test_nonterminal_stale_paused_absorbed_then_resurfaced() {
   local dir state fakebin out drain_out capture_file window key pane_hash sig pid back statusf
   dir=$(make_case nonterminal-stale-paused); state="$dir/state"; fakebin="$dir/fakebin"
@@ -2466,30 +2465,26 @@ test_nonterminal_stale_paused_absorbed_then_resurfaced() {
   # crew_absorb_class reads the declared pause from fm-crew-state.sh.
   export FM_FAKE_CREW_STATE='state: paused · source: status-log · holding for the upstream tool release'
 
-  # Phase A: a fresh pause (status file just written) under a high re-surface
-  # threshold is absorbed - no wake, no wedge timer.
+  # Phase A: a fresh pause alerts once even though the declared-wait cadence has
+  # not elapsed, and the alert never starts the wedge timer.
   PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
     FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
     FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
   pid=$!
-  if ! wait_poll_cycle "$state" "$pid"; then
-    reap "$pid"; fail "watcher exited for a fresh declared pause (should absorb): $(cat "$out")"
-  fi
-  [ ! -s "$out" ] || fail "fresh paused stale printed a wake reason during absorb"
-  [ ! -s "$state/.wake-queue" ] || fail "fresh paused stale enqueued a wake during absorb"
-  [ "$(cat "$state/.stale-$key" 2>/dev/null || true)" = "$pane_hash" ] || fail "stale suppressor not advanced on paused absorb"
-  [ -e "$state/.paused-$key" ] || fail "paused flag not recorded on absorb"
+  wait_for_exit "$pid" 100 || { reap "$pid"; fail "watcher did not alert on first sight of a fresh declared pause"; }
+  grep -F "awaiting external" "$out" >/dev/null || fail "first-sight alert lost the declared-wait reason"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the first-sight declared-pause alert"
+  [ "$(cat "$state/.stale-$key" 2>/dev/null || true)" = "$pane_hash" ] || fail "stale suppressor not advanced on the first alert"
+  [ -e "$state/.paused-$key" ] || fail "paused flag not recorded on first alert"
   [ ! -e "$state/.stale-since-$key" ] || fail "a paused absorb must not start the wedge timer"
   reap "$pid"
-  ack_stopped_cycle "$state" || fail "could not acknowledge the intentional paused phase-A stop"
 
-  # Phase B: age the pause past the (now normal) threshold by backdating its
-  # status file, re-prime .seen-* to the new signature so the signal scan stays
-  # quiet, and confirm it re-surfaces as a paused recheck - never a wedge.
+  # Phase B: age both the declaration and its first-alert throttle beyond the
+  # normal threshold, then confirm one bounded recheck - never a wedge.
   back=$(( $(date +%s) - 500 ))
-  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$statusf"
-  else touch -m -d "@$back" "$statusf"; fi
+  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$statusf" "$state/.paused-resurfaced-$key"
+  else touch -m -d "@$back" "$statusf" "$state/.paused-resurfaced-$key"; fi
   sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-held_status"
   : > "$out"
   printf 'idle, holding for upstream (token 2)' > "$capture_file"
@@ -2506,7 +2501,7 @@ test_nonterminal_stale_paused_absorbed_then_resurfaced() {
   [ ! -e "$state/.stale-since-$key" ] || fail "a paused re-surface must not use the wedge timer"
   FM_STATE_OVERRIDE="$state" "$DRAIN" > "$drain_out" 2>/dev/null || fail "drain after the paused re-surface failed"
   grep "$(printf '\tstale\t')" "$drain_out" | grep -F "$window" >/dev/null || fail "paused re-surface was not queued"
-  pass "a declared pause is absorbed on first sight, then re-surfaced as a recheck past the threshold, never wedge-escalated"
+  pass "a declared pause alerts once on first sight, then re-surfaces on the bounded cadence, never wedge-escalated"
 }
 
 # Own background work is a declared wait using the same existing paused verb.
