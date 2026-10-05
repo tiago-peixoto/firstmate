@@ -369,9 +369,11 @@ SECONDMATE_LIVENESS_WINDOW_SECS=${FM_SECONDMATE_LIVENESS_WINDOW_SECS:-}
 case "$SECONDMATE_LIVENESS_WINDOW_SECS" in ''|*[!0-9]*|0) SECONDMATE_LIVENESS_WINDOW_SECS=3600 ;; esac
 # A crew that declared a pause is idling on a known external wait, so its stale
 # pane is absorbed rather than wedge-escalated.
-# A captain-held or paused crew's declared wait uses the same bounded cadence
-# whatever the agent's liveness; a secondmate earns that cadence from its
-# declaration alone because its endpoint liveness is deliberately never read.
+# A captain-held or paused crew whose agent has confidently exited uses the same
+# bounded cadence, while a live or ambiguously read agent surfaces on first sight
+# and is then held to that same cadence; a secondmate earns the cadence on its
+# declaration alone, because its endpoint liveness is deliberately never read
+# (pause_state_class owns that split).
 # These cases re-surface once for a recheck every PAUSE_RESURFACE_SECS - far
 # longer than the wedge threshold, but finite so a forgotten wait cannot rot
 # invisibly - except an item held for the captain while the away-posture record
@@ -1147,10 +1149,9 @@ FM_WEDGE_DEMAND_INSPECT_COUNT=${FM_WEDGE_DEMAND_INSPECT_COUNT:-3}
 # absorb can rot invisibly. <age> is how long the current absorb has held and
 # <throttle> is the per-window marker whose mtime records the last re-surface, so
 # once past PAUSE_RESURFACE_SECS the pane wakes once per window rather than every
-# poll. An optional <scope> binds that cadence to its current declaration, so a
-# declaration not yet recorded on the marker - its first sight or a replacement -
-# wakes at once; callers without a scoped declaration keep the timestamp body.
-# Shared by the declared-pause absorb and the worktree-write deferral so the two cadences cannot
+# poll. An optional <scope> binds that cadence to its current declaration; callers
+# without a scoped declaration keep the timestamp body. Shared by the
+# declared-pause absorb and the worktree-write deferral so the two cadences cannot
 # drift apart; each caller owns its own marker and reason.
 # Returns without waking while either the absorb or the throttle is inside the
 # window; wake() itself exits the cycle, exactly as it does inline. An optional
@@ -1159,7 +1160,8 @@ FM_WEDGE_DEMAND_INSPECT_COUNT=${FM_WEDGE_DEMAND_INSPECT_COUNT:-3}
 # throttle keeps the cadence between repeats.
 resurface_absorbed() {  # <window> <throttle-marker> <age> <reason> [scope] [min-age]
   local win=$1 throttle=$2 age=$3 reason=$4 scope=${5-} min_age=${6:-$PAUSE_RESURFACE_SECS}
-  if [ -z "$scope" ] || [ "$(cat "$throttle" 2>/dev/null || true)" = "$scope" ]; then
+  if [ -z "$scope" ] || [ ! -e "$throttle" ] \
+    || [ "$(cat "$throttle" 2>/dev/null || true)" = "$scope" ]; then
     [ "$age" -ge "$min_age" ] || return 0
     [ "$(age_of "$throttle")" -ge "$PAUSE_RESURFACE_SECS" ] || return 0   # 999999 when no prior re-surface
   fi
@@ -1332,11 +1334,10 @@ wedge_wait_evidence() {  # <task> -> one wait_record on stdout
 # RECORD rather than re-derived here, so this function cannot word one kind of
 # wait as another.
 # A wait with a written record is aged from that file, which is when the worker
-# wrote the line - anchored there rather than on a marker this deferral keeps
-# touching, for the same reason handle_paused_stale anchors once per declaration:
-# an idle pane churns its display (a clock, a token counter), and a marker
-# refreshed on each pass would let that churn reset the cadence. A wait with NO
-# written record publishes no age at all: the
+# wrote the line - anchored there rather than on a per-window marker for the same
+# reason handle_paused_stale is: an idle pane churns its display (a clock, a
+# token counter), and a marker this deferral kept touching would let that churn
+# reset the cadence. A wait with NO written record publishes no age at all: the
 # quiet window is the only clock in hand and this deferral resets it on every
 # pass, so a number read from it would never grow and would tell a supervisor
 # that a day-old gate opened four minutes ago. The bounded re-surface still
@@ -1568,29 +1569,15 @@ busy_turn_over_age() {  # <task>
   [ "$(age_of "$f")" -ge "$BUSY_TURN_MAX_SECS" ]
 }
 
-declared_wait_identity() {  # <status-file> <declared-line>
-  local statusf=$1 line=$2 row position checksum
-  # The line position stays fixed across unrelated resolved events, but advances
-  # when an identical pause is declared again after its prior phase was resolved.
-  row=$(grep -nFx -- "$line" "$statusf" 2>/dev/null | tail -n 1) || row=
-  position=${row%%:*}
-  case "$position" in ''|*[!0-9]*) position=$(fm_wake_signal_sig "$statusf" || true) ;; esac
-  checksum=$(printf '%s' "$line" | cksum)
-  checksum=${checksum%% *}
-  printf 'declared:%s:%s' "$position" "$checksum"
-}
-
 # Absorb a stale pane under a declared external-wait pause (paused:) or a
-# captain-held transfer, alarm its first sight once (a secondmate's status signal
-# is its first surface, so its first sight is absorbed), and re-surface it once every
+# dead-agent captain-held transfer, and re-surface it once every
 # PAUSE_RESURFACE_SECS for a recheck so it cannot rot invisibly. Called on any
 # stale poll once pause_state_class permits the bounded cadence, so it must be
-# cheap: it NEVER re-reads crew state. The age is anchored once per declaration
-# on the declared line's own [at=] stamp, or the status file's mtime for an
-# unstamped line or a later-dated stamp, so unrelated status appends and a churny
-# idle pane cannot restart or defer the cadence.
-# The bounded re-surface itself is the shared resurface_absorbed above, throttled
-# by this window's own .paused-resurfaced-<key> marker. Advances
+# cheap: it NEVER re-reads crew state. The re-surface age is anchored on the
+# status file mtime, not a per-hash marker, so a churny idle pane (a ticking
+# clock, a token counter) cannot keep resetting the cadence the way a hash-tied
+# timer would. The bounded re-surface itself is the shared resurface_absorbed
+# above, throttled by this window's own .paused-resurfaced-<key> marker. Advances
 # the stale suppressor to <hash> and flags the key paused.
 #
 # The recheck distinguishes the declared dependency from a captain decision:
@@ -1598,28 +1585,21 @@ declared_wait_identity() {  # <status-file> <declared-line>
 # captain themself for a verified hold. Only the captain-held verb takes the second
 # wording; a caller that reached the bounded cadence off pause tracking alone, with
 # no declaring verb left on the log, keeps the external-wait wording it always had.
-handle_paused_stale() {  # <window> <task> <hash> [absorb-first-sight]
-  local win=$1 task=$2 h=$3 absorb_first=${4-} key statusf age detail reason declaration last until now min_age since_file declared_at stamp
+handle_paused_stale() {  # <window> <task> <hash>
+  local win=$1 task=$2 h=$3 key statusf mtime age detail reason declaration last until now min_age
   key=$(window_key "$win")
   printf '%s' "$h" > "$STATE/.stale-$key"
   : > "$STATE/.paused-$key"
   rm -f "$STATE/.stale-since-$key" "$STATE/.wedge-escalations-$key"
   clear_write_tracking "$key"
   statusf="$STATE/$task.status"
+  mtime=$(stat_mtime "$statusf")
+  case "$mtime" in ''|*[!0-9]*) mtime=$(date +%s) ;; esac
   now=$(date +%s)
+  age=$(( now - mtime ))
   last=$(status_declared_wait_line "$statusf")
   min_age=$PAUSE_RESURFACE_SECS
-  declaration=$(declared_wait_identity "$statusf" "$last")
-  since_file="$STATE/.paused-since-$key"
-  if [ "$(cat "$since_file" 2>/dev/null || true)" != "$declaration" ]; then
-    printf '%s' "$declaration" > "$since_file"
-    touch -r "$statusf" "$since_file" 2>/dev/null || true
-    if declared_at=$(status_line_at_epoch "$last") && [ "$(age_of "$since_file")" -lt $(( now - declared_at )) ] \
-      && stamp=$(date -d "@$declared_at" +%Y%m%d%H%M.%S 2>/dev/null || date -r "$declared_at" +%Y%m%d%H%M.%S 2>/dev/null); then
-      touch -t "$stamp" "$since_file" 2>/dev/null || true
-    fi
-  fi
-  age=$(age_of "$since_file")
+  declaration="declared:$(fm_wake_signal_sig "$statusf" || true)"
   if status_is_captain_held "$last"; then
     if away_record_present; then
       triage_log "absorbed stale (captain-held, never rechecked while the away-posture record exists): $win"
@@ -1646,10 +1626,7 @@ handle_paused_stale() {  # <window> <task> <hash> [absorb-first-sight]
     detail="paused, awaiting external"
     reason="paused ${age}s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds"
   fi
-  if [ -e "$STATE/.paused-resurfaced-$key" ] || [ "$age" -ge "$min_age" ] \
-    || { [ -z "$absorb_first" ] && [ "$(window_kind "$win")" != secondmate ]; }; then
-    resurface_absorbed "$win" "$STATE/.paused-resurfaced-$key" "$age" "stale: $win ($reason)" "$declaration" "$min_age"
-  fi
+  resurface_absorbed "$win" "$STATE/.paused-resurfaced-$key" "$age" "stale: $win ($reason)" "$declaration" "$min_age"
   triage_log "absorbed stale ($detail, age ${age}s): $win"
 }
 
@@ -1663,9 +1640,8 @@ handle_paused_stale() {  # <window> <task> <hash> [absorb-first-sight]
 # verified captain-held transfer instead identifies that live foreground call as
 # the expected external wait. The caller has already confirmed liveness through
 # the busy verdict, so this exception does not suppress undeclared wedges or
-# alter the separate non-busy classification: its first crossing is absorbed
-# rather than alarmed, and handle_paused_stale keeps the exception bounded by
-# re-surfacing it once per PAUSE_RESURFACE_SECS.
+# alter the separate non-busy classification. handle_paused_stale keeps the
+# exception bounded by re-surfacing it once per PAUSE_RESURFACE_SECS.
 # A pane that declared nothing falls through to the shared wedge timer, which,
 # in a home that armed config/wedge-defer-parked-gate, applies the same rule to
 # the one wait a busy pane cannot declare: a validation gate of its own awaiting
@@ -1716,7 +1692,7 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
       fi
       return 0
     fi
-    handle_paused_stale "$win" "$task" "$h" absorb-first-sight
+    handle_paused_stale "$win" "$task" "$h"
     return 0
   fi
   wedge_timer_check "$win" "$since_file" "busy (no completed turn)" "$escalation_file" "$task" "$h"
@@ -1725,7 +1701,7 @@ busy_turn_bound_check() {  # <window> <task> <hash> <since-file> <escalation-fil
 
 clear_pause_state() {  # <window-key>
   local key=$1
-  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" "$STATE/.paused-resurfaced-$key" "$STATE/.paused-since-$key"
+  rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key" "$STATE/.paused-resurfaced-$key"
 }
 
 # The hash-scoped half of clear_pause_tracking: the stale suppressor, its wedge
@@ -1747,10 +1723,8 @@ clear_pause_tracking() {  # <window-key>
 }
 
 # Reconcile a declared pause or captain-held status with authoritative crew state.
-# After fm-crew-state has fallen back to stopped or unknown, the declaration still
-# supplies the bounded cadence; only positive evidence that the crew is working
-# overrides it. Crew state is read on first sight of a standing pause and then at
-# most once per STALE_ESCALATE_SECS, never on every idle poll.
+# A declaration keeps its bounded cadence unless authoritative state proves the crew
+# is working; its first stale sight still surfaces once for inspection.
 pause_state_class() {  # <window> <task>
   local win=$1 task=$2 key last recheck_file class
   key=$(window_key "$win")
@@ -1771,9 +1745,12 @@ pause_state_class() {  # <window> <task>
     printf 'working'
     return
   fi
-  # Recover paused classification when authoritative crew state cannot name a
-  # current state. Only positive evidence that the crew is working supersedes its
-  # still-current declaration.
+  # Let the existing nonterminal stale path issue the one first-sight alert.
+  # Once it records the pause, later sights use the bounded cadence below.
+  if [ ! -e "$STATE/.paused-$key" ]; then
+    printf 'none'
+    return
+  fi
   [ "$class" = none ] && class=paused
   case "$class" in
     paused) date +%s > "$recheck_file" ;;
@@ -1817,8 +1794,16 @@ task_captain_call_open() {  # <task>
   return 0
 }
 
-# The re-surface throttle scope for a captain call, carrying the CALL's own
-# lifecycle identity beside the status-log signature. The status log is not enough on its own: a task
+# The identity a re-surface throttle is bound to: the task's whole status-log
+# signature. Any new status event - a replacement wait, a fresh delivery, a
+# blocker - changes it and so starts its own window instead of inheriting the
+# silence of the one before it.
+stale_wait_declaration() {  # <task>
+  printf 'declared:%s' "$(fm_wake_signal_sig "$STATE/$1.status" || true)"
+}
+
+# The same scope for a captain call, carrying the CALL's own lifecycle identity
+# beside the status signature. The status log is not enough on its own: a task
 # can be answered with `--release` and held again as a genuinely different call
 # without any status append, and binding the throttle to the signature alone let
 # the second call inherit the first one's silence and absorbed its first sight.
@@ -1873,9 +1858,10 @@ captain_call_stale_bound() {  # <window-key> <task>
 
 # Surface a stale pane no classifier could resolve, so firstmate inspects it: it
 # may have finished through an interactive menu that wrote no status, be waiting on
-# a decision, or be wedged. pause_state_class admits a standing declared wait to
-# handle_paused_stale whatever the agent's liveness, so this path mainly serves a
-# parked worker that declared nothing, on first sight of each distinct stale hash.
+# a decision, or be wedged. pause_state_class deliberately answers `none` for a
+# still-LIVE agent even under a declared wait, so a worker genuinely waiting on a
+# decision is never silenced - which routes every parked-but-live worker here, on
+# first sight of each distinct stale hash.
 #
 # So a legitimate wait bounds this path to the same once-per-PAUSE_RESURFACE_SECS
 # cadence resurface_absorbed owns for the absorbed paths, throttled by this
@@ -1898,7 +1884,7 @@ surface_nonterminal_stale() {  # <window> <hash>
   if status_is_paused "$last"; then
     declared=0
     bounded=0
-    STALE_WAIT_DECLARATION=$(declared_wait_identity "$STATE/$task.status" "$last")
+    STALE_WAIT_DECLARATION=$(stale_wait_declaration "$task")
     if until=$(status_paused_until "$last"); then
       now=$(date +%s)
       if [ "$now" -lt "$until" ]; then
@@ -1913,7 +1899,7 @@ surface_nonterminal_stale() {  # <window> <hash>
   elif status_is_captain_held "$last"; then
     declared=0
     bounded=0
-    STALE_WAIT_DECLARATION=$(declared_wait_identity "$STATE/$task.status" "$last")
+    STALE_WAIT_DECLARATION=$(stale_wait_declaration "$task")
     if captain_held_silenced "$last"; then
       throttled=0
     else
@@ -1939,8 +1925,8 @@ surface_nonterminal_stale() {  # <window> <hash>
     # A backlog hold is NOT a declared pause, and must not be dressed up as one:
     # the loop-top reconciliation and pause_state_class both read the status LINE,
     # so a .paused-* flag this line does not support would be cleared on the next
-    # poll - taking the throttle with it - and would hand the declared-wait
-    # cadence a declaration it was never given. Only the shared re-surface
+    # poll - taking the throttle with it - and would hand the mate and dead-agent
+    # cadences a declaration they were never given. Only the shared re-surface
     # marker is kept, which is the whole of what this bound needs.
     rm -f "$STATE/.paused-$key" "$STATE/.paused-rechecked-$key"
   else
@@ -3110,8 +3096,9 @@ EOF
           #   - working: an actively-running pipeline legitimately sits on a static
           #     pane (e.g. waiting on CI), so absorb and start the wedge timer so a
           #     genuinely frozen run still escalates past STALE_ESCALATE_SECS;
-          #   - paused: the current declared wait uses the long PAUSE_RESURFACE_SECS
-          #     cadence instead of wedge-escalating, regardless of endpoint liveness;
+          #   - paused: a declared wait pause_state_class admits (its header owns which
+          #     liveness evidence each kind of crew must supply), so absorb on the long
+          #     PAUSE_RESURFACE_SECS cadence instead of wedge-escalating;
           #   - none: no running pipeline, no exact busy verdict, no admitted declared wait.
           #     Surface immediately so firstmate inspects the inconclusive state
           #     (it may be done via an interactive menu that wrote no done: status,
