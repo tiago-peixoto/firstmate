@@ -1,0 +1,42 @@
+# 0. captain-saved permissions planted in the mate home before the relaunch
+{"permissions":{"allow":["Bash(echo lab-saved-rule:*)"]}}
+275d87b7da554fa1f48fc4763593df28009c61b1ae6916bcd3ed3fcad0931bc1  /tmp/fmlab-busy-r2-2847472/mate/.claude/settings.local.json
+
+# 1. before relaunch
+busy-gen: g1791214423.2853551.5906
+gen=g1791214423.2853551.5906
+17:35:43  verdict=[idle claude-hook]  record=[seq=6 state=idle source=claude-hook event=stop]
+
+# 2. fm-control.sh labc4cd414257c1-mate relaunch (claude -> claude)
+warning: secondmate labc4cd414257c1-mate sync skipped before launch: dirty working tree
+relaunched labc4cd414257c1-mate harness=claude from=claude model=sonnet effort=low backend=tmux endpoint=firstmate:fm-labc4cd414257c1-mate worktree=/tmp/fmlab-busy-r2-2847472/mate
+relaunch exit=0
+
+# 3. after relaunch
+busy-gen: g1791214574.3012953.26891
+gen=g1791214574.3012953.26891
+settings hook gen: gen 'g1791214574.3012953.26891'
+mate settings.local.json:
+{"permissions":{"allow":["Bash(echo lab-saved-rule:*)"]}}
+/tmp/fmlab-busy-r2-2847472/mate/.claude/settings.local.json: OK
+
+# 4. the relaunched real Claude mate: launch turn, then a typed prompt, on the new generation
+17:38:12  verdict=[idle claude-hook]  record=[seq=3 state=idle source=claude-hook event=stop]
+17:38:16  verdict=[idle claude-hook]  record=[seq=3 state=idle source=claude-hook event=stop]
+17:38:19  verdict=[busy claude-hook]  record=[seq=4 state=busy source=claude-hook event=user-prompt-submit]
+17:38:21  verdict=[busy claude-hook]  record=[seq=4 state=busy source=claude-hook event=user-prompt-submit]
+17:38:23  verdict=[busy claude-hook]  record=[seq=4 state=busy source=claude-hook event=user-prompt-submit]
+17:38:25  verdict=[busy claude-hook]  record=[seq=4 state=busy source=claude-hook event=user-prompt-submit]
+17:38:27  verdict=[busy claude-hook]  record=[seq=4 state=busy source=claude-hook event=user-prompt-submit]
+17:38:29  verdict=[busy claude-hook]  record=[seq=4 state=busy source=claude-hook event=user-prompt-submit]
+17:38:31  verdict=[idle claude-hook]  record=[seq=5 state=idle source=claude-hook event=stop]
+17:38:33  verdict=[idle claude-hook]  record=[seq=5 state=idle source=claude-hook event=stop]
+17:38:35  verdict=[idle claude-hook]  record=[seq=5 state=idle source=claude-hook event=stop]
+17:38:37  verdict=[idle claude-hook]  record=[seq=5 state=idle source=claude-hook event=stop]
+17:38:39  verdict=[idle claude-hook]  record=[seq=5 state=idle source=claude-hook event=stop]
+
+# saved permissions after the relaunched mate ran turns:
+{"permissions":{"allow":["Bash(echo lab-saved-rule:*)"]}}
+/tmp/fmlab-busy-r2-2847472/mate/.claude/settings.local.json: OK
+# parent turn-ended marker (must stay absent):
+ls: cannot access '/tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.turn-ended': No such file or directory

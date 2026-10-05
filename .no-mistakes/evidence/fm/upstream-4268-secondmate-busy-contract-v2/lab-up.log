@@ -1,0 +1,16 @@
+lab: /tmp/fmlab-busy-r2-2847472 (tear down with: bin/fm-live-lab.sh down /tmp/fmlab-busy-r2-2847472)
+tree: 0e0f15c06bab4245d737260cf7cf6e7b40c941b4 from /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M467BNVDSWYRP9SXNRDQK9J5
+scaffolded: /tmp/fmlab-busy-r2-2847472/home/data/labc4cd414257c1-mate/brief.md (secondmate charter)
+home=/tmp/fmlab-busy-r2-2847472/mate
+spawned labc4cd414257c1-mate harness=claude kind=secondmate mode=secondmate yolo=off window=firstmate:fm-labc4cd414257c1-mate worktree=/tmp/fmlab-busy-r2-2847472/mate
+primary: claude --setting-sources project,local --model sonnet --effort medium --permission-mode auto
+ok primary: claude pid 2866640 in /tmp/fmlab-busy-r2-2847472/home
+ok probe: the primary answered LABREADY-c4cd414257c1
+ok trust: /tmp/fmlab-busy-r2-2847472/home is trusted in the Claude store
+ok mirror: verified writer, check passed, captain=1 main=1
+ok host: supervision host pid 2889995
+ok watcher: live watcher with a fresh beacon
+ok mate: labc4cd414257c1-mate pid 2856704 in /tmp/fmlab-busy-r2-2847472/mate
+ok treehouse: ~/.treehouse unchanged
+ready: /tmp/fmlab-busy-r2-2847472
+up exit=0

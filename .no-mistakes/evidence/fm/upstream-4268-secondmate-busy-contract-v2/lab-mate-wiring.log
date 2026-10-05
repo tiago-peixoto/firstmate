@@ -1,0 +1,76 @@
+## tree under test
+0e0f15c06bab4245d737260cf7cf6e7b40c941b4
+
+## parent state files for labc4cd414257c1-mate
+-rw-------  1 firstmate firstmate   25 Oct  5 17:33 labc4cd414257c1-mate.busy-gen
+-rw-------  1 firstmate firstmate  107 Oct  5 17:33 labc4cd414257c1-mate.busy-state
+-rw-rw-r--  1 firstmate firstmate  948 Oct  5 17:33 labc4cd414257c1-mate.claude-settings.json
+dr-x------  2 firstmate firstmate  340 Oct  5 17:33 labc4cd414257c1-mate.git-hooks
+drwxrwxr-x  3 firstmate firstmate   60 Oct  5 17:34 labc4cd414257c1-mate.inbox
+-rw-rw-r--  1 firstmate firstmate  394 Oct  5 17:33 labc4cd414257c1-mate.meta
+-rw-rw-r--  1 firstmate firstmate   92 Oct  5 17:34 labc4cd414257c1-mate.status
+
+## state/labc4cd414257c1-mate.claude-settings.json
+{
+  "feedbackDrafts": "off",
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/tmp/fmlab-busy-r2-2847472/home/bin/fm-busy-event.sh' apply '/tmp/fmlab-busy-r2-2847472/home/state' 'labc4cd414257c1-mate' busy --gen 'g1791214423.2853551.5906' --source claude-hook --event user-prompt-submit 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/tmp/fmlab-busy-r2-2847472/home/bin/fm-busy-event.sh' apply '/tmp/fmlab-busy-r2-2847472/home/state' 'labc4cd414257c1-mate' idle --gen 'g1791214423.2853551.5906' --source claude-hook --event stop-failure 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/tmp/fmlab-busy-r2-2847472/home/bin/fm-busy-event.sh' apply '/tmp/fmlab-busy-r2-2847472/home/state' 'labc4cd414257c1-mate' idle --gen 'g1791214423.2853551.5906' --source claude-hook --event session-end 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+## mate home .fm-busy-stop
+writer=/tmp/fmlab-busy-r2-2847472/home/bin/fm-busy-event.sh
+state=/tmp/fmlab-busy-r2-2847472/home/state
+id=labc4cd414257c1-mate
+gen=g1791214423.2853551.5906
+
+## mate home .claude/ (no settings.local.json expected)
+total 4
+drwxrwxr-x  3 firstmate firstmate  100 Oct  5 17:33 .
+drwxrwxr-x 22 firstmate firstmate  720 Oct  5 17:33 ..
+drwxrwxr-x  3 firstmate firstmate   60 Oct  5 17:33 mods
+-rw-rw-r--  1 firstmate firstmate 2102 Oct  5 17:33 settings.json
+lrwxrwxrwx  1 firstmate firstmate   17 Oct  5 17:33 skills -> ../.agents/skills
+
+## parent turn-ended marker (must be absent)
+ls: cannot access '/tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.turn-ended': No such file or directory
+
+## mate process command line
+2856704 claude --permission-mode auto --add-dir /tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.inbox --settings /tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.claude-settings.json --model sonnet --effort low : Firstmate operational input waiting: read '/tmp/fmlab-busy-r2-2847472/mate/state/operational-inbox/1791214424-b5660937e7082e52.msg' and handle its contents as Firstmate operational input.
+
+## busy-state record
+v1 gen=g1791214423.2853551.5906 seq=3 state=busy source=claude-hook event=user-prompt-submit ts=1791214438

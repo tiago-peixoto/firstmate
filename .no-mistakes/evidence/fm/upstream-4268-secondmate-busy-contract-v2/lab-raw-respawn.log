@@ -1,0 +1,70 @@
+# 1. canonical claude mate is armed (generation current, Stop pointer present)
+/tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.busy-gen
+/tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.busy-state
+/tmp/fmlab-busy-r2-2847472/mate/.fm-busy-stop
+g1791214574.3012953.26891
+17:38:57  verdict=[idle claude-hook]  record=[seq=5 state=idle source=claude-hook event=stop]
+
+# 2. the pane dies without fm-control exit (window killed on the lab tmux server)
+firstmate:lab
+firstmate:main
+after the crash the arm is still current:
+/tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.busy-gen
+/tmp/fmlab-busy-r2-2847472/mate/.fm-busy-stop
+
+# 3. respawn with the raw launch command escape hatch
++ fm-spawn.sh labc4cd414257c1-mate 'claude --permission-mode auto --model sonnet --effort low' --secondmate
+warning: secondmate labc4cd414257c1-mate sync skipped before launch: dirty working tree
+spawned labc4cd414257c1-mate harness=claude kind=secondmate mode=secondmate yolo=off window=firstmate:fm-labc4cd414257c1-mate worktree=/tmp/fmlab-busy-r2-2847472/mate
+spawn exit=0
+
+# 4. after the raw respawn
+-rw-rw-r--  1 firstmate firstmate   951 Oct  5 17:36 labc4cd414257c1-mate.claude-settings.json
+(listing above: busy / claude-settings files left for the mate)
+ls: cannot access '/tmp/fmlab-busy-r2-2847472/mate/.fm-busy-stop': No such file or directory
+17:39:09  verdict=[unknown missing]  record=[busy-state file: absent]
+saved permissions:
+/tmp/fmlab-busy-r2-2847472/mate/.claude/settings.local.json: OK
+
+# 5. the raw-launched real Claude mate runs a turn; the verdict must stay unknown, never a stale idle
+17:39:25  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:27  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:29  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:31  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:33  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:35  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:38  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:40  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:42  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:44  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:46  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:48  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:50  verdict=[unknown missing]  record=[busy-state file: absent]
+17:39:52  verdict=[unknown missing]  record=[busy-state file: absent]
+
+# raw mate process and pane
+3104649 claude --permission-mode auto --model sonnet --effort low
+firstmate@firstmate-hz:/tmp/fmlab-busy-r2-2847472/mate$ export GOTMPDIR=/tmp/fm-labc4cd414257c1-mate/gotmp
+export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fmlab-busy-r2-2847472/mate$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fmlab-busy-r2-2847472/mate$ . '/tmp/fm-labc4cd414257c1-mate+691e7bb96663cbf82e2608479f9bb22f4a49e64434280a89592103341b1d32a1/launch.s1791214745.3099726.27085.sh'
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Sonnet 5.5 with low effort · Claude Max
+ ▝▝   ▝▝   /tmp/fmlab-busy-r2-2847472/mate
+❯ Run this one foreground shell command: python3 -c "import time; time.sleep(10)" and then reply with the single word RAWDONE. Do nothing else.                                                                             
+● Bash(python3 -c "import time; time.sleep(10)")                                                                                                                                                                            
+  ⎿  (No output)
+  ⎿  (timeout 30s)                               
+  ⎿  Allowed by auto mode classifier
+● RAWDONE                              
+✻ Sautéed for 18s · done 5:39 PM                                                                                                                                                                                            
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                       
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents                   
+
+# Stop pointer and turn-ended marker after the raw mate's Stop:
+ls: cannot access '/tmp/fmlab-busy-r2-2847472/mate/.fm-busy-stop': No such file or directory
+ls: cannot access '/tmp/fmlab-busy-r2-2847472/home/state/labc4cd414257c1-mate.turn-ended': No such file or directory
+# saved permissions:
+/tmp/fmlab-busy-r2-2847472/mate/.claude/settings.local.json: OK
