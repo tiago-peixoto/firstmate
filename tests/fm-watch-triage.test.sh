@@ -2473,7 +2473,7 @@ test_nonterminal_stale_paused_absorbed_then_resurfaced() {
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
   pid=$!
   wait_for_exit "$pid" 100 || { reap "$pid"; fail "watcher did not alert on first sight of a fresh declared pause"; }
-  grep -F "awaiting external" "$out" >/dev/null || fail "first-sight alert lost the declared-wait reason"
+  grep -Fx "stale: $window" "$out" >/dev/null || fail "first-sight declared-pause alert was not a plain stale wake"
   ack_stopped_cycle "$state" || fail "could not acknowledge the first-sight declared-pause alert"
   [ "$(cat "$state/.stale-$key" 2>/dev/null || true)" = "$pane_hash" ] || fail "stale suppressor not advanced on the first alert"
   [ -e "$state/.paused-$key" ] || fail "paused flag not recorded on first alert"
@@ -2605,8 +2605,8 @@ test_exited_declared_pause_is_bounded_but_live_gate_surfaces() {
     FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
   pid=$!
   wait_for_exit "$pid" 100 || fail "dead-agent declared pause did not alert on first sight"
-  grep -F "awaiting external" "$state/.wake-queue" >/dev/null \
-    || fail "dead-agent first-sight alert lost the declared-wait reason"
+  grep -F "stale: $window" "$state/.wake-queue" >/dev/null \
+    || fail "dead-agent first-sight alert was not queued"
   ack_stopped_cycle "$state" || fail "could not acknowledge the dead-agent first-sight alert"
 
   # Further sights stay quiet until the declaration's recheck is due.
