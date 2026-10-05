@@ -1598,7 +1598,7 @@ handle_paused_stale() {  # <window> <task> <hash>
   now=$(date +%s)
   age=$(( now - mtime ))
   last=$(status_declared_wait_line "$statusf")
-  min_age=$PAUSE_RESURFACE_SECS
+  min_age=0
   declaration="declared:$(fm_wake_signal_sig "$statusf" || true)"
   if status_is_captain_held "$last"; then
     if away_record_present; then
@@ -1726,7 +1726,7 @@ clear_pause_tracking() {  # <window-key>
 # A declaration keeps its bounded cadence unless authoritative state proves the crew
 # is working; its first stale sight still surfaces once for inspection.
 pause_state_class() {  # <window> <task>
-  local win=$1 task=$2 key last recheck_file class throttle_file
+  local win=$1 task=$2 key last recheck_file class throttle_file declaration
   key=$(window_key "$win")
   last=$(status_declared_wait_line "$STATE/$task.status")
   recheck_file="$STATE/.paused-rechecked-$key"
@@ -1735,7 +1735,11 @@ pause_state_class() {  # <window> <task>
     crew_absorb_class "$task"
     return
   fi
-  if [ -e "$STATE/.paused-$key" ] && [ "$(age_of "$recheck_file")" -lt "$STALE_ESCALATE_SECS" ]; then
+  throttle_file="$STATE/.paused-resurfaced-$key"
+  declaration=$(stale_wait_declaration "$task")
+  if [ -e "$STATE/.paused-$key" ] \
+    && [ "$(cat "$throttle_file" 2>/dev/null || true)" = "$declaration" ] \
+    && [ "$(age_of "$recheck_file")" -lt "$STALE_ESCALATE_SECS" ]; then
     printf 'paused'
     return
   fi
@@ -1747,9 +1751,8 @@ pause_state_class() {  # <window> <task>
   fi
   # Let the existing nonterminal stale path issue the one first-sight alert.
   # Once it records the pause, later sights use the bounded cadence below.
-  throttle_file="$STATE/.paused-resurfaced-$key"
   if [ ! -e "$STATE/.paused-$key" ] \
-    || [ "$(cat "$throttle_file" 2>/dev/null || true)" != "$(stale_wait_declaration "$task")" ]; then
+    || [ "$(cat "$throttle_file" 2>/dev/null || true)" != "$declaration" ]; then
     printf 'none'
     return
   fi
