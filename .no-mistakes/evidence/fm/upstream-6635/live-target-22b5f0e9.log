@@ -1,0 +1,113 @@
+
+== source root: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M46PNNZHXH7JCN2WESN7SMF9 @ 22b5f0e9
+
+== 1. create an undelivered pending reply, attempt delivery, run the watcher tick
+corr=2479caba13ba501e
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+-- blocked lines for the key: 1
+-- status_open_decisions: [pending-reply-2479caba13ba501e blocked pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport]
+-- record phase: escalated
+RESULT ok   - first loss appends one blocked line and opens the decision (blocked lines=1, decision open=yes)
+
+== 2. retry while the decision is still open (idempotent retry)
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+-- blocked lines for the key: 1
+-- status_open_decisions: [pending-reply-2479caba13ba501e blocked pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport]
+-- record phase: escalated
+RESULT ok   - a retry of an open decision appends nothing (blocked lines=1, decision open=yes)
+
+== 3. adversarial: a resolved line for ANOTHER key must not end this episode
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | needs-decision [key=scope]: narrow or wide?
+   | resolved [key=scope]: answered: narrow
+-- blocked lines for the key: 1
+-- status_open_decisions: [pending-reply-2479caba13ba501e blocked pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport]
+-- record phase: escalated
+RESULT ok   - a resolve for another key does not reopen the dedupe (blocked lines=1, decision open=yes)
+
+== 4. adversarial: a forged resolved line the reserved-key rule rejects must not end this episode
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | needs-decision [key=scope]: narrow or wide?
+   | resolved [key=scope]: answered: narrow
+   | resolved [key=pending-reply-2479caba13ba501e]: answered: looks fine
+-- blocked lines for the key: 1
+-- status_open_decisions: [pending-reply-2479caba13ba501e blocked pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport]
+-- record phase: escalated
+RESULT ok   - a rejected resolve neither closes nor allows a duplicate (blocked lines=1, decision open=yes)
+
+== 5. operator close: bin/fm-send.sh mate --resolve-key pending-reply-2479caba13ba501e
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.4sWpo7
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-send: doorbell not typed because the agent in primary:fm-mate has exited; the steer is durably recorded at /tmp/fm-lab.4sWpo7/state/mate.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+fm-send exit=0
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | needs-decision [key=scope]: narrow or wide?
+   | resolved [key=scope]: answered: narrow
+   | resolved [key=pending-reply-2479caba13ba501e]: answered: looks fine
+   | resolved [key=pending-reply-2479caba13ba501e] [at=1791226750]: pending-reply-resolved: task=mate pending-reply-id=2479caba13ba501e via=operator-resolve-key dismiss the unknown-delivery hold
+-- blocked lines for the key: 1
+-- status_open_decisions: []
+-- record phase: escalated
+RESULT ok   - the operator close closes the decision (blocked lines=1, decision open=no)
+
+== 6. second same-kind loss after the operator close
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | needs-decision [key=scope]: narrow or wide?
+   | resolved [key=scope]: answered: narrow
+   | resolved [key=pending-reply-2479caba13ba501e]: answered: looks fine
+   | resolved [key=pending-reply-2479caba13ba501e] [at=1791226750]: pending-reply-resolved: task=mate pending-reply-id=2479caba13ba501e via=operator-resolve-key dismiss the unknown-delivery hold
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226752]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+-- blocked lines for the key: 2
+-- status_open_decisions: [pending-reply-2479caba13ba501e blocked pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport]
+-- record phase: escalated
+RESULT ok   - a new escalation after the close appends and reopens the decision (blocked lines=2, decision open=yes)
+
+== 7. retry of the reopened decision
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | needs-decision [key=scope]: narrow or wide?
+   | resolved [key=scope]: answered: narrow
+   | resolved [key=pending-reply-2479caba13ba501e]: answered: looks fine
+   | resolved [key=pending-reply-2479caba13ba501e] [at=1791226750]: pending-reply-resolved: task=mate pending-reply-id=2479caba13ba501e via=operator-resolve-key dismiss the unknown-delivery hold
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226752]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | blocked [key=pending-reply-f6d60ee318743760] [at=1791226757]: pending-reply-missed: task=mate pending-reply-id=f6d60ee318743760 request=dismiss the unknown-delivery hold
+-- blocked lines for the key: 2
+-- status_open_decisions: [pending-reply-2479caba13ba501e blocked pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport;pending-reply-f6d60ee318743760 blocked pending-reply-missed: task=mate pending-reply-id=f6d60ee318743760 request=dismiss the unknown-delivery hold]
+-- record phase: escalated
+RESULT ok   - a retry of the reopened decision appends nothing (blocked lines=2, decision open=yes)
+
+== 8. second operator close, then a third loss
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.4sWpo7
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in primary:fm-mate has exited; the steer is durably recorded at /tmp/fm-lab.4sWpo7/state/mate.inbox/003.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+fm-send exit=0
+RESULT ok   - the second operator close closes the decision (blocked lines=2, decision open=no)
+-- status log (/tmp/fm-lab.4sWpo7/state/mate.status):
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226744]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | needs-decision [key=scope]: narrow or wide?
+   | resolved [key=scope]: answered: narrow
+   | resolved [key=pending-reply-2479caba13ba501e]: answered: looks fine
+   | resolved [key=pending-reply-2479caba13ba501e] [at=1791226750]: pending-reply-resolved: task=mate pending-reply-id=2479caba13ba501e via=operator-resolve-key dismiss the unknown-delivery hold
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226752]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+   | blocked [key=pending-reply-f6d60ee318743760] [at=1791226757]: pending-reply-missed: task=mate pending-reply-id=f6d60ee318743760 request=dismiss the unknown-delivery hold
+   | resolved [key=pending-reply-2479caba13ba501e] [at=1791226758]: pending-reply-resolved: task=mate pending-reply-id=2479caba13ba501e via=operator-resolve-key dismiss again
+   | blocked [key=pending-reply-2479caba13ba501e] [at=1791226760]: pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport
+-- blocked lines for the key: 3
+-- status_open_decisions: [pending-reply-f6d60ee318743760 blocked pending-reply-missed: task=mate pending-reply-id=f6d60ee318743760 request=dismiss the unknown-delivery hold;pending-reply-2479caba13ba501e blocked pending-reply-delivery-unknown: task=mate pending-reply-id=2479caba13ba501e request=wake after lost transport]
+-- record phase: escalated
+RESULT ok   - a third episode appends and reopens again (blocked lines=3, decision open=yes)
+
+== SUMMARY: 0 failed expectation(s)
+DRIVER-DONE fails=0
