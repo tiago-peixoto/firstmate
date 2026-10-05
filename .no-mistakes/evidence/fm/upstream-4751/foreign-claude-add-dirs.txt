@@ -1,0 +1,4 @@
+--add-dir '/tmp/fm-lab.TMGbza/state/operational-inbox'
+--add-dir '/tmp/fm-lab.TMGbza/state/skill-foreign.inbox'
+--add-dir '/tmp/fm-lab.TMGbza/data/skill-foreign'
+--add-dir '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M46H32NZJGJTWXDWWNHJCZTD/.agents/skills'

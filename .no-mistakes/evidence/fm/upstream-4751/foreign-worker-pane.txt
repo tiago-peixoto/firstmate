@@ -1,0 +1,73 @@
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/projects/foreign$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.2
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign$ cd -- '/tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign'
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign$ export GOTMPDIR=/tmp/fm-skill-foreign/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign$ export FM_TASK_ID=skill-foreign
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign$ . '/tmp/fm-skill-foreign+2aebd82c295ea1d5c06c4cdf924a1f001b9a844b8031f4bb08e930a5746923ab/launch.s1791221284.40
+12482.22913.sh'
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign
+
+
+❯ : Firstmate operational input waiting: read '/tmp/fm-lab.TMGbza/state/operational-inbox/1791221285-4b5840063121f104.msg' and handle its contents as Firstmate operational input.
+
+  Read 1 file (ctrl+o to expand)
+
+● Skill(firstmate-coding-guidelines)
+  ⎿  Initializing…
+  ⎿  Error: Unknown skill: firstmate-coding-guidelines
+
+● Bash(pwd; git rev-parse --show-toplevel; ls /tmp/fm-lab.TMGbza/state/skill-foreign.inbox/ 2>&1)
+  ⎿  /tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign
+     /tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign
+     handled
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(/tmp/fm-lab.TMGbza/data/skill-foreign/report.md)
+  ⎿  Wrote 74 lines to ../../../../../data/skill-foreign/report.md
+      1 # Probe: can a crewmate in the `foreign` worktree follow the `firstmate-coding-guidelines` instruction?
+      2
+      3 ## Conclusion
+      4
+      5 Yes, through the fallback path only.
+      6 The Skill tool did not resolve the skill name `firstmate-coding-guidelines` in this session.
+      7 The fallback file named by the worker role contract was readable with the Read tool on the first attempt.
+      8
+      9 ## What I did
+     … +66 lines (ctrl+o to expand)
+
+● Bash(echo "done [at=$(date +%s)]: Skill tool returned 'Unknown skill: firstmate-coding-guidelines'; fallback SKILL.md read with Read tool succeeded; report at /tmp/f…)
+  ⎿  done [at=1791221310]: Skill tool returned 'Unknown skill: firstmate-coding-guidelines'; fallback SKILL.md read with Read tool succeeded; report at /tmp/fm-lab.TMGbza/data/skill-foreign/repor
+     t.md
+
+● The instruction can be followed from this worktree, but only through the fallback path: the Skill tool did not resolve the name, and the fallback file was readable.
+
+  1. Skill tool: the call with firstmate-coding-guidelines failed with the exact text <tool_use_error>Unknown skill: firstmate-coding-guidelines</tool_use_error>.
+  2. Fallback read: following line 9 of the launch brief, I read /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M46H32NZJGJTWXDWWNHJCZTD/.agents/skills/firstmate-coding-guidelines/SKILL.md with
+     the Read tool. The first call returned all 135 lines with no denial and no hook feedback. I cannot observe a prompt that a human approves, so that is the limit of the evidence.
+  3. Frontmatter: the file has name: firstmate-coding-guidelines and description: >-, a folded value that begins "Agent-only reference for changing firstmate's shared, tracked material per AGENTS.md
+     section 1." The report quotes the full three-line value.
+  4. Location: pwd and git rev-parse --show-toplevel both printed /tmp/fm-lab.TMGbza/treehouse/.treehouse/foreign-251621/1/foreign.
+
+  I did not test why the name fails to resolve. The frontmatter carries user-invocable: false and metadata: internal: true, and the skill lives outside this project's worktree; either could be the
+  cause.
+
+  I edited no project file, and I skipped the completion gate of the captain-hold-lifecycle skill as the spec directed. The steering inbox held no waiting message.
+
+  The report is at /tmp/fm-lab.TMGbza/data/skill-foreign/report.md, and I appended the done line to /tmp/fm-lab.TMGbza/state/skill-foreign.status.
+
+✻ Sautéed for 29s · done 7:28 PM
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+

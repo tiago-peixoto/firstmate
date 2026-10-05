@@ -1,0 +1,70 @@
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/projects/fmrepo$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.2
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo$ cd -- '/tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo'
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo$ export GOTMPDIR=/tmp/fm-skill-fmrepo/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo$ export FM_TASK_ID=skill-fmrepo
+firstmate@firstmate-hz:/tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo$ . '/tmp/fm-skill-fmrepo+2aebd82c295ea1d5c06c4cdf924a1f001b9a844b8031f4bb08e930a5746923ab/launch.s1791221642.72516
+.9347.sh'
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo
+
+
+❯ : Firstmate operational input waiting: read '/tmp/fm-lab.TMGbza/state/operational-inbox/1791221642-dd09943e5c84d55e.msg' and handle its contents as Firstmate operational input.
+
+  Read 1 file (ctrl+o to expand)
+
+● Skill(firstmate-coding-guidelines)
+  ⎿  Successfully loaded skill
+
+● Bash(pwd; git rev-parse --show-toplevel; ls /tmp/fm-lab.TMGbza/state/skill-fmrepo.inbox/ 2>&1; ls -la .agents/skills/firstmate-coding-guidelines/ 2>&1; ls -la /home/…)
+  ⎿  /tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo
+     /tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo
+     handled
+     … +15 lines (ctrl+o to expand)
+
+● Write(/tmp/fm-lab.TMGbza/data/skill-fmrepo/report.md)
+  ⎿  Wrote 81 lines to ../../../../../data/skill-fmrepo/report.md
+      1 # Probe: can the `firstmate-coding-guidelines` skill instruction be followed from this Firstmate worktree
+      2
+      3 ## Conclusion
+      4
+      5 Yes.
+      6 The skill name `firstmate-coding-guidelines` resolved through the Skill tool in this session, and the tool loaded the content from this worktree's own copy.
+      7 The worker role contract therefore did not require the fallback file, and I did not read it.
+      8
+      9 ## Step 1 - Skill tool invocation
+     … +73 lines (ctrl+o to expand)
+
+● Bash(echo "done [at=$(date +%s)]: firstmate-coding-guidelines resolved via Skill tool from this worktree's .claude/skills; fallback file not required and not read; r…)
+  ⎿  Error: Exit code 2
+     done [at=1791221670]: firstmate-coding-guidelines resolved via Skill tool from this worktree's .claude/skills; fallback file not required and not read; report at
+     /tmp/fm-lab.TMGbza/data/skill-fmrepo/report.md
+     ls: cannot access '/tmp/fm-lab.TMGbza/state/skill-fmrepo.inbox/*.msg': No such file or directory
+
+● The instruction can be followed from this worktree: the skill name firstmate-coding-guidelines resolved through the Skill tool.
+
+  - Step 1: The Skill tool returned Launching skill: firstmate-coding-guidelines with no error, then delivered the full skill body.
+  - Step 2: The worker role contract requires the fallback file only if the skill name does not resolve. The name resolved, so the contract did not require the fallback file, and I did not read it.
+  - Step 3: The tool reported the load directory as /tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo/.claude/skills/firstmate-coding-guidelines. In this worktree .claude/skills is a
+    symlink to ../.agents/skills, so the content came from the worktree's own copy. Both pwd and git rev-parse --show-toplevel printed /tmp/fm-lab.TMGbza/treehouse/.treehouse/fmrepo-a122fa/1/fmrepo.
+
+  This probe did not exercise the fallback path, because the name resolved. The fallback SKILL.md exists and has the same size as the worktree copy (12579 bytes), but I did not compare their contents.
+
+  I edited no project file and skipped the captain-hold-lifecycle completion gate, as the brief instructed. The steering inbox held no unhandled messages. The done line is appended to
+  /tmp/fm-lab.TMGbza/state/skill-fmrepo.status, and the report is at /tmp/fm-lab.TMGbza/data/skill-fmrepo/report.md.
+
+✻ Baked for 31s · done 7:34 PM
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+
+
