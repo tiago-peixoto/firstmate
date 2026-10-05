@@ -1,0 +1,298 @@
+## Lab: FM_HOME=/tmp/fm-lab.1AKLOV, real bin/fm-spawn.sh typed into a real tmux pane on the private fm-lab socket, real treehouse pool, real tasks-axi backlog.
+## Worker launch command is the documented raw-launch escape hatch ('sleep 3600') so no paid agent runs.
+
+### S1 - no config/project-capacity: dispatch is uncapped
+(config/ listed above; no project-capacity file)
+(cap-a was already spawned the same way; its output is in live-s1a below)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+warning: /tmp/fm-lab.1AKLOV/data/cap-a/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-a
+notice: cap-a ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-a harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-cap-a worktree=/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+[exit 0]
+$ bin/fm-spawn.sh cap-b /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+warning: /tmp/fm-lab.1AKLOV/data/cap-b/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-b
+notice: cap-b ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-b harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-cap-b worktree=/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy
+[exit 0]
+--- state records:
+cap-a.meta
+cap-b.meta
+--- tmux windows:
+primary:bash bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+primary:fm-cap-a sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+primary:fm-cap-b sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy
+--- git worktrees:
+/tmp/fm-lab.1AKLOV/projects/heavy                            47eeee2 [main]
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy 47eeee2 (detached HEAD)
+--- backlog:
+# Backlog
+
+## In flight
+- [ ] cap-b - item for cap-b (kind: ship) (since 2026-10-05)
+- [ ] cap-a - item for cap-a (kind: ship) (since 2026-10-05)
+
+## Queued
+- [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05)
+## Done
+
+### S2 - declare 'heavy 2' with both places held: spawn cap-c is deferred
+config/project-capacity:
+# heavy suite serves two workers
+#
+heavy 2
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: project heavy admits 2 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 2 already hold a place (cap-a, cap-b); task cap-c was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+stderr line count: 3 ; lines starting 'deferred:': 1
+brief.md
+--- state records:
+cap-a.meta
+cap-b.meta
+--- tmux windows:
+primary:bash bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+primary:fm-cap-a sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+primary:fm-cap-b sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy
+--- git worktrees:
+/tmp/fm-lab.1AKLOV/projects/heavy                            47eeee2 [main]
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy 47eeee2 (detached HEAD)
+--- backlog:
+# Backlog
+
+## In flight
+- [ ] cap-b - item for cap-b (kind: ship) (since 2026-10-05)
+- [ ] cap-a - item for cap-a (kind: ship) (since 2026-10-05)
+
+## Queued
+- [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05)
+## Done
+
+### S3 - a malformed or unreadable declaration refuses the spawn (both places still held by cap-a, cap-b)
+
+#### capacity is not an integer
+config/project-capacity:
+  | heavy two
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.1AKLOV/config/project-capacity line 1 gives heavy a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+after: cap-c record: 0, cap-c windows: 0, backlog row: - [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05) [section: ## Queued]
+
+#### capacity of zero
+config/project-capacity:
+  | heavy 0
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.1AKLOV/config/project-capacity line 1 gives heavy a capacity that is not a positive integer); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+after: cap-c record: 0, cap-c windows: 0, backlog row: - [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05) [section: ## Queued]
+
+#### project named twice
+config/project-capacity:
+  | heavy 2
+  | heavy 3
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.1AKLOV/config/project-capacity line 2 names heavy a second time); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+after: cap-c record: 0, cap-c windows: 0, backlog row: - [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05) [section: ## Queued]
+
+#### another project's line is malformed (line with no name)
+config/project-capacity:
+  | other 2
+  | 7
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.1AKLOV/config/project-capacity line 2 is not '<project-name> <capacity>'); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+after: cap-c record: 0, cap-c windows: 0, backlog row: - [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05) [section: ## Queued]
+
+#### file is unreadable (mode 000)
+config/project-capacity:
+---------- 1 firstmate firstmate 8 Oct  5 16:57 /tmp/fm-lab.1AKLOV/config/project-capacity
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.1AKLOV/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+after: cap-c record: 0, cap-c windows: 0, backlog row: - [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05) [section: ## Queued]
+
+#### declaration path is a directory
+config/project-capacity:
+drwxrwxr-x 2 firstmate firstmate 40 Oct  5 16:57 /tmp/fm-lab.1AKLOV/config/project-capacity
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+error: spawn refused: the project capacity declaration is unreadable (/tmp/fm-lab.1AKLOV/config/project-capacity is not a readable regular file); fix it so the captain's worker limits are known (docs/configuration.md "Project capacity")
+[exit 1]
+after: cap-c record: 0, cap-c windows: 0, backlog row: - [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05) [section: ## Queued]
+
+### S4 - comment forms do not declare or break anything; cap stays at the real line
+
+#### '#', '# heavy 9', '#note', blank lines are comments; 'heavy 2' still caps -> deferred
+config/project-capacity:
+  | #
+  | # heavy 9
+  | #note-with-no-number
+  |    # indented heavy 9
+  | 
+  | heavy 2
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+deferred: project heavy admits 2 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 2 already hold a place (cap-a, cap-b); task cap-c was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+after: cap-c record: 0, cap-c windows: 0, backlog row: - [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05) [section: ## Queued]
+
+### S5 - a project whose name begins with '#', in a second clone of the same origin
+config/project-capacity:
+  | # two workers
+  | #repo 2
+(holders cap-a and cap-b run in the clone named 'heavy'; cap-d is spawned from the clone named '#repo' of the same origin)
+$ bin/fm-spawn.sh cap-d '/tmp/fm-lab.1AKLOV/projects/#repo' --mode local-only --yolo off --harness 'sleep 3600'
+deferred: project #repo admits 2 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 2 already hold a place (cap-a, cap-b); task cap-d was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+after: cap-d record: 0; backlog section of cap-d: ## Queued
+
+#### the same clone 'heavy' has no line under that name, so it is not capped by '#repo 2' (matching is by clone directory name)
+(not spawned here to keep the holder count; shown by S1-style admission below after raising #repo to 3)
+config/project-capacity:
+  | #repo 3
+$ bin/fm-spawn.sh cap-d '/tmp/fm-lab.1AKLOV/projects/#repo' --mode local-only --yolo off --harness 'sleep 3600'
+warning: /tmp/fm-lab.1AKLOV/data/cap-d/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-d
+notice: cap-d ships mode=local-only while the standing posture for #repo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-d harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-cap-d worktree=/tmp/fm-lab.1AKLOV/treehouse/.treehouse/#repo-1ac586/1/#repo
+[exit 0]
+--- state records:
+cap-a.meta
+cap-b.meta
+cap-d.meta
+--- tmux windows:
+primary:bash bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+primary:fm-cap-a sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+primary:fm-cap-b sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy
+primary:fm-cap-d sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/#repo-1ac586/1/#repo
+--- git worktrees:
+/tmp/fm-lab.1AKLOV/projects/heavy                            47eeee2 [main]
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy 47eeee2 (detached HEAD)
+--- backlog:
+# Backlog
+
+## In flight
+- [ ] cap-d - item for cap-d (kind: ship) (since 2026-10-05)
+- [ ] cap-b - item for cap-b (kind: ship) (since 2026-10-05)
+- [ ] cap-a - item for cap-a (kind: ship) (since 2026-10-05)
+
+## Queued
+- [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05)
+- [ ] cap-e - item for cap-e (kind: ship) (since 2026-10-05)
+## Done
+
+### S6 - 'heavy 3' with three holders (cap-a, cap-b in 'heavy'; cap-d in the '#repo' clone of the same origin)
+config/project-capacity:
+  | heavy 3
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+deferred: project heavy admits 3 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 3 already hold a place (cap-a, cap-b, cap-d); task cap-c was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+### S7 - a relaunch of a worker that already holds a place is not counted (project still full)
+cap-a pane after stopping its agent: fm-cap-a bash
+$ bin/fm-spawn.sh cap-a --relaunch --harness 'sleep 3600'
+warning: /tmp/fm-lab.1AKLOV/data/cap-a/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-a
+notice: cap-a ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-a harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-cap-a worktree=/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+[exit 0]
+cap-a pane after relaunch: fm-cap-a sleep
+
+### S8 - cleanup frees exactly one place
+$ bin/fm-teardown.sh cap-d
+teardown: reaping leaked worktree process(es) for cap-d: 493073 499040
+teardown: force-killing leaked worktree process(es) for cap-d: 493073
+A new version of treehouse is available: v2.3.0 → v3.1.2
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown cap-d complete (window primary:fm-cap-d, worktree /tmp/fm-lab.1AKLOV/treehouse/.treehouse/#repo-1ac586/1/#repo)
+Backlog: cap-d is closed in /tmp/fm-lab.1AKLOV/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+records now: cap-a.meta cap-b.meta 
+$ bin/fm-spawn.sh cap-c /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+warning: /tmp/fm-lab.1AKLOV/data/cap-c/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-c
+notice: cap-c ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-c harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-cap-c worktree=/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/3/heavy
+[exit 0]
+$ bin/fm-spawn.sh cap-e /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+deferred: project heavy admits 3 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 3 already hold a place (cap-a, cap-b, cap-c); task cap-e was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+### S9 - a recorded ready PR frees exactly one place
+$ bin/fm-pr-check.sh cap-b https://github.com/o/r/pull/7
+armed: state/cap-b.check.sh
+[exit 0]
+cap-b record pr line: pr=https://github.com/o/r/pull/7
+$ bin/fm-spawn.sh cap-e /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+warning: /tmp/fm-lab.1AKLOV/data/cap-e/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-e
+notice: cap-e ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned cap-e harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-cap-e worktree=/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy
+[exit 0]
+
+### S10 - capacity is shared with a local secondmate home (/tmp/fm-lab.1AKLOV/mate, registered in the root's data/secondmates.md; its own config/ has no declaration)
+mate config dir: (empty)
+$ env FM_HOME=/tmp/fm-lab.1AKLOV/mate bin/fm-spawn.sh mate-1 /tmp/fm-lab.1AKLOV/mate/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+deferred: project heavy admits 3 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 3 already hold a place (cap-a in /tmp/fm-lab.1AKLOV, cap-c in /tmp/fm-lab.1AKLOV, cap-e in /tmp/fm-lab.1AKLOV); task mate-1 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+mate records: 0; mate backlog section of mate-1: ## Queued
+$ bin/fm-teardown.sh cap-e
+teardown: reaping leaked worktree process(es) for cap-e: 586093 595840
+teardown: force-killing leaked worktree process(es) for cap-e: 586093
+
+🌳 Worktree returned to pool.
+teardown cap-e complete (window primary:fm-cap-e, worktree /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy)
+Backlog: cap-e is closed in /tmp/fm-lab.1AKLOV/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+$ env FM_HOME=/tmp/fm-lab.1AKLOV/mate bin/fm-spawn.sh mate-1 /tmp/fm-lab.1AKLOV/mate/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+warning: /tmp/fm-lab.1AKLOV/mate/data/mate-1/launch-brief.md records no ship branch; defaulting to legacy branch fm/mate-1
+notice: mate-1 ships mode=local-only while the standing posture for heavy is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned mate-1 harness=sleep kind=ship mode=local-only yolo=off window=primary:fm-mate-1 worktree=/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy
+[exit 0]
+(cap-e was closed by its teardown; a new queued item cap-f is dispatched from the root home)
+$ bin/fm-spawn.sh cap-f /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'
+deferred: project heavy admits 3 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 3 already hold a place (cap-a, cap-c, mate-1 in /tmp/fm-lab.1AKLOV/mate); task cap-f was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+[exit 75]
+
+### Final lab state
+--- state records:
+cap-a.meta
+cap-b.meta
+cap-c.meta
+--- tmux windows:
+primary:bash bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+primary:fm-cap-a sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+primary:fm-cap-b sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy
+primary:fm-cap-c sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/3/heavy
+primary:fm-mate-1 sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy
+--- git worktrees:
+/tmp/fm-lab.1AKLOV/projects/heavy                            47eeee2 [main]
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/3/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy 47eeee2 (detached HEAD)
+--- backlog:
+# Backlog
+
+## In flight
+- [ ] cap-c - item for cap-c (kind: ship) (since 2026-10-05)
+- [ ] cap-b - item for cap-b (kind: ship) (since 2026-10-05)
+- [ ] cap-a - item for cap-a (kind: ship) (since 2026-10-05)
+
+## Queued
+- [ ] cap-f - item for cap-f (kind: ship) (since 2026-10-05)
+## Done
+- [x] cap-e - item for cap-e (kind: ship) (done 2026-10-05)
+  local main
+- [x] cap-d - item for cap-d (kind: ship) (done 2026-10-05)
+  local main
+--- mate records:
+mate-1.meta

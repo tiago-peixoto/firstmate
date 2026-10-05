@@ -15,6 +15,6 @@ ok - an unreadable declaration refuses every fresh spawn rather than guessing th
 ok - a batch reports a capacity deferral as deferred, not failed
 ok - an Orca spawn takes the shared project lock whenever a same-origin clone is capped and defers before creating anything
 
-real	1m36.840s
-user	0m27.407s
-sys	0m40.967s
+real	1m22.836s
+user	0m25.700s
+sys	0m39.137s

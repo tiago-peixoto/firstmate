@@ -1,0 +1,194 @@
+## Real Claude primary (claude CLI, normal login) in the lab home on the private fm-lab tmux socket, session 'captain'. Pane capture:
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+❯ Captain here. This is a disposable lab home (FM_HOME=/tmp/fm-lab.1AKLOV). Lab rule for this whole session: every worker launch uses --harness 'sleep 3600' with --mode local-only
+  --yolo off, briefs are already written and must not be edited, and skip watcher repair. Item cap-f is queued in the backlog for project /tmp/fm-lab.1AKLOV/projects/heavy.
+  Dispatch it now with bin/fm-spawn.sh, then tell me in three lines what happened, what state the backlog item is in, and when you will try it again.
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; ls -la $FM_HOME $FM_HOME/data $FM_HOME/config $FM_HOME/state 2>&1 | head -60; cat $FM_HOME/data/backlog.md 2>&1 | head -40; c…)
+  ⎿  /tmp/fm-lab.1AKLOV:
+     total 12
+     drwx------   11 firstmate firstmate    280 Oct  5 16:58 .
+     … +126 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-spawn.sh cap-f /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'; echo "EXIT=$?";…)
+  ⎿  fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+     WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+     deferred: project heavy admits 3 worker(s) at once on this machine (/tmp/fm-lab.1AKLOV/config/project-capacity) and 3 already hold a place (cap-a, cap-c, mate-1 in /tmp/f
+     … +17 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, the worker for cap-f did not start: project heavy allows 3 workers at once on this machine, and 3 already hold a place (cap-a, cap-c, and the second mate's worker
+  mate-1), so bin/fm-spawn.sh deferred it with exit code 75.
+  The cap-f backlog item is unchanged and still under Queued, not blocked - I read data/backlog.md after the run, and no cap-f worker record was created.
+  I will dispatch cap-f again as soon as one of those three reports a ready branch or is cleaned up, and I re-check at every cleanup and fleet review; monitoring is down in this
+  lab and I left it unrepaired per your rule, so that re-check happens on my next turn rather than by automatic notification.
+✻ Cogitated for 17s · done 5:00 PM
+❯ cap-c is finished and nothing in it needs keeping. Clean up cap-c with bin/fm-teardown.sh, then carry on as your standing instructions say.
+● Skill(ship-landing)
+  ⎿  Successfully loaded skill
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-teardown.sh --help 2>&1 | head -40; echo ---; cat $FM_HOME/state/cap-c.meta)
+  ⎿  fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+     error: teardown refused: task record is not a regular file at /tmp/fm-lab.1AKLOV/state/--help.meta
+     ---
+     … +13 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-teardown.sh cap-c; echo "EXIT=$?"; echo ---; cat $FM_HOME/data/backlog.md; ls $FM_HOME/state | grep cap-c)
+  ⎿  fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+     WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+     teardown: reaping leaked worktree process(es) for cap-c: 549336 556179
+     … +25 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Standing instructions: re-evaluate queued work after every teardown. A place on heavy is now free, so cap-f goes again.
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-spawn.sh cap-f /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'; echo "EXIT=$?";…)
+  ⎿  fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+     WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+     warning: /tmp/fm-lab.1AKLOV/data/cap-f/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-f
+     … +34 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-tasks-axi.sh --help 2>&1 | head -30)
+  ⎿  fm-tasks-axi.sh - run tasks-axi against THIS home's backlog from any working directory.
+     Usage: fm-tasks-axi.sh [<tasks-axi command> [args...]]
+     … +27 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-tasks-axi.sh update --help 2>&1 | head -25; bin/fm-tasks-axi.sh show cap-f 2>&1 | head -20)
+  ⎿  usage: tasks-axi update <id> [flags]
+     aliases: edit
+     flags:
+     … +25 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-tasks-axi.sh update cap-f --body "Delivery: local-only, yolo off. Deviation from the standing no-mistakes posture for…)
+  ⎿  ok: updated cap-f (body)
+     task:
+       id: cap-f
+     … +23 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, cap-c is cleaned up and the cap-f worker is now running on project heavy.
+  - cap-c cleanup: bin/fm-teardown.sh cap-c exited 0 without any force flag, so its own landed-work check passed. It stopped two leftover processes, returned the isolated copy to
+    the pool, and moved cap-c to Done in the backlog.
+  - cap-f dispatch: my standing instructions say to re-evaluate queued work after every cleanup, and cap-c's place on heavy was now free. bin/fm-spawn.sh exited 0 this time and
+    moved cap-f from Queued to In flight. The Queued section is now empty.
+  - Delivery note: the launch warned that local-only is less rigor than heavy's standing no-mistakes setting. I proceeded on your lab rule and recorded that reason on the cap-f
+    backlog item.
+  - Branch warning: the launch also warned that cap-f's instructions name no branch, so it defaulted to fm/cap-f. I left the instructions unedited per your rule.
+  Heavy is at its limit of 3 again, and nothing else is queued. Monitoring is still down and unrepaired per your lab rule, so I will not get automatic notifications from cap-a,
+  cap-b or cap-f.
+✻ Churned for 45s · done 5:01 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Show me the current backlog and fleet state
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+
+## Lab state after the primary's second turn
+--- state records:
+cap-a.meta
+cap-b.meta
+cap-f.meta
+--- tmux windows:
+captain:claude claude /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+captain:fm-cap-f sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/3/heavy
+primary:bash bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+primary:fm-cap-a sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+primary:fm-cap-b sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy
+primary:fm-mate-1 sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy
+--- git worktrees:
+/tmp/fm-lab.1AKLOV/projects/heavy                            47eeee2 [main]
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/3/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy 47eeee2 (detached HEAD)
+--- backlog:
+# Backlog
+
+## In flight
+- [ ] cap-f - item for cap-f (kind: ship) (since 2026-10-05)
+  Delivery: local-only, yolo off. Deviation from the standing no-mistakes posture for heavy: explicit lab-session instruction that every worker launch uses local-only with yolo off.
+- [ ] cap-b - item for cap-b (kind: ship) (since 2026-10-05)
+- [ ] cap-a - item for cap-a (kind: ship) (since 2026-10-05)
+
+## Queued
+## Done
+- [x] cap-c - item for cap-c (kind: ship) (done 2026-10-05)
+  local main
+- [x] cap-e - item for cap-e (kind: ship) (done 2026-10-05)
+  local main
+- [x] cap-d - item for cap-d (kind: ship) (done 2026-10-05)
+  local main
+
+## Third turn: a recorded PR-ready handoff on a capped project. Pane capture:
+❯ Two things. I queued a new item cap-g for project heavy (brief already written). And worker cap-a just reported its pull request is ready: https://github.com/o/r/pull/9 - record
+  that handoff with bin/fm-pr-check.sh cap-a and that URL (skip any forge verification, this is a lab). Then carry on as your standing instructions say.
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; sed -n 1,60p bin/fm-pr-check.sh; echo ---; cat $FM_HOME/data/backlog.md; cat $FM_HOME/state/cap-a.meta; ls $FM_HOME/data/cap-…)
+  ⎿  #!/usr/bin/env bash
+     # Record a PR-ready task: store one validated canonical pr=<url> and the forge's
+     # exact pr_head=<sha> when available, then atomically arm a static merge poll.
+     … +89 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-pr-check.sh cap-a https://github.com/o/r/pull/9; echo "EXIT=$?"; cat $FM_HOME/state/cap-a.meta | grep -E '^pr')
+  ⎿  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+     armed: state/cap-a.check.sh
+     EXIT=0
+     … +2 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● The handoff is recorded. Heavy has a declared capacity, so my standing instructions call for re-evaluating the queue now: cap-a's recorded PR frees its place, and cap-g is the
+  queued candidate.
+● Bash(export FM_HOME=/tmp/fm-lab.1AKLOV; bin/fm-spawn.sh cap-g /tmp/fm-lab.1AKLOV/projects/heavy --mode local-only --yolo off --harness 'sleep 3600'; rc=$?; echo "EXI…)
+  ⎿  fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.1AKLOV
+     WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+     warning: /tmp/fm-lab.1AKLOV/data/cap-g/launch-brief.md records no ship branch; defaulting to legacy branch fm/cap-g
+     … +26 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, cap-a's ready PR is recorded and the cap-g worker is now running on project heavy.
+  - cap-a handoff: bin/fm-pr-check.sh cap-a exited 0 and stored https://github.com/o/r/pull/9 on cap-a's record, with merge monitoring registered for it. cap-a stays In flight in
+    the backlog until that PR merges, and merging it needs your word.
+  - cap-g dispatch: heavy has a declared limit of 3 workers, so my standing instructions call for re-evaluating the queue after a recorded ready PR. That record freed cap-a's
+    place, bin/fm-spawn.sh exited 0, and cap-g moved from Queued to In flight. The Queued section is empty.
+  - Same two warnings as cap-f: local-only is less rigor than heavy's standing no-mistakes setting, which I proceeded on under your lab rule and recorded on the cap-g item. The
+    instructions name no branch, so it defaulted to fm/cap-g, and I left them unedited.
+  Heavy is at its limit again. Monitoring is still down and unrepaired per your lab rule, so a merge of PR 9 will not notify me automatically.
+✻ Worked for 24s · done 5:02 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ I queued cap-h for heavy, dispatch it now
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+
+## Lab state after the third turn
+--- state records:
+cap-a.meta
+cap-b.meta
+cap-f.meta
+cap-g.meta
+--- tmux windows:
+captain:claude claude /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+captain:fm-cap-f sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/3/heavy
+captain:fm-cap-g sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/5/heavy
+primary:bash bash /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M468TAJ5H4QA2XF5A86T06ZW
+primary:fm-cap-a sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy
+primary:fm-cap-b sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy
+primary:fm-mate-1 sleep /tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy
+--- git worktrees:
+/tmp/fm-lab.1AKLOV/projects/heavy                            47eeee2 [main]
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/1/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/2/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/3/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/4/heavy 47eeee2 (detached HEAD)
+/tmp/fm-lab.1AKLOV/treehouse/.treehouse/heavy-1ac586/5/heavy 47eeee2 (detached HEAD)
+--- backlog:
+# Backlog
+
+## In flight
+- [ ] cap-g - item for cap-g (kind: ship) (since 2026-10-05)
+  Delivery: local-only, yolo off. Deviation from the standing no-mistakes posture for heavy: explicit lab-session instruction that every worker launch uses local-only with yolo off.
+- [ ] cap-f - item for cap-f (kind: ship) (since 2026-10-05)
+  Delivery: local-only, yolo off. Deviation from the standing no-mistakes posture for heavy: explicit lab-session instruction that every worker launch uses local-only with yolo off.
+- [ ] cap-b - item for cap-b (kind: ship) (since 2026-10-05)
+- [ ] cap-a - item for cap-a (kind: ship) (since 2026-10-05)
+
+## Queued
+## Done
+- [x] cap-c - item for cap-c (kind: ship) (done 2026-10-05)
+  local main
+- [x] cap-e - item for cap-e (kind: ship) (done 2026-10-05)
+  local main
+- [x] cap-d - item for cap-d (kind: ship) (done 2026-10-05)
+  local main
+cap-a pr line: pr=https://github.com/o/r/pull/9
