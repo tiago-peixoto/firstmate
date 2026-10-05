@@ -1,0 +1,34 @@
+### Scenario 5 (adversarial): picker text quoted in the transcript above a normal composer does not block a typed send
+--- pane before ---
+  Read 1 file (ctrl+o to expand)
+● Background work is running
+    The following will stop when you exit:
+    shell · sleep 900
+    ❯ 1. Exit and stop tasks
+      2. Move to background and exit
+      3. Stay
+    Enter to confirm · Esc to cancel
+✻ Worked for 3s · done 12:58 AM · 1 shell still running
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage
+$ bin/fm-send.sh lab:fm-t1 "Reply with the single word pong. Ignore the inbox."
+exit status: 0
+--- pane after ---
+  Read 1 file (ctrl+o to expand)
+● Background work is running
+    The following will stop when you exit:
+    shell · sleep 900
+    ❯ 1. Exit and stop tasks
+      2. Move to background and exit
+      3. Stay
+    Enter to confirm · Esc to cancel
+✻ Worked for 3s · done 12:58 AM · 1 shell still running
+❯ Reply with the single word pong. Ignore the inbox.
+● pong
+✻ Sautéed for 0s · done 12:59 AM · 1 shell still running
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage

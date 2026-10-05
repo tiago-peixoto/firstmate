@@ -1,0 +1,60 @@
+## Scenario 3: picker strings quoted in the transcript above a normal composer must not be read as a picker
+### operator presses Esc on the lab pane to close the picker
+### $ bin/fm-send.sh primary:fm-t1 '<ask Claude to print the picker lines verbatim>'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.5HZEE1
+exit status: 0
+
+### pane now (quoted picker text above an idle composer)
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.5HZEE1/wt
+❯ Use the Bash tool with run_in_background true to run: sleep 900. Then reply with the single word started.
+● Bash(sleep 900)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  Allowed by auto mode classifier
+● started
+✻ Brewed for 2s · done 12:47 AM · 1 shell still running
+❯ /exit
+❯ Reply with exactly these four lines verbatim, as plain text with no code fence, one per line, and nothing else:
+  "Background work is running" then "❯ 1. Exit and stop tasks" then "2. Move to background and exit" then "Enter to
+  confirm · Esc to cancel"
+● Background work is running
+  ❯ 1. Exit and stop tasks
+  2. Move to background and exit
+  Enter to confirm · Esc to cancel
+✻ Sautéed for 2s · done 12:48 AM · 1 shell still running
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage
+
+### $ bin/fm-send.sh primary:fm-t1 'Reply with the single word received.'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.5HZEE1
+exit status: 0
+
+### pane after
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.5HZEE1/wt
+❯ Use the Bash tool with run_in_background true to run: sleep 900. Then reply with the single word started.
+● Bash(sleep 900)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  Allowed by auto mode classifier
+● started
+✻ Brewed for 2s · done 12:47 AM · 1 shell still running
+❯ /exit
+❯ Reply with exactly these four lines verbatim, as plain text with no code fence, one per line, and nothing else:
+  "Background work is running" then "❯ 1. Exit and stop tasks" then "2. Move to background and exit" then "Enter to
+  confirm · Esc to cancel"
+● Background work is running
+  ❯ 1. Exit and stop tasks
+  2. Move to background and exit
+  Enter to confirm · Esc to cancel
+✻ Sautéed for 2s · done 12:48 AM · 1 shell still running
+❯ Reply with the single word received.
+● received
+✻ Worked for 0s · done 12:49 AM · 1 shell still running
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage

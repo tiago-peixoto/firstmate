@@ -1,0 +1,27 @@
+## Scenario 4: with no background work, fm-control exit still stops the real Claude agent (Claude started from a shell pane)
+### pane before
+bash-5.3$ claude --allowedTools Bash
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.5HZEE1/wt
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Try "fix typecheck errors"
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents                                               ◐ medium · /effort
+### pane process before: claude
+
+### $ bin/fm-control.sh t1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.5HZEE1
+stopped t1 harness=claude backend=tmux endpoint=primary:fm-t1 worktree=/tmp/fm-lab.5HZEE1/wt
+exit status: 0
+
+### pane after
+ ▝▝   ▝▝   /tmp/fm-lab.5HZEE1/wt
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  /exit                         Exit the CLI
+  /context                      Visualize current context usage as a colored grid
+  /usage-credits                Configure usage credits or request them from your admin when you hit a limit
+bash-5.3$
+### pane process after: bash

@@ -1,0 +1,16 @@
+### Baseline (base commit e5b9dddc): fm-control exit from an idle composer while a background shell runs
+--- pane before
+✻ Churned for 2s · done 12:38 AM · 1 shell still running
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage                                                                ◐ medium · /effort
+pane command: claude; background sleep: 877667 sleep 900
+--- $ <base>/bin/fm-control.sh t1 exit
+error: exit-delivered t1 interrupt=not-needed exit-command=delivered agent-state=missing exit=unconfirmed; the agent did not stop within 30s
+exit code: 1
+--- after
+fm-t2 bash
+pane command: bash; background sleep: none
+note: the fm-t1 window ran claude as its only command, so the window closed when Claude exited; the last 'pane command' line reads the remaining fm-t2 window. The background sleep 900 was killed.

@@ -1,0 +1,6 @@
+### Scenario 2: fm-control t1 exit while the picker is already open
+$ bin/fm-control.sh t1 exit
+error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it.
+exit status: 1
+pane unchanged: byte-identical before and after
+pane_current_command=claude pane_dead=0

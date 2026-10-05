@@ -1,0 +1,24 @@
+### Scenario 3: fm-send t1 <text> while the picker is open
+$ bin/fm-send.sh t1 "please report your status"
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.FLNH3e/state/t1.inbox/002.msg and the watcher will re-ring
+exit status: 0
+pane unchanged: byte-identical before and after (nothing typed, no Enter)
+--- pane tail ---
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+  shell · sleep 900
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+  Enter to confirm · Esc to cancel
+pane_current_command=claude pane_dead=0
+--- inbox ---
+/tmp/fm-lab.FLNH3e/state/t1.inbox:
+002.msg
+handled
+
+/tmp/fm-lab.FLNH3e/state/t1.inbox/handled:
+001.msg

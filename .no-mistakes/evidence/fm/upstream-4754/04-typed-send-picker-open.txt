@@ -1,0 +1,27 @@
+### Scenario 4: typed fm-send while the picker is open (typed plane: explicit endpoint, and a slash command to a task id)
+$ bin/fm-send.sh lab:fm-t1 please report your status
+error: blocked on a prompt: Claude background-task exit picker
+error: text not sent to lab:fm-t1 (tmux send failed; tried explicit target 'lab:fm-t1' matched /tmp/fm-lab.FLNH3e/state/t1.meta; backend=tmux)
+exit status: 1
+pane unchanged: byte-identical before and after (nothing typed, no Enter)
+pane_current_command=claude pane_dead=0
+
+$ bin/fm-send.sh t1 /status
+error: blocked on a prompt: Claude background-task exit picker
+error: text not sent to lab:fm-t1 (tmux send failed; tried meta=/tmp/fm-lab.FLNH3e/state/t1.meta; backend=from-meta)
+exit status: 1
+pane unchanged: byte-identical before and after (nothing typed, no Enter)
+pane_current_command=claude pane_dead=0
+
+--- pane tail ---
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+  shell · sleep 900
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+  Enter to confirm · Esc to cancel
+--- leftover dialog temp files ---
+ls: cannot access '/tmp/fm-composer-dialog.*': No such file or directory

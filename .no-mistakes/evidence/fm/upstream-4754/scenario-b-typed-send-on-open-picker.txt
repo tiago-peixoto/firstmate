@@ -1,0 +1,39 @@
+### Scenario B: typed fm-send while the exit picker is open
+--- $ bin/fm-send.sh t1 /status
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.00dDYR
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  2 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: blocked on a prompt: Claude background-task exit picker
+error: text not sent to fmses:fm-t1 (tmux send failed; tried meta=/tmp/fm-lab.00dDYR/state/t1.meta; backend=from-meta)
+exit code: 1
+--- $ bin/fm-send.sh fmses:fm-t1 'please continue'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.00dDYR
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: blocked on a prompt: Claude background-task exit picker
+error: text not sent to fmses:fm-t1 (tmux send failed; tried explicit target 'fmses:fm-t1' matched /tmp/fm-lab.00dDYR/state/t1.meta; backend=tmux)
+exit code: 1
+--- pane is byte-identical after both refusals
+--- pane after
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.00dDYR/wt-t1
+❯ Run the shell command sleep 900 with run_in_background true, then reply with just: started
+● Bash(sleep 900)
+  ⎿  Running in the background (↓ to manage)
+● started
+✻ Churned for 2s · done 12:38 AM · 1 shell still running
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+  shell · sleep 900
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+  Enter to confirm · Esc to cancel
+pane command: claude; background sleep: 877667 sleep 900

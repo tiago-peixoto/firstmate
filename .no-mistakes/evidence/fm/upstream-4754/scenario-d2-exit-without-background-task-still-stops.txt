@@ -1,0 +1,39 @@
+### Scenario D2 (control): fm-control exit with no background task, picker text quoted in the transcript
+--- pane before
+firstmate@firstmate-hz:/tmp/fm-lab.00dDYR/wt-t2$ claude
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.00dDYR/wt-t2
+! cat picker.txt
+  ⎿    Background work is running
+       The following will stop when you exit:
+       shell · sleep 900
+       ❯ 1. Exit and stop tasks
+         2. Move to background and exit
+         3. Stay
+       Enter to confirm · Esc to cancel
+● picker.txt holds a capture of the Claude Code exit dialog, the prompt that appears when you exit while a background task is still running.
+  It shows one background shell task (sleep 900) and three choices, with the cursor on the first:
+  1. Exit and stop tasks
+  2. Move to background and exit
+  3. Stay
+  The file is untracked on branch task-t2, and nothing else in the repository has changed since the init commit.
+  Tell me what you want done with this file, for example checking the dialog text against expected wording or committing the file.
+✻ Churned for 4s · done 12:41 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+pane command: claude; background sleep: 877667 sleep 900
+--- $ bin/fm-control.sh t2 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.00dDYR
+stopped t2 harness=claude backend=tmux endpoint=fmses:fm-t2 worktree=/tmp/fm-lab.00dDYR/wt-t2
+exit code: 0
+--- pane after exit
+  /exit                         Exit the CLI
+  /context                      Visualize current context usage as a colored grid
+  /usage-credits                Configure usage credits or request them from your admin when you hit a limit
+Resume this session with:
+claude --resume 610b7d73-5f24-4fa3-897b-4d29a5fa0021
+firstmate@firstmate-hz:/tmp/fm-lab.00dDYR/wt-t2$
+pane command: bash; background sleep: 877667 sleep 900

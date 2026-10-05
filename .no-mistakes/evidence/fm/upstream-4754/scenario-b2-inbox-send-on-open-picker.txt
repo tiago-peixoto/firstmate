@@ -1,0 +1,10 @@
+### Scenario B2: inbox-plane fm-send (durable record plus doorbell) while the exit picker is open
+--- $ bin/fm-send.sh t1 'please keep going'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.00dDYR
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.00dDYR/state/t1.inbox/001.msg and the watcher will re-ring
+exit code: 0
+--- pane is byte-identical after the send
+pane command: claude; background sleep: 877667 sleep 900
+--- inbox
+state/t1.inbox/001.msg

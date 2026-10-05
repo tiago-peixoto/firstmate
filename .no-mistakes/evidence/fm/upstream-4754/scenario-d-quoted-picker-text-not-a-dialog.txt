@@ -1,0 +1,54 @@
+### Scenario D (adversarial): the picker text is only quoted in the transcript above a normal composer
+--- pane before
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.00dDYR/wt-t2
+! cat picker.txt
+  ⎿    Background work is running
+       The following will stop when you exit:
+       shell · sleep 900
+       ❯ 1. Exit and stop tasks
+         2. Move to background and exit
+         3. Stay
+       Enter to confirm · Esc to cancel
+● picker.txt holds a capture of the Claude Code exit prompt, the dialog that appears when you exit while a background task is still running.
+  Here the background task is a shell running sleep 900.
+  The three options mean:
+  1. Exit and stop tasks - Claude Code exits and kills the sleep 900 shell.
+  2.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · esc to interrupt · ← for agents
+                                      tmux focus-events off · add 'set -g focus-events on' to ~/.tmux.conf and reattach for focus tracking
+--- $ bin/fm-send.sh fmses:fm-t2 'Reply with exactly: pong'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.00dDYR
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+exit code: 0
+--- pane after the typed send
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.00dDYR/wt-t2
+! cat picker.txt
+  ⎿    Background work is running
+       The following will stop when you exit:
+       shell · sleep 900
+       ❯ 1. Exit and stop tasks
+         2. Move to background and exit
+         3. Stay
+       Enter to confirm · Esc to cancel
+● picker.txt holds a capture of the Claude Code exit prompt, the dialog that appears when you exit while a background task is still running.
+  Here the background task is a shell running sleep 900.
+  The three options mean:
+  1. Exit and stop tasks - Claude Code exits and kills the sleep 900 shell.
+  2. Move to background and exit - Claude Code exits, and the session, including the shell, continues to run in the background.
+  3. Stay - Claude Code cancels the exit and the session continues.
+  You did not include a request with the file, and I ran nothing. Tell me what you want me to do with this capture.
+✻ Cooked for 4s · done 12:40 AM
+❯ Reply with exactly: pong
+● pong
+✻ Baked for 0s · done 12:40 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

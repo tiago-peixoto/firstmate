@@ -1,0 +1,8 @@
+### Herdr live attempt: bin/fm-herdr-lab.sh provision refused
+fm-herdr-lab: fleet-state tripwire requires exactly one running default session
+provision failed
+fm-herdr-lab: missing fleet-state tripwire for 'fm-lab-exitpicker-1152794-7433'; refusing destructive calls
+--- $ herdr session list
+name                 status   directory                                        socket
+default              stopped  /home/firstmate/.config/herdr                    /home/firstmate/.config/herdr/herdr.sock
+fm-remote            running  /home/firstmate/.config/herdr/sessions/fm-remote /home/firstmate/.config/herdr/sessions/fm-remote/herdr.sock

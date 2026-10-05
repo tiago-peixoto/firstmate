@@ -1,0 +1,18 @@
+### Baseline: the same command from base commit e5b9dddc (before the fix), same worker state
+$ <base e5b9dddc>/bin/fm-control.sh t1 exit
+stopped t1 harness=claude backend=tmux endpoint=lab:fm-t1 worktree=/tmp/fm-lab.FLNH3e/wt-t1
+exit status: 0
+fm_backend_agent_state: dead
+--- pane ---
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+  shell · sleep 900
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+  Enter to confirm · Esc to cancel
+Resume this session with:
+claude --resume 100bca15-8748-4184-a9f8-fc045dcec98f
+bash-5.3$

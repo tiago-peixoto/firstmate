@@ -1,0 +1,7 @@
+### Herdr live path: lab could not be provisioned on this host (2026-10-06, target 4bdc121b)
+$ bin/fm-herdr-lab.sh prepare fm-lab-t4754-1814424-1202
+fm-herdr-lab: fleet-state tripwire requires exactly one running default session
+$ bin/fm-herdr-lab.sh provision fm-lab-t4754-1814424-1202
+fm-herdr-lab: fleet-state tripwire requires exactly one running default session
+$ herdr session list --json
+{"sessions":[{"default":true,"name":"default","running":false,...},{"default":false,"name":"fm-remote","running":true,...}]}

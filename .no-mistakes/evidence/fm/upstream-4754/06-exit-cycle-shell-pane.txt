@@ -1,0 +1,39 @@
+### Scenario 6: full operator cycle on a Claude worker running inside a shell pane (the way a real worker runs)
+## 6a. exit with a background shell running: refused, agent still alive
+$ bin/fm-control.sh t1 exit
+error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it.
+exit status: 1
+fm_backend_agent_state: alive
+--- pane ---
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+  shell · sleep 900
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+  Enter to confirm · Esc to cancel
+
+## 6b. operator presses Esc, worker stops its background shell, exit now stops the agent
+fm-send (stop the shell) exit status: 0
+--- pane before exit ---
+● Stop Task
+  ⎿  sleep 900 · stopped
+● stopped
+✻ Baked for 3s · done 1:02 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+$ bin/fm-control.sh t1 exit
+stopped t1 harness=claude backend=tmux endpoint=lab:fm-t1 worktree=/tmp/fm-lab.FLNH3e/wt-t1
+exit status: 0
+fm_backend_agent_state: dead
+--- pane after exit ---
+  /exit                         Exit the CLI
+  /context                      Visualize current context usage as a colored grid
+  /usage-credits                Configure usage credits or request them from your admin when you hit a limit
+Resume this session with:
+claude --resume 87f08770-50a4-4136-b908-1125dc257b3a
+bash-5.3$

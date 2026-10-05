@@ -1,0 +1,49 @@
+## Scenario 2: picker already open on the real Claude pane
+### $ bin/fm-control.sh t1 exit   (second call, picker already on screen)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.5HZEE1
+error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it.
+exit status: 1
+
+### $ bin/fm-send.sh t1 '/status'   (typed plane)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.5HZEE1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: blocked on a prompt: Claude background-task exit picker
+error: text not sent to primary:fm-t1 (tmux send failed; tried meta=/tmp/fm-lab.5HZEE1/state/t1.meta; backend=from-meta)
+exit status: 1
+
+### $ bin/fm-send.sh primary:fm-t1 'hello typed steer'   (explicit backend target, typed plane)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.5HZEE1
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: blocked on a prompt: Claude background-task exit picker
+error: text not sent to primary:fm-t1 (tmux send failed; tried explicit target 'primary:fm-t1' matched /tmp/fm-lab.5HZEE1/state/t1.meta; backend=tmux)
+exit status: 1
+
+pane sha256 before: e940ca409cb1ac8974d0280a0a7ab9e61bf0b0d34de19c53a9dcf674df057f37  -
+pane sha256 after:  e940ca409cb1ac8974d0280a0a7ab9e61bf0b0d34de19c53a9dcf674df057f37  -
+### pane after
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.5HZEE1/wt
+❯ Use the Bash tool with run_in_background true to run: sleep 900. Then reply with the single word started.
+● Bash(sleep 900)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  Allowed by auto mode classifier
+● started
+✻ Brewed for 2s · done 12:47 AM · 1 shell still running
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+  shell · sleep 900
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+  Enter to confirm · Esc to cancel
+### pane process: claude
+### background shell: 1 process(es) running 'sleep 900'
