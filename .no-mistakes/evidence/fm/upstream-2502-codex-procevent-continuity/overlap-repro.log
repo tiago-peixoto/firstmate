@@ -1,0 +1,44 @@
+d61bcad6b4e8a63a4b550996823a209f23e2d60f
+round 1: supervisors=1 pids=[2144408 ] lock pid=2144408
+round 2: supervisors=1 pids=[2148949 ] lock pid=2148949
+round 3: supervisors=1 pids=[2153327 ] lock pid=2153327
+round 4: supervisors=1 pids=[2156949 ] lock pid=2156949
+round 5: supervisors=1 pids=[2160404 ] lock pid=2160404
+round 6: supervisors=1 pids=[2164858 ] lock pid=2164858
+round 7: supervisors=1 pids=[2169478 ] lock pid=2169478
+round 8: supervisors=1 pids=[2174347 ] lock pid=2174347
+round 9: supervisors=1 pids=[2179690 ] lock pid=2179690
+round 10: supervisors=1 pids=[2185560 ] lock pid=2185560
+round 11: supervisors=1 pids=[2190665 ] lock pid=2190665
+round 12: supervisors=1 pids=[2195248 ] lock pid=2195248
+round 13: supervisors=1 pids=[2198844 ] lock pid=2198844
+round 14: supervisors=1 pids=[2202909 ] lock pid=2202909
+round 15: supervisors=1 pids=[2207043 ] lock pid=2207043
+round 16: supervisors=1 pids=[2212416 ] lock pid=2212416
+round 17: supervisors=1 pids=[2217673 ] lock pid=2217673
+round 18: supervisors=1 pids=[2222392 ] lock pid=2222392
+round 19: supervisors=1 pids=[2225773 ] lock pid=2225773
+round 20: supervisors=1 pids=[2228856 ] lock pid=2228856
+round 21: supervisors=1 pids=[2232292 ] lock pid=2232292
+round 22: supervisors=1 pids=[2236503 ] lock pid=2236503
+round 23: supervisors=1 pids=[2241378 ] lock pid=2241378
+round 24: supervisors=1 pids=[2247646 ] lock pid=2247646
+round 25: supervisors=1 pids=[2253749 ] lock pid=2253749
+round 26: supervisors=1 pids=[2259042 ] lock pid=2259042
+round 27: supervisors=1 pids=[2264011 ] lock pid=2264011
+round 28: supervisors=1 pids=[2266925 ] lock pid=2266925
+round 29: supervisors=1 pids=[2270111 ] lock pid=2270111
+round 30: supervisors=1 pids=[2272721 ] lock pid=2272721
+round 31: supervisors=1 pids=[2275876 ] lock pid=2275876
+round 32: supervisors=1 pids=[2280062 ] lock pid=2280062
+round 33: supervisors=1 pids=[2283943 ] lock pid=2283943
+round 34: supervisors=1 pids=[2287119 ] lock pid=2287119
+round 35: supervisors=1 pids=[2289908 ] lock pid=2289908
+round 36: supervisors=1 pids=[2293066 ] lock pid=2293066
+round 37: supervisors=1 pids=[2299299 ] lock pid=2299299
+round 38: supervisors=1 pids=[2303905 ] lock pid=2303905
+round 39: supervisors=1 pids=[2308168 ] lock pid=2308168
+round 40: supervisors=1 pids=[2311401 ] lock pid=2311401
+rounds with more than one supervisor: 0 of 40
+lock dir created but `starting` not yet written, then one Stop: supervisors started=1 (lock pid=2313739)
+exit=0

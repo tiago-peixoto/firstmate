@@ -1,0 +1,24 @@
+d61bcad6b4e8a63a4b550996823a209f23e2d60f
+== A. six allowing Stops fired at once by the lock-owning session start exactly one supervisor (finding 2)
+supervisor processes for this home: 1 (pids: 2543300 ); lock pid: 2543300; starting file present: no
+PASS A
+arm.out: watcher: started pid=2543334 (beacon fresh)|
+== B. a second session that does not own state/.lock runs a checkpoint and an allowing Stop (finding 1)
+non-owner checkpoint rc=124 output: checkpoint: no actionable wake within 2s
+supervisor pid before=2543300 after=2543300; watcher pid before=2543334 after=2543334; supervisors for home: 1; session lock still 2545447: yes
+PASS B
+== C. owner's checkpoint takes over, supervisor attaches to that watcher, then the Codex owner exits (finding 3)
+settling checkpoint 1 rc=0: check: rearm-resurface|
+settling checkpoint 2 rc=124: checkpoint: no actionable wake within 2s|
+owner checkpoint stopped supervisor 2543300 (alive now: no); checkpoint watcher pid=2554436
+supervisor 2555031 arm.out: watcher: attached pid=2554436 (beacon 0s)|
+just before owner exit: checkpoint watcher 2554436 alive: yes; checkpoint still running: yes
+after owner exit: checkpoint still running: yes; supervisor lock present: no; checkpoint watcher 2554436 alive: yes; watch lock pid: 2554436
+PASS C
+checkpoint finished rc=124: checkpoint: no actionable wake within 20s
+== D. host-opted home (config/supervision-host) starts no idle supervisor (scope)
+with config/supervision-host: lock present: no; supervisors: 0
+after removing config/supervision-host: supervisor up: yes
+PASS D
+leftover supervisors for home: 0
+exit=0
