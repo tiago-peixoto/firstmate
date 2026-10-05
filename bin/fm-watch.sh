@@ -1726,7 +1726,7 @@ clear_pause_tracking() {  # <window-key>
 # A declaration keeps its bounded cadence unless authoritative state proves the crew
 # is working; its first stale sight still surfaces once for inspection.
 pause_state_class() {  # <window> <task>
-  local win=$1 task=$2 key last recheck_file class
+  local win=$1 task=$2 key last recheck_file class throttle_file
   key=$(window_key "$win")
   last=$(status_declared_wait_line "$STATE/$task.status")
   recheck_file="$STATE/.paused-rechecked-$key"
@@ -1747,7 +1747,9 @@ pause_state_class() {  # <window> <task>
   fi
   # Let the existing nonterminal stale path issue the one first-sight alert.
   # Once it records the pause, later sights use the bounded cadence below.
-  if [ ! -e "$STATE/.paused-$key" ]; then
+  throttle_file="$STATE/.paused-resurfaced-$key"
+  if [ ! -e "$STATE/.paused-$key" ] \
+    || [ "$(cat "$throttle_file" 2>/dev/null || true)" != "$(stale_wait_declaration "$task")" ]; then
     printf 'none'
     return
   fi
