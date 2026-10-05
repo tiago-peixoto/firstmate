@@ -1,0 +1,39 @@
+### 6. Flag removed (config/: startup-memory-budget ). Session 4 = a third real Claude Code primary; C=95e3943ebef1546a is still escalated and open.
+### token: 889519:7d0246f9-fa07-4472-8c44-86b91d0f1223
+### WAKE QUEUE section of the digest:
+WAKE QUEUE
+--------------------------------------------------------------------------------
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+### wake queue bytes: 0
+--- record 95e3943ebef1546a
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=799609:28eb854d-f4da-4fa2-84ee-22e33ad69741
+### bearings decisions_open:
+[]
+### primary pane:
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M460XVN2AF27NQ7BAG6DBRDE
+❯ Run exactly this one command and nothing else, then quote verbatim what it prints: bin/fm-session-start.sh > "$FM_HOME/session4-start.txt" 2>&1; sed -n "/WAKE QUEUE/,/SUPERVISION/p" "$FM_HOME/session4-start.txt" |
+  head -40
+● Bash(bin/fm-session-start.sh > "$FM_HOME/session4-start.txt" 2>&1; sed -n "/WAKE QUEUE/,/SUPERVISION/p" "$FM_HOME/session4-start.txt" | head -40)
+  ⎿  WAKE QUEUE
+     --------------------------------------------------------------------------------
+     WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+     … +2 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, the command ran once and printed exactly this:
+  WAKE QUEUE
+  --------------------------------------------------------------------------------
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  ================================================================================
+  SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+  I ran nothing else, so I did not act on the warning or read the rest of the saved output in $FM_HOME/session4-start.txt.
+✻ Churned for 13s · done 2:44 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ show the full session4-start.txt
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

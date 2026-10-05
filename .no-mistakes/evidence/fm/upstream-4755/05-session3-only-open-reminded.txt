@@ -1,0 +1,59 @@
+### 5. Session 3 = a second real Claude Code primary (new process, new session id). It ran bin/fm-session-start.sh.
+A=e3f6d6bf7b143dd3 (operator closed) B=b285c54ba1a1ef7f (reply arrived) C=95e3943ebef1546a (still open, plus an unkeyed 'resolved:' line)
+### token: 799609:28eb854d-f4da-4fa2-84ee-22e33ad69741
+### WAKE QUEUE section of the digest:
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1791204165	2	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=95e3943ebef1546a request=list the open invoices;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 838964.1791204165.PetQEZ
+UNREAD STATUS (new since last drain, not re-printed after this presentation):
+mate resolved [key=pending-reply-e3f6d6bf7b143dd3] [at=1791204119]: pending-reply-resolved: task=mate pending-reply-id=e3f6d6bf7b143dd3 via=operator-resolve-key ack, handled out of band
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+--- record e3f6d6bf7b143dd3
+phase=escalated
+surfaced_session=664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959
+escalation_dismissed_epoch=1791204122
+--- record b285c54ba1a1ef7f
+surfaced_session=664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959
+escalation_dismissed_epoch=
+phase=resolved
+--- record 95e3943ebef1546a
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=799609:28eb854d-f4da-4fa2-84ee-22e33ad69741
+### bearings decisions_open:
+[{"id":"mate","key":"pending-reply-95e3943ebef1546a","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=95e3943ebef1546a request=list the open invoices","owner":"(main)"}]
+### count of blocked lines per key in the status log (no second status line):
+1
+### primary pane:
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M460XVN2AF27NQ7BAG6DBRDE
+❯ Run exactly this one command and nothing else, then quote verbatim what it prints: bin/fm-session-start.sh > "$FM_HOME/session3-start.txt" 2>&1; sed -n "/WAKE QUEUE/,/SUPERVISION/p" "$FM_HOME/session3-start.txt" |
+  head -40
+● Bash(bin/fm-session-start.sh > "$FM_HOME/session3-start.txt" 2>&1; sed -n "/WAKE QUEUE/,/SUPERVISION/p" "$FM_HOME/session3-start.txt" | head -40)
+  ⎿  WAKE QUEUE
+     --------------------------------------------------------------------------------
+     1791204165 2       check   pending-reply-escalated pending-reply-escalated: task=mate pending-reply-id=95e3943ebef1546a request=list the open invoices;
+     … +7 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, the command printed exactly this:
+  WAKE QUEUE
+  --------------------------------------------------------------------------------
+  1791204165    2       check   pending-reply-escalated pending-reply-escalated: task=mate pending-reply-id=95e3943ebef1546a request=list the open invoices;
+  WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 838964.1791204165.PetQEZ
+  UNREAD STATUS (new since last drain, not re-printed after this presentation):
+  mate resolved [key=pending-reply-e3f6d6bf7b143dd3] [at=1791204119]: pending-reply-resolved: task=mate pending-reply-id=e3f6d6bf7b143dd3 via=operator-resolve-key ack, handled out of band
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  ================================================================================
+  SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+  I ran only that one command, as instructed, so I did not handle the queued notification, acknowledge it, or repair the monitoring that the output reports as down.
+✻ Baked for 15s · done 2:42 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ handle the queued wake and ack it
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

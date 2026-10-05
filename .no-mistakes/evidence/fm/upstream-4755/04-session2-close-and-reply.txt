@@ -1,0 +1,37 @@
+### 4. Still session 2 (token 664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959). Wake acked; second session start and a watcher-style tick add no wake:
+tick rc=0
+wake queue bytes: 0
+### escalate B and C in session 2
+A=e3f6d6bf7b143dd3 B=b285c54ba1a1ef7f C=95e3943ebef1546a
+### operator closes A with the keyed close:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.OLEmPi
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send rc=0
+### correlated reply arrives for B:
+tick rc=0
+### adversarial: an unkeyed resolved line, which must NOT dismiss C:
+### status log:
+blocked [key=pending-reply-e3f6d6bf7b143dd3] [at=1791203931]: pending-reply-missed: task=mate pending-reply-id=e3f6d6bf7b143dd3 request=send the weekly report
+blocked [key=pending-reply-b285c54ba1a1ef7f] [at=1791204118]: pending-reply-missed: task=mate pending-reply-id=b285c54ba1a1ef7f request=confirm the deploy window
+blocked [key=pending-reply-95e3943ebef1546a] [at=1791204118]: pending-reply-missed: task=mate pending-reply-id=95e3943ebef1546a request=list the open invoices
+resolved [key=pending-reply-e3f6d6bf7b143dd3] [at=1791204119]: pending-reply-resolved: task=mate pending-reply-id=e3f6d6bf7b143dd3 via=operator-resolve-key ack, handled out of band
+done [corr=b285c54ba1a1ef7f]: deploy window confirmed
+resolved: looked at it
+--- record e3f6d6bf7b143dd3
+resolved_via=
+phase=escalated
+surfaced_session=664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959
+escalation_dismissed_epoch=1791204122
+--- record b285c54ba1a1ef7f
+surfaced_session=664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959
+escalation_dismissed_epoch=
+phase=resolved
+resolved_via=status
+--- record 95e3943ebef1546a
+resolved_via=
+phase=escalated
+surfaced_session=664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959
+escalation_dismissed_epoch=
+### wake queue:
+### bearings decisions_open:
+{"id":"mate","key":"pending-reply-95e3943ebef1546a","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=95e3943ebef1546a request=list the open invoices","owner":"(main)"}

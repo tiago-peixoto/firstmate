@@ -1,0 +1,52 @@
+### 3. Session 2 = a real Claude Code primary on the lab tmux socket (FM_HOME=/tmp/fm-lab.OLEmPi). It ran bin/fm-session-start.sh.
+### lock + token:
+664221
+664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959
+### record A:
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=664221:3c3874bf-3b4f-4fc2-98bf-8dd94502b959
+### WAKE QUEUE section of the session-start digest (session2-start.txt):
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1791204031	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=e3f6d6bf7b143dd3 request=send the weekly report;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 711645.1791204031.8zPpfM
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-e3f6d6bf7b143dd3] blocked: pending-reply-missed: task=mate pending-reply-id=e3f6d6bf7b143dd3 request=send the weekly report
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+### status log still has one escalation line:
+blocked [key=pending-reply-e3f6d6bf7b143dd3] [at=1791203931]: pending-reply-missed: task=mate pending-reply-id=e3f6d6bf7b143dd3 request=send the weekly report
+### primary pane:
+ ▐▛███▛█   Claude Code v2.1.289
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M460XVN2AF27NQ7BAG6DBRDE
+❯ Run exactly this one command and nothing else, then quote verbatim the WAKE QUEUE section of its output: bin/fm-session-start.sh > "$FM_HOME/session2-start.txt" 2>&1; sed -n "/WAKE QUEUE/,/SUPERVISION/p"
+  "$FM_HOME/session2-start.txt" | head -40
+● Bash(bin/fm-session-start.sh > "$FM_HOME/session2-start.txt" 2>&1; sed -n "/WAKE QUEUE/,/SUPERVISION/p" "$FM_HOME/session2-start.txt" | head -40)
+  ⎿  WAKE QUEUE
+     --------------------------------------------------------------------------------
+     1791204031 1       check   pending-reply-escalated pending-reply-escalated: task=mate pending-reply-id=e3f6d6bf7b143dd3 request=send the weekly report;
+     … +8 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, I ran that one command and nothing else. Here is the WAKE QUEUE section of its output, verbatim:
+  WAKE QUEUE
+  --------------------------------------------------------------------------------
+  1791204031    1       check   pending-reply-escalated pending-reply-escalated: task=mate pending-reply-id=e3f6d6bf7b143dd3 request=send the weekly report;
+  WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 711645.1791204031.8zPpfM
+  OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  mate [key=pending-reply-e3f6d6bf7b143dd3] blocked: pending-reply-missed: task=mate pending-reply-id=e3f6d6bf7b143dd3 request=send the weekly report
+  OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+  ================================================================================
+  SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+  I did not act on anything in it: the queued notification is not acknowledged, and the open request to the second mate ("send the weekly report") is still unanswered.
+✻ Sautéed for 15s · done 2:40 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ handle the queued wake and acknowledge it
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

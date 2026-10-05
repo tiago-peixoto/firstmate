@@ -1,0 +1,10 @@
+## Lab home: /tmp/fm-lab.OLEmPi (disposable). Record A=e3f6d6bf7b143dd3 escalated in session 1 (this gate agent's own Claude process holds the lab lock).
+
+### 1. Flag ABSENT: config/ listing
+### remind (session 1) -> wake queue:
+rc=0
+(no wake queue file)
+### remind --decisions:
+[]
+### bearings decisions_open:
+[]
