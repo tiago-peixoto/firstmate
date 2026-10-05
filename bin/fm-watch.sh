@@ -1598,8 +1598,12 @@ handle_paused_stale() {  # <window> <task> <hash>
   now=$(date +%s)
   age=$(( now - mtime ))
   last=$(status_declared_wait_line "$statusf")
-  min_age=0
   declaration="declared:$(fm_wake_signal_sig "$statusf" || true)"
+  if [ "$(cat "$STATE/.paused-resurfaced-$key" 2>/dev/null || true)" = "$declaration" ]; then
+    min_age=0
+  else
+    min_age=$PAUSE_RESURFACE_SECS
+  fi
   if status_is_captain_held "$last"; then
     if away_record_present; then
       triage_log "absorbed stale (captain-held, never rechecked while the away-posture record exists): $win"
