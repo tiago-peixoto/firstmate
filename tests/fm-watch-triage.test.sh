@@ -2726,15 +2726,15 @@ test_declared_wait_first_sight_and_cadence_ignore_liveness() {
 # throttle belongs to the old declaration and must not suppress the new wait's
 # first inspection merely because its timestamp is still young.
 test_absorbed_replacement_wait_does_not_inherit_the_old_throttle() {
-  local spec name initial replacement expected dir state fakebin out capture_file
+  local spec name initial replacement dir state fakebin out capture_file
   local statusf window key sig back pid wakes
   for spec in \
-    'paused-replacement|paused: waiting on validation run one|paused: waiting on validation run two|awaiting external' \
-    'captain-held-replacement|captain-held [key=route]: awaiting the routing call|captain-held [key=release]: awaiting the release call|awaiting the captain'
+    'paused-replacement|paused: waiting on validation run one|paused: waiting on validation run two' \
+    'captain-held-replacement|captain-held [key=route]: awaiting the routing call|captain-held [key=release]: awaiting the release call'
   do
     name=${spec%%|*}; spec=${spec#*|}
     initial=${spec%%|*}; spec=${spec#*|}
-    replacement=${spec%%|*}; expected=${spec#*|}
+    replacement=${spec#*|}
     dir=$(make_case "$name"); state="$dir/state"; fakebin="$dir/fakebin"
     out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/held.status"
     window="test:fm-held"
@@ -2773,8 +2773,9 @@ test_absorbed_replacement_wait_does_not_inherit_the_old_throttle() {
     wakes=$(awk -F '\t' -v w="$window" '$3 == "stale" && $4 == w { n++ } END { print n + 0 }' \
       "$state/.wake-queue" 2>/dev/null || echo 0)
     [ "$wakes" -eq 1 ] || fail "[$name] replacement declared wait produced $wakes wakes instead of one"
-    grep -F "$expected" "$state/.wake-queue" >/dev/null \
-      || fail "[$name] replacement declared wait used the wrong recheck reason: $(cat "$state/.wake-queue")"
+    [ "$(awk -F '\t' -v w="$window" '$3 == "stale" && $4 == w && $5 == "stale: " w { n++ } END { print n + 0 }' \
+      "$state/.wake-queue" 2>/dev/null || echo 0)" -eq 1 ] \
+      || fail "[$name] replacement declared wait did not surface as one plain first-sight alert: $(cat "$state/.wake-queue")"
   done
   pass "absorbed paused and captain-held replacements each start their own re-surface cadence"
 }
