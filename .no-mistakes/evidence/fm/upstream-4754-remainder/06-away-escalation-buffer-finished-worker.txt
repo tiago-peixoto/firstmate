@@ -1,0 +1,6 @@
+stale persisted 32s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-picker
+stale persisted 31s (possible wedge): lab:fm-picker
+stale persisted 32s (possible wedge): lab:fm-picker
+stale persisted 32s (possible wedge): lab:fm-picker
+stale persisted 32s (possible wedge): lab:fm-picker
+picker.status: done: shipped the lab task

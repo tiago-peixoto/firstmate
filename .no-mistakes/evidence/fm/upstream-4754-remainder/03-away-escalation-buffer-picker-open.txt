@@ -1,0 +1,1 @@
+stale persisted 32s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-picker

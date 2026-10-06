@@ -1,0 +1,12 @@
+# second mate (kind=secondmate) registered on the real pane showing the picker; watcher ran 75s at FM_POLL=2 and printed no wake
+--- drain
+1791291720	15	signal	mate.status	signal: /tmp/fm-lab.by0jH6/state/mate.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 15 --recovery-generation 2035058.1791291720.jDj1or
+wake annotation: latest wake-EVENT observed at drain, not current state: mate.status: working: the parent supervises this secondmate
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+--- ack --ack-through 15 --recovery-generation 2035058.1791291720.jDj1or
+--- drain
+
+--- watch
+(no exit line: watcher was still polling when stopped)
+wake queue after the run:

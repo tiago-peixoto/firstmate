@@ -1,0 +1,11 @@
+[2026-10-06T14:55:42+0200] daemon starting (pid 1667957); target=lab:super; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=30s; batch=999999s
+[2026-10-06T14:55:43+0200] wake: check: rearm-resurface
+[2026-10-06T14:55:44+0200] self-handle: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker) -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-06T14:56:51+0200] wake: stale: lab:fm-picker
+[2026-10-06T14:56:53+0200] self-handle: stale: lab:fm-picker -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-06T14:57:06+0200] wake: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+[2026-10-06T14:57:08+0200] self-handle: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker) -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-06T14:57:15+0200] wake: stale: lab:fm-picker
+[2026-10-06T14:57:17+0200] self-handle: stale: lab:fm-picker -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-06T14:57:24+0200] wake: stale: lab:fm-picker
+[2026-10-06T14:57:25+0200] self-handle: stale: lab:fm-picker -> transient stale (lab:fm-picker): working: parked between turns

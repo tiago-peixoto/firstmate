@@ -1,0 +1,40 @@
+● Bash(sleep 900)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  Allowed by auto mode classifier
+
+● started
+
+✻ Cooked for 4s · done 2:53 PM · 1 shell still running
+
+❯ /exit
+
+❯ /exit
+
+❯ Reply with exactly these four lines as plain text, each on its own line, no code block, nothing else: "Background
+  work is running" then "❯ 1. Exit and stop tasks" then "  2. Move to background and exit" then "Enter to confirm · Esc
+  to cancel"
+
+● Background work is running
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+  Enter to confirm · Esc to cancel
+
+✻ Cogitated for 1s · done 2:58 PM · 1 shell still running
+
+❯ Reply with exactly these five lines as plain text, each on its own line, no code block, nothing else: "Quoted:" then
+  "Background work is running" then "❯ 1. Exit and stop tasks" then "  2. Move to background and exit" then "Enter to
+  confirm · Esc to cancel"
+
+● Quoted:
+  Background work is running
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+  Enter to confirm · Esc to cancel
+
+✻ Crunched for 1s · done 2:59 PM · 1 shell still running
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage
+

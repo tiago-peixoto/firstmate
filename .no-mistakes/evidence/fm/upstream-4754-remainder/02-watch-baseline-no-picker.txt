@@ -1,0 +1,10 @@
+--- drain
+1791291226	2	signal	picker.status	signal: /tmp/fm-lab.by0jH6/state/picker.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 1580330.1791291253.CQZsXM
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+--- ack --ack-through 2 --recovery-generation 1580330.1791291253.CQZsXM
+--- drain
+
+--- watch
+stale: lab:fm-picker
+exit=0

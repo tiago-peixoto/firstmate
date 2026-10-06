@@ -1,0 +1,18 @@
+# Real watcher, real tmux pane showing the real Claude picker. The crew-state verdict was supplied through FM_CREW_STATE_BIN
+# (prints 'state: working · source: run-step · validating (running)'), because a real no-mistakes run could not be started from inside the gate.
+# FM_STALE_ESCALATE_SECS=8 FM_WEDGE_DEMAND_INSPECT_COUNT=3; one watcher run per wake.
+--- watch
+stale: lab:fm-picker (idle 8s, possible wedge, escalation 1, blocked-on-prompt: Claude background-task exit picker)
+exit=0
+--- watch
+stale: lab:fm-picker (idle 8s, possible wedge, escalation 2, blocked-on-prompt: Claude background-task exit picker)
+exit=0
+--- watch
+stale: lab:fm-picker (idle 8s, possible wedge, escalation 3, demand-deep-inspection: same pane has wedge-escalated 3 times in a row - do not re-absorb on the run-step/pane state alone, blocked-on-prompt: Claude background-task exit picker)
+exit=0
+--- watch
+stale: lab:fm-picker (idle 8s, possible wedge, escalation 4, demand-deep-inspection: same pane has wedge-escalated 4 times in a row - do not re-absorb on the run-step/pane state alone, blocked-on-prompt: Claude background-task exit picker)
+exit=0
+--- watch
+stale: lab:fm-picker (idle 8s, possible wedge, escalation 5, demand-deep-inspection: same pane has wedge-escalated 5 times in a row - do not re-absorb on the run-step/pane state alone, blocked-on-prompt: Claude background-task exit picker)
+exit=0

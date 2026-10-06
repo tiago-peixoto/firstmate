@@ -1,0 +1,10 @@
+--- drain
+1791291293	3	stale	lab:fm-picker	stale: lab:fm-picker
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 3 --recovery-generation 1618762.1791291293.WZx0t5
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+--- ack --ack-through 3 --recovery-generation 1618762.1791291293.WZx0t5
+--- drain
+
+--- watch
+stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+exit=0

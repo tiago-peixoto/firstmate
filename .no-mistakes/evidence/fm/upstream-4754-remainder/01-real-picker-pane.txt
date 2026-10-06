@@ -1,0 +1,40 @@
+ ▐▛███▛█   Claude Code v2.1.291
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab.by0jH6/work
+
+
+❯ Run the shell command sleep 900 as a background task (run_in_background true), then reply with only the word started.
+  Do nothing else.
+
+● Bash(sleep 900)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  Allowed by auto mode classifier
+
+● started
+
+✻ Cooked for 4s · done 2:53 PM · 1 shell still running
+
+❯ /exit
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+
+  shell · sleep 900
+
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+
+  Enter to confirm · Esc to cancel
+
+
+
+
+
+
+
+
+
+
+

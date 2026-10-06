@@ -1,0 +1,4 @@
+145:ok - a dialog name on a first-sight stale reaches the away persistence line
+146:ok - a seen terminal status on the picker clears like a plain stale
+147:ok - a dialog name joins the escalation of an unseen status
+148:ok - a dialog name after demand-deep-inspection still escalates, and a declared wait still pauses
