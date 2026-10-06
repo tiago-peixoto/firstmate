@@ -2586,7 +2586,7 @@ test_own_work_wait_keeps_first_alert_then_long_cadence() {
 # A declared wait gets one first-sight alert regardless of agent liveness, then
 # uses the bounded pause cadence instead of repeating on every watcher re-arm.
 test_declared_wait_first_sight_and_cadence_ignore_liveness() {
-  local dir state fakebin out capture_file statusf window key pane_hash sig pid back round wakes bare
+  local dir state fakebin out capture_file statusf window key pane_hash sig pid back round wakes bare calls
   dir=$(make_case exited-declared-pause); state="$dir/state"; fakebin="$dir/fakebin"
   out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/held.status"
   window="test:fm-held"
@@ -2598,6 +2598,9 @@ test_declared_wait_first_sight_and_cadence_ignore_liveness() {
   pane_hash=$(hash_text "idle bare shell after agent exit")
   printf '%s' "$pane_hash" > "$state/.hash-$key"
   printf '1\n' > "$state/.count-$key"
+  calls="$state/crew-state.calls"
+  : > "$calls"
+  export FM_FAKE_CREW_STATE_LOG="$calls"
 
   PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
     FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_FAKE_CREW_STATE='state: stopped · source: pane · bare shell' \
@@ -2624,6 +2627,9 @@ test_declared_wait_first_sight_and_cadence_ignore_liveness() {
   done
   wakes=$(awk -F '\t' -v w="$window" '$3 == "stale" && $4 == w { n++ } END { print n + 0 }' "$state/.wake-queue" 2>/dev/null || echo 0)
   [ "$wakes" -eq 0 ] || fail "dead-agent declared pause re-alarmed $wakes times inside the cadence"
+  [ "$(wc -l < "$calls" | tr -d ' ')" -eq 1 ] \
+    || fail "stable dead-agent pause polls read crew state $(wc -l < "$calls" | tr -d ' ') times before the cadence"
+  unset FM_FAKE_CREW_STATE_LOG
 
   back=$(( $(date +%s) - 1200 ))
   if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$statusf" "$state/.paused-resurfaced-$key"
@@ -6548,9 +6554,8 @@ test_afk_one_shot_never_hands_off_captain_held_under_away_record() {
 }
 
 # --- declared waits are condition-aware: `until <UTC ISO 8601>` --------------
-# A paused: line naming when the wait clears is rechecked at that time when it
-# falls within the flat cadence, but a distant or mistyped time cannot extend
-# the cadence, and a time that has passed is rechecked at once.
+# A paused: line naming when the wait clears gets one first-sight alert; future,
+# distant, mistyped, or passed times cannot extend the bounded recheck cadence.
 paused_until_fixture() {  # <name> <until-epoch> <status-age-secs>
   local name=$1 until=$2 age=$3 dir state statusf window key back
   dir=$(make_case "$name"); state="$dir/state"
@@ -6579,28 +6584,84 @@ until_watch() {  # <dir> <cadence> -> pid in UNTIL_PID
   UNTIL_PID=$!
 }
 
-test_paused_until_near_future_is_quiet_before_the_cadence() {
+test_paused_until_near_future_alerts_once_before_the_cadence() {
   local dir state
   dir=$(paused_until_fixture until-near-future "$(( $(date +%s) + 120 ))" 60); state="$dir/state"
   until_watch "$dir" 240
+  wait_for_exit "$UNTIL_PID" 100 \
+    || { reap "$UNTIL_PID"; fail "a near-future declared wait did not alert on first sight"; }
+  grep -F 'stale: test:fm-until' "$dir/watch.out" >/dev/null \
+    || fail "the first-sight declared-wait alert was not a plain stale wake"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the first-sight declared-wait alert"
+  : > "$dir/watch.out"
+  until_watch "$dir" 240
   if ! wait_poll_cycle "$state" "$UNTIL_PID" || ! wait_poll_cycle "$state" "$UNTIL_PID"; then
-    reap "$UNTIL_PID"; fail "a declared wait with a near-future until time was rechecked before that time: $(cat "$dir/watch.out")"
+    reap "$UNTIL_PID"; fail "a near-future declared wait rechecked before its bounded cadence: $(cat "$dir/watch.out")"
   fi
-  [ ! -s "$state/.wake-queue" ] || fail "a declared wait with a near-future until time was queued for a recheck"
+  [ ! -s "$state/.wake-queue" ] || fail "a near-future declared wait queued a second alert before the cadence"
   grep -F 'declared time not reached' "$state/.watch-triage.log" >/dev/null \
-    || fail "the absorb did not cite the declared time in the triage log"
+    || fail "the bounded absorb did not cite the declared time"
   reap "$UNTIL_PID"
-  pass "a declared wait naming a near-future until time stays quiet until that time"
+  pass "a near-future declared wait alerts once, then stays quiet before the cadence"
+}
+
+test_paused_until_dead_agent_rechecks_on_the_bounded_cadence() {
+  local dir state fakebin out capture_file statusf window key sig back
+  dir=$(make_case dead-agent-far-future-until); state="$dir/state"; fakebin="$dir/fakebin"
+  out="$dir/watch.out"; capture_file="$dir/pane.txt"; statusf="$state/until.status"
+  window="test:fm-until-dead"
+  printf 'idle, waiting for the reset\n' > "$capture_file"
+  printf 'window=%s\nkind=ship\nharness=grok\nbackend=tmux\n' "$window" > "$state/until.meta"
+  printf 'paused: rate limit resets, until %s\n' "$(iso_utc_at "$(( $(date +%s) + 31536000 ))")" > "$statusf"
+  back=$(( $(date +%s) - 600 ))
+  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$statusf"
+  else touch -m -d "@$back" "$statusf"; fi
+  sig=$(seen_sig "$statusf"); printf '%s' "$sig" > "$state/.seen-until_status"
+  key=$(printf '%s' "$window" | tr '.:/' '___')
+  printf '%s' "$(hash_text 'idle, waiting for the reset')" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_FAKE_CREW_STATE='state: stopped · source: pane · bare shell' \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || fail "dead-agent first-sight declared wait did not alert"
+  grep -F "stale: $window" "$out" >/dev/null || fail "dead-agent first-sight alert was not surfaced"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the dead-agent first-sight alert"
+  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$state/.paused-resurfaced-$key" "$state/.paused-rechecked-$key"
+  else touch -m -d "@$back" "$state/.paused-resurfaced-$key" "$state/.paused-rechecked-$key"; fi
+
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh FM_FAKE_CREW_STATE='state: stopped · source: pane · bare shell' \
+    FM_WATCH_HANDLING_SUCCESSOR=1 \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_PAUSE_RESURFACE_SECS=240 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_for_exit "$pid" 100 || { reap "$pid"; fail "dead-agent far-future until was not rechecked on the bounded cadence"; }
+  grep -F 'declared time is beyond the recheck cadence' "$out" >/dev/null \
+    || fail "dead-agent cadence recheck lost the far-future until reason: $(cat "$out")"
+  grep -F 'possible wedge' "$out" >/dev/null && fail "dead-agent far-future until was mislabeled a wedge"
+  pass "a dead agent's far-future declared until rechecks on the bounded cadence"
 }
 
 test_paused_until_wrong_year_is_bounded_by_the_cadence() {
-  local dir state
+  local dir state back key
   dir=$(paused_until_fixture until-wrong-year "$(( $(date +%s) + 31536000 ))" 300); state="$dir/state"
   until_watch "$dir" 240
   wait_for_exit "$UNTIL_PID" 100 \
-    || { reap "$UNTIL_PID"; fail "a wrong-year declared time silenced the wait beyond the recheck cadence"; }
-  grep -F 'stale: test:fm-until' "$dir/watch.out" >/dev/null \
-    || fail "the bounded wrong-year recheck did not print a stale wake: $(cat "$dir/watch.out")"
+    || { reap "$UNTIL_PID"; fail "a wrong-year declared wait did not alert on first sight"; }
+  grep -Fx 'stale: test:fm-until' "$dir/watch.out" >/dev/null \
+    || fail "first-sight declared-wait alert was not a plain stale wake"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the first-sight declared-wait alert"
+  key=$(printf '%s' 'test:fm-until' | tr '.:/' '___')
+  back=$(( $(date +%s) - 600 ))
+  if [ "$(uname)" = Darwin ]; then touch -mt "$(date -r "$back" '+%Y%m%d%H%M.%S')" "$state/.paused-resurfaced-$key" "$state/.paused-rechecked-$key"
+  else touch -m -d "@$back" "$state/.paused-resurfaced-$key" "$state/.paused-rechecked-$key"; fi
+  : > "$dir/watch.out"
+  until_watch "$dir" 240
+  wait_for_exit "$UNTIL_PID" 100 \
+    || { reap "$UNTIL_PID"; fail "a wrong-year declared wait was not rechecked on the bounded cadence"; }
   grep -F 'declared time is beyond the recheck cadence' "$dir/watch.out" >/dev/null \
     || fail "the bounded recheck gave the wrong reason: $(cat "$dir/watch.out")"
   grep -F 'declared clearing time has passed' "$dir/watch.out" >/dev/null \
@@ -6608,25 +6669,22 @@ test_paused_until_wrong_year_is_bounded_by_the_cadence() {
   pass "a wrong-year declared time cannot silence the watcher beyond the recheck cadence"
 }
 
-test_paused_until_that_passed_is_rechecked_before_the_cadence() {
+test_paused_until_that_passed_alerts_once_before_the_cadence() {
   local dir state
   dir=$(paused_until_fixture until-passed "$(( $(date +%s) - 30 ))" 60); state="$dir/state"
   until_watch "$dir" 999
-  wait_for_exit "$UNTIL_PID" 100 || { reap "$UNTIL_PID"; fail "a declared wait whose until time passed was not rechecked ahead of the cadence"; }
-  grep -F 'stale: test:fm-until' "$dir/watch.out" >/dev/null || fail "the due recheck did not print a stale wake: $(cat "$dir/watch.out")"
-  grep -F 'declared clearing time has passed' "$dir/watch.out" >/dev/null \
-    || fail "the due recheck did not say the declared time passed: $(cat "$dir/watch.out")"
+  wait_for_exit "$UNTIL_PID" 100 || { reap "$UNTIL_PID"; fail "a declared wait whose until time passed did not alert on first sight"; }
+  grep -Fx 'stale: test:fm-until' "$dir/watch.out" >/dev/null \
+    || fail "the passed-time first-sight alert was not plain stale: $(cat "$dir/watch.out")"
   grep -F 'possible wedge' "$dir/watch.out" >/dev/null && fail "a due declared wait was mislabeled a possible wedge"
-  # The due recheck fires once per declaration: a second watcher on the same
-  # unchanged declaration absorbs it again.
-  ack_stopped_cycle "$state" || fail "could not acknowledge the due recheck"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the passed-time first-sight alert"
   : > "$dir/watch.out"
   until_watch "$dir" 999
   if ! wait_poll_cycle "$state" "$UNTIL_PID" || ! wait_poll_cycle "$state" "$UNTIL_PID"; then
-    reap "$UNTIL_PID"; fail "the due recheck repeated on every poll instead of once per declaration: $(cat "$dir/watch.out")"
+    reap "$UNTIL_PID"; fail "a passed-time declared wait re-alerted before its bounded cadence: $(cat "$dir/watch.out")"
   fi
   reap "$UNTIL_PID"
-  pass "a declared wait whose until time has passed is rechecked at once, then held to the cadence"
+  pass "a passed-time declared wait alerts once, then stays quiet before the cadence"
 }
 
 # CI's stock macOS Bash lane sets FM_TEST_ONLY to run just the bash-3.2
@@ -6774,6 +6832,7 @@ test_live_captain_held_first_sight_silenced_by_away_record
 test_backlog_hold_never_rechecked_while_away_record_exists
 test_afk_one_shot_never_hands_off_captain_held_under_away_record
 test_captain_held_rechecked_under_a_quiet_record
-test_paused_until_near_future_is_quiet_before_the_cadence
+test_paused_until_near_future_alerts_once_before_the_cadence
+test_paused_until_dead_agent_rechecks_on_the_bounded_cadence
 test_paused_until_wrong_year_is_bounded_by_the_cadence
-test_paused_until_that_passed_is_rechecked_before_the_cadence
+test_paused_until_that_passed_alerts_once_before_the_cadence
