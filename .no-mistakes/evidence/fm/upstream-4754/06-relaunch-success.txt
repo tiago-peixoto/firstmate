@@ -1,0 +1,47 @@
+### Scenario 8: no background work, fm-control t1 relaunch replaces the real Claude agent and leaves no dialog file
+commit under test: 4f50944c
+before: agent process 1076304 claude
+$ fm-control.sh t1 relaunch --note 'replace the agent'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: $LAB/data/t1/brief.md must contain nonempty ## Captain's intent and ## Firstmate spec subsections (or a nonempty legacy # Task body) before spawn
+error: the replacement agent for t1 could not be launched on claude
+error: t1's agent was stopped but the replacement did not launch; no agent is running, and its work plus the recorded progress note are preserved at $LAB/wt-t1
+exit code: 1
+dialog file: absent
+files anywhere in the lab home matching *composer-dialog*: 0
+after: agent process 
+--- pane after relaunch:
+✻ Cogitated for 2s · done 2:23 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ❯ /exit                       Exit the CLI
+    /context                    Visualize current context usage as a colored grid
+    /usage-credits              Configure usage credits or request them from your admin when you hit a limit
+Resume this session with:
+claude --resume 4ef5537a-abd0-4f65-948f-5d9f38afbb23
+firstmate@firstmate-hz:$LAB/wt-t1$
+
+### Scenario 8b: the first attempt above stopped the agent but my fixture brief lacked the required sections; brief repaired, relaunch run again
+$ fm-control.sh t1 relaunch --note 'replace the agent'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+warning: $LAB/data/t1/launch-brief.md records no ship branch; defaulting to legacy branch fm/t1
+warning: $LAB/data/t1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+relaunched t1 harness=claude from=claude model=default effort=default backend=tmux endpoint=fmses:fm-t1 worktree=$LAB/wt-t1
+exit code: 0
+dialog file: absent
+files anywhere in the lab home matching *composer-dialog*: 0
+after: agent process 1168802 claude --dangerously-skip-permissions --add-dir $LAB/state/operation
+--- pane after relaunch:
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   $LAB/wt-t1
+❯ : Firstmate operational input waiting: read '$LAB/state/operational-inbox/1791246243-340ea2a26e8a3850.msg' and handle its
+  contents as Firstmate operational input.
+  Read 1 file (ctrl+o to expand)
+● ready
+✻ Sautéed for 6s · done 2:24 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+                                      tmux focus-events off · add 'set -g focus-events on' to ~/.tmux.conf and reattach for focus tracking

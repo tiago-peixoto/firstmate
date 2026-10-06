@@ -1,0 +1,13 @@
+### Scenario 7: a command that loses the control lock must not delete the lock holder's dialog file
+A separate process holds $LAB/state/.control-t1.lock (taken through bin/fm-wake-lib.sh) and the holder's dialog file holds the picker name.
+lock staged
+$ fm-control.sh t1 exit
+error: another lifecycle action is already running for task t1
+exit code: 1
+holder's dialog file after the refused command: [Claude background-task exit picker]
+$ fm-control.sh t1 relaunch --note x
+error: another lifecycle action is already running for task t1
+exit code: 1
+holder's dialog file after the refused command: [Claude background-task exit picker]
+lrwxrwxrwx 1 firstmate firstmate 54 Oct  6 02:23 $LAB/state/.control-t1.lock -> $LAB/state/.control-t1.lock.owner.83Jq78
+pane: byte-identical to before the commands

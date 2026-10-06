@@ -1,15 +1,18 @@
-### Scenario 1: fm-control t1 exit, Claude 2.1.289 with one background shell (target 4bdc121b)
-$ bin/fm-control.sh t1 exit
+### Scenario 1: fm-control t1 exit on a real Claude pane (v2.1.290 (Claude Code)) with a running background shell
+commit under test: 4f50944c
+$ fm-control.sh t1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
 error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it.
-exit status: 1
---- pane after the command returned ---
-     handled
-     … +2 lines (ctrl+o to expand)
+exit code: 1
+
+### pane after the command
+● Bash(sleep 900)
+  ⎿  Running in the background (↓ to manage)
   ⎿  Allowed by auto mode classifier
 ● started
-✻ Churned for 15s · done 12:57 AM · 1 shell still running
+✻ Churned for 2s · done 2:22 AM · 1 shell still running
 ❯ /exit
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   Background work is running
   The following will stop when you exit:
   shell · sleep 900
@@ -17,5 +20,10 @@ exit status: 1
     2. Move to background and exit
     3. Stay
   Enter to confirm · Esc to cancel
---- pane process (agent still alive) ---
-pane_current_command=claude pane_dead=0
+
+### state dir after the command (dialog file must be absent)
+t1.meta
+
+### pane process and background shell still alive
+pane command: claude
+1106911 sleep 900

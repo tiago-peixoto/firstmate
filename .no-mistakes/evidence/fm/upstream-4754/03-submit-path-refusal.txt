@@ -1,0 +1,7 @@
+### Scenario 5: picker already open, the shared submit path (fm_backend_send_text_submit) called directly
+$ fm_backend_send_text_submit tmux fmses:fm-t1 'hello from supervision' 3 0.5 1.2 fm-t1
+error: blocked on a prompt: Claude background-task exit picker
+verdict on stdout: []
+return status: 1
+pane: byte-identical to before the command (nothing typed, no key sent)
+temp dialog files left: 0

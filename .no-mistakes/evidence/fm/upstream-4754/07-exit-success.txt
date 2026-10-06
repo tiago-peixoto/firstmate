@@ -1,0 +1,26 @@
+### Scenario 9a (before the fix): fm-control exit from commit c362cf7f, the parent of the leftover-file fix, stops the real Claude agent
+$ <c362cf7f>/bin/fm-control.sh t1 exit
+stopped t1 harness=claude backend=tmux endpoint=fmses:fm-t1 worktree=$LAB/wt-t1
+exit code: 0
+dialog file: PRESENT
+files anywhere in the lab home matching *composer-dialog*: 1
+agent processes under the pane shell: 0
+
+(leftover removed by hand; agent started again with the current commit: fm-control.sh t1 relaunch)
+relaunched t1 harness=claude from=claude model=default effort=default backend=tmux endpoint=fmses:fm-t1 worktree=$LAB/wt-t1
+agent processes under the pane shell: 1
+
+### Scenario 9b (current commit 4f50944c): no background work, fm-control t1 exit stops the real Claude agent and leaves no dialog file
+$ fm-control.sh t1 exit
+stopped t1 harness=claude backend=tmux endpoint=fmses:fm-t1 worktree=$LAB/wt-t1
+exit code: 0
+dialog file: absent
+files anywhere in the lab home matching *composer-dialog*: 0
+agent processes under the pane shell: 0
+--- pane after exit:
+  ❯ /exit                       Exit the CLI
+    /context                    Visualize current context usage as a colored grid
+    /usage-credits              Configure usage credits or request them from your admin when you hit a limit
+Resume this session with:
+claude --resume c6b65853-ffbe-42bc-801c-18ee4094e88f
+firstmate@firstmate-hz:$LAB/wt-t1$

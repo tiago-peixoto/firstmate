@@ -1,0 +1,14 @@
+### Scenario 6: eight real fm-control exit commands started together on one task while the picker is open
+--- process 1: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+--- process 2: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+--- process 3: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+--- process 4: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+--- process 5: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+--- process 6: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+--- process 7: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+--- process 8: error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it. rc=1 
+lock losers: 0; picker refusals: 8; any other outcome: 0
+pane: byte-identical to before the commands (no Enter confirmed the picker)
+dialog file after all commands: absent
+pane command: claude
+1106911 sleep 900

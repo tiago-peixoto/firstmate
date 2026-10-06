@@ -1,0 +1,47 @@
+### Scenario 2: picker already open, fm-control t1 exit
+$ fm-control.sh t1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it.
+exit code: 1
+pane: byte-identical to before the command (nothing typed, no key sent)
+dialog file: absent
+state dir: t1.meta 
+
+### Scenario 3: picker already open, fm-control t1 relaunch
+$ fm-control.sh t1 relaunch --note 'replace the agent'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+error: task t1 is blocked on a prompt: Claude background-task exit picker. Refusing to type Enter into it.
+error: relaunch of t1 failed while stopping the old agent, which is still running; its original instructions were restored
+exit code: 1
+pane: byte-identical to before the command (nothing typed, no key sent)
+dialog file: absent
+state dir: t1.control-relaunch t1.control-relaunch.brief-prior t1.control-relaunch.meta-prior t1.control-relaunch.note t1.meta 
+
+### Scenario 4: picker already open, typed submit through fm-send
+temp dialog files before: 0
+$ fm-send.sh t1 'hello from supervision'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at $LAB/state/t1.inbox/001.msg and the watcher will re-ring
+exit code: 0
+pane: byte-identical to before the command (nothing typed, no key sent)
+temp dialog files after: 0
+
+### pane now
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Background work is running
+  The following will stop when you exit:
+  shell · sleep 900
+  ❯ 1. Exit and stop tasks
+    2. Move to background and exit
+    3. Stay
+  Enter to confirm · Esc to cancel
+pane command: claude
+1106911 sleep 900
