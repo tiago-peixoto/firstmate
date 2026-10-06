@@ -1,0 +1,16 @@
+## Session 1 token (pid:session id of lab primary 1)
+3564498:5e8ff35e-c001-4a82-967a-47bd575f212f
+## Records after escalation
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:request_summary=confirm the deploy window
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:phase=escalated
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:surfaced_session=3564498:5e8ff35e-c001-4a82-967a-47bd575f212f
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:escalation_dismissed_epoch=
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:request_summary=audit the release notes
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:phase=escalated
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:surfaced_session=3564498:5e8ff35e-c001-4a82-967a-47bd575f212f
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:escalation_dismissed_epoch=
+## mate.status
+blocked [key=pending-reply-176cad67cf0c1a9a] [at=1791293470]: pending-reply-missed: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes
+blocked [key=pending-reply-4cf4eb855e174fbd] [at=1791293471]: pending-reply-missed: task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window
+## wake queue after escalation
+## wake queue after two same-session polls and a direct reminder run (pending-reply-escalated rows: 0)

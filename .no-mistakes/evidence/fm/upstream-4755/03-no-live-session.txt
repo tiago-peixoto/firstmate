@@ -1,0 +1,4 @@
+## No live session: lock status and token
+lock: stale (pid 3564498 dead or not a harness)
+token=[]
+pending-reply-escalated rows queued with no live session: 0

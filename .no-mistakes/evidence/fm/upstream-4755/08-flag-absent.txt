@@ -1,0 +1,29 @@
+## config dir (flag absent)
+(end)
+## escalated 3fea4df880729350 with no live session
+/tmp/fm-lab.qyP1o5/state/pending-replies/3fea4df880729350:phase=escalated
+/tmp/fm-lab.qyP1o5/state/pending-replies/3fea4df880729350:surfaced_session=
+blocked [key=pending-reply-3fea4df880729350] [at=1791293669]: pending-reply-missed: task=mate pending-reply-id=3fea4df880729350 request=send the incident summary
+## later session opens (session-start exit=0), token: 3474219:10525d11-0c2e-4060-964a-362dd77ca8e7
+## WAKE QUEUE section of that digest
+WAKE QUEUE
+--------------------------------------------------------------------------------
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-3fea4df880729350] blocked: pending-reply-missed: task=mate pending-reply-id=3fea4df880729350 request=send the incident summary
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+## pending-reply-escalated rows after two polls and a direct reminder run: 0
+## --decisions output: []
+## Bearings decisions_open
+[]
+## record unchanged
+/tmp/fm-lab.qyP1o5/state/pending-replies/3fea4df880729350:escalation_dismiss_scan=
+/tmp/fm-lab.qyP1o5/state/pending-replies/3fea4df880729350:phase=escalated
+/tmp/fm-lab.qyP1o5/state/pending-replies/3fea4df880729350:surfaced_session=
+/tmp/fm-lab.qyP1o5/state/pending-replies/3fea4df880729350:escalation_dismissed_epoch=
+
+## now create config/pending-reply-resurface and poll once
+1791293677	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=3fea4df880729350 request=send the incident summary;
+## Bearings decisions_open
+[{"id":"mate","key":"pending-reply-3fea4df880729350","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=3fea4df880729350 request=send the incident summary","owner":"(main)"}]

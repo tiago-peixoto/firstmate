@@ -1,0 +1,25 @@
+## Bearings, flag present, session 1 (TOON)
+27:decisions_open[2]{id,key,verb,summary,owner}:
+28-  mate,pending-reply-176cad67cf0c1a9a,blocked,"pending-reply escalated: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes",(main)
+29-  mate,pending-reply-4cf4eb855e174fbd,blocked,"pending-reply escalated: task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window",(main)
+30-landed: []
+31-gates: []
+32-reports: []
+33-recorded_prs: []
+## Bearings --json decisions_open
+[
+  {
+    "id": "mate",
+    "key": "pending-reply-176cad67cf0c1a9a",
+    "verb": "blocked",
+    "summary": "pending-reply escalated: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes",
+    "owner": "(main)"
+  },
+  {
+    "id": "mate",
+    "key": "pending-reply-4cf4eb855e174fbd",
+    "verb": "blocked",
+    "summary": "pending-reply escalated: task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window",
+    "owner": "(main)"
+  }
+]

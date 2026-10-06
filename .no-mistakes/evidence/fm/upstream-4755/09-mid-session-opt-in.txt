@@ -1,0 +1,10 @@
+## session opens with the flag absent, token: 3474219:10525d11-0c2e-4060-964a-362dd77ca8e7
+## escalated ab899d6228948c3d in this session, flag absent
+/tmp/fm-lab.88DKaN/state/pending-replies/ab899d6228948c3d:phase=escalated
+/tmp/fm-lab.88DKaN/state/pending-replies/ab899d6228948c3d:surfaced_session=3474219:10525d11-0c2e-4060-964a-362dd77ca8e7
+## created config/pending-reply-resurface in the same session
+## pending-reply-escalated rows after two polls and a direct reminder run, same session: 0
+## Bearings decisions_open (row is listed once opted in)
+[{"id":"mate","key":"pending-reply-ab899d6228948c3d","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=ab899d6228948c3d request=review the migration plan","owner":"(main)"}]
+## a later session (FM_PENDING_REPLY_SESSION=later-session, the script's documented token override)
+1791293699	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=ab899d6228948c3d request=review the migration plan;

@@ -1,0 +1,20 @@
+## Session 2 token
+3695096:c660b28e-5d70-4ca4-8f41-3970190acda6
+## WAKE QUEUE section of the session-start digest printed to lab primary 2
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1791293518	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes; task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 3712370.1791293518.bPwvGo
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-176cad67cf0c1a9a] blocked: pending-reply-missed: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes
+mate [key=pending-reply-4cf4eb855e174fbd] blocked: pending-reply-missed: task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+## surfaced_session after session 2 start
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:surfaced_session=3695096:c660b28e-5d70-4ca4-8f41-3970190acda6
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:surfaced_session=3695096:c660b28e-5d70-4ca4-8f41-3970190acda6
+## mate.status (no second blocked line)
+blocked [key=pending-reply-176cad67cf0c1a9a] [at=1791293470]: pending-reply-missed: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes
+blocked [key=pending-reply-4cf4eb855e174fbd] [at=1791293471]: pending-reply-missed: task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window

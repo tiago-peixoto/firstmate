@@ -1,0 +1,23 @@
+## queue before repeat polls
+1791293518	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes; task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window;
+## rows after three more polls in session 2: 1
+## ack output
+## fm-send --resolve-key output
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.OF8JAI
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+## mate.status after the operator close
+blocked [key=pending-reply-176cad67cf0c1a9a] [at=1791293470]: pending-reply-missed: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes
+blocked [key=pending-reply-4cf4eb855e174fbd] [at=1791293471]: pending-reply-missed: task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window
+resolved [key=pending-reply-176cad67cf0c1a9a] [at=1791293549]: pending-reply-resolved: task=mate pending-reply-id=176cad67cf0c1a9a via=operator-resolve-key handled out of band, no reply needed
+## what the mate pane received
+: Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'mate.inbox' steering inbox, read and act on each in numeric order, then mv each into its handled/.
+: Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'mate.inbox' steering inbox, read and act on each in numeric order, then mv each into its handled/.
+## queue after ack
+## rows after ack and two more polls in session 2: 0
+## records
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:phase=escalated
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:escalation_dismissed_epoch=
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:surfaced_session=3695096:c660b28e-5d70-4ca4-8f41-3970190acda6
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:phase=escalated
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:surfaced_session=3695096:c660b28e-5d70-4ca4-8f41-3970190acda6
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:escalation_dismissed_epoch=1791293559

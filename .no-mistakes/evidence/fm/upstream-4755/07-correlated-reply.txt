@@ -1,0 +1,26 @@
+## queue after session 3 acked the reminder
+## the mate's correlated reply arrives on the parent channel
+done [corr=4cf4eb855e174fbd]: deploy window confirmed for Thursday
+## records after one poll
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:phase=resolved
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:resolved_via=status
+/tmp/fm-lab.OF8JAI/state/pending-replies/4cf4eb855e174fbd:escalation_closed_epoch=1791293638
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:resolved_via=
+/tmp/fm-lab.OF8JAI/state/pending-replies/176cad67cf0c1a9a:phase=escalated
+## mate.status
+blocked [key=pending-reply-176cad67cf0c1a9a] [at=1791293470]: pending-reply-missed: task=mate pending-reply-id=176cad67cf0c1a9a request=audit the release notes
+blocked [key=pending-reply-4cf4eb855e174fbd] [at=1791293471]: pending-reply-missed: task=mate pending-reply-id=4cf4eb855e174fbd request=confirm the deploy window
+resolved [key=pending-reply-176cad67cf0c1a9a] [at=1791293549]: pending-reply-resolved: task=mate pending-reply-id=176cad67cf0c1a9a via=operator-resolve-key handled out of band, no reply needed
+done [corr=4cf4eb855e174fbd]: deploy window confirmed for Thursday
+## Bearings decisions_open
+[]
+## Session 4 (the gate agent's own Claude process) token
+3474219:10525d11-0c2e-4060-964a-362dd77ca8e7
+## WAKE QUEUE section of session 4's digest
+WAKE QUEUE
+--------------------------------------------------------------------------------
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+mate done [corr=4cf4eb855e174fbd]: deploy window confirmed for Thursday
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+## pending-reply-escalated rows after a poll in session 4: 0
