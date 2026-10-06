@@ -1,0 +1,84 @@
+
+=== 1. unchanged PR, repeat poll (baseline already observed): must stay quiet ===
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 0
+  pending: []
+
+=== 2. head change: stored previous head rewritten to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, real forge reports the real head ===
+contribution-wake: check: contributions delivery 44dedec4cc2c837bc523db87dee454eb4b92e273abfd80437a49bfe38c3108bd
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 1
+  pending: [{"task":"delivery","type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to df192a7bb3ca5477e1f72f58eb5b004ec754a877","source":"https://github.com/kunchenguid/firstmate/pull/5341"}]
+
+=== 2b. unchanged re-poll after the head wake: no second wake ===
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 1
+  pending: [{"task":"delivery","type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to df192a7bb3ca5477e1f72f58eb5b004ec754a877","source":"https://github.com/kunchenguid/firstmate/pull/5341"}]
+  acked head:df192a7bb3ca5477e1f72f58eb5b004ec754a877:2026-10-06T13:26:07Z
+
+=== 3. leaving draft: stored previous observation rewritten to draft:true, real forge reports draft:false ===
+contribution-wake: check: contributions delivery d0396f17ee060e00e50f3237c03906fd94256b5949e498afc1c1788fe8241812
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 2
+  pending: [{"task":"delivery","type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kunchenguid/firstmate/pull/5341"}]
+
+=== 3b. adversarial: stored draft:false -> still false is not movement ===
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 2
+  pending: [{"task":"delivery","type":"ready-for-review","body":"pull request left draft","source":"https://github.com/kunchenguid/firstmate/pull/5341"}]
+  acked ready-for-review:df192a7bb3ca5477e1f72f58eb5b004ec754a877:2026-10-06T13:26:12Z
+
+=== 4. reviewer baseline: first observation of https://github.com/cli/cli/pull/14580, which already has a requested reviewer ===
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 2
+  pending: []
+  recorded review_requests: ["tidy-dev"]
+
+=== 5. legacy baseline: stored observation with no review_requests field at all ===
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 2
+  pending: []
+
+=== 6. newly requested reviewer: stored previous review_requests rewritten to [] ===
+contribution-wake: check: contributions reviewed 0536f6e61e5f4ed9c64a9d8cde7c796c89f31d38047e1a8eb15493b54e10c622
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 3
+  pending: [{"task":"reviewed","type":"review-requested","body":"review requested from tidy-dev","source":"https://github.com/cli/cli/pull/14580"}]
+
+=== 6b. unchanged re-poll: no second wake ===
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 3
+  pending: [{"task":"reviewed","type":"review-requested","body":"review requested from tidy-dev","source":"https://github.com/cli/cli/pull/14580"}]
+  acked review-requested:tidy-dev:2026-10-06T13:26:29Z
+
+=== 7. settlement is not movement: stored open observation with head aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, real forge reports https://github.com/kunchenguid/firstmate/pull/6028 merged ===
+contribution-wake: check: contributions landed 19c8909adb52d8ee4b5d35a723884e66a169a06167487b2593613c738a857c17
+  check exit=0 (output above is what the watcher would surface)
+  durable check wakes queued: 4
+  pending: [{"task":"landed","type":"comment","body":"**Kun's firstmate triage (firstmate-oss) — merge stamp**\n\n- **contract-class:** `restore`\n- **tip SHA:** `c0be3dca16309702fd78cd660aea06fd36d08a0c` (attestation `no-mistakes-pipeline-attestation:v1` head_sha MATCH)\n- **Canonical fix for #5847**, superseding the duplicate BASHPID-guard PRs (#5849 and the rest), which I'll close as superseded once this lands.\n\n**Why this one:** it drops the bash-4-only `$BASHPID` read and does the \"am I the top-level caller?\" check inside the perl watchdog after `","source":"https://github.com/kunchenguid/firstmate/pull/6028#issuecomment-6008100677"}]
+  landed record: {"state":"merged","head":"c0be3dca16309702fd78cd660aea06fd36d08a0c","pending":[{"token":"comment:6008100677:2026-10-06T02:29:10Z:","type":"comment","source":"https://github.com/kunchenguid/firstmate/pull/6028#issuecomment-6008100677","head":null,"author":"kunchenguid","body":"**Kun's firstmate triage (firstmate-oss) — merge stamp**\n\n- **contract-class:** `restore`\n- **tip SHA:** `c0be3dca16309702fd78cd660aea06fd36d08a0c` (attestation `no-mistakes-pipeline-attestation:v1` head_sha MATCH)\n- **Canonical fix for #5847**, superseding the duplicate BASHPID-guard PRs (#5849 and the rest), which I'll close as superseded once this lands.\n\n**Why this one:** it drops the bash-4-only `$BASHPID` read and does the \"am I the top-level caller?\" check inside the perl watchdog after `"}],"error":null}
+  movement wakes added by settlement: 1
+
+=== 8. watcher end to end: quiet on the unchanged PR, then surfaces a head change once ===
+  quiet watcher exit=0 (124 = checkpoint expired with nothing to surface)
+  out: check: rearm-resurface
+  watcher after head change exit=0
+  out: check: contributions delivery 6dd7c1b9a4b73a412984417291928cfcd1cde5895090b27836d77ed9d119b426
+  out: 
+  durable check wakes queued: 5
+  pending: [{"task":"delivery","type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to df192a7bb3ca5477e1f72f58eb5b004ec754a877","source":"https://github.com/kunchenguid/firstmate/pull/5341"},{"task":"landed","type":"comment","body":"**Kun's firstmate triage (firstmate-oss) — merge stamp**\n\n- **contract-class:** `restore`\n- **tip SHA:** `c0be3dca16309702fd78cd660aea06fd36d08a0c` (attestation `no-mistakes-pipeline-attestation:v1` head_sha MATCH)\n- **Canonical fix for #5847**, superseding the duplicate BASHPID-guard PRs (#5849 and the rest), which I'll close as superseded once this lands.\n\n**Why this one:** it drops the bash-4-only `$BASHPID` read and does the \"am I the top-level caller?\" check inside the perl watchdog after `","source":"https://github.com/kunchenguid/firstmate/pull/6028#issuecomment-6008100677"}]
+  repeat watcher exit=124
+  out: checkpoint: no actionable wake within 15s
+  durable check wakes queued: 5
+  pending: [{"task":"delivery","type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to df192a7bb3ca5477e1f72f58eb5b004ec754a877","source":"https://github.com/kunchenguid/firstmate/pull/5341"},{"task":"landed","type":"comment","body":"**Kun's firstmate triage (firstmate-oss) — merge stamp**\n\n- **contract-class:** `restore`\n- **tip SHA:** `c0be3dca16309702fd78cd660aea06fd36d08a0c` (attestation `no-mistakes-pipeline-attestation:v1` head_sha MATCH)\n- **Canonical fix for #5847**, superseding the duplicate BASHPID-guard PRs (#5849 and the rest), which I'll close as superseded once this lands.\n\n**Why this one:** it drops the bash-4-only `$BASHPID` read and does the \"am I the top-level caller?\" check inside the perl watchdog after `","source":"https://github.com/kunchenguid/firstmate/pull/6028#issuecomment-6008100677"}]
+
+=== supplement to 7: the one wake there is the maintainer's comment on the merged PR (behavior that predates this change), not movement ===
+  landed pending signal types: ["comment"]
+  movement signals (head / ready-for-review / review-requested) on landed: 0
+  stored prior was open, draft:true, head aaaa...; observed now: {"state":"merged","draft":false,"head":"c0be3dca16309702fd78cd660aea06fd36d08a0c"}
+
+=== supplement to 8: the first watcher run printed 'check: rearm-resurface' (likely because steps 2-7 left undrained wakes in the queue; not verified); clean quiet proof after acknowledging everything ===
+fm-contributions: contribution is not owned by this durable task
+  pending after ack: 1 (the comment on the merged PR; its task is settled, so ack refuses it - unrelated to movement)
+  watcher on unchanged real PRs exit=124; out: checkpoint: no actionable wake within 15s
+  wakes queued before=5 after=5

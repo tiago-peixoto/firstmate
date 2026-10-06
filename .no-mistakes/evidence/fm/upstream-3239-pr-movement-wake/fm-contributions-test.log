@@ -53,4 +53,7 @@ ok - the effective budget is cut down to the watcher per-check bound with margin
 ok - generated checks enforce configured and inherited budgets at runtime
 ok - a genuinely unavailable forge records an error and wakes once per failure episode
 ok - a late owner does not restart a shared forge failure episode
-exit=0
+ok - retire stops the unavailable check, leaves rotation and restores complete coverage
+ok - a late owner settled beside a retired final record stays unretired and known
+ok - retire is idempotent and refuses non-captain, unknown, malformed and signal-bearing pairs
+rc=0
