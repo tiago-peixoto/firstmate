@@ -1,0 +1,10 @@
+# target commit fbbd3269: bin/fm-watch.sh against a real Claude Code 2.1.290 exit picker
+stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+EXIT=0
+
+# drained wake-queue row
+1791262176	3	stale	lab:fm-picker	stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+
+# base commit 5838f105: same pane, same picker
+stale: lab:fm-picker
+EXIT=0

@@ -1,0 +1,7 @@
+# away mode, worker: picker reopened, daemon saved the name, then Esc pressed before the 20s threshold
+state/.subsuper-dialog-worker before Esc: Claude background-task exit picker
+state/.subsuper-dialog-worker 5s after Esc: absent (removed by the watcher miss poll)
+$ cat state/.subsuper-escalations   # 30s after Esc: no new line for the closed picker
+stale persisted 20s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-worker
+worker.status: done: all work finished
+stale persisted 20s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-worker

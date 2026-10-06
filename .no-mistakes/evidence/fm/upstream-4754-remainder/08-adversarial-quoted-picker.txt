@@ -1,0 +1,14 @@
+# kind=ship, status "working:", normal mode. Real Claude pane quoting the picker lines above a normal composer:
+● Quoted:
+  Background work is running
+  ❯ 1. Exit and stop tasks
+  Enter to confirm · Esc to cancel
+✻ Sautéed for 1s · done 7:38 AM · 1 shell still running
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage
+
+## one watcher cycle
+watcher exited rc=0; printed:
+stale: lab:fm-worker

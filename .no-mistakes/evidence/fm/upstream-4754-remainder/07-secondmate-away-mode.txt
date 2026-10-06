@@ -1,0 +1,10 @@
+# kind=secondmate, away mode (state/.afk), real daemon + watcher, FM_STALE_ESCALATE_SECS=20
+## A. picker open: daemon state
+state/.subsuper-dialog-mate: Claude background-task exit picker
+state/.subsuper-stale-mate: 1791265018
+## B. 6s after Esc: daemon state
+(no .subsuper-dialog-mate, no .subsuper-stale-mate)
+## C. 36s after Esc (past the 20s threshold): escalation buffer
+(state/.subsuper-escalations does not exist: no wedge line for the idle mate)
+## D. picker reopened and left open past the threshold: escalation buffer
+stale persisted 20s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-worker

@@ -1,0 +1,8 @@
+# second mate (kind=secondmate, status 'working:') parked on the real picker - bin/fm-watch.sh output
+stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+EXIT=0
+
+# after Esc on the picker: 30s of polling, watcher output:
+(empty - watcher still blocking)
+# bookkeeping files for the mate after the miss poll:
+(none)

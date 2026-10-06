@@ -1,0 +1,2 @@
+$ FM_HOME=$LAB FM_POLL=2 bin/fm-watch.sh   # target commit 6c6b8993, real Claude 2.1.291 pane on the exit picker, kind=ship, status "working:"
+stale: lab:fm-worker (blocked-on-prompt: Claude background-task exit picker)

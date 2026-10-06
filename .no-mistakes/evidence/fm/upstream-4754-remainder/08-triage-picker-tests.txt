@@ -1,0 +1,5 @@
+ok - a pane on the exit picker is a named stale, from the one capture the poll already takes
+ok - a pane on the exit picker keeps the wedge ladder, and the name follows demand-deep-inspection
+ok - picker text quoted above a composer stays an ordinary stale
+ok - a second mate on the exit picker is reported, and the bookkeeping is cleared when it closes
+rc=0

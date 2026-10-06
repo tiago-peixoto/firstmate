@@ -1,0 +1,5 @@
+# same real picker pane, kind=ship, status "working:", normal mode
+## base commit 5838f105 watcher
+stale: lab:fm-worker
+## target commit 6c6b8993 watcher
+stale: lab:fm-worker (blocked-on-prompt: Claude background-task exit picker)

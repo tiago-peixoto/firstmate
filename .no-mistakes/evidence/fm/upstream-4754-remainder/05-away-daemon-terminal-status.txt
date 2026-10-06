@@ -1,0 +1,12 @@
+# away mode, recorded decision trace: status 'done:' already escalated by signal, then /exit opens the real picker (FM_STALE_ESCALATE_SECS=40)
+## state/picker.status
+working: parked between turns
+done: PR opened and checks green
+## state/.supervise-daemon.log
+[2026-10-06T06:53:28+0200] wake: signal: /tmp/fm-lab.Kv2Lhb/state/picker.status
+[2026-10-06T06:53:30+0200] escalate: signal: /tmp/fm-lab.Kv2Lhb/state/picker.status -> picker.status: done: PR opened and checks green
+[2026-10-06T06:53:47+0200] wake: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+[2026-10-06T06:53:48+0200] self-handle: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker) -> stale + terminal (already escalated by signal): done: PR opened and checks green
+## state/.subsuper-escalations
+picker.status: done: PR opened and checks green
+stale persisted 41s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-picker

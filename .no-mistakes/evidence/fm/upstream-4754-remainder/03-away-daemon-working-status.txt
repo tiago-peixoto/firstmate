@@ -1,0 +1,4 @@
+# away mode (state/.afk present), real fm-supervise-daemon.sh wrapping real fm-watch.sh, FM_STALE_ESCALATE_SECS=20
+# worker status "working:", real Claude pane on the exit picker
+$ cat state/.subsuper-escalations
+stale persisted 20s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-worker

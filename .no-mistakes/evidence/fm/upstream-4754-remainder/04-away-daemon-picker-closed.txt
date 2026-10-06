@@ -1,0 +1,22 @@
+# away mode: picker seen and self-handled, then Esc pressed on the real picker before the 40s escalation bound
+## pane after Esc
+✻ Cogitated for 2s · done 6:48 AM · 1 shell still running
+❯ /exit
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage                        ✔ Update installed · Restart to update
+## state/.supervise-daemon.log
+[2026-10-06T06:52:19+0200] daemon starting (pid 1711145); target=lab:sup; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=40s; batch=999999s
+[2026-10-06T06:52:20+0200] wake: check: rearm-resurface
+[2026-10-06T06:52:22+0200] escalate: check: rearm-resurface -> check: rearm-resurface
+[2026-10-06T06:52:24+0200] wake: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+[2026-10-06T06:52:26+0200] self-handle: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker) -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-06T06:52:32+0200] wake: stale: lab:fm-picker
+[2026-10-06T06:52:34+0200] self-handle: stale: lab:fm-picker -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-06T06:52:44+0200] wake: stale: lab:fm-picker
+[2026-10-06T06:52:45+0200] self-handle: stale: lab:fm-picker -> transient stale (lab:fm-picker): working: parked between turns
+## state/.subsuper-escalations
+check: rearm-resurface
+stale persisted 42s (possible wedge): lab:fm-picker
+## .subsuper-dialog-picker existed after self-handle, was removed within 0.5s of the next watcher poll after Esc

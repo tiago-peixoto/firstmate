@@ -1,0 +1,5 @@
+# away mode, worker status "done:" already escalated by signal (seen), then real picker reopened; FM_STALE_ESCALATE_SECS=20
+$ cat state/.subsuper-escalations
+stale persisted 20s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-worker
+worker.status: done: all work finished
+stale persisted 20s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-worker

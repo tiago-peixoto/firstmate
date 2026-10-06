@@ -1,0 +1,10 @@
+# kind=secondmate, status "working: the parent supervises this secondmate", normal mode, real Claude 2.1.291 pane
+## A. /exit opened the picker: one watcher cycle
+watcher exited rc=0; printed:
+stale: lab:fm-worker (blocked-on-prompt: Claude background-task exit picker)
+.count-lab_fm-worker
+.hash-lab_fm-worker
+.stale-lab_fm-worker
+## B. Esc closed the picker: watcher observed for 15s
+watcher still blocking after 15s; printed: []
+(no .hash/.count/.stale bookkeeping left for the mate)
