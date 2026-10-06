@@ -1,0 +1,30 @@
+$ bin/fm-control.sh lab742c683c3184-worker relaunch --note ...   (target commit 47c74cfb)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fmlab.AyDAnO/home
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fmlab.AyDAnO/home
+relaunched lab742c683c3184-worker harness=claude from=claude model=sonnet effort=low backend=tmux endpoint=firstmate:fm-lab742c683c3184-worker worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+ [rc=0]
+--- after relaunch (new incarnation)
+sidecars:
+lab742c683c3184-worker.busy-gen
+lab742c683c3184-worker.busy-state
+busy-gen file: g1791326894.2258028.18728
+task record busy/spawn lines:
+window=firstmate:fm-lab742c683c3184-worker
+harness=claude
+busy_gen=g1791326894.2258028.18728
+spawn_gen=s1791326894.2256330.21143
+pane command: claude
+
+$ <base e06a46fe>/bin/fm-control.sh lab742c683c3184-worker exit   (baseline, before the fix)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fmlab.AyDAnO/home
+stopped lab742c683c3184-worker harness=claude backend=tmux endpoint=firstmate:fm-lab742c683c3184-worker worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+ [rc=0]
+--- after exit with BASE code: sidecar gone, busy_gen left behind (the bug)
+sidecars:
+(none)
+task record busy/spawn lines:
+window=firstmate:fm-lab742c683c3184-worker
+harness=claude
+busy_gen=g1791326894.2258028.18728
+spawn_gen=s1791326894.2256330.21143
+pane command: bash

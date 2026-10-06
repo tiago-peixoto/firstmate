@@ -1,0 +1,94 @@
+47c74cfb727870431bb1d1e2263edca265ebd6fd
+--- before (armed worker spawned by fm-spawn.sh)
+sidecars:
+lab742c683c3184-worker.busy-gen
+lab742c683c3184-worker.busy-state
+busy-gen file: g1791326255.1730600.25712
+task record (664):
+window=firstmate:fm-lab742c683c3184-worker
+endpoint_task_id=lab742c683c3184-worker
+worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+project=/tmp/fmlab.AyDAnO/home/projects/notes
+harness=claude
+kind=ship
+mode=local-only
+yolo=on
+branch=fm/lab742c683c3184-worker
+tasktmp=/tmp/fm-lab742c683c3184-worker
+model=sonnet
+effort=low
+busy_gen=g1791326255.1730600.25712
+spawn_gen=s1791326255.1727964.26581
+pane command: claude
+
+$ bin/fm-control.sh lab742c683c3184-worker interrupt
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fmlab.AyDAnO/home
+interrupt-delivered lab742c683c3184-worker harness=claude backend=tmux verified=agent-alive cancel=unconfirmed
+ [rc=0]
+--- after interrupt
+sidecars:
+lab742c683c3184-worker.busy-gen
+lab742c683c3184-worker.busy-state
+busy-gen file: g1791326255.1730600.25712
+task record (664):
+window=firstmate:fm-lab742c683c3184-worker
+endpoint_task_id=lab742c683c3184-worker
+worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+project=/tmp/fmlab.AyDAnO/home/projects/notes
+harness=claude
+kind=ship
+mode=local-only
+yolo=on
+branch=fm/lab742c683c3184-worker
+tasktmp=/tmp/fm-lab742c683c3184-worker
+model=sonnet
+effort=low
+busy_gen=g1791326255.1730600.25712
+spawn_gen=s1791326255.1727964.26581
+pane command: claude
+
+$ bin/fm-control.sh lab742c683c3184-worker exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fmlab.AyDAnO/home
+stopped lab742c683c3184-worker harness=claude backend=tmux endpoint=firstmate:fm-lab742c683c3184-worker worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+ [rc=0]
+--- after exit
+sidecars:
+(none)
+task record (600):
+window=firstmate:fm-lab742c683c3184-worker
+endpoint_task_id=lab742c683c3184-worker
+worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+project=/tmp/fmlab.AyDAnO/home/projects/notes
+harness=claude
+kind=ship
+mode=local-only
+yolo=on
+branch=fm/lab742c683c3184-worker
+tasktmp=/tmp/fm-lab742c683c3184-worker
+model=sonnet
+effort=low
+spawn_gen=s1791326255.1727964.26581
+pane command: bash
+
+$ bin/fm-control.sh lab742c683c3184-worker exit   (second time)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fmlab.AyDAnO/home
+already-stopped lab742c683c3184-worker harness=claude backend=tmux endpoint=firstmate:fm-lab742c683c3184-worker worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+ [rc=0]
+--- after second exit
+sidecars:
+(none)
+task record (600):
+window=firstmate:fm-lab742c683c3184-worker
+endpoint_task_id=lab742c683c3184-worker
+worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+project=/tmp/fmlab.AyDAnO/home/projects/notes
+harness=claude
+kind=ship
+mode=local-only
+yolo=on
+branch=fm/lab742c683c3184-worker
+tasktmp=/tmp/fm-lab742c683c3184-worker
+model=sonnet
+effort=low
+spawn_gen=s1791326255.1727964.26581
+pane command: bash

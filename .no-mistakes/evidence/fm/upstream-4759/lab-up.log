@@ -1,0 +1,13 @@
+lab: /tmp/fmlab.AyDAnO (tear down with: bin/fm-live-lab.sh down /tmp/fmlab.AyDAnO)
+tree: 47c74cfb727870431bb1d1e2263edca265ebd6fd from /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M49N6YTMN76GNKZE9YPDVFPC
+spawned lab742c683c3184-worker harness=claude kind=ship mode=local-only yolo=on window=firstmate:fm-lab742c683c3184-worker worktree=/tmp/fmlab.AyDAnO/treehouse/.treehouse/notes-863bbf/1/notes
+gate: /tmp/fmlab.AyDAnO/home/data/lab742c683c3184-worker/gate (touch, then message the worker to resume)
+primary: claude --setting-sources project,local --model sonnet --effort medium --permission-mode auto
+ok primary: claude pid 1738299 in /tmp/fmlab.AyDAnO/home
+ok probe: the primary answered LABREADY-742c683c3184
+ok trust: /tmp/fmlab.AyDAnO/home is trusted in the Claude store
+fail host: supervision host pid 1754547 runs (expected none)
+ok watcher: live watcher with a fresh beacon
+fail worker: the worker is not currently parked on /tmp/fmlab.AyDAnO/home/data/lab742c683c3184-worker/gate (state: unknown · source: pane · harness state unavailable (unknown missing))
+ok treehouse: ~/.treehouse unchanged
+not ready after 600s; the lab is left up for inspection: bin/fm-live-lab.sh pane /tmp/fmlab.AyDAnO, then bin/fm-live-lab.sh down /tmp/fmlab.AyDAnO
