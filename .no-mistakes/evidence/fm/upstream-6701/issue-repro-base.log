@@ -1,0 +1,115 @@
+
+== 1. reader advances over a 77-byte log, then the log is replaced by a 2-byte file
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=0
+PASS  original log size (77)
+captured result 2: status=continuity-broken from_offset=77 to_offset=2 reason=truncated 
+classify: continuity-broken
+handle exit status: 3 (continuity-broken: ios (truncated) already-handled: remote-reply-ios 2 <base-e06a46fe>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable )
+cursor file: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=c0fd1ee9a3c3d2fe0a0bdd39978b6ed817077ccaafb6795802bb5b3933e13f17 
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: remote-reply-continuity-ios blocked 
+PASS  first break handle exit status (3)
+PASS  blocked lines after first break (1)
+PASS  open decision after first break (remote-reply-continuity-ios	blocked)
+
+== 2. operator resolves the continuity decision
+fm-send.sh ios --resolve-key remote-reply-continuity-ios exit status: 0
+close line: resolved [key=remote-reply-continuity-ios] [at=1791300801]: answered: accepted the continuity break
+PASS  operator resolve exit status (0)
+PASS  open decisions after resolve ()
+PASS  blocked lines after resolve (1)
+
+== 3. a later read of that same shortened log (cursor has not moved)
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=77
+captured result 3: status=continuity-broken from_offset=77 to_offset=2 reason=truncated 
+classify: continuity-broken
+handle exit status: 3 (continuity-broken: ios (truncated) already-handled: remote-reply-ios 3 <base-e06a46fe>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable )
+cursor file: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=c0fd1ee9a3c3d2fe0a0bdd39978b6ed817077ccaafb6795802bb5b3933e13f17 
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: 
+PASS  repeat break handle exit status (3)
+PASS  blocked lines after unchanged re-read (1)
+PASS  open decisions after unchanged re-read ()
+
+== 4. retire the route, restore a 43-byte log, reader advances from the start
+retired: remote-reply-ios
+cursor file: <absent>
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: 
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=0
+cursor file: schema=fm-remote-reply-cursor.v1 offset=43 prefix_sha256=1492dcfcad4acce35e38cd5273652165c5350b58a10d3e42538e246bcf54b026 
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: 
+PASS  cursor offset after restore (43)
+PASS  blocked lines after restore (1)
+PASS  open decisions after restore ()
+
+== 5. empty the restored log: the second, distinct break
+captured result 5: status=continuity-broken from_offset=43 to_offset=0 reason=truncated 
+classify: continuity-broken
+handle exit status: 3 (continuity-broken: ios (truncated) already-handled: remote-reply-ios 5 <base-e06a46fe>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable )
+cursor file: schema=fm-remote-reply-cursor.v1 offset=43 prefix_sha256=1492dcfcad4acce35e38cd5273652165c5350b58a10d3e42538e246bcf54b026 
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: 
+PASS  second break handle exit status (3)
+FAIL  blocked lines after second break: got "1", expected "2"
+FAIL  open decision after second break: got "", expected "remote-reply-continuity-ios	blocked"
+
+== 6. adversarial: replay the same captured result, then read the unchanged empty log again
+FAIL  blocked lines after replayed ingest: got "1", expected "2"
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=43
+captured result 6: status=continuity-broken from_offset=43 to_offset=0 reason=truncated 
+classify: continuity-broken
+handle exit status: 3 (continuity-broken: ios (truncated) already-handled: remote-reply-ios 6 <base-e06a46fe>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable )
+FAIL  blocked lines after a fresh read of the unchanged break: got "1", expected "2"
+
+== 7. adversarial: resolve, then read the unchanged break once more (must stay closed)
+fm-send.sh ios --resolve-key remote-reply-continuity-ios exit status: 1
+  fm-send: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  fm-send: error: --resolve-key 'remote-reply-continuity-ios': no open decision or blocker with that key in /tmp/fm-6701-drive.yHeF2m/parent/state/ios.status, and no captain-held task 'remote-reply-continuity-ios' or 'ios-decision-remote-reply-continuity-ios' still open (already closed or mistyped). Re-check the OPEN DECISIONS listing, then resend without that key or with the right one; nothing was sent.
+close line: resolved [key=remote-reply-continuity-ios] [at=1791300801]: answered: accepted the continuity break
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=43
+captured result 7: status=continuity-broken from_offset=43 to_offset=0 reason=truncated 
+classify: continuity-broken
+handle exit status: 3 (continuity-broken: ios (truncated) already-handled: remote-reply-ios 7 <base-e06a46fe>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable )
+cursor file: schema=fm-remote-reply-cursor.v1 offset=43 prefix_sha256=1492dcfcad4acce35e38cd5273652165c5350b58a10d3e42538e246bcf54b026 
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: 
+FAIL  blocked lines after resolve and unchanged re-read: got "1", expected "2"
+PASS  open decisions after resolve and unchanged re-read ()
+
+== 8. no retirement: the 43-byte log comes back with one more line, the reader advances, the log is emptied
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=43
+cursor file: schema=fm-remote-reply-cursor.v1 offset=80 prefix_sha256=6945476397f8e85fd5f66a5082c61e0b20aede72e1e822b17219a8e89382932e 
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: 
+PASS  open decisions after the cursor moved ()
+captured result 9: status=continuity-broken from_offset=80 to_offset=0 reason=truncated 
+classify: continuity-broken
+handle exit status: 3 (continuity-broken: ios (truncated) already-handled: remote-reply-ios 9 <base-e06a46fe>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable )
+cursor file: schema=fm-remote-reply-cursor.v1 offset=80 prefix_sha256=6945476397f8e85fd5f66a5082c61e0b20aede72e1e822b17219a8e89382932e 
+continuity file: <absent>
+blocked continuity lines: 1
+open decisions: 
+PASS  moved-cursor break handle exit status (3)
+FAIL  blocked lines after the moved-cursor break: got "1", expected "2"
+FAIL  open decision after the moved-cursor break: got "", expected "remote-reply-continuity-ios	blocked"
+
+== final parent status log (continuity lines)
+blocked [key=remote-reply-continuity-ios] [at=1791300799]: remote reply continuity broke for ios (truncated)
+resolved [key=remote-reply-continuity-ios] [at=1791300801]: answered: accepted the continuity break
+
+RESULT: 7 failed expectation(s)
