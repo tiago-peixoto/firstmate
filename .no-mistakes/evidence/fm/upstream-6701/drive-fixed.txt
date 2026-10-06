@@ -1,0 +1,90 @@
+
+=== 1. route healthy, reader caught up ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=43 prefix_sha256=7365c59b84dd931290c295f38a2c67d2137719b73fe2265f1f14f1f02bc2b396   retirements file: absent
+blocked continuity lines on parent status log: 0
+open decisions: []
+listener captured remote-reply-ios.2.result classified as: continuity-broken
+handle ios 2 exit status: 3
+
+=== 2. first break: remote log replaced under the cursor ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=43 prefix_sha256=7365c59b84dd931290c295f38a2c67d2137719b73fe2265f1f14f1f02bc2b396   retirements file: absent
+blocked continuity lines on parent status log: 1
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+open decisions: [remote-reply-continuity-ios ]
+
+=== 3. operator resolves the decision ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=43 prefix_sha256=7365c59b84dd931290c295f38a2c67d2137719b73fe2265f1f14f1f02bc2b396   retirements file: absent
+blocked continuity lines on parent status log: 1
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+open decisions: []
+listener captured remote-reply-ios.3.result classified as: continuity-broken
+handle ios 3 exit status: 3
+
+=== 4. same unchanged break read again (cursor not moved): expect no new line, decision closed ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=43 prefix_sha256=7365c59b84dd931290c295f38a2c67d2137719b73fe2265f1f14f1f02bc2b396   retirements file: absent
+blocked continuity lines on parent status log: 1
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+open decisions: []
+
+=== 5. log repaired and extended, reader advances, no retirement ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=e26d10883968f10096422578076356a933590f80762930fe7fc3d8d735ccda23   retirements file: absent
+blocked continuity lines on parent status log: 1
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+open decisions: []
+listener captured remote-reply-ios.5.result classified as: continuity-broken
+handle ios 5 exit status: 3
+
+=== 6. LATER DISTINCT BREAK at the new cursor: expect a second blocked line, decision open ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=e26d10883968f10096422578076356a933590f80762930fe7fc3d8d735ccda23   retirements file: absent
+blocked continuity lines on parent status log: 2
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+  | blocked [key=remote-reply-continuity-ios] [at=1791328432]: remote reply continuity broke for ios (truncated) at offset 77 prefix e26d10883968 retirements 0
+open decisions: [remote-reply-continuity-ios ]
+listener captured remote-reply-ios.6.result classified as: continuity-broken
+handle ios 6 exit status: 3
+
+=== 7. that later break read again: expect still two lines ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=e26d10883968f10096422578076356a933590f80762930fe7fc3d8d735ccda23   retirements file: absent
+blocked continuity lines on parent status log: 2
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+  | blocked [key=remote-reply-continuity-ios] [at=1791328432]: remote reply continuity broke for ios (truncated) at offset 77 prefix e26d10883968 retirements 0
+open decisions: [remote-reply-continuity-ios ]
+retired: remote-reply-ios
+
+=== 8. operator resolves, retires the route, restores identical bytes; reader back at the same offset ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=e26d10883968f10096422578076356a933590f80762930fe7fc3d8d735ccda23   retirements file: count=1
+blocked continuity lines on parent status log: 2
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+  | blocked [key=remote-reply-continuity-ios] [at=1791328432]: remote reply continuity broke for ios (truncated) at offset 77 prefix e26d10883968 retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+open decisions: []
+listener captured remote-reply-ios.8.result classified as: continuity-broken
+handle ios 8 exit status: 3
+
+=== 9. break after retirement with identical bytes: expect a third blocked line, decision open ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=e26d10883968f10096422578076356a933590f80762930fe7fc3d8d735ccda23   retirements file: count=1
+blocked continuity lines on parent status log: 3
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+  | blocked [key=remote-reply-continuity-ios] [at=1791328432]: remote reply continuity broke for ios (truncated) at offset 77 prefix e26d10883968 retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+  | blocked [key=remote-reply-continuity-ios] [at=1791328447]: remote reply continuity broke for ios (truncated) at offset 77 prefix e26d10883968 retirements 1
+open decisions: [remote-reply-continuity-ios ]
+listener captured remote-reply-ios.9.result classified as: continuity-broken
+handle ios 9 exit status: 3
+
+=== 10. that break read again: expect still three lines ===
+cursor: schema=fm-remote-reply-cursor.v1 offset=77 prefix_sha256=e26d10883968f10096422578076356a933590f80762930fe7fc3d8d735ccda23   retirements file: count=1
+blocked continuity lines on parent status log: 3
+  | blocked [key=remote-reply-continuity-ios] [at=1791328418]: remote reply continuity broke for ios (truncated) at offset 43 prefix 7365c59b84dd retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+  | blocked [key=remote-reply-continuity-ios] [at=1791328432]: remote reply continuity broke for ios (truncated) at offset 77 prefix e26d10883968 retirements 0
+  | resolved [key=remote-reply-continuity-ios]: operator accepted the break
+  | blocked [key=remote-reply-continuity-ios] [at=1791328447]: remote reply continuity broke for ios (truncated) at offset 77 prefix e26d10883968 retirements 1
+open decisions: [remote-reply-continuity-ios ]
