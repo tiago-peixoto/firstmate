@@ -4354,10 +4354,21 @@ test_nonterminal_stale_pause_transitions_reclassify_unchanged_hash() {
     sleep 0.1
     i=$((i + 1))
   done
-  kill -0 "$pid" 2>/dev/null || { reap "$pid"; fail "a stale hash that entered pause was wedge-escalated: $(cat "$out")"; }
+  wait_for_exit "$pid" 100 || { reap "$pid"; fail "a newly recognized declared pause did not alert once"; }
+  grep -Fx "stale: $window" "$out" >/dev/null || { reap "$pid"; fail "first-sight declared-pause alert was not a plain stale wake: $(cat "$out")"; }
   [ -e "$state/.paused-$key" ] || { reap "$pid"; fail "unchanged stale hash did not enter paused mode"; }
   [ ! -e "$state/.stale-since-$key" ] || { reap "$pid"; fail "pause transition retained its wedge timer"; }
-  wait_poll_cycle "$state" "$pid" || { reap "$pid"; fail "a stale hash that entered pause was wedge-escalated: $(cat "$out")"; }
+  ack_stopped_cycle "$state" || fail "could not acknowledge the first-sight declared-pause alert"
+  reap "$pid"
+
+  PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" \
+    FM_FAKE_TMUX_CURRENT_COMMAND=zsh \
+    FM_STATE_OVERRIDE="$state" FM_CREW_STATE_BIN="$fakebin/fm-crew-state.sh" FM_PAUSE_RESURFACE_SECS=999 FM_POLL=1 FM_SIGNAL_GRACE=1 \
+    FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" &
+  pid=$!
+  wait_poll_cycle "$state" "$pid" || { reap "$pid"; fail "an acknowledged pause re-woke before its bounded recheck: $(cat "$out")"; }
+  [ ! -s "$out" ] || { reap "$pid"; fail "an acknowledged pause emitted another first-sight alert: $(cat "$out")"; }
+  [ ! -s "$state/.wake-queue" ] || { reap "$pid"; fail "an acknowledged pause queued another first-sight alert"; }
   reap "$pid"
   ack_stopped_cycle "$state" || fail "could not acknowledge the intentional entered-pause watcher stop"
 
