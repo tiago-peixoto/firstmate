@@ -1,0 +1,18 @@
+t+  0s driver start root=/tmp/fm-base.h4fKt4 cadence=45s poll=2s
+t+  7s WAKE rc=0: signal: /tmp/fm-lab.gHCMyR/state/alive.status /tmp/fm-lab.gHCMyR/state/dead.status /tmp/fm-lab.gHCMyR/state/held.status /tmp/fm-lab.gHCMyR/state/unknown.status /tmp/fm-lab.gHCMyR/state/until.status
+t+ 19s WAKE rc=0: stale: crew:fm-alive
+t+ 25s WAKE rc=0: stale: crew:fm-unknown
+t+ 40s WAKE rc=0: stale: crew:fm-held (captain-held 48s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 46s WAKE rc=0: stale: crew:fm-dead (paused 53s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 52s WAKE rc=0: stale: crew:fm-until (paused 60s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+t+ 67s WAKE rc=0: stale: crew:fm-alive (paused 75s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 73s WAKE rc=0: stale: crew:fm-unknown (paused 81s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 89s WAKE rc=0: stale: crew:fm-held (captain-held 96s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 94s WAKE rc=0: stale: crew:fm-dead (paused 102s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+101s WAKE rc=0: stale: crew:fm-until (paused 108s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+t+116s WAKE rc=0: stale: crew:fm-alive (paused 123s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+122s WAKE rc=0: stale: crew:fm-unknown (paused 129s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+137s WAKE rc=0: stale: crew:fm-held (captain-held 145s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+142s WAKE rc=0: stale: crew:fm-dead (paused 150s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+149s WAKE rc=0: stale: crew:fm-until (paused 156s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+t+152s driver end

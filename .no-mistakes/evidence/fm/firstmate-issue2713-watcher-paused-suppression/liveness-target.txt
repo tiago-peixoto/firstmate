@@ -1,0 +1,5 @@
+crew:fm-dead agent_alive=dead | crew-state: state: unknown · source: none · worktree gone (torn down?) | status: paused: waiting on the upstream release
+crew:fm-unknown agent_alive=unknown | crew-state: state: unknown · source: none · worktree gone (torn down?) | status: paused: waiting on the upstream release
+crew:fm-alive agent_alive=alive | crew-state: state: unknown · source: none · worktree gone (torn down?) | status: paused: waiting on the upstream release
+crew:fm-held agent_alive=dead | crew-state: state: unknown · source: none · worktree gone (torn down?) | status: captain-held [key=route]: tracked by held-decision-route
+crew:fm-until agent_alive=dead | crew-state: state: unknown · source: none · worktree gone (torn down?) | status: paused: rate limit until 2027-10-06T00:00:00Z

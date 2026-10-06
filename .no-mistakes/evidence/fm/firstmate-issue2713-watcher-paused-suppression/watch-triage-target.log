@@ -1,0 +1,98 @@
+[2026-10-06T15:20:41+0200] absorbed stale (paused, awaiting external, age 30s): crew:fm-alive
+[2026-10-06T15:20:46+0200] absorbed stale (paused, awaiting external, age 35s): crew:fm-alive
+[2026-10-06T15:20:46+0200] absorbed stale (paused, awaiting external, age 35s): crew:fm-dead
+[2026-10-06T15:20:51+0200] absorbed stale (paused, awaiting external, age 40s): crew:fm-alive
+[2026-10-06T15:20:51+0200] absorbed stale (captain-held, awaiting the captain, age 40s): crew:fm-held
+[2026-10-06T15:20:56+0200] absorbed stale (paused, awaiting external, age 45s): crew:fm-alive
+[2026-10-06T15:20:57+0200] absorbed stale (captain-held, awaiting the captain, age 46s): crew:fm-held
+[2026-10-06T15:20:57+0200] absorbed stale (paused, awaiting external, age 46s): crew:fm-unknown
+[2026-10-06T15:20:57+0200] absorbed non-terminal stale (declared wait or open captain call already re-surfaced this window): crew:fm-until
+[2026-10-06T15:21:00+0200] absorbed stale (paused, awaiting external, age 49s): crew:fm-alive
+[2026-10-06T15:21:01+0200] absorbed non-terminal stale (declared wait or open captain call already re-surfaced this window): crew:fm-dead
+[2026-10-06T15:21:01+0200] absorbed stale (captain-held, awaiting the captain, age 50s): crew:fm-held
+[2026-10-06T15:21:01+0200] absorbed stale (paused, awaiting external, age 50s): crew:fm-unknown
+[2026-10-06T15:21:06+0200] absorbed stale (paused, awaiting external, age 55s): crew:fm-alive
+[2026-10-06T15:21:06+0200] absorbed stale (paused, awaiting external, age 55s): crew:fm-dead
+[2026-10-06T15:21:06+0200] absorbed stale (captain-held, awaiting the captain, age 55s): crew:fm-held
+[2026-10-06T15:21:07+0200] absorbed stale (paused, awaiting external, age 56s): crew:fm-unknown
+[2026-10-06T15:21:07+0200] absorbed stale (paused, declared time beyond recheck cadence, age 56s): crew:fm-until
+[2026-10-06T15:21:10+0200] absorbed stale (paused, awaiting external, age 59s): crew:fm-alive
+[2026-10-06T15:21:10+0200] absorbed stale (paused, awaiting external, age 59s): crew:fm-dead
+[2026-10-06T15:21:10+0200] absorbed stale (captain-held, awaiting the captain, age 59s): crew:fm-held
+[2026-10-06T15:21:11+0200] absorbed stale (paused, awaiting external, age 60s): crew:fm-unknown
+[2026-10-06T15:21:11+0200] absorbed stale (paused, declared time beyond recheck cadence, age 60s): crew:fm-until
+[2026-10-06T15:21:14+0200] absorbed stale (paused, awaiting external, age 63s): crew:fm-alive
+[2026-10-06T15:21:14+0200] absorbed stale (paused, awaiting external, age 63s): crew:fm-dead
+[2026-10-06T15:21:14+0200] absorbed stale (captain-held, awaiting the captain, age 63s): crew:fm-held
+[2026-10-06T15:21:15+0200] absorbed stale (paused, awaiting external, age 63s): crew:fm-unknown
+[2026-10-06T15:21:15+0200] absorbed stale (paused, declared time beyond recheck cadence, age 64s): crew:fm-until
+[2026-10-06T15:21:18+0200] absorbed stale (paused, awaiting external, age 67s): crew:fm-alive
+[2026-10-06T15:21:18+0200] absorbed stale (paused, awaiting external, age 67s): crew:fm-dead
+[2026-10-06T15:21:18+0200] absorbed stale (captain-held, awaiting the captain, age 67s): crew:fm-held
+[2026-10-06T15:21:19+0200] absorbed stale (paused, awaiting external, age 68s): crew:fm-unknown
+[2026-10-06T15:21:19+0200] absorbed stale (paused, declared time beyond recheck cadence, age 68s): crew:fm-until
+[2026-10-06T15:21:27+0200] absorbed stale (paused, awaiting external, age 76s): crew:fm-alive
+[2026-10-06T15:21:32+0200] absorbed stale (paused, awaiting external, age 81s): crew:fm-alive
+[2026-10-06T15:21:32+0200] absorbed stale (paused, awaiting external, age 81s): crew:fm-dead
+[2026-10-06T15:21:37+0200] absorbed stale (paused, awaiting external, age 86s): crew:fm-alive
+[2026-10-06T15:21:37+0200] absorbed stale (paused, awaiting external, age 86s): crew:fm-dead
+[2026-10-06T15:21:37+0200] absorbed stale (captain-held, awaiting the captain, age 86s): crew:fm-held
+[2026-10-06T15:21:42+0200] absorbed stale (paused, awaiting external, age 91s): crew:fm-alive
+[2026-10-06T15:21:42+0200] absorbed stale (paused, awaiting external, age 91s): crew:fm-dead
+[2026-10-06T15:21:43+0200] absorbed stale (captain-held, awaiting the captain, age 92s): crew:fm-held
+[2026-10-06T15:21:43+0200] absorbed stale (paused, awaiting external, age 92s): crew:fm-unknown
+[2026-10-06T15:21:43+0200] absorbed stale (paused, declared time beyond recheck cadence, age 92s): crew:fm-until
+[2026-10-06T15:21:46+0200] absorbed stale (paused, awaiting external, age 95s): crew:fm-alive
+[2026-10-06T15:21:47+0200] absorbed stale (paused, awaiting external, age 95s): crew:fm-dead
+[2026-10-06T15:21:47+0200] absorbed stale (captain-held, awaiting the captain, age 96s): crew:fm-held
+[2026-10-06T15:21:47+0200] absorbed stale (paused, awaiting external, age 96s): crew:fm-unknown
+[2026-10-06T15:21:52+0200] absorbed stale (paused, awaiting external, age 101s): crew:fm-alive
+[2026-10-06T15:21:52+0200] absorbed stale (paused, awaiting external, age 101s): crew:fm-dead
+[2026-10-06T15:21:53+0200] absorbed stale (captain-held, awaiting the captain, age 102s): crew:fm-held
+[2026-10-06T15:21:53+0200] absorbed stale (paused, awaiting external, age 102s): crew:fm-unknown
+[2026-10-06T15:21:53+0200] absorbed stale (paused, declared time beyond recheck cadence, age 102s): crew:fm-until
+[2026-10-06T15:21:56+0200] absorbed stale (paused, awaiting external, age 105s): crew:fm-alive
+[2026-10-06T15:21:57+0200] absorbed stale (paused, awaiting external, age 106s): crew:fm-dead
+[2026-10-06T15:21:57+0200] absorbed stale (captain-held, awaiting the captain, age 106s): crew:fm-held
+[2026-10-06T15:21:57+0200] absorbed stale (paused, awaiting external, age 106s): crew:fm-unknown
+[2026-10-06T15:21:57+0200] absorbed stale (paused, declared time beyond recheck cadence, age 106s): crew:fm-until
+[2026-10-06T15:22:00+0200] absorbed stale (paused, awaiting external, age 109s): crew:fm-alive
+[2026-10-06T15:22:00+0200] absorbed stale (paused, awaiting external, age 109s): crew:fm-dead
+[2026-10-06T15:22:01+0200] absorbed stale (captain-held, awaiting the captain, age 110s): crew:fm-held
+[2026-10-06T15:22:01+0200] absorbed stale (paused, awaiting external, age 110s): crew:fm-unknown
+[2026-10-06T15:22:01+0200] absorbed stale (paused, declared time beyond recheck cadence, age 110s): crew:fm-until
+[2026-10-06T15:22:04+0200] absorbed stale (paused, awaiting external, age 113s): crew:fm-alive
+[2026-10-06T15:22:05+0200] absorbed stale (paused, awaiting external, age 113s): crew:fm-dead
+[2026-10-06T15:22:05+0200] absorbed stale (captain-held, awaiting the captain, age 114s): crew:fm-held
+[2026-10-06T15:22:05+0200] absorbed stale (paused, awaiting external, age 114s): crew:fm-unknown
+[2026-10-06T15:22:05+0200] absorbed stale (paused, declared time beyond recheck cadence, age 114s): crew:fm-until
+[2026-10-06T15:22:13+0200] absorbed stale (paused, awaiting external, age 122s): crew:fm-alive
+[2026-10-06T15:22:18+0200] absorbed stale (paused, awaiting external, age 127s): crew:fm-alive
+[2026-10-06T15:22:18+0200] absorbed stale (paused, awaiting external, age 127s): crew:fm-dead
+[2026-10-06T15:22:23+0200] absorbed stale (paused, awaiting external, age 132s): crew:fm-alive
+[2026-10-06T15:22:24+0200] absorbed stale (paused, awaiting external, age 133s): crew:fm-dead
+[2026-10-06T15:22:24+0200] absorbed stale (captain-held, awaiting the captain, age 133s): crew:fm-held
+[2026-10-06T15:22:29+0200] absorbed stale (paused, awaiting external, age 138s): crew:fm-alive
+[2026-10-06T15:22:29+0200] absorbed stale (paused, awaiting external, age 138s): crew:fm-dead
+[2026-10-06T15:22:29+0200] absorbed stale (captain-held, awaiting the captain, age 138s): crew:fm-held
+[2026-10-06T15:22:30+0200] absorbed stale (paused, awaiting external, age 138s): crew:fm-unknown
+[2026-10-06T15:22:30+0200] absorbed stale (paused, declared time beyond recheck cadence, age 139s): crew:fm-until
+[2026-10-06T15:22:33+0200] absorbed stale (paused, awaiting external, age 142s): crew:fm-alive
+[2026-10-06T15:22:33+0200] absorbed stale (paused, awaiting external, age 142s): crew:fm-dead
+[2026-10-06T15:22:33+0200] absorbed stale (captain-held, awaiting the captain, age 142s): crew:fm-held
+[2026-10-06T15:22:33+0200] absorbed stale (paused, awaiting external, age 142s): crew:fm-unknown
+[2026-10-06T15:22:38+0200] absorbed stale (paused, awaiting external, age 147s): crew:fm-alive
+[2026-10-06T15:22:38+0200] absorbed stale (paused, awaiting external, age 147s): crew:fm-dead
+[2026-10-06T15:22:39+0200] absorbed stale (captain-held, awaiting the captain, age 148s): crew:fm-held
+[2026-10-06T15:22:39+0200] absorbed stale (paused, awaiting external, age 148s): crew:fm-unknown
+[2026-10-06T15:22:39+0200] absorbed stale (paused, declared time beyond recheck cadence, age 148s): crew:fm-until
+[2026-10-06T15:22:42+0200] absorbed stale (paused, awaiting external, age 151s): crew:fm-alive
+[2026-10-06T15:22:43+0200] absorbed stale (paused, awaiting external, age 152s): crew:fm-dead
+[2026-10-06T15:22:43+0200] absorbed stale (captain-held, awaiting the captain, age 152s): crew:fm-held
+[2026-10-06T15:22:43+0200] absorbed stale (paused, awaiting external, age 152s): crew:fm-unknown
+[2026-10-06T15:22:43+0200] absorbed stale (paused, declared time beyond recheck cadence, age 152s): crew:fm-until
+[2026-10-06T15:22:47+0200] absorbed stale (paused, awaiting external, age 156s): crew:fm-alive
+[2026-10-06T15:22:47+0200] absorbed stale (paused, awaiting external, age 156s): crew:fm-dead
+[2026-10-06T15:22:47+0200] absorbed stale (captain-held, awaiting the captain, age 156s): crew:fm-held
+[2026-10-06T15:22:47+0200] absorbed stale (paused, awaiting external, age 156s): crew:fm-unknown
+[2026-10-06T15:22:48+0200] absorbed stale (paused, declared time beyond recheck cadence, age 156s): crew:fm-until

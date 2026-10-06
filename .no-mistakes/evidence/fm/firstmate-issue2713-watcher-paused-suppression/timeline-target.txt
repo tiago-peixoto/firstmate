@@ -1,0 +1,19 @@
+t+  0s driver start root=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M48NR24QA5ZN9G9H3PE5CXGK cadence=45s poll=2s
+t+  6s WAKE rc=0: signal: /tmp/fm-lab.3e8C8O/state/alive.status /tmp/fm-lab.3e8C8O/state/dead.status /tmp/fm-lab.3e8C8O/state/held.status /tmp/fm-lab.3e8C8O/state/unknown.status /tmp/fm-lab.3e8C8O/state/until.status
+t+ 18s WAKE rc=0: stale: crew:fm-alive
+t+ 23s WAKE rc=0: stale: crew:fm-dead
+t+ 28s WAKE rc=0: stale: crew:fm-held
+t+ 33s WAKE rc=0: stale: crew:fm-unknown
+t+ 43s WAKE rc=0: stale: crew:fm-until (paused 50s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+t+ 63s WAKE rc=0: stale: crew:fm-alive (paused 71s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 68s WAKE rc=0: stale: crew:fm-dead (paused 76s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 74s WAKE rc=0: stale: crew:fm-held (captain-held 81s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+ 79s WAKE rc=0: stale: crew:fm-unknown (paused 87s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+ 89s WAKE rc=0: stale: crew:fm-until (paused 96s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+t+110s WAKE rc=0: stale: crew:fm-alive (paused 117s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+115s WAKE rc=0: stale: crew:fm-dead (paused 122s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+120s WAKE rc=0: stale: crew:fm-held (captain-held 128s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+t+125s WAKE rc=0: stale: crew:fm-unknown (paused 133s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+t+135s WAKE rc=0: stale: crew:fm-until (paused 143s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+t+150s watcher still blocking at end of window (no wake)
+t+150s driver end
