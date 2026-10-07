@@ -1,0 +1,94 @@
+=== scenario: disabled (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+{"mcpServers":{"repro-marker":{"command":"/tmp/fm-kimi-live.c0zbjj/disabled/proj/repro-mcp-marker.sh","args":["--disabled"],"enabled":false}}}
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.; inspect window primary:fm-kimi-live-disabled
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+(none)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344796]: refusing Kimi launch: .kimi-code/mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.
+
+=== scenario: nullmap (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+{"mcpServers":null}
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.; inspect window primary:fm-kimi-live-nullmap
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+(none)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344802]: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.
+
+=== scenario: arraymap (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+{"mcpServers":[{"command":"/tmp/fm-kimi-live.c0zbjj/arraymap/proj/repro-mcp-marker.sh"}]}
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.; inspect window primary:fm-kimi-live-arraymap
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+(none)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344809]: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.
+
+=== scenario: badjson (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+not-json
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.; inspect window primary:fm-kimi-live-badjson
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+(none)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344815]: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.
+
+=== scenario: emptymap (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+{"mcpServers":{}}
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+error: kimi brief pointer delivery was not confirmed; inspect window primary:fm-kimi-live-emptymap
+##### frame at 03:47:04.183 #####
+turn.
+mi-live.c0zbjj/emptymap/pool/.treehouse/proj-96e25c/1/proj'
+tmp/fm-kimi-live-emptymap/gotmp
+VISER_DISABLE=1
+=kimi-live-emptymap
+ive-emptymap+40b66f680e1e669188b1de97b16b17f56c3db521c67948387a4f8ba464797429/launch.s1791344821.2443927.31554
+.sh'
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  <lab>/emptymap/pool/.treehouse/proj-96e25c/1/proj
+  Project-level MCP servers are disabled until you explicitly choose Trust. Trust starts the listed project
+  MCP targets and remembers this folder.
+   ❯ Trust this folder
+     Enable project MCP servers. Remembered for this folder.
+     Don't trust
+     Exit Kimi Code. Asked again next launch.
+
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+wd_proj_6a1b48d17f3b
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344852]: kimi brief pointer delivery was not confirmed
+

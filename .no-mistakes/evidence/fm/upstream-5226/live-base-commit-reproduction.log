@@ -1,0 +1,127 @@
+=== scenario: basedecl (firstmate tree: /tmp/fm-kimi-live.c0zbjj/base) ===
+--- .kimi-code/mcp.json in project ---
+{"mcpServers":{"repro-marker":{"command":"/tmp/fm-kimi-live.c0zbjj/basedecl/proj/repro-mcp-marker.sh","args":["--from-project-mcp"]},"repro-remote":{"url":"http://127.0.0.1:9/mcp"}}}
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+warning: <lab>/basedecl/data/kimi-live-basedecl/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-live-basedecl
+warning: <lab>/basedecl/data/kimi-live-basedecl/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: kimi brief pointer delivery was not confirmed; inspect window primary:fm-kimi-live-basedecl
+warning: leaving task kimi-live-basedecl's slot claim on <lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- tmux windows ---
+primary:0 bash cmd=bash
+primary:1 fm-kimi-live-basedecl cmd=kimi-code
+--- visible pane primary:0 ---
+'<lab>/base/bin/fm-spawn.sh' kimi-live-basedecl '<lab>/basedecl/proj' --
+harness kimi --mode no-mistakes --yolo off > '<lab>/basedecl/spawn.out' 2>&1; echo rc=$? >
+'<lab>/basedecl/spawn.rc'
+bash-5.3$ '<lab>/base/bin/fm-spawn.sh' kimi-live-basedecl '<lab>/basedec
+l/proj' --harness kimi --mode no-mistakes --yolo off > '<lab>/basedecl/spawn.out' 2>&1; ech
+o rc=$? > '<lab>/basedecl/spawn.rc'
+bash-5.3$
+--- visible pane primary:1 ---
+🌳 Entered worktree at <lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj. Type 'exit' to re
+turn.
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ cd -- '/tmp/fm-ki
+mi-live.c0zbjj/basedecl/pool/.treehouse/proj-d5dbe2/1/proj'
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ export GOTMPDIR=/
+tmp/fm-kimi-live-basedecl/gotmp
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ export COMPACT_AD
+VISER_DISABLE=1
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ export FM_TASK_ID
+=kimi-live-basedecl
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ . '/tmp/fm-kimi-l
+ive-basedecl+7f2e9832055a4c34a171a7646ce8b2c5509fcb215634817785ebed35cecf2bc6/launch.s1791344730.2374999.22405
+.sh'
+ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                          │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                          │
+ │  ▐█████▌  Run /login or /provider to get started.                                                        │
+ │                                                                                                          │
+ │  Directory: <lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj                         │
+ │  Session:                                                                                                │
+ │  Model:     not set, run /login or /provider                                                             │
+ │  Version:   2.1.1                                                                                        │
+ │                                                                                                          │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi Code Desktop is here — Everything you love about Kimi Code, now on desktop
+   Run /desktop or visit https://www.kimi.com/code to install
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf
+ and restart tmux.
+   Error: LLM not set, send "/login" to login
+ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                        │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  …/proj-d5dbe2/1/proj     ! to run a shell command | /compact compresses context when it gets long
+                                                                                                  context: 0%
+--- recorded task-pane frames that show Kimi folder-prompt text (from 0.1s polling) ---
+frames with folder-prompt text: 1
+##### frame at 03:45:33.314 #####
+treehouse get
+firstmate@firstmate-hz:<lab>/basedecl/proj$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at <lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj. Type 'exit' to re
+turn.
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ cd -- '/tmp/fm-ki
+mi-live.c0zbjj/basedecl/pool/.treehouse/proj-d5dbe2/1/proj'
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ export GOTMPDIR=/
+tmp/fm-kimi-live-basedecl/gotmp
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ export COMPACT_AD
+VISER_DISABLE=1
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ export FM_TASK_ID
+=kimi-live-basedecl
+firstmate@firstmate-hz:<lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj$ . '/tmp/fm-kimi-l
+ive-basedecl+7f2e9832055a4c34a171a7646ce8b2c5509fcb215634817785ebed35cecf2bc6/launch.s1791344730.2374999.22405
+.sh'
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  <lab>/basedecl/pool/.treehouse/proj-d5dbe2/1/proj
+  Project-level MCP servers are disabled until you explicitly choose Trust. Trust starts the listed project
+  MCP targets and remembers this folder.
+  Project MCP targets:
+    repro-marker (stdio): command=<lab>/basedecl/proj/repro-mcp-marker.sh
+    args=["--from-project-mcp"]
+    repro-remote (http): url=http://127.0.0.1:9/mcp
+   ❯ Trust this folder
+     Enable project MCP servers. Remembered for this folder.
+     Don't trust
+     Exit Kimi Code. Asked again next launch.
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+wd_proj_4ef9f7e8c557
+--- kimi processes on lab socket ---
+2375374 treehouse get
+(end)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+2026-10-07T03:45:33Z --from-project-mcp
+--- task status file ---
+failed [at=1791344761]: kimi brief pointer delivery was not confirmed
+--- KIMI_CODE_HOME contents ---
+.
+./bin
+./bin/fd
+./bin/kimi
+./cache
+./cache/query-store
+./config.toml
+./device_id
+./fm-turn-end.d
+./fm-turn-end.d/fm.7Xt4RXAFsztg
+./fm-turn-end.sh
+./logs
+./logs/kimi-code.log
+./sessions
+./sessions/.index-cache
+./telemetry
+./tui.toml
+./updates
+./updates/latest.json
+./updates/rollout.log
+./user-history
+./user-history/588d3a45e8f0dfc0903eceef71d6384f.jsonl
+./workspaces.json
+./workspace-trust
+./workspace-trust/wd_proj_4ef9f7e8c557

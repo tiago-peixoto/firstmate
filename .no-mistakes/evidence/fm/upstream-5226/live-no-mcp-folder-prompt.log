@@ -1,0 +1,122 @@
+=== scenario: nomcp (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+(none)
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+warning: <lab>/nomcp/data/kimi-live-nomcp/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-live-nomcp
+warning: <lab>/nomcp/data/kimi-live-nomcp/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: kimi brief pointer delivery was not confirmed; inspect window primary:fm-kimi-live-nomcp
+warning: leaving task kimi-live-nomcp's slot claim on <lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- tmux windows ---
+primary:0 bash cmd=bash
+primary:1 fm-kimi-live-nomcp cmd=kimi-code
+--- visible pane primary:0 ---
+'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ/bin/fm-spawn.sh' kimi-live-nom
+cp '<lab>/nomcp/proj' --harness kimi --mode no-mistakes --yolo off > '/tmp/fm-kimi-live.c0z
+bjj/nomcp/spawn.out' 2>&1; echo rc=$? > '<lab>/nomcp/spawn.rc'
+bash-5.3$ '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ/bin/fm-spawn.sh' kim
+i-live-nomcp '<lab>/nomcp/proj' --harness kimi --mode no-mistakes --yolo off > '/tmp/fm-kim
+i-live.c0zbjj/nomcp/spawn.out' 2>&1; echo rc=$? > '<lab>/nomcp/spawn.rc'
+bash-5.3$
+--- visible pane primary:1 ---
+🌳 Setting up worktree...
+🌳 Entered worktree at <lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj. Type 'exit' to retur
+n.
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ cd -- '/tmp/fm-kimi-
+live.c0zbjj/nomcp/pool/.treehouse/proj-bc019b/1/proj'
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ export GOTMPDIR=/tmp
+/fm-kimi-live-nomcp/gotmp
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ export COMPACT_ADVIS
+ER_DISABLE=1
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ export FM_TASK_ID=ki
+mi-live-nomcp
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ . '/tmp/fm-kimi-live
+-nomcp+374be77af7b5e16f35bb70da7bb3859f270a3ddc6dd190076ba47ea09b1635a3/launch.s1791344682.2340547.8486.sh'
+ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                          │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                          │
+ │  ▐█████▌  Run /login or /provider to get started.                                                        │
+ │                                                                                                          │
+ │  Directory: <lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj                            │
+ │  Session:                                                                                                │
+ │  Model:     not set, run /login or /provider                                                             │
+ │  Version:   2.1.1                                                                                        │
+ │                                                                                                          │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi Code Desktop is here — Everything you love about Kimi Code, now on desktop
+   Run /desktop or visit https://www.kimi.com/code to install
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf
+ and restart tmux.
+   Error: LLM not set, send "/login" to login
+ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                        │
+ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  …/proj-bc019b/1/proj                ctrl-s to add guidance without waiting for the turn to finish
+                                                                                                  context: 0%
+--- recorded task-pane frames that show Kimi folder-prompt text (from 0.1s polling) ---
+frames with folder-prompt text: 1
+##### frame at 03:44:45.449 #####
+treehouse get
+firstmate@firstmate-hz:<lab>/nomcp/proj$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at <lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj. Type 'exit' to retur
+n.
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ cd -- '/tmp/fm-kimi-
+live.c0zbjj/nomcp/pool/.treehouse/proj-bc019b/1/proj'
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ export GOTMPDIR=/tmp
+/fm-kimi-live-nomcp/gotmp
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ export COMPACT_ADVIS
+ER_DISABLE=1
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ export FM_TASK_ID=ki
+mi-live-nomcp
+firstmate@firstmate-hz:<lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj$ . '/tmp/fm-kimi-live
+-nomcp+374be77af7b5e16f35bb70da7bb3859f270a3ddc6dd190076ba47ea09b1635a3/launch.s1791344682.2340547.8486.sh'
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  <lab>/nomcp/pool/.treehouse/proj-bc019b/1/proj
+  Project-level MCP servers are disabled until you explicitly choose Trust. Trust starts the listed project
+  MCP targets and remembers this folder.
+   ❯ Trust this folder
+     Enable project MCP servers. Remembered for this folder.
+     Don't trust
+     Exit Kimi Code. Asked again next launch.
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+wd_proj_6cbf3b0a1f6e
+--- kimi processes on lab socket ---
+2341199 treehouse get
+(end)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344713]: kimi brief pointer delivery was not confirmed
+--- KIMI_CODE_HOME contents ---
+.
+./bin
+./bin/fd
+./bin/kimi
+./cache
+./cache/query-store
+./config.toml
+./device_id
+./fm-turn-end.d
+./fm-turn-end.d/fm.8Tfx51u4XtKO
+./fm-turn-end.sh
+./logs
+./logs/kimi-code.log
+./sessions
+./sessions/.index-cache
+./telemetry
+./tui.toml
+./updates
+./updates/latest.json
+./updates/rollout.log
+./user-history
+./user-history/c7511ab37710a4c1c72a2f645ddd48d3.jsonl
+./workspaces.json
+./workspace-trust
+./workspace-trust/wd_proj_6cbf3b0a1f6e

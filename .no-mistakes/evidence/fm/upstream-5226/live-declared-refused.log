@@ -1,0 +1,51 @@
+=== scenario: declared (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+{"mcpServers":{"repro-marker":{"command":"/tmp/fm-kimi-live.c0zbjj/declared/proj/repro-mcp-marker.sh","args":["--from-project-mcp"]},"repro-remote":{"url":"http://127.0.0.1:9/mcp"}}}
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+warning: <lab>/declared/data/kimi-live-declared/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-live-declared
+warning: <lab>/declared/data/kimi-live-declared/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.; inspect window primary:fm-kimi-live-declared
+warning: leaving task kimi-live-declared's slot claim on <lab>/declared/pool/.treehouse/proj-3cd320/1/proj in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- tmux windows ---
+primary:0 bash cmd=bash
+primary:1 fm-kimi-live-declared cmd=bash
+--- visible pane primary:0 ---
+'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ/bin/fm-spawn.sh' kimi-live-dec
+lared '<lab>/declared/proj' --harness kimi --mode no-mistakes --yolo off > '/tmp/fm-kimi-li
+ve.c0zbjj/declared/spawn.out' 2>&1; echo rc=$? > '<lab>/declared/spawn.rc'
+bash-5.3$ '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ/bin/fm-spawn.sh' kim
+i-live-declared '<lab>/declared/proj' --harness kimi --mode no-mistakes --yolo off > '/tmp/
+fm-kimi-live.c0zbjj/declared/spawn.out' 2>&1; echo rc=$? > '<lab>/declared/spawn.rc'
+bash-5.3$
+--- visible pane primary:1 ---
+treehouse get
+firstmate@firstmate-hz:<lab>/declared/proj$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at <lab>/declared/pool/.treehouse/proj-3cd320/1/proj. Type 'exit' to re
+turn.
+firstmate@firstmate-hz:<lab>/declared/pool/.treehouse/proj-3cd320/1/proj$ cd -- '/tmp/fm-ki
+mi-live.c0zbjj/declared/pool/.treehouse/proj-3cd320/1/proj'
+firstmate@firstmate-hz:<lab>/declared/pool/.treehouse/proj-3cd320/1/proj$ export GOTMPDIR=/
+tmp/fm-kimi-live-declared/gotmp
+firstmate@firstmate-hz:<lab>/declared/pool/.treehouse/proj-3cd320/1/proj$ export COMPACT_AD
+VISER_DISABLE=1
+firstmate@firstmate-hz:<lab>/declared/pool/.treehouse/proj-3cd320/1/proj$ export FM_TASK_ID
+=kimi-live-declared
+firstmate@firstmate-hz:<lab>/declared/pool/.treehouse/proj-3cd320/1/proj$
+--- kimi processes on lab socket ---
+2292813 treehouse get
+(end)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344610]: refusing Kimi launch: .kimi-code/mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.
+--- KIMI_CODE_HOME contents ---
+.
+./bin
+./bin/kimi
+./config.toml
+./fm-turn-end.d
+./fm-turn-end.d/fm.HWtirVFaEmez
+./fm-turn-end.sh

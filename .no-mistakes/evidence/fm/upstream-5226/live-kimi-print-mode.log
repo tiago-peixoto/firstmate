@@ -1,0 +1,12 @@
+$ kimi -p "say hi"   (real Kimi Code 2.1.1, untrusted directory declaring a project MCP stdio server, isolated KIMI_CODE_HOME, no login)
+kimi version 2.1.1
+Warning: this folder is not trusted; skipped 1 project-level MCP server: repro-marker (stdio: <lab>/pdir/proj/m.sh).
+  Run `kimi` here and choose "Trust this folder" to enable them.
+
+error: failed to run prompt: No model configured. Run `kimi` and use /login to sign in, then retry; or set default_model in config.toml.
+See log: <lab>/pdir/h/.kimi-code/logs/kimi-code.log
+exit=1
+--- marker log ---
+(absent: the declared command never ran)
+--- workspace-trust records ---
+(none)

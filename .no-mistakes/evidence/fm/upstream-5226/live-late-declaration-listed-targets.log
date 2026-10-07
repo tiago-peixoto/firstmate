@@ -1,0 +1,110 @@
+=== scenario: late (firstmate tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ) ===
+--- .kimi-code/mcp.json in project ---
+(none)
+--- fm-spawn.sh exit ---
+rc=1
+--- fm-spawn.sh output ---
+warning: <lab>/late/data/kimi-live-late/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-live-late
+warning: <lab>/late/data/kimi-live-late/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: kimi's folder prompt lists project MCP targets, so Firstmate did not answer it and did not send the brief. That answer can start those targets without a consent decision that covers them. Remove the project servers from .kimi-code/mcp.json, or wait for a later consent design.; inspect window primary:fm-kimi-live-late
+warning: leaving task kimi-live-late's slot claim on <lab>/late/pool/.treehouse/proj-186466/1/proj in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- tmux windows ---
+primary:0 bash cmd=bash
+primary:1 fm-kimi-live-late cmd=kimi-code
+--- visible pane primary:0 ---
+FM_KIMI_READY_POLLS=20 '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0AXQ/bin/fm-
+spawn.sh' kimi-live-late '<lab>/late/proj' --harness kimi --mode no-mistakes --yolo off > '
+<lab>/late/spawn.out' 2>&1; echo rc=$? > '<lab>/late/spawn.rc'
+bash-5.3$ FM_KIMI_READY_POLLS=20 '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4A64W7B4XD3JPH1SGNE0A
+XQ/bin/fm-spawn.sh' kimi-live-late '<lab>/late/proj' --harness kimi --mode no-mistakes --yo
+lo off > '<lab>/late/spawn.out' 2>&1; echo rc=$? > '<lab>/late/spawn.rc'
+bash-5.3$
+--- visible pane primary:1 ---
+treehouse get
+firstmate@firstmate-hz:<lab>/late/proj$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at <lab>/late/pool/.treehouse/proj-186466/1/proj. Type 'exit' to return
+.
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ cd -- '/tmp/fm-kimi-l
+ive.c0zbjj/late/pool/.treehouse/proj-186466/1/proj'
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ export GOTMPDIR=/tmp/
+fm-kimi-live-late/gotmp
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ export COMPACT_ADVISE
+R_DISABLE=1
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ export FM_TASK_ID=kim
+i-live-late
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ . '/tmp/fm-kimi-live-
+late+46ce2d4fc44325cc03da53903ea2b2bc8e9002823613621e4a13c53ddd1897fe/launch.s1791344779.2410181.9263.sh'
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  <lab>/late/pool/.treehouse/proj-186466/1/proj
+  Project-level MCP servers are disabled until you explicitly choose Trust. Trust starts the listed project
+  MCP targets and remembers this folder.
+  Project MCP targets:
+    repro-marker (stdio):
+    command=<lab>/late/pool/.treehouse/proj-186466/1/proj/repro-mcp-marker.sh
+    args=["--from-late-declaration"]
+   ❯ Trust this folder
+     Enable project MCP servers. Remembered for this folder.
+     Don't trust
+     Exit Kimi Code. Asked again next launch.
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+--- recorded task-pane frames that show Kimi folder-prompt text (from 0.1s polling) ---
+frames with folder-prompt text: 1
+##### frame at 03:46:22.301 #####
+treehouse get
+firstmate@firstmate-hz:<lab>/late/proj$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at <lab>/late/pool/.treehouse/proj-186466/1/proj. Type 'exit' to return
+.
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ cd -- '/tmp/fm-kimi-l
+ive.c0zbjj/late/pool/.treehouse/proj-186466/1/proj'
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ export GOTMPDIR=/tmp/
+fm-kimi-live-late/gotmp
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ export COMPACT_ADVISE
+R_DISABLE=1
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ export FM_TASK_ID=kim
+i-live-late
+firstmate@firstmate-hz:<lab>/late/pool/.treehouse/proj-186466/1/proj$ . '/tmp/fm-kimi-live-
+late+46ce2d4fc44325cc03da53903ea2b2bc8e9002823613621e4a13c53ddd1897fe/launch.s1791344779.2410181.9263.sh'
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  <lab>/late/pool/.treehouse/proj-186466/1/proj
+  Project-level MCP servers are disabled until you explicitly choose Trust. Trust starts the listed project
+  MCP targets and remembers this folder.
+  Project MCP targets:
+    repro-marker (stdio):
+    command=<lab>/late/pool/.treehouse/proj-186466/1/proj/repro-mcp-marker.sh
+    args=["--from-late-declaration"]
+   ❯ Trust this folder
+     Enable project MCP servers. Remembered for this folder.
+     Don't trust
+     Exit Kimi Code. Asked again next launch.
+ ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+--- kimi workspace-trust records in the lab KIMI_CODE_HOME ---
+(none)
+--- kimi processes on lab socket ---
+2410619 treehouse get
+(end)
+--- project MCP marker log (written only if the declared stdio command ran) ---
+(absent: the declared command never ran)
+--- task status file ---
+failed [at=1791344782]: kimi's folder prompt lists project MCP targets, so Firstmate did not answer it and did not send the brief. That answer can start those targets without a consent decision that covers them. Remove the project servers from .kimi-code/mcp.json, or wait for a later consent design.
+--- KIMI_CODE_HOME contents ---
+.
+./bin
+./bin/kimi
+./config.toml
+./device_id
+./fm-turn-end.d
+./fm-turn-end.d/fm.x5hXyN6tzKAY
+./fm-turn-end.sh
+./telemetry
+./tui.toml
+./updates
+./updates/latest.json
+./updates/rollout.log
+./workspaces.json
