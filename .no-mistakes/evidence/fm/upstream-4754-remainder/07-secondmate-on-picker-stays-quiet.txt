@@ -1,0 +1,5 @@
+# meta kind=secondmate, status 'working:', real pane on the real picker; watcher polled every 2s for 25s
+watcher still running: yes
+watcher stdout bytes: 0
+beacon mtime before=1791393903 after=1791393941
+wake queue rows: 0

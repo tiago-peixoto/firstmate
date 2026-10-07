@@ -1,0 +1,5 @@
+# watcher arm 2 stdout (real fm-watch.sh, real tmux pane, real Claude 2.1.292 exit picker)
+stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+
+# state/.wake-queue
+1791393698	3	stale	lab:fm-picker	stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)

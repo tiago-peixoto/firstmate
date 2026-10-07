@@ -1,0 +1,5 @@
+# Real watcher, real pane on the real picker; crew verdict stubbed to 'state: working · source: run-step' so the wedge timer path runs
+# arm 3: first wedge escalation
+stale: lab:fm-picker (idle 503s, possible wedge, escalation 1, blocked-on-prompt: Claude background-task exit picker)
+# arm 4: third escalation (count preset to 2)
+stale: lab:fm-picker (idle 501s, possible wedge, escalation 3, demand-deep-inspection: same pane has wedge-escalated 3 times in a row - do not re-absorb on the run-step/pane state alone, blocked-on-prompt: Claude background-task exit picker)

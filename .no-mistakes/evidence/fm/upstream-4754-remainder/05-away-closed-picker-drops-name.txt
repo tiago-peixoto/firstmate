@@ -1,0 +1,15 @@
+# Same daemon run. The picker was re-reported at 19:23:38, then Esc closed it about 1s later.
+# The saved name file state/.subsuper-dialog-picker was gone within 1s; the next persistence line has no name.
+# state/.subsuper-escalations
+stale persisted 21s (possible wedge, blocked-on-prompt: Claude background-task exit picker): lab:fm-picker
+stale persisted 21s (possible wedge): lab:fm-picker
+# state/.supervise-daemon.log
+[2026-10-07T19:23:00+0200] daemon starting (pid 2917092); target=lab:super; target_source=FM_SUPERVISOR_TARGET; backend=tmux; backend_source=FM_SUPERVISOR_BACKEND; afk=on; inject_skip='heartbeat'; stale_escalate=20s; batch=3600s
+[2026-10-07T19:23:02+0200] wake: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+[2026-10-07T19:23:04+0200] self-handle: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker) -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-07T19:23:38+0200] wake: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker)
+[2026-10-07T19:23:41+0200] self-handle: stale: lab:fm-picker (blocked-on-prompt: Claude background-task exit picker) -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-07T19:23:49+0200] wake: stale: lab:fm-picker
+[2026-10-07T19:23:51+0200] self-handle: stale: lab:fm-picker -> transient stale (lab:fm-picker): working: parked between turns
+[2026-10-07T19:23:58+0200] wake: stale: lab:fm-picker
+[2026-10-07T19:24:01+0200] self-handle: stale: lab:fm-picker -> transient stale (lab:fm-picker): working: parked between turns

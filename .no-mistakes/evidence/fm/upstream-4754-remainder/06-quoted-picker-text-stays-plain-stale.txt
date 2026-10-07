@@ -1,19 +1,14 @@
-# real Claude pane quoting the picker's heading, selected row and footer above a normal composer
- ▐▛███▛█   Claude Code v2.1.291
-▝▜██████▀  Opus 5.5 · Claude Max
- ▝▝   ▝▝   /tmp/fm-lab.Kv2Lhb/work2
-❯ Reply with exactly the following four lines and nothing else, no code fence. Line 1: Quoted: Line 2: Background work
-  is running Line 3: ❯ 1. Exit and stop tasks Line 4: Enter to confirm · Esc to cancel
-● Quoted:
-  Background work is running
+# Pane: Claude quoted the picker's words above a normal composer (no live picker)
+❯ Reply with exactly these three lines and nothing else, each on its own line, no code block: "Background work is
+  running" then "❯ 1. Exit and stop tasks" then "Enter to confirm · Esc to cancel"
+● Background work is running
   ❯ 1. Exit and stop tasks
   Enter to confirm · Esc to cancel
-✻ Sautéed for 1s · done 6:55 AM
+✻ Churned for 1s · done 7:24 PM · 1 shell still running
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
+  ⏵⏵ auto mode on · 1 shell · ← for agents · ↓ to manage
 
-# bin/fm-watch.sh output (target commit)
-stale: lab:fm-quoted
-EXIT=0
+# watcher stdout
+stale: lab:fm-picker
