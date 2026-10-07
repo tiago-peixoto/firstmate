@@ -1,0 +1,40 @@
+{
+  "feedbackDrafts": "off",
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4BC1HVJW0MG1RT3X3PYQBRZ/bin/fm-busy-event.sh' apply '/tmp/fm-lab.0eKxDJ/primary/state' 'sm-live' busy --gen 'g1791383274.4528.20759' --source claude-hook --event user-prompt-submit 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4BC1HVJW0MG1RT3X3PYQBRZ/bin/fm-busy-event.sh' apply '/tmp/fm-lab.0eKxDJ/primary/state' 'sm-live' idle --gen 'g1791383274.4528.20759' --source claude-hook --event stop-failure 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4BC1HVJW0MG1RT3X3PYQBRZ/bin/fm-busy-event.sh' apply '/tmp/fm-lab.0eKxDJ/primary/state' 'sm-live' idle --gen 'g1791383274.4528.20759' --source claude-hook --event session-end 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
