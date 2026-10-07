@@ -38,4 +38,6 @@ ok - a later continuity break after repair and re-advance opens the decision aga
 ok - an old-format continuity line does not swallow the next break
 ok - a later continuity break after the cursor moves without retirement opens the decision again
 ok - a continuity break after retirement and an identical restore opens the decision once
+ok - a failed cursor removal does not increase the retirement count
+ok - a retirement that stops after removing the cursor leaves the old count
 ALL TESTS PASSED

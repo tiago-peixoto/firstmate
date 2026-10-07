@@ -1,0 +1,103 @@
+checkout under test: <base-export> (base 99da16d9, exported with git archive)
+
+== 1. Read the route, then break it (first break)
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=0
+adapter classify: continuity-broken
+continuity-broken: ios (truncated)
+already-handled: remote-reply-ios 2
+<base-export>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable
+adapter handle exit status: 3
+cursor: schema=fm-remote-reply-cursor.v1 offset=41 prefix_sha256=ce699f5e4021261174e3b3c9aa1a5ba75e37400a672f71b0dd12ce8797084a10 
+retirement count file: absent
+continuity lines in parent state/ios.status:
+    blocked [key=remote-reply-continuity-ios] [at=1791335854]: remote reply continuity broke for ios (truncated)
+blocked lines: 1   open decisions: [remote-reply-continuity-ios ]
+PASS: first break appends one blocked line (got 1)
+PASS: first break opens the decision (got remote-reply-continuity-ios )
+
+== 2. Operator resolves; the same unchanged break is read again
+operator appended: resolved [key=remote-reply-continuity-ios]
+continuity-broken: ios (truncated)
+handled: remote-reply-ios 2
+<base-export>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable
+adapter handle exit status: 3
+cursor: schema=fm-remote-reply-cursor.v1 offset=41 prefix_sha256=ce699f5e4021261174e3b3c9aa1a5ba75e37400a672f71b0dd12ce8797084a10 
+retirement count file: absent
+continuity lines in parent state/ios.status:
+    blocked [key=remote-reply-continuity-ios] [at=1791335854]: remote reply continuity broke for ios (truncated)
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+blocked lines: 1   open decisions: []
+PASS: unchanged repeat appends nothing (got 1)
+PASS: unchanged repeat leaves the decision closed (got )
+
+== 3. Issue 6701: repair the log, reader advances, later distinct break (no retirement)
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=41
+PASS: repair alone appends no blocked line (got 1)
+adapter classify: continuity-broken
+continuity-broken: ios (truncated)
+already-handled: remote-reply-ios 4
+<base-export>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable
+adapter handle exit status: 3
+cursor: schema=fm-remote-reply-cursor.v1 offset=79 prefix_sha256=654aba5c70886df322b8c26670a5a345dae67b62d11d47085b3ac9b4b2656ac9 
+retirement count file: absent
+continuity lines in parent state/ios.status:
+    blocked [key=remote-reply-continuity-ios] [at=1791335854]: remote reply continuity broke for ios (truncated)
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+blocked lines: 1   open decisions: []
+FAIL: later distinct break appends a new blocked line (expected 2, got 1)
+FAIL: later distinct break opens the decision again (expected remote-reply-continuity-ios , got )
+
+== 4. The later break is read again before any resolve
+cursor: schema=fm-remote-reply-cursor.v1 offset=79 prefix_sha256=654aba5c70886df322b8c26670a5a345dae67b62d11d47085b3ac9b4b2656ac9 
+retirement count file: absent
+continuity lines in parent state/ios.status:
+    blocked [key=remote-reply-continuity-ios] [at=1791335854]: remote reply continuity broke for ios (truncated)
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+blocked lines: 1   open decisions: []
+FAIL: repeat of the later break appends nothing (expected 2, got 1)
+
+== 5. Resolve, retire the route, restore identical bytes, break at the same position
+operator appended: resolved [key=remote-reply-continuity-ios]
+retired: remote-reply-ios
+adapter retire exit status: 0
+registered: remote-reply-ios (remote-reply)
+armed: remote-reply-ios offset=0
+PASS: identical restore alone appends no blocked line (got 1)
+PASS: identical restore leaves the decision closed (got )
+adapter classify: continuity-broken
+continuity-broken: ios (truncated)
+already-handled: remote-reply-ios 6
+<base-export>/bin/fm-procevent-remote-reply.sh: line 1: tmp: unbound variable
+adapter handle exit status: 3
+cursor: schema=fm-remote-reply-cursor.v1 offset=79 prefix_sha256=654aba5c70886df322b8c26670a5a345dae67b62d11d47085b3ac9b4b2656ac9 
+retirement count file: absent
+continuity lines in parent state/ios.status:
+    blocked [key=remote-reply-continuity-ios] [at=1791335854]: remote reply continuity broke for ios (truncated)
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+blocked lines: 1   open decisions: []
+FAIL: break after retirement and identical restore appends a new blocked line (expected 2, got 1)
+FAIL: break after retirement opens the decision again (expected remote-reply-continuity-ios , got )
+FAIL: repeat of that break appends nothing (expected 2, got 1)
+
+== 6. Adversarial: retirement cannot remove the cursor (cursor path is a directory)
+operator appended: resolved [key=remote-reply-continuity-ios]
+retired: remote-reply-ios
+rm: cannot remove '/tmp/fm-6701-drive.sRBrb0/parent/state/remote-replies/ios.cursor': Is a directory
+adapter retire exit status: 0
+FAIL: retirement reports failure (expected failed, got succeeded)
+PASS: failed retirement leaves the count unchanged (got absent)
+cursor: schema=fm-remote-reply-cursor.v1 offset=79 prefix_sha256=654aba5c70886df322b8c26670a5a345dae67b62d11d47085b3ac9b4b2656ac9 
+retirement count file: absent
+continuity lines in parent state/ios.status:
+    blocked [key=remote-reply-continuity-ios] [at=1791335854]: remote reply continuity broke for ios (truncated)
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+    resolved [key=remote-reply-continuity-ios]: operator accepted the break
+blocked lines: 1   open decisions: []
+PASS: after the failed retirement the resolved break still appends nothing (got 1)
+PASS: after the failed retirement the decision stays closed (got )
+
+== RESULT: 7 expectation(s) failed
