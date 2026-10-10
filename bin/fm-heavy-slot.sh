@@ -5,6 +5,7 @@
 #        fm-heavy-slot.sh claim --task <task-id> --load <max> --slot <path> [--slot <path>...]
 #        fm-heavy-slot.sh release --task <task-id> --slot <path> [--slot <path>...]
 #        fm-heavy-slot.sh status --slot <path> [--slot <path>...]
+#        fm-heavy-slot.sh clear --slot <path>
 # A slot is a directory at a full absolute path that every Firstmate home on the
 # machine shares. Which paths a home's briefs list, and in what order, is owned
 # by bin/fm-brief.sh and docs/configuration.md ("Heavy-run slots"); this script
@@ -24,7 +25,13 @@
 #   between commands  claimed with no command running, for at most the idle bound;
 #   idle              claimed with no command running for longer than the idle bound;
 #   stale             a command was recorded but its heartbeat stopped;
-#   free, no owner, unreadable owner, or not a directory.
+#   free, no owner, a plain file (an older hand-made claim that blocks every
+#   mkdir of that path), or a legacy owner line (any other owner shape).
+# The heartbeat tracks the wrapper, not the work it started: a wrapper killed
+# outright stops beating while its command, or a suite process that command
+# started, may still run. So run also exports FM_HEAVY_SLOT_HELD=<slot>:<task>
+# into the command, and every process the command starts inherits that mark
+# unless it empties its environment.
 # Waiters are served in arrival order. A waiter keeps a ticket, refreshed every
 # poll, in the queue directory fm-heavy-slot-queue beside the first listed slot,
 # and claims a free slot only when no live waiter that arrived earlier may claim
@@ -49,15 +56,33 @@
 #            no readable owner, or a slot path that is not a directory.
 #   status   prints each listed slot's reading and the queue, longest waiter
 #            first, and changes nothing.
-# Exit status: run exits with the command's own status; claim, release, and
-# status exit 0 on success; 1 when the 1-minute load cannot be read or the owner
-# line or ticket cannot be written; 2 on a usage error.
+#   clear    is for firstmate only, so it refuses when FM_TASK_ID marks a
+#            worker. It removes one slot that another task abandoned, and only
+#            on positive evidence that nothing of that claim still runs, all of
+#            which must hold: the owner file (or, for any other shape, the slot)
+#            has not changed for the stale bound, or the idle bound for a claim
+#            with no command or a shape this script never writes; no recorded
+#            pid is a live process; no live process carries the claim's
+#            FM_HEAVY_SLOT_HELD mark; and no no-mistakes pipeline step is running
+#            on this machine, because a pipeline's Test step runs inside the
+#            daemon, where no mark reaches and nothing here can tell whose run
+#            it is. A dead pid alone is never enough. It prints every finding,
+#            then either clears the slot or refuses and leaves it untouched.
+#            The mark is read from /proc, or from `ps -E` where /proc is absent,
+#            so it sees only processes this user may inspect: every home on the
+#            machine is assumed to run as one user.
+# Exit status: run exits with the command's own status; claim, release, status,
+# and a clear that cleared or found the slot free exit 0; 1 when the 1-minute
+# load cannot be read or the owner line or ticket cannot be written; 2 on a
+# usage error; 3 when clear refuses.
 # FM_HEAVY_SLOT_POLL sets the seconds between admission attempts and heartbeats
 # (default 15), FM_HEAVY_SLOT_STALE the whole seconds after which a heartbeat or
 # ticket is stale (default 120), and FM_HEAVY_SLOT_IDLE the whole seconds a
 # claim may run no command before it reads idle (default 600).
 # With FM_TEST_SEAM=1, FM_HEAVY_SLOT_LOADAVG_OVERRIDE names a file read in place
-# of /proc/loadavg.
+# of /proc/loadavg, and FM_HEAVY_SLOT_PS_OVERRIDE names a file of
+# `<pid> <ppid> <args>` lines read in place of the machine's process table when
+# clear looks for running pipeline steps.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -80,8 +105,8 @@ die_usage() {
 [ "$#" -ge 1 ] || { usage >&2; exit 2; }
 case "$1" in
   -h|--help) usage; exit 0 ;;
-  run|claim|release|status) MODE=$1; shift ;;
-  *) die_usage "unknown subcommand '$1' (expected run, claim, release, or status)" ;;
+  run|claim|release|status|clear) MODE=$1; shift ;;
+  *) die_usage "unknown subcommand '$1' (expected run, claim, release, status, or clear)" ;;
 esac
 
 TASK=
@@ -97,9 +122,13 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "$MODE" != status ]; then
-  fm_task_id_path_safe "$TASK" || die_usage "--task must be a valid task id (got '$TASK')"
-fi
+case "$MODE" in
+  status) ;;
+  clear)
+    [ -z "$TASK" ] || die_usage "clear takes no --task: it clears a slot whatever task it names"
+    [ "${#SLOTS[@]}" -le 1 ] || die_usage "clear takes exactly one --slot" ;;
+  *) fm_task_id_path_safe "$TASK" || die_usage "--task must be a valid task id (got '$TASK')" ;;
+esac
 [ "${#SLOTS[@]}" -ge 1 ] || die_usage "at least one --slot is required"
 for slot in "${SLOTS[@]}"; do
   case "$slot" in
@@ -202,9 +231,10 @@ slot_verdict() {
   V_TASK=
   V_AGE=
   if [ ! -e "$1" ] && [ ! -L "$1" ]; then V_LABEL=free; return 0; fi
+  if [ -f "$1" ] && [ ! -L "$1" ]; then V_LABEL="plain file"; return 0; fi
   if [ ! -d "$1" ] || [ -L "$1" ]; then V_LABEL="not a directory"; return 0; fi
   if [ ! -e "$1/owner" ]; then V_LABEL="no owner"; return 0; fi
-  if ! read_owner "$1" || ! V_AGE=$(file_age "$1/owner"); then V_LABEL="unreadable owner"; return 0; fi
+  if ! read_owner "$1" || ! V_AGE=$(file_age "$1/owner"); then V_LABEL="legacy owner"; return 0; fi
   V_TASK=$O_TASK
   if [ "$O_PID" = - ]; then
     if [ "$V_AGE" -le "$IDLE" ]; then V_LABEL="between commands"; else V_LABEL=idle; fi
@@ -330,6 +360,10 @@ print_status() {
       free) echo "$slot: free" ;;
       working|stale|idle|"between commands")
         echo "$slot: held by $V_TASK, $V_LABEL (owner file changed ${V_AGE}s ago)" ;;
+      "plain file")
+        echo "$slot: plain file, not a claim this helper made; every mkdir of this path fails until firstmate clears it ($(head -n 1 "$slot" 2>/dev/null))" ;;
+      "legacy owner")
+        echo "$slot: legacy owner line ($(head -n 1 "$slot/owner" 2>/dev/null))" ;;
       *) echo "$slot: $V_LABEL" ;;
     esac
   done
@@ -345,6 +379,136 @@ print_status() {
       printf '%s\t  %s stale ticket, not refreshed for %ss (ignored)\n' "$T_SINCE" "$T_TASK" "$age"
     fi
   done | LC_ALL=C sort -t "$(printf '\t')" -k1,1g | cut -f2-
+}
+
+process_table() {
+  if [ "${FM_TEST_SEAM:-}" = 1 ] && [ -n "${FM_HEAVY_SLOT_PS_OVERRIDE:-}" ]; then
+    cat "$FM_HEAVY_SLOT_PS_OVERRIDE"
+  else
+    ps -A -o pid= -o ppid= -o args=
+  fi
+}
+
+# Prints `<pid> <args>` for each child of a no-mistakes daemon other than its log sink.
+pipeline_steps() {
+  process_table | awk '
+    { pid[NR] = $1; ppid[NR] = $2; line = $0; sub(/^[ \t]*[0-9]+[ \t]+[0-9]+[ \t]+/, "", line); args[NR] = line }
+    args[NR] ~ /(^|\/)no-mistakes daemon run( |$)/ { daemon[$1] = 1 }
+    END {
+      for (i = 1; i <= NR; i++)
+        if ((ppid[i] in daemon) && args[i] !~ /(^|\/)no-mistakes daemon log-sink( |$)/) print pid[i], args[i]
+    }
+  '
+}
+
+# Prints each live pid whose environment carries the mark; fails when no
+# process environment can be read at all.
+marked_pids() {
+  local want="FM_HEAVY_SLOT_HELD=$1"
+  if [ -r /proc/self/environ ]; then
+    grep -l -a -z -x -F -- "$want" /proc/[0-9]*/environ 2>/dev/null | sed -n 's#^/proc/\([0-9][0-9]*\)/environ$#\1#p'
+    return 0
+  fi
+  ps -A -E -ww -o pid= -o command= 2>/dev/null | awk -v want=" $want " '
+    { if (index($0 " ", want)) { sub(/^[ \t]+/, ""); split($0, f, /[ \t]+/); print f[1] } }
+    END { exit NR == 0 }
+  '
+}
+
+# Prints the pids an owner line or a plain-file claim records, in any shape.
+recorded_pids() {
+  awk '
+    {
+      for (i = 1; i <= NF; i++) {
+        w = $i
+        sub(/^pid=/, "", w)
+        if (w ~ /^[0-9]+$/ && w + 0 > 1) print w
+      }
+    }
+  ' "$1" 2>/dev/null | sort -u
+}
+
+clear_slot() {
+  local slot=$1 refuse=0 record age bound pid pids steps token=
+  if [ -n "${FM_TASK_ID:-}" ]; then
+    echo "fm-heavy-slot: clear is for firstmate only; a worker escalates a slot it cannot use instead (FM_TASK_ID=$FM_TASK_ID)" >&2
+    exit 3
+  fi
+  slot_verdict "$slot"
+  if [ "$V_LABEL" = free ]; then
+    echo "fm-heavy-slot: $slot is free; nothing to clear"
+    exit 0
+  fi
+  case "$V_LABEL" in
+    working|stale|idle|"between commands")
+      record="$slot/owner"
+      token="$slot:$V_TASK"
+      if [ "$V_LABEL" = idle ] || [ "$V_LABEL" = "between commands" ]; then bound=$IDLE; else bound=$STALE; fi
+      ;;
+    "plain file") record=$slot; bound=$IDLE ;;
+    *) record="$slot/owner"; [ -f "$record" ] || record=$slot; bound=$IDLE ;;
+  esac
+  echo "fm-heavy-slot: $slot reads ${V_LABEL}${V_TASK:+, held by $V_TASK}"
+  pids=
+  [ ! -f "$record" ] || pids=$(recorded_pids "$record")
+  if [ -z "$pids" ]; then
+    echo "  ok: no pid recorded"
+  fi
+  for pid in $pids; do
+    if ps -p "$pid" -o pid= >/dev/null 2>&1; then
+      echo "  no: recorded pid $pid is a live process: $(ps -p "$pid" -o args= 2>/dev/null)"
+      refuse=1
+    else
+      echo "  ok: recorded pid $pid is not running, which alone proves nothing"
+    fi
+  done
+  if [ -n "$token" ]; then
+    if pids=$(marked_pids "$token"); then
+      if [ -n "$pids" ]; then
+        for pid in $pids; do
+          echo "  no: pid $pid still carries this claim's mark: $(ps -p "$pid" -o args= 2>/dev/null)"
+        done
+        refuse=1
+      else
+        echo "  ok: no live process carries FM_HEAVY_SLOT_HELD=$token"
+      fi
+    else
+      echo "  no: cannot read process environments to look for this claim's processes"
+      refuse=1
+    fi
+  else
+    echo "  ok: no mark to look for: this helper never made this claim"
+  fi
+  steps=$(pipeline_steps)
+  if [ -n "$steps" ]; then
+    printf '%s\n' "$steps" | while IFS= read -r pid; do
+      echo "  no: a no-mistakes pipeline step is running, and nothing here can tell whose: $pid"
+    done
+    refuse=1
+  else
+    echo "  ok: no no-mistakes pipeline step is running"
+  fi
+  # The age check runs last, just before the removal: a slot released and
+  # claimed again while the process scans ran has a fresh record, so it is
+  # refused here instead of being removed under its new holder.
+  if age=$(file_age "$record"); then
+    if [ "$age" -gt "$bound" ]; then
+      echo "  ok: $record unchanged for ${age}s, past the ${bound}s bound"
+    else
+      echo "  no: $record changed ${age}s ago, within the ${bound}s bound"
+      refuse=1
+    fi
+  else
+    echo "  no: cannot read the age of $record"
+    refuse=1
+  fi
+  if [ "$refuse" = 1 ]; then
+    echo "fm-heavy-slot: refused to clear $slot; it is left untouched"
+    exit 3
+  fi
+  rm -rf -- "$slot"
+  echo "fm-heavy-slot: cleared $slot"
+  exit 0
 }
 
 # shellcheck disable=SC2329 # Registered by the EXIT trap below.
@@ -365,6 +529,9 @@ case "$MODE" in
   status)
     print_status
     exit 0
+    ;;
+  clear)
+    clear_slot "${SLOTS[0]}"
     ;;
   release)
     if slot=$(own_slot); then
@@ -402,6 +569,7 @@ fi
 write_owner "$SLOT" "$$" || { echo "fm-heavy-slot: could not write $SLOT/owner" >&2; exit 1; }
 beat "$$" </dev/null >/dev/null 2>&1 &
 BEATER=$!
+export FM_HEAVY_SLOT_HELD="$SLOT:$TASK"
 "$@"
 rc=$?
 exit "$rc"

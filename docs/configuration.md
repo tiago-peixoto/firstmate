@@ -920,6 +920,7 @@ Every Firstmate home on one machine shares a small set of heavy-run slots, so fu
 Each ship and scout brief carries a `# Machine capacity` section that names this home's slots and load bar and tells the worker to claim, use, and release a slot only through [`bin/fm-heavy-slot.sh`](../bin/fm-heavy-slot.sh).
 Slot 1 is the directory `/tmp/fm-heavy-suite.lock` and slot n is `/tmp/fm-heavy-suite.lock-<n>`; a brief always spells each path in full.
 Waiters are served in arrival order through a queue beside the slots, and `bin/fm-heavy-slot.sh status --slot <path>...` shows each slot's holder, whether it is still working, and the queue.
+Workers never remove a slot; firstmate clears an abandoned one with `bin/fm-heavy-slot.sh clear --slot <path>`, which removes it only when it finds positive evidence that nothing of that claim still runs.
 
 | File | Contents | When absent |
 | --- | --- | --- |
@@ -932,7 +933,7 @@ Slot numbers are positive integers without leading zeros or repeats.
 An invalid value, or a present path that is not a readable regular file, stops ship and scout scaffolds before anything is written.
 Both files are local to each home and not inherited by secondmate homes, because the slot list is how one home's share of the machine is reserved; secondmate charters never carry the section.
 
-`bin/fm-heavy-slot.sh`'s header owns the claim, owner-line, heartbeat, queue, and release contract.
+`bin/fm-heavy-slot.sh`'s header owns the claim, owner-line, heartbeat, queue, release, and clear contract.
 
 ## Worker launch environment (config/launch-env-allowlist)
 
