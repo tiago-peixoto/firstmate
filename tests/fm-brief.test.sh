@@ -1446,6 +1446,8 @@ test_capacity_rule_reaches_every_crewmate_brief() {
     assert_contains "$section" '`task=<task-id> pid=<pid>`: the pid is the process running the heavy command, alive while it runs' \
       "$kind: owner contents with a live pid are missing"
     assert_contains "$section" "As soon as the run parks at a gate, waits only on hosted CI, or ends" "$kind: release on park or end is missing"
+    assert_contains "$section" "do not also wrap it: wrapped, it would wait on the slot its own wrapper holds" \
+      "$kind: a project's own slot-claiming script would deadlock inside the helper"
     # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
     assert_contains "$section" 'list every slot with `ls -d /tmp/fm-heavy-suite*`' "$kind: capacity is not checked by enumeration"
     assert_contains "$section" "Never test a single path instead" "$kind: single-path test is not forbidden"

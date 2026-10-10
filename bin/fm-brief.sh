@@ -658,6 +658,7 @@ Claim, use, and release a slot only through the slot helper, never by hand:
 - Pipeline run: before you start or resume it, run \`$HEAVY_HELPER claim $HEAVY_ADMIT_ARGS\`.
   Drive the run with each \`no-mistakes\` call wrapped in the full-suite form above, which keeps your claimed slot.
   As soon as the run parks at a gate, waits only on hosted CI, or ends, run \`$HEAVY_HELPER release --task $ID$HEAVY_SLOT_ARGS\`.
+When the project's own instructions run its suite through a script that claims one of these slots itself, run that script as the project says and do not also wrap it: wrapped, it would wait on the slot its own wrapper holds.
 A slot is a directory claimed by one atomic \`mkdir\` of its full path: that mkdir is the check and the claim in one step.
 Testing a path and then creating it is never a claim, and neither is a plain file at a slot path.
 The slot's \`owner\` file reads \`task=<task-id> pid=<pid>\`: the pid is the process running the heavy command, alive while it runs, or \`-\` while a pipeline claim has no command running.
