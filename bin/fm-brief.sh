@@ -87,6 +87,14 @@
 # delivery contract.
 # There is no --yolo flag here. The worker never owns merge decisions, so yolo is
 # a spawn-time and firstmate-side input only (AGENTS.md section 7).
+# Ship and scout scaffolds also share one "# Machine capacity" section, because
+# either kind may run a full suite or a pipeline Test step on slots every home
+# on the machine shares. It spells each of this home's slot paths in full, in
+# claim order, states the 1-minute load bar, and sends every claim through
+# bin/fm-heavy-slot.sh, which owns the claim mechanics. The values come from
+# config/heavy-suite-slots and config/heavy-suite-load (docs/configuration.md,
+# "Heavy-run slots"); an invalid value stops the scaffold before anything is
+# written. A secondmate charter omits it: its crewmates' briefs carry it.
 # Every scaffold's status protocol distinguishes the configured
 # declared-external-wait verb (FM_CLASSIFY_PAUSED_VERB, default "paused") from
 # "blocked:": pause for a known wait expected to clear on its own, including
@@ -317,6 +325,60 @@ if [ "$KIND" != secondmate ] && { [ -e "$BRIEF_INCLUDE_FILE" ] || [ -L "$BRIEF_I
     exit 1
   fi
   [ -n "$(printf '%s' "$BRIEF_INCLUDE_BODY" | tr -d '[:space:]')" ] || BRIEF_INCLUDE_BODY=
+fi
+
+# The machine-capacity values are read before anything is written too, so an
+# invalid one never leaves a partial scaffold behind.
+HEAVY_SLOT_BASE=/tmp/fm-heavy-suite.lock
+HEAVY_SLOTS_FILE="$CONFIG/heavy-suite-slots"
+HEAVY_LOAD_FILE="$CONFIG/heavy-suite-load"
+heavy_config_words() {
+  HEAVY_WORDS=()
+  { [ -f "$1" ] && [ -r "$1" ]; } || {
+    echo "error: $1 must be a readable regular file" >&2
+    return 1
+  }
+  read -r -d '' -a HEAVY_WORDS < "$1" || true
+}
+if [ "$KIND" != secondmate ]; then
+  HEAVY_SLOT_NUMBERS=(1 2)
+  if [ -e "$HEAVY_SLOTS_FILE" ] || [ -L "$HEAVY_SLOTS_FILE" ]; then
+    heavy_config_words "$HEAVY_SLOTS_FILE" || exit 1
+    [ "${#HEAVY_WORDS[@]}" -ge 1 ] || {
+      echo "error: $HEAVY_SLOTS_FILE must list at least one slot number, such as '3 4'" >&2
+      exit 1
+    }
+    heavy_seen=' '
+    for heavy_n in "${HEAVY_WORDS[@]}"; do
+      case "$heavy_n" in
+        0*|*[!0-9]*)
+          echo "error: $HEAVY_SLOTS_FILE must hold positive slot numbers, such as '3 4' (got '$heavy_n')" >&2
+          exit 1 ;;
+      esac
+      case "$heavy_seen" in
+        *" $heavy_n "*) echo "error: $HEAVY_SLOTS_FILE lists slot $heavy_n twice" >&2; exit 1 ;;
+      esac
+      heavy_seen="$heavy_seen$heavy_n "
+    done
+    HEAVY_SLOT_NUMBERS=("${HEAVY_WORDS[@]}")
+  fi
+  if [ -e "$HEAVY_LOAD_FILE" ] || [ -L "$HEAVY_LOAD_FILE" ]; then
+    heavy_config_words "$HEAVY_LOAD_FILE" || exit 1
+    HEAVY_LOAD=
+    [ "${#HEAVY_WORDS[@]}" -ne 1 ] || HEAVY_LOAD=${HEAVY_WORDS[0]}
+    if ! printf '%s\n' "$HEAVY_LOAD" | grep -Eq '^[0-9]+([.][0-9]+)?$' \
+      || ! awk -v bar="$HEAVY_LOAD" 'BEGIN { exit !(bar + 0 > 0) }'; then
+      echo "error: $HEAVY_LOAD_FILE must hold one positive 1-minute load, such as 10" >&2
+      exit 1
+    fi
+  else
+    HEAVY_LOAD=$(getconf _NPROCESSORS_ONLN 2>/dev/null) || HEAVY_LOAD=
+    case "$HEAVY_LOAD" in
+      ''|0*|*[!0-9]*)
+        echo "error: cannot count this machine's processors for the default heavy-run load bar; write the bar into $HEAVY_LOAD_FILE" >&2
+        exit 1 ;;
+    esac
+  fi
 fi
 
 # Append the include as the last section of a ship or scout scaffold.
@@ -571,6 +633,41 @@ IFS= read -r -d '' SHARED_INFRA_RULE <<'EOF' || true
 EOF
 SHARED_INFRA_RULE=${SHARED_INFRA_RULE%$'\n'}
 
+# One shared string keeps the ship and scout capacity rule identical too. Every
+# slot path is spelled in full: a bare suffix once resolved to two different
+# paths, so two lanes each held a genuine lock and ran heavy suites together.
+HEAVY_HELPER=$(shell_quote "$FM_ROOT/bin/fm-heavy-slot.sh")
+HEAVY_SLOT_ARGS=
+HEAVY_SLOT_LIST=
+for heavy_n in "${HEAVY_SLOT_NUMBERS[@]}"; do
+  if [ "$heavy_n" = 1 ]; then heavy_path=$HEAVY_SLOT_BASE; else heavy_path="$HEAVY_SLOT_BASE-$heavy_n"; fi
+  HEAVY_SLOT_ARGS="$HEAVY_SLOT_ARGS --slot $heavy_path"
+  HEAVY_SLOT_LIST="$HEAVY_SLOT_LIST${HEAVY_SLOT_LIST:+, then }\`$heavy_path\`"
+done
+HEAVY_ADMIT_ARGS="--task $ID --load $HEAVY_LOAD$HEAVY_SLOT_ARGS"
+IFS= read -r -d '' CAPACITY_SECTION <<EOF || true
+# Machine capacity
+This machine's heavy-run slots are shared by every Firstmate home on it.
+A full test suite is a heavy run, and so is a no-mistakes pipeline run, whose Test step runs a suite inside the no-mistakes daemon.
+Each heavy run holds one slot for as long as it works, and a task holds at most one slot.
+This home claims only these slots, tried in this order: $HEAVY_SLOT_LIST.
+Every slot path here is written in full; never shorten one to a suffix.
+A heavy run starts only when the 1-minute load is at or below $HEAVY_LOAD.
+Claim, use, and release a slot only through the slot helper, never by hand:
+- Full suite: \`$HEAVY_HELPER run $HEAVY_ADMIT_ARGS -- <suite command>\` waits for the load and a free slot, runs the suite, and releases the slot when the suite ends.
+- Pipeline run: before you start or resume it, run \`$HEAVY_HELPER claim $HEAVY_ADMIT_ARGS\`.
+  Drive the run with each \`no-mistakes\` call wrapped in the full-suite form above, which keeps your claimed slot.
+  As soon as the run parks at a gate, waits only on hosted CI, or ends, run \`$HEAVY_HELPER release --task $ID$HEAVY_SLOT_ARGS\`.
+A slot is a directory claimed by one atomic \`mkdir\` of its full path: that mkdir is the check and the claim in one step.
+Testing a path and then creating it is never a claim, and neither is a plain file at a slot path.
+The slot's \`owner\` file reads \`task=<task-id> pid=<pid>\`: the pid is the process running the heavy command, alive while it runs, or \`-\` while a pipeline claim has no command running.
+To see what holds capacity, list every slot with \`ls -d ${HEAVY_SLOT_BASE%.lock}*\` and read each \`owner\` file.
+Never test a single path instead: a lock under another spelling is invisible to that test and looks exactly like a free slot.
+If the helper is still waiting when your wait bound passes and a slot's owner pid is a dead process, append \`blocked [at=<epoch>]: heavy slot <full path> held by <owner task> with a dead pid\` and stop.
+Never delete, move, or rewrite a slot you did not claim, even one that looks abandoned.
+EOF
+CAPACITY_SECTION=${CAPACITY_SECTION%$'\n'}
+
 if [ "$KIND" = scout ]; then
 if "$SCRIPT_DIR/fm-bootstrap.sh" lavish-compatible >/dev/null 2>&1; then
   LAVISH_LINE='If your deliverable is a visual artifact the captain will review and iterate on, use the lavish-axi rule: arm your board with bin/fm-procevent-lavish.sh arm <artifact.html> --for <task-id>; never run lavish-axi poll yourself. Re-arm with the reply after each nonterminal round to acknowledge it, route the board feedback through your steering inbox, write needs-decision [key=board-review] with the live board URL when the captain owes a decision, and stop at session_ended or an empty End without re-arming - acknowledge that final round with bin/fm-procevent.sh handled <source-id> <sequence> to conclude and retire your board.'
@@ -611,6 +708,8 @@ $CREWMATE_PAUSE_INSTRUCTIONS
    A decision or blocker you opened stays open until a \`resolved\` line carrying its exact key lands; a later \`done:\` or \`working:\` line never closes it, even when the answer is what started that work.
    Firstmate's reply normally writes that closing line at answer time; when a blocker or wait clears WITHOUT a firstmate reply, append \`resolved [at=<epoch>]: {how it cleared}\` yourself (same \`[key=<slug>]\` if you opened it with one) as you resume.
 $SHARED_INFRA_RULE
+
+$CAPACITY_SECTION
 
 $WAIT_BLOCK$INBOX_SECTION
 
@@ -689,6 +788,8 @@ $ASK_USER_BLOCK
    A decision or blocker you opened stays open until a \`resolved\` line carrying its exact key lands; a later \`done:\` or \`working:\` line never closes it, even when the answer is what started that work.
    Firstmate's reply normally writes that closing line at answer time; when a blocker or wait clears WITHOUT a firstmate reply, append \`resolved [at=<epoch>]: {how it cleared}\` yourself (same \`[key=<slug>]\` if you opened it with one) as you resume.
 $SHARED_INFRA_RULE
+
+$CAPACITY_SECTION
 
 $WAIT_BLOCK$INBOX_SECTION
 
