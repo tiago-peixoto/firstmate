@@ -939,6 +939,109 @@ EOF
   pass "nonprogressing child states are explicit and inconsistent terminal rows invalidate"
 }
 
+write_passed_run() {  # <fakebin> <worktree> <pr-number>
+  local branch head
+  branch=$(git -C "$2" rev-parse --abbrev-ref HEAD)
+  head=$(git -C "$2" rev-parse HEAD)
+  mkdir -p "$1/runs"
+  cat > "$1/runs/${branch#fm/}" <<EOF
+run:
+  id: "01RUN$3"
+  branch: $branch
+  status: completed
+  head: "$head"
+  pr: "https://github.com/acme/repo/pull/$3"
+  findings: none
+outcome: passed
+EOF
+}
+
+# A green PR waiting on a maintainer is delivered work still in flight, so it is
+# held rather than reported as a finished task the home forgot to clean up. The
+# real current-state reader runs against a fake pipeline and forge: PR 1 is open
+# and PR 2 merged.
+test_open_green_pr_is_held_not_terminal() {
+  local home mate fakebin id canonical json out
+  home=$(make_home open-green-pr)
+  mate="$TMP_ROOT/open-green-pr-mate"
+  make_valid_secondmate_home waiting "$mate"
+  append_secondmate_registry "$home" waiting "$mate"
+  fakebin=$(make_fakebin "$home")
+  cat > "$fakebin/no-mistakes" <<'SH'
+#!/usr/bin/env bash
+case "$*" in
+  axi|"axi status")
+    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
+    cat "$(dirname "$0")/runs/${branch#fm/}" 2>/dev/null ;;
+esac
+exit 0
+SH
+  cat > "$fakebin/gh" <<'SH'
+#!/usr/bin/env bash
+[ "${1:-} ${2:-}" = "api graphql" ] || exit 1
+case " $* " in
+  *" number=2 "*) printf 'state=MERGED\nmerged=true\n' ;;
+  *) printf 'state=OPEN\nmerged=false\n' ;;
+esac
+SH
+  cat > "$mate/data/backlog.md" <<'EOF'
+## In flight
+- [ ] awaiting - Green PR waiting on a maintainer (repo: sample) (kind: ship) (since 2026-07-11)
+- [ ] landed - Merged PR never cleaned up (repo: sample) (kind: ship) (since 2026-07-11)
+- [ ] noted - Worker note that only claims an open PR (repo: sample) (kind: ship) (since 2026-07-11)
+
+## Queued
+
+## Done
+EOF
+  for id in awaiting landed noted; do
+    fm_git_init_commit "$mate/projects/$id"
+    git -C "$mate/projects/$id" checkout -q -b "fm/$id"
+    fm_write_meta "$mate/state/$id.meta" \
+      "window=firstmate:fm-$id" "worktree=$mate/projects/$id" "project=sample" \
+      "harness=claude" "kind=ship" "mode=no-mistakes" "branch=fm/$id"
+    record_claude_state "$mate/state" "$id" idle
+  done
+  write_passed_run "$fakebin" "$mate/projects/awaiting" 1
+  write_passed_run "$fakebin" "$mate/projects/landed" 2
+  printf '%s\n' 'done: PR https://github.com/acme/repo/pull/1 checks green' \
+    'paused: parked on the maintainer verdict for https://github.com/acme/repo/pull/1' \
+    > "$mate/state/awaiting.status"
+  printf 'done: PR https://github.com/acme/repo/pull/2 checks green\n' > "$mate/state/landed.status"
+  printf 'done: run passed: PR open\n' > "$mate/state/noted.status"
+
+  json=$(run "$home" "$fakebin" --json)
+  canonical=$(PATH="$fakebin:$PATH" FM_HOME="$home" FM_SNAPSHOT_NOW=2026-07-11T18:00:00Z \
+    "$ROOT/bin/fm-fleet-snapshot.sh" --json)
+  printf '%s' "$canonical" | jq -e '
+    .secondmate_current.records[] | select(.id == "waiting")
+    | .invalidity == {kind:"terminal_in_flight",ids:["landed","noted"]}
+      and (.holds | any(.id == "awaiting" and .source == "child-state"
+        and (.reason | startswith("run passed: PR open"))))
+  ' >/dev/null || fail "an open green PR read as finished, or a finished task stopped reading as a mismatch: $canonical"
+  printf '%s' "$json" | jq -e '
+    .secondmate_reconcile == [{id:"waiting",spawn_gen:null,host:null,
+      kind:"terminal_in_flight",ids:["landed","noted"]}]
+  ' >/dev/null || fail "bearings did not ask to reconcile exactly the finished tasks: $json"
+  out=$(printf '%s' "$json" | FM_HOME="$home" "$ROOT/bin/fm-secondmate-reconcile.sh" request --snapshot -)
+  assert_contains "$out" "requested: " "a finished task never cleaned up still queues a reconcile request"
+
+  rm -f "$home/state/reconcile-notify"/request-*.json
+  for id in landed noted; do
+    rm -f "$mate/state/$id.meta" "$mate/state/$id.status"
+  done
+  printf '## In flight\n- [ ] awaiting - Green PR waiting on a maintainer (repo: sample) (kind: ship) (since 2026-07-11)\n\n## Queued\n\n## Done\n' \
+    > "$mate/data/backlog.md"
+  json=$(run "$home" "$fakebin" --json)
+  printf '%s' "$json" | jq -e '
+    (.secondmates[] | select(.id == "waiting") | .state == "externally_held")
+      and all(.secondmate_reconcile[]; .kind == null)
+  ' >/dev/null || fail "a home whose only child waits on a maintainer is not held: $json"
+  out=$(printf '%s' "$json" | FM_HOME="$home" "$ROOT/bin/fm-secondmate-reconcile.sh" request --snapshot -)
+  assert_equals "not-needed" "$out" "an open green PR must not queue a reconcile request"
+  pass "an open green PR waiting on a maintainer is held, not a finished task to reconcile"
+}
+
 test_registry_unavailability_and_bounds_are_explicit() {
   local home fakebin json canonical id mate boundary
   home=$(make_home registry-unavailable)
@@ -3371,6 +3474,7 @@ test_secondmate_and_child_bounds_are_disclosed
 test_parent_decision_is_untrusted_contradiction_only
 test_parent_evidence_reconciles_by_verb_and_key
 test_nonprogressing_child_states_are_explicit
+test_open_green_pr_is_held_not_terminal
 test_registry_unavailability_and_bounds_are_explicit
 test_current_landed_baseline_is_repeatable_and_prior_report_independent
 test_default_is_bounded_and_local_only
