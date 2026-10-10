@@ -662,9 +662,13 @@ When the project's own instructions run its suite through a script that claims o
 A slot is a directory claimed by one atomic \`mkdir\` of its full path: that mkdir is the check and the claim in one step.
 Testing a path and then creating it is never a claim, and neither is a plain file at a slot path.
 The slot's \`owner\` file reads \`task=<task-id> pid=<pid>\`: the pid is the process running the heavy command, alive while it runs, or \`-\` while a pipeline claim has no command running.
+While the command runs, the helper also refreshes the \`owner\` file's time every 15 seconds, so a fresh file shows the heavy command still working, even between a suite's short-lived processes, where no single pid can.
+While you wait, the helper keeps your place in one machine-wide queue: a free slot goes to the longest live waiter that may use it, so a bare \`mkdir\` or a faster retry only takes a slot from someone who waited longer.
 To see what holds capacity, list every slot with \`ls -d ${HEAVY_SLOT_BASE%.lock}*\` and read each \`owner\` file.
 Never test a single path instead: a lock under another spelling is invisible to that test and looks exactly like a free slot.
-If the helper is still waiting when your wait bound passes and a slot's owner pid is a dead process, append \`blocked [at=<epoch>]: heavy slot <full path> held by <owner task> with a dead pid\` and stop.
+If the helper is still waiting when your wait bound passes, run \`$HEAVY_HELPER status$HEAVY_SLOT_ARGS\`.
+A holder it reads \`working\` or \`between commands\` is honest queuing, so keep waiting.
+A holder it reads \`idle\` (no command run for 10 minutes), \`stale\` (no heartbeat for 2 minutes), or anything else is not shown to be working: append \`blocked [at=<epoch>]: heavy slot <full path> held by <owner task>, <reading>\` and stop.
 Never delete, move, or rewrite a slot you did not claim, even one that looks abandoned.
 EOF
 CAPACITY_SECTION=${CAPACITY_SECTION%$'\n'}
