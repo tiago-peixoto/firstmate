@@ -1459,7 +1459,10 @@ test_capacity_rule_reaches_every_crewmate_brief() {
       "$kind: honest queuing is not told apart from a stuck holder"
     assert_contains "$section" "is not shown to be working: append \`blocked [at=<epoch>]: heavy slot <full path> held by <owner task>, <reading>\`" \
       "$kind: a not-working holder is not escalated"
-    assert_contains "$section" "Never delete, move, or rewrite a slot you did not claim" "$kind: deleting another task's slot is not forbidden"
+    assert_contains "$section" "Never delete, move, or rewrite a slot you did not claim, even one that looks abandoned, and never clear one yourself." \
+      "$kind: deleting or clearing another task's slot is not forbidden"
+    assert_contains "$section" "Only firstmate clears a slot, through the helper's \`clear\`, which refuses unless it finds positive evidence that nothing of that claim still runs; a dead pid alone is never that evidence." \
+      "$kind: who clears a slot, and on what evidence, is missing"
     assert_slots_spelled_in_full "$brief" "$kind"
     section=${section//cap-$kind/<id>}
     [ -n "$first_section" ] || first_section=$section

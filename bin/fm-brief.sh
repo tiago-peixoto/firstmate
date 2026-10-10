@@ -669,7 +669,8 @@ Never test a single path instead: a lock under another spelling is invisible to 
 If the helper is still waiting when your wait bound passes, run \`$HEAVY_HELPER status$HEAVY_SLOT_ARGS\`.
 A holder it reads \`working\` or \`between commands\` is honest queuing, so keep waiting.
 A holder it reads \`idle\` (no command run for 10 minutes), \`stale\` (no heartbeat for 2 minutes), or anything else is not shown to be working: append \`blocked [at=<epoch>]: heavy slot <full path> held by <owner task>, <reading>\` and stop.
-Never delete, move, or rewrite a slot you did not claim, even one that looks abandoned.
+Never delete, move, or rewrite a slot you did not claim, even one that looks abandoned, and never clear one yourself.
+Only firstmate clears a slot, through the helper's \`clear\`, which refuses unless it finds positive evidence that nothing of that claim still runs; a dead pid alone is never that evidence.
 EOF
 CAPACITY_SECTION=${CAPACITY_SECTION%$'\n'}
 
