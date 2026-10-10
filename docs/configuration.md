@@ -13,6 +13,7 @@ Start with the directory layout, then use the setting reference for the behavior
 | Backlog, preferences, and memory | [Backlog backend](#backlog-backend-taskstoml--configbacklog-backend), [captain preferences](#captain-preferences-datacaptainmd--datacaptain-sharedmd), and [startup memory budget](#startup-memory-budget-configstartup-memory-budget) |
 | Supervision and presentation | [Pi supervision branch](#pi-supervision-branch), [supervision host](#supervision-host-configsupervision-host), and [Calm preference](#calm-preference-configcalm) |
 | Persistent secondmates | [Secondmate routes](#secondmate-routes-datasecondmatesmd) |
+| Heavy test runs shared by every home on one machine | [Heavy-run slots](#heavy-run-slots-configheavy-suite-slots-configheavy-suite-load) |
 | Per-run overrides and tuning | [Environment variables](#environment-variables) |
 
 ## FM_HOME
@@ -912,6 +913,25 @@ An absent or blank file changes nothing, while a present path that is not a read
 The text is static and never executed or expanded; secondmate charters never take it, and the file is local to each home rather than part of secondmate inherited configuration.
 
 `bin/fm-brief.sh`'s header owns the placement rule and its safety argument.
+
+## Heavy-run slots (config/heavy-suite-slots, config/heavy-suite-load)
+
+Every Firstmate home on one machine shares a small set of heavy-run slots, so full test suites and no-mistakes pipeline runs from many homes do not all run at once.
+Each ship and scout brief carries a `# Machine capacity` section that names this home's slots and load bar and tells the worker to claim, use, and release a slot only through [`bin/fm-heavy-slot.sh`](../bin/fm-heavy-slot.sh).
+Slot 1 is the directory `/tmp/fm-heavy-suite.lock` and slot n is `/tmp/fm-heavy-suite.lock-<n>`; a brief always spells each path in full.
+
+| File | Contents | When absent |
+| --- | --- | --- |
+| `config/heavy-suite-slots` | The slot numbers this home may claim, separated by whitespace, in the order its workers try them | Slots 1 and 2 |
+| `config/heavy-suite-load` | One positive number: the 1-minute load at or below which a heavy run may start | The machine's online processor count |
+
+The slot count is a per-machine choice, and two is only the default.
+To reserve capacity for each home, give each home its own slot plus the shared ones: homes listing `3 4` and `1 4` each keep one slot to themselves and share slot 4.
+Slot numbers are positive integers without leading zeros or repeats.
+An invalid value, or a present path that is not a readable regular file, stops ship and scout scaffolds before anything is written.
+Both files are local to each home and not inherited by secondmate homes, because the slot list is how one home's share of the machine is reserved; secondmate charters never carry the section.
+
+`bin/fm-heavy-slot.sh`'s header owns the claim, owner-line, and release contract.
 
 ## Worker launch environment (config/launch-env-allowlist)
 

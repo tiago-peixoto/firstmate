@@ -1395,6 +1395,136 @@ test_crewmate_scaffolds_forbid_pool_administration() {
   pass "fm-brief.sh: every crewmate scaffold forbids administering the shared worktree pool"
 }
 
+capacity_section() {
+  awk '/^# Machine capacity$/ { on = 1; print; next } on && /^# / { exit } on' "$1"
+}
+
+# A brief once named one heavy slot in full and the other as a bare "-2", which
+# two lanes resolved to two different paths: each held a genuine lock and both
+# ran. Every slot reference must be a full path or the enumeration glob.
+assert_slots_spelled_in_full() {
+  local brief=$1 label=$2 bad
+  # shellcheck disable=SC2016 # A backtick ends a slot path in Markdown code spans.
+  bad=$(grep -oE '[^[:space:]`]*fm-heavy-suite[^[:space:]`]*' "$brief" \
+    | grep -vxE '/tmp/fm-heavy-suite\.lock(-[1-9][0-9]*)?|/tmp/fm-heavy-suite\*') || true
+  [ -z "$bad" ] || fail "$label: heavy-slot reference that is not a full path: $bad"
+  # shellcheck disable=SC2016 # A backtick ends a slot path in Markdown code spans.
+  bad=$(grep -oE '[^[:space:]`]*lock-[0-9]+' "$brief" | grep -vxE '/tmp/fm-heavy-suite\.lock-[1-9][0-9]*') || true
+  [ -z "$bad" ] || fail "$label: slot suffix outside a full path: $bad"
+  bad=$(capacity_section "$brief" | grep -nE '(^|[^[:alnum:]_./-])-[0-9]+([^[:alnum:]_.]|$)') || true
+  [ -z "$bad" ] || fail "$label: bare slot suffix in the capacity rule: $bad"
+}
+
+test_capacity_rule_reaches_every_crewmate_brief() {
+  local home kind brief section cpus first_section=
+  home="$TMP_ROOT/capacity-default"
+  mkdir -p "$home/data"
+  cpus=$(getconf _NPROCESSORS_ONLN)
+  for kind in no-mistakes direct-PR local-only scout; do
+    if [ "$kind" = scout ]; then
+      FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "cap-$kind" some-proj --scout >/dev/null || fail "scout scaffold failed"
+    else
+      FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "cap-$kind" some-proj --mode "$kind" >/dev/null || fail "$kind scaffold failed"
+    fi
+    brief="$home/data/cap-$kind/brief.md"
+    section=$(capacity_section "$brief")
+    [ -n "$section" ] || fail "$kind brief carries no machine-capacity rule"
+    # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+    assert_contains "$section" 'tried in this order: `/tmp/fm-heavy-suite.lock`, then `/tmp/fm-heavy-suite.lock-2`.' \
+      "$kind: default slots are not both spelled in full, in order"
+    assert_contains "$section" "at or below $cpus." "$kind: default load bar is not this machine's processor count"
+    assert_contains "$section" "'$ROOT/bin/fm-heavy-slot.sh' run --task cap-$kind --load $cpus --slot /tmp/fm-heavy-suite.lock --slot /tmp/fm-heavy-suite.lock-2 -- " \
+      "$kind: full-suite claim command is missing or inexact"
+    assert_contains "$section" "fm-heavy-slot.sh' claim --task cap-$kind --load $cpus --slot /tmp/fm-heavy-suite.lock --slot /tmp/fm-heavy-suite.lock-2\`" \
+      "$kind: pipeline claim command is missing or inexact"
+    assert_contains "$section" "fm-heavy-slot.sh' release --task cap-$kind --slot /tmp/fm-heavy-suite.lock --slot /tmp/fm-heavy-suite.lock-2\`" \
+      "$kind: release command is missing or inexact"
+    assert_contains "$section" "a task holds at most one slot" "$kind: one slot per task is missing"
+    # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+    assert_contains "$section" 'A slot is a directory claimed by one atomic `mkdir` of its full path' "$kind: slot shape or atomic claim is missing"
+    # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+    assert_contains "$section" '`task=<task-id> pid=<pid>`: the pid is the process running the heavy command, alive while it runs' \
+      "$kind: owner contents with a live pid are missing"
+    assert_contains "$section" "As soon as the run parks at a gate, waits only on hosted CI, or ends" "$kind: release on park or end is missing"
+    assert_contains "$section" "do not also wrap it: wrapped, it would wait on the slot its own wrapper holds" \
+      "$kind: a project's own slot-claiming script would deadlock inside the helper"
+    # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+    assert_contains "$section" 'list every slot with `ls -d /tmp/fm-heavy-suite*`' "$kind: capacity is not checked by enumeration"
+    assert_contains "$section" "Never test a single path instead" "$kind: single-path test is not forbidden"
+    assert_contains "$section" "owner pid is a dead process, append \`blocked" "$kind: dead-holder escalation is missing"
+    assert_contains "$section" "Never delete, move, or rewrite a slot you did not claim" "$kind: deleting another task's slot is not forbidden"
+    assert_slots_spelled_in_full "$brief" "$kind"
+    section=${section//cap-$kind/<id>}
+    [ -n "$first_section" ] || first_section=$section
+    [ "$section" = "$first_section" ] || fail "$kind capacity rule drifted from the other crewmate briefs"
+  done
+  FM_HOME="$home" FM_SECONDMATE_CHARTER='Supervise assigned work.' \
+    "$ROOT/bin/fm-brief.sh" cap-mate --secondmate --no-projects >/dev/null || fail "secondmate scaffold failed"
+  assert_no_grep '# Machine capacity' "$home/data/cap-mate/brief.md" "a secondmate charter took the crewmate capacity rule"
+  pass "fm-brief: every ship mode and the scout carry one exact capacity rule with every slot spelled in full"
+}
+
+test_capacity_rule_follows_home_config() {
+  local home brief section
+  home="$TMP_ROOT/capacity-config"
+  mkdir -p "$home/config"
+  printf '3\n4\n' > "$home/config/heavy-suite-slots"
+  printf '10\n' > "$home/config/heavy-suite-load"
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" cap-config some-proj --mode direct-PR >/dev/null || fail "configured scaffold failed"
+  brief="$home/data/cap-config/brief.md"
+  section=$(capacity_section "$brief")
+  # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+  assert_contains "$section" 'tried in this order: `/tmp/fm-heavy-suite.lock-3`, then `/tmp/fm-heavy-suite.lock-4`.' \
+    "configured slots are not listed in full, in the configured order"
+  assert_contains "$section" "--load 10 --slot /tmp/fm-heavy-suite.lock-3 --slot /tmp/fm-heavy-suite.lock-4 -- " \
+    "the claim command does not carry the configured load bar and slots"
+  assert_not_contains "$section" "/tmp/fm-heavy-suite.lock " "an unconfigured slot reached the claim command"
+  # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+  assert_not_contains "$section" '`/tmp/fm-heavy-suite.lock`' "an unconfigured slot reached the slot list"
+  assert_slots_spelled_in_full "$brief" "configured"
+
+  printf '5' > "$home/config/heavy-suite-slots"
+  printf ' 12.5 \n' > "$home/config/heavy-suite-load"
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" cap-single some-proj --scout >/dev/null || fail "single-slot scaffold failed"
+  section=$(capacity_section "$home/data/cap-single/brief.md")
+  # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+  assert_contains "$section" 'tried in this order: `/tmp/fm-heavy-suite.lock-5`.' "a one-slot home did not list exactly its slot"
+  assert_contains "$section" "--load 12.5 --slot /tmp/fm-heavy-suite.lock-5 -- " "a decimal load bar or single slot did not reach the command"
+  pass "fm-brief: the capacity rule spells the home's configured slots in full, in order, with its load bar"
+}
+
+test_capacity_config_is_validated_before_writing() {
+  local home value out rc n=0
+  home="$TMP_ROOT/capacity-invalid"
+  mkdir -p "$home/config"
+  for value in '0' '2 2' 'two' '-2' 'lock-2' ' '; do
+    n=$((n + 1))
+    printf '%s\n' "$value" > "$home/config/heavy-suite-slots"
+    out=$(FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "cap-bad-slots-$n" some-proj --scout 2>&1); rc=$?
+    expect_code 1 "$rc" "slots '$value' must stop the scaffold"
+    assert_contains "$out" "heavy-suite-slots" "slots '$value' refusal did not name the file"
+    assert_absent "$home/data/cap-bad-slots-$n" "slots '$value' left a partial scaffold behind"
+  done
+  rm -f "$home/config/heavy-suite-slots"
+  for value in '0' 'abc' '10 12' '-1'; do
+    n=$((n + 1))
+    printf '%s\n' "$value" > "$home/config/heavy-suite-load"
+    out=$(FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "cap-bad-load-$n" some-proj --mode local-only 2>&1); rc=$?
+    expect_code 1 "$rc" "load '$value' must stop the scaffold"
+    assert_contains "$out" "heavy-suite-load" "load '$value' refusal did not name the file"
+    assert_absent "$home/data/cap-bad-load-$n" "load '$value' left a partial scaffold behind"
+  done
+  rm -f "$home/config/heavy-suite-load"
+  mkdir "$home/config/heavy-suite-load"
+  out=$(FM_HOME="$home" "$ROOT/bin/fm-brief.sh" cap-bad-load-dir some-proj --scout 2>&1); rc=$?
+  expect_code 1 "$rc" "an unreadable load file must stop the scaffold"
+  assert_contains "$out" "heavy-suite-load must be a readable regular file" "unusable load path refusal did not explain itself"
+  FM_HOME="$home" FM_SECONDMATE_CHARTER='Supervise assigned work.' \
+    "$ROOT/bin/fm-brief.sh" cap-bad-mate --secondmate --no-projects >/dev/null \
+    || fail "a secondmate charter must not read the crewmate capacity config"
+  pass "fm-brief: invalid capacity config stops ship and scout scaffolds before anything is written"
+}
+
 test_script_parses
 test_no_heredoc_in_command_substitution
 test_help_includes_entire_header
@@ -1431,3 +1561,6 @@ test_branch_prefix_is_refused_where_it_does_not_apply
 test_branch_prefix_value_is_validated
 test_branch_prefix_command_is_shell_safe
 test_crewmate_scaffolds_forbid_pool_administration
+test_capacity_rule_reaches_every_crewmate_brief
+test_capacity_rule_follows_home_config
+test_capacity_config_is_validated_before_writing
