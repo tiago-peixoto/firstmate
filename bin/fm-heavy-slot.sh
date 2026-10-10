@@ -5,7 +5,7 @@
 #        fm-heavy-slot.sh claim --task <task-id> --load <max> --slot <path> [--slot <path>...]
 #        fm-heavy-slot.sh release --task <task-id> --slot <path> [--slot <path>...]
 #        fm-heavy-slot.sh status --slot <path> [--slot <path>...]
-#        fm-heavy-slot.sh clear --slot <path>
+#        fm-heavy-slot.sh clear --slot <path> [--owner-ended]
 # A slot is a directory at a full absolute path that every Firstmate home on the
 # machine shares. Which paths a home's briefs list, and in what order, is owned
 # by bin/fm-brief.sh and docs/configuration.md ("Heavy-run slots"); this script
@@ -29,9 +29,11 @@
 #   mkdir of that path), or a legacy owner line (any other owner shape).
 # The heartbeat tracks the wrapper, not the work it started: a wrapper killed
 # outright stops beating while its command, or a suite process that command
-# started, may still run. So run also exports FM_HEAVY_SLOT_HELD=<slot>:<task>
-# into the command, and every process the command starts inherits that mark
-# unless it empties its environment.
+# started, may still run. So every claim this script makes also holds
+# <slot>/mark, one line `<slot>:<task>`, which run exports as FM_HEAVY_SLOT_HELD
+# into the command; every process the command starts inherits that mark unless
+# it empties its environment. The brief never describes the mark file, so a
+# claim written by hand in the owner-line shape still reads as unmarked.
 # Waiters are served in arrival order. A waiter keeps a ticket, refreshed every
 # poll, in the queue directory fm-heavy-slot-queue beside the first listed slot,
 # and claims a free slot only when no live waiter that arrived earlier may claim
@@ -59,21 +61,25 @@
 #   clear    is for firstmate only, so it refuses when FM_TASK_ID marks a
 #            worker. It removes one slot that another task abandoned, and only
 #            on positive evidence that nothing of that claim still runs, all of
-#            which must hold: the owner file (or, for any other shape, the slot)
-#            has not changed for the stale bound, or the idle bound for a claim
-#            with no command or a shape this script never writes; no recorded
-#            pid is a live process; no live process carries the claim's
-#            FM_HEAVY_SLOT_HELD mark; and no no-mistakes pipeline step is running
+#            which must hold: no recorded pid is a live process; no live process
+#            carries the claim's mark; no no-mistakes pipeline step is running
 #            on this machine, because a pipeline's Test step runs inside the
 #            daemon, where no mark reaches and nothing here can tell whose run
-#            it is. A dead pid alone is never enough. It prints every finding,
-#            then either clears the slot or refuses and leaves it untouched.
+#            it is; and the owner file (or, for any other shape, the slot) has
+#            not changed for the stale bound, or the idle bound for a claim
+#            with no command or a shape this script never writes. A dead pid
+#            alone is never enough. A claim without a mark, made by hand or by
+#            another script, leaves no process evidence this script can read,
+#            so clear refuses it unless firstmate passes --owner-ended after
+#            confirming that the claim's owning task has ended and none of its
+#            processes run. It prints every finding, then either clears the
+#            slot or refuses and leaves it untouched.
 #            The mark is read from /proc, or from `ps -E` where /proc is absent,
 #            so it sees only processes this user may inspect: every home on the
 #            machine is assumed to run as one user.
 # Exit status: run exits with the command's own status; claim, release, status,
 # and a clear that cleared or found the slot free exit 0; 1 when the 1-minute
-# load cannot be read or the owner line or ticket cannot be written; 2 on a
+# load cannot be read or the owner line, mark, or ticket cannot be written; 2 on a
 # usage error; 3 when clear refuses.
 # FM_HEAVY_SLOT_POLL sets the seconds between admission attempts and heartbeats
 # (default 15), FM_HEAVY_SLOT_STALE the whole seconds after which a heartbeat or
@@ -112,16 +118,19 @@ esac
 TASK=
 LOAD_MAX=
 SLOTS=()
+OWNER_ENDED=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --task) [ "$#" -ge 2 ] || die_usage "--task requires a value"; TASK=$2; shift 2 ;;
     --load) [ "$#" -ge 2 ] || die_usage "--load requires a value"; LOAD_MAX=$2; shift 2 ;;
     --slot) [ "$#" -ge 2 ] || die_usage "--slot requires a value"; SLOTS+=("$2"); shift 2 ;;
+    --owner-ended) OWNER_ENDED=1; shift ;;
     --) shift; break ;;
     *) die_usage "unknown argument '$1'" ;;
   esac
 done
 
+[ "$OWNER_ENDED" = 0 ] || [ "$MODE" = clear ] || die_usage "--owner-ended is for clear only"
 case "$MODE" in
   status) ;;
   clear)
@@ -223,6 +232,9 @@ own_slot() {
 }
 
 write_owner() {
+  if [ ! -f "$1/mark" ]; then
+    printf '%s:%s\n' "$1" "$TASK" > "$1/mark.$$" && mv -f "$1/mark.$$" "$1/mark" || return 1
+  fi
   printf 'task=%s pid=%s\n' "$TASK" "$2" > "$1/owner.$$" && mv -f "$1/owner.$$" "$1/owner"
 }
 
@@ -442,7 +454,10 @@ clear_slot() {
   case "$V_LABEL" in
     working|stale|idle|"between commands")
       record="$slot/owner"
-      token="$slot:$V_TASK"
+      if [ -f "$slot/mark" ] && [ ! -L "$slot/mark" ]; then
+        token=$(head -n 1 "$slot/mark" 2>/dev/null)
+        [ "${token##*:}" = "$V_TASK" ] || token=
+      fi
       if [ "$V_LABEL" = idle ] || [ "$V_LABEL" = "between commands" ]; then bound=$IDLE; else bound=$STALE; fi
       ;;
     "plain file") record=$slot; bound=$IDLE ;;
@@ -476,8 +491,11 @@ clear_slot() {
       echo "  no: cannot read process environments to look for this claim's processes"
       refuse=1
     fi
+  elif [ "$OWNER_ENDED" = 1 ]; then
+    echo "  ok: no mark from this helper, and firstmate confirmed the owning task has ended (--owner-ended)"
   else
-    echo "  ok: no mark to look for: this helper never made this claim"
+    echo "  no: no mark from this helper, so nothing here can show this claim's work ended; confirm its owning task has ended and none of its processes run, then pass --owner-ended"
+    refuse=1
   fi
   steps=$(pipeline_steps)
   if [ -n "$steps" ]; then
@@ -555,7 +573,7 @@ if [ "$MODE" = claim ]; then
     exit 0
   fi
   acquire
-  write_owner "$SLOT" - || { echo "fm-heavy-slot: could not write $SLOT/owner" >&2; exit 1; }
+  write_owner "$SLOT" - || { echo "fm-heavy-slot: could not write $SLOT/owner or $SLOT/mark" >&2; exit 1; }
   CREATED=0
   echo "fm-heavy-slot: claimed $SLOT"
   exit 0
@@ -566,10 +584,12 @@ if held=$(own_slot); then
 else
   acquire
 fi
-write_owner "$SLOT" "$$" || { echo "fm-heavy-slot: could not write $SLOT/owner" >&2; exit 1; }
+write_owner "$SLOT" "$$" || { echo "fm-heavy-slot: could not write $SLOT/owner or $SLOT/mark" >&2; exit 1; }
+mark=$(head -n 1 "$SLOT/mark" 2>/dev/null)
+[ -n "$mark" ] || { echo "fm-heavy-slot: could not read $SLOT/mark" >&2; exit 1; }
 beat "$$" </dev/null >/dev/null 2>&1 &
 BEATER=$!
-export FM_HEAVY_SLOT_HELD="$SLOT:$TASK"
+export FM_HEAVY_SLOT_HELD="$mark"
 "$@"
 rc=$?
 exit "$rc"
