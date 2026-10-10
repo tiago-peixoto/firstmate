@@ -3,7 +3,9 @@
 # order, an owner line whose pid lives for the whole heavy command, release that
 # never touches another task's slot, the load bar, and claims that span several
 # commands. Every slot lives under this suite's own temp root, never under the
-# machine's real /tmp/fm-heavy-suite* slots.
+# machine's real /tmp/fm-heavy-suite* slots. A fake suite that waits for a "go"
+# file also ends once its case directory is removed, so a test that fails before
+# releasing it leaves nothing running.
 # shellcheck disable=SC2016 # single-quoted scripts expand inside their own shells
 set -u
 
@@ -41,7 +43,7 @@ test_run_claims_a_directory_and_releases_it() {
   local out rc owner pid first
   new_case run-basic
   "$HELPER" run --task t1 --load 5 --slot "$S1" --slot "$S2" -- \
-    sh -c 'sleep 0.1 & echo $! > "$1/first"; wait; echo "$PPID" > "$1/parent"; touch "$1/between"; until [ -e "$1/go" ]; do sleep 0.05; done; exit 7' sh "$CASE" &
+    sh -c 'sleep 0.1 & echo $! > "$1/first"; wait; echo "$PPID" > "$1/parent"; touch "$1/between"; until [ -e "$1/go" ] || [ ! -d "$1" ]; do sleep 0.05; done; exit 7' sh "$CASE" &
   pid=$!
   wait_for path_exists "$CASE/between" || fail "the wrapped command never ran"
   [ -d "$S1" ] && [ ! -L "$S1" ] || fail "run did not claim the first listed slot as a directory"
@@ -163,7 +165,7 @@ test_term_never_releases_under_a_running_command() {
   local pid rc
   new_case term
   "$HELPER" run --task t1 --load 5 --slot "$S1" -- \
-    sh -c 'touch "$1/started"; until [ -e "$1/go" ]; do sleep 0.05; done' sh "$CASE" &
+    sh -c 'touch "$1/started"; until [ -e "$1/go" ] || [ ! -d "$1" ]; do sleep 0.05; done' sh "$CASE" &
   pid=$!
   wait_for path_exists "$CASE/started" || fail "the wrapped command never started"
   kill -TERM "$pid"
