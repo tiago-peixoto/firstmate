@@ -1451,7 +1451,14 @@ test_capacity_rule_reaches_every_crewmate_brief() {
     # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
     assert_contains "$section" 'list every slot with `ls -d /tmp/fm-heavy-suite*`' "$kind: capacity is not checked by enumeration"
     assert_contains "$section" "Never test a single path instead" "$kind: single-path test is not forbidden"
-    assert_contains "$section" "owner pid is a dead process, append \`blocked" "$kind: dead-holder escalation is missing"
+    assert_contains "$section" "the helper also refreshes the \`owner\` file's time every 15 seconds" "$kind: the heartbeat that shows a holder working is missing"
+    assert_contains "$section" "a free slot goes to the longest live waiter that may use it" "$kind: arrival-order admission is missing"
+    assert_contains "$section" "run \`'$ROOT/bin/fm-heavy-slot.sh' status --slot /tmp/fm-heavy-suite.lock --slot /tmp/fm-heavy-suite.lock-2\`" \
+      "$kind: the status command a waiter reads is missing or inexact"
+    assert_contains "$section" "A holder it reads \`working\` or \`between commands\` is honest queuing, so keep waiting." \
+      "$kind: honest queuing is not told apart from a stuck holder"
+    assert_contains "$section" "is not shown to be working: append \`blocked [at=<epoch>]: heavy slot <full path> held by <owner task>, <reading>\`" \
+      "$kind: a not-working holder is not escalated"
     assert_contains "$section" "Never delete, move, or rewrite a slot you did not claim" "$kind: deleting another task's slot is not forbidden"
     assert_slots_spelled_in_full "$brief" "$kind"
     section=${section//cap-$kind/<id>}
