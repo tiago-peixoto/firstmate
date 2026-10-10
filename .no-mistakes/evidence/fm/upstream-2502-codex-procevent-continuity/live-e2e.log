@@ -1,21 +1,2 @@
-d61bcad6b4e8a63a4b550996823a209f23e2d60f
-2026-10-05T14:27:13Z
-Note: switching to 'd61bcad6b4e8a63a4b550996823a209f23e2d60f'.
-
-You are in 'detached HEAD' state. You can look around, make experimental
-changes and commit them, and you can discard any commits you make in this
-state without impacting any branches by switching back to a branch.
-
-If you want to create a new branch to retain commits you create, you may
-do so (now or later) by using -c with the switch command. Example:
-
-  git switch -c <new-branch-name>
-
-Or undo this operation with:
-
-  git switch -
-
-Turn off this advice by setting config variable advice.detachedHead to false
-
-ok - codex-cli 0.157.1 Stop re-armed an ownerless source and queued its close into the idle thread
+ok - codex-cli 0.160.1 Stop re-armed an ownerless source and queued its close into the idle thread
 exit=0

@@ -1,0 +1,21 @@
+ok - codex idle continuity re-arms a single-shot source only for a live owner
+ok - a Codex ancestor reported by its full binary path owns idle continuity
+ok - each new turn checkpoint takes over from the idle supervisor and the next stop restores it
+ok - a checkpoint from a session that does not own the lock leaves the idle supervisor running
+ok - a supervisor attached to a checkpoint watcher re-arms its own after the checkpoint ends
+ok - the idle supervisor queues pending downtime once and re-arms as a handling successor
+ok - handover closes never spend the failure budget, and real arm failures still do
+ok - a broken watcher queues one give-up check per failure episode, and a successful checkpoint ends the episode
+ok - a close that returns after away mode started is not queued and leaves the watcher alone
+ok - a home opted into the supervision host starts no idle supervisor
+ok - a supervision-host file opts out of idle continuity, and supervision-host-off does not
+ok - a session that does not own the home lock starts no idle supervisor
+ok - a dead recorded session owner is reclaimed before the idle supervisor starts
+ok - a startup lock is not reclaimed or handed over until the supervisor pid is recorded
+ok - a stop that overlaps another stop mid-claim starts no second supervisor
+ok - a stall after watcher: attached spends the failure budget
+ok - a started arm that ends with no actionable reason spends the failure budget
+ok - owner exit does not stop a watcher the supervisor only attached to
+ok - TERM stops a watcher only when this supervisor started it
+ok - TERM does not stop a watcher the arm yielded after starting one
+ok - handover finishes when another session still holds the watcher

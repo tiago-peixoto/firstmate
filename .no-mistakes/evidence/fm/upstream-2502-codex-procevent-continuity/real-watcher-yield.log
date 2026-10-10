@@ -1,0 +1,7 @@
+product under test: plain clone at 2d399c25, FM_GATE_REFUSE_BYPASS unset, marked lab home
+try 1: supervisor pid=2206542; arm.out of the one arm:
+    watcher: started pid=2206616 (beacon fresh)
+    watcher: attached pid=2207564 (beacon 1s)
+watcher A=2206616 alive=no; lock holder B=2207564
+handover rc=0 supervisor alive=no watcher B=2207564 alive=yes lock pid=2207564
+PASS - S5

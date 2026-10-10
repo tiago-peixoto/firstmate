@@ -1,0 +1,43 @@
+product under test: plain clone at 2d399c25, FM_GATE_REFUSE_BYPASS unset, marked lab home
+== S1: a second session's checkpoint leaves the owner's idle supervisor running
+supervisor pid=1936381 owner=1936065 arm: watcher: started pid=1936449 (beacon fresh) watcher=1936449
+foreign checkpoint rc=124: checkpoint: no actionable wake within 2s
+after: supervisor pid=1936381 alive=yes watcher=1936449 alive=yes
+PASS - S1
+== S6: TERM (owner checkpoint handover) stops a watcher the supervisor started itself
+owner checkpoint rc=0: check: rearm-resurface
+old watcher 1936449 alive=no; idle lock present=no
+PASS - S6
+== S2a: 8 overlapping allowing Stops start exactly one supervisor
+supervisors running for this home: 1 (recorded pid=1942512)
+PASS - S2a
+== S2b: a lock whose startup hook is alive and has no pid yet is not reclaimed by a later Stop
+after second Stop: starting=1945046 pid-file=empty
+supervisors running for this home: 0
+handover while startup holds the lock rc=1, lock present=yes
+after the startup hook died, next Stop: supervisor alive=yes
+PASS - S2b
+== S3: owner exits while the arm only attached to another session's watcher
+foreign checkpoint watcher pid=1949126
+supervisor pid=1949559 arm: watcher: attached pid=1949126 (beacon 1s)
+owner gone: supervisor alive=no lock present=no foreign watcher 1949126 alive=yes lock pid=1949126
+PASS - S3
+== S4: owner checkpoint hands over a supervisor that only attached to the foreign watcher
+supervisor pid=1951275 arm: watcher: attached pid=1949126 (beacon 0s) foreign watcher=1949126
+owner checkpoint rc=1 after 7s: watcher: already running pid 1949126
+checkpoint: watcher is already running outside this foreground checkpoint
+supervisor alive=no foreign watcher 1949126 alive=yes
+PASS - S4
+foreign checkpoint finished: checkpoint: no actionable wake within 25s
+== S5: started then attached - the supervisor's watcher yields the lock, then TERM
+supervisor pid=1985836 started watcher A=1986142
+arm.out now:
+    watcher: already running pid 1990450
+    watcher: attached pid=1990450 (beacon 0s)
+watcher A=1986142 alive=no; lock holder B=1990450
+handover rc=0 supervisor alive=no watcher B=1990450 alive=yes
+PASS - S5 (this run re-armed and attached; the single-arm started-then-attached case is in real-watcher-yield.log)
+== S7: host-opted home starts no idle supervisor
+config/supervision-host present: lock present=no watcher alive=no
+PASS - S7
+RESULT=0

@@ -1,0 +1,17 @@
+product under test: plain clone at 2d399c25, FM_GATE_REFUSE_BYPASS unset, marked lab home
+foreign watcher pid=1892130
+supervisor pid=1900341 arm: watcher: attached pid=1892130 (beacon 1s)
+froze foreign watcher 1892130 at 17:55:51
+--- arm.out at 17:55:51
+    watcher: attached pid=1892130 (beacon 1s)
+--- arm.out at 17:55:58
+    watcher: attached pid=1892130 (beacon 1s)
+    watcher: FAILED - attached watcher pid=1892130 stalled (beacon 8s at or past hard bound 8s)
+--- arm.out at 17:56:03
+    watcher: FAILED - no live watcher with a fresh beacon
+supervisor alive=no at 17:56:09
+failure notice present=yes
+queued into thread:
+    check: codex idle continuity stopped after 3 failed watcher arms: watcher: FAILED - no live watcher with a fresh beacon
+foreign watcher 1892130 alive=yes
+next allowing Stop: idle lock present=no
