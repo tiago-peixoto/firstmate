@@ -389,6 +389,8 @@ test_clear_requires_every_piece_of_evidence() {
   expect_code 2 "$?" "clear must refuse a --task"
   FM_TASK_ID='' "$HELPER" clear --slot "$S1" --slot "$S2" 2>/dev/null
   expect_code 2 "$?" "clear must take exactly one slot"
+  "$HELPER" status --slot "$S1" --owner-ended >/dev/null 2>&1
+  expect_code 2 "$?" "--owner-ended must be refused outside clear"
   out=$(clear_as_firstmate --slot "$S1"); rc=$?
   expect_code 0 "$rc" "clearing a free slot must succeed"
   assert_contains "$out" "is free; nothing to clear" "a free slot was not reported free"
@@ -407,21 +409,35 @@ test_clear_requires_every_piece_of_evidence() {
   expect_code 0 "$rc" "an old claim with no command, pid, mark, or pipeline step must clear"$'\n'"$out"
   assert_absent "$S1" "the abandoned claim was not cleared"
 
+  mkdir "$S1"
+  printf 'task=by-hand pid=%s\n' "$gone" > "$S1/owner"
+  touch -t 202001010000 "$S1/owner"
+  out=$(clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 3 "$rc" "a hand-written claim in the helper's owner shape must not clear on its missing mark"
+  assert_contains "$out" "no mark from this helper, so nothing here can show this claim's work ended" \
+    "clear treated a hand-written claim's missing mark as evidence"
+  out=$(clear_as_firstmate --slot "$S1" --owner-ended); rc=$?
+  expect_code 0 "$rc" "an old hand-written claim must clear once firstmate confirms its owner ended"$'\n'"$out"
+  assert_absent "$S1" "the hand-written claim was not cleared"
+
   printf '%s\n' "$$" > "$S2"
   touch -t 202001010000 "$S2"
-  out=$(clear_as_firstmate --slot "$S2"); rc=$?
-  expect_code 3 "$rc" "a plain-file claim recording a live pid must not be cleared"
+  out=$(clear_as_firstmate --slot "$S2" --owner-ended); rc=$?
+  expect_code 3 "$rc" "a plain-file claim recording a live pid must not be cleared, whatever firstmate confirmed"
   assert_contains "$out" "recorded pid $$ is a live process" "clear did not name the live recorded pid"
   printf 'some-task %s\n' "$gone" > "$S2"
-  out=$(clear_as_firstmate --slot "$S2"); rc=$?
+  out=$(clear_as_firstmate --slot "$S2" --owner-ended); rc=$?
   expect_code 3 "$rc" "a plain file written just now must not be cleared"
   assert_contains "$out" "changed 0s ago" "clear did not refuse a fresh plain file on its age"
   touch -t 202001010000 "$S2"
   out=$(clear_as_firstmate --slot "$S2"); rc=$?
-  expect_code 0 "$rc" "an old plain file with a dead pid and no pipeline step must clear"$'\n'"$out"
-  assert_contains "$out" "no mark to look for: this helper never made this claim" "clear did not say a legacy claim has no mark"
+  expect_code 3 "$rc" "an old plain file must not clear before firstmate confirms its owner ended"
+  [ -f "$S2" ] || fail "a refused clear removed the plain file"
+  out=$(clear_as_firstmate --slot "$S2" --owner-ended); rc=$?
+  expect_code 0 "$rc" "an old plain file with a dead pid, a confirmed owner end, and no pipeline step must clear"$'\n'"$out"
+  assert_contains "$out" "firstmate confirmed the owning task has ended" "clear did not report firstmate's confirmation"
   assert_absent "$S2" "the plain-file claim was not cleared"
-  pass "fm-heavy-slot: clear is firstmate's, and needs an old claim, no live recorded pid, and no running pipeline step"
+  pass "fm-heavy-slot: clear is firstmate's, and needs an old claim, no live recorded pid or mark, no running pipeline step, and a confirmed owner end for an unmarked claim"
 }
 
 test_clear_leaves_a_slot_claimed_again_during_its_checks() {
