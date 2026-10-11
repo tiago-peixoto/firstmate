@@ -1,0 +1,18 @@
+ok - fm-turnend-guard: away mode blocks on a dead away-mode daemon
+ok - fm-turnend-guard: away mode blocks on a pid-reused away-mode daemon lock
+ok - fm-turnend-guard: away-mode daemon ownership never substitutes for a fresh beacon
+ok - fm-turnend-guard: a daemon lock proves nothing while away mode is off
+ok - fm-turnend-guard: away-mode beacon freshness uses the poll-derived grace, not the flat default
+ok - fm-turnend-guard: a dead away-mode daemon still blocks under the poll-derived grace
+ok - fm-turnend-guard: the poll-derived grace is bounded, not unlimited
+ok - fm-turnend-guard: with away mode off, the poll-derived grace never applies
+guard exit=0
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 1525567.1791748186.AoU4dT
+ok - checkpoint passes through a real watcher wake and leaves the queue for drain
+ok - checkpoint preserves watcher environment for registered custom checks
+ok - checkpoint rejects an existing watcher singleton as unowned
+ok - checkpoint: an opted-in home runs the host for the checkpoint's bound, raised only while away
+ok - checkpoint: a handed-back wake passes through, and a host stand-down is a failure
+ok - checkpoint: a Codex home without config/supervision-host, or with an off file, never runs the host
+ok - checkpoint: the real host ends its park at the checkpoint bound as a quiet checkpoint
+checkpoint exit=0

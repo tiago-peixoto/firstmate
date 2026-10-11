@@ -1,0 +1,10 @@
+poll 40 busy=1 quiet=0 hits=1 lock_seen=0
+poll 80 busy=1 quiet=0 hits=2 lock_seen=0
+poll 120 busy=0 quiet=12 hits=3 lock_seen=0
+poll 160 busy=0 quiet=52 hits=3 lock_seen=0
+poll 200 busy=0 quiet=92 hits=3 lock_seen=0
+poll 240 busy=0 quiet=132 hits=3 lock_seen=0
+RESULT started=1 idle_seconds=75 lock_seen=0 hits_at_idle_start=3 hits_at_end=3 codex_alive=1
+config: startup-memory-budget
+supervision-host
+exit=0

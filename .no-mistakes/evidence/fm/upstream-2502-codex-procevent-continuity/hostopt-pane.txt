@@ -1,0 +1,45 @@
+› Reply with exactly OK2. Do not retire, register, or modify any process-event source; it is an intentional test fixture. Follow the normal wake drain protoco…
+    + 10 lines (ctrl+t to expand)
+
+• Ran bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 1595699.1791748269.lCBbdm
+  └ (no output)
+
+• OK2
+
+• Blocked by hook
+  └ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ●  TURN WOULD END BLIND - SUPERVISION IS OFF
+    ●  1 process-event source(s) registered, but no live watcher holds this home lock (last beat: 15s ago).
+    ●  repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 20.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Ran bin/fm-wake-drain.sh
+  └ WARNING: watcher still down (same stale episode; last beat: 19s ago, grace 300s) - full banner already printed this episode.
+
+• Ran bin/fm-watch-checkpoint.sh --seconds 20
+  └ check: process-event result captured: procevent:shot:2
+
+• Ran bin/fm-wake-drain.sh
+  └ WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 6 --recovery-generation 1655240.1791748292.KTdfXj
+    WARNING: watcher still down (same stale episode; last beat: 7s ago, grace 300s) - full banner already printed this episode.
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + 2 lines (ctrl+t to expand)
+
+• Ran bin/fm-procevent-lavish.sh read /tmp/fm-hostopt-lab.pnQP43/fmhome/state/procevent-inbox/shot.2.result
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+
+• Ran bin/fm-wake-drain.sh --ack-through 6 --recovery-generation 1655240.1791748292.KTdfXj
+  └ (no output)
+
+• OK2
+
+  Worked for 55s • 9:51 PM
+
+
+› Ask Codex to do anything
+
+  GPT-6.1-Sol low · /tmp/fm-hostopt-lab.pnQP43/project · Return IDLE-OK
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view
