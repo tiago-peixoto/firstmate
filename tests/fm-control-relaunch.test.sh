@@ -2343,6 +2343,221 @@ test_herdr_reclaim_of_a_secondmate_names_its_own_owner() {
   pass "reclaim: a herdr secondmate whose endpoint is gone is sent to its own respawn owner"
 }
 
+# --- herdr: a reclaimed worker gets its own presentation space -------------
+#
+# A stateful stand-in for what a presentation projection touches: workspaces in
+# sidebar order, tabs with one pane each, the focused workspace, each
+# workspace's active tab, and agent registrations. Closing a workspace's last
+# pane removes the workspace, as herdr does. Never a real herdr session.
+make_herdr_space_stub() {  # <case-dir>
+  local fb="$1/fakebin"
+  mkdir -p "$fb"
+  rm -f "$fb/sleep"
+  cat > "$fb/herdr" <<'SH'
+#!/usr/bin/env bash
+set -u
+D=$FM_FAKE_DIR
+S=$D/herdr-state.json
+printf '%s\n' "$*" >> "$D/herdr-log"
+ws= label= cwd= pane= pos=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --session) shift $(($# > 1 ? 2 : 1)) ;;
+    --workspace) ws=${2:-}; shift $(($# > 1 ? 2 : 1)) ;;
+    --label) label=${2:-}; shift $(($# > 1 ? 2 : 1)) ;;
+    --cwd) cwd=${2:-}; shift $(($# > 1 ? 2 : 1)) ;;
+    --pane) pane=${2:-}; shift $(($# > 1 ? 2 : 1)) ;;
+    *) pos+=("$1"); shift ;;
+  esac
+done
+set -- "${pos[@]+"${pos[@]}"}"
+q() { jq -c "$@" "$S"; }
+put() { jq -c "$@" "$S" > "$S.tmp" && mv "$S.tmp" "$S"; }
+case "${1:-} ${2:-}" in
+  'status --json')
+    printf '{"client":{"version":"0.9.0","protocol":22},"server":{"running":true,"version":"0.9.0","protocol":22}}\n' ;;
+  'session list')
+    jq -cn --arg sock "$D/fmlab.sock" '{sessions:[{name:"fmlab", default:false, running:true, socket_path:$sock}]}' ;;
+  'workspace list')
+    q '. as $s | {result:{workspaces:[$s.workspaces[] | . + {focused:(.workspace_id == $s.focused), active_tab_id:$s.active[.workspace_id]}]}}' ;;
+  'workspace create')
+    n=$(q -r .next)
+    put --arg w "w$n" --arg t "w$n:t$n" --arg p "w$n:p$n" --arg l "$label" --arg c "$cwd" \
+      '.next += 1 | .workspaces += [{workspace_id:$w, label:$l}]
+       | .tabs += [{tab_id:$t, workspace_id:$w, label:"1", pane_id:$p, cwd:$c}] | .active[$w] = $t'
+    jq -cn --arg w "w$n" --arg t "w$n:t$n" --arg p "w$n:p$n" --arg l "$label" \
+      '{result:{workspace:{workspace_id:$w, label:$l}, tab:{tab_id:$t}, root_pane:{pane_id:$p}}}' ;;
+  'tab create')
+    n=$(q -r .next)
+    put --arg w "$ws" --arg t "$ws:t$n" --arg p "$ws:p$n" --arg l "$label" --arg c "$cwd" \
+      '.next += 1 | .tabs += [{tab_id:$t, workspace_id:$w, label:$l, pane_id:$p, cwd:$c}]'
+    jq -cn --arg t "$ws:t$n" --arg p "$ws:p$n" '{result:{tab:{tab_id:$t}, root_pane:{pane_id:$p}}}' ;;
+  'tab list')
+    q --arg w "$ws" '. as $s | {result:{tabs:[$s.tabs[] | select(.workspace_id == $w)
+      | {tab_id, label, workspace_id, focused:($s.focused == $w and $s.active[$w] == .tab_id)}]}}' ;;
+  'tab get')
+    q --arg t "${3:-}" '[.tabs[] | select(.tab_id == $t)]
+      | if length == 1 then {result:{tab:(.[0] | {tab_id, workspace_id, label})}} else {error:{code:"tab_not_found"}} end' ;;
+  'tab focus')
+    put --arg t "${3:-}" '([.tabs[] | select(.tab_id == $t)][0].workspace_id) as $w
+      | if $w == null then . else .focused = $w | .active[$w] = $t end' ;;
+  'pane list')
+    q --arg w "$ws" '{result:{panes:[.tabs[] | select(.workspace_id == $w) | {pane_id, tab_id, workspace_id}]}}' ;;
+  'pane get')
+    q --arg p "${3:-}" '[.tabs[] | select(.pane_id == $p)]
+      | if length == 1 then {result:{pane:(.[0] | {pane_id, tab_id, workspace_id, cwd, foreground_cwd:.cwd})}}
+        else {error:{code:"pane_not_found"}} end' ;;
+  'pane close')
+    put --arg p "${3:-}" '([.tabs[] | select(.pane_id == $p)][0]) as $gone
+      | if $gone == null then . else
+          .tabs |= map(select(.pane_id != $p)) | del(.agents[$p])
+          | ([.tabs[] | select(.workspace_id == $gone.workspace_id)]) as $left
+          | if ($left | length) == 0
+            then .workspaces |= map(select(.workspace_id != $gone.workspace_id)) | del(.active[$gone.workspace_id])
+            elif .active[$gone.workspace_id] == $gone.tab_id then .active[$gone.workspace_id] = $left[0].tab_id
+            else . end
+        end' ;;
+  'agent get')
+    q --arg p "${3:-}" 'if .agents[$p] then {result:{agent:{agent_status:.agents[$p]}}} else {error:{code:"agent_not_found"}} end' ;;
+  'pane process-info')
+    q --arg p "$pane" '{result:{type:"pane_process_info", process_info:{pane_id:$p, shell_pid:4242,
+      foreground_processes:(if .agents[$p] then [{pid:4243, name:"claude", argv:["claude"], cmdline:"claude"}] else [] end)}}}' ;;
+  'pane send-text')
+    payload=${4:-}
+    case "$payload" in
+      ". '"*"'") staged=${payload#". '"}; staged=${staged%"'"}; [ ! -f "$staged" ] || payload=$(cat "$staged") ;;
+    esac
+    case "$payload" in
+      *'encode launch-brief'* | *'Firstmate operational input waiting: read'*)
+        put --arg p "${3:-}" '.agents[$p] = "idle"' ;;
+    esac ;;
+  'terminal title')
+    printf '{"result":{"reason":"no_foreground_client"}}\n' ;;
+esac
+exit 0
+SH
+  chmod +x "$fb/herdr"
+}
+
+# herdr_space_case_or_skip <name> <id>: a second mate's ship task that was
+# projected into its own presentation space, with that space already gone.
+# Session fmlab holds the workspace the captain is looking at and, right after
+# it, the second mate's own workspace and the pane its agent runs in (w2:p2).
+# The task's journal still binds its closed pane (%7) under that parent.
+# Sets HERDR_CASE_DIR for the same reason herdr_case_or_skip does.
+herdr_space_case_or_skip() {  # <name> <id>
+  local id=$2 dir home
+  HERDR_CASE_DIR=
+  command -v jq >/dev/null 2>&1 || return 1
+  HERDR_CASE_DIR=$(new_case "$1" "$id")
+  dir=$HERDR_CASE_DIR
+  add_herdr_ship_task "$dir" "$id" fmlab '%none'
+  make_herdr_space_stub "$dir"
+  printf 'artmate\n' > "$dir/home/.fm-secondmate-home"
+  jq -cn --arg cwd "$dir" --arg home "$dir/home" '{
+    next: 3,
+    workspaces: [{workspace_id:"w1", label:"captain-view"}, {workspace_id:"w2", label:"2ndmate-artmate"}],
+    tabs: [{tab_id:"w1:t1", workspace_id:"w1", label:"1", pane_id:"w1:p1", cwd:$cwd},
+           {tab_id:"w2:t2", workspace_id:"w2", label:"artmate", pane_id:"w2:p2", cwd:$home}],
+    focused: "w1",
+    active: {w1:"w1:t1", w2:"w2:t2"},
+    agents: {"w2:p2":"idle"}
+  }' > "$dir/fake/herdr-state.json"
+  home=$(cd "$dir/home" && pwd -P)
+  printf '%s\n' version=2 "task_id=$id" projection_id=oldprojectionToken0001 "home=$home" \
+    session=fmlab workspace_id=ws1 tab_id=tab1 pane_id=%7 parent_workspace_id=w2 \
+    parent_label=2ndmate-artmate "workspace_label=└ $id · p:oldprojectionToken0001" "task_label=fm-$id" \
+    > "$dir/home/state/$id.herdr-presentation"
+}
+
+# run_control_from_pane <case-dir> <launcher-pane> <args...>: fm-control as an
+# agent running inside that pane of session fmlab invokes it, with the pane
+# identity herdr injects.
+run_control_from_pane() {
+  local dir=$1 pane=$2
+  shift 2
+  mkdir -p "$dir/user-home"
+  env -u HERDR_TAB_ID -u HERDR_WORKSPACE_ID \
+    HERDR_ENV=1 HERDR_PANE_ID="$pane" HERDR_SESSION=fmlab HERDR_SOCKET_PATH="$dir/fake/fmlab.sock" \
+    PATH="$dir/fakebin:$PATH" FM_HOME="$dir/home" FM_FAKE_DIR="$dir/fake" \
+    HOME="$dir/user-home" CLAUDE_CONFIG_DIR='' \
+    FM_SPAWN_NO_GUARD=1 GROK_HOME="$dir/grokhome" \
+    FM_CONTROL_POLL=0.01 FM_CONTROL_EXIT_WAIT=0.05 FM_CONTROL_LAUNCH_WAIT=0.05 \
+    "$CONTROL" "$@" 2>&1
+}
+
+test_herdr_rebind_projects_a_secondmate_worker_into_its_own_space() {
+  local dir out rc=0 ws pane label state
+  herdr_space_case_or_skip herdr-own-space rl78 || {
+    echo "skip - herdr reclaim needs jq (the herdr adapter parses JSON with it)"
+    return 0
+  }
+  dir=$HERDR_CASE_DIR
+  state=$dir/fake/herdr-state.json
+
+  out=$(run_control_from_pane "$dir" w2:p2 rl78 relaunch --note "the pane was closed; pick the work back up") || rc=$?
+  expect_code 0 "$rc" "a second mate should reclaim its worker whose pane was closed"$'\n'"$out"
+
+  ws=$(meta_field "$dir" rl78 herdr_workspace_id)
+  pane=$(meta_field "$dir" rl78 herdr_pane_id)
+  label=$(jq -r --arg w "$ws" '.workspaces[] | select(.workspace_id == $w) | .label' "$state")
+  [ "$ws" != w2 ] || fail "the relaunched worker landed in the second mate's own workspace"
+  case "$label" in
+    "└ rl78 · p:"*) ;;
+    *) fail "the relaunched worker should get its own presentation space, got workspace '$ws' labeled '$label'"$'\n'"$out" ;;
+  esac
+  [ "$(jq -r --arg w "$ws" '[.workspaces[].workspace_id] | index($w) - index("w2")' "$state")" = 1 ] \
+    || fail "the new space should sit right after the second mate's workspace: $(jq -c '[.workspaces[].label]' "$state")"
+  [ "$(jq -r --arg w "$ws" '[.tabs[] | select(.workspace_id == $w) | "\(.label) \(.pane_id)"] | join(",")' "$state")" = "fm-rl78 $pane" ] \
+    || fail "the new space should hold exactly the worker's tab and pane: $(jq -c '.tabs' "$state")"
+  [ "$(jq -r '[.tabs[] | select(.workspace_id == "w2") | .label] | join(",")' "$state")" = artmate ] \
+    || fail "the second mate's own workspace gained a tab: $(jq -c '.tabs' "$state")"
+  [ "$(meta_field "$dir" rl78 window)" = "fmlab:$pane" ] \
+    || fail "the record should name the new pane, got $(meta_field "$dir" rl78 window)"
+  [ "$(jq -r '.focused + " " + .active.w1' "$state")" = "w1 w1:t1" ] \
+    || fail "the reclaim moved the captain's focus: $(jq -c '{focused, active}' "$state")"
+  [ "$(jq -r --arg p "$pane" '.agents[$p]' "$state")" = idle ] \
+    || fail "the replacement was not launched into the new pane"
+  assert_contains "$(cat "$dir/home/state/rl78.herdr-presentation")" "pane_id=$pane" \
+    "the journal should bind the new pane so a later restart can find it"
+  assert_not_contains "$(cat "$dir/home/state/rl78.herdr-presentation")" oldprojectionToken0001 \
+    "the closed space's journal should be replaced, not kept beside the new one"
+  pass "reclaim: a second mate's worker whose pane was closed is relaunched into its own presentation space"
+}
+
+test_herdr_rebind_leaves_a_surviving_old_space_alone() {
+  local dir out rc=0 journal_before state
+  herdr_space_case_or_skip herdr-old-space rl79 || {
+    echo "skip - herdr reclaim needs jq (the herdr adapter parses JSON with it)"
+    return 0
+  }
+  dir=$HERDR_CASE_DIR
+  state=$dir/fake/herdr-state.json
+  # The worker's pane is gone but its old space is not: someone opened another
+  # tab in it. That space still carries the journal's token, so nothing here may
+  # retire the journal or create a second space for the same task.
+  jq -c '.next = 4
+    | .workspaces += [{workspace_id:"w3", label:"└ rl79 · p:oldprojectionToken0001"}]
+    | .tabs += [{tab_id:"w3:t3", workspace_id:"w3", label:"notes", pane_id:"w3:p3", cwd:"/tmp"}]
+    | .active.w3 = "w3:t3"' "$state" > "$state.tmp"
+  mv "$state.tmp" "$state"
+  journal_before=$(cat "$dir/home/state/rl79.herdr-presentation")
+
+  out=$(run_control_from_pane "$dir" w2:p2 rl79 relaunch --note "the pane was closed; pick the work back up") || rc=$?
+  expect_code 0 "$rc" "a reclaim beside a surviving old space should still relaunch the worker"$'\n'"$out"
+
+  [ "$(cat "$dir/home/state/rl79.herdr-presentation")" = "$journal_before" ] \
+    || fail "the reclaim rewrote the journal of a space that still exists"
+  [ "$(jq -r '[.workspaces[] | select(.label | startswith("└ rl79 "))] | length' "$state")" = 1 ] \
+    || fail "the reclaim created a second space for one task: $(jq -c '[.workspaces[].label]' "$state")"
+  [ "$(jq -r '[.tabs[] | select(.workspace_id == "w3") | .label] | join(",")' "$state")" = notes ] \
+    || fail "the reclaim touched the surviving old space: $(jq -c '.tabs' "$state")"
+  [ "$(meta_field "$dir" rl79 herdr_workspace_id)" = w2 ] \
+    || fail "the worker should fall back to its home's ordinary workspace, got $(meta_field "$dir" rl79 herdr_workspace_id)"
+  assert_contains "$out" "still present" "the fallback should say why the worker did not get its own space"
+  pass "reclaim: a surviving old presentation space is left alone and the worker falls back to the flat layout"
+}
+
 test_relaunch_reverifies_an_already_in_flight_item_instead_of_rewriting_it() {
   local dir out rc=0
   command -v tasks-axi >/dev/null 2>&1 || {
@@ -2456,5 +2671,7 @@ test_herdr_reclaim_refuses_an_agent_that_came_back
 test_herdr_reclaim_keeps_the_task_whole
 test_herdr_reclaim_of_a_secondmate_names_its_own_owner
 test_herdr_rebind_failure_from_a_plain_shell_names_the_real_cause
+test_herdr_rebind_projects_a_secondmate_worker_into_its_own_space
+test_herdr_rebind_leaves_a_surviving_old_space_alone
 test_relaunch_reverifies_an_already_in_flight_item_instead_of_rewriting_it
 test_relaunch_moves_a_drifted_item_back_in_flight

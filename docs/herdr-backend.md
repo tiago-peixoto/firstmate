@@ -157,7 +157,7 @@ Rename it manually before expecting new tasks or recovery to use it.
 
 Recovery and list-live still scan the first workspace matching the home label, because they address panes they already recorded rather than choosing where new work goes.
 The one recovery that does place new work is the control plane's reclaim of a destroyed endpoint.
-It mints a replacement tab through this section's ordinary placement rules while pinning the herdr session the task's record names ([`agent-control.md`](agent-control.md) "Reclaiming a task whose endpoint is gone").
+It re-creates the endpoint through the same placement rules as a fresh spawn, including the presentation projection below, while pinning the herdr session the task's record names ([`agent-control.md`](agent-control.md) "Reclaiming a task whose endpoint is gone").
 
 Existing task operations use recorded endpoint ids and do not move a live task when labels change.
 The per-home workspace is reused while it has task tabs.
@@ -247,7 +247,8 @@ An unconverged opt-out keeps the default projection in that home until convergen
 Presentation is a best-effort visual projection, never task ownership or lifecycle authority.
 A presentation journal is the per-task record in this home's `state/` that binds a task to its projected workspace.
 
-Only a fresh task with neither metadata nor an existing presentation journal is eligible for projected creation.
+Projected creation needs a task with no existing presentation journal: a fresh task with no metadata, or the control plane's reclaim of a destroyed endpoint.
+That reclaim first retires a journal whose token workspace is positively gone in the recorded session, and falls back flat while the earlier space is still present or unreadable.
 Creation proceeds in this order:
 
 1. Firstmate atomically publishes a three-field version 1 journal containing a random 128-bit base64url token, before asking Herdr to create anything.
@@ -456,7 +457,7 @@ Any of these preserves the candidate and lets session startup continue with at m
 - Grouping is best-effort; only an exact same-identity version 2 binding survives a Herdr restart in place.
 - A failed journal publication or projected workspace create stops that spawn instead of falling back flat.
   So a Herdr create failure surfaces as a spawn failure in every Herdr home, rather than only in homes that opted in.
-  Every earlier degradation on the fresh projected-create path (no session server, contended presentation lock, absent or ambiguous parent) still warns and continues flat.
+  Every earlier degradation on the projected-create path, fresh or reclaim (no session server, contended presentation lock, absent or ambiguous parent), still warns and continues flat.
 - Recovery of an existing presentation journal deliberately refuses the spawn when the shared presentation lock is contended, rather than falling back flat.
   Default-on makes that refusal reachable in any Herdr home.
 - Existing layouts are not force-renamed or rearranged.
@@ -465,7 +466,8 @@ Any of these preserves the candidate and lets session startup continue with at m
   Session start removes only the exact home-local, uniquely journal-correlated, childless idle-shell shape above.
 - Spaces have no cross-home cleanup path, and a secondmate child can clean up only from its exact home.
 - Every stale-looking space outside that narrow startup proof still requires manual cleanup in Herdr's UI after human inspection.
-- Regaining a dedicated space after degradation requires stopping the flat task, manually checking the stale projection, and clearing its journal before a genuinely fresh launch.
+- Regaining a dedicated space after degradation requires stopping the flat task and manually checking the stale projection.
+  Clearing its journal then allows a genuinely fresh launch, and a reclaim of a destroyed endpoint retires the journal itself once that projection is gone.
 - The visible token is only a restart-stable correlator and never substitutes for the exact binding.
 
 ### Presentation tests
@@ -848,6 +850,7 @@ tests/fm-backend-herdr-agent-exit-shell-e2e.test.sh
 tests/fm-herdr-pi-stale-registration-live-e2e.test.sh
 tests/fm-backend-herdr-eventwait-smoke.test.sh
 tests/fm-control-herdr-smoke.test.sh
+tests/fm-control-herdr-relaunch-space-e2e.test.sh
 tests/fm-herdr-session-cleanup.test.sh
 tests/fm-herdr-session-cleanup-e2e.test.sh
 tests/fm-herdr-attached-viewer-live-e2e.test.sh
