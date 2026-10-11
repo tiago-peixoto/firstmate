@@ -7,9 +7,9 @@
 # ESCALATES a batched, distilled digest to the supervisor pane on
 # captain-relevant events plus bounded declared-wait rechecks. This is the
 # token-efficient replacement for the prior always-inject daemon: routine
-# signal/stale/heartbeat wakes cost zero firstmate context; only done/
-# needs-decision/blocked/failed/persistent-wedge/check-output events and a
-# declared-wait recheck reach the LLM, and even then as one pre-read digest per
+# signal/stale/heartbeat wakes cost zero firstmate context; routing is owned by
+# .agents/skills/afk/SKILL.md (Classification policy).
+# Escalated events reach the LLM as one pre-read digest per
 # batch window. That digest is byte-bounded (see escalate_flush); when it cuts
 # or omits anything it names a state/.subsuper-digests/ file holding every
 # buffered event verbatim.
@@ -48,7 +48,7 @@
 #     drain and acknowledges it only after routing completes.
 #   - Fail-safe-to-escalate: any wake the classifier cannot confidently mark
 #     routine is escalated.
-#   - Bounded wedge latency: a stale pane without a declared wait is escalated
+#   - Bounded wedge latency: ordinary pane staleness without a declared wait escalates
 #     only after it has been idle for STALE_ESCALATE_SECS
 #     (configurable), rechecked once. A wedged crewmate is therefore detected
 #     within STALE_ESCALATE_SECS + a tick, never lost. A declared wait - either a
@@ -201,11 +201,6 @@ FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 # (fm_busy_classify).
 # shellcheck source=bin/fm-busy-lib.sh
 . "$FM_DAEMON_DIR/fm-busy-lib.sh"
-
-# The single owner of PR-poll artifact validation, read here only for
-# fm_pr_poll_covers_wait in the pause-recheck arm below.
-# shellcheck source=bin/fm-pr-lib.sh
-. "$FM_DAEMON_DIR/fm-pr-lib.sh"
 
 # --- tunables ---------------------------------------------------------------
 # Supervisor backends this daemon knows how to inject into today. zellij, orca,
@@ -1333,20 +1328,12 @@ housekeeping() {  # <state>
             _now > "$marker"
           fi
         elif [ -n "$standing" ] && status_is_paused "$standing"; then
-          # Away mode inherits the same exemption bin/fm-watch.sh applies: a
-          # declared wait on a pull request that a live movement poll covers
-          # needs no digest asking the captain to confirm it still holds,
-          # because the poll reports every condition that would void it. The
-          # window is restarted rather than dropped, so coverage is re-proved
-          # once an hour and lapses back into the recheck by itself.
           if [ "$bounded_until" -eq 1 ]; then
             pause_reason="paused ${age}s (awaiting external, the declared time is beyond the recheck cadence; confirm the wait still holds): $win"
           else
             pause_reason="paused ${age}s (awaiting external, recheck whether the wait still holds): $win"
           fi
-          if fm_pr_poll_covers_wait "$state" "$task" "$FM_DAEMON_DIR/fm-pr-poll.sh" "$pause_secs"; then
-            _now > "$marker"
-          elif escalate_add "$state" "$pause_reason"; then
+          if escalate_add "$state" "$pause_reason"; then
             _now > "$marker"
             if [ -n "$until" ] && [ "$now" -ge "$until" ]; then
               printf '%s\n' "$until" > "$due"
@@ -1587,6 +1574,8 @@ handle_wake() {  # <reason> <state>
                 *) arg="${reason#signal: }" ;;
               esac
               decision=$(FM_STATUS_SPAN_ENDPOINT_FILE="$capture" classify_signal "$arg" "$state") ;;
+    stale:*" (unread firstmate instruction: stuck-busy "*|stale:*" (steering-inbox busy bookkeeping unwritable: "*)
+              decision="escalate|${reason#stale: }" ;;
     stale:*)  kind=stale; arg="${reason#stale: }"; stale_detail="${arg#"$arg"}"
               case "$arg" in *" ("*) stale_detail="${arg#*" ("}"; arg="${arg%% \(*}" ;; esac
               task=$(window_to_task "$arg" "$state")
