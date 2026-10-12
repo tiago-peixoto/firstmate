@@ -1,0 +1,5 @@
+before: supervisor pid=2091376 owner=2016224 session-lock=2016224 my-shell=2300331
+$ FM_HOME=$LAB bin/fm-watch-checkpoint.sh --seconds 6   (from a shell outside the Codex session)
+checkpoint: no actionable wake within 6s
+exit=124
+after: supervisor pid=2091376 alive=yes

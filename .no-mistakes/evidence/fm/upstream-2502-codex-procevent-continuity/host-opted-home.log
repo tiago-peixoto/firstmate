@@ -1,0 +1,13 @@
+config: startup-memory-budget supervision-host 
+assistant: IDLE-OK
+user: Reply with exactly OK3. Do not retire, register, or modify any process-event source; it is an intentional test fixture. Follow the normal wake drain protocol otherwise.
+assistant: Captain, I’ll drain the wake queue and acknowledge it without changing any process-event source. 
+assistant: OK3
+user: <hook_prompt hook_run_id="stop:4:/tmp/fm-idle-dbg/project/.codex/hooks.json">●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ●  TURN WOULD END BLIND - SUPERVISION IS OFF ●  1 process-event source(s) registered, but no live watcher holds this home lock (last beat: never). ●  repair missing watcher supervi
+assistant: Captain, I’ll run the requested supervision checkpoint without changing the test fixture. 
+assistant: Captain, I’m applying the process-event-sources skill to read the captured result while preserving the test fixture. 
+assistant: OK3
+60s after the turn ended: idle-supervisor-lock=absent hits=2
+--- .supervision-host.log
+1791815320	start	gen=host-2548074-1791815319	primary=codex
+1791815321	pass-through	attended	no supervision engine	check: process-event result captured: procevent:shot:1

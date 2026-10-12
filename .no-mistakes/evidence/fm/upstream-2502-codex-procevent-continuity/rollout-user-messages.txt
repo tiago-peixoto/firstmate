@@ -1,0 +1,11 @@
+2026-10-12T14:20:59.595Z Reply with exactly IDLE-OK. Do not call tools.
+2026-10-12T14:21:31.146Z Reply with exactly OK2. Do not retire, register, or modify any process-event source; it is an intentional test fixture. Follow the normal wake drain p
+2026-10-12T14:21:50.812Z Reply with exactly OK3. Do not retire, register, or modify any process-event source; it is an intentional test fixture. Follow the normal wake drain p
+2026-10-12T14:21:58.330Z <hook_prompt hook_run_id="stop:4:/tmp/fm-idle-dbg/project/.codex/hooks.json">●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+2026-10-12T14:22:32.168Z check: rearm-resurface
+2026-10-12T14:22:50.627Z check: process-event result captured: procevent:shot:2
+2026-10-12T14:23:06.843Z check: process-event result captured: procevent:shot:3
+2026-10-12T14:23:34.392Z check: process-event result captured: procevent:shot:4
+2026-10-12T14:23:50.088Z check: process-event result captured: procevent:shot:5
+2026-10-12T14:24:16.299Z check: process-event result captured: procevent:shot:6
+2026-10-12T14:24:43.824Z check: process-event result captured: procevent:shot:7

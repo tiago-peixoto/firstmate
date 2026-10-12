@@ -1,0 +1,35 @@
+› check: process-event result captured: procevent:shot:7
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.7.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.8.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.6.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.3.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.1.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-wake-drain.sh --ack-through 268 --recovery-generation 2243557.1791815066.CGHl53
+  └ wake drain: acknowledged wakes through 268 (36 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_…
+    + 1 line (ctrl+t to expand)
+• Working (14s • esc to interrupt)
+› Ask Codex to do anything
+  GPT-6.1-Sol low · /tmp/fm-idle-dbg/project · Reply with IDLE-OK
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

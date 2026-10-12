@@ -1,0 +1,4 @@
+14:28:20 hits=1 idle-supervisor-lock=absent busy=n
+14:28:22 hits=1 idle-supervisor-lock=absent busy=y
+14:28:42 hits=2 idle-supervisor-lock=absent busy=y
+14:29:08 hits=2 idle-supervisor-lock=absent busy=n

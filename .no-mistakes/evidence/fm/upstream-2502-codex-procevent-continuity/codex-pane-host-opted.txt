@@ -1,0 +1,32 @@
+› Reply with exactly OK3. Do not retire, register, or modify any process-event source; it is an intentional test fixture. Follow the normal wake drain protoco…
+• OK3
+• Blocked by hook
+  └ ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ●  TURN WOULD END BLIND - SUPERVISION IS OFF
+    ●  1 process-event source(s) registered, but no live watcher holds this home lock (last beat: never).
+    ●  repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Captain, I’ll run the requested supervision checkpoint without changing the test fixture.
+• Ran bin/fm-watch-checkpoint.sh --seconds 180
+  └ check: process-event result captured: procevent:shot:1
+• Ran bin/fm-wake-drain.sh
+  └ ●  After draining queued wakes, repair missing watcher supervision with a foreground checkpoint: bin/fm-watch-checkpoint.sh --seconds 180.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + 7 lines (ctrl+t to expand)
+• Explored
+  └ Read SKILL.md (process-event-sources skill)
+    + Show details
+• Captain, I’m applying the process-event-sources skill to read the captured result while preserving the test fixture.
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.1.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 2548587.1791815320.MDe9gF
+  └ (no output)
+• OK3
+  Worked for 48s • 4:29 PM
+› Ask Codex to do anything
+  GPT-6.1-Sol low · /tmp/fm-idle-dbg/project · Return IDLE-OK
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

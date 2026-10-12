@@ -1,0 +1,31 @@
+› check: process-event result captured: procevent:shot:10
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.10.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.8.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-procevent-lavish.sh read "${FM_HOME}/state/procevent-inbox/shot.11.result"
+  └
+    ANNOTATIONS: (none)
+    END LAVISH RESULT (0 of 0)
+    + 10 lines (ctrl+t to expand)
+• Ran bin/fm-wake-drain.sh --ack-through 478 --recovery-generation 2419598.1791815184.IrKZMP
+  └ (no output)
+• Captain, I drained and acknowledged the wakes through 478. All eleven captured results contained no feedback. I left the test fixture unchanged.
+  Worked for 16s • 4:26 PM
+› check: rearm-resurface
+• Captain, I’ll drain the wake and preserve the test fixture.
+• Ran bin/fm-wake-drain.sh
+  └ 1791815196    511    check    procevent:shot:12    check: procevent lavish shot 12
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 532 --recovery-generation 2419598.1791815184.IrKZMP
+    WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+    + 11 lines (ctrl+t to expand)
+• Working (6s • esc to interrupt)
+› Ask Codex to do anything
+  GPT-6.1-Sol low · /tmp/fm-idle-dbg/project · Reply with IDLE-OK
+  ? for shortcuts                                                                                                                     ⚠ 2 warnings · f2 to view

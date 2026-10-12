@@ -1,0 +1,5 @@
+before: codex=2016224 supervisor=2414088 watcher=2443646 hits=13 arm.out: watcher: started pid=2443646 (beacon fre
+killed lab tmux server (Codex exits) at 14:26:55
+after: codex alive=n supervisor alive=n lock dir: absent watcher lock pid=none
+remaining fm-watch/idle processes from lab project: 0
+hits 50s later: 13 (was 13; source reruns stop when nothing supervises)
