@@ -1,0 +1,118 @@
+
+### S1 arm the monitor on an open PR that already has a requested reviewer and team; poll twice with nothing changing
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+   armed: state/delivery.check.sh
+-- first observation
+   check output: 
+   pending=[]
+   durable check wakes=0
+-- unchanged re-poll
+   check output: 
+   pending=[]
+   durable check wakes=0
+   stored review_requests=["existing","team:core"]
+
+### S2 head replaced A -> B
+-- poll after push
+   check output: contribution-wake: check: contributions delivery ccabd90f3684080c0cd308ae78c6a95d71bd141864b840d707635344cc68be0b|
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:05:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=1
+-- unchanged re-poll
+   check output: 
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:05:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=1
+
+### S3 new reviewer and new team requested (existing ones stay)
+-- poll after request
+   check output: contribution-wake: check: contributions delivery b1d776135af4a6a39fc5dec4251b485284f763bb7bdc5a74e9d32ac0410c983a|contribution-wake: check: contributions delivery 2826b5d49830e9f041994ae82da393a06fdfc41b688f8a6716e068d32af0323d|
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:05:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","token":"review-requested:alice:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:docs","token":"review-requested:team:docs:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=3
+-- unchanged re-poll
+   check output: 
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:05:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","token":"review-requested:alice:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:docs","token":"review-requested:team:docs:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=3
+
+### S4 PR converted to draft, then leaves draft
+-- poll after convert-to-draft (must add nothing)
+   check output: 
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:05:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","token":"review-requested:alice:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:docs","token":"review-requested:team:docs:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=3
+-- poll after ready-for-review
+   check output: contribution-wake: check: contributions delivery adf6470a0ef29dd97991b704d5a0e8caba6606b1c20b4c2dcf547d9ccd7e385b|
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:05:00Z","source":"https://github.com/o/r/pull/8"},{"type":"ready-for-review","body":"pull request left draft","token":"ready-for-review:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:20:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","token":"review-requested:alice:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:docs","token":"review-requested:team:docs:2026-09-16T08:10:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=4
+
+### S5 ack each pending token; then the same head A returns (force-push back) and must wake again with a fresh token
+$ fm-contributions.sh ack delivery <url> head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:05:00Z -> rc=0
+$ fm-contributions.sh ack delivery <url> ready-for-review:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:20:00Z -> rc=0
+$ fm-contributions.sh ack delivery <url> review-requested:alice:2026-09-16T08:10:00Z -> rc=0
+$ fm-contributions.sh ack delivery <url> review-requested:team:docs:2026-09-16T08:10:00Z -> rc=0
+   pending=[]
+   durable check wakes=4
+-- head B -> A
+   check output: contribution-wake: check: contributions delivery c3b336c65d6de4d63dfd6379e29d9758f720c2608f14982c0fc560a1fcf9cc76|
+   pending=[{"type":"head","body":"head moved from bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","token":"head:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2026-09-16T08:25:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=5
+-- head A -> B again (same sha as S2, new observation time)
+   check output: contribution-wake: check: contributions delivery 37bdea5e2d698be5beb4b74de47ec5df31c42fb96c06439995d7a4fb7468841c|
+   pending=[{"type":"head","body":"head moved from bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","token":"head:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2026-09-16T08:25:00Z","source":"https://github.com/o/r/pull/8"},{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:30:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=6
+
+### S6 maintainer comment and review still wake (pre-existing behavior kept after the merge with main)
+-- baseline
+   check output: 
+   pending=[]
+   durable check wakes=0
+-- maintainer comment
+   check output: contribution-wake: check: contributions delivery ee89cced8f63efe97f93a052f98e52a4acd99e50badd2edee5d2d192cc414177|
+   pending=[{"type":"comment","body":"Please clarify","token":"comment:12:2026-09-16T08:01:00Z:","source":"https://github.com/o/r/pull/8#issuecomment-12"}]
+   durable check wakes=1
+-- maintainer review
+   check output: contribution-wake: check: contributions delivery 41a8e3d277913c50716e3ca4b6ec2022fc878302b98338d18e7f62cc61973595|
+   pending=[{"type":"comment","body":"Please clarify","token":"comment:12:2026-09-16T08:01:00Z:","source":"https://github.com/o/r/pull/8#issuecomment-12"},{"type":"review","body":"needs work","token":"review:13:2026-09-16T08:02:00Z:CHANGES_REQUESTED","source":"https://github.com/o/r/pull/8#pullrequestreview-13"}]
+   durable check wakes=2
+
+### S7 adversarial: head changes in the same observation that shows the PR merged / closed
+-- baseline (merged case)
+   check output: 
+   pending=[]
+   durable check wakes=0
+-- poll sees merged + new head + new reviewer
+   check output: 
+   pending=[]
+   durable check wakes=0
+   stored state={"state":"merged","head":"cccccccccccccccccccccccccccccccccccccccc"}
+-- baseline (closed case)
+   check output: 
+   pending=[]
+   durable check wakes=0
+-- poll sees closed + new head + new reviewer
+   check output: 
+   pending=[]
+   durable check wakes=0
+   stored state={"state":"closed","head":"cccccccccccccccccccccccccccccccccccccccc"}
+
+### S8 adversarial: record stored before review requests were recorded (legacy), forge already has a reviewer
+-- first poll over legacy record (baseline only)
+   check output: 
+   pending=[]
+   durable check wakes=0
+-- bob requested afterwards
+   check output: contribution-wake: check: contributions delivery f58422e37f1ddc45be0f985312c53cc61e7b9bef99c04b16b6a3597d0a28c2a9|
+   pending=[{"type":"review-requested","body":"review requested from bob","token":"review-requested:bob:2026-09-16T08:05:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=1
+
+### S9 real watcher (fm-watch-checkpoint.sh): quiet while unchanged, surfaces one wake on a replaced head, quiet again
+-- checkpoint 8s, PR unchanged
+   rc=124 (124 = quiet expiry) output: checkpoint: no actionable wake within 8s
+   pending=[]
+   durable check wakes=0
+   wakes before movement=0
+-- checkpoint 30s after head A -> B
+   rc=0 (124 = quiet expiry) output: check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=1
+-- checkpoint 4s, nothing new
+   rc=124 (124 = quiet expiry) output: checkpoint: no actionable wake within 4s
+   pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z","source":"https://github.com/o/r/pull/8"}]
+   durable check wakes=1

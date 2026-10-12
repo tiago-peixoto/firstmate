@@ -1,0 +1,19 @@
+### upstream main vs this commit
+upstream main: 20dcbf91520b1816663b81873ad67d0b93b3e4d6
+upstream main is an ancestor of target 2d6be57b: a merge into main cannot conflict
+git merge-tree upstream-main target: clean
+{"headRefOid":"e65abeafad27b7198507230554654dfac44758bd","isDraft":false,"mergeStateStatus":"DIRTY","mergeable":"CONFLICTING","state":"OPEN"}
+
+### real GitHub: fm-contributions.sh poll of PR 5341 through the real gh login (read-only), disposable home
+-- first poll (baseline)
+contribution-wake: check: contributions delivery 6dddb009c469ccab66a9a51a32094b2feec9c8b2df81a2c0c1b7f5a6a0923198
+   rc=0
+{"error":null,"obs":{"head":"e65abeafad27b7198507230554654dfac44758bd","state":"open","draft":false,"mergeable":"conflicting","review_requests":[]},"pending":[{"type":"comment","body":"Speaking as Kun's firstmate: thanks, @tiago-peixoto, for filing #3239, addressing Greptile's settlement finding, and keeping this branch current. I read the whole diff of head `e65abeaf` against main `47aff866`.\n\n**What I checked:**\n- `bin/fm-contributions.sh` `observe` now records `review_requests` (logins plus `team:<slug>`).\n- `poll` adds a new `movement` function in `bin/fm-contributions.jq`. For an open PR it emits a pending signal and one durable `check: contributions` wake when the head c"}]}
+   durable check wakes=1
+-- second poll, nothing changed on GitHub
+   rc=0 durable check wakes=1 pending=[{"type":"comment","body":"Speaking as Kun's firstmate: thanks, @tiago-peixoto, for filing #3239, addressing Greptile's settlement finding, and keeping this branch current. I read the whole diff of head `e65abeaf` against main `47aff866`.\n\n**What I checked:**\n- `bin/fm-contributions.sh` `observe` now records `review_requests` (logins plus `team:<slug>`).\n- `poll` adds a new `movement` function in `bin/fm-contributions.jq`. For an open PR it emits a pending signal and one durable `check: contributions` wake when the head c"}]
+-- rewind the stored prior observation (older head, draft=true, no review requests), poll real GitHub again
+contribution-wake: check: contributions delivery 893e26234bdd86a4526493fac64d20b44180b755d0c51e9f3cb42b3360a4b1bf
+contribution-wake: check: contributions delivery cf74778ec614b20175cf77679e1a3a659a503ace4515db8b5b74005984448998
+   rc=0 durable check wakes=3
+[{"type":"head","body":"head moved from 0000000000000000000000000000000000000001 to e65abeafad27b7198507230554654dfac44758bd"},{"type":"ready-for-review","body":"pull request left draft"}]
