@@ -3,7 +3,9 @@
 # order, an owner line whose pid lives for the whole heavy command, release that
 # never touches another task's slot, the load bar, and claims that span several
 # commands. Every slot lives under this suite's own temp root, never under the
-# machine's real /tmp/fm-heavy-suite* slots.
+# machine's real /tmp/fm-heavy-suite* slots. A fake suite that waits for a "go"
+# file also ends once its case directory is removed, so a test that fails before
+# releasing it leaves nothing running.
 # shellcheck disable=SC2016 # single-quoted scripts expand inside their own shells
 set -u
 
@@ -41,7 +43,7 @@ test_run_claims_a_directory_and_releases_it() {
   local out rc owner pid first
   new_case run-basic
   "$HELPER" run --task t1 --load 5 --slot "$S1" --slot "$S2" -- \
-    sh -c 'sleep 0.1 & echo $! > "$1/first"; wait; echo "$PPID" > "$1/parent"; touch "$1/between"; until [ -e "$1/go" ]; do sleep 0.05; done; exit 7' sh "$CASE" &
+    sh -c 'sleep 0.1 & echo $! > "$1/first"; wait; echo "$PPID" > "$1/parent"; touch "$1/between"; until [ -e "$1/go" ] || [ ! -d "$1" ]; do sleep 0.05; done; exit 7' sh "$CASE" &
   pid=$!
   wait_for path_exists "$CASE/between" || fail "the wrapped command never ran"
   [ -d "$S1" ] && [ ! -L "$S1" ] || fail "run did not claim the first listed slot as a directory"
@@ -163,7 +165,7 @@ test_term_never_releases_under_a_running_command() {
   local pid rc
   new_case term
   "$HELPER" run --task t1 --load 5 --slot "$S1" -- \
-    sh -c 'touch "$1/started"; until [ -e "$1/go" ]; do sleep 0.05; done' sh "$CASE" &
+    sh -c 'touch "$1/started"; until [ -e "$1/go" ] || [ ! -d "$1" ]; do sleep 0.05; done' sh "$CASE" &
   pid=$!
   wait_for path_exists "$CASE/started" || fail "the wrapped command never started"
   kill -TERM "$pid"
@@ -325,6 +327,156 @@ test_queue_skips_waiters_that_cannot_take_the_slot() {
   pass "fm-heavy-slot: the queue skips dead, load-barred, and other-slot waiters, and otherwise serves arrival order"
 }
 
+NO_STEPS="$TMP_ROOT/ps-no-steps"
+printf '%s\n' '100 1 /usr/local/bin/no-mistakes daemon run --root /x' '101 100 /usr/local/bin/no-mistakes daemon log-sink --root /x' > "$NO_STEPS"
+STEP_RUNNING="$TMP_ROOT/ps-step-running"
+{ cat "$NO_STEPS"; printf '%s\n' '102 100 sh -c bin/ci'; } > "$STEP_RUNNING"
+
+clear_as_firstmate() {
+  FM_TASK_ID='' FM_HEAVY_SLOT_PS_OVERRIDE="${PS_TABLE:-$NO_STEPS}" "$HELPER" clear "$@"
+}
+
+dead_pid() {
+  local p
+  sh -c 'exit 0' &
+  p=$!
+  wait "$p"
+  echo "$p"
+}
+
+process_gone() { ! kill -0 "$1" 2>/dev/null; }
+
+# Found live on this machine: a lock recorded a pid that was dead while its gate
+# had been running for 35 minutes under another pid, so a sweep keyed on that
+# pid would have cleared a live lock and started a second suite beside it.
+test_clear_refuses_a_gate_that_outlived_its_wrapper() {
+  local runner suite out rc
+  new_case orphan
+  FM_HEAVY_SLOT_POLL=0.1 "$HELPER" run --task gate --load 5 --slot "$S1" -- \
+    sh -c 'echo $$ > "$1/suite"; until [ -e "$1/go" ] || [ ! -d "$1" ]; do sh -c "sleep 0.1"; done' sh "$CASE" &
+  runner=$!
+  wait_for path_exists "$CASE/suite" || fail "the suite never started"
+  suite=$(cat "$CASE/suite")
+  kill -KILL "$runner"
+  wait "$runner" 2>/dev/null
+  wait_for status_says "$S1" "$S1: held by gate, stale" || fail "a killed wrapper's slot never read as stale"
+  kill -0 "$suite" 2>/dev/null || fail "the suite should still be running after its wrapper was killed"
+  out=$(FM_HEAVY_SLOT_STALE=1 clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 3 "$rc" "clear must refuse a slot whose gate is still running"
+  assert_contains "$out" "recorded pid" "clear did not report the recorded pid"
+  assert_contains "$out" "is not running, which alone proves nothing" "clear treated a dead pid as evidence"
+  assert_contains "$out" "pid $suite still carries this claim's mark" "clear did not find the running suite through its mark"
+  assert_contains "$out" "refused to clear $S1; it is left untouched" "clear did not report its refusal"
+  [ -d "$S1" ] || fail "a refused clear removed the slot"
+  touch "$CASE/go"
+  wait_for process_gone "$suite" || fail "the suite never ended"
+  sleep 0.3
+  out=$(FM_HEAVY_SLOT_STALE=1 clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 0 "$rc" "clear must clear once nothing of the claim runs"$'\n'"$out"
+  assert_contains "$out" "no live process carries FM_HEAVY_SLOT_HELD=$S1:gate" "clear did not report the mark search"
+  assert_absent "$S1" "clear did not remove the abandoned slot"
+  pass "fm-heavy-slot: clear refuses while a killed wrapper's suite still runs, whatever its pid says, and clears once it ends"
+}
+
+test_clear_requires_every_piece_of_evidence() {
+  local out rc gone
+  new_case evidence
+  gone=$(dead_pid)
+  out=$(FM_TASK_ID=some-worker "$HELPER" clear --slot "$S1" 2>&1); rc=$?
+  expect_code 3 "$rc" "a worker must not clear a slot"
+  assert_contains "$out" "clear is for firstmate only" "the worker refusal did not explain itself"
+  FM_TASK_ID='' "$HELPER" clear --task x --slot "$S1" 2>/dev/null
+  expect_code 2 "$?" "clear must refuse a --task"
+  FM_TASK_ID='' "$HELPER" clear --slot "$S1" --slot "$S2" 2>/dev/null
+  expect_code 2 "$?" "clear must take exactly one slot"
+  "$HELPER" status --slot "$S1" --owner-ended >/dev/null 2>&1
+  expect_code 2 "$?" "--owner-ended must be refused outside clear"
+  out=$(clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 0 "$rc" "clearing a free slot must succeed"
+  assert_contains "$out" "is free; nothing to clear" "a free slot was not reported free"
+
+  "$HELPER" claim --task c1 --load 5 --slot "$S1" >/dev/null || fail "claim failed"
+  out=$(clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 3 "$rc" "a fresh claim must not be cleared"
+  assert_contains "$out" "within the 600s bound" "clear did not refuse a fresh claim on its age"
+  touch -t 202001010000 "$S1/owner"
+  out=$(PS_TABLE=$STEP_RUNNING clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 3 "$rc" "a claim must not be cleared while a pipeline step runs"
+  assert_contains "$out" "a no-mistakes pipeline step is running, and nothing here can tell whose: 102 sh -c bin/ci" \
+    "clear did not name the running pipeline step"
+  [ -d "$S1" ] || fail "a refused clear removed the slot"
+  out=$(clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 0 "$rc" "an old claim with no command, pid, mark, or pipeline step must clear"$'\n'"$out"
+  assert_absent "$S1" "the abandoned claim was not cleared"
+
+  mkdir "$S1"
+  printf 'task=by-hand pid=%s\n' "$gone" > "$S1/owner"
+  touch -t 202001010000 "$S1/owner"
+  out=$(clear_as_firstmate --slot "$S1"); rc=$?
+  expect_code 3 "$rc" "a hand-written claim in the helper's owner shape must not clear on its missing mark"
+  assert_contains "$out" "no mark from this helper, so nothing here can show this claim's work ended" \
+    "clear treated a hand-written claim's missing mark as evidence"
+  out=$(clear_as_firstmate --slot "$S1" --owner-ended); rc=$?
+  expect_code 0 "$rc" "an old hand-written claim must clear once firstmate confirms its owner ended"$'\n'"$out"
+  assert_absent "$S1" "the hand-written claim was not cleared"
+
+  printf '%s\n' "$$" > "$S2"
+  touch -t 202001010000 "$S2"
+  out=$(clear_as_firstmate --slot "$S2" --owner-ended); rc=$?
+  expect_code 3 "$rc" "a plain-file claim recording a live pid must not be cleared, whatever firstmate confirmed"
+  assert_contains "$out" "recorded pid $$ is a live process" "clear did not name the live recorded pid"
+  printf 'some-task %s\n' "$gone" > "$S2"
+  out=$(clear_as_firstmate --slot "$S2" --owner-ended); rc=$?
+  expect_code 3 "$rc" "a plain file written just now must not be cleared"
+  assert_contains "$out" "changed 0s ago" "clear did not refuse a fresh plain file on its age"
+  touch -t 202001010000 "$S2"
+  out=$(clear_as_firstmate --slot "$S2"); rc=$?
+  expect_code 3 "$rc" "an old plain file must not clear before firstmate confirms its owner ended"
+  [ -f "$S2" ] || fail "a refused clear removed the plain file"
+  out=$(clear_as_firstmate --slot "$S2" --owner-ended); rc=$?
+  expect_code 0 "$rc" "an old plain file with a dead pid, a confirmed owner end, and no pipeline step must clear"$'\n'"$out"
+  assert_contains "$out" "firstmate confirmed the owning task has ended" "clear did not report firstmate's confirmation"
+  assert_absent "$S2" "the plain-file claim was not cleared"
+  pass "fm-heavy-slot: clear is firstmate's, and needs an old claim, no live recorded pid or mark, no running pipeline step, and a confirmed owner end for an unmarked claim"
+}
+
+test_clear_leaves_a_slot_claimed_again_during_its_checks() {
+  local table clearer out rc
+  new_case reclaim
+  "$HELPER" claim --task old --load 5 --slot "$S1" >/dev/null || fail "claim failed"
+  touch -t 202001010000 "$S1/owner"
+  table="$CASE/ps-table"
+  mkfifo "$table" || fail "could not create the process-table fifo"
+  PS_TABLE=$table clear_as_firstmate --slot "$S1" > "$CASE/clear-out" &
+  clearer=$!
+  # Opening the fifo waits until clear reads its process table, which it does
+  # only after it has read the old claim.
+  timeout 60 sh -c 'exec 3> "$1"; "$2" release --task old --slot "$3" >/dev/null && "$2" claim --task new --load 5 --slot "$3" >/dev/null && cat "$4" >&3' \
+    sh "$table" "$HELPER" "$S1" "$NO_STEPS" || fail "the slot was not claimed again while clear ran"
+  wait "$clearer"; rc=$?
+  out=$(cat "$CASE/clear-out")
+  expect_code 3 "$rc" "clear must refuse a slot claimed again while it checked"$'\n'"$out"
+  assert_contains "$out" "within the 600s bound" "clear did not refuse the new claim on its age"
+  assert_equals "task=new pid=-" "$(cat "$S1/owner" 2>/dev/null)" "clear removed a claim made while it checked"
+  "$HELPER" release --task new --slot "$S1" >/dev/null || fail "release of the new claim failed"
+  pass "fm-heavy-slot: clear leaves a slot that was released and claimed again while it checked"
+}
+
+test_status_names_legacy_claims() {
+  local out gone
+  new_case legacy
+  gone=$(dead_pid)
+  printf 'pid=%s task=old-task claimed 03:44:40Z\n' "$gone" > "$S1"
+  mkdir "$S2"
+  printf '%s\n' "$gone" > "$S2/owner"
+  out=$("$HELPER" status --slot "$S1" --slot "$S2")
+  assert_contains "$out" "$S1: plain file, not a claim this helper made; every mkdir of this path fails until firstmate clears it (pid=$gone task=old-task" \
+    "status did not explain a plain file at a slot path"
+  assert_contains "$out" "$S2: legacy owner line ($gone)" "status did not name a legacy owner line"
+  rm -rf "$S1" "$S2"
+  pass "fm-heavy-slot: status names a plain-file claim and a legacy owner line instead of hiding them"
+}
+
 test_run_claims_a_directory_and_releases_it
 test_run_skips_slots_it_cannot_claim_and_never_touches_them
 test_concurrent_runs_never_share_a_slot
@@ -336,3 +488,7 @@ test_longest_waiter_wins_over_a_faster_poller
 test_working_holder_reads_working_between_a_suites_processes
 test_idle_and_stale_holders_read_as_not_working
 test_queue_skips_waiters_that_cannot_take_the_slot
+test_clear_refuses_a_gate_that_outlived_its_wrapper
+test_clear_requires_every_piece_of_evidence
+test_clear_leaves_a_slot_claimed_again_during_its_checks
+test_status_names_legacy_claims
