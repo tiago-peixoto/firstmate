@@ -200,6 +200,131 @@ test_usage_refuses_inexact_slots() {
   pass "fm-heavy-slot: bare suffixes, relative paths, and malformed calls are refused before any claim"
 }
 
+status_says() {
+  FM_HEAVY_SLOT_STALE=1 FM_HEAVY_SLOT_IDLE=1 "$HELPER" status --slot "$1" | grep -qF -- "$2"
+}
+
+# Measured on this machine: a waiter polling every few seconds ran its acquire
+# loop 234 times in 20 minutes and never once saw a slot free, because another
+# home's tasks released and retook it faster than that. The first claimer to
+# poll after a release must not win just by polling faster.
+test_longest_waiter_wins_over_a_faster_poller() {
+  local task i pids=() b_pid at_queue b_hold total
+  new_case fairness
+  for task in a1 a2; do
+    (
+      for i in 1 2 3 4 5 6 7 8; do
+        FM_HEAVY_SLOT_POLL=0.02 "$HELPER" run --task "$task" --load 5 --slot "$S1" -- \
+          sh -c 'echo "$1" >> "$2/order"; sleep 0.25' sh "$task" "$CASE" 2>/dev/null || exit 1
+      done
+    ) &
+    pids+=("$!")
+  done
+  wait_for path_exists "$CASE/order" || fail "the fast home never claimed the slot"
+  FM_HEAVY_SLOT_POLL=0.4 "$HELPER" run --task b --load 5 --slot "$S1" -- \
+    sh -c 'echo b >> "$1/order"' sh "$CASE" 2> "$CASE/b-err" &
+  b_pid=$!
+  wait_for grep -q 'waiting for a' "$CASE/b-err" || fail "the slow waiter never started waiting"
+  at_queue=$(wc -l < "$CASE/order" | tr -d ' ')
+  wait "$b_pid" || fail "the slow waiter's run failed"
+  for i in "${pids[@]}"; do
+    wait "$i" || fail "a fast run failed"
+  done
+  b_hold=$(grep -n '^b$' "$CASE/order" | cut -d: -f1)
+  total=$(wc -l < "$CASE/order" | tr -d ' ')
+  [ "$b_hold" -le $((at_queue + 2)) ] \
+    || fail "the longest waiter lost the slot to faster pollers: it queued during hold $at_queue and got hold $b_hold of $total"
+  pass "fm-heavy-slot: a free slot goes to the longest waiter, not to the fastest poller"
+}
+
+# A pipeline Test step is a run of short-lived per-file processes, so a pid
+# recorded at the start was seen dead while the step was still working, and a
+# waiter keyed on it would have called a working slot abandoned.
+test_working_holder_reads_working_between_a_suites_processes() {
+  local holder waiter out err
+  new_case honest
+  mkfifo "$CASE/never"
+  FM_HEAVY_SLOT_POLL=0.1 FM_HEAVY_SLOT_STALE=1 "$HELPER" run --task w1 --load 5 --slot "$S1" -- \
+    bash -c 'sh -c "exit 0" & echo $! > "$1/first"; wait; touch "$1/gap"; read -r -t 3 <> "$1/never"; sh -c "exit 0"' bash "$CASE" &
+  holder=$!
+  wait_for path_exists "$CASE/gap" || fail "the suite never reached the gap between its processes"
+  sleep 2
+  ! kill -0 "$(cat "$CASE/first")" 2>/dev/null || fail "the suite's first process should be gone in the gap"
+  out=$(FM_HEAVY_SLOT_STALE=1 "$HELPER" status --slot "$S1")
+  assert_contains "$out" "$S1: held by w1, working" "a working holder between its suite's processes did not read as working"
+  FM_HEAVY_SLOT_POLL=0.1 FM_HEAVY_SLOT_STALE=1 "$HELPER" run --task q --load 5 --slot "$S1" -- touch "$CASE/q-ran" 2> "$CASE/q-err" &
+  waiter=$!
+  wait_for grep -q 'waiting for a slot' "$CASE/q-err" || fail "the waiter never reported its wait"
+  err=$(cat "$CASE/q-err")
+  assert_contains "$err" "$S1 held by w1 (working)" "the waiter did not see honest queuing behind working work"
+  assert_not_contains "$err" "idle" "a waiter behind working work was told the holder is idle"
+  assert_not_contains "$err" "stale" "a waiter behind working work was told the holder is stale"
+  wait "$holder" || fail "the working holder failed"
+  wait "$waiter" || fail "the waiter failed after the holder ended"
+  assert_present "$CASE/q-ran" "the waiter never ran once the working holder ended"
+  pass "fm-heavy-slot: a holder reads working between its suite's processes, and a waiter behind it sees honest queuing"
+}
+
+test_idle_and_stale_holders_read_as_not_working() {
+  local runner waiter
+  new_case notworking
+  "$HELPER" claim --task idler --load 5 --slot "$S1" >/dev/null || fail "claim failed"
+  wait_for status_says "$S1" "$S1: held by idler, idle" || fail "a claim running no command never read as idle"
+  FM_HEAVY_SLOT_POLL=0.1 "$HELPER" run --task gone --load 5 --slot "$S2" -- \
+    sh -c 'echo $$ > "$1/cmd"; exec sleep 30' sh "$CASE" &
+  runner=$!
+  wait_for path_exists "$CASE/cmd" || fail "the run never started its command"
+  status_says "$S2" "$S2: held by gone, working" || fail "a fresh run did not read as working"
+  kill -KILL "$runner"
+  kill "$(cat "$CASE/cmd")" 2>/dev/null
+  wait "$runner" 2>/dev/null
+  wait_for status_says "$S2" "$S2: held by gone, stale" || fail "a run whose heartbeat stopped never read as stale"
+  FM_HEAVY_SLOT_STALE=1 FM_HEAVY_SLOT_IDLE=1 "$HELPER" run --task q --load 5 --slot "$S1" --slot "$S2" -- true 2> "$CASE/q-err" &
+  waiter=$!
+  wait_for grep -q 'waiting for a slot' "$CASE/q-err" || fail "the waiter never reported its wait"
+  assert_contains "$(cat "$CASE/q-err")" "$S1 held by idler (idle); $S2 held by gone (stale)" "the waiter was not told its holders are not working"
+  kill -TERM "$waiter"
+  wait "$waiter" 2>/dev/null
+  assert_equals "" "$(ls "$CASE/fm-heavy-slot-queue")" "a waiter stopped while queued left its ticket behind"
+  [ -d "$S1" ] && [ -d "$S2" ] || fail "reading a holder as not working must never release its slot"
+  "$HELPER" release --task idler --slot "$S1" >/dev/null
+  rm -rf "$S2"
+  pass "fm-heavy-slot: an idle claim and a stopped heartbeat read as not working, and nothing is released for it"
+}
+
+test_queue_skips_waiters_that_cannot_take_the_slot() {
+  local q late out early_line late_line ticket
+  new_case queue
+  q="$CASE/fm-heavy-slot-queue"
+  mkdir "$q"
+  printf 'task=ghost\nsince=1\npid=1\nload=50\nslot=%s\n' "$S1" > "$q/ghost.1"
+  touch -t 202001010000 "$q/ghost.1"
+  printf 'task=lowbar\nsince=2\npid=1\nload=0.5\nslot=%s\n' "$S1" > "$q/lowbar.1"
+  printf 'task=elsewhere\nsince=3\npid=1\nload=50\nslot=%s\n' "$S2" > "$q/elsewhere.1"
+  "$HELPER" run --task b --load 5 --slot "$S1" -- touch "$CASE/b-ran" 2>/dev/null || fail "run failed"
+  assert_present "$CASE/b-ran" "a dead, load-barred, or other-slot waiter held up a free slot"
+
+  printf 'task=early\nsince=4\npid=1\nload=50\nslot=%s\n' "$S1" > "$q/early.1"
+  "$HELPER" run --task late --load 5 --slot "$S1" -- touch "$CASE/late-ran" 2> "$CASE/late-err" &
+  late=$!
+  wait_for grep -q 'kept for longer waiter early' "$CASE/late-err" || fail "a later waiter did not leave the slot to an earlier one"
+  assert_absent "$CASE/late-ran" "a later waiter took the slot ahead of an earlier one"
+  assert_absent "$S1" "a later waiter claimed the slot ahead of an earlier one"
+  out=$("$HELPER" status --slot "$S1")
+  assert_contains "$out" "ghost stale ticket" "status did not mark the dead waiter's ticket stale"
+  early_line=$(printf '%s\n' "$out" | grep -n '^  early waiting' | cut -d: -f1)
+  late_line=$(printf '%s\n' "$out" | grep -n '^  late waiting' | cut -d: -f1)
+  [ -n "$early_line" ] && [ -n "$late_line" ] && [ "$early_line" -lt "$late_line" ] \
+    || fail "status did not list the queue longest waiter first"$'\n'"$out"
+  rm -f "$q/early.1"
+  wait "$late" || fail "the later waiter failed once the earlier one left"
+  assert_present "$CASE/late-ran" "the later waiter never ran once the earlier one left"
+  for ticket in "$q"/late.*; do
+    [ ! -e "$ticket" ] || fail "a waiter that claimed left its ticket behind"
+  done
+  pass "fm-heavy-slot: the queue skips dead, load-barred, and other-slot waiters, and otherwise serves arrival order"
+}
+
 test_run_claims_a_directory_and_releases_it
 test_run_skips_slots_it_cannot_claim_and_never_touches_them
 test_concurrent_runs_never_share_a_slot
@@ -207,3 +332,7 @@ test_run_waits_for_the_load_bar
 test_claim_spans_commands_until_release
 test_term_never_releases_under_a_running_command
 test_usage_refuses_inexact_slots
+test_longest_waiter_wins_over_a_faster_poller
+test_working_holder_reads_working_between_a_suites_processes
+test_idle_and_stale_holders_read_as_not_working
+test_queue_skips_waiters_that_cannot_take_the_slot
