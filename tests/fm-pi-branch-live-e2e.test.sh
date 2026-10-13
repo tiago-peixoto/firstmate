@@ -1100,3 +1100,64 @@ if [ "$status" -ne 0 ] || [ "$out" != "RETRY_OK" ]; then
 fi
 done
 pass "real Pi SDK $PI_VERSION suppresses only empty or exact-repeat retry finals, retains first and differing replies after reopen, buffers retry streaming, and keeps outcomes retryable"
+
+# The custom before_agent_start variant was introduced in Pi 1.2.
+# Exercise the vendor event runner, not a fabricated event or a live session.
+case "$PI_VERSION" in
+  0.*|1.0.*|1.1.*)
+    printf 'skip: Pi %s predates the custom before_agent_start event contract\n' "$PI_VERSION"
+    ;;
+  *)
+    eventhome="$TMP_ROOT/event-home"
+    eventdir="$TMP_ROOT/event-agent-dir"
+    mkdir -p "$eventhome/state" "$eventhome/config" "$eventdir"
+    BRANCH_PLUGIN="$repo/.pi/extensions/fm-branch-supervision.ts" \
+      WATCH_PLUGIN="$repo/.pi/extensions/fm-primary-pi-watch.ts" \
+      FM_HOME="$eventhome" FM_ROOT_OVERRIDE="$ROOT" \
+      PI_CODING_AGENT_DIR="$eventdir" PI_PACKAGE_DIR="$PI_PACKAGE_DIR" \
+      node --input-type=module > "$TMP_ROOT/event-output" 2>&1 <<'EOF'
+import { writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+const pkg = process.env.PI_PACKAGE_DIR;
+const sdk = await import(pathToFileURL(`${pkg}/dist/index.js`).href);
+const { loadExtensions, loadExtensionFromFactory } = await import(
+  pathToFileURL(`${pkg}/dist/core/extensions/loader.js`).href,
+);
+const home = process.env.FM_HOME;
+writeFileSync(`${home}/state/.lock`, `${process.pid}\n`);
+const events = [];
+const bus = sdk.createEventBus();
+const runtime = sdk.createExtensionRuntime();
+const observer = await loadExtensionFromFactory((pi) => {
+  pi.on("before_agent_start", (event) => { events.push(event); });
+}, home, bus, runtime);
+const loaded = await loadExtensions([process.env.BRANCH_PLUGIN, process.env.WATCH_PLUGIN], home, bus, runtime);
+if (loaded.errors.length) throw new Error(JSON.stringify(loaded.errors));
+const modelRuntime = await sdk.ModelRuntime.create({
+  authPath: `${process.env.PI_CODING_AGENT_DIR}/auth.json`,
+  modelsPath: `${process.env.PI_CODING_AGENT_DIR}/models.json`,
+});
+const manager = sdk.SessionManager.inMemory(home);
+const runner = new sdk.ExtensionRunner([observer, ...loaded.extensions], runtime, home, manager, new sdk.ModelRegistry(modelRuntime));
+const errors = [];
+runner.onError((error) => { errors.push(error); });
+await runner.emitBeforeAgentStart({ messageType: "user", prompt: "ordinary prompt" }, { cwd: home });
+await runner.emitBeforeAgentStart({
+  messageType: "custom",
+  message: { role: "custom", customType: "fixture", content: "ordinary prompt", display: false, timestamp: Date.now() },
+}, { cwd: home });
+if (events.length !== 2 || events[0].prompt !== "ordinary prompt" ||
+    events[1].messageType !== "custom" || "prompt" in events[1]) {
+  throw new Error("real SDK did not emit the supported user/custom event shapes");
+}
+if (errors.length) throw new Error(JSON.stringify(errors));
+console.log("EVENT_OK");
+EOF
+    status=$?
+    out=$(cat "$TMP_ROOT/event-output")
+    if [ "$status" -ne 0 ] || [ "$out" != "EVENT_OK" ]; then
+      fail "real-SDK before-agent event guard failed against pi-coding-agent $PI_VERSION: $out"
+    fi
+    pass "real Pi SDK $PI_VERSION emits prompt-bearing user and no-prompt custom events accepted by both consumers"
+    ;;
+esac
