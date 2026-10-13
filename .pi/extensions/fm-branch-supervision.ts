@@ -96,6 +96,8 @@ import {
   ToolExecutionComponent,
   VERSION,
   type AgentSession,
+  type BeforeAgentStartEvent,
+  type MessageStartEvent,
   type ExtensionAPI,
   type ExtensionCommandContext,
   type ToolDefinition,
@@ -228,6 +230,14 @@ const scriptEnv = {
 
 function offerEligible(offer: BranchDispatchOffer): boolean {
   return offer.eligible === true;
+}
+
+// Identify the supported custom trigger before prompt-only SDKs can narrow it
+// to never. The message type comes from the public SDK in both releases.
+function isCustomBeforeAgentStart(event: BeforeAgentStartEvent): event is BeforeAgentStartEvent & {
+  message: Extract<MessageStartEvent["message"], { role: "custom" }>;
+} {
+  return !("prompt" in event) && "message" in event;
 }
 
 function isProcessingCustomMessage(message: { role?: string; customType?: string }): boolean {
@@ -1670,11 +1680,12 @@ ${context.command}
   // synchronous read it replaces did. The generation is captured before that
   // await so a session replaced while it runs cannot be staged into.
   pi.on?.("before_agent_start", async (event, ctx) => {
-    if (!("prompt" in event)) {
+    if (isCustomBeforeAgentStart(event)) {
       processingOpenedThisRun = queuedProcessingContent !== null &&
         isProcessingCustomMessage(event.message) && event.message.content === queuedProcessingContent;
       return;
     }
+    if (!("prompt" in event)) return;
     rememberMainModel(ctx);
     currentMainSession = ctx?.sessionManager ?? null;
     const promptGeneration = generation;

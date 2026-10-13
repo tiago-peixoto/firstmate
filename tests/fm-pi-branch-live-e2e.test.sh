@@ -1161,3 +1161,131 @@ EOF
     pass "real Pi SDK $PI_VERSION emits prompt-bearing user and no-prompt custom events accepted by both consumers"
     ;;
 esac
+
+# The real session owns cancellation: parking main after an idle processing
+# request opens must abort only that dedicated run, not user/unrelated runs.
+for cancellation_case in processing user unrelated; do
+case "$PI_VERSION:$cancellation_case" in
+  0.*:processing|1.0.*:processing|1.1.*:processing|0.*:unrelated|1.0.*:unrelated|1.1.*:unrelated)
+    printf 'skip: Pi %s has no custom before-agent boundary for the %s cancellation subprobe\n' "$PI_VERSION" "$cancellation_case"
+    continue
+    ;;
+esac
+cancelhome="$TMP_ROOT/cancel-home-$cancellation_case"
+canceldir="$TMP_ROOT/cancel-agent-dir-$cancellation_case"
+mkdir -p "$cancelhome/state" "$cancelhome/config" "$canceldir"
+cp "$streamdir/models.json" "$canceldir/models.json"
+BRANCH_PLUGIN="$repo/.pi/extensions/fm-branch-supervision.ts" \
+  FM_HOME="$cancelhome" FM_ROOT_OVERRIDE="$ROOT" CANCEL_CASE="$cancellation_case" \
+  PI_CODING_AGENT_DIR="$canceldir" PI_PACKAGE_DIR="$PI_PACKAGE_DIR" \
+  node --input-type=module > "$TMP_ROOT/cancel-output" 2>&1 <<'EOF'
+import { readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
+const home = process.env.FM_HOME;
+const sdk = await import(pathToFileURL(`${process.env.PI_PACKAGE_DIR}/dist/index.js`).href);
+writeFileSync(`${home}/state/.lock`, `${process.pid}\n`);
+const outcome = (...args) => {
+  const result = spawnSync("bash", [`${process.env.FM_ROOT_OVERRIDE}/bin/fm-branch-outcome.sh`, ...args], { encoding: "utf8" });
+  if (result.status !== 0) throw new Error(result.stderr);
+  return result.stdout.trim();
+};
+outcome("processed-init");
+const seq = Number(outcome("append", "--task", "example", "--verdict", "captain", "--summary", "A decision is needed"));
+let completions = 0;
+let settled = 0;
+const triggers = [];
+const errors = [];
+const mode = process.env.CANCEL_CASE;
+const requests = [];
+const contexts = [];
+const chunk = (delta, finish) => `data: ${JSON.stringify({ id: "cancel-probe", object: "chat.completion.chunk", created: 1, model: "fm-live-stream-model", choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
+globalThis.fetch = async (input, options) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  if (!url.startsWith("https://fm-live-stream.invalid/")) throw new Error(`unexpected provider: ${url}`);
+  requests.push(JSON.parse(options.body));
+  completions += 1;
+  return new Response(chunk({ role: "assistant", content: "ACK" }, null) + chunk({}, "stop") + "data: [DONE]\n\n", { headers: { "content-type": "text/event-stream" } });
+};
+const agentDir = process.env.PI_CODING_AGENT_DIR;
+const settings = sdk.SettingsManager.create(home, agentDir);
+const loader = new sdk.DefaultResourceLoader({
+  cwd: home, agentDir, settingsManager: settings,
+  additionalExtensionPaths: [process.env.BRANCH_PLUGIN],
+  extensionFactories: [{ name: "cancel-probe", factory: (pi) => {
+    pi.on("before_agent_start", (event) => {
+      triggers.push(event);
+      // Custom-opening cases require the real 1.2 before-agent boundary.
+      // The ordinary user-run control remains applicable on older SDKs.
+      if (mode !== "processing" || triggers.length === 2) {
+        const parked = spawnSync("bash", [`${process.env.FM_ROOT_OVERRIDE}/bin/fm-afk-contract.sh`, "enter", "--words", "fixture away posture"], { encoding: "utf8" });
+        if (parked.status !== 0) throw new Error(parked.stderr);
+      }
+    });
+    // The vendor runs context_with_system after every request-local context
+    // transform. Observe its output, not the restored stored session history.
+    pi.on("context_with_system", (event) => { contexts.push(structuredClone(event.messages)); });
+    pi.on("agent_settled", () => { settled += 1; });
+  } }],
+  noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
+});
+await loader.reload();
+const runtime = await sdk.ModelRuntime.create({ authPath: `${agentDir}/auth.json`, modelsPath: `${agentDir}/models.json` });
+const registry = new sdk.ModelRegistry(runtime);
+await registry.refresh();
+const { session } = await sdk.createAgentSession({
+  cwd: home, sessionManager: sdk.SessionManager.inMemory(home), settingsManager: settings,
+  resourceLoader: loader, modelRuntime: runtime, model: registry.find("fm-live-stream", "fm-live-stream-model"), noTools: "builtin",
+});
+session.extensionRunner.onError((error) => errors.push(error));
+try {
+  if (mode === "unrelated") {
+    await session.sendCustomMessage({ customType: "fixture", content: "Unrelated custom turn.", display: false }, { triggerTurn: true });
+  } else {
+    await session.prompt("Original user turn.");
+  }
+  const expectedSettled = mode === "processing" ? 2 : 1;
+  for (let i = 0; i < 600 && settled < expectedSettled; i += 1) await new Promise((done) => setTimeout(done, 50));
+  if (settled !== expectedSettled || completions !== 1) throw new Error(`cancellation ownership failed: ${settled} settlements, ${completions} completions, ${JSON.stringify(triggers)}`);
+  if (mode === "processing") {
+    if (triggers.length !== 2) throw new Error("processing run did not open");
+    const trigger = triggers[1];
+    const version = JSON.parse(readFileSync(`${process.env.PI_PACKAGE_DIR}/package.json`, "utf8")).version;
+    if (version.startsWith("1.2.") && (trigger.messageType !== "custom" || "prompt" in trigger || trigger.message.customType !== "fm-branch-process")) throw new Error(`wrong real processing trigger: ${JSON.stringify(trigger)}`);
+    // Cancellation precedes a second provider request; stored transcript is
+    // retained. A subsequent ordinary request must filter the old envelope.
+    if (!session.sessionManager.buildSessionContext().messages.some((message) => message.role === "custom" && message.customType === "fm-branch-process")) throw new Error("cancellation deleted stored processing history");
+    const contextCountBeforeNextPrompt = contexts.length;
+    await session.prompt("A subsequent ordinary user turn.");
+    if (settled !== 3 || completions !== 2 || contexts.length <= contextCountBeforeNextPrompt) throw new Error("subsequent ordinary request did not execute its real context boundary");
+    if (contexts.slice(contextCountBeforeNextPrompt).some((messages) => messages.some((message) => message.role === "custom" && message.customType === "fm-branch-process"))) throw new Error("processing envelope leaked into subsequent request-local context");
+    const requestText = requests.at(-1).messages.map((message) => typeof message.content === "string" ? message.content : (message.content ?? []).map((part) => part.text ?? "").join("\n")).join("\n");
+    if (requestText.includes(trigger.message.content) || !requestText.includes("Original user turn.") || !requestText.includes("A subsequent ordinary user turn.")) throw new Error("subsequent provider request leaked processing content or lost ordinary user content");
+  } else {
+    const expectedText = mode === "unrelated" ? "Unrelated custom turn." : "Original user turn.";
+    const requestText = requests[0].messages.map((message) => typeof message.content === "string" ? message.content : (message.content ?? []).map((part) => part.text ?? "").join("\n")).join("\n");
+    if (!requestText.includes(expectedText)) throw new Error("away context lost ordinary user/unrelated custom content");
+  }
+  if (!outcome("unprocessed").includes(`"seq":${seq}`)) throw new Error("cancellation acknowledged an unhandled outcome");
+  if (errors.length) throw new Error(JSON.stringify(errors));
+} finally {
+  await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
+  session.dispose();
+}
+console.log(`CANCEL_OK ${JSON.stringify({ mode, completions, settled, requests, contexts, cancellation: mode === "processing" ? "before a second provider request; subsequent real request filtered history" : "not cancelled" })}`);
+EOF
+status=$?
+out=$(cat "$TMP_ROOT/cancel-output")
+if [ "$status" -ne 0 ] || [[ "$out" != CANCEL_OK\ * ]]; then
+  fail "real-SDK cancellation guard ($cancellation_case) failed against pi-coding-agent $PI_VERSION: $out"
+fi
+printf '%s\n' "$out"
+done
+case "$PI_VERSION" in
+  0.*|1.0.*|1.1.*)
+    pass "real Pi SDK $PI_VERSION preserves applicable user runs and unprocessed outcomes during away posture; newer custom-opening cases are N/A"
+    ;;
+  *)
+    pass "real Pi SDK $PI_VERSION cancels processing before a second provider request, filters it from a subsequent request, and preserves user/unrelated content and unprocessed outcomes"
+    ;;
+esac
