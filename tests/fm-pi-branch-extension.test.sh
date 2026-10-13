@@ -1062,8 +1062,19 @@ if (operational.status !== 0) throw new Error(`could not create operational inpu
 await fire("before_agent_start", { prompt: operational.stdout }, mainCtx);
 entries.push({ type: "message", message: { role: "user", content: operational.stdout } });
 const unsolicitedPrompt = "Please keep responses concise while monitoring the fleet.";
-await fire("before_agent_start", { prompt: unsolicitedPrompt }, mainCtx);
+await fire("before_agent_start", { messageType: "user", prompt: unsolicitedPrompt }, mainCtx);
 entries.push({ type: "message", message: { role: "user", content: unsolicitedPrompt } });
+// Pi 1.2's idle sendMessage trigger carries a CustomMessage, not a prompt.
+// Even report-request wording in it must never become captain dialog.
+await fire("before_agent_start", {
+  type: "before_agent_start",
+  messageType: "custom",
+  message: {
+    role: "custom", customType: "fixture", content: explicitRequest,
+    display: false, timestamp: Date.now(),
+  },
+  systemPrompt: "fixture", systemPromptOptions: {},
+}, mainCtx);
 await fire("agent_start", {}, mainCtx);
 await fire("agent_end", {}, mainCtx);
 const legacyOperational = "⁣FIRSTMATE_OP: give me a fresh system-resource report.";
@@ -1121,6 +1132,7 @@ for (const content of [unsolicitedPrompt, ...requestedPrompts]) {
   if (copies !== 1) throw new Error(`current captain prompt was mirrored ${copies} times instead of once`);
 }
 if (mirroredCaptainText.some((text) =>
+  text === `[captain] ${explicitRequest}` ||
   text.includes("operational watcher injection") || text.includes("FIRSTMATE_OP: give me a fresh system-resource report")
 )) {
   throw new Error("canonical current or legacy operational input entered captain mirror context");
@@ -2115,6 +2127,21 @@ if (stolen?.messages?.some((message) => message.customType === "fm-branch-proces
   throw new Error(`joined processing was not stripped from the captain-opened run: ${JSON.stringify(stolen)}`);
 }
 await fire("agent_end", {});
+for (const message of [
+  { ...processingMsg, customType: "fixture" },
+  { ...processingMsg, content: "different processing request" },
+]) {
+  aborted = false;
+  await fire("before_agent_start", {
+    type: "before_agent_start", messageType: "custom", message,
+    systemPrompt: "fixture", systemPromptOptions: {},
+  }, abortCtx);
+  const unrelated = await fire("context", { messages: [...history, message, processingMsg] }, abortCtx);
+  if (aborted) throw new Error("an unrelated custom run was aborted after a processing request joined it");
+  if (unrelated?.messages?.some((item) => item.customType === "fm-branch-process")) {
+    throw new Error(`joined processing was not stripped from a custom run: ${JSON.stringify(unrelated)}`);
+  }
+}
 aborted = false;
 await fire("before_agent_start", { prompt: pending.message.content }, abortCtx);
 await fire("agent_start", {}, defaultSessionCtx);
@@ -2122,6 +2149,23 @@ const openedByRequest = await fire("context", { messages: [...history, processin
 if (!aborted) throw new Error("a dedicated processing turn with history was not aborted under the record");
 if (openedByRequest?.messages?.some((message) => message.customType === "fm-branch-process")) {
   throw new Error(`dedicated processing with history was not stripped: ${JSON.stringify(openedByRequest)}`);
+}
+await fire("agent_end", {});
+contract(["archive"]);
+aborted = false;
+await fire("before_agent_start", {
+  type: "before_agent_start", messageType: "custom",
+  message: { ...processingMsg, timestamp: Date.now() },
+  systemPrompt: "fixture", systemPromptOptions: {},
+}, abortCtx);
+await fire("agent_start", {}, defaultSessionCtx);
+await fire("turn_start", {});
+await fire("message_start", { message: processingMsg }, abortCtx);
+contract(["enter", "--words", "merge task-d when green, then cut the prerelease\n\n"]);
+const openedByCustomRequest = await fire("context", { messages: [...history, processingMsg] }, abortCtx);
+if (!aborted) throw new Error("a custom processing turn with history was not aborted when the record appeared");
+if (openedByCustomRequest?.messages?.some((message) => message.customType === "fm-branch-process")) {
+  throw new Error(`custom processing with history was not stripped: ${JSON.stringify(openedByCustomRequest)}`);
 }
 await fire("agent_end", {});
 await fire("agent_settled", {});
