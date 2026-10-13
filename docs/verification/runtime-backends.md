@@ -2356,7 +2356,7 @@ The current portable regression proves that only consecutive provider errors cou
 
 Scope of the earlier evidence: the installed signed `pi` CLI (0.82.0 at verification time) is a compiled binary whose bundled SDK is not importable from Node, so the importable npm package is the only surface the guard and the typecheck can pin.
 The extension executes inside the signed CLI's own runtime, so a CLI upgrade can drift ahead of the pinned npm surface; refresh the SDK construction, picker, renderer, and type evidence after every Pi upgrade by rerunning the applicable live guard probes, picker regression, and strict typecheck above (point `FM_PI_PACKAGE_DIR` at a matching npm install when one exists).
-The live guard now drives both extensions through the watcher-owned settlement handshake, requires rejected branch settlement before main delivery, and verifies successor-delivery confirmation; rerun it against the matching importable Pi package to refresh end-to-end fallback evidence.
+The [live-guard contract](../pi-supervision-branch.md#live-guards) owns the current fallback observations and fixture limits; rerun it against the matching importable Pi package to refresh SDK fallback evidence.
 
 ### 2026-09-02 streaming-time watcher delivery
 
