@@ -23,8 +23,10 @@
 #
 # No provider call leaves the machine. The first branch probe points
 # PI_CODING_AGENT_DIR at an empty directory, so it reads no credentials and
-# model resolution stays empty by construction. The 429 probe intercepts its
-# only request before transport, and the precedence probes read only a local
+# model resolution stays empty by construction. Its main session uses a
+# separate local runtime and intercepted SSE responses, with real vendor
+# events and request capture. The 429 probe intercepts its only request before
+# transport, and the precedence probes read only a local
 # placeholder key for their never-contacted fake provider. Run after
 # every Pi upgrade and before trusting refreshed per-harness evidence
 # (docs/verification/runtime-backends.md).
@@ -64,6 +66,15 @@ if [ "${1:-}" = --handling-delivered ]; then
   printf 'confirmed generation=%s watcher=%s\n' "$2" "$4" >> "${FM_LIVE_WATCH_LOG:?}"
   exit 0
 fi
+# Match --restart's home-scoped retirement contract: a replacement must not
+# leave its predecessor polling the same trigger file.
+if [ "${1:-}" = --restart ] && [ -f "${FM_LIVE_WATCH_LOG:?}" ]; then
+  previous=$(awk '/^arm pid=/ { pid = substr($0, 9) } END { print pid }' "$FM_LIVE_WATCH_LOG")
+  if [ -n "$previous" ]; then
+    kill -TERM "$previous" 2>/dev/null || true
+    printf 'retire pid=%s\n' "$previous" >> "$FM_LIVE_WATCH_LOG"
+  fi
+fi
 printf 'arm pid=%s\n' "$$" >> "${FM_LIVE_WATCH_LOG:?}"
 printf 'watcher: started pid=%s (beacon fresh) recovery-generation=live-sdk-generation\n' "$$"
 trap 'exit 0' TERM INT
@@ -71,6 +82,7 @@ while :; do
   if [ -e "$FM_LIVE_WATCH_TRIGGER" ]; then
     reason=$(cat "$FM_LIVE_WATCH_TRIGGER")
     rm -f "$FM_LIVE_WATCH_TRIGGER"
+    printf 'trigger pid=%s reason=%s\n' "$$" "$reason" >> "${FM_LIVE_WATCH_LOG:?}"
     printf '%s\n' "$reason"
     exit 0
   fi
@@ -101,90 +113,100 @@ const approvedProject = `${home}/projects/live-probe`;
 mkdirSync(approvedProject, { recursive: true });
 writeFileSync(`${home}/state/live-probe.meta`, `project=${approvedProject}\nwindow=fm-live-probe\n`);
 writeFileSync(`${home}/state/.wake-queue`, "1\t1\tsignal\tlive-probe.status\tsignal: live-sdk probe\n");
-const busHandlers = new Map();
+// Main gets a separate local model runtime; the branch's agent dir remains
+// empty. Observe real vendor input, consumption, settlement and provider
+// requests rather than synthesizing successful sendUserMessage callbacks.
 const offers = [];
-const bus = {
-  on(channel, handler) {
-    busHandlers.set(channel, [...(busHandlers.get(channel) ?? []), handler]);
-    return () => {};
-  },
-  emit(channel, data) {
-    for (const handler of busHandlers.get(channel) ?? []) handler(data);
-    if (channel === "fm-branch-supervision:dispatch") offers.push(data);
-  },
-};
 const mainUserMessages = [];
-const piHandlers = new Map();
-let watcherTool = null;
-let sessionCtx = {};
-const pi = {
-  events: bus,
-  on(event, handler) {
-    piHandlers.set(event, [...(piHandlers.get(event) ?? []), handler]);
+const mainInputs = [];
+const requests = [];
+const errors = [];
+let settled = 0;
+const sdk = await import(pathToFileURL(`${process.env.PI_PACKAGE_DIR}/dist/index.js`).href);
+const mainDir = resolve(home, "../main-agent-dir");
+mkdirSync(mainDir, { recursive: true });
+writeFileSync(`${mainDir}/models.json`, JSON.stringify({ providers: {
+  "fm-live-main": {
+    baseUrl: "https://fm-live-main.invalid/v1", api: "openai-completions", apiKey: "fm-live-placeholder",
+    models: [{ id: "fm-live-main-model", name: "local main", contextWindow: 8192, maxTokens: 512 }],
   },
-  registerTool(tool) {
-    if (tool.name === "fm_watch_arm_pi") watcherTool = tool;
-  },
-  registerCommand() {},
-  registerMessageRenderer() {},
-  sendMessage() {},
-  // Main is idle throughout this probe, so a send starts a run: Pi raises
-  // before_agent_start with the exact text and then the user message_start.
-  // A send while main streams raises neither at queue time; the sixth probe
-  // below proves that against the real AgentSession.
-  async sendUserMessage(content, options) {
-    mainUserMessages.push({ content, options: options ?? {} });
-    for (const handler of piHandlers.get("before_agent_start") ?? []) {
-      await handler({ prompt: content }, sessionCtx);
-    }
-    for (const handler of piHandlers.get("message_start") ?? []) {
-      await handler({ message: { role: "user", content: [{ type: "text", text: content }] } }, sessionCtx);
-    }
-  },
+} }));
+globalThis.fetch = async (input, options) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  if (!url.startsWith("https://fm-live-main.invalid/")) throw new Error(`unexpected provider request: ${url}`);
+  requests.push(JSON.parse(options.body));
+  const chunk = (delta, finish_reason) => `data: ${JSON.stringify({
+    id: "main-fallback", object: "chat.completion.chunk", created: 1, model: "fm-live-main-model",
+    choices: [{ index: 0, delta, finish_reason }],
+  })}\n\n`;
+  return new Response(chunk({ role: "assistant", content: "ACK" }, null) + chunk({}, "stop") + "data: [DONE]\n\n", {
+    headers: { "content-type": "text/event-stream" },
+  });
 };
 process.env.FM_ROOT_OVERRIDE = process.env.FM_REAL_ROOT;
 const branchMod = await import(pathToFileURL(process.env.BRANCH_PLUGIN).href);
-branchMod.default(pi);
 process.env.FM_ROOT_OVERRIDE = process.env.FM_WATCH_ROOT;
 const watchMod = await import(pathToFileURL(process.env.WATCH_PLUGIN).href);
-watchMod.default(pi);
-// The real model surface, built from the same empty agent dir: no
-// credentials are read and no catalog is fetched, so every model lookup is
-// genuinely empty by construction.
-const { ModelRegistry, ModelRuntime } = await import(
-  pathToFileURL(`${process.env.PI_PACKAGE_DIR}/dist/index.js`).href
-);
-const modelRegistry = new ModelRegistry(
-  await ModelRuntime.create({
-    authPath: `${process.env.PI_CODING_AGENT_DIR}/auth.json`,
-    modelsPath: `${process.env.PI_CODING_AGENT_DIR}/models.json`,
-  }),
-);
-if (typeof modelRegistry.getAvailable !== "function" || typeof modelRegistry.hasConfiguredAuth !== "function") {
-  throw new Error("the real ModelRegistry no longer exposes the model surface the supervision picker reads");
+const settings = sdk.SettingsManager.create(home, mainDir);
+const loader = new sdk.DefaultResourceLoader({
+  cwd: home, agentDir: mainDir, settingsManager: settings,
+  extensionFactories: [branchMod.default, watchMod.default, (pi) => {
+    pi.events.on("fm-branch-supervision:dispatch", (offer) => { offers.push(offer); });
+    pi.on("input", (event) => { mainInputs.push(event); });
+    pi.on("message_start", (event) => {
+      if (event.message.role === "user") mainUserMessages.push({
+        content: event.message.content.filter((part) => part.type === "text").map((part) => part.text).join("\n"),
+      });
+    });
+    pi.on("agent_settled", () => { settled += 1; });
+  }],
+  noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
+});
+const mainRuntime = await sdk.ModelRuntime.create({ authPath: `${mainDir}/auth.json`, modelsPath: `${mainDir}/models.json` });
+const mainRegistry = new sdk.ModelRegistry(mainRuntime);
+await mainRegistry.refresh();
+const model = mainRegistry.find("fm-live-main", "fm-live-main-model");
+if (!model) throw new Error("real main runtime did not resolve the local provider");
+const emptyRegistry = new sdk.ModelRegistry(await sdk.ModelRuntime.create({
+  authPath: `${process.env.PI_CODING_AGENT_DIR}/auth.json`, modelsPath: `${process.env.PI_CODING_AGENT_DIR}/models.json`,
+}));
+if (emptyRegistry.getAvailable().length || emptyRegistry.find("openai", "no-such-live-model")) {
+  throw new Error("isolated branch runtime was not empty");
 }
-sessionCtx = {
-  sessionManager: { getSessionFile: () => `${home}/main.jsonl`, getEntries: () => [] },
-  modelRegistry,
+const createMain = async (reason) => {
+  // dispose invalidates the vendor extension runtime, including bus listeners.
+  // Reload resources for a replacement rather than rebinding a stale API.
+  await loader.reload();
+  if (loader.getExtensions().errors.length) throw new Error(JSON.stringify(loader.getExtensions().errors));
+  const created = await sdk.createAgentSession({
+    cwd: home, agentDir: mainDir, settingsManager: settings, resourceLoader: loader,
+    sessionManager: sdk.SessionManager.create(home, `${home}/main-sessions`),
+    modelRuntime: mainRuntime, model, noTools: "builtin", sessionStartEvent: { type: "session_start", reason },
+  });
+  await created.session.bindExtensions({ onError: (error) => { errors.push(error); } });
+  return created.session;
 };
+let session = await createMain("startup");
 const waitFor = async (predicate, label) => {
   for (let i = 0; i < 600; i += 1) {
     if (predicate()) return;
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  throw new Error(`timeout waiting for ${label}`);
+  throw new Error(`timeout waiting for ${label}; offers=${offers.length}; messages=${mainUserMessages.length}; settled=${settled}; errors=${JSON.stringify(errors)}; watch=${readFileSync(process.env.FM_LIVE_WATCH_LOG, "utf8")}`);
 };
+const liveArmPids = () => readFileSync(process.env.FM_LIVE_WATCH_LOG, "utf8").split(/\n/)
+  .filter((line) => line.startsWith("arm pid="))
+  .map((line) => Number(line.slice("arm pid=".length)))
+  .filter((pid) => { try { process.kill(pid, 0); return true; } catch { return false; } });
 const armCount = () => existsSync(process.env.FM_LIVE_WATCH_LOG)
   ? readFileSync(process.env.FM_LIVE_WATCH_LOG, "utf8").split(/\n/).filter((line) => line.startsWith("arm ")).length
   : 0;
-for (const handler of piHandlers.get("session_start") ?? []) {
-  await handler({ type: "session_start", reason: "startup" }, sessionCtx);
-}
 if (existsSync(`${home}/state/.pi-branch-extension-loaded`)) {
   throw new Error("branch activated before the primary session acquired its lock");
 }
 writeFileSync(`${home}/state/.lock`, `${process.pid}\n`);
-if (!watcherTool) throw new Error("watcher tool was not registered");
+const watcherTool = session.getToolDefinition("fm_watch_arm_pi");
+if (!watcherTool) throw new Error("watcher tool was not registered in the real main session");
 const armed = await watcherTool.execute("live-sdk-arm", {}, undefined, undefined, {});
 if (!armed.details?.ok) throw new Error(`watcher did not arm: ${JSON.stringify(armed.details)}`);
 await waitFor(() => armCount() === 1, "initial watcher arm");
@@ -221,14 +243,16 @@ if (!existsSync(`${home}/state/branch-session`)) {
 // A model pin the branch's REAL runtime cannot resolve must refuse the build
 // and reject the offer back to watcher-owned main delivery rather than
 // silently running the branch on whatever model main would have used.
+await waitFor(() => settled === 1 && !session.isStreaming, "first real main request settlement");
+if (!session.sessionManager.buildSessionContext().messages.some((message) => message.role === "user" && message.content.some((part) => part.type === "text" && part.text === fallback))) {
+  throw new Error("real main session did not retain the first delivered wake");
+}
 writeFileSync(`${home}/config/supervision-branch-model`, "openai/no-such-live-model\n");
-for (const handler of piHandlers.get("session_shutdown") ?? []) {
-  await handler({ type: "session_shutdown", reason: "new" }, sessionCtx);
-}
-for (const handler of piHandlers.get("session_start") ?? []) {
-  await handler({ type: "session_start", reason: "new" }, sessionCtx);
-}
+await session.extensionRunner.emit({ type: "session_shutdown", reason: "new" });
+await session.dispose();
+session = await createMain("new");
 await waitFor(() => armCount() >= 3, "replacement watcher arm");
+await waitFor(() => liveArmPids().length === 1, "replacement to retire the previous fixture arm");
 writeFileSync(`${home}/state/.wake-queue`, "1\t2\tsignal\tlive-probe.status\tsignal: live pin probe\n");
 writeFileSync(process.env.FM_LIVE_WATCH_TRIGGER, "signal: live pin probe\n");
 await waitFor(() => mainUserMessages.length === 2, "pinned watcher-owned main delivery");
@@ -251,15 +275,38 @@ const confirmations = readFileSync(process.env.FM_LIVE_WATCH_LOG, "utf8")
 if (confirmations.length !== 2) {
   throw new Error(`watcher did not confirm both successor deliveries: ${confirmations.join(" | ")}`);
 }
-console.log("LIVE_OK");
+await waitFor(() => settled === 2 && !session.isStreaming, "pinned real main request settlement");
+// Idle input events carry no streamingBehavior on SDK1.1; follow-up queue
+// semantics are asserted separately by the existing real streaming probe.
+if (requests.length !== 2 || mainInputs.length !== 2 || mainInputs.some((event) => event.source !== "extension")) {
+  throw new Error(`real fallback request ownership failed: ${JSON.stringify({ requests, mainInputs, settled })}`);
+}
+for (const [index, reason] of ["signal: live-sdk probe", "signal: live pin probe"].entries()) {
+  if (!JSON.stringify(requests[index].messages).includes(`FIRSTMATE WATCHER WAKE: ${reason}`)) {
+    throw new Error(`real main provider did not receive fallback ${index}`);
+  }
+}
+if (!session.sessionManager.buildSessionContext().messages.some((message) => message.role === "user" && message.content.some((part) => part.type === "text" && part.text === pinFallback))) {
+  throw new Error("real main session did not retain the pinned fallback");
+}
+if (existsSync(`${home}/state/.branch-eligible-rows`) || existsSync(`${home}/state/branch-outcomes.jsonl`)) {
+  throw new Error("unusable branch fabricated an outcome or retained claimed notification ownership");
+}
+if (!readFileSync(`${home}/state/.wake-queue`, "utf8").includes("signal: live pin probe") || errors.length) {
+  throw new Error(`real fallback lost its durable row or raised extension errors: ${JSON.stringify(errors)}`);
+}
+await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
+await session.dispose();
+console.log(`LIVE_OK ${JSON.stringify({ requests, mainInputs, settled, watch: readFileSync(process.env.FM_LIVE_WATCH_LOG, "utf8") })}`);
 process.exit(0);
 EOF
 status=$?
 out=$(cat "$TMP_ROOT/node-output")
-if [ "$status" -ne 0 ] || [ "$out" != "LIVE_OK" ]; then
+if [ "$status" -ne 0 ] || [[ "$out" != LIVE_OK\ * ]]; then
   fail "real-SDK Pi branch guard failed against pi-coding-agent $PI_VERSION: $out"
 fi
-pass "real Pi SDK $PI_VERSION accepts the branch session construction and preserves an unpromptable wake"
+printf '%s\n' "$out"
+pass "real Pi SDK $PI_VERSION rejects an unusable pin and delivers both fallback wakes through the real main session and provider"
 
 # Real-SDK Mode 2 guard: a constructed AgentSession receives the c1 429 shape
 # from Pi's real OpenAI-compatible adapter. Fetch is intercepted in-process,
