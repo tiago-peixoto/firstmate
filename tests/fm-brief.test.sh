@@ -393,7 +393,7 @@ test_ship_mode_is_explicit_not_registry() {
   brief="$home/data/brief-explicit-a5/brief.md"
   grep -qx "Delivery contract: mode=no-mistakes" "$brief" \
     || fail "registered direct-PR posture overrode the explicit --mode"
-  assert_grep "Firstmate will then instruct you to run /no-mistakes" "$brief" \
+  assert_grep "sends you the instruction to run /no-mistakes" "$brief" \
     "explicit no-mistakes brief did not render the pipeline definition of done"
 
   # An unregistered project is not a blocker either, because nothing is looked up.
@@ -535,6 +535,53 @@ test_no_mistakes_dod_wording() {
   assert_no_grep "no-mistakes refuses" "$brief" \
     "no-mistakes DOD must not claim the tool itself refuses --yes"
   pass "fm-brief.sh: no-mistakes DOD keeps its apostrophe prose and bans --yes outright"
+}
+
+# A no-mistakes worker writes `done` twice: once to hand its commit over for
+# validation and once when the work is finished. The two lines must differ in
+# their own words, the handoff must say who starts the run, and the line the
+# brief teaches must be the line the reader recognizes (issue 7251).
+test_no_mistakes_dod_tells_handoff_from_finished() {
+  local home brief variant flags taught line
+  home="$TMP_ROOT/handoff-wording-home"
+  mkdir -p "$home/data"
+  while IFS='|' read -r variant flags; do
+    # shellcheck disable=SC2086  # flags is a deliberate word list
+    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "brief-handoff-$variant" some-proj --mode no-mistakes $flags >/dev/null 2>&1 \
+      || fail "$variant no-mistakes brief did not scaffold"
+    brief="$home/data/brief-handoff-$variant/brief.md"
+    # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
+    assert_grep 'append `done [at=<epoch>]: ready for validation, not pushed - {summary}` to the status file and stop.' "$brief" \
+      "$variant: the handoff instruction lost its fixed words"
+    # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
+    assert_no_grep 'append `done [at=<epoch>]: {summary}`' "$brief" \
+      "$variant: the handoff instruction still reads like a finished report"
+    assert_grep "That line is the validation handoff, not your finished report" "$brief" \
+      "$variant: the brief does not say the handoff is not the finished report"
+    assert_grep "Firstmate reads it and sends you the instruction to run /no-mistakes" "$brief" \
+      "$variant: the handoff does not name who starts the validation run"
+    assert_grep "Start the run only when that instruction arrives" "$brief" \
+      "$variant: the handoff does not tell the worker to wait for the instruction"
+    # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
+    taught=$(sed -n 's/.*append `\(done \[at=<epoch>\]: ready for validation[^`]*\)`.*/\1/p' "$brief" | head -1)
+    line=${taught/<epoch>/1788576000}
+    line=${line/\{summary\}/retry the upload once}
+    # shellcheck disable=SC2016  # the inner script reads its own positional parameters
+    bash -c '. "$1/bin/fm-dod-lib.sh"; fm_dod_ship_done_is_validation_handoff ship no-mistakes "$2"' _ "$ROOT" "$line" \
+      || fail "$variant: the handoff line the brief teaches is not recognized as a handoff: $line"
+  done <<'VARIANTS'
+github|
+gerrit|--forge gerrit --shape squash
+VARIANTS
+  # shellcheck disable=SC2016  # single quotes are deliberate: the backticks must stay literal
+  assert_grep 'append `done [at=<epoch>]: PR {url} checks green` and stop. You are finished.' \
+    "$home/data/brief-handoff-github/brief.md" "the finished report lost its ready wording"
+
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-handoff-direct some-proj --mode direct-PR >/dev/null 2>&1 \
+    || fail "direct-PR brief did not scaffold"
+  assert_no_grep "ready for validation" "$home/data/brief-handoff-direct/brief.md" \
+    "a direct-PR brief, which has no validation handoff, teaches the handoff line"
+  pass "fm-brief.sh: no-mistakes DOD tells the validation handoff from the finished report"
 }
 
 # The green-PR report must not depend on a status poll: `axi status` never
@@ -1818,6 +1865,7 @@ test_ship_mode_is_explicit_not_registry
 test_delivery_flags_are_refused_where_they_do_not_apply
 test_faster_paths_use_configured_authority_without_stacked_review
 test_no_mistakes_dod_wording
+test_no_mistakes_dod_tells_handoff_from_finished
 test_no_mistakes_dod_green_detection
 test_pr_based_dod_requires_non_draft
 test_ask_user_escalation_format
