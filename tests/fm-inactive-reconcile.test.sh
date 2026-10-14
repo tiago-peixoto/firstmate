@@ -268,6 +268,30 @@ test_local_done_head_is_pinned_before_parent_delivery() {
   pass 'inactive reconciliation pins local readiness under its existing lock before one parent delivery'
 }
 
+# A no-mistakes child's validation handoff asks this home to start the run, so
+# it is not an outcome for the parent: neither the ledger path nor the inactive
+# path publishes it, however long the child then sits idle reading done. The
+# ready report that follows is delivered as usual.
+test_validation_handoff_is_not_published_as_finished_work() {
+  local key
+  make_world handoff; bind_secondmate local
+  write_child "$MATE" child 'done [at=1788576000]: ready for validation, not pushed - retry the upload once'
+  FM_FAKE_CREW_STATE='done' run_reconcile "$MATE"
+  FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
+  run_report "$MATE" child || fail "the report entry point failed on a validation handoff"
+  [ ! -s "$MAIN/state/mate.status" ] \
+    || fail "a validation handoff was published upstream: $(cat "$MAIN/state/mate.status")"
+  [ "$(outcome_count "$MATE" reported)" = 0 ] || fail "a validation handoff left a delivery receipt"
+  printf 'done [at=1788579600]: PR https://example.test/owner/repo/pull/1 checks green\n' >> "$MATE/state/child.status"
+  FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
+  key=$(reported_outcome_key "$MATE" child 'done') || fail "the ready report after a handoff left no receipt"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$key]: child child done: PR https://example.test/owner/repo/pull/1 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
+    || fail "the ready report after a handoff was not delivered: $(cat "$MAIN/state/mate.status" 2>/dev/null)"
+  [ "$(grep -c 'child-outcome-child-done' "$MAIN/state/mate.status")" = 1 ] \
+    || fail "the handoff and the ready report were both delivered"
+  pass "a validation handoff is not published upstream and the later ready report is"
+}
+
 # The ledger pass runs on every poll, so a ship done: already delivered does
 # not pay for the git reachability check again.
 test_delivered_ledger_done_skips_git_gate() {
@@ -1073,6 +1097,7 @@ test_main_direct_terminal_presentation_receipt
 test_branch_ack_retires_inactive_outcome_receipt
 test_unpushed_ci_ready_done_is_not_published
 test_local_done_head_is_pinned_before_parent_delivery
+test_validation_handoff_is_not_published_as_finished_work
 test_delivered_ledger_done_skips_git_gate
 test_local_secondmate_delivers_terminal_ledger_line
 test_secondmate_multiline_terminal_outcome_is_delivered_once

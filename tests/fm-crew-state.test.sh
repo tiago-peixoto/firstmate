@@ -2562,6 +2562,29 @@ test_no_mistakes_prevalidation_done_stays_done() {
   pass "no-mistakes pre-validation done: stays current-state done"
 }
 
+test_validation_handoff_reads_done_with_its_fixed_words() {
+  reset_fakes
+  local d out
+  d=$(new_case handoff-done)
+  make_repo_on_branch "$d/wt" fm/handoff
+  git -C "$d/wt" commit -q --allow-empty -m 'fix only in the worktree'
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/handoff.meta" \
+    "window=fm:fm-handoff" "worktree=$d/wt" "project=$d/wt" \
+    "kind=ship" "mode=no-mistakes" "harness=claude"
+  printf 'done [at=1788576000]: ready for validation, not pushed - retry the upload once\n' > "$d/state/handoff.status"
+  FM_FAKE_AXI_STATUS=""
+  FM_FAKE_RUNS_LIST=""
+  FM_FAKE_BUSY=0
+  arm_idle_record "$d/state" handoff
+  out=$(run_crew_state "$d" handoff)
+  assert_contains "$out" "state: done" "validation handoff must read done"
+  assert_contains "$out" "ready for validation, not pushed - retry the upload once" \
+    "validation handoff detail must carry the words that tell it from finished work"
+  assert_not_contains "$out" "state: blocked" "validation handoff must not be the named-head gate"
+  pass "validation handoff reads done and shows it is not finished work"
+}
+
 test_moved_remote_branch_without_named_head_is_blocked() {
   reset_fakes
   local d main_sha fix_sha out
@@ -6305,6 +6328,7 @@ test_other_branch_run_ignored
 test_unpushed_ship_done_is_blocked
 test_merged_pr_reads_done_under_captured_meta
 test_no_mistakes_prevalidation_done_stays_done
+test_validation_handoff_reads_done_with_its_fixed_words
 test_moved_remote_branch_without_named_head_is_blocked
 test_external_review_done_reads_ready
 test_no_run_busy_pane

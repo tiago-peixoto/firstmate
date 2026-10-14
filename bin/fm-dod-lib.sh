@@ -37,9 +37,15 @@
 # (secondmate ledger-first publish of a child done). A ship `done:` is not
 # accepted while the named head exists only in the worker's disposable copy.
 # The check tests that head, not whether some branch moved. In no-mistakes
-# mode the pre-validation `done: {summary}` is the pipeline handoff and is
-# not gated; only the later CI-ready `done: PR <url> checks green` is, or on a
-# Gerrit project the later `done: PR <change url> published for review`. The
+# mode the pre-validation `done: ready for validation, not pushed - {summary}`
+# is the validation handoff and is not gated; only the later CI-ready
+# `done: PR <url> checks green` is, or on a Gerrit project the later
+# `done: PR <change url> published for review`. The fixed opening words are what
+# tell the handoff from finished work on the line alone, and
+# fm_dod_ship_done_is_validation_handoff is their one reader. A worker launched
+# from instructions rendered before that phrase existed writes a bare
+# `done: {summary}`, which stays an ungated handoff but is not recognized as
+# one by that reader. The
 # named head is the worker copy's HEAD, except that a done naming the task's
 # recorded pr= passes when the forge holds that head: a forge-reported
 # pr_head= in no-mistakes mode, or a recorded merge
@@ -144,6 +150,11 @@
 . "$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)/fm-brief-heading-lib.sh"
 # shellcheck source=bin/fm-external-review-lib.sh
 . "$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)/fm-external-review-lib.sh"
+
+# The words that open a no-mistakes validation handoff note. The rendered
+# instruction and fm_dod_ship_done_is_validation_handoff both read them here, so
+# the phrase a worker is told to write is the phrase the reader recognizes.
+FM_DOD_VALIDATION_HANDOFF_NOTE='ready for validation, not pushed'
 
 fm_brief_worker_role() {  # <state-dir> <task-id> <code-root>
   local state=$1 task_id=$2 root=$3
@@ -585,9 +596,10 @@ This project's review server is Gerrit: it has no pull requests and no forge CI 
 Pass \`--skip push,pr,ci\` on every \`no-mistakes axi run\` for this task, and skip nothing else: \`review\`, \`test\`, \`document\`, and \`lint\` are the whole point of the run.
 Those three are the only steps that reach a forge, and skipping them is a supported outcome, not a degraded one.
 The task is complete only when committed on your branch.
-When you believe it is complete, append \`done [at=<epoch>]: {summary}\` to the status file and stop.
-Firstmate will then instruct you to run /no-mistakes to validate.
-That first \`done:\` is the handoff that starts the pipeline; it is not a request to publish.
+When you believe it is complete, append \`done [at=<epoch>]: $FM_DOD_VALIDATION_HANDOFF_NOTE - {summary}\` to the status file and stop.
+That line is the validation handoff, not your finished report: it says the work is committed in this copy and nothing is published.
+Firstmate reads it and sends you the instruction to run /no-mistakes.
+Start the run only when that instruction arrives, and do not publish before the run has passed.
 
 EOF
       fm_nm_driving_block "$forge"
@@ -679,9 +691,10 @@ EOF
 Delivery contract: mode=no-mistakes$contract_forge$contract_consent
 Ship branch: $branch
 The task is complete only when committed on your branch.
-When you believe it is complete, append \`done [at=<epoch>]: {summary}\` to the status file and stop.
-Firstmate will then instruct you to run /no-mistakes to validate and ship a PR.
-That first \`done:\` is the handoff that starts the pipeline, which owns the push; it is not a request to push from this copy.
+When you believe it is complete, append \`done [at=<epoch>]: $FM_DOD_VALIDATION_HANDOFF_NOTE - {summary}\` to the status file and stop.
+That line is the validation handoff, not your finished report: it says the work is committed in this copy and nothing is pushed.
+Firstmate reads it and sends you the instruction to run /no-mistakes, which validates the work and ships a PR.
+Start the run only when that instruction arrives, and never push from this copy: the run owns the push.
 ${nm_base}
 EOF
       fm_nm_driving_block "$forge"
@@ -791,7 +804,7 @@ fm_dod_accept_external_review_done() {  # <worktree> <project> <line> <meta>
 }
 
 # 0 when this ship done: is one the named-head gate must accept or refuse.
-# no-mistakes pre-validation done: is the pipeline handoff and is not gated.
+# no-mistakes pre-validation done: is the validation handoff and is not gated.
 # Empty mode is treated as no-mistakes, the unregistered-project default.
 fm_dod_should_gate_ship_done() {  # <kind> <mode> <line>
   local note
@@ -804,6 +817,17 @@ fm_dod_should_gate_ship_done() {  # <kind> <mode> <line>
       fm_dod_note_reports_ci_ready "$note" || fm_dod_note_reports_published_change "$note" ;;
     *) return 1 ;;
   esac
+}
+
+# 0 when this ship done: is the no-mistakes validation handoff: committed, not
+# pushed, waiting for firstmate to send the run instruction. A line the gate
+# tests is a ready report, so it is never also a handoff.
+fm_dod_ship_done_is_validation_handoff() {  # <kind> <mode> <line>
+  [ "$1" = ship ] || return 1
+  [ "$(status_line_verb "$3")" = "done" ] || return 1
+  case "$2" in no-mistakes|'') ;; *) return 1 ;; esac
+  case "$(status_line_note "$3")" in "$FM_DOD_VALIDATION_HANDOFF_NOTE"*) ;; *) return 1 ;; esac
+  ! fm_dod_should_gate_ship_done "$1" "$2" "$3"
 }
 
 # The PR/MR URL from a `done: PR <url>...` note, or empty.
