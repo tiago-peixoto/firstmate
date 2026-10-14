@@ -94,6 +94,55 @@ test_no_mistakes_prevalidation_done_is_not_gated() {
   pass "no-mistakes pre-validation done: is not gated"
 }
 
+handoff_line() {  # <summary>
+  printf 'done [at=1788576000]: %s - %s\n' "$FM_DOD_VALIDATION_HANDOFF_NOTE" "$1"
+}
+
+test_validation_handoff_is_recognized_from_the_line_alone() {
+  local line
+  line=$(handoff_line 'retry the upload once')
+  [ "$line" = 'done [at=1788576000]: ready for validation, not pushed - retry the upload once' ] \
+    || fail "handoff line is not the documented form: $line"
+  fm_dod_ship_done_is_validation_handoff ship no-mistakes "$line" \
+    || fail "the handoff line was not recognized as a validation handoff"
+  fm_dod_ship_done_is_validation_handoff ship '' "$line" \
+    || fail "the handoff line was not recognized under the unregistered-project default mode"
+  ! fm_dod_ship_done_is_validation_handoff ship no-mistakes \
+    'done [at=1788576000]: PR https://example.test/o/r/pull/9 checks green' \
+    || fail "a CI-ready report was read as a validation handoff"
+  ! fm_dod_ship_done_is_validation_handoff ship no-mistakes \
+    "done: $FM_DOD_VALIDATION_HANDOFF_NOTE - PR https://example.test/o/r/pull/9 checks green" \
+    || fail "a line the named-head gate tests was also read as a handoff"
+  ! fm_dod_ship_done_is_validation_handoff ship no-mistakes 'done: implementation complete' \
+    || fail "a line without the fixed words was read as a validation handoff"
+  ! fm_dod_ship_done_is_validation_handoff ship no-mistakes "working: $FM_DOD_VALIDATION_HANDOFF_NOTE" \
+    || fail "a working: line was read as a validation handoff"
+  ! fm_dod_ship_done_is_validation_handoff ship direct-PR "$line" \
+    || fail "a direct-PR done was read as a validation handoff"
+  ! fm_dod_ship_done_is_validation_handoff scout no-mistakes "$line" \
+    || fail "a scout done was read as a validation handoff"
+  pass "the validation handoff is told from finished work by its line alone"
+}
+
+test_validation_handoff_is_not_gated_and_ready_report_still_is() {
+  local repo wt sha reason rc
+  repo="$TMP_ROOT/handoff-repo"
+  wt="$TMP_ROOT/handoff-wt"
+  fm_git_worktree "$repo" "$wt" fm/handoff
+  git -C "$wt" commit -q --allow-empty -m 'only in the disposable copy'
+  sha=$(git -C "$wt" rev-parse HEAD)
+  accept_done ship no-mistakes "$wt" "$repo" "$(handoff_line 'implementation complete')" \
+    || fail "the validation handoff must not require named-head reachability"
+  reason=$(accept_done ship no-mistakes "$wt" "$repo" 'done: PR https://example.test/o/r/pull/8 checks green')
+  rc=$?
+  [ "$rc" -eq 1 ] || fail "a ready report after the handoff was accepted with an unpushed head (exit $rc)"
+  case "$reason" in
+    *"named head $sha is unreachable outside the worker copy") ;;
+    *) fail "the ready-report refusal did not name the commit: $reason" ;;
+  esac
+  pass "the validation handoff is not gated and the later ready report still is"
+}
+
 test_local_only_linked_branch_is_accepted() {
   local repo wt
   repo="$TMP_ROOT/local-repo"
@@ -427,6 +476,8 @@ EOF
 test_scout_done_is_not_gated
 test_unpushed_ship_done_is_refused
 test_no_mistakes_prevalidation_done_is_not_gated
+test_validation_handoff_is_recognized_from_the_line_alone
+test_validation_handoff_is_not_gated_and_ready_report_still_is
 test_remote_containing_named_head_is_accepted
 test_moved_branch_without_named_head_is_refused
 test_free_text_sha_is_not_the_named_head
