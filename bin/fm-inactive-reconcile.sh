@@ -18,10 +18,11 @@
 # report pointer, without consulting fm-crew-state.sh. A ship `done:` is
 # published only when bin/fm-dod-lib.sh accepts the named head, so an
 # unpushed copy is not reported upstream as ready. The cadence path uses
-# fm-crew-state.sh, which applies the same gate: a no-mistakes
-# pre-validation `done: {summary}` still reads done (the pipeline handoff),
-# while a CI-ready or direct-PR/local-only done whose head lives only in the
-# disposable copy reads blocked and is not a terminal inactive outcome.
+# fm-crew-state.sh, which applies the same gate: a CI-ready or
+# direct-PR/local-only done whose head lives only in the disposable copy reads
+# blocked and is not a terminal inactive outcome. A no-mistakes validation
+# handoff (bin/fm-dod-lib.sh owns its wording) is never published: it asks this
+# home to start the validation run and is not an outcome for the parent.
 # Neither path refreshes remote-tracking refs before that gate: it runs under
 # the child's meta lock inside a scan budget of at most 30 seconds, which a
 # fetch bounded at 30 seconds per remote does not fit. The home's own
@@ -545,6 +546,8 @@ report_child_ledger_locked() { # <id> <meta>
   pr=$(pr_for_task "$meta" "$last" "$status")
   incarnation=$(meta_incarnation "$meta")
   fingerprint=$(sha256_text "$incarnation|$id|$state|ledger|$last")
+  ! fm_dod_ship_done_is_validation_handoff "$(meta_field "$meta" kind)" "$(meta_field "$meta" mode)" "$last" \
+    || return 0
   if [ "$state" = "done" ] && [ ! -f "$(record_path "$fingerprint" reported)" ] \
     && [ ! -f "$(record_path "$fingerprint" pending)" ] \
     && ! fm_dod_accept_ship_done "$(meta_field "$meta" kind)" "$(meta_field "$meta" mode)" \
