@@ -1,0 +1,8 @@
+== fresh start, free lock (fix)
+pi pid=831608 lock-file=absent watch=831608 turnend=831608
+== base commit: live session, nested pi --help, then fm-session-start
+pi pid=840401
+lock=840401 watch=859150 turnend=859150
+lock acquired: harness pid 840401
+PI_WATCH_EXTENSION: not loaded - approve Pi project trust once per clone, then restart plain pi so /tmp/fm-base.fABMi4/.pi/extensions/fm-primary-turnend-guard.ts and /tmp/fm-base.fABMi4/.pi/extensions/fm-primary-pi-watch.ts auto-load for turn-end guard and background wake coverage; use -e /tmp/fm-base.fABMi4/.pi/extensions/fm-primary-turnend-guard.ts -e /tmp/fm-base.fABMi4/.pi/extensions/fm-primary-pi-watch.ts only if project hooks are not trusted
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: pi

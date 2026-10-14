@@ -1,0 +1,15 @@
+== after session start (base)
+lock: 706160 alive=yes
+pi-watch marker pid=706160 alive=yes line3=generation=1 phase=active
+pi-turnend marker pid=706160 alive=yes line3=
+session-start reader: loaded (no alarm)
+== after nested 'pi --approve --offline --help' (base)
+lock: 706160 alive=yes
+pi-watch marker pid=711755 alive=no line3=generation=1 phase=active
+pi-turnend marker pid=711755 alive=no line3=
+session-start reader: PI_WATCH_EXTENSION: not loaded
+== after nested 'pi --approve --offline --list-models zzzz' (base)
+lock: 706160 alive=yes
+pi-watch marker pid=723820 alive=no line3=generation=1 phase=active
+pi-turnend marker pid=723820 alive=no line3=
+session-start reader: PI_WATCH_EXTENSION: not loaded

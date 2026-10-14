@@ -1,0 +1,9 @@
+old pid 738783 alive=no
+before relaunch: lock=738783 watch=738783 turnend=738783
+relaunched pi pid=799729 (lock still on dead 738783)
+after relaunch: watch=799729 turnend=799729
+-- nested probe after relaunch, then fm-session-start inside the new session
+lock=799729 watch=799729 turnend=799729
+lock acquired: harness pid 799729
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: pi
+PI_WATCH_EXTENSION lines: 0

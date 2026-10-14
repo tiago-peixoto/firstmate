@@ -1,0 +1,50 @@
+[Context]
+  ~/.pi/agent/AGENTS.md, ~/AGENTS.md, AGENTS.md
+
+[Skills]
+  afk, agent-skill-trigger-index, ahoy, ask-user-authority, away-quiet-supervision, bearings, bootstrap-diagnostics, captain-hold-lifecycle, decision-hold-lifecycle, diagnostic-reasoning,
+firstmate-codexapp, firstmate-coding-guidelines, firstmate-orca, firstmate-self-repo, fmx-respond, harness-adapters, no-mistakes, operational-home-layout, process-event-sources, project-management,
+quiet, quota-array-dispatch, scout-completion, secondmate-provisioning, session-start-recovery, ship-landing, stow, stuck-crewmate-recovery, updatefirstmate, validation-supervision
+
+[Extensions]
+  fm-branch-supervision.ts, fm-calm.ts, fm-primary-pi-watch.ts, fm-primary-turnend-guard.ts, pi-codex-accounts:src
+
+
+ Warning: tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ $ pi --approve --offline --help > /dev/null 2>&1; echo probe-done
+
+ probe-done
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+ ⁣FIRSTMATE_OP: v1 watcher: FIRSTMATE WATCHER WAKE: watcher: FAILED - Pi extension could not restore watcher continuity after 5 retries
+ watcher: FAILED - refusing to arm from a disposable validation checkout: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4XHNAMWM84RTZHYT1S404VB/bin
+
+ Run bin/fm-wake-drain.sh first and handle the queued wake. Watcher continuity is extension-owned.
+
+
+ Checking the working directory
+
+
+ $ bin/fm-wake-drain.sh (timeout 30s)
+
+ WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 708180.1791993079.q1wWY4
+
+ Took 1.0s
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ $ pi --approve --offline --list-models zzzz > /dev/null 2>&1; echo probe-done
+
+ probe-done
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+── ⠇ Working ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/.no-mistakes/worktrees/5284051b2355/01M4XHNAMWM84RTZHYT1S404VB (detached)
+↑20k ↓85 $0.041 (sub) 7.4%/272k (auto)                                                                                                                                 (openai-codex) gpt-6-sol • medium

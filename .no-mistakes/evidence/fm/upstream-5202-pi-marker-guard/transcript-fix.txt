@@ -1,0 +1,15 @@
+== after session start (fix)
+lock: 738783 alive=yes
+pi-watch marker pid=738783 alive=yes line3=generation=1 phase=active
+pi-turnend marker pid=738783 alive=yes line3=
+session-start reader: loaded (no alarm)
+== after nested 'pi --approve --offline --help' (fix)
+lock: 738783 alive=yes
+pi-watch marker pid=738783 alive=yes line3=generation=1 phase=active
+pi-turnend marker pid=738783 alive=yes line3=
+session-start reader: loaded (no alarm)
+== after nested 'pi --approve --offline --list-models zzzz' (fix)
+lock: 738783 alive=yes
+pi-watch marker pid=738783 alive=yes line3=generation=1 phase=active
+pi-turnend marker pid=738783 alive=yes line3=
+session-start reader: loaded (no alarm)
