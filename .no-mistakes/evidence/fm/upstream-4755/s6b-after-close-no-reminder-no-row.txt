@@ -1,0 +1,18 @@
+--- after operator close: later session runs bin/fm-session-start.sh (LOCK + WAKE QUEUE sections)
+lock acquired: harness pid 3882723
+WAKE QUEUE
+--------------------------------------------------------------------------------
+UNREAD STATUS (new since last drain, not re-printed after this presentation):
+mate resolved [key=pending-reply-d0ad0a49bb7b399c] [at=1792017068]: pending-reply-resolved: task=mate pending-reply-id=d0ad0a49bb7b399c via=operator-resolve-key ack, handled out of band
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+--- record
+phase=escalated
+surfaced_session=3882723:0d866474-10f9-42a7-8e0d-587fdcbd427d
+escalation_dismissed_epoch=1792017082
+--- a further session token: FM_PENDING_REPLY_SESSION=yet-another bin/fm-pending-reply-remind.sh state
+rc=0
+queue: []
+--- bearings decisions_open
+decisions_open: []
+landed: []

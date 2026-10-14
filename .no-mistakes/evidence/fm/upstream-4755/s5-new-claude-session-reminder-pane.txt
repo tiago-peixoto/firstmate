@@ -1,0 +1,24 @@
+ ▐▛███▛█   Claude Code v2.1.300
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M4Y8ARR0YM9PR9S801Y3EJS7
+❯ Run exactly this one shell command and show me its WAKE QUEUE section, nothing else: bin/fm-session-start.sh
+● Bash(bin/fm-session-start.sh)
+  ⎿  ================================================================================
+     SESSION START - /tmp/fm-lab.4wudR2
+     ================================================================================
+     … +161 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Captain, here is the WAKE QUEUE section from bin/fm-session-start.sh:
+  WAKE QUEUE
+  --------------------------------------------------------------------------------
+  1792017028      2       check   pending-reply-escalated pending-reply-escalated: task=mate pending-reply-id=d0ad0a49bb7b399c request=finish the report;
+  WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 4126567.1792017028.snKEig
+  OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  mate [key=pending-reply-d0ad0a49bb7b399c] blocked: pending-reply-missed: task=mate pending-reply-id=d0ad0a49bb7b399c request=finish the report
+  OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  I ran only that one command, as you asked. I did not handle the notification, answer the open decision, or run the acknowledgement command it printed.
+✻ Churned for 17s · done 12:30 AM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents

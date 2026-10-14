@@ -1,0 +1,11 @@
+$ rm config/pending-reply-resurface; FM_PENDING_REPLY_SESSION=another-session bin/fm-pending-reply-remind.sh state
+rc=0
+wake queue:
+(end queue)
+$ bin/fm-pending-reply-remind.sh --decisions state
+[]
+$ bin/fm-bearings-snapshot.sh | grep decisions_open -A2
+decisions_open: []
+landed: []
+gates: []
+surfaced_session=3882723:0d866474-10f9-42a7-8e0d-587fdcbd427d

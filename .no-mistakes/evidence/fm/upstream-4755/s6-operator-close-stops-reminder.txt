@@ -1,0 +1,24 @@
+$ bin/fm-send.sh mate --resolve-key pending-reply-d0ad0a49bb7b399c "ack, handled out of band"
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.4wudR2
+error: target 'mate' is not resolvable (tried meta=/tmp/fm-lab.4wudR2/state/mate.meta; metadata window/terminal lookup; backend=none). Use fm-mate for a recorded task/lane, or pass a well-formed explicit backend target such as session:window.
+rc=1
+--- mate.status
+blocked [key=pending-reply-d0ad0a49bb7b399c] [at=1792016821]: pending-reply-missed: task=mate pending-reply-id=d0ad0a49bb7b399c request=finish the report
+--- new session: bin/fm-session-start.sh (WAKE QUEUE section)
+lock acquired: harness pid 3882723
+
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1792017051	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=d0ad0a49bb7b399c request=finish the report;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 3 --recovery-generation 4152371.1792017051.Yvnst0
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-d0ad0a49bb7b399c] blocked: pending-reply-missed: task=mate pending-reply-id=d0ad0a49bb7b399c request=finish the report
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+================================================================================
+--- record
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=3882723:0d866474-10f9-42a7-8e0d-587fdcbd427d
+--- bearings decisions_open
+decisions_open[1]{id,key,verb,summary,owner}:
+  mate,pending-reply-d0ad0a49bb7b399c,blocked,"pending-reply escalated: task=mate pending-reply-id=d0ad0a49bb7b399c request=finish the report",(main)
