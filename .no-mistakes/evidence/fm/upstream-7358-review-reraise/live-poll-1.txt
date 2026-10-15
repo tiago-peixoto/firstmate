@@ -1,0 +1,19 @@
+$ fm-contributions.sh poll   # real gh, real clock, cli/cli#12942 under a captain hold
+contribution-wake: check: contributions delivery 4fcc870a6aa24fa34805990eba2b38e2cbf2a21d46d172a50785e9cdf7958fee
+contribution-wake: check: contributions delivery 944e8e5b9913a409c983047ffaa20313d8ff3d8bc57163a4ff0c03556107af22
+contribution-wake: check: contributions delivery 676a26203246885520b3183167d955bca79f60a462316128ff90d22e89e11ca0
+contribution-wake: check: contributions delivery dbb6234c2858f4bb087afc346307b43094a1df91027740d3deec53f032fcdf28
+contribution-wake: check: contributions delivery 2dfe159bbd3ca0ad4df971ab64c7a81273318228428787d045f6715a3d186b5f
+contribution-wake: check: contributions delivery ed6998e437899c8892da3ef3fdc6d4bbd2e09751539f5231c662fe77ffa6b5da
+contribution-wake: check: contributions delivery 4a3f3683d40fc7ce67b2887a636c8683cc1093730c5a732b45d2fd11b8e27822
+exit=0
+$ fm-contributions.sh pending
+{"type":"comment","source":"https://github.com/cli/cli/pull/12942#issuecomment-4128639868","author":"BagToad","token":"comment:4128639868:2026-03-25T18:01:25Z:"}
+{"type":"comment","source":"https://github.com/cli/cli/pull/12942#issuecomment-4869911555","author":"BagToad","token":"comment:4869911555:2026-07-02T19:51:20Z:"}
+{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183714605","author":"BagToad","token":"review-comment:3183714605:2026-05-04T19:17:51Z:"}
+{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183836351","author":"BagToad","token":"review-comment:3183836351:2026-05-04T19:17:51Z:"}
+{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183896709","author":"BagToad","token":"review-comment:3183896709:2026-05-04T19:17:51Z:"}
+{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183909947","author":"BagToad","token":"review-comment:3183909947:2026-05-04T19:17:51Z:"}
+{"type":"review","source":"https://github.com/cli/cli/pull/12942#pullrequestreview-4222580349","author":"BagToad","token":"review:4222580349:2026-05-04T19:17:51Z:COMMENTED"}
+$ jq .records[0].threads data/delivery/contributions.json
+{"error":null,"state":"open","threads":[{"key":"review-comment:3183714605","type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183714605","author":"BagToad","at":"2026-05-04T18:43:50Z","raised":"2026-10-15T19:21:44Z"},{"key":"review-comment:3183836351","type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183836351","author":"BagToad","at":"2026-05-04T19:04:54Z","raised":"2026-10-15T19:21:44Z"}]}

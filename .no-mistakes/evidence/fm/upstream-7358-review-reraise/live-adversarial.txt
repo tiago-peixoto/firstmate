@@ -1,0 +1,5 @@
+## unacknowledged re-raise, poll again at 2026-10-17T21:30:00Z: expect no duplicate wake
+exit=0 pending=2
+## FM_CONTRIBUTIONS_REPLY_AGE=0 is refused:
+fm-contributions: invalid reply age
+exit=1

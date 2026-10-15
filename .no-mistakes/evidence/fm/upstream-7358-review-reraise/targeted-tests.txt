@@ -1,0 +1,10 @@
+ok - an acknowledged unanswered thread under a hold is raised again after a day, daily, until the author replies
+ok - a resolved thread with no reply counts as answered
+ok - only inline threads and reviews requesting changes with text, no author reply, resolution or later verdict are tracked as unanswered
+ok - the reply age is a validated seconds setting
+ok - a closed pull request stops raising its threads
+ok - new maintainer comment wakes once and stays pending until acknowledged
+ok - new maintainer review wakes once and stays pending until acknowledged
+ok - new maintainer inline wakes once and stays pending until acknowledged
+ok - watcher surfaces one newly durable contribution signal without re-ringing it
+ok - a merged or closed contribution settles once, is not re-read, and never wakes again

@@ -1,0 +1,35 @@
+## ack every pending signal (supervisor acknowledges while the delivery is on a captain hold)
+acked comment:4128639868:2026-03-25T18:01:25Z:
+acked comment:4869911555:2026-07-02T19:51:20Z:
+acked review-comment:3183714605:2026-05-04T19:17:51Z:
+acked review-comment:3183836351:2026-05-04T19:17:51Z:
+acked review-comment:3183896709:2026-05-04T19:17:51Z:
+acked review-comment:3183909947:2026-05-04T19:17:51Z:
+acked review:4222580349:2026-05-04T19:17:51Z:COMMENTED
+
+## poll at +19h (2026-10-16T14:21:44Z): expect silence
+exit=0 pending=0
+
+## poll at +25h (2026-10-16T20:21:44Z): expect one unanswered wake per open thread naming URL and age
+contribution-wake: check: contributions delivery d6d242c6041b573546e11ec2360c4c3305001db2f9537376b397bce8d10c8d3a unanswered https://github.com/cli/cli/pull/12942#discussion_r3183714605 3961h
+contribution-wake: check: contributions delivery 896865ec32507a01f6c9ba20cee776e34576d450d4efbab6358b8b8c002c62dd unanswered https://github.com/cli/cli/pull/12942#discussion_r3183836351 3961h
+exit=0
+## pending:
+{"type":"unanswered","source":"https://github.com/cli/cli/pull/12942#discussion_r3183714605","age":"3961h","author":"BagToad"}
+{"type":"unanswered","source":"https://github.com/cli/cli/pull/12942#discussion_r3183836351","age":"3961h","author":"BagToad"}
+## durable wake queue tail:
+1792092127	8	check	contribution-d6d242c6041b573546e11ec2360c4c3305001db2f9537376b397bce8d10c8d3a	check: contributions delivery d6d242c6041b573546e11ec2360c4c3305001db2f9537376b397bce8d10c8d3a unanswered https://github.com/cli/cli/pull/12942#discussion_r3183714605 3961h
+1792092127	9	check	contribution-896865ec32507a01f6c9ba20cee776e34576d450d4efbab6358b8b8c002c62dd	check: contributions delivery 896865ec32507a01f6c9ba20cee776e34576d450d4efbab6358b8b8c002c62dd unanswered https://github.com/cli/cli/pull/12942#discussion_r3183836351 3961h
+
+## ack the re-raises, then poll at +26h: expect silence
+acked unanswered:review-comment:3183714605:2026-10-16T20:21:44Z
+acked unanswered:review-comment:3183836351:2026-10-16T20:21:44Z
+exit=0
+
+## poll at +49h (2026-10-17T20:21:44Z): expect raised again
+contribution-wake: check: contributions delivery 774737935915e91dbc985bc69b18169573f1086422ec686f56473843c6076779 unanswered https://github.com/cli/cli/pull/12942#discussion_r3183714605 3985h
+contribution-wake: check: contributions delivery 4c41867dbe6f9afc91e1552ee5f7956d79b81a19825cdf8ba7ff938d602b58b5 unanswered https://github.com/cli/cli/pull/12942#discussion_r3183836351 3985h
+exit=0
+## notified unanswered tokens kept: 2
+## backlog row still held:
+- [ ] delivery - Contribution delivery https://github.com/cli/cli/pull/12942 (repo: sample) (kind: ship) (hold: wait for the scope decision) (hold-kind: captain)
