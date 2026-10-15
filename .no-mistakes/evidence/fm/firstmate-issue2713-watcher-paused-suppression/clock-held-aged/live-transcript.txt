@@ -1,0 +1,7 @@
+=== scenario: never-settling (clock) pane, status age 500s, line 'captain-held [key=route]: awaiting the captain on the routing call', liveness=unknown ===
+  pane sample 1: 16:50:02.530088762
+  pane sample 2: 16:50:03.347063130
+[inside cadence (FM_PAUSE_RESURFACE_SECS=999)] watcher stayed running 10s (no wake)
+[declaration has stood the cadence (FM_PAUSE_RESURFACE_SECS=240)] watcher exited with wake: stale: fmlab:ticking (captain-held 514s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold) 
+[pane keeps ticking right after recheck] watcher stayed running 10s (no wake)
+  wake-queue stale entries:

@@ -1,0 +1,8 @@
+=== scenario: ordinary crew, paused: declaration, agent liveness=alive (pane cmd: grok), crew-state: state: paused · source: status-log · waiting on the upstream tool release ===
+[first sight] watcher exited with wake: stale: fmlab:parked 
+  markers: .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked 
+[later sight inside cadence] watcher stayed running 10s (no wake)
+  (backdated .paused-resurfaced-fmlab_parked by 120s, cadence FM_PAUSE_RESURFACE_SECS=60)
+[sight after cadence elapsed] watcher exited with wake: stale: fmlab:parked (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds) 
+[next sight inside new cadence] watcher stayed running 10s (no wake)
+  wake-queue stale entries:

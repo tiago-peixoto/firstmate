@@ -1,0 +1,5 @@
+=== scenario: never-settling (clock) pane, status age 30s, line 'paused: waiting on the validation run to finish', liveness=unknown ===
+  pane sample 1: 16:50:02.551470520
+  pane sample 2: 16:50:03.371173754
+[inside cadence (FM_PAUSE_RESURFACE_SECS=999)] watcher stayed running 10s (no wake)
+  wake-queue stale entries:

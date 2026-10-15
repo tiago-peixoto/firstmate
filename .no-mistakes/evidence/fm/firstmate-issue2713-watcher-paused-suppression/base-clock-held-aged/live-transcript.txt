@@ -1,0 +1,7 @@
+=== scenario: never-settling (clock) pane, status age 500s, line 'captain-held [key=route]: awaiting the captain on the routing call', liveness=unknown ===
+  pane sample 1: 16:50:55.014497588
+  pane sample 2: 16:50:55.828184213
+[inside cadence (FM_PAUSE_RESURFACE_SECS=999)] watcher stayed running 10s (no wake)
+[declaration has stood the cadence (FM_PAUSE_RESURFACE_SECS=240)] watcher stayed running 20s (no wake)
+[pane keeps ticking right after recheck] watcher stayed running 10s (no wake)
+  wake-queue stale entries:
