@@ -9,6 +9,7 @@ ok - an unreadable superseded mandate stays required until its record validates
 ok - the retained contract epoch requires its final archive on every check
 ok - the return brief renders health, the words with the session account, waiting, could-not-fix, handled, and cost from durable records, and the gate shrinks to what the away session could not fix
 ok - the return brief lists landed work whose worker is still up, from the durable merge marker only, without gating on it and never offering a secondmate for teardown
+ok - the return brief lists a failed lane while a standing hold mirror is the last status line
 ok - the return brief points at the drain for branch outcomes on a host home and leaves the read cursor to it, and a Pi home's brief is unchanged
 ok - the all-silent return keeps the outcome stored without promising a drain presentation
 ok - a drain that cannot record its branch-outcome presentation keeps the return's catch-up gated until a check records it
@@ -31,4 +32,3 @@ ok - a later failed probe does not change the trip-row error count
 ok - the return brief excludes prior-session latch rows
 ok - the return brief retains in-window trips and failed turns across a main restart
 ok - a return with only the legacy away flag still renders the brief and measures the window from the flag
-exit=0

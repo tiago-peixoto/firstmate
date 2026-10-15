@@ -18,6 +18,7 @@ ok - overridden resolve and durable-transfer verbs still close keys behind unrel
 ok - per-key filtering retains ship/scout terminals, reopenings, and secondmate blockers
 ok - prose without a colon cannot impersonate a ship or scout terminal declaration
 ok - a stated default retraction closes its decision and leaves an unrelated keyless wait standing
+ok - a decision answered before a hold stays answered under the standing mirror
 ok - a declared wait outlives answers for other keys beyond the event window, and its own resolved line retracts it
 ok - a settled hold mirror does not hide a standing pause under another key's resolved line
 ok - a standing hold mirror stays the declared wait under an unrelated answer, a buried transfer does not
@@ -27,3 +28,4 @@ ok - a worker event after a standing hold mirror replaces it as the declared wai
 ok - a worker done stays current under a standing mirror, and a later hold survives an earlier settled transfer
 ok - a held paused lane stays paused when an unrelated answer lands on the mirror
 ok - only a colon-bearing or keyed line is a decision transition in the fold
+ok - a recorded line stays recorded across a later resolve

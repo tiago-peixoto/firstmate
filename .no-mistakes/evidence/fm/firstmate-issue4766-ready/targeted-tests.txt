@@ -1,0 +1,5 @@
+fm-classify-decision-key rc=0
+fm-inactive-reconcile rc=0
+fm-afk-return rc=0
+fm-crew-state rc=0
+fm-captain-hold-lifecycle rc=0

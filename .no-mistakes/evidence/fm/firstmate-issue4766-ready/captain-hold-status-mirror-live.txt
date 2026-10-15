@@ -1,0 +1,82 @@
+=== S1: hold a paused lane with a multi-line reason, repeat it, release it
+hold rc=0
+repeat hold rc=0
+--- state/t1.status:
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on upstream release
+captain-held [key=captain-hold-t1-1] [at=1792077862]: Pick the API shape blocked: on vendor reply
+--- readers on t1.status:
+last_status_line:        captain-held [key=captain-hold-t1-1] [at=1792077862]: Pick the API shape blocked: on vendor reply
+last_worker_status_line: paused: waiting on upstream release
+status_current_line:     needs-decision [key=api-shape]: which API shape
+open decisions:          api-shape needs-decision which API shape
+--- fm-crew-state t1:
+state: unknown · source: none · worktree gone (torn down?)
+release rc=0
+--- state/t1.status:
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on upstream release
+captain-held [key=captain-hold-t1-1] [at=1792077862]: Pick the API shape blocked: on vendor reply
+resolved [key=captain-hold-t1-1] [at=1792077865]: captain call released by fm-captain-hold
+--- readers on t1.status:
+last_status_line:        paused: waiting on upstream release
+last_worker_status_line: paused: waiting on upstream release
+status_current_line:     needs-decision [key=api-shape]: which API shape
+open decisions:          api-shape needs-decision which API shape
+replayed release rc=0 lines=5
+
+=== S2: failed lane held, then closed by answer; failure stays in worker view
+hold rc=0
+--- readers on t2.status:
+last_status_line:        captain-held [key=captain-hold-t2-1] [at=1792077868]: retry or drop?
+last_worker_status_line: failed: build broke
+status_current_line:     failed: build broke
+open decisions:          
+close rc=0
+working: start
+failed: build broke
+captain-held [key=captain-hold-t2-1] [at=1792077868]: retry or drop?
+resolved [key=captain-hold-t2-1] [at=1792077869]: captain call answered by fm-captain-hold
+--- readers on t2.status:
+last_status_line:        failed: build broke
+last_worker_status_line: failed: build broke
+status_current_line:     failed: build broke
+open decisions:          
+
+=== S3: answered decision stays closed under a standing mirror
+hold rc=0
+needs-decision [key=q]: pick
+resolved [key=q]: use a
+captain-held [key=captain-hold-t3-1] [at=1792077871]: review
+--- readers on t3.status:
+last_status_line:        captain-held [key=captain-hold-t3-1] [at=1792077871]: review
+last_worker_status_line: resolved [key=q]: use a
+status_current_line:     captain-held [key=captain-hold-t3-1] [at=1792077871]: review
+open decisions:          
+--- fm-crew-state t3:
+state: unknown · source: none · worktree gone (torn down?)
+
+=== S4: worker writes after the mirror; that line wins
+--- readers on t3.status:
+last_status_line:        done: PR ready
+last_worker_status_line: done: PR ready
+status_current_line:     done: PR ready
+open decisions:          
+
+=== S5: decision-only hold (no lane) creates no status log
+hold rc=0
+ls: cannot access 'state/t5.status': No such file or directory
+
+=== S6: lane with no status log yet gets a one-line declaration
+hold rc=0
+captain-held [key=captain-hold-t6-1] [at=1792077874]: approve scope
+--- readers on t6.status:
+last_status_line:        captain-held [key=captain-hold-t6-1] [at=1792077874]: approve scope
+last_worker_status_line: 
+status_current_line:     captain-held [key=captain-hold-t6-1] [at=1792077874]: approve scope
+open decisions:          
+--- diverged:
+diverged rc=0
+lab removed: yes
