@@ -1,0 +1,47 @@
+### scenario: late-declaration-listed-targets-not-answered
+### project .kimi-code/mcp.json: (absent)
+### fm-spawn.sh output
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YLx9wU
+warning: /tmp/fm-lab.YLx9wU/data/kimi-late-declaration-listed-targets-not-answered/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-late-declaration-listed-targets-not-answered
+notice: kimi-late-declaration-listed-targets-not-answered ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi's folder prompt lists project MCP targets, so Firstmate did not answer it and did not send the brief. That answer can start those targets without a consent decision that covers them. Remove the project servers from .kimi-code/mcp.json, or wait for a later consent design.; inspect window primary:fm-kimi-late-declaration-listed-targets-not-answered
+warning: leaving task kimi-late-declaration-listed-targets-not-answered's slot claim on /tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+EXIT=1
+### tmux windows
+primary:bash cmd=bash path=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM
+primary:fm-kimi-late-declaration-listed-targets-not-answered cmd=kimi-code path=/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo
+### visible pane primary:0
+bash-5.3$ FM_SPAWN_NO_GUARD=1 bin/fm-spawn.sh kimi-late-declaration-listed-targets-not-answered /tmp/fm-lab.YLx9wU/projects/demo --harness kimi --mode local-onl
+y --yolo off > /tmp/fm-lab.YLx9wU/spawn.out 2>&1; echo EXIT=$? >> /tmp/fm-lab.YLx9wU/spawn.out
+bash-5.3$
+### visible pane primary:1
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.YLx9wU/projects/demo$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo$ cd -- '/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo'
+firstmate@firstmate-hz:/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo$ export GOTMPDIR=/tmp/fm-kimi-late-declaration-listed-targets-not-answered/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo$ export FM_TASK_ID=kimi-late-declaration-listed-targets-not-answered
+firstmate@firstmate-hz:/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo$ . '/tmp/fm-kimi-late-declaration-listed-targets-not-answered+6abf83c6dfce8d936001f
+67023404fe4426b63ffcc00ed7cd26085fa0051839e/launch.s1792068253.3575739.25788.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  /tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo
+  Project-level MCP servers are disabled until you explicitly choose Trust. Trust starts the listed project MCP targets and remembers this folder.
+  Project MCP targets:
+    late-marker (stdio): command=/tmp/fm-lab.YLx9wU/projects/demo/repro-mcp-marker.sh
+   ❯ Trust this folder
+     Enable project MCP servers. Remembered for this folder.
+     Don't trust
+     Exit Kimi Code. Asked again next launch.
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+### kimi processes in lab
+3574645 /bin/bash -c source /home/firstmate/.claude/shell-snapshots/snapshot-bash-1792067734536-90hout.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'cd /tmp/fm-kimi-driver && python3 - <<'"'"'PY'"'"' p='"'"'drive.sh'"'"'; s=open(p).read() old='"'"'chmod +x "$LAB/home/.kimi-code/bin/kimi"\n'"'"' new=old+'"'"''"'"''"'"'if [ -n "${FM_DRIVE_LATE_MCP:-}" ]; then   printf '"'"'#!/bin/sh\\nmkdir -p .kimi-code\\nprintf "%%s\\\\n" "{\\\\"mcpServers\\\\":{\\\\"late-marker\\\\":{\\\\"command\\\\":\\\\"%s\\\\"}}}" > .kimi-code/mcp.json\\nexec /home/firstmate/.local/share/mise/installs/node/22.23.1/bin/node %s "$@"\\n'"'"' "$LAB/projects/demo/repro-mcp-marker.sh" "$K2/node_modules/@moonshot-ai/kimi-code/dist/main.mjs" > "$LAB/home/.kimi-code/bin/kimi" fi '"'"''"'"''"'"' s=s.replace(old,new); open(p,'"'"'w'"'"').write(s) PY FM_DRIVE_LATE_MCP=1 FM_DRIVE_SETTLE=4 ./drive.sh late-declaration-listed-targets-not-answered NONE | sed -n '"'"'/fm-spawn.sh output/,/tmux windows/p;/visible pane primary:1/,$p'"'"' | grep -v "^firstmate@\|^treehouse\|🌳"' && pwd -P >| /tmp/claude-e05e-cwd
+3574685 /bin/bash -c source /home/firstmate/.claude/shell-snapshots/snapshot-bash-1792067734536-90hout.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'cd /tmp/fm-kimi-driver && python3 - <<'"'"'PY'"'"' p='"'"'drive.sh'"'"'; s=open(p).read() old='"'"'chmod +x "$LAB/home/.kimi-code/bin/kimi"\n'"'"' new=old+'"'"''"'"''"'"'if [ -n "${FM_DRIVE_LATE_MCP:-}" ]; then   printf '"'"'#!/bin/sh\\nmkdir -p .kimi-code\\nprintf "%%s\\\\n" "{\\\\"mcpServers\\\\":{\\\\"late-marker\\\\":{\\\\"command\\\\":\\\\"%s\\\\"}}}" > .kimi-code/mcp.json\\nexec /home/firstmate/.local/share/mise/installs/node/22.23.1/bin/node %s "$@"\\n'"'"' "$LAB/projects/demo/repro-mcp-marker.sh" "$K2/node_modules/@moonshot-ai/kimi-code/dist/main.mjs" > "$LAB/home/.kimi-code/bin/kimi" fi '"'"''"'"''"'"' s=s.replace(old,new); open(p,'"'"'w'"'"').write(s) PY FM_DRIVE_LATE_MCP=1 FM_DRIVE_SETTLE=4 ./drive.sh late-declaration-listed-targets-not-answered NONE | sed -n '"'"'/fm-spawn.sh output/,/tmux windows/p;/visible pane primary:1/,$p'"'"' | grep -v "^firstmate@\|^treehouse\|🌳"' && pwd -P >| /tmp/claude-e05e-cwd
+3574794 tmux -f /dev/null -L fm-lab new-session -d -s primary -x 160 -y 50 -c /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM -e FM_HOME=/tmp/fm-lab.YLx9wU -e HOME=/tmp/fm-lab.YLx9wU/home -e KIMI_CODE_HOME=/tmp/fm-lab.YLx9wU/home/.kimi-code -e TREEHOUSE_ROOT=/tmp/fm-lab.YLx9wU/pool -e PATH=/usr/bin:/bin:/home/firstmate/.local/bin -e TERM=xterm-256color env PATH=/usr/bin:/bin:/home/firstmate/.local/bin bash --norc
+3582487 kimi-code
+### project MCP marker log: (absent - no project MCP command started)
+### Kimi workspaces.json (folder trust records)
+{"version":1,"workspaces":{"wd_demo_2fd13aec8404":{"root":"/tmp/fm-lab.YLx9wU/pool/.treehouse/demo-29c17d/1/demo","name":"demo","created_at":"2026-10-15T12:44:16.465Z","last_opened_at":"2026-10-15T12:44:16.465Z"}},"deleted_workspace_ids":[]}

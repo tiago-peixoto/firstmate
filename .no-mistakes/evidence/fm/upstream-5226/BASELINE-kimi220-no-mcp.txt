@@ -1,0 +1,42 @@
+### scenario: BASELINE-kimi220-no-mcp
+### project .kimi-code/mcp.json: (absent)
+### fm-spawn.sh output
+warning: /tmp/fm-lab.W3Thnh/data/kimi-BASELINE-kimi220-no-mcp/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-BASELINE-kimi220-no-mcp
+notice: kimi-BASELINE-kimi220-no-mcp ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready; inspect window primary:fm-kimi-BASELINE-kimi220-no-mcp
+warning: leaving task kimi-BASELINE-kimi220-no-mcp's slot claim on /tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+EXIT=1
+### tmux windows
+primary:bash cmd=bash path=/tmp/fm-base.ITDQtI
+primary:fm-kimi-BASELINE-kimi220-no-mcp cmd=kimi-code path=/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo
+### visible pane primary:0
+bash-5.3$ FM_SPAWN_NO_GUARD=1 bin/fm-spawn.sh kimi-BASELINE-kimi220-no-mcp /tmp/fm-lab.W3Thnh/projects/demo --harness kimi --mode local-only --yolo off > /tmp/f
+m-lab.W3Thnh/spawn.out 2>&1; echo EXIT=$? >> /tmp/fm-lab.W3Thnh/spawn.out
+bash-5.3$
+### visible pane primary:1
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.W3Thnh/projects/demo$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo$ cd -- '/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo'
+firstmate@firstmate-hz:/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo$ export GOTMPDIR=/tmp/fm-kimi-BASELINE-kimi220-no-mcp/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo$ export FM_TASK_ID=kimi-BASELINE-kimi220-no-mcp
+firstmate@firstmate-hz:/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo$ . '/tmp/fm-kimi-BASELINE-kimi220-no-mcp+34aa5e4d004b9b742798a210fc8eab024a6c584cdf
+7b4964113cc4888d776454/launch.s1792068412.3732801.1644.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  /tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo
+  No project integrations or instructions to activate.
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+### kimi processes in lab
+3731463 tmux -f /dev/null -L fm-lab new-session -d -s primary -x 160 -y 50 -c /tmp/fm-base.ITDQtI -e FM_HOME=/tmp/fm-lab.W3Thnh -e HOME=/tmp/fm-lab.W3Thnh/home -e KIMI_CODE_HOME=/tmp/fm-lab.W3Thnh/home/.kimi-code -e TREEHOUSE_ROOT=/tmp/fm-lab.W3Thnh/pool -e PATH=/usr/bin:/bin:/home/firstmate/.local/bin -e TERM=xterm-256color env PATH=/usr/bin:/bin:/home/firstmate/.local/bin bash --norc
+3736897 kimi-code
+### project MCP marker log: (absent - no project MCP command started)
+### Kimi workspaces.json (folder trust records)
+{"version":1,"workspaces":{"wd_demo_8b6e643ca218":{"root":"/tmp/fm-lab.W3Thnh/pool/.treehouse/demo-9e1f0d/1/demo","name":"demo","created_at":"2026-10-15T12:46:55.509Z","last_opened_at":"2026-10-15T12:46:55.509Z"}},"deleted_workspace_ids":[]}

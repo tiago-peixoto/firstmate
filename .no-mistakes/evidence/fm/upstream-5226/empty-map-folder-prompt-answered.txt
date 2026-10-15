@@ -1,0 +1,54 @@
+### scenario: empty-map-folder-prompt-answered
+### project .kimi-code/mcp.json: {"mcpServers":{}}
+### fm-spawn.sh output
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.lCEpGK
+warning: /tmp/fm-lab.lCEpGK/data/kimi-empty-map-folder-prompt-answered/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-empty-map-folder-prompt-answered
+notice: kimi-empty-map-folder-prompt-answered ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi brief pointer delivery was not confirmed; inspect window primary:fm-kimi-empty-map-folder-prompt-answered
+warning: leaving task kimi-empty-map-folder-prompt-answered's slot claim on /tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+EXIT=1
+### tmux windows
+primary:bash cmd=bash path=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM
+primary:fm-kimi-empty-map-folder-prompt-answered cmd=kimi-code path=/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo
+### visible pane primary:0
+bash-5.3$ FM_SPAWN_NO_GUARD=1 bin/fm-spawn.sh kimi-empty-map-folder-prompt-answered /tmp/fm-lab.lCEpGK/projects/demo --harness kimi --mode local-only --yolo off
+ > /tmp/fm-lab.lCEpGK/spawn.out 2>&1; echo EXIT=$? >> /tmp/fm-lab.lCEpGK/spawn.out
+bash-5.3$
+### visible pane primary:1
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.lCEpGK/projects/demo$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo$ cd -- '/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo'
+firstmate@firstmate-hz:/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo$ export GOTMPDIR=/tmp/fm-kimi-empty-map-folder-prompt-answered/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo$ export FM_TASK_ID=kimi-empty-map-folder-prompt-answered
+firstmate@firstmate-hz:/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo$ . '/tmp/fm-kimi-empty-map-folder-prompt-answered+6faec0be00b8b5924704ac4aabf4336b2
+2c3e420e9f778eb2c1d17b71bdf80bc/launch.s1792068155.3472819.11242.sh'
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Run /login or /provider to get started.                                                                                                          │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo                                                                                          │
+ │  Session:                                                                                                                                                  │
+ │  Model:     not set, run /login or /provider                                                                                                               │
+ │  Version:   2.1.1                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi Code Desktop is here — Everything you love about Kimi Code, now on desktop
+   Run /desktop or visit https://www.kimi.com/code to install
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+   Error: LLM not set, send "/login" to login
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  …/demo-b0acf4/1/demo                                                                             /goal for multi-step work with a clear finish line
+                                                                                                                                                    context: 0%
+### kimi processes in lab
+3472561 tmux -f /dev/null -L fm-lab new-session -d -s primary -x 160 -y 50 -c /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM -e FM_HOME=/tmp/fm-lab.lCEpGK -e HOME=/tmp/fm-lab.lCEpGK/home -e KIMI_CODE_HOME=/tmp/fm-lab.lCEpGK/home/.kimi-code -e TREEHOUSE_ROOT=/tmp/fm-lab.lCEpGK/pool -e PATH=/usr/bin:/bin:/home/firstmate/.local/bin -e TERM=xterm-256color env PATH=/usr/bin:/bin:/home/firstmate/.local/bin bash --norc
+3475272 kimi-code
+### project MCP marker log: (absent - no project MCP command started)
+### Kimi workspaces.json (folder trust records)
+{"version":1,"workspaces":{"wd_demo_049ede1e2c35":{"root":"/tmp/fm-lab.lCEpGK/pool/.treehouse/demo-b0acf4/1/demo","name":"demo","created_at":"2026-10-15T12:42:38.051Z","last_opened_at":"2026-10-15T12:42:38.519Z"}},"deleted_workspace_ids":[]}

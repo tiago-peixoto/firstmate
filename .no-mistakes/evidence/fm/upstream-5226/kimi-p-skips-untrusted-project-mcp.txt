@@ -1,0 +1,8 @@
+### real Kimi Code CLI 2.1.1: kimi -p in a directory whose .kimi-code/mcp.json declares repro-marker
+{"mcpServers":{"repro-marker":{"command":"/tmp/fm-kimi-real.nTvetC/marker.sh"}}}
+kimi version 2.1.1
+Warning: this folder is not trusted; skipped 1 project-level MCP server: repro-marker (stdio: /tmp/fm-kimi-real.nTvetC/marker.sh).
+  Run `kimi` here and choose "Trust this folder" to enable them.
+
+error: failed to run prompt: No model configured. Run `kimi` and use /login to sign in, then retry; or set default_model in config.toml.
+### marker log: (absent - repro-marker never started)

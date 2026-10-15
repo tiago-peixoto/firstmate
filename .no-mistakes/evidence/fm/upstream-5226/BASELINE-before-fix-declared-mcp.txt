@@ -1,0 +1,53 @@
+### scenario: BASELINE-before-fix-declared-mcp
+### project .kimi-code/mcp.json: {"mcpServers":{"repro-marker":{"command":"/tmp/fm-lab.4Q8db1/projects/demo/repro-mcp-marker.sh"}}}
+### fm-spawn.sh output
+warning: /tmp/fm-lab.4Q8db1/data/kimi-BASELINE-before-fix-declared-mcp/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-BASELINE-before-fix-declared-mcp
+notice: kimi-BASELINE-before-fix-declared-mcp ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi brief pointer delivery was not confirmed; inspect window primary:fm-kimi-BASELINE-before-fix-declared-mcp
+warning: leaving task kimi-BASELINE-before-fix-declared-mcp's slot claim on /tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+EXIT=1
+### tmux windows
+primary:bash cmd=bash path=/tmp/fm-base.ITDQtI
+primary:fm-kimi-BASELINE-before-fix-declared-mcp cmd=kimi-code path=/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo
+### visible pane primary:0
+bash-5.3$ FM_SPAWN_NO_GUARD=1 bin/fm-spawn.sh kimi-BASELINE-before-fix-declared-mcp /tmp/fm-lab.4Q8db1/projects/demo --harness kimi --mode local-only --yolo off
+ > /tmp/fm-lab.4Q8db1/spawn.out 2>&1; echo EXIT=$? >> /tmp/fm-lab.4Q8db1/spawn.out
+bash-5.3$
+### visible pane primary:1
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.4Q8db1/projects/demo$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo$ cd -- '/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo'
+firstmate@firstmate-hz:/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo$ export GOTMPDIR=/tmp/fm-kimi-BASELINE-before-fix-declared-mcp/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo$ export FM_TASK_ID=kimi-BASELINE-before-fix-declared-mcp
+firstmate@firstmate-hz:/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo$ . '/tmp/fm-kimi-BASELINE-before-fix-declared-mcp+a82d5132ab048a84ec07f68bc4a0dde5e
+07dd09223a7ced9d04909d599668218/launch.s1792068199.3501057.5901.sh'
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Run /login or /provider to get started.                                                                                                          │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo                                                                                          │
+ │  Session:                                                                                                                                                  │
+ │  Model:     not set, run /login or /provider                                                                                                               │
+ │  Version:   2.1.1                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi Code Desktop is here — Everything you love about Kimi Code, now on desktop
+   Run /desktop or visit https://www.kimi.com/code to install
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+   Error: LLM not set, send "/login" to login
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  …/demo-1bcf01/1/demo                            ctrl-o to hide or reveal tool output switching between a clean chat view and full execution details
+                                                                                                                                                    context: 0%
+### kimi processes in lab
+3500295 tmux -f /dev/null -L fm-lab new-session -d -s primary -x 160 -y 50 -c /tmp/fm-base.ITDQtI -e FM_HOME=/tmp/fm-lab.4Q8db1 -e HOME=/tmp/fm-lab.4Q8db1/home -e KIMI_CODE_HOME=/tmp/fm-lab.4Q8db1/home/.kimi-code -e TREEHOUSE_ROOT=/tmp/fm-lab.4Q8db1/pool -e PATH=/usr/bin:/bin:/home/firstmate/.local/bin -e TERM=xterm-256color env PATH=/usr/bin:/bin:/home/firstmate/.local/bin bash --norc
+3511419 kimi-code
+### project MCP marker log: started 
+### Kimi workspaces.json (folder trust records)
+{"version":1,"workspaces":{"wd_demo_0b5d887dcc37":{"root":"/tmp/fm-lab.4Q8db1/pool/.treehouse/demo-1bcf01/1/demo","name":"demo","created_at":"2026-10-15T12:43:22.882Z","last_opened_at":"2026-10-15T12:43:23.191Z"}},"deleted_workspace_ids":[]}

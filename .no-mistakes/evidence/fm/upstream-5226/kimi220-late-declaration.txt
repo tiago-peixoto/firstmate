@@ -1,0 +1,44 @@
+### scenario: kimi220-late-declaration
+### project .kimi-code/mcp.json: (absent)
+### fm-spawn.sh output
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.AH8a0n
+warning: /tmp/fm-lab.AH8a0n/data/kimi-kimi220-late-declaration/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-kimi220-late-declaration
+notice: kimi-kimi220-late-declaration ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready. No key was sent.; inspect window primary:fm-kimi-kimi220-late-declaration
+warning: leaving task kimi-kimi220-late-declaration's slot claim on /tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+EXIT=1
+### tmux windows
+primary:bash cmd=bash path=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM
+primary:fm-kimi-kimi220-late-declaration cmd=kimi-code path=/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo
+### visible pane primary:0
+bash-5.3$ FM_SPAWN_NO_GUARD=1 bin/fm-spawn.sh kimi-kimi220-late-declaration /tmp/fm-lab.AH8a0n/projects/demo --harness kimi --mode local-only --yolo off > /tmp/
+fm-lab.AH8a0n/spawn.out 2>&1; echo EXIT=$? >> /tmp/fm-lab.AH8a0n/spawn.out
+bash-5.3$
+### visible pane primary:1
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.AH8a0n/projects/demo$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo$ cd -- '/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo'
+firstmate@firstmate-hz:/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo$ export GOTMPDIR=/tmp/fm-kimi-kimi220-late-declaration/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo$ export FM_TASK_ID=kimi-kimi220-late-declaration
+firstmate@firstmate-hz:/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo$ . '/tmp/fm-kimi-kimi220-late-declaration+482b3a610db0ba920a6e07088e5ebe1621b4f0b79
+84655fecf369c2ff93c3100/launch.s1792068368.3688650.8117.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  /tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo
+  Start 1 MCP server automatically
+    Config: .kimi-code/mcp.json
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+### kimi processes in lab
+3688315 tmux -f /dev/null -L fm-lab new-session -d -s primary -x 160 -y 50 -c /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM -e FM_HOME=/tmp/fm-lab.AH8a0n -e HOME=/tmp/fm-lab.AH8a0n/home -e KIMI_CODE_HOME=/tmp/fm-lab.AH8a0n/home/.kimi-code -e TREEHOUSE_ROOT=/tmp/fm-lab.AH8a0n/pool -e PATH=/usr/bin:/bin:/home/firstmate/.local/bin -e TERM=xterm-256color env PATH=/usr/bin:/bin:/home/firstmate/.local/bin bash --norc
+3690977 kimi-code
+### project MCP marker log: (absent - no project MCP command started)
+### Kimi workspaces.json (folder trust records)
+{"version":1,"workspaces":{"wd_demo_913e56e1cd1f":{"root":"/tmp/fm-lab.AH8a0n/pool/.treehouse/demo-6980f6/1/demo","name":"demo","created_at":"2026-10-15T12:46:11.451Z","last_opened_at":"2026-10-15T12:46:11.451Z"}},"deleted_workspace_ids":[]}

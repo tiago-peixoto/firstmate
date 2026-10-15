@@ -1,0 +1,31 @@
+### scenario: disabled-mcp-refused
+### project .kimi-code/mcp.json: {"mcpServers":{"repro-marker":{"command":"/tmp/fm-lab.jvMkb8/projects/demo/repro-mcp-marker.sh","enabled":false}}}
+### fm-spawn.sh output
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.jvMkb8
+warning: /tmp/fm-lab.jvMkb8/data/kimi-disabled-mcp-refused/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi-disabled-mcp-refused
+notice: kimi-disabled-mcp-refused ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.; inspect window primary:fm-kimi-disabled-mcp-refused
+warning: leaving task kimi-disabled-mcp-refused's slot claim on /tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+EXIT=1
+### tmux windows
+primary:bash cmd=bash path=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM
+primary:fm-kimi-disabled-mcp-refused cmd=bash path=/tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo
+### visible pane primary:0
+bash-5.3$ FM_SPAWN_NO_GUARD=1 bin/fm-spawn.sh kimi-disabled-mcp-refused /tmp/fm-lab.jvMkb8/projects/demo --harness kimi --mode local-only --yolo off > /tmp/fm-l
+ab.jvMkb8/spawn.out 2>&1; echo EXIT=$? >> /tmp/fm-lab.jvMkb8/spawn.out
+bash-5.3$
+### visible pane primary:1
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.jvMkb8/projects/demo$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo$ cd -- '/tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo'
+firstmate@firstmate-hz:/tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo$ export GOTMPDIR=/tmp/fm-kimi-disabled-mcp-refused/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo$ export FM_TASK_ID=kimi-disabled-mcp-refused
+firstmate@firstmate-hz:/tmp/fm-lab.jvMkb8/pool/.treehouse/demo-414b72/1/demo$
+### kimi processes in lab
+3446846 tmux -f /dev/null -L fm-lab new-session -d -s primary -x 160 -y 50 -c /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M4ZRV2XTNMKZXCK2AY5MGVZM -e FM_HOME=/tmp/fm-lab.jvMkb8 -e HOME=/tmp/fm-lab.jvMkb8/home -e KIMI_CODE_HOME=/tmp/fm-lab.jvMkb8/home/.kimi-code -e TREEHOUSE_ROOT=/tmp/fm-lab.jvMkb8/pool -e PATH=/usr/bin:/bin:/home/firstmate/.local/bin -e TERM=xterm-256color env PATH=/usr/bin:/bin:/home/firstmate/.local/bin bash --norc
+### project MCP marker log: (absent - no project MCP command started)
+### Kimi workspaces.json (folder trust records)
+(absent)
