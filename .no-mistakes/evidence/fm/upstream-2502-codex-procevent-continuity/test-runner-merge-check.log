@@ -1,0 +1,15 @@
+$ bin/fm-test-run.sh --check-coverage
+FM_TEST_COVERAGE ok total=258 parallel=24 parallel_max_ms=665545 parallel_imbalance_ms=2 parallel_unhinted=0 serial=218 serial_shards=9 serial_unhinted=12 serial_max_ms=1074843 serial_budget_ms=1200000 herdr=16
+exit=0
+$ bin/fm-test-run.sh --list --changed --base 9b1ada04 | grep -E "codex-idle|turnend-guard|commandcode"
+tests/fm-commandcode-harness.test.sh
+tests/fm-codex-idle-continuity-live-e2e.test.sh
+tests/fm-commandcode-signals-live-e2e.test.sh
+tests/fm-composer-codex-idle-live-e2e.test.sh
+tests/fm-codex-idle-continuity.test.sh
+tests/fm-turnend-guard.test.sh
+exit=0
+$ bin/fm-test-run.sh --list-scheduled --family live-harness-optin | grep -E "codex-idle|commandcode"
+tests/fm-codex-idle-continuity-live-e2e.test.sh
+tests/fm-composer-codex-idle-live-e2e.test.sh
+tests/fm-commandcode-signals-live-e2e.test.sh

@@ -1,0 +1,2 @@
+ok - codex-cli 0.160.1 Stop re-armed an ownerless source and queued its close into the idle thread
+exit=0
