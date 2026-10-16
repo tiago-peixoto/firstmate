@@ -147,6 +147,14 @@ else
 fi
 printf '%s\n' "$*" >> "${QUOTA_AXI_CALLS:?}"
 [ "${FAKE_QUOTA_FAIL:-0}" = 1 ] && exit 1
+if [ "${1:-}" = auth ]; then
+  if [ -n "${QUOTA_AUTH_FIXTURE:-}" ]; then
+    cat "$QUOTA_AUTH_FIXTURE"
+  else
+    printf '{"schemaVersion":2,"auth":[]}\n'
+  fi
+  exit 0
+fi
 [ "${1:-}" = --json ] || exit 2
 cat "${QUOTA_AXI_FIXTURE:?}"
 SH
@@ -873,7 +881,44 @@ assert_contains "$out" 'candidate: pi:openai-codex-work/gpt-5.6-terra  provider=
 assert_contains "$out" 'candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=0%  spendPriority=-  runway=exhausted_now  -> not eligible: runway exhausted_now at all_models' "the sibling lane reads its own exhausted row"
 assert_contains "$out" 'candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty' "native Codex never infers an account from a Pi lane"
 assert_contains "$out" "  profile: --harness 'pi' --model 'openai-codex-work/gpt-5.6-terra'" "the lane with headroom is chosen"
-assert_equals '--json' "$(cat "$LOG/quota-axi.calls")" "schema 6 needs one quota-axi --json read"
+assert_equals $'--json\nauth --json' "$(cat "$LOG/quota-axi.calls")" "schema 6 reads quota once and the Pi sign-in sources once"
+
+# The server groups the Pi sign-in with native Codex, unlike the Mac.
+SOURCE_AUTH="$TMP_ROOT/source-auth.json"
+SOURCE_QUOTA="$TMP_ROOT/source-quota.json"
+cat > "$SOURCE_AUTH" <<'JSON'
+{"schemaVersion":2,"auth":[{"provider":"codex","accountKey":"codex-home","sources":[
+  {"source":"auth-json","status":"available"},
+  {"source":"pi:openai-codex","status":"available"}
+]}]}
+JSON
+jq '.providers |= map(select(.accountKey == "openai-codex-work") |
+  .accountKey = "codex-home")' "$SCHEMA6" > "$SOURCE_QUOTA"
+reset_log
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$SOURCE_QUOTA" QUOTA_AUTH_FIXTURE="$SOURCE_AUTH" run code out err "$BRIEF"
+assert_contains "$out" 'candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=11%' "Pi uses the server account that records its sign-in"
+assert_contains "$out" 'candidate: pi:openai-codex-work/gpt-5.6-terra  provider=codex  -> eligible, unranked:' "Pi does not borrow another sign-in account"
+
+jq --slurpfile original "$SCHEMA6" '.providers += [$original[0].providers[] |
+  select(.accountKey == "openai-codex")]' "$SOURCE_QUOTA" > "$TMP_ROOT/source-priority.json"
+for harness in pi pi-signed; do
+  jq --arg h "$harness" '(.rules[].use[] | select(.harness == "pi")).harness = $h' "$LANE_RULES" > "$RULES"
+  reset_log
+  TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$TMP_ROOT/source-priority.json" QUOTA_AUTH_FIXTURE="$SOURCE_AUTH" run code out err "$BRIEF"
+  assert_contains "$out" "candidate: $harness:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=11%" "$harness source evidence takes priority over the account name"
+done
+cp "$LANE_RULES" "$RULES"
+
+jq '.auth += [(.auth[0] | .accountKey = "openai-codex")]' "$SOURCE_AUTH" > "$TMP_ROOT/ambiguous-auth.json"
+reset_log
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$TMP_ROOT/source-priority.json" QUOTA_AUTH_FIXTURE="$TMP_ROOT/ambiguous-auth.json" run code out err "$BRIEF"
+assert_contains "$out" 'candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=0%' "ambiguous source evidence falls back without picking an account by position"
+
+jq '.auth[].accountKey = "openai-codex"' "$SOURCE_AUTH" > "$TMP_ROOT/mac-auth.json"
+jq '.providers[].accountKey = "openai-codex"' "$SOURCE_QUOTA" > "$TMP_ROOT/mac-quota.json"
+reset_log
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$TMP_ROOT/mac-quota.json" QUOTA_AUTH_FIXTURE="$TMP_ROOT/mac-auth.json" run code out err "$BRIEF"
+assert_contains "$out" 'candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=11%' "Pi still matches the Mac account"
 
 SCHEMA6_NATIVE="$TMP_ROOT/schema6-native.json"
 jq '
