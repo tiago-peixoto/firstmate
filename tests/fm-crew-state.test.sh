@@ -1245,6 +1245,22 @@ test_ci_monitoring_no_checks_terminal_surfaces_done() {
   pass "terminal no-checks ci-monitor marker surfaces done"
 }
 
+# A repository declaring `no_ci: true` has no checks to wait on, so no-mistakes
+# logs a different green sentence and parks in the ci step until merge or close.
+test_ci_monitoring_no_ci_repo_surfaces_pr_ready() {
+  reset_fakes
+  local d; d=$(new_case ci-no-ci-repo)
+  make_repo_on_branch "$d/wt" fm/feat-cinoci
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-cinoci.meta" "window=fm:fm-feat-cinoci" "worktree=$d/wt" "kind=ship"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/feat-cinoci)"
+  FM_FAKE_CI_LOGS="repository declares no CI (no_ci: true) - treating as all checks passed - still monitoring until merged or closed"
+  local out; out=$(run_crew_state "$d" feat-cinoci)
+  assert_contains "$out" "state: done" "a no_ci repository parked in ci -> done"
+  assert_contains "$out" "checks green: PR ready for review" "a no_ci repository reads PR ready for review"
+  pass "no_ci repository ci marker surfaces PR ready for review"
+}
+
 # The monitor logs a checks state only when it changes, and a base-branch
 # advance re-arms only its idle timeout, so a green PR on a busy base ends its
 # ci log with re-arm lines (the 2026-09-22 PR #5317 shape: green, then main
@@ -5758,6 +5774,7 @@ test_ci_ready_done_log_beats_monitoring_run
 test_ci_monitoring_checks_green_surfaces_done
 test_top_level_ci_checks_green_surfaces_done
 test_ci_monitoring_no_checks_terminal_surfaces_done
+test_ci_monitoring_no_ci_repo_surfaces_pr_ready
 test_ci_monitoring_green_then_rearm_stays_green
 test_ci_monitoring_green_before_log_tail_stays_green
 test_ci_monitoring_no_checks_yet_stays_working
