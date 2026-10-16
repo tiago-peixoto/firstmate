@@ -1,0 +1,54 @@
+# fake curl stands in only for the typesafe.ai API (no TYPESAFE_API_KEY on this machine)
+# Mac runs use the real quota-axi 0.1.62 with the real sign-ins
+# Server-shaped runs pipe the same real output through jq: openai-codex row and Pi source moved under codex-home
+
+=== new script | Mac: real quota-axi ===
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 282   tokens: -/-
+  rule: rule_1 (Codex work.)   confidence: 0.9
+  probabilities: rule_1=0.97 default=0.03
+  note: rule matched
+  note: 1 eligible candidate(s) unranked (codex)
+  candidate: pi:openai-codex/gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2232  runway=through_reset  -> eligible
+  candidate: pi:openai-codex-work/gpt-5.5  provider=codex  scope=all_models  remaining=70%  spendPriority=-0.7812  runway=projected_exhaustion  -> eligible
+  candidate: codex:gpt-5.5  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+  profile: --harness 'pi' --model 'openai-codex/gpt-5.5'
+
+=== new script | Server-shaped quota-axi ===
+dispatch-resolve:
+  status: escalate
+  model: jev-1.13.0   latency_ms: 13   tokens: -/-
+  rule: rule_1 (Codex work.)   confidence: 0.9
+  probabilities: rule_1=0.97 default=0.03
+  reason: genuine spendPriority tie
+  note: rule matched
+  candidate: pi:openai-codex/gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2232  runway=through_reset  -> eligible
+  candidate: pi:openai-codex-work/gpt-5.5  provider=codex  scope=all_models  remaining=70%  spendPriority=-0.7812  runway=projected_exhaustion  -> eligible
+  candidate: codex:gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2232  runway=through_reset  -> eligible
+
+=== base script | Mac: real quota-axi ===
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 15   tokens: -/-
+  rule: rule_1 (Codex work.)   confidence: 0.9
+  probabilities: rule_1=0.97 default=0.03
+  note: rule matched
+  note: 1 eligible candidate(s) unranked (codex)
+  candidate: pi:openai-codex/gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2232  runway=through_reset  -> eligible
+  candidate: pi:openai-codex-work/gpt-5.5  provider=codex  scope=all_models  remaining=70%  spendPriority=-0.7812  runway=projected_exhaustion  -> eligible
+  candidate: codex:gpt-5.5  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+  profile: --harness 'pi' --model 'openai-codex/gpt-5.5'
+
+=== base script | Server-shaped quota-axi ===
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 18   tokens: -/-
+  rule: rule_1 (Codex work.)   confidence: 0.9
+  probabilities: rule_1=0.97 default=0.03
+  note: rule matched
+  note: 1 eligible candidate(s) unranked (codex)
+  candidate: pi:openai-codex/gpt-5.5  provider=codex  -> eligible, unranked: provider codex has no quota row for account openai-codex: disclosed uncertainty
+  candidate: pi:openai-codex-work/gpt-5.5  provider=codex  scope=all_models  remaining=70%  spendPriority=-0.7811  runway=projected_exhaustion  -> eligible
+  candidate: codex:gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2232  runway=through_reset  -> eligible
+  profile: --harness 'codex' --model 'gpt-5.5'

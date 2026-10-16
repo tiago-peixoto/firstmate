@@ -1,0 +1,17 @@
+=== server-shaped, pi-signed harness, real auth evidence relabeled ===
+  status: escalate
+  candidate: pi-signed:openai-codex/gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2233  runway=through_reset  -> eligible
+  candidate: codex:gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2233  runway=through_reset  -> eligible
+=== server-shaped, quota-axi auth exits 1 ===
+  status: clear
+  note: 1 eligible candidate(s) unranked (codex)
+  candidate: pi-signed:openai-codex/gpt-5.5  provider=codex  -> eligible, unranked: provider codex has no quota row for account openai-codex: disclosed uncertainty
+  candidate: codex:gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2233  runway=through_reset  -> eligible
+  profile: --harness 'codex' --model 'gpt-5.5'
+exit=
+=== server-shaped, Pi source present but status missing ===
+  status: clear
+  note: 1 eligible candidate(s) unranked (codex)
+  candidate: pi-signed:openai-codex/gpt-5.5  provider=codex  -> eligible, unranked: provider codex has no quota row for account openai-codex: disclosed uncertainty
+  candidate: codex:gpt-5.5  provider=codex  scope=all_models  remaining=100%  spendPriority=1.2233  runway=through_reset  -> eligible
+  profile: --harness 'codex' --model 'gpt-5.5'
