@@ -1943,7 +1943,8 @@ The resolver prints its preferred-family decision while retaining evidence for e
 If preferred candidates remain eligible but none is rankable, it escalates instead of selecting another family.
 It never introduces candidates outside the matched rule or its existing default fallback.
 
-The [shared quota library](../bin/fm-quota-axi-lib.sh) accepts schema 5 and schema 6 and implements the [account-matching contract](../.agents/skills/quota-array-dispatch/SKILL.md#1-eligibility).
+The [shared quota library](../bin/fm-quota-axi-lib.sh) accepts schema 5 and schema 6.
+The resolver supplements its account join with `quota-axi auth --json` for Pi Codex sign-ins under the [account-matching contract](../.agents/skills/quota-array-dispatch/SKILL.md#1-eligibility).
 
 - An expanded provider with no matching account row leaves the candidate eligible but unranked.
 - Known applicable rows from a provider with partial quota semantics remain rankable; rows whose own status is not known remain unrankable.
