@@ -24,7 +24,8 @@
 #   `approval` and `floor`, each profile's declared `provider` and `floor`, the
 #   quota rows from ONE quota-axi --json snapshot (schema 5 or 6; each
 #   candidate binds to one row through quota_row in
-#   bin/fm-quota-axi-lib.sh, so a Pi lane such as openai-codex-work/...
+#   bin/fm-quota-axi-lib.sh, with quota-axi auth --json resolving Pi Codex
+#   sign-ins to accounts when available, so openai-codex-work/...
 #   reads its own account's row and an expanded provider with no row for the
 #   candidate is unmeasured, never blocked), then the optional preferred_provider
 #   family restriction before spendPriority ranks the remaining candidates.
@@ -395,17 +396,33 @@ jq -e --slurpfile rules "$RULES" '
 command -v quota-axi >/dev/null 2>&1 || emit_error "quota-axi not installed"
 quota-axi --json > "$QUOTA" 2>/dev/null || emit_error "quota-axi --json failed"
 fm_quota_json_valid < "$QUOTA" || emit_error "quota-axi --json returned an invalid snapshot"
+AUTH='[]'
+if jq -e '.schemaVersion == 6' "$QUOTA" >/dev/null &&
+  jq -e '[.rules[]?.use, .default] | flatten | any(.[];
+    (.harness == "pi" or .harness == "pi-signed") and .provider == "codex")' "$RULES" >/dev/null; then
+  AUTH=$(quota-axi auth --json 2>/dev/null | jq -ce '[.auth[]? |
+    select(.provider == "codex" and (.accountKey | type) == "string") |
+    {accountKey, sources: [.sources[]? | select(.status == "available") | .source]}]') || AUTH='[]'
+fi
 
 # ---- resolution: declared gates + quota evidence + argmax, all in jq ------------
 RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg none_criterion "$DEFAULT_WHEN" --argjson pmap "$PMAP" \
-  --slurpfile resp "$RESP_FILE" --slurpfile rules "$RULES" --slurpfile quota "$QUOTA" "$FM_QUOTA_ROW_JQ"'
+  --argjson auth "$AUTH" --slurpfile resp "$RESP_FILE" --slurpfile rules "$RULES" --slurpfile quota "$QUOTA" "$FM_QUOTA_ROW_JQ"'
   ($resp[0]) as $r | ($rules[0]) as $cfg | ($quota[0]) as $q | ($r.answers.rule) as $a |
   def profiles($v): if ($v | type) == "array" then $v elif ($v | type) == "object" then [$v] else [] end;
   def prov($p; $lane): quota_row($q; $p; $lane);
   def rows($p; $lane): (prov($p; $lane) | .quotaSemantics.effectiveAvailability // []);
   def bare($m): ($m | split("/") | last);
   def provider_of($c): ($c.provider // $pmap[$c.harness] // null);
-  def lane_of($c): quota_lane($c.harness; $c.model);
+  def lane_of($c):
+    quota_lane($c.harness; $c.model) as $lane |
+    if ($c.harness == "pi" or $c.harness == "pi-signed") and
+       provider_of($c) == "codex" and $lane != "codex-home" and $lane != "" then
+      ([$auth[] | select(.sources | index("pi:" + $lane)) | .accountKey] | unique) as $accounts |
+      if ($accounts | length) == 1 and
+         any($q.providers[]; .provider == "codex" and .accountKey == $accounts[0])
+      then $accounts[0] else $lane end
+    else $lane end;
   def measured($p; $lane):
     (prov($p; $lane) != null and (["known", "partial"] | index(prov($p; $lane).quotaSemantics.status)) != null);
   def applicable($p; $lane; $m):
