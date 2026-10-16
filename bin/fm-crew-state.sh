@@ -905,9 +905,10 @@ nm_effective_ci_step_status() {
 # ~/.no-mistakes/logs/*/ci.log on the installed v1.32.2 binary, including the
 # actual PR #252 run). A repository declaring `no_ci: true` logs "repository
 # declares no CI (no_ci: true) - treating as all checks passed - still
-# monitoring until merged or closed" instead, which is the same green. Reads the ci step's log via `axi logs --full` and scans
-# it for the MOST RECENT recognized marker (the log is append-only/chronological,
-# so the last match is current): green with nothing red after it means CI is
+# monitoring until merged or closed" instead, which is the same green. Reads
+# the ci step's log via `axi logs --full` and scans it for the MOST RECENT
+# recognized marker (the log is append-only/chronological, so the last match
+# is current): green with nothing red after it means CI is
 # green right now, still only waiting on merge/close.
 # "base branch advanced (..), re-arming CI monitor timeout" is deliberately NOT
 # a marker: the monitor logs a checks state only when that state changes, and a
