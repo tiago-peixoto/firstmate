@@ -1,0 +1,14 @@
+--- fm-crew-state.sh (real) ---
+state: working · source: run-step · validating (running)
+--- fm-fleet-snapshot.sh --json: secondmate rbbt record ---
+{
+  "current": {
+    "state": "active_child_work",
+    "reason": null
+  },
+  "invalidity": {
+    "kind": null,
+    "ids": []
+  },
+  "holds": []
+}

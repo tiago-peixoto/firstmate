@@ -1,0 +1,3 @@
+not ok - a no_ci repository parked in ci -> done (missing: 'state: done')
+--- output ---
+state: working · source: run-step · validating (running)

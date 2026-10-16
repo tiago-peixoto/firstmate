@@ -1,0 +1,24 @@
+--- fm-crew-state.sh (real) ---
+state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/acme/repo/pull/7
+--- fm-fleet-snapshot.sh --json: secondmate rbbt record ---
+{
+  "current": {
+    "state": "externally_held",
+    "reason": null
+  },
+  "invalidity": {
+    "kind": null,
+    "ids": []
+  },
+  "holds": [
+    {
+      "id": "nocitask",
+      "title": "nocitask",
+      "blocked_by": null,
+      "blocked_by_ids": [],
+      "unresolved_blocker_ids": [],
+      "reason": "checks green: PR ready for review (still monitoring for merge/close): https://github.com/acme/repo/pull/7",
+      "source": "child-state"
+    }
+  ]
+}
