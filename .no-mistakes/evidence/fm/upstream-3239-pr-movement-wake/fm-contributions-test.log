@@ -27,6 +27,8 @@ ok - cross-home away yolo delivery is fleet work
 ok - retired ownership persists and unsupported forge remains visibly unmeasured
 ok - unsupported forge coverage is disclosed without inventing fleet work
 ok - held unsupported forge coverage remains unmeasured
+ok - unsupported ownership stays silent and unmeasured; legacy errors clear without fabricated evidence
+ok - legacy cleanup preserves unsupported ownership and supported missing-evidence failure in the same file
 ok - shared contribution signal wakes once while retaining both acknowledgements
 ok - watcher keeps observer diagnostics separate from contribution wakes
 ok - expired child unsupported-forge coverage remains unmeasured
@@ -38,7 +40,13 @@ ok - record task identity is the directory dirname/basename named
 ok - snapshot and pending create nothing in a home without state
 ok - budget exhausted mid-observation (exhaust) keeps the prior record and stays silent
 ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
-ok - a genuine forge failure inside the budget still records the error and wakes
+ok - a genuine forge failure inside the budget still records the error, its cause and wakes
+ok - one HTTP 500 is retried once and a successful retry stays healthy
+ok - two transient failures wake once and name the failed read in the record
+ok - an HTTP 404 is reported without retrying
+ok - real gh error shapes drive the intended retry decision and keep their error
+ok - a URL never inherits the previous URL read diagnostic
+jq: error (at /tmp/fm-contributions.2gUEsX/after.json:1): null (null) cannot be matched, as it is not a string
 ok - a URL owned by two tasks is observed once and every owner receives the result
 ok - a merged or closed contribution settles once, is not re-read, and never wakes again
 ok - a head change observed as merged or closed settles without a movement wake
@@ -57,6 +65,6 @@ ok - retire stops the unavailable check, leaves rotation and restores complete c
 ok - a late owner settled beside a retired final record stays unretired and known
 ok - retire is idempotent and refuses non-captain, unknown, malformed and signal-bearing pairs
 
-real	3m26.957s
-user	0m36.395s
-sys	1m8.961s
+real	3m55.527s
+user	0m45.975s
+sys	1m32.722s
