@@ -1,0 +1,47 @@
+# Live Pi 1.3.0 lab (FM_HOME=/tmp/fm-lab.GURCtN, tmux -L fm-lab), nested probes run via Pi '!!' so they are descendants of the primary, cwd = run worktree
+
+## FIX (8d1944b9), first primary: nested pi --approve --help + --list-models
+== lock:
+1502832
+== before
+1502832
+generation=1 phase=active
+1502832
+pi --help exit 0
+pi --list-models exit 0
+== after
+1502832
+generation=1 phase=active
+1502832
+session start after probes: lock acquired: harness pid 1502832; PI_WATCH_EXTENSION alarms: 0
+
+## BASE (66c300bd extensions) reproduction: nested pi --approve --help
+== lock:
+1635429
+== before
+1635429
+generation=1 phase=active
+1635429
+pi --help exit 0
+== after
+1747343
+generation=1 phase=active
+1747343
+session start after probe:
+PI_WATCH_EXTENSION: not loaded - approve Pi project trust once per clone, then restart plain pi so /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M54ZRNKETVF23RMYRQT7TKP0/.pi/extensions/fm-primary-turnend-guard.ts and /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M54ZRNKETVF23RMYRQT7TKP0/.pi/extensions/fm-primary-pi-watch.ts auto-load for turn-end guard and background wake coverage; use -e /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M54ZRNKETVF23RMYRQT7TKP0/.pi/extensions/fm-primary-turnend-guard.ts -e /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M54ZRNKETVF23RMYRQT7TKP0/.pi/extensions/fm-primary-pi-watch.ts only if project hooks are not trusted
+
+## FIX relaunch after previous lock pid 1635429 died, then nested probes
+== lock:
+1799154
+== before
+1799154
+generation=1 phase=active
+1799154
+pi --help exit 0
+pi --list-models exit 0
+== after
+1799154
+generation=1 phase=active
+1799154
+fix-ss1: lock acquired: harness pid 1799154 alarms=0
+fix-ss2: lock acquired: harness pid 1799154 alarms=0
