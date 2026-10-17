@@ -1,0 +1,49 @@
+=== https://github.com/dubzzz/fast-check/pull/7456
+--- gh pr checks (all, unsettled):
+pending Warm up pnpm cache (macOS)
+pending Warm up pnpm cache (Linux)
+pending Warm up pnpm cache (Windows)
+pending Analyse
+fail renovate/artifacts
+pending renovate/stability-days
+gh exit=0
+--- before fix (base 66c300bd):
+CHECKS: no required check has reported; readiness unconfirmed
+exit=0
+--- after fix (44c5b680):
+CHECKS: no required check has reported; readiness unconfirmed
+REPORTED CHECK: Warm up pnpm cache (macOS) (IN_PROGRESS)
+REPORTED CHECK: Warm up pnpm cache (Linux) (IN_PROGRESS)
+REPORTED CHECK: Warm up pnpm cache (Windows) (IN_PROGRESS)
+REPORTED CHECK: Analyse (IN_PROGRESS)
+REPORTED CHECK: renovate/artifacts (FAILURE)
+REPORTED CHECK: renovate/stability-days (PENDING)
+exit=0
+=== https://github.com/xbmc/xbmc/pull/29941
+--- gh pr checks (all, unsettled):
+fail Mergeable
+pending CodeRabbit
+pending default
+gh exit=0
+--- before fix (base 66c300bd):
+CHECKS: no required check has reported; readiness unconfirmed
+exit=0
+--- after fix (44c5b680):
+CHECKS: no required check has reported; readiness unconfirmed
+REPORTED CHECK: Mergeable (FAILURE)
+REPORTED CHECK: CodeRabbit (PENDING)
+REPORTED CHECK: default (PENDING)
+exit=0
+=== https://github.com/MergeFi/frontend/pull/803
+--- gh pr checks (all, unsettled):
+fail build-and-lint
+fail Vercel
+gh exit=0
+--- before fix (base 66c300bd):
+CHECKS: no required check has reported; readiness unconfirmed
+exit=0
+--- after fix (44c5b680):
+CHECKS: no required check has reported; readiness unconfirmed
+REPORTED CHECK: build-and-lint (FAILURE)
+REPORTED CHECK: Vercel (FAILURE)
+exit=0

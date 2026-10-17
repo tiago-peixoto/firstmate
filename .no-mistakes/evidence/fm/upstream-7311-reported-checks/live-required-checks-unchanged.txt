@@ -1,0 +1,43 @@
+=== https://github.com/ahembree/librariarr/pull/466 (required checks reported; 9 unsettled checks, 6 of them required)
+--- all unsettled checks:
+pending Lint & Type Check
+pending Browser E2E (compose)
+pending Analyze (javascript-typescript)
+pending Unit Tests
+pending Integration Tests
+pending Build
+pending Docker Build
+fail code/snyk (ahembree)
+--- after fix:
+REQUIRED CHECK: Lint & Type Check (IN_PROGRESS)
+REQUIRED CHECK: Browser E2E (compose) (IN_PROGRESS)
+REQUIRED CHECK: Unit Tests (IN_PROGRESS)
+REQUIRED CHECK: Integration Tests (IN_PROGRESS)
+REQUIRED CHECK: Build (IN_PROGRESS)
+REQUIRED CHECK: Docker Build (IN_PROGRESS)
+exit=0
+IDENTICAL to before fix
+=== https://github.com/openclaw/openclaw/pull/175592 (required checks reported; 18 unsettled checks, 1 of them required)
+--- all unsettled checks:
+pending security-fast
+pending control-ui-i18n
+pending check-docs
+pending check-additional-boundaries
+pending check-plan
+pending check-guards-architecture
+pending check-source-contracts
+pending check-guards
+pending checks-node-changed-compact-large-17
+pending check-additional-extension-package-boundary
+pending checks-node-compact-small-1
+pending checks-fast-baseline-ratchets
+pending checks-node-changed-boundary
+pending checks-node-changed-extensions-config
+pending checks-node-compact-small-2
+pending checks-node-changed
+pending auto-response
+pending openclaw/ci-gate
+--- after fix:
+REQUIRED CHECK: openclaw/ci-gate (PENDING)
+exit=0
+IDENTICAL to before fix
