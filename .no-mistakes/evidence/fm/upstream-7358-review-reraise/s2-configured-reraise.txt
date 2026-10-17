@@ -1,0 +1,43 @@
+== S2: arm with FM_CONTRIBUTIONS_REPLY_AGE=86400, PR on captain hold, maintainer inline comment r31 at 08:00, no author reply
+registered: state/contributions.check.sh
+  generated check shim:
+    > #!/usr/bin/env bash
+    > export FM_HOME=/tmp/fm-lab.3WTWws
+    > export FM_STATE_OVERRIDE=/tmp/fm-lab.3WTWws/state
+    > export FM_DATA_OVERRIDE=/tmp/fm-lab.3WTWws/data
+    > export FM_CONTRIBUTIONS_REPLY_AGE=86400
+    > exec /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M55TW83P5T383P6CJ4BAYC4R/bin/fm-contributions.sh poll
+-- watcher at 2026-09-16T08:01Z (comment arrives; watcher env has NO reply age, shim carries it)
+  watcher exit=0 stdout:
+    | check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+    | 
+-- watcher at 2026-09-17T03:00:00Z
+  watcher exit=0 stdout:
+    | check: rearm-resurface
+-- watcher at 2026-09-17T09:00:00Z
+  watcher exit=0 stdout:
+    | check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+    | 
+  pending: [{"type":"unanswered","source":"https://github.com/o/r/pull/8#discussion_r31","age":"25h","author":"maintainer"}]
+  threads: [{"key":"review-comment:31","type":"review-comment","source":"https://github.com/o/r/pull/8#discussion_r31","author":"maintainer","at":"2026-09-16T08:00:00Z","raised":"2026-09-17T09:00:00Z"}]
+  acked the re-raise; pending now: []
+-- watcher at 2026-09-18T08:00:00Z
+  watcher exit=0 stdout:
+    | check: rearm-resurface
+-- watcher at 2026-09-18T09:00:00Z
+  watcher exit=0 stdout:
+    | check: contributions delivery bb045b195bed108d456fb1437a2c20a2c2832760f3ac090dee57ea496d3d09a0 unanswered https://github.com/o/r/pull/8#discussion_r31 49h
+    | 
+  graphql reads made: 3
+-- author replies r32 in thread r31 at 2026-09-18T10:00Z
+-- watcher at 2026-09-18T10:05:00Z
+  watcher exit=0 stdout:
+    | check: rearm-resurface
+-- watcher at 2026-09-20T10:00:00Z
+  watcher exit=124 stdout:
+    | checkpoint: no actionable wake within 4s
+  threads after reply: []  pending: []  unanswered notified: []
+  durable wake queue reasons:
+    q| check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+    q| check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+    q| check: contributions delivery bb045b195bed108d456fb1437a2c20a2c2832760f3ac090dee57ea496d3d09a0 unanswered https://github.com/o/r/pull/8#discussion_r31 49h

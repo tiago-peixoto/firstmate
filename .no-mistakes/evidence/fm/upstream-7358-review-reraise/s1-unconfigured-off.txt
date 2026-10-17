@@ -1,0 +1,26 @@
+== S1: unconfigured install: arm without FM_CONTRIBUTIONS_REPLY_AGE, maintainer inline comment r31 at 08:00
+registered: state/contributions.check.sh
+  generated check shim:
+    > #!/usr/bin/env bash
+    > export FM_HOME=/tmp/fm-lab.dS0MEW
+    > export FM_STATE_OVERRIDE=/tmp/fm-lab.dS0MEW/state
+    > export FM_DATA_OVERRIDE=/tmp/fm-lab.dS0MEW/data
+    > exec /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M55TW83P5T383P6CJ4BAYC4R/bin/fm-contributions.sh poll
+-- watcher at 2026-09-16T08:01Z (comment arrives)
+  watcher exit=0 stdout:
+    | check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+    | 
+  pending after ack: []
+-- watcher at 2026-09-17T09:00:00Z
+  watcher exit=0 stdout:
+    | check: rearm-resurface
+-- watcher at 2026-09-18T09:00:00Z
+  watcher exit=124 stdout:
+    | checkpoint: no actionable wake within 4s
+-- watcher at 2026-09-25T09:00:00Z
+  watcher exit=124 stdout:
+    | checkpoint: no actionable wake within 4s
+  graphql reads made: 0
+  record has threads key: false  events carry unanswered/at: false
+  wake queue rows: 1
+    q| check	contribution-683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8	check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8

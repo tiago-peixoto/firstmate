@@ -1,0 +1,25 @@
+== S3: tracking rules with FM_CONTRIBUTIONS_REPLY_AGE=86400 (all items posted 2026-09-16, no author reply unless noted)
+-- poll at 2026-09-16T08:00Z (arrival wakes)
+    | contribution-wake: check: contributions delivery ddb2b3fc7523d0c985603f435c698159886d25e0656e621bccac9420793c2a12
+    | contribution-wake: check: contributions delivery 24a601980dcee8f9904d66ff5a28133edc82719a0bba6f28ef20d68b43fec0ff
+    | contribution-wake: check: contributions delivery a906f6ce5cf72979ca15547cc3e2e8cb9cf12bd161de9f4c2dcb63584cae7d79
+    | contribution-wake: check: contributions delivery a247cd0d67c4055b2b5d4fdd9c975e7630f71f5b3fa89fc12db89c371ab9e813
+    | contribution-wake: check: contributions delivery 64da62ded16ca6d199ad78ea7f36411bb4360c15d90bcfca3981de165c51805e
+    | contribution-wake: check: contributions delivery 603188cbbd647a65f1c2111056aa68df787ef17dbadbbe72975a886907abdad5
+    | contribution-wake: check: contributions delivery 63b99c8e7134cfc8d08725e587988c2407e5be0fd6bef8e6f291b617449c9e6f
+    | contribution-wake: check: contributions delivery 2c13f632f498157a25bf5c74b4041e35f36c1490379de64e6133b8d301713abe
+    | contribution-wake: check: contributions delivery 2a63ad99ecf66866c3639477228bbe509cd8f6e46b0d9b2e1e053cb58119b1df
+    | contribution-wake: check: contributions delivery 8cd9a11a2db3d7d58d81776555b37f5dfd3208802ab688899eb2e985d4a990fa
+  tracked thread keys: ["review-comment:80","review-comment:81","review-comment:90","review:62"]
+-- poll at 2026-09-18T08:00Z (two days later)
+    | contribution-wake: check: contributions delivery bd86e3947fb6d6370699376dd830fabe7ae990407f8fec1fbccea88809bdc209 unanswered https://github.com/o/r/pull/8#discussion_r80 52h
+    | contribution-wake: check: contributions delivery 6d606e82a9384e01ee05212f9654863294e73bea19b25af2a1b27cf80fe892ba unanswered https://github.com/o/r/pull/8#discussion_r81 51h
+    | contribution-wake: check: contributions delivery 9cecff98393694f0dfd88b661974dec03b7fad206dab9016c64de8aa4b740186 unanswered https://github.com/o/r/pull/8#discussion_r90 52h
+    | contribution-wake: check: contributions delivery 698128898013aa46e707de6bc311ab3276c8251b16028fc9caa7a0c968a1ca63 unanswered https://github.com/o/r/pull/8#pullrequestreview-62 49h
+== S4: invalid reply-age values
+  FM_CONTRIBUTIONS_REPLY_AGE=0 -> exit=1 stderr: fm-contributions: invalid reply age
+  FM_CONTRIBUTIONS_REPLY_AGE=soon -> exit=1 stderr: fm-contributions: invalid reply age
+  FM_CONTRIBUTIONS_REPLY_AGE=-5 -> exit=1 stderr: fm-contributions: invalid reply age
+  FM_CONTRIBUTIONS_REPLY_AGE=1.5 -> exit=1 stderr: fm-contributions: invalid reply age
+  arm with 0 -> exit=1 stderr: fm-contributions: invalid reply age
+  FM_CONTRIBUTIONS_REPLY_AGE= (empty) -> exit=0 output: '' threads key present: false
