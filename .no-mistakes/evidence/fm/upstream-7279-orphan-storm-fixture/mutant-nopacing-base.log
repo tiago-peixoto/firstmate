@@ -1,0 +1,4 @@
+registered: floor-src (lavish)
+ok - an orphaned source command obeys the launch floor during its grace window
+focused storm case passed
+rc=0 elapsed=3s

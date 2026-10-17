@@ -1,0 +1,3 @@
+registered: floor-src (lavish)
+not ok - the orphan-storm fixture launched only 2 times within its observation window
+rc=1 elapsed=31s

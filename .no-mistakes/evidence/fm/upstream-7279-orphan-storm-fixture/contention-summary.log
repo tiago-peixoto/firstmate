@@ -1,0 +1,5 @@
+target run 1 rc=0 elapsed=186s ok - an orphaned source command obeys the launch floor during its grace window
+target run 2 rc=0 elapsed=188s ok - an orphaned source command obeys the launch floor during its grace window
+target run 3 rc=0 elapsed=163s ok - an orphaned source command obeys the launch floor during its grace window
+base run 1 rc=1 elapsed=114s not ok - the orphan-storm fixture launched only 1 times within its observation window
+base run 2 rc=1 elapsed=117s not ok - the orphan-storm fixture launched only 1 times within its observation window
