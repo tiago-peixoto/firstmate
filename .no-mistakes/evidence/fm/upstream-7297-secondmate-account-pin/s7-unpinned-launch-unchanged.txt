@@ -1,0 +1,8 @@
+$ ls $FM_HOME/config; bin/fm-spawn.sh other /tmp/fm-lab-mates.vJUste/other --secondmate; grep -c ^account= $FM_HOME/state/other.meta
+secondmate-harness
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+warning: secondmate other sync skipped before launch: primary default-branch commit cannot be resolved
+spawned other harness=claude kind=secondmate mode=secondmate yolo=off window=primary:fm-other worktree=/tmp/fm-lab-mates.vJUste/other
+0
+exit=1

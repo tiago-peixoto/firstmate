@@ -1,0 +1,5 @@
+$ bin/fm-spawn.sh remote1 --secondmate
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: /tmp/fm-lab.HDzCP0/config/secondmate-accounts/remote1/claude-account cannot pin remote secondmate remote1 from this host; configure config/claude-account in its home /srv/mate on lab-remote.invalid instead
+exit=1

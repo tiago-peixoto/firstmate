@@ -1,0 +1,6 @@
+$ cat $FM_HOME/config/secondmate-accounts/other/claude-account; bin/fm-spawn.sh other /tmp/fm-lab-mates.vJUste/other --secondmate
+/tmp/fm-lab.HDzCP0/signed-out-root
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: /tmp/fm-lab.HDzCP0/config/secondmate-accounts/other/claude-account pins Claude workers to /tmp/fm-lab.HDzCP0/signed-out-root, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-lab.HDzCP0/signed-out-root claude, then /login, or change the pin
+exit=1

@@ -1,0 +1,5 @@
+$ bin/fm-control.sh work relaunch
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+error: /tmp/fm-lab.HDzCP0/config/secondmate-accounts/work/claude-account pins Claude workers to /tmp/fm-lab.HDzCP0/signed-out-root, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-lab.HDzCP0/signed-out-root claude, then /login, or change the pin
+exit=1
+claude pid before=1531563 after=1531563

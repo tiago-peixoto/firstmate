@@ -1,0 +1,6 @@
+$ CLAUDE_CONFIG_DIR=/tmp/fm-lab.HDzCP0/signed-out-root bin/fm-spawn.sh work --secondmate
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+warning: secondmate work sync skipped before launch: primary default-branch commit cannot be resolved
+spawned work harness=claude kind=secondmate mode=secondmate yolo=off window=primary:fm-work worktree=/tmp/fm-lab-mates.vJUste/work account=ordinary
+exit=0

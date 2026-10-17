@@ -1,0 +1,11 @@
+$ bin/fm-spawn.sh other /tmp/fm-lab-mates.vJUste/other --secondmate
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: config/claude-account pins Claude workers to /tmp/fm-lab.HDzCP0/signed-out-root, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-lab.HDzCP0/signed-out-root claude, then /login, or change the pin
+exit=1

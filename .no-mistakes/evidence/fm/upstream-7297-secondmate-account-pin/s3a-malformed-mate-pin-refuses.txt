@@ -1,0 +1,7 @@
+$ cat $FM_HOME/config/claude-account $FM_HOME/config/secondmate-accounts/other/claude-account; bin/fm-spawn.sh other /tmp/fm-lab-mates.vJUste/other --secondmate
+ordinary
+relative
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: /tmp/fm-lab.HDzCP0/config/secondmate-accounts/other/claude-account must hold 'ordinary' or one absolute path on a single line with no control characters: /tmp/fm-lab.HDzCP0/config/secondmate-accounts/other/claude-account
+exit=1

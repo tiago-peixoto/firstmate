@@ -1,0 +1,19 @@
+firstmate@firstmate-hz:/tmp/fm-lab-mates.vJUste/work$ export GOTMPDIR=/tmp/fm-work/gotmp
+export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab-mates.vJUste/work$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab-mates.vJUste/work$ . '/tmp/fm-work+1ec1abc449601c351e2a4582ea7b98d6e2f507385b971944fc5f2bd80ce051d9/launch.s1792254034.1525151.1392.sh'
+ ▐▛███▛█   Claude Code v2.1.302
+▝▜██████▀  Opus 5.5 · Claude Max
+ ▝▝   ▝▝   /tmp/fm-lab-mates.vJUste/work
+❯ : Firstmate operational input waiting: read '/tmp/fm-lab-mates.vJUste/work/state/operational-inbox/1792254035-ff9e0bf44987e4cd.msg' and handle its contents as Firstmate operational input.
+  Listed 1 directory (ctrl+o to expand)
+● Bash(cd /tmp/fm-lab-mates.vJUste/work; cat data/charter.md; echo ---; cat .fm-secondmate-home; echo ---; ls -la bin config /tmp/fm-lab.HDzCP0/state/work.inbox 2>&1)
+  ⎿  charter for work
+     ---
+     work
+     … +16 lines (ctrl+o to expand)
+✽ Newspapering… (8s · ↓ 404 tokens · thinking)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for agents                                                                                                   ◐ medium · /effort

@@ -1,0 +1,5 @@
+$ bin/fm-spawn.sh work /tmp/fm-lab-mates.vJUste/work --secondmate
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+warning: secondmate work sync skipped before launch: primary default-branch commit cannot be resolved
+spawned work harness=claude kind=secondmate mode=secondmate yolo=off window=primary:fm-work worktree=/tmp/fm-lab-mates.vJUste/work account=ordinary
+exit=0

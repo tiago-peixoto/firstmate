@@ -1,0 +1,10 @@
+$ cat $FM_HOME/config/claude-account $FM_HOME/config/secondmate-accounts/work/claude-account; bin/fm-control.sh work relaunch; grep ^account= $FM_HOME/state/work.meta
+/tmp/fm-lab.HDzCP0/signed-out-root
+ordinary
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.HDzCP0
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+warning: secondmate work sync skipped before launch: primary default-branch commit cannot be resolved
+relaunched work harness=claude from=claude model=default effort=default backend=tmux endpoint=primary:fm-work worktree=/tmp/fm-lab-mates.vJUste/work
+account=ordinary
+exit=0

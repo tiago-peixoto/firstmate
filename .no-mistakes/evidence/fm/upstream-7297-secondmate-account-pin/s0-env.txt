@@ -1,0 +1,4 @@
+$ echo FM_HOME=$FM_HOME TMUX=$TMUX; env | grep -c NO_MISTAKES_GATE
+FM_HOME=/tmp/fm-lab.HDzCP0 TMUX=/tmp/fm-lab.HDzCP0/tmux/tmux-1000/fm-lab,1503697,0
+0
+exit=1
