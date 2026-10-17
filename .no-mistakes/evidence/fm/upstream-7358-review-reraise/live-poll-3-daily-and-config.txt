@@ -1,0 +1,26 @@
+$ ack every pending token
+acked held unanswered:review-comment:4269934936:2026-10-18T12:00:00Z
+$ FM_CONTRIBUTIONS_NOW=2026-10-19T11:59:00Z fm-contributions.sh poll
+exit=0
+(just under a day after the re-raise: expect silence)
+
+$ FM_CONTRIBUTIONS_NOW=2026-10-19T12:00:00Z fm-contributions.sh poll
+contribution-wake: check: contributions held 7a1e8f163927ffa27604f3ea54fd0ecedf512eb82d2a30811c91365ac2c0db6a unanswered https://github.com/cli/cli/pull/14665#discussion_r4269934936 120h
+exit=0
+(a day after the re-raise: expect the next daily wake)
+$ unanswered tokens kept in notified
+["unanswered:review-comment:4269934936:2026-10-19T12:00:00Z"]
+
+$ ack every pending token
+acked held unanswered:review-comment:4269934936:2026-10-19T12:00:00Z
+$ FM_CONTRIBUTIONS_REPLY_AGE=3600 FM_CONTRIBUTIONS_NOW=2026-10-19T13:00:00Z fm-contributions.sh poll
+contribution-wake: check: contributions held 7eb6a3a99e78076c71350e64a5e2e27d669203517ac948f861d643d29102203c unanswered https://github.com/cli/cli/pull/14665#discussion_r4269934936 121h
+exit=0
+(reply age set to one hour: expect a raise one hour later)
+
+$ FM_CONTRIBUTIONS_REPLY_AGE=soon fm-contributions.sh poll
+fm-contributions: invalid reply age
+exit=1
+$ FM_CONTRIBUTIONS_REPLY_AGE=0 fm-contributions.sh poll
+fm-contributions: invalid reply age
+exit=1

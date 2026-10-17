@@ -1,19 +1,22 @@
-$ fm-contributions.sh poll   # real gh, real clock, cli/cli#12942 under a captain hold
-contribution-wake: check: contributions delivery 4fcc870a6aa24fa34805990eba2b38e2cbf2a21d46d172a50785e9cdf7958fee
-contribution-wake: check: contributions delivery 944e8e5b9913a409c983047ffaa20313d8ff3d8bc57163a4ff0c03556107af22
-contribution-wake: check: contributions delivery 676a26203246885520b3183167d955bca79f60a462316128ff90d22e89e11ca0
-contribution-wake: check: contributions delivery dbb6234c2858f4bb087afc346307b43094a1df91027740d3deec53f032fcdf28
-contribution-wake: check: contributions delivery 2dfe159bbd3ca0ad4df971ab64c7a81273318228428787d045f6715a3d186b5f
-contribution-wake: check: contributions delivery ed6998e437899c8892da3ef3fdc6d4bbd2e09751539f5231c662fe77ffa6b5da
-contribution-wake: check: contributions delivery 4a3f3683d40fc7ce67b2887a636c8683cc1093730c5a732b45d2fd11b8e27822
+$ FM_CONTRIBUTIONS_NOW=2026-10-17T12:00:00Z fm-contributions.sh poll
+contribution-wake: check: contributions held 99794512bf9ae66e2248ebc077105e7575ae15481c5e2af862ba481ae4d53674
+contribution-wake: check: contributions held 91b5c0bf52fb3f5b3edce8d1690d53299b4d27b30dc6722c94526b37855f247a
+contribution-wake: check: contributions answered 7e250f35ea2fadf8a1596bf127fe282f1a329406a67142d92c8828bbdeedc684
+contribution-wake: check: contributions answered 90c90f55a83e9a93133194f1ce461086a15ce94a1419c7033feb4a6e4195103d
+contribution-wake: check: contributions answered f704ef864980dce85ab54f508421c7868c6282296429be100a860af90b754601
+contribution-wake: check: contributions answered 6a4a04795c36f4be6e79b74fd8a82d7ce13144cadbe2cb638d158a61952c1483
+contribution-wake: check: contributions answered d21bdabb895054591f55820d2b03ddbcfaff05c26b689e1aa8f9ea9d6a43e3a5
 exit=0
-$ fm-contributions.sh pending
-{"type":"comment","source":"https://github.com/cli/cli/pull/12942#issuecomment-4128639868","author":"BagToad","token":"comment:4128639868:2026-03-25T18:01:25Z:"}
-{"type":"comment","source":"https://github.com/cli/cli/pull/12942#issuecomment-4869911555","author":"BagToad","token":"comment:4869911555:2026-07-02T19:51:20Z:"}
-{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183714605","author":"BagToad","token":"review-comment:3183714605:2026-05-04T19:17:51Z:"}
-{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183836351","author":"BagToad","token":"review-comment:3183836351:2026-05-04T19:17:51Z:"}
-{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183896709","author":"BagToad","token":"review-comment:3183896709:2026-05-04T19:17:51Z:"}
-{"type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183909947","author":"BagToad","token":"review-comment:3183909947:2026-05-04T19:17:51Z:"}
-{"type":"review","source":"https://github.com/cli/cli/pull/12942#pullrequestreview-4222580349","author":"BagToad","token":"review:4222580349:2026-05-04T19:17:51Z:COMMENTED"}
-$ jq .records[0].threads data/delivery/contributions.json
-{"error":null,"state":"open","threads":[{"key":"review-comment:3183714605","type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183714605","author":"BagToad","at":"2026-05-04T18:43:50Z","raised":"2026-10-15T19:21:44Z"},{"key":"review-comment:3183836351","type":"review-comment","source":"https://github.com/cli/cli/pull/12942#discussion_r3183836351","author":"BagToad","at":"2026-05-04T19:04:54Z","raised":"2026-10-15T19:21:44Z"}]}
+
+$ jq threads/pending
+{"task":"held","url":"https://github.com/cli/cli/pull/14665","error":null,"threads":[{"key":"review-comment:4269934936","type":"review-comment","source":"https://github.com/cli/cli/pull/14665#discussion_r4269934936","author":"williammartin","at":"2026-10-14T11:03:15Z","raised":"2026-10-17T12:00:00Z"}],"pending":[{"type":"review-comment","source":"https://github.com/cli/cli/pull/14665#discussion_r4269934936","age":null},{"type":"review","source":"https://github.com/cli/cli/pull/14665#pullrequestreview-5516898781","age":null}]}
+{"task":"answered","url":"https://github.com/cli/cli/pull/14673","error":null,"threads":[],"pending":[{"type":"review-comment","source":"https://github.com/cli/cli/pull/14673#discussion_r4294412060","age":null},{"type":"review-comment","source":"https://github.com/cli/cli/pull/14673#discussion_r4295075795","age":null},{"type":"review-comment","source":"https://github.com/cli/cli/pull/14673#discussion_r4295075816","age":null},{"type":"review","source":"https://github.com/cli/cli/pull/14673#pullrequestreview-5547465769","age":null},{"type":"review","source":"https://github.com/cli/cli/pull/14673#pullrequestreview-5548315999","age":null}]}
+
+$ wake queue
+1792243157	1	check	contribution-99794512bf9ae66e2248ebc077105e7575ae15481c5e2af862ba481ae4d53674	check: contributions held 99794512bf9ae66e2248ebc077105e7575ae15481c5e2af862ba481ae4d53674
+1792243157	2	check	contribution-91b5c0bf52fb3f5b3edce8d1690d53299b4d27b30dc6722c94526b37855f247a	check: contributions held 91b5c0bf52fb3f5b3edce8d1690d53299b4d27b30dc6722c94526b37855f247a
+1792243160	3	check	contribution-7e250f35ea2fadf8a1596bf127fe282f1a329406a67142d92c8828bbdeedc684	check: contributions answered 7e250f35ea2fadf8a1596bf127fe282f1a329406a67142d92c8828bbdeedc684
+1792243160	4	check	contribution-90c90f55a83e9a93133194f1ce461086a15ce94a1419c7033feb4a6e4195103d	check: contributions answered 90c90f55a83e9a93133194f1ce461086a15ce94a1419c7033feb4a6e4195103d
+1792243160	5	check	contribution-f704ef864980dce85ab54f508421c7868c6282296429be100a860af90b754601	check: contributions answered f704ef864980dce85ab54f508421c7868c6282296429be100a860af90b754601
+1792243160	6	check	contribution-6a4a04795c36f4be6e79b74fd8a82d7ce13144cadbe2cb638d158a61952c1483	check: contributions answered 6a4a04795c36f4be6e79b74fd8a82d7ce13144cadbe2cb638d158a61952c1483
+1792243161	7	check	contribution-d21bdabb895054591f55820d2b03ddbcfaff05c26b689e1aa8f9ea9d6a43e3a5	check: contributions answered d21bdabb895054591f55820d2b03ddbcfaff05c26b689e1aa8f9ea9d6a43e3a5

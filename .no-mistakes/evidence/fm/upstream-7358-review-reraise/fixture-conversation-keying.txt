@@ -1,0 +1,9 @@
+# one inline conversation: maintainer root r80 plus maintainer follow-up r81, no author reply
+$ poll at 2026-09-16T08:00:00Z
+contribution-wake: check: contributions delivery 24a601980dcee8f9904d66ff5a28133edc82719a0bba6f28ef20d68b43fec0ff
+contribution-wake: check: contributions delivery 91fd7cc007203d7005022e9ef0fdb67aee15d2d7acaedc42a5377acaefdff4de
+$ tracked thread keys
+["review-comment:80","review-comment:81"]
+$ poll at 2026-09-17T08:00:00Z (one reply age later)
+contribution-wake: check: contributions delivery faa0fb820fe7879cdeab27ef3ef44b53d096dca040fa5c55599ae79f2891a2f5 unanswered https://github.com/o/r/pull/8#discussion_r80 28h
+contribution-wake: check: contributions delivery 7c382b32b05d78de00495e37e6938e836f70b1d3edb8abeeaec62ca0d0a45eab unanswered https://github.com/o/r/pull/8#discussion_r81 27h

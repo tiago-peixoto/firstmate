@@ -1,0 +1,29 @@
+$ ack every pending token
+acked answered review-comment:4294412060:2026-10-16T13:18:39Z:
+acked answered review-comment:4295075795:2026-10-16T13:19:04Z:
+acked answered review-comment:4295075816:2026-10-16T13:19:04Z:
+acked answered review:5547465769:2026-10-16T13:18:39Z:APPROVED
+acked answered review:5548315999:2026-10-16T13:19:04Z:APPROVED
+acked held review-comment:4269934936:2026-10-14T11:03:40Z:
+acked held review:5516898781:2026-10-14T11:03:40Z:APPROVED
+$ fm-contributions.sh pending
+[]
+
+$ FM_CONTRIBUTIONS_NOW=2026-10-18T11:00:00Z fm-contributions.sh poll
+exit=0
+(23h after the first raise: expect silence)
+
+$ FM_CONTRIBUTIONS_NOW=2026-10-18T12:00:00Z fm-contributions.sh poll
+contribution-wake: check: contributions held b8dbe889de88933057c29ded2495b9d214615e3de6e3320dbc9a63f827a5e4ec unanswered https://github.com/cli/cli/pull/14665#discussion_r4269934936 96h
+exit=0
+(24h after the first raise: expect one unanswered wake for held only)
+
+$ fm-contributions.sh pending
+{"task":"held","type":"unanswered","source":"https://github.com/cli/cli/pull/14665#discussion_r4269934936","age":"96h","author":"williammartin"}
+$ held threads
+[{"key":"review-comment:4269934936","type":"review-comment","source":"https://github.com/cli/cli/pull/14665#discussion_r4269934936","author":"williammartin","at":"2026-10-14T11:03:15Z","raised":"2026-10-18T12:00:00Z"}]
+$ answered threads
+[]
+$ wake queue tail
+1792243161	7	check	contribution-d21bdabb895054591f55820d2b03ddbcfaff05c26b689e1aa8f9ea9d6a43e3a5	check: contributions answered d21bdabb895054591f55820d2b03ddbcfaff05c26b689e1aa8f9ea9d6a43e3a5
+1792243185	8	check	contribution-b8dbe889de88933057c29ded2495b9d214615e3de6e3320dbc9a63f827a5e4ec	check: contributions held b8dbe889de88933057c29ded2495b9d214615e3de6e3320dbc9a63f827a5e4ec unanswered https://github.com/cli/cli/pull/14665#discussion_r4269934936 96h
