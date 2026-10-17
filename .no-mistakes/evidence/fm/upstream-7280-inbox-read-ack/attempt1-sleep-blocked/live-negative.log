@@ -1,0 +1,64 @@
+[16:34:51Z] generated inbox section:
+    # Firstmate instruction inbox
+    Firstmate steers you through durable message files in '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'.
+    When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'/*.msg and read each message in numeric order.
+    Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'/NNN.msg`.
+    Do not record a read before actually reading the message; if the command fails, report the failure rather than assuming it was acknowledged.
+    Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'/NNN.msg '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'/handled/`.
+    The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+    An empty or absent inbox needs no action.
+    
+[16:35:21Z] worker pane after startup:
+      If the test needs the wait to happen, choose one of these:
+      1. Background sleep: I run sleep 200 in the background and reply "slept" when it finishes.
+      2. Change the harness: remove this sleep block from the harness settings, then I retry the exact foreground command.
+    ✻ Cogitated for 10s · done 6:35 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.E2i7iu
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[16:35:25Z] fm-send wrote 001.msg
+handled
+[16:35:25Z] real fm-watch.sh started pid=2599464 (poll 10s, grace 20s, busy max 2 = defaults' shape)
+[16:35:40Z] msg=gone read=yes handled=yes busy-state= watcher=running
+[16:35:55Z] msg=gone read=yes handled=yes busy-state= watcher=running
+[16:36:10Z] msg=gone read=yes handled=yes busy-state= watcher=exited
+[16:36:10Z] watcher stdout:
+    stale: lab:fm-rr-negative
+[16:36:10Z] wake queue:
+    1792254969	1	stale	lab:fm-rr-negative	stale: lab:fm-rr-negative
+[16:36:10Z] watcher stderr tail:
+[16:36:10Z] final worker pane:
+      If the test needs the wait to happen, choose one of these:
+      1. Background sleep: I run sleep 200 in the background and reply "slept" when it finishes.
+      2. Change the harness: remove this sleep block from the harness settings, then I retry the exact foreground command.
+    ✻ Cogitated for 10s · done 6:35 PM
+    ❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'rr-negative.inbox' steering inbox, read each in numeric order, record read as briefed, act, then mv into handled/.
+      Read 1 file, listed 1 directory (ctrl+o to expand)
+    ● Bash('/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'/001.msg;…)
+      ⎿  exit=0
+    ● Bash(touch /tmp/fm-lab.E2i7iu/steer-done && mv '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'/001.msg '/tmp/fm-lab.E2i7iu/state/rr-negative.inbox'/handled/ && ls -la /…)
+      ⎿  -rw-rw-r-- 1 firstmate firstmate 0 Oct 17 18:35 /tmp/fm-lab.E2i7iu/steer-done
+         /tmp/fm-lab.E2i7iu/state/rr-negative.inbox/handled/:
+         … +4 lines (ctrl+o to expand)
+    ● Captain, I handled the one waiting instruction, and the inbox is now empty.
+      1. Read: The inbox at /tmp/fm-lab.E2i7iu/state/rr-negative.inbox held one message, 001.msg. It said: "Run 'touch /tmp/fm-lab.E2i7iu/steer-done' and finish the inbox procedure."
+      2. Read receipt: After reading it, I ran fm-task-inbox-read.sh on 001.msg, and it exited with code 0.
+      3. Action: I ran touch /tmp/fm-lab.E2i7iu/steer-done, and a listing shows that file now exists.
+      4. Handled: I moved 001.msg into handled/, and a listing of handled/ shows it there.
+      The earlier task is still not done. The Bash tool blocks a plain foreground sleep 200, so I have not replied "slept". If you want the wait to happen, choose one:
+      1. Background sleep: I run sleep 200 in the background and reply "slept" when it finishes.
+      2. Remove the block: you remove the sleep block from the tool settings, and I retry the exact command in the foreground.
+    ✻ Worked for 13s · done 6:35 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)

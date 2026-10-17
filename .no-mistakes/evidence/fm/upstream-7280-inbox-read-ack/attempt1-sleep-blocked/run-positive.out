@@ -1,0 +1,56 @@
+[16:34:51Z] generated inbox section:
+    # Firstmate instruction inbox
+    Firstmate steers you through durable message files in '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'.
+    When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'/*.msg and read each message in numeric order.
+    Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'/NNN.msg`.
+    Do not record a read before actually reading the message; if the command fails, report the failure rather than assuming it was acknowledged.
+    Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'/NNN.msg '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'/handled/`.
+    The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+    An empty or absent inbox needs no action.
+    
+[16:35:21Z] worker pane after startup:
+      An empty or absent inbox needs no action.
+      There is no other task. Reply 'ready' and wait.
+    ● ready
+    ✻ Cooked for 11s · done 6:35 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)
+[16:35:25Z] fm-send wrote 001.msg
+handled
+[16:35:25Z] real fm-watch.sh started pid=2599065 (poll 10s, grace 20s, busy max 2 = defaults' shape)
+[16:35:40Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:35:55Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:36:10Z] msg=pending read=yes handled=no busy-state= watcher=exited
+[16:36:10Z] watcher stdout:
+    stale: lab:fm-rr-positive
+[16:36:10Z] wake queue:
+    1792254969	1	stale	lab:fm-rr-positive	stale: lab:fm-rr-positive
+[16:36:10Z] watcher stderr tail:
+[16:36:10Z] final worker pane:
+    ● ready
+    ✻ Cooked for 11s · done 6:35 PM · 1 shell still running
+    ❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'rr-positive.inbox' steering inbox, read each in numeric order, record read as briefed, act, then mv into handled/.
+    ● Bash(ls -la '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'/; for f in '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'/*.msg; do echo "== $f"; cat "$f"; done)
+      ⎿  total 4
+         drwxrwxr-x 3 firstmate firstmate  80 Oct 17 18:35 .
+         drwxrwxr-x 5 firstmate firstmate 340 Oct 17 18:35 ..
+         … +8 lines (ctrl+o to expand)
+    ● Bash('/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.ALSGIT/state/rr-positive.inbox'/001.msg;…)
+      ⎿  exit=0
+    ● Bash(sleep 240)
+      ⎿  Error: Blocked: standalone sleep 240. To wait for a condition, use Monitor with an until-loop (e.g. `until <check>; do sleep 2; done`). To wait for a command you started, use run_in_background:
+         true. Do not chain shorter sleeps to work around this block.
+    ● Bash(sleep 240)
+      ⎿  Running in the background (↓ to manage)
+    ● I've started sleep 240 in the background, and message 001 is still in progress.
+      I couldn't run it in the foreground as the message asked, because the harness blocks a standalone foreground sleep.
+      The read receipt for 001.msg is recorded, and the read command exited with 0.
+      When the background sleep finishes, I will run touch /tmp/fm-lab.ALSGIT/steer-done.
+      Then I will move 001.msg into handled/.
+    ✻ Cooked for 18s · done 6:35 PM · 1 shell still running
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on · 1 shell · ↓ to manage

@@ -1,0 +1,60 @@
+[16:48:30Z] generated inbox section:
+    # Firstmate instruction inbox
+    Firstmate steers you through durable message files in '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'.
+    When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/NNN.msg '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/handled/`.
+    The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+    
+[16:49:00Z] worker pane after startup:
+      The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+      There is no other task. Reply 'ready' and wait.
+    ● ready
+    ✻ Cooked for 4s · done 6:48 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.OjKmg1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[16:49:03Z] fm-send wrote 001.msg
+handled
+[16:49:03Z] real fm-watch.sh started pid=3397279 (poll 10s, grace 20s, busy max 2 = defaults' shape)
+[16:49:18Z] msg=pending read=no handled=no busy-state= busy=busy claude-hook watcher=running
+[16:49:33Z] msg=pending read=no handled=no busy-state=001.msg:1 busy=busy claude-hook watcher=running
+[16:49:48Z] msg=pending read=no handled=no busy-state=001.msg:2 busy=busy claude-hook watcher=exited
+[16:49:48Z] watcher stdout:
+    stale: lab:fm-rr-positive (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.OjKmg1/state/rr-positive.inbox/001.msg stays unhandled and no doorbell was typed; inspect the worker)
+[16:49:48Z] wake queue:
+    1792255776	1	stale	lab:fm-rr-positive	stale: lab:fm-rr-positive (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.OjKmg1/state/rr-positive.inbox/001.msg stays unhandled and no doorbell was typed; inspect the worker)
+[16:49:48Z] watcher stderr tail:
+[16:49:48Z] final worker pane:
+     ▝▝   ▝▝   ~/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV
+    ❯ You are a firstmate worker in a live test. Follow this section of your brief exactly:
+      Firstmate instruction inbox
+      Firstmate steers you through durable message files in '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'.
+      When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/*.msg, read and act on each
+      message in numeric order, then acknowledge each handled message by moving it: mv '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/NNN.msg '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/handled/.
+      The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+      There is no other task. Reply 'ready' and wait.
+    ● ready
+    ✻ Cooked for 4s · done 6:48 PM
+    ❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'rr-positive.inbox' steering inbox, read and act on each in numeric order, then mv each into its handled/.
+    ● Bash(echo "FM_TASK_INBOX=$FM_TASK_INBOX"; ls -la '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/; for f in '/tmp/fm-lab.OjKmg1/state/rr-positive.inbox'/*.msg; do echo…)
+      ⎿  FM_TASK_INBOX=/tmp/fm-lab.OjKmg1/state/rr-positive.inbox
+         total 4
+         drwxrwxr-x 3 firstmate firstmate  80 Oct 17 18:49 .
+         … +9 lines (ctrl+o to expand)
+    ● Bash(timeout 240 tail -f /dev/null; echo waited)
+      ⎿  Running… (30s · timeout 10m)
+         (ctrl+b ctrl+b (twice) to run in background)
+    * Beaming… (45s · ↓ 322 tokens)
+      ⎿  Tip: Run claude --continue or claude --resume to resume a conversation
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt

@@ -1,0 +1,14 @@
+lab: /tmp/fmlab.ijptTN (tear down with: bin/fm-live-lab.sh down /tmp/fmlab.ijptTN)
+tree: a214c875e5cccbf9b6b6ab0d4cd98e6900d34e6f from /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV
+spawned lab5415baab2cd1-worker harness=claude kind=ship mode=local-only yolo=on window=firstmate:fm-lab5415baab2cd1-worker worktree=/tmp/fmlab.ijptTN/treehouse/.treehouse/notes-7a3882/1/notes
+gate: /tmp/fmlab.ijptTN/home/data/lab5415baab2cd1-worker/gate (touch, then message the worker to resume)
+primary: claude --setting-sources project,local --model sonnet --effort medium --permission-mode auto
+ok primary: claude pid 3483143 in /tmp/fmlab.ijptTN/home
+ok probe: the primary answered LABREADY-5415baab2cd1
+ok trust: /tmp/fmlab.ijptTN/home is trusted in the Claude store
+ok mirror: verified writer, check passed, captain=1 main=1
+ok host: supervision host pid 3502294
+ok watcher: live watcher with a fresh beacon
+ok worker: lab5415baab2cd1-worker parked on /tmp/fmlab.ijptTN/home/data/lab5415baab2cd1-worker/gate
+ok treehouse: ~/.treehouse unchanged
+ready: /tmp/fmlab.ijptTN

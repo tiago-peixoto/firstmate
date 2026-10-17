@@ -1,0 +1,45 @@
+[16:47:17Z] generated inbox section:
+    # Firstmate instruction inbox
+    Firstmate steers you through durable message files in '/tmp/fm-lab.IvBNWU/state/rr-positive.inbox'.
+    When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-lab.IvBNWU/state/rr-positive.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm-lab.IvBNWU/state/rr-positive.inbox'/NNN.msg '/tmp/fm-lab.IvBNWU/state/rr-positive.inbox'/handled/`.
+    The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+    
+[16:47:47Z] worker pane after startup:
+     /tmp/fm-base.z55f
+     Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source project, or work from your team). If not, take a moment to review what's in this
+     folder first.
+     Claude Code'll be able to read, edit, and execute files here.
+     Security guide
+     ❯ No, exit
+       Yes, I trust this folder
+     Enter to confirm · Esc to cancel
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.IvBNWU
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at /tmp/fm-lab.IvBNWU/state/rr-positive.inbox/001.msg and the watcher will re-ring
+[16:47:49Z] fm-send wrote 001.msg
+handled
+[16:47:49Z] real fm-watch.sh started pid=3330615 (poll 10s, grace 20s, busy max 2 = defaults' shape)
+[16:48:04Z] msg=pending read=no handled=no busy-state= busy=busy fm-spawn watcher=running
+[16:48:19Z] msg=pending read=no handled=no busy-state= busy=busy fm-spawn watcher=exited
+[16:48:19Z] watcher stdout:
+    stale: lab:fm-rr-positive
+[16:48:19Z] wake queue:
+    1792255692	1	stale	lab:fm-rr-positive	stale: lab:fm-rr-positive
+[16:48:19Z] watcher stderr tail:
+[16:48:19Z] final worker pane:
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+     Accessing workspace:
+     /tmp/fm-base.z55f
+     Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source project, or work from your team). If not, take a moment to review what's in this
+     folder first.
+     Claude Code'll be able to read, edit, and execute files here.
+     Security guide
+     ❯ No, exit
+       Yes, I trust this folder
+     Enter to confirm · Esc to cancel

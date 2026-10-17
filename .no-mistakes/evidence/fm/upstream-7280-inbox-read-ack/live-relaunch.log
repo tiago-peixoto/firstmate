@@ -1,0 +1,69 @@
+== before relaunch: inbox
+/tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox:
+.read
+001.msg
+handled
+
+/tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox/.read:
+001.msg
+== before relaunch: due action (grace 0)
+quiet
+== worker pane before relaunch
+● I read 001.msg and recorded the read receipt with fm-task-inbox-read.sh. The command gave no error.
+  The message said to take no other action, so I left it in the inbox and didn't touch the gate file. The gate file /tmp/fmlab.ijptTN/home/data/lab5415baab2cd1-worker/gate doesn't exist. I'm still paused and ending my
+  turn.
+✻ Crunched for 7s · done 6:51 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle)
+== fm-control.sh relaunch
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 32s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  After draining queued wakes, repair missing watcher supervision according to the session-start block for this harness; do not use shell &.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+relaunched lab5415baab2cd1-worker harness=claude from=claude model=sonnet effort=low backend=tmux endpoint=firstmate:fm-lab5415baab2cd1-worker worktree=/tmp/fmlab.ijptTN/treehouse/.treehouse/notes-7a3882/1/notes
+== after relaunch: inbox
+001.msg
+handled
+ls: cannot access '/tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox/.read': No such file or directory
+== after relaunch: due action (grace 0)
+ring /tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox/001.msg
+== after 3s: replacement worker inbox state
+/tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox:
+.read
+001.msg
+handled
+
+/tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox/.read:
+001.msg
+
+/tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox/handled:
+== replacement worker pane
+firstmate@firstmate-hz:/tmp/fmlab.ijptTN/treehouse/.treehouse/notes-7a3882/1/notes$ . '/tmp/fm-lab5415baab2cd1-worker+ac45b5eaf92ec89f0aa6f07d7206f60849c7a5f3cbb956282195adfa212c02f3/launch.s1792255875.3540728.13642.sh'
+ ▐▛███▛█   Claude Code v2.1.302
+▝▜██████▀  Sonnet 5.5 with low effort · Claude Max
+ ▝▝   ▝▝   /tmp/fmlab.ijptTN/treehouse/.treehouse/notes-7a3882/1/notes
+❯ : Firstmate operational input waiting: read '/tmp/fmlab.ijptTN/home/state/operational-inbox/1792255876-c36252e0bf459563.msg' and handle its contents as Firstmate operational input.
+  Read 1 file (ctrl+o to expand)
+● Bash(pwd -P; git rev-parse --show-toplevel; git branch --show-current; ls /tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox/ /tmp/fmlab.ijptTN/home/state/lab…)
+  ⎿  /tmp/fmlab.ijptTN/treehouse/.treehouse/notes-7a3882/1/notes
+     /tmp/fmlab.ijptTN/treehouse/.treehouse/notes-7a3882/1/notes
+     fm/lab5415baab2cd1-worker
+     … +8 lines (ctrl+o to expand)
+  ⎿  Allowed by auto mode classifier
+● Isolation is fine. 001.msg is still unhandled, so I'll read it.
+  Read 1 file (ctrl+o to expand)
+● Bash('/tmp/fmlab.ijptTN/home/bin/fm-task-inbox-read.sh' '/tmp/fmlab.ijptTN/home/state/lab5415baab2cd1-worker.inbox/001.msg')
+  ⎿  (No output)
+  ⎿  Allowed by auto mode classifier
+✻ Fiddle-faddling… (9s · ↓ 463 tokens)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · esc to interrupt · ← for agents                                                                                                                                   ○ low · /effort
+== lab wake queue / wake log lines mentioning unread
+(none)

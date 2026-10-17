@@ -1,0 +1,76 @@
+[16:42:14Z] generated inbox section:
+    # Firstmate instruction inbox
+    Firstmate steers you through durable message files in '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'.
+    When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/*.msg and read each message in numeric order.
+    Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/NNN.msg`.
+    Do not record a read before actually reading the message; if the command fails, report the failure rather than assuming it was acknowledged.
+    Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/NNN.msg '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/handled/`.
+    The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+    An empty or absent inbox needs no action.
+    
+[16:42:44Z] worker pane after startup:
+      An empty or absent inbox needs no action.
+      There is no other task. Reply 'ready' and wait.
+    ● ready
+    ✻ Churned for 4s · done 6:42 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.y9fmPr
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the requested message WILL still be sent.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[16:42:47Z] fm-send wrote 001.msg
+handled
+[16:42:47Z] real fm-watch.sh started pid=3035430 (poll 10s, grace 20s, busy max 2 = defaults' shape)
+[16:43:02Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:43:17Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:43:32Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:43:47Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:44:02Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:44:17Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:44:32Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:44:47Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:45:02Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:45:17Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:45:32Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:45:47Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:46:02Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:46:17Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:46:32Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:46:47Z] msg=pending read=yes handled=no busy-state= busy=busy claude-hook watcher=running
+[16:47:02Z] msg=gone read=yes handled=yes busy-state= busy=idle claude-hook watcher=running
+[16:47:02Z] watcher stdout:
+[16:47:02Z] wake queue:
+[16:47:02Z] watcher stderr tail:
+[16:47:02Z] final worker pane:
+    ❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'rr-positive.inbox' steering inbox, read each in numeric order, record read as briefed, act, then mv into handled/.
+    ● Bash(ls '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/; for f in '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/*.msg; do echo "== $f"; cat "$f"; done)
+      ⎿  001.msg
+         handled
+         == /tmp/fm-lab.y9fmPr/state/rr-positive.inbox/001.msg
+         … +5 lines (ctrl+o to expand)
+    ● Bash('/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/001.msg;…)
+      ⎿  rc=0
+    ● Bash(timeout 240 tail -f /dev/null; echo waited)
+      ⎿  waited
+      ⎿  (timeout 10m)
+    ● Bash(touch /tmp/fm-lab.y9fmPr/steer-done && mv '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/001.msg '/tmp/fm-lab.y9fmPr/state/rr-positive.inbox'/handled/ && ls '/tmp…)
+      ⎿  /tmp/fm-lab.y9fmPr/state/rr-positive.inbox/:
+         handled
+         … +2 lines (ctrl+o to expand)
+    ● I read and handled message 001 from the rr-positive.inbox steering inbox, and the inbox now has no unread messages.
+      1. Read receipt: I ran fm-task-inbox-read.sh on 001.msg right after reading it, and it exited with code 0.
+      2. Instruction: I ran timeout 240 tail -f /dev/null; echo waited in the foreground, and it printed waited after the full 240 seconds.
+      3. Marker: I created /tmp/fm-lab.y9fmPr/steer-done.
+      4. Acknowledgement: I moved 001.msg into handled/, and a final listing showed only the handled directory left in the inbox.
+    ✻ Crunched for 4m 12s · done 6:46 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)

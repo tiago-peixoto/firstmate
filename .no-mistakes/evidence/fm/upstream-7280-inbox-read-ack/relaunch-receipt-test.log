@@ -1,0 +1,33 @@
+ok - fm-control relaunch: progress and the Firstmate-worktree worker identity reach the replacement
+ok - fm-control relaunch: a replacement worker does not inherit its predecessor's read receipts
+DONE
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/sendemail-validate': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/pre-auto-gc': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/post-rewrite': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/pre-push': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/post-merge': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/post-checkout': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/pre-rebase': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/post-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/prepare-commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/pre-merge-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/pre-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/post-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/pre-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/applypatch-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/receipts-11610/home/state/rl46.git-hooks/commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/sendemail-validate': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/pre-auto-gc': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/post-rewrite': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/pre-push': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/post-merge': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/post-checkout': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/pre-rebase': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/post-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/prepare-commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/pre-merge-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/pre-commit': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/post-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/pre-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/applypatch-msg': Permission denied
+rm: cannot remove '/tmp/fm-control-relaunch.xcALy3/note-23472/home/state/rl2.git-hooks/commit-msg': Permission denied

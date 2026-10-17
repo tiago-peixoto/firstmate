@@ -1,0 +1,69 @@
+[16:36:30Z] generated inbox section:
+    # Firstmate instruction inbox
+    Firstmate steers you through durable message files in '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'.
+    When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/*.msg and read each message in numeric order.
+    Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/NNN.msg`.
+    Do not record a read before actually reading the message; if the command fails, report the failure rather than assuming it was acknowledged.
+    Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/NNN.msg '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/handled/`.
+    The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+    An empty or absent inbox needs no action.
+    
+[16:37:00Z] worker pane after startup:
+      An empty or absent inbox needs no action.
+      There is no other task. Reply 'ready' and wait.
+    ● ready
+    ✻ Brewed for 4s · done 6:36 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)
+[16:37:04Z] fm-send wrote 001.msg
+handled
+[16:37:04Z] real fm-watch.sh started pid=2709651 (poll 10s, grace 20s, busy max 2 = defaults' shape)
+[16:37:19Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:37:34Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:37:49Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:38:04Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:38:19Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:38:34Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:38:49Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:39:04Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:39:19Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:39:34Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:39:49Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:40:04Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:40:19Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:40:34Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:40:49Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:41:04Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:41:19Z] msg=pending read=yes handled=no busy-state= watcher=running
+[16:41:34Z] msg=gone read=yes handled=yes busy-state= watcher=running
+[16:41:34Z] watcher stdout:
+[16:41:34Z] wake queue:
+[16:41:34Z] watcher stderr tail:
+[16:41:34Z] final worker pane:
+      Then act on the message and acknowledge completed handling by moving it: mv '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/NNN.msg '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/handled/.
+      The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+      An empty or absent inbox needs no action.
+      There is no other task. Reply 'ready' and wait.
+    ● ready
+    ✻ Brewed for 4s · done 6:36 PM
+    ❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 'rr-positive.inbox' steering inbox, read each in numeric order, record read as briefed, act, then mv into handled/.
+      Read 1 file, listed 1 directory (ctrl+o to expand)
+    ● Bash('/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5598DH6TJ7W4HZVJMJZKJYV/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/001.msg)
+      ⎿  (No output)
+    ● Bash(timeout 240 tail -f /dev/null; echo waited)
+      ⎿  waited
+      ⎿  (timeout 10m)
+    ● Bash(touch /tmp/fm-lab.dbppA8/steer-done && mv '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/001.msg '/tmp/fm-lab.dbppA8/state/rr-positive.inbox'/handled/ && ls '/tmp…)
+      ⎿  handled
+    ● Message 001 is handled. It was the only instruction in the inbox, and nothing else is waiting.
+      - Read receipt: fm-task-inbox-read.sh ran on 001.msg with exit 0 and printed nothing. I recorded it before acting.
+      - Long wait: timeout 240 tail -f /dev/null; echo waited ran in the foreground and printed waited.
+      - Done marker: I created /tmp/fm-lab.dbppA8/steer-done with touch.
+      - Handled: I moved 001.msg into handled/. Listing the inbox afterwards showed only the handled directory.
+    ✻ Worked for 4m 27s · done 6:41 PM
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    ❯ 
+    ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      ⏵⏵ bypass permissions on (shift+tab to cycle)
