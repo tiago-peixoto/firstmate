@@ -1,0 +1,25 @@
+env: env (uutils coreutils) 0.8.0; GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)
+### mode: shebang (home /tmp/fm-drain.Iw8xtW)
+closed-stdout drain exit=0 stderr=
+--- next drain:
+(no '[seq 1]' row)
+--- third drain:
+(no '[seq 1]' row - not repeated)
+
+### mode: bash (home /tmp/fm-drain.SoVFVd)
+closed-stdout drain exit=1 stderr=bin/fm-wake-drain.sh: line 714: printf: Bad file descriptor
+bin/fm-wake-drain.sh: line 714: printf: write error: Bad file descriptor
+--- next drain:
+2:[seq 1] demo: merged the docs fix
+--- third drain:
+(no '[seq 1]' row - not repeated)
+
+$ /usr/bin/env bash -c "readlink /proc/self/fd/1" >&-
+pipe:[51513221]
+$ bash -c "readlink /proc/self/fd/1" >&-
+pipe:[51513221]
+# fd 1 of the bash process, with stdout closed by the caller:
+$ /usr/bin/env bash -c ... >&-
+/dev/null
+$ bash -c ... >&-
+fd 1 closed
