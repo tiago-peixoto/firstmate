@@ -1,0 +1,21 @@
+# relaunch: 005 read by old worker (receipt 16:42:15), not handled; fm-control.sh relaunch 16:42:21-16:42:29
+after relaunch at 16:42:30: .read/ absent, 005.msg pending (see listing captured then)
+## inbox now
+/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox:
+total 4
+drwxrwxr-x 4 firstmate firstmate  100 16:42:40 .
+drwxrwxr-x 7 firstmate firstmate 1300 16:42:48 ..
+drwxrwxr-x 2 firstmate firstmate   60 16:42:40 .read
+-rw------- 1 firstmate firstmate  258 16:42:09 005.msg
+drwxrwxr-x 2 firstmate firstmate  120 16:41:47 handled
+
+/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox/.read:
+total 0
+drwxrwxr-x 2 firstmate firstmate  60 16:42:40 .
+drwxrwxr-x 4 firstmate firstmate 100 16:42:40 ..
+-rw-rw-r-- 1 firstmate firstmate   0 16:42:40 005.msg
+## relaunch note in launch-brief.md
+First, check your instruction inbox: list it with
+`find '/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V`.
+Follow the brief's inbox procedure for read receipts and completed handling
+in numeric order. A steer sent before the relaunch survives there.

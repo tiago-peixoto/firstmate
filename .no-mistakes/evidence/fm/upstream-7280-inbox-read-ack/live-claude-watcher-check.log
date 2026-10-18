@@ -1,0 +1,10 @@
+check rc=0
+check rc=0
+check rc=0
+wake-queue: []
+doorbells typed into pane: 0
+/tmp/fm-lab.jT2X6X/state/rcpt1.inbox:
+001.msg
+handled
+
+/tmp/fm-lab.jT2X6X/state/rcpt1.inbox/handled:

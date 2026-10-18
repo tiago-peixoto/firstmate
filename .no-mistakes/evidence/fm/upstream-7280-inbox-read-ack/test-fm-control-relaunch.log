@@ -1,0 +1,11 @@
+not ok - the relaunch off opencode should complete (missing: 'spawned rl78 harness=claude')
+--- output ---
+warning: /tmp/fm-control-relaunch.ZxfkJa/opencodetracked-5971/home/data/rl78/launch-brief.md records no ship branch; defaulting to legacy branch fm/rl78
+warning: /tmp/fm-control-relaunch.ZxfkJa/opencodetracked-5971/home/data/rl78/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+mise ERROR error parsing config file: /home/firstmate/.config/mise/config.toml
+mise ERROR Config files in /home/firstmate/.config/mise/config.toml are not trusted.
+Trust them with `mise trust`. See https://mise.jdx.dev/cli/trust.html for more information.
+mise ERROR Version: 2026.9.12 linux-x64 (2026-09-20)
+mise ERROR Run with --verbose or MISE_VERBOSE=1 for more information
+error: refusing to pre-register Claude trust: could not record trust for '/tmp/fm-control-relaunch.ZxfkJa/opencodetracked-5971/wt' and project '/tmp/fm-control-relaunch.ZxfkJa/opencodetracked-5971/proj' in '/tmp/fm-control-relaunch.ZxfkJa/opencodetracked-5971/user-home/.claude.json'
+error: could not pre-register Claude workspace trust for /tmp/fm-control-relaunch.ZxfkJa/opencodetracked-5971/wt; refusing to launch a claude worker that would wedge on the trust dialog; inspect window fmses:fm-rl78

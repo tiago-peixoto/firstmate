@@ -1,0 +1,25 @@
+# round 1 (16:27-16:31): 001 and 002 read via fm-task-inbox-read.sh, worker busy in a 420s foreground wait; 003 sent while busy, never read
+## inbox
+/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox:
+total 20
+drwxrwxr-x 4 firstmate firstmate  180 16:30:51 .
+drwxrwxr-x 7 firstmate firstmate 1360 16:30:58 ..
+-rw-rw-r-- 1 firstmate firstmate   10 16:30:51 .busy-state
+-rw-rw-r-- 1 firstmate firstmate    8 16:30:51 .escalated
+drwxrwxr-x 2 firstmate firstmate   80 16:28:49 .read
+-rw------- 1 firstmate firstmate  333 16:27:20 001.msg
+-rw------- 1 firstmate firstmate  426 16:28:44 002.msg
+-rw------- 1 firstmate firstmate  146 16:28:58 003.msg
+drwxrwxr-x 2 firstmate firstmate   40 16:26:36 handled
+
+/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox/.read:
+total 0
+drwxrwxr-x 2 firstmate firstmate  80 16:28:49 .
+drwxrwxr-x 4 firstmate firstmate 180 16:30:51 ..
+-rw-rw-r-- 1 firstmate firstmate   0 16:27:28 001.msg
+-rw-rw-r-- 1 firstmate firstmate   0 16:28:49 002.msg
+## .busy-state
+003.msg	2
+## wake lines naming the inbox
+1371683	linux-starttime=211370933 cmdline-hex=62617368002f746d702f666d6c61622e466656314a4a2f686f6d652f62696e2f666d2d77617463682e736800	stale: firstmate:fm-lab2149cb08f9bc-worker (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox/003.msg stays unhandled and no doorbell was typed; inspect the worker)
+1792333851	6	stale	firstmate:fm-lab2149cb08f9bc-worker	stale: firstmate:fm-lab2149cb08f9bc-worker (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox/003.msg stays unhandled and no doorbell was typed; inspect the worker)

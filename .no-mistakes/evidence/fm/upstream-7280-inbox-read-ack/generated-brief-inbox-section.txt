@@ -1,0 +1,9 @@
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read each message in numeric order.
+Immediately after reading each message, before acting, record that you read it: `'/tmp/fmlab.FfV1JJ/home/bin/fm-task-inbox-read.sh' '/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox'/NNN.msg`.
+Do not record a read before actually reading the message; if the command fails, report the failure rather than assuming it was acknowledged.
+Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox'/NNN.msg '/tmp/fmlab.FfV1JJ/home/state/lab2149cb08f9bc-worker.inbox'/handled/`.
+The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+An empty or absent inbox needs no action.
+
