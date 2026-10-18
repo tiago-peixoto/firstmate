@@ -1,0 +1,29 @@
+== target (/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M57HQCX3DNWERC9T78HQBNF9/bin/fm-contributions.sh poll) ==
+FM_CONTRIBUTIONS_REPLY_AGE=0      exit=1 fm-contributions: invalid reply age
+FM_CONTRIBUTIONS_REPLY_AGE=00     exit=1 fm-contributions: invalid reply age
+FM_CONTRIBUTIONS_REPLY_AGE=000    exit=1 fm-contributions: invalid reply age
+FM_CONTRIBUTIONS_REPLY_AGE=soon   exit=1 fm-contributions: invalid reply age
+FM_CONTRIBUTIONS_REPLY_AGE=3600   exit=0 contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+FM_CONTRIBUTIONS_REPLY_AGE=03600  exit=0 
+== parent (/tmp/tmp.KWeffJdxEc/parent/bin/fm-contributions.sh poll) ==
+FM_CONTRIBUTIONS_REPLY_AGE=0      exit=1 fm-contributions: invalid reply age
+FM_CONTRIBUTIONS_REPLY_AGE=00     exit=0 contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+FM_CONTRIBUTIONS_REPLY_AGE=000    exit=0 
+FM_CONTRIBUTIONS_REPLY_AGE=soon   exit=1 fm-contributions: invalid reply age
+FM_CONTRIBUTIONS_REPLY_AGE=3600   exit=0 
+FM_CONTRIBUTIONS_REPLY_AGE=03600  exit=0 
+== target: 19-hour inline comment under a captain hold, reply age 86400 ==
+- [ ] delivery - Contribution delivery https://github.com/o/r/pull/8 (repo: sample) (kind: ship)  (hold: wait for the scope decision) (hold-kind: captain)
+poll 08:01 ->
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+acked pending signal
+poll +19h (2026-09-17T03:00) ->
+(empty above means no wake)
+poll +25h (2026-09-17T09:00) ->
+contribution-wake: check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+pending ->
+[{"token":"unanswered:review-comment:31:2026-09-17T09:00:00Z","type":"unanswered","thread":"review-comment:31","source":"https://github.com/o/r/pull/8#discussion_r31","head":null,"author":"maintainer","age":"25h","body":"no reply from the contribution author for 25h","task":"delivery","url":"https://github.com/o/r/pull/8"}]
+== target: unconfigured install, same thread, 9 days later ==
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+poll 2026-09-25 ->
+graphql calls: 0

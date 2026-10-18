@@ -39,7 +39,7 @@ ok - two transient failures wake once and name the failed read in the record
 ok - an HTTP 404 is reported without retrying
 ok - real gh error shapes drive the intended retry decision and keep their error
 ok - a URL never inherits the previous URL read diagnostic
-jq: error (at /tmp/fm-contributions.KpeHdq/after.json:1): null (null) cannot be matched, as it is not a string
+jq: error (at /tmp/fm-contributions.OtGr3w/after.json:1): null (null) cannot be matched, as it is not a string
 ok - a URL owned by two tasks is observed once and every owner receives the result
 ok - a merged or closed contribution settles once, is not re-read, and never wakes again
 ok - a late owner inherits a terminal observation without a forge read or wake
@@ -64,7 +64,3 @@ ok - a closed pull request stops raising its threads
 ok - the unanswered re-raise and the review-thread read stay off unless a reply age is configured
 ok - arm copies a configured reply age into the generated check
 ok - a many-review PR stores only classified review fields and stays readable
-
-real	4m8.116s
-user	0m51.399s
-sys	1m41.482s
