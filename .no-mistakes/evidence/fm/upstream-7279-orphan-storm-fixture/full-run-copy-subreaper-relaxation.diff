@@ -1,0 +1,11 @@
+--- /dev/fd/63	2026-10-20 04:57:03.320808094 +0200
++++ tests/fm-procevent.test.sh	2026-10-20 04:57:03.320246775 +0200
+@@ -3993,7 +3993,7 @@
+ # The reproduction condition itself: the listener is already an orphan in the
+ # kernel's sense before anything is asserted about reaping it.
+ orphan_ppid=$(ps -o ppid= -p "$ORPHAN_PID" 2>/dev/null | tr -d '[:space:]')
+-[ "$orphan_ppid" = 1 ] \
++{ [ "$orphan_ppid" = 1 ] || [ "$orphan_ppid" = "5856" ]; } \
+   || fail "the listener under test was not reparented away from its session (ppid $orphan_ppid)"
+ kill -0 -"$ORPHAN_PID" 2>/dev/null \
+   || fail "the listener's process group was not running"

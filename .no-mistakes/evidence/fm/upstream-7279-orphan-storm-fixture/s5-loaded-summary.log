@@ -1,0 +1,9 @@
+run 1 exit=0 launch_count=3 launch_span=7.406s wait=12s ok - an orphaned source command obeys the launch floor during its grace window
+run 2 exit=0 launch_count=3 launch_span=6.714s wait=12s ok - an orphaned source command obeys the launch floor during its grace window
+run 3 exit=0 launch_count=3 launch_span=6.751s wait=10s ok - an orphaned source command obeys the launch floor during its grace window
+run 4 exit=0 launch_count=3 launch_span=8.213s wait=12s ok - an orphaned source command obeys the launch floor during its grace window
+run 5 exit=0 launch_count=3 launch_span=7.089s wait=11s ok - an orphaned source command obeys the launch floor during its grace window
+run 6 exit=0 launch_count=3 launch_span=6.538s wait=11s ok - an orphaned source command obeys the launch floor during its grace window
+run 7 exit=0 launch_count=3 launch_span=7.226s wait=15s ok - an orphaned source command obeys the launch floor during its grace window
+run 8 exit=0 launch_count=3 launch_span=7.354s wait=13s ok - an orphaned source command obeys the launch floor during its grace window
+hogs stopped

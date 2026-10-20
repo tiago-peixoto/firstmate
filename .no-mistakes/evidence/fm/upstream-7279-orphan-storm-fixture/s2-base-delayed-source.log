@@ -1,0 +1,4 @@
+# mode=base source_delay=12 stamp_mult=1 tmp=/tmp/fm-7279-storm.t4dAlC pid=1111771
+registered: floor-src (lavish)
+not ok - the orphan-storm fixture launched only 2 times within its observation window
+exit=1

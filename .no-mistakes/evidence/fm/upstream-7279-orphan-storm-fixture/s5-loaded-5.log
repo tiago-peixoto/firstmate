@@ -1,0 +1,5 @@
+# mode=fixed source_delay=0 stamp_mult=1 tmp=/tmp/fm-7279-storm.cTSyzY pid=1243200
+registered: floor-src (lavish)
+# launch_count=3 launch_span=7.089s wait=11s
+# no processes referencing /tmp/fm-7279-storm.cTSyzY/launch-floor after retire
+ok - an orphaned source command obeys the launch floor during its grace window
