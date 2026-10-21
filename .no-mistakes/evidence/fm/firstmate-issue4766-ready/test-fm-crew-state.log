@@ -132,6 +132,7 @@ ok - terminal passed run with open PR does not claim merged
 ok - terminal passed run PR overrides stale task metadata
 ok - terminal passed run without readable PR identity reports unknown
 ok - terminal passed run reads open GitLab MR state
+ok - terminal passed run reads Forgejo pull request state through tea api
 ok - terminal passed run reads merged GitLab MR state
 ok - terminal passed run handles failed GitLab read
 ok - terminal passed run reads open Gerrit change state
@@ -158,6 +159,7 @@ ok - unpushed ship done: is current-state blocked
 ok - recorded merged PR reads done under the fleet snapshot's captured meta
 ok - no-mistakes pre-validation done: stays current-state done
 ok - moved remote branch without the named head is current-state blocked
+ok - forge=external: an uploaded review reads done, and a PR report reads blocked with the gate's reason
 ok - no run + a busy semantic record reads working, attributed to its source
 ok - a launch parked on a recognized interactive prompt never reads working, closing the absorb path a stale watcher poll depends on
 ok - a converted adapter never reads working from rendered footer text
@@ -174,6 +176,7 @@ ok - no run + idle pane on a paused: status reports state: paused with its reaso
 ok - no run + idle pane honors the configured paused verb
 ok - a trailing resolved: event does not corrupt state render (idle stays idle)
 ok - dead window ignores stale status log
+ok - a gone window of a live session ignores the stale status log
 ok - a tmux that fails to answer reads unknown/unreachable, never gone
 ok - closed pane still reports a terminal run-step
 ok - closed pane still reports an active run-step
@@ -185,6 +188,8 @@ ok - fm-crew-state remote: an idle alive endpoint reads alive, never gone or dea
 ok - fm-crew-state remote: an unreachable host reads unknown-remote, never gone or dead
 ok - fm-crew-state remote: the remote host's own dead verdict is reported truthfully
 ok - missing meta is handled gracefully
+ok - override guard: a foreign-named override is ignored and the task's own state files are read
+ok - override guard: a matching-name override still steers the read at the captured generation
 ok - crew_is_provably_working absorbs a validating crew found only via the runs-list fallback
 ok - crew_is_provably_working still surfaces a genuinely stopped crew (safety property preserved)
 ok - usage error exits 2
@@ -266,6 +271,13 @@ ok - a head-tied row reads working when axi names the self run
 ok - a head-tied row reads working when axi names the other run
 ok - a head-tied coarse row is exempt even when the record head diverged
 ok - an unrecognised ledger word keeps the ordinary supersede note
+ok - daemon probe classifies running
+ok - daemon probe classifies stopped
+ok - daemon probe classifies empty
+ok - daemon probe classifies unexpected
+ok - daemon probe classifies absent
+ok - daemon probe classifies refused
+ok - daemon probe classifies timeout
 ok - an unanswered daemon probe leaves a live rebased run bound
 ok - a head-tied coarse live row is exempt from the dead-daemon verdict
 ok - a coarse live row over an open decision keeps the original supersede note
@@ -283,4 +295,4 @@ ok - inventory-error run selection reports unknown with candidate ids
 ok - selected-error run selection reports unknown with candidate ids
 ok - legacy conflicting run records report unknown
 all fm-crew-state tests passed
-exit=0
+rc=0 elapsed=382s

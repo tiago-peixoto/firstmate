@@ -37,7 +37,6 @@ ok - scan marker replaces a symlink without overwriting its target
 ok - nonterminal and captain-held workers remain outside inactive terminal reporting
 ok - watcher hook wakes for terminal loss and preserves idle secondmate exemption
 ok - the real watcher poll delivers a child's terminal ledger line to the parent channel
-actionable: inactive terminal outcome awaiting captain presentation: child=b state=done pr=https://example.test/owner/repo/pull/1
 ok - stalled state reads are bounded without starving later children
 ok - aggregate scan budget includes durable wake operations
 actionable: inactive terminal outcome needs parent report: child=child state=failed (missing or unreadable parent binding .fm-secondmate-parent)
@@ -48,4 +47,4 @@ ok - reconciliation makes zero forge or PR API calls
 actionable: inactive terminal outcome awaiting captain presentation: child=child state=done pr=https://example.test/owner/repo/pull/1
 ok - reconciliation state reads set no-forge mode
 all inactive reconciliation tests passed
-exit=0
+rc=0 elapsed=153s

@@ -1,0 +1,5 @@
+ok - the completion gate attests captain-held inventory and transfers open status decisions
+ok - hold and release mirror the hold on the status log the classifier reads
+ok - release and close retract a hold mirror buried under a later answer
+ok - settling a transferred call leaves a re-asked transfer key open
+rc=0 elapsed=124s
