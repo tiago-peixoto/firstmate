@@ -1,15 +1,16 @@
-################ Scenario 1: hold mirrors onto the status log, worker state preserved
+################ Scenario 1: hold mirrors onto the status log; worker state preserved
 --- before hold: crew-state
 state: done · source: status-log · PR ready https://example.test/pr/1 checks green
 --- status log after hold:
 working: implementing
 done: PR ready https://example.test/pr/1 checks green
-captain-held [key=captain-hold-t1-1] [at=1792571288]: Pick the API shape blocked: on vendor reply
+captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
 PASS  exactly one captain-held line with key captain-hold-t1-1
-PASS  two-line reason collapsed: no stray blocked: line
+PASS  two-line reason folded: no stray blocked: line
 PASS  hold appended exactly one physical line
-last_status_line        = captain-held [key=captain-hold-t1-1] [at=1792571288]: Pick the API shape blocked: on vendor reply
-PASS  last_status_line sees the standing hold raw
+PASS  hold declaration was self-announced (does not re-wake the recording home)
+last_status_line        = captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
+PASS  last_status_line (watcher/daemon view) sees the standing hold raw
 last_worker_status_line = done: PR ready https://example.test/pr/1 checks green
 PASS  last_worker_status_line keeps the worker's done line
 status_current_line     = done: PR ready https://example.test/pr/1 checks green
@@ -21,31 +22,33 @@ state: done · source: status-log · PR ready https://example.test/pr/1 checks g
 PASS  fm-crew-state reports done while held
 --- idempotent re-hold
 PASS  repeated hold does not duplicate the mirror
-################ Scenario 2: release retracts the mirror; readers return the worker's line
+################ Scenario 2: release and close retract the mirror; readers return the worker's line
 --- status log after release:
 working: implementing
 done: PR ready https://example.test/pr/1 checks green
-captain-held [key=captain-hold-t1-1] [at=1792571288]: Pick the API shape blocked: on vendor reply
-resolved [key=captain-hold-t1-1] [at=1792571291]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
+resolved [key=captain-hold-t1-1] [at=1792579587]: captain call released by fm-captain-hold
 PASS  release appended the keyed retraction
+PASS  release retraction was self-announced
 last_status_line        = done: PR ready https://example.test/pr/1 checks green
 PASS  settled mirror pair reads through to the worker's done line
 status_current_line     = done: PR ready https://example.test/pr/1 checks green
 PASS  status_current_line after release is the done line
 state: done · source: status-log · PR ready https://example.test/pr/1 checks green
 PASS  fm-crew-state reports done after release
---- re-hold starts lifecycle 2, close answer retracts it
+--- re-hold starts lifecycle 2, close answer retracts it, replay appends nothing
 PASS  re-hold declares key captain-hold-t1-2
 PASS  close appended the keyed retraction for lifecycle 2
+PASS  replayed settlement appended no second retraction
 last_status_line        = done: PR ready https://example.test/pr/1 checks green
 PASS  after close the lane still reads its done line
 --- final status log:
 working: implementing
 done: PR ready https://example.test/pr/1 checks green
-captain-held [key=captain-hold-t1-1] [at=1792571288]: Pick the API shape blocked: on vendor reply
-resolved [key=captain-hold-t1-1] [at=1792571291]: captain call released by fm-captain-hold
-captain-held [key=captain-hold-t1-2] [at=1792571293]: second review
-resolved [key=captain-hold-t1-2] [at=1792571295]: captain call answered by fm-captain-hold
+captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
+resolved [key=captain-hold-t1-1] [at=1792579587]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-t1-2] [at=1792579589]: second review
+resolved [key=captain-hold-t1-2] [at=1792579590]: captain call answered by fm-captain-hold
 --- backlog after close:
 ## In flight
 
@@ -59,54 +62,73 @@ resolved [key=captain-hold-t1-2] [at=1792571295]: captain call answered by fm-ca
   Captain decision:
   Ship it.
 
-  Resolution recorded by fm-captain-hold.
-  Decision digest: e944608c5944d3363a709679c7f9b68c28fc466649133bc24e8c347e33a0d637
-  Resolution mode: released
-
-  Captain decision:
-  Use shape A.
-
+PASS  closing answer moved the task to Done in the backlog
 ################ Scenario 3 (adversarial): hold after an answered worker decision does not revive it
 --- crew-state before hold:
 state: unknown · source: none · no current-state source available
 needs-decision [key=q]: pick
 resolved [key=q]: use a
-captain-held [key=captain-hold-t2-1] [at=1792571297]: captain review
-status_current_line = captain-held [key=captain-hold-t2-1] [at=1792571297]: captain review
-PASS  answered needs-decision is not revived by the hold
+captain-held [key=captain-hold-t2-1] [at=1792579593]: captain review
+status_current_line = captain-held [key=captain-hold-t2-1] [at=1792579593]: captain review
+PASS  answered needs-decision is not revived by the hold (current line is the mirror, not the answered question)
+status_open_decisions = []
+PASS  no decision is open under the hold
 --- crew-state while held:
 state: unknown · source: none · no current-state source available
 PASS  fm-crew-state state word unchanged by the hold (before: state: unknown / held: state: unknown)
-keyless: status_current_line = captain-held [key=captain-hold-t2-2] [at=1792571301]: captain review again
+blocked: daemon socket refused
+resolved [key=default]: restarted
+captain-held [key=captain-hold-t2-2] [at=1792579596]: captain review again
+keyless: status_current_line = captain-held [key=captain-hold-t2-2] [at=1792579596]: captain review again
 PASS  answered keyless blocked is not revived by the hold
-################ Scenario 4: failed lane stays failed under a standing hold (crew-state)
+state: unknown · source: none · no current-state source available
+PASS  fm-crew-state does not report the answered blocked under the re-hold
+################ Scenario 4: failed lane stays failed under a standing hold
 working: start
 failed: build broke
-captain-held [key=captain-hold-t3-1] [at=1792571303]: retry or drop?
+captain-held [key=captain-hold-t3-1] [at=1792579598]: retry or drop?
 last_worker_status_line = failed: build broke
 PASS  worker failure visible under the standing hold
 state: failed · source: status-log · build broke
 PASS  fm-crew-state reports failed while held
-################ Scenario 5: upstream fm-capacity.sh works in the merged tree
---- no target:
-capacity: free_lanes=unknown reason=no-target lanes=2 target=none secondmates=1 load1=8.63 cores=12 mem_free_pct=85 disk_free_mb=61322
-Lanes: 2 running, no target set (config/lane-capacity absent).
-Secondmates: 1 (hold no lane).
-Host: load 8.63 on 12 cores, memory free 85%, disk free 61322 MB.
-PASS  no target: counts only, no invented target
---- target 3:
-capacity: free_lanes=1 reason=ok lanes=2 target=3 secondmates=1 load1=8.63 cores=12 mem_free_pct=85 disk_free_mb=61322
-Lanes: 2 running of 3 target, 1 open.
-Secondmates: 1 (hold no lane).
-Host: load 8.63 on 12 cores, memory free 85%, disk free 61322 MB.
-PASS  target 3 with 2 lanes reports 1 free lane or a named host constraint
---- malformed target:
-capacity: free_lanes=unknown reason=invalid-target lanes=2 target=invalid secondmates=1 load1=8.63 cores=12 mem_free_pct=85 disk_free_mb=61322
-Lanes: 2 running, target unreadable (config/lane-capacity must hold one non-negative integer).
-Secondmates: 1 (hold no lane).
-Host: load 8.63 on 12 cores, memory free 85%, disk free 61322 MB.
-fm-capacity: config/lane-capacity must hold one non-negative integer
-exit=1
-PASS  malformed lane-capacity reports invalid and exits 1
+################ Scenario 5 (boundary): a decision-only hold mints no status log
+PASS  no status log created for a lane-less hold
+--- divergence guard over the mirrored home:
+
+PASS  diverged reports nothing for the hold lifecycle's own keyed pair
+################ Scenario 6 (live watcher): hold and release never re-surface a delivered lane
+--- round 1: first sight of the delivered idle lane surfaces one terminal stale
+watcher output:
+stale: firstmate:fm-t4
+PASS  first terminal stale surfaced for firstmate:fm-t4
+PASS  no wedge label on the delivered lane
+wake queue:
+1792579605	1	stale	firstmate:fm-t4	stale: firstmate:fm-t4
+stale suppressor hash = 8b332bc73bac775fb7902a2646336dc3
+wake queue after ack:
+--- round 2: firstmate holds the lane for the captain (real fm-captain-hold.sh), watcher re-armed
+done: PR https://example.test/pull/4 checks green
+captain-held [key=captain-hold-t4-1] [at=1792579609]: merge approval
+watcher output:
+PASS  watcher stayed alive through 3 poll cycles after the hold (rc=0)
+PASS  the hold firstmate just recorded printed no wake
+PASS  no new stale row for the held lane (rows before=0 after=0)
+PASS  held done lane took the captain-held cadence (.paused marker present)
+--- round 3: captain releases (real answer --release), watcher re-armed with a 1s wedge bound
+done: PR https://example.test/pull/4 checks green
+captain-held [key=captain-hold-t4-1] [at=1792579609]: merge approval
+resolved [key=captain-hold-t4-1] [at=1792579615]: captain call released by fm-captain-hold
+watcher output:
+PASS  watcher stayed alive through 4 poll cycles after the release (rc=0)
+PASS  the release printed no wake (delivered outcome not re-surfaced)
+PASS  no new stale row after release (rows=0)
+PASS  release lifted the hold's pause marker
+PASS  settled mirror over a done lane never wedge-escalated
+PASS  stale suppressor hash unchanged across hold and release
+PASS  no wedge alarm fired
+--- state markers for firstmate_fm-t4:
+.count-firstmate_fm-t4
+.hash-firstmate_fm-t4
+.stale-firstmate_fm-t4
 
 TOTAL FAILS: 0

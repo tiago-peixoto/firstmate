@@ -1,0 +1,23 @@
+--- status log:
+done: PR https://example.test/pull/5 checks green
+captain-held [key=captain-hold-t5-1] [at=1792579785]: merge approval while the captain is away
+PASS  away-posture record written by fm-afk-contract.sh enter
+--- phase A: away record present; held lane past the cadence
+watcher output:
+PASS  watcher stayed alive through 5 poll cycles (rc=0)
+PASS  no recheck printed while the away-posture record exists
+PASS  no wake queued while away
+PASS  no recheck throttle armed
+triage log:
+[2026-10-21T12:49:51+0200] absorbed stale (captain-held, never rechecked while the away-posture record exists): firstmate:fm-t5
+[2026-10-21T12:49:53+0200] absorbed stale (captain-held, never rechecked while the away-posture record exists): firstmate:fm-t5
+[2026-10-21T12:49:55+0200] absorbed stale (captain-held, never rechecked while the away-posture record exists): firstmate:fm-t5
+PASS  triage log names the away-posture rule for the held lane
+--- phase B: captain returns (record archived); the bounded recheck comes back
+watcher output:
+stale: firstmate:fm-t5 (captain-held 515s, awaiting the captain - the hold is recorded, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+PASS  the recheck surfaced for firstmate:fm-t5
+PASS  the recheck names the captain, not an external wait
+PASS  no wedge label on the held lane
+
+TOTAL FAILS: 0

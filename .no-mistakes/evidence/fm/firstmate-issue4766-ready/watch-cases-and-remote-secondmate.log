@@ -1,0 +1,48 @@
+=== FM_TEST_ONLY=test_settled_hold_mirror_over_done_lane_never_wedge_escalates tests/fm-watch-triage.test.sh ===
+ok - a settled hold mirror over a done lane surfaces one terminal stale, then stays inert and never wedge-escalates
+exit=0 elapsed=6s
+=== FM_TEST_ONLY=test_settled_hold_mirror_over_paused_lane_resurfaces_once_per_cadence tests/fm-watch-triage.test.sh ===
+ok - a settled hold mirror over a paused lane resurfaces once per cadence, never once per relaunch
+exit=0 elapsed=6s
+=== FM_TEST_ONLY=test_hold_mirror_transition_keeps_the_stale_throttle tests/fm-watch-triage.test.sh ===
+ok - a hold and its release recorded by firstmate keep the stale throttle and suppressor they found
+exit=0 elapsed=40s
+=== FM_TEST_ONLY=test_settled_transfer_keeps_the_stale_suppressor tests/fm-watch-triage.test.sh ===
+ok - an answered complete transfer reads back to its decision and leaves the surfaced lane inert
+exit=0 elapsed=30s
+WATCHDONE
+=== tests/fm-remote-secondmate-lifecycle-e2e.test.sh (timeout 600s) ===
+ok - overlapping remote home provisioning serializes through publication and rollback
+ok - competing cleanup of the public home cannot reach a live provisioning clone
+ok - a home that appears mid-provision makes the provision die without touching it
+ok - remote seed rollback preserves serialized competing routes
+ok - unknown readiness preserves its route and brief for reconciliation
+ok - remote seeding checks, repairs, and re-checks readiness, then stops on a remaining gap
+ok - remote seeding proceeds once the repair closes every gap
+ok - remote seeding provisions a supplied origin without touching the primary project tree
+ok - remote provisioning re-validates a supplied origin at the receiving host
+ok - seeding carries bitbucket, self-hosted, and scp-like origins through to the remote clone
+ok - remote seed registers the route and provisions the whole home and project clone on that host
+ok - remote inheritance rejects incomplete and superseded payload generations
+ok - mixed local and remote routes validate without migration
+ok - remote spawn launches on the remote-local backend and records a host-qualified route
+ok - legacy and mismatched remote endpoints fail closed before backend access
+ok - non-herdr remote endpoints are refused without changing either route
+not ok - remote spawn never reached its blocked inheritance write
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/sendemail-validate': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/pre-auto-gc': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/post-rewrite': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/pre-push': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/post-merge': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/post-checkout': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/pre-rebase': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/post-commit': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/prepare-commit-msg': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/pre-merge-commit': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/pre-commit': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/post-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/pre-applypatch': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/applypatch-msg': Permission denied
+rm: cannot remove '/tmp/fm-remote-secondmate-e2e.461mfd/remote-home/state/parent-route/ios.git-hooks/commit-msg': Permission denied
+exit=1 elapsed=244s
+ALLDONE
