@@ -1,0 +1,16 @@
+[08:37:40] lab home /tmp/fm-lab.AfwnHU (private tmux socket dir /tmp/fm-lab.AfwnHU/tmux)
+[08:37:42] pane foreground: sleep ; backend agent_state=ambiguous
+[08:37:42] crew appended to crew.status: captain-held [key=route]: awaiting the captain on the routing call
+[08:37:47] signal: watcher exited after 5s with: signal: /tmp/fm-lab.AfwnHU/state/crew.status
+[08:37:50] crew-state now: state: unknown · source: pane · harness state unavailable (unknown missing)
+[08:37:56] first-sight: watcher exited after 6s with: stale: lab:fm-crew
+[08:38:56] recheck: watcher exited after 57s with: stale: lab:fm-crew (captain-held 74s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[08:38:56] recheck fired 74s after the declaration was written (cadence 60s)
+[08:39:30] after-recheck: watcher stayed quiet for 30s
+[08:39:30] wake queue (kind, window, reason):
+signal	crew.status	needs-decision: /tmp/fm-lab.AfwnHU/state/crew.status
+signal	crew.status	needs-decision: /tmp/fm-lab.AfwnHU/state/crew.status
+stale	lab:fm-crew	stale: lab:fm-crew
+stale	lab:fm-crew	stale: lab:fm-crew (captain-held 74s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[08:39:30] RESULT: PASS
+[08:39:31] lab home removed

@@ -1,0 +1,14 @@
+[08:37:40] lab home /tmp/fm-lab.kL6Bem (private tmux socket dir /tmp/fm-lab.kL6Bem/tmux)
+[08:37:42] pane foreground: bash ; backend agent_state=dead
+[08:37:42] crew appended to crew.status: paused: waiting for the nightly build until 2026-10-21T08:52Z
+[08:37:47] signal: watcher exited after 5s with: signal: /tmp/fm-lab.kL6Bem/state/crew.status
+[08:37:50] crew-state now: state: unknown · source: pane · harness state unavailable (unknown missing)
+[08:38:43] recheck: watcher exited after 53s with: stale: lab:fm-crew (paused 61s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+[08:38:43] recheck fired 61s after the declaration was written (cadence 60s, until 2026-10-21T08:52Z)
+[08:39:17] after-recheck: watcher stayed quiet for 30s
+[08:39:17] wake queue (kind, window, reason):
+signal	crew.status	signal: /tmp/fm-lab.kL6Bem/state/crew.status
+signal	crew.status	signal: /tmp/fm-lab.kL6Bem/state/crew.status
+stale	lab:fm-crew	stale: lab:fm-crew (paused 61s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+[08:39:17] RESULT: PASS
+[08:39:18] lab home removed

@@ -1,0 +1,14 @@
+[08:37:40] lab home /tmp/fm-lab.94bBU2 (private tmux socket dir /tmp/fm-lab.94bBU2/tmux)
+[08:37:42] pane foreground: bash ; backend agent_state=dead
+[08:37:42] crew appended to mate.status: paused: waiting on the parent home to answer
+[08:37:47] signal: watcher exited after 5s with: signal: /tmp/fm-lab.94bBU2/state/mate.status
+[08:37:50] crew-state now: state: paused · source: status-log · waiting on the parent home to answer
+[08:38:42] recheck: watcher exited after 52s with: stale: lab:fm-mate (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:38:42] recheck fired 60s after the declaration was written (cadence 60s)
+[08:39:16] after-recheck: watcher stayed quiet for 30s
+[08:39:16] wake queue (kind, window, reason):
+signal	mate.status	signal: /tmp/fm-lab.94bBU2/state/mate.status
+signal	mate.status	signal: /tmp/fm-lab.94bBU2/state/mate.status
+stale	lab:fm-mate	stale: lab:fm-mate (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:39:16] RESULT: PASS
+[08:39:17] lab home removed

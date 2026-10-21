@@ -1,0 +1,17 @@
+[08:37:40] lab home /tmp/fm-lab.JJsY1D (private tmux socket dir /tmp/fm-lab.JJsY1D/tmux)
+[08:37:42] pane foreground: bash ; backend agent_state=dead
+[08:37:42] crew appended to crew.status: paused: waiting on the upstream tool release
+[08:37:47] signal: watcher exited after 5s with: signal: /tmp/fm-lab.JJsY1D/state/crew.status
+[08:37:51] crew-state now: state: unknown · source: pane · harness state unavailable (unknown missing)
+[08:37:57] first-sight: watcher exited after 6s with: stale: lab:fm-crew
+[08:37:57] markers after first sight: .paused-lab_fm-crew .paused-rechecked-lab_fm-crew .paused-resurfaced-lab_fm-crew .stale-lab_fm-crew 
+[08:38:57] recheck: watcher exited after 58s with: stale: lab:fm-crew (paused 75s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:38:57] recheck fired 75s after the declaration was written (cadence 60s)
+[08:39:31] after-recheck: watcher stayed quiet for 30s
+[08:39:31] wake queue (kind, window, reason):
+signal	crew.status	signal: /tmp/fm-lab.JJsY1D/state/crew.status
+signal	crew.status	signal: /tmp/fm-lab.JJsY1D/state/crew.status
+stale	lab:fm-crew	stale: lab:fm-crew
+stale	lab:fm-crew	stale: lab:fm-crew (paused 75s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:39:31] RESULT: PASS
+[08:39:32] lab home removed

@@ -1,0 +1,16 @@
+[08:37:40] lab home /tmp/fm-lab.odY7Zt (private tmux socket dir /tmp/fm-lab.odY7Zt/tmux)
+[08:37:42] pane foreground: bash ; backend agent_state=ambiguous
+[08:37:44] pane hash changes between captures: 7d8e30868bbf2a751fa90baf6ab98dc6  - -> c8be29ad26fee53473f545852671a0e6  -
+[08:37:44] crew appended to crew.status: paused: waiting on the validation run to finish
+[08:37:48] signal: watcher exited after 4s with: signal: /tmp/fm-lab.odY7Zt/state/crew.status
+[08:37:51] crew-state now: state: unknown · source: pane · harness state unavailable (unknown missing)
+[08:38:44] first-cadence: watcher exited after 53s with: stale: lab:fm-crew (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:38:44] recheck fired 60s after the declaration was written (cadence 60s)
+[08:38:44] note: a stale suppressor exists for the unsettled hash
+[08:39:29] next-cadence: watcher stayed quiet for 40s
+[08:39:29] wake queue (kind, window, reason):
+signal	crew.status	signal: /tmp/fm-lab.odY7Zt/state/crew.status
+signal	crew.status	signal: /tmp/fm-lab.odY7Zt/state/crew.status
+stale	lab:fm-crew	stale: lab:fm-crew (paused 60s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:39:29] RESULT: PASS
+[08:39:30] lab home removed

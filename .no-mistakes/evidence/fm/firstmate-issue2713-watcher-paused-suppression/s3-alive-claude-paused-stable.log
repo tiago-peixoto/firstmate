@@ -1,0 +1,18 @@
+[08:37:40] lab home /tmp/fm-lab.0E2oC1 (private tmux socket dir /tmp/fm-lab.0E2oC1/tmux)
+[08:37:53] pane foreground: claude ; backend agent_state=alive
+[08:37:53] pane capture saved to s3-alive-claude-paused-stable.pane.txt
+[08:37:53] crew appended to crew.status: paused: waiting on the upstream tool release
+[08:37:56] signal: watcher exited after 3s with: signal: /tmp/fm-lab.0E2oC1/state/crew.status
+[08:37:59] crew-state now: state: unknown · source: pane · harness state unavailable (unknown missing)
+[08:38:05] first-sight: watcher exited after 6s with: stale: lab:fm-crew
+[08:39:06] recheck: watcher exited after 59s with: stale: lab:fm-crew (paused 72s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:39:06] recheck fired 72s after the declaration was written (cadence 60s)
+[08:39:40] after-recheck: watcher stayed quiet for 30s
+[08:39:40] agent still alive at the end: alive
+[08:39:40] wake queue (kind, window, reason):
+signal	crew.status	signal: /tmp/fm-lab.0E2oC1/state/crew.status
+signal	crew.status	signal: /tmp/fm-lab.0E2oC1/state/crew.status
+stale	lab:fm-crew	stale: lab:fm-crew
+stale	lab:fm-crew	stale: lab:fm-crew (paused 72s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[08:39:40] RESULT: PASS
+[08:39:41] lab home removed
