@@ -1,0 +1,36 @@
+[07:56:37] scenario=dead-paused cadence=60s lab=/tmp/fm-lab.Ycar8A window=fmlab:worker
+[07:56:37] status line: paused: waiting on the upstream tool release
+[07:56:37] pane_current_command: bash
+[07:56:37] pane text: lab$|
+[07:56:38] crew-state verdict: state: paused · source: status-log · waiting on the upstream tool release
+[07:56:38] agent state: dead
+[07:56:43] round signal: watcher EXITED rc=0 after 5s. stdout=[signal: /tmp/fm-lab.Ycar8A/state/demo.status|]
+[07:56:43] round signal markers: .seen-demo_status 
+[07:56:43] round signal queue rows: signal	demo.status	signal: /tmp/fm-lab.Ycar8A/state/demo.status|signal	demo.status	signal: /tmp/fm-lab.Ycar8A/state/demo.status|
+[07:56:43] round signal triage log tail: 
+[07:56:47] drain: 1792562202	2	signal	demo.status	signal: /tmp/fm-lab.Ycar8A/state/demo.status|wake annotation: latest wake-EVENT observed at drain, not current state: demo.status: paused: waiting on the upstream tool release|
+[07:56:48] acked through 2
+[07:56:57] round first-sight: watcher EXITED rc=0 after 9s. stdout=[stale: fmlab:worker|]
+[07:56:57] round first-sight markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[07:56:57] round first-sight queue rows: stale	fmlab:worker	stale: fmlab:worker|
+[07:56:57] round first-sight triage log tail: 
+[07:57:00] drain: 1792562216	3	stale	fmlab:worker	stale: fmlab:worker|
+[07:57:00] acked through 3
+[07:57:16] round inside-cadence: watcher still running after 15s (absorbing; killed). stdout=[]
+[07:57:16] round inside-cadence markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[07:57:16] round inside-cadence queue rows: 
+[07:57:16] round inside-cadence triage log tail: 
+[07:58:04] waited: anchor age now 64s (cadence 60s)
+[07:58:05] round recheck: watcher EXITED rc=0 after 1s. stdout=[check: rearm-resurface|]
+[07:58:05] round recheck markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[07:58:05] round recheck queue rows: 
+[07:58:05] round recheck triage log tail: 
+[07:58:07] drain: 
+[07:58:07] acked through 0
+[07:58:10] round after-recheck: watcher EXITED rc=0 after 3s. stdout=[stale: fmlab:worker (paused 92s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|]
+[07:58:10] round after-recheck markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[07:58:10] round after-recheck queue rows: stale	fmlab:worker	stale: fmlab:worker (paused 92s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|
+[07:58:10] round after-recheck triage log tail: 
+[07:58:10] final pane text: lab$|
+[07:58:10] final pane_current_command: bash
+[07:58:10] DONE scenario=dead-paused

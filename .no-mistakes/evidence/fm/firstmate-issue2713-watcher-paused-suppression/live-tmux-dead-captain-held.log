@@ -1,0 +1,36 @@
+[08:00:23] scenario=dead-captain-held cadence=60s lab=/tmp/fm-lab.L0gl7s window=fmlab:worker
+[08:00:23] status line: captain-held [key=route]: awaiting the captain on the routing call
+[08:00:23] pane_current_command: bash
+[08:00:23] pane text: lab$|
+[08:00:24] crew-state verdict: state: unknown · source: none · no current-state source available
+[08:00:24] agent state: dead
+[08:00:27] round signal: watcher EXITED rc=0 after 3s. stdout=[signal: /tmp/fm-lab.L0gl7s/state/demo.status|]
+[08:00:27] round signal markers: .seen-demo_status 
+[08:00:27] round signal queue rows: signal	demo.status	needs-decision: /tmp/fm-lab.L0gl7s/state/demo.status|signal	demo.status	needs-decision: /tmp/fm-lab.L0gl7s/state/demo.status|
+[08:00:27] round signal triage log tail: 
+[08:00:29] drain: 1792562426	2	signal	demo.status	needs-decision: /tmp/fm-lab.L0gl7s/state/demo.status|wake annotation: latest wake-EVENT observed at drain, not current state: demo.status: captain-held [key=route]: awaiting the captain on the routing call|
+[08:00:29] acked through 2
+[08:00:35] round first-sight: watcher EXITED rc=0 after 6s. stdout=[stale: fmlab:worker|]
+[08:00:35] round first-sight markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[08:00:35] round first-sight queue rows: stale	fmlab:worker	stale: fmlab:worker|
+[08:00:35] round first-sight triage log tail: 
+[08:00:38] drain: 1792562435	3	stale	fmlab:worker	stale: fmlab:worker|
+[08:00:38] acked through 3
+[08:00:53] round inside-cadence: watcher still running after 15s (absorbing; killed). stdout=[]
+[08:00:53] round inside-cadence markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[08:00:53] round inside-cadence queue rows: 
+[08:00:53] round inside-cadence triage log tail: 
+[08:01:41] waited: anchor age now 63s (cadence 60s)
+[08:01:42] round recheck: watcher EXITED rc=0 after 1s. stdout=[check: rearm-resurface|]
+[08:01:42] round recheck markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[08:01:42] round recheck queue rows: 
+[08:01:43] round recheck triage log tail: 
+[08:01:45] drain: 
+[08:01:45] acked through 0
+[08:01:47] round after-recheck: watcher EXITED rc=0 after 2s. stdout=[stale: fmlab:worker (captain-held 83s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)|]
+[08:01:47] round after-recheck markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[08:01:47] round after-recheck queue rows: stale	fmlab:worker	stale: fmlab:worker (captain-held 83s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)|
+[08:01:47] round after-recheck triage log tail: 
+[08:01:47] final pane text: lab$|
+[08:01:47] final pane_current_command: bash
+[08:01:47] DONE scenario=dead-captain-held

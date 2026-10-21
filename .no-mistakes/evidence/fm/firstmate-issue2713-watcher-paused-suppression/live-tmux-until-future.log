@@ -1,0 +1,23 @@
+[08:02:58] scenario=until-future cadence=60s lab=/tmp/fm-lab.oUun4H window=fmlab:worker
+[08:02:58] status line: paused: waiting on the nightly build until 2026-10-21T07:02Z
+[08:02:58] pane_current_command: bash
+[08:02:58] pane text: lab$|
+[08:02:58] crew-state verdict: state: paused · source: status-log · waiting on the nightly build until 2026-10-21T07:02Z
+[08:02:58] agent state: dead
+[08:03:02] round signal: watcher EXITED rc=0 after 4s. stdout=[signal: /tmp/fm-lab.oUun4H/state/demo.status|]
+[08:03:02] round signal markers: .seen-demo_status 
+[08:03:02] round signal queue rows: signal	demo.status	signal: /tmp/fm-lab.oUun4H/state/demo.status|signal	demo.status	signal: /tmp/fm-lab.oUun4H/state/demo.status|
+[08:03:02] round signal triage log tail: 
+[08:03:07] drain: 1792562581	2	signal	demo.status	signal: /tmp/fm-lab.oUun4H/state/demo.status|wake annotation: latest wake-EVENT observed at drain, not current state: demo.status: paused: waiting on the nightly build until 2026-10-21T07:02Z|
+[08:03:07] acked through 2
+[08:03:28] round first-sight: watcher still running after 20s (absorbing; killed). stdout=[]
+[08:03:28] round first-sight markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[08:03:28] round first-sight queue rows: 
+[08:03:28] round first-sight triage log tail: 
+[08:03:30] round second-look: watcher EXITED rc=0 after 2s. stdout=[check: rearm-resurface|]
+[08:03:30] round second-look markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[08:03:30] round second-look queue rows: 
+[08:03:30] round second-look triage log tail: 
+[08:03:30] final pane text: lab$|
+[08:03:30] final pane_current_command: bash
+[08:03:30] DONE scenario=until-future

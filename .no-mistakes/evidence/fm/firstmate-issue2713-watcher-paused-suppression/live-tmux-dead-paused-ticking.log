@@ -1,0 +1,30 @@
+[08:01:48] scenario=dead-paused-ticking cadence=60s lab=/tmp/fm-lab.XTYptv window=fmlab:worker
+[08:01:48] status line: paused: waiting on the validation run to finish
+[08:01:48] pane_current_command: bash
+[08:01:48] pane text: 08:01:47.444529136|08:01:47.851646842|08:01:48.259228000|
+[08:01:48] crew-state verdict: state: paused · source: status-log · waiting on the validation run to finish
+[08:01:49] agent state: ambiguous
+[08:01:53] round signal: watcher EXITED rc=0 after 4s. stdout=[signal: /tmp/fm-lab.XTYptv/state/demo.status|]
+[08:01:53] round signal markers: .seen-demo_status 
+[08:01:53] round signal queue rows: signal	demo.status	signal: /tmp/fm-lab.XTYptv/state/demo.status|signal	demo.status	signal: /tmp/fm-lab.XTYptv/state/demo.status|
+[08:01:53] round signal triage log tail: 
+[08:01:56] drain: 1792562512	2	signal	demo.status	signal: /tmp/fm-lab.XTYptv/state/demo.status|wake annotation: latest wake-EVENT observed at drain, not current state: demo.status: paused: waiting on the validation run to finish|
+[08:01:57] acked through 2
+[08:02:12] round inside-cadence: watcher still running after 15s (absorbing; killed). stdout=[]
+[08:02:12] round inside-cadence markers: .count-fmlab_worker .hash-fmlab_worker .paused-rechecked-fmlab_worker .seen-demo_status 
+[08:02:12] round inside-cadence queue rows: 
+[08:02:12] round inside-cadence triage log tail: 
+[08:02:51] waited: anchor age now 63s (cadence 60s)
+[08:02:52] round recheck: watcher EXITED rc=0 after 1s. stdout=[check: rearm-resurface|]
+[08:02:52] round recheck markers: .count-fmlab_worker .hash-fmlab_worker .paused-rechecked-fmlab_worker .seen-demo_status 
+[08:02:52] round recheck queue rows: 
+[08:02:52] round recheck triage log tail: 
+[08:02:54] drain: 
+[08:02:54] acked through 0
+[08:02:56] round after-recheck: watcher EXITED rc=0 after 2s. stdout=[stale: fmlab:worker (paused 68s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|]
+[08:02:56] round after-recheck markers: .count-fmlab_worker .hash-fmlab_worker .paused-fmlab_worker .paused-rechecked-fmlab_worker .paused-resurfaced-fmlab_worker .seen-demo_status .stale-fmlab_worker 
+[08:02:56] round after-recheck queue rows: stale	fmlab:worker	stale: fmlab:worker (paused 68s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|
+[08:02:56] round after-recheck triage log tail: 
+[08:02:56] final pane text: 08:02:55.994021119|08:02:56.410535626|08:02:56.820657308|
+[08:02:56] final pane_current_command: bash
+[08:02:56] DONE scenario=dead-paused-ticking
