@@ -1,0 +1,72 @@
+## Scenario: replaced pull request head wakes once
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+  -> exit 0
+
+# first poll (baseline observation, head=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# forge: PR head moves to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+$ bash contributions.check.sh
+contribution-wake: check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683562	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+# unchanged re-poll
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683562	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+# acknowledge the head signal
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683562	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+# stored record after ack:
+{
+  "seen": [],
+  "pending": [],
+  "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

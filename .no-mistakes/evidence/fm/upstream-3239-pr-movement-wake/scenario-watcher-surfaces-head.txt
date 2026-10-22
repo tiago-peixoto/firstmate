@@ -1,0 +1,57 @@
+## Scenario: the checkpoint watcher stays quiet on an unchanged PR and surfaces a replaced head once
+armed: state/delivery.check.sh
+  -> exit 0
+# quiet watcher, PR unchanged (expect timeout exit 124, no wake)
+$ FM_POLL=1 FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=0 FM_HEARTBEAT=999999 fm-watch-checkpoint.sh --seconds 8
+  -> exit 124
+stdout:
+checkpoint: no actionable wake within 8s
+stderr:
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# forge: PR head moves to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+$ FM_WATCH_HANDLING_SUCCESSOR=1 ... fm-watch-checkpoint.sh --seconds 30
+  -> exit 0
+stdout:
+check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+stderr:
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683665	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+# watcher again with the head unchanged (expect quiet, exit 124)
+  -> exit 124
+stdout:
+checkpoint: no actionable wake within 5s
+stderr:
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683665	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+

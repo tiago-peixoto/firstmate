@@ -1,0 +1,60 @@
+## Scenario: a pull request leaving draft wakes once; converting to draft does not
+armed: state/delivery.check.sh
+  -> exit 0
+# first poll (draft=false baseline)
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# forge: PR converted to draft
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# forge: PR marked ready for review (draft=false)
+$ bash contributions.check.sh
+contribution-wake: check: contributions delivery ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "ready-for-review:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2026-09-16T08:00:00Z",
+    "type": "ready-for-review",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "pull request left draft",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683621	1	check	contribution-ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c	check: contributions delivery ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c
+
+# unchanged re-poll
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "ready-for-review:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2026-09-16T08:00:00Z",
+    "type": "ready-for-review",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "pull request left draft",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683621	1	check	contribution-ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c	check: contributions delivery ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c
+

@@ -1,0 +1,97 @@
+## Scenario: a newly requested reviewer or team wakes once; a removed request does not
+armed: state/delivery.check.sh
+  -> exit 0
+# first poll (no review requests baseline)
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# forge: reviewer alice requested
+$ bash contributions.check.sh
+contribution-wake: check: contributions delivery b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "review-requested:alice:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from alice",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683627	1	check	contribution-b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d	check: contributions delivery b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d
+
+# forge: team core also requested
+$ bash contributions.check.sh
+contribution-wake: check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "review-requested:alice:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from alice",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  },
+  {
+    "token": "review-requested:team:core:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from team:core",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 2
+--- .wake-queue:
+1792683627	1	check	contribution-b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d	check: contributions delivery b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d
+1792683628	2	check	contribution-1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d	check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+
+# forge: alice removed from requests (no wake expected)
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "review-requested:alice:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from alice",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  },
+  {
+    "token": "review-requested:team:core:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from team:core",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 2
+--- .wake-queue:
+1792683627	1	check	contribution-b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d	check: contributions delivery b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d
+1792683628	2	check	contribution-1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d	check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+
+# stored baseline:
+[
+  "team:core"
+]

@@ -1,0 +1,57 @@
+## Adversarial: after acknowledging the head signal, an unchanged re-poll stays quiet
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683602	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z
+  -> exit 0
+# re-poll twice after ack with the head unchanged
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683602	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+# then the head moves back to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (a genuinely new transition)
+$ bash contributions.check.sh
+contribution-wake: check: contributions delivery 983211164d58ca04b57bf4873587e252185690604351dc8d9699070905fcba9b
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "head:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "head moved from bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 2
+--- .wake-queue:
+1792683602	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+1792683605	2	check	contribution-983211164d58ca04b57bf4873587e252185690604351dc8d9699070905fcba9b	check: contributions delivery 983211164d58ca04b57bf4873587e252185690604351dc8d9699070905fcba9b
+

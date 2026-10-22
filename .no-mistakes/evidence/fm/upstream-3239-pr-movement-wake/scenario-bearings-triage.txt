@@ -1,0 +1,32 @@
+## Scenario: Bearings reports a pending movement signal as fleet triage work
+# before movement: fm-bearings-snapshot.sh --json | .contributions
+{
+  "counts": {
+    "captain": 0,
+    "fleet": 0,
+    "maintainer": 1,
+    "nobody": 0
+  },
+  "actionable": []
+}
+# after head movement: fm-bearings-snapshot.sh --json | .contributions
+{
+  "scope": "owned contributions per home",
+  "known": 1,
+  "checked": 1,
+  "counts": {
+    "captain": 0,
+    "fleet": 1,
+    "maintainer": 0,
+    "nobody": 0
+  },
+  "complete": true,
+  "proven_clear": true,
+  "unmeasured_homes": 0,
+  "unreadable_records": 0,
+  "unmeasured": 0,
+  "stale_verdicts": 0,
+  "missing_verdicts": 0,
+  "captain_omitted": 0,
+  "captain": []
+}

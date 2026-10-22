@@ -1,0 +1,48 @@
+## Scenario: a head change observed as merged settles without a movement wake
+registered -> exit 0
+# first poll (open, head A)
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# forge: head moves to B, reviewer requested and PR becomes merged in the same observation
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# stored record:
+{
+  "state": "merged",
+  "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "pending": [],
+  "error": null
+}
+
+## Scenario: a head change observed as closed settles without a movement wake
+registered -> exit 0
+# first poll (open, head A)
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# forge: head moves to B, reviewer requested and PR becomes closed in the same observation
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# stored record:
+{
+  "state": "closed",
+  "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "pending": [],
+  "error": null
+}
+

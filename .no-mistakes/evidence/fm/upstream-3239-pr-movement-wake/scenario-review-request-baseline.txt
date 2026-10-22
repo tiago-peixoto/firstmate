@@ -1,0 +1,75 @@
+## Scenario: review requests present at the first observation are a baseline, not movement
+armed: state/delivery.check.sh
+  -> exit 0
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# stored baseline:
+[
+  "alice",
+  "team:core"
+]
+
+## Scenario: a legacy record stored before review requests were recorded treats current requests as baseline
+# legacy stored record (no review_requests field):
+[
+  "can_merge",
+  "checks",
+  "draft",
+  "events",
+  "head",
+  "mergeable",
+  "review_decision",
+  "reviews",
+  "state"
+]
+armed: state/delivery.check.sh
+  -> exit 0
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+$ bash contributions.check.sh
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[]
+--- durable check wakes in state/.wake-queue: 0
+
+# stored baseline:
+[
+  "alice",
+  "team:core"
+]
+# now a further reviewer bob is requested after the baseline
+$ bash contributions.check.sh
+contribution-wake: check: contributions delivery 680eabe6d66c35c16f46575452005b8950fab17a5eb0750baf8ccd333b037f26
+  -> exit 0
+$ bash delivery.check.sh
+  -> exit 0
+--- pending (fm-contributions.sh pending):
+[
+  {
+    "token": "review-requested:bob:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from bob",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+--- durable check wakes in state/.wake-queue: 1
+--- .wake-queue:
+1792683642	1	check	contribution-680eabe6d66c35c16f46575452005b8950fab17a5eb0750baf8ccd333b037f26	check: contributions delivery 680eabe6d66c35c16f46575452005b8950fab17a5eb0750baf8ccd333b037f26
+
