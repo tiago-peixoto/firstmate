@@ -1,0 +1,127 @@
+
+### SCENARIO A: 19-hour unanswered inline comment under a captain hold (FM_CONTRIBUTIONS_REPLY_AGE=86400)
+backlog hold line: - [ ] delivery - Contribution delivery https://github.com/o/r/pull/8 (repo: sample) (kind: ship)  (hold: wait for the scope decision) (hold-kind: captain)
+forge inline comments: [{"id":31,"user":{"login":"maintainer"},"author_association":"OWNER","body":"Why is this retried?","html_url":"https://github.com/o/r/pull/8#discussion_r31","created_at":"2026-09-16T08:00:00Z","updated_at":"2026-09-16T08:00:00Z","commit_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]
+
+### A1 poll at 2026-09-16T08:01Z: comment arrives, ordinary wake
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-hold 2026-09-16T08:01:00Z
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+[exit 0]
+
+### A2 supervisor acknowledges the pending signal
+$ ack_pending /tmp/fm-manual-7358.eYCtam/manual-hold
+[exit 0]
+pending after ack: []
+
+### A3 poll 19h after the comment (03:00 next day): nothing raised yet
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-hold 2026-09-17T03:00:00Z
+[exit 0]
+threads in record: [{"key":"review-comment:31","type":"review-comment","source":"https://github.com/o/r/pull/8#discussion_r31","author":"maintainer","at":"2026-09-16T08:00:00Z","raised":"2026-09-16T08:01:00Z"}]
+
+### A4 poll 25h after the comment: re-raised with URL and age
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-hold 2026-09-17T09:00:00Z
+contribution-wake: check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+[exit 0]
+durable wake queue:
+1792641227	1	check	contribution-683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8	check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+1792641229	2	check	contribution-1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550	check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+pending now: [{"token":"unanswered:review-comment:31:2026-09-17T09:00:00Z","type":"unanswered","thread":"review-comment:31","source":"https://github.com/o/r/pull/8#discussion_r31","head":null,"author":"maintainer","age":"25h","body":"no reply from the contribution author for 25h","task":"delivery","url":"https://github.com/o/r/pull/8"}]
+record threads: [{"key":"review-comment:31","type":"review-comment","source":"https://github.com/o/r/pull/8#discussion_r31","author":"maintainer","at":"2026-09-16T08:00:00Z","raised":"2026-09-17T09:00:00Z"}]
+
+### A5 ack the re-raise, poll 24h later (08:00) -> silent, poll 25h later (09:00) -> raised again at 49h
+$ ack_pending /tmp/fm-manual-7358.eYCtam/manual-hold
+[exit 0]
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-hold 2026-09-18T08:00:00Z
+[exit 0]
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-hold 2026-09-18T09:00:00Z
+contribution-wake: check: contributions delivery bb045b195bed108d456fb1437a2c20a2c2832760f3ac090dee57ea496d3d09a0 unanswered https://github.com/o/r/pull/8#discussion_r31 49h
+[exit 0]
+notified unanswered tokens kept: ["unanswered:review-comment:31:2026-09-18T09:00:00Z"]
+
+### A6 the author replies in the thread; later polls stay silent and tracking ends
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-hold 2026-09-18T10:05:00Z
+[exit 0]
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-hold 2026-09-20T10:00:00Z
+[exit 0]
+record threads/pending: {"threads":[],"pending":[]}
+
+### SCENARIO B: a reply from a non-author account does NOT answer the thread (adversarial)
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-stranger 2026-09-16T09:01:00Z
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+[exit 0]
+$ ack_pending /tmp/fm-manual-7358.eYCtam/manual-stranger
+[exit 0]
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-stranger 2026-09-17T09:30:00Z
+contribution-wake: check: contributions delivery 70238d0d49fa2f3a437603b0f0688f27472ad7a9b9420ccd3cc27e30145af806 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+[exit 0]
+
+### SCENARIO C: unconfigured install (no FM_CONTRIBUTIONS_REPLY_AGE) never reads reviewThreads and never re-raises
+$ poll_off 2026-09-16T08:01:00Z
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+[exit 0]
+$ ack_pending /tmp/fm-manual-7358.eYCtam/manual-off
+[exit 0]
+$ poll_off 2026-09-18T09:00:00Z
+[exit 0]
+$ poll_off 2026-09-25T09:00:00Z
+[exit 0]
+graphql calls made by fake gh: 0
+distinct gh call kinds:
+      3 api repos/o/r
+      3 api repos/o/r/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/check-runs
+      3 api repos/o/r/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses
+      3 api repos/o/r/issues/8/comments
+      3 api repos/o/r/pulls/8
+      3 api repos/o/r/pulls/8/comments
+      3 api repos/o/r/pulls/8/reviews
+      3 pr view
+record has threads key: false
+
+### C2 switch it on: the graphql reviewThreads read appears and the thread is raised
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-off 2026-09-27T09:00:00Z
+contribution-wake: check: contributions delivery 4143d8075f9ad4c9e6ab37f19b820adaba100075df8406a5649ed3aded648e50 unanswered https://github.com/o/r/pull/8#discussion_r31 265h
+[exit 0]
+graphql calls now: 1
+api graphql --paginate --slurp -f owner=o -f name=r -F number=8 -f query=query($owner:String!,$name:String!,$number:Int!,$endCursor:String){repository(owner:$ow
+
+### SCENARIO D: reply-age validation refuses 0, 00, 000, -5, soon, 1.5, empty-is-off, accepts 03600
+$ FM_CONTRIBUTIONS_REPLY_AGE=0 poll -> exit 1: fm-contributions: invalid reply age
+$ FM_CONTRIBUTIONS_REPLY_AGE=00 poll -> exit 1: fm-contributions: invalid reply age
+$ FM_CONTRIBUTIONS_REPLY_AGE=000 poll -> exit 1: fm-contributions: invalid reply age
+$ FM_CONTRIBUTIONS_REPLY_AGE=-5 poll -> exit 1: fm-contributions: invalid reply age
+$ FM_CONTRIBUTIONS_REPLY_AGE=soon poll -> exit 1: fm-contributions: invalid reply age
+$ FM_CONTRIBUTIONS_REPLY_AGE=1.5 poll -> exit 1: fm-contributions: invalid reply age
+$ FM_CONTRIBUTIONS_REPLY_AGE=03600 poll -> exit 0: contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+$ FM_CONTRIBUTIONS_REPLY_AGE= (empty) poll -> exit 0: 
+
+### SCENARIO E: arm copies a configured reply age into the generated check shim
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-arm 2026-09-16T08:01:00Z
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+[exit 0]
+$ ack_pending /tmp/fm-manual-7358.eYCtam/manual-arm
+[exit 0]
+[arm exit 0]
+generated shim:
+    #!/usr/bin/env bash
+    export FM_HOME=/tmp/fm-manual-7358.eYCtam/manual-arm
+    export FM_STATE_OVERRIDE=/tmp/fm-manual-7358.eYCtam/manual-arm/state
+    export FM_DATA_OVERRIDE=/tmp/fm-manual-7358.eYCtam/manual-arm/data
+    export FM_CONTRIBUTIONS_REPLY_AGE=3600
+    exec /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5GS2NWMN00DAD7E98P88NE7/bin/fm-contributions.sh poll
+$ run the shim with the variable unset in the caller env at +1.5h -> contribution-wake: check: contributions delivery 8361df51d461662840bc13f6a5046f39c7ee3ceb21a3a8953fc01ce20a253fbc unanswered https://github.com/o/r/pull/8#discussion_r31 1h
+[exit 0]
+shim re-armed without the setting mentions REPLY_AGE: 0
+$ run unconfigured shim at +2d -> [exit 0]
+
+### SCENARIO F: merged pull request drops threads and unanswered signals
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-merged 2026-09-16T08:01:00Z
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+[exit 0]
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-merged 2026-09-17T09:00:00Z
+contribution-wake: check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+[exit 0]
+$ poll_at /tmp/fm-manual-7358.eYCtam/manual-merged 2026-09-18T09:00:00Z
+[exit 0]
+record: {"state":"merged","threads":[],"pending":["review-comment"]}
+
+(disposable homes under /tmp/fm-manual-7358.eYCtam are removed by the test lib EXIT trap)
