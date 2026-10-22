@@ -1,0 +1,138 @@
+# Live drive of bin/fm-pr-check.sh at f7600eb7 against a disposable secondmate home
+# Forge reads use the machine's real gh (read-only) on the real merged PR https://github.com/kunchenguid/firstmate/pull/7407
+# lab=/tmp/fm-ready-green.KJA0FP (removed at exit)
+
+== S1 default (no flag): register while checks pending -> ready line published at registration (pre-existing behavior kept)
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  stderr: ●  WATCHER DOWN - SUPERVISION IS OFF
+  stderr: ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+  stderr: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+  stderr: ●  This is a supervision warning only; the guarded operation WILL still run.
+  stderr: ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  stderr: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  config/ready-after-green: absent; meta mode=no-mistakes
+  state/task-x1.status:
+    | working [at=1792641602]: waiting for CI on https://github.com/kunchenguid/firstmate/pull/7407
+  parent channel parent/state/mate-x.status:
+    | done [key=child-pr-task-x1] [at=1792641605]: child task-x1 PR ready: https://github.com/kunchenguid/firstmate/pull/7407 mode=no-mistakes
+  ready lines on channel: 1
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S2 flag on: register while checks pending -> poll armed, pr= recorded, NO ready line, no actionable warning
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=no-mistakes
+  state/task-x1.status:
+    | working [at=1792641605]: waiting for CI on https://github.com/kunchenguid/firstmate/pull/7407
+  parent channel parent/state/mate-x.status:
+    (absent)
+  ready lines on channel: 0
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S3 flag on: checks-green report names ANOTHER PR (https://github.com/kunchenguid/firstmate/pull/7155) -> still withheld
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=no-mistakes
+  state/task-x1.status:
+    | working [at=1792641605]: waiting for CI on https://github.com/kunchenguid/firstmate/pull/7407
+    | done [at=1792641607]: PR https://github.com/kunchenguid/firstmate/pull/7155 checks green
+  parent channel parent/state/mate-x.status:
+    (absent)
+  ready lines on channel: 0
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S4 flag on: checks-green report names a PR whose number merely starts with this one (https://github.com/kunchenguid/firstmate/pull/74070) -> still withheld
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=no-mistakes
+  state/task-x1.status:
+    | working [at=1792641605]: waiting for CI on https://github.com/kunchenguid/firstmate/pull/7407
+    | done [at=1792641607]: PR https://github.com/kunchenguid/firstmate/pull/7155 checks green
+    | done [at=1792641610]: PR https://github.com/kunchenguid/firstmate/pull/74070 checks green, held for captain merge
+  parent channel parent/state/mate-x.status:
+    (absent)
+  ready lines on channel: 0
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S5 flag on: checks-green report for THIS PR with trailing text -> ready line published
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=no-mistakes
+  state/task-x1.status:
+    | working [at=1792641605]: waiting for CI on https://github.com/kunchenguid/firstmate/pull/7407
+    | done [at=1792641607]: PR https://github.com/kunchenguid/firstmate/pull/7155 checks green
+    | done [at=1792641610]: PR https://github.com/kunchenguid/firstmate/pull/74070 checks green, held for captain merge
+    | done [at=1792641612]: PR https://github.com/kunchenguid/firstmate/pull/7407 checks green, held for captain merge.
+  parent channel parent/state/mate-x.status:
+    | done [key=child-pr-task-x1] [at=1792641615]: child task-x1 PR ready: https://github.com/kunchenguid/firstmate/pull/7407 mode=no-mistakes
+  ready lines on channel: 1
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S6 flag on: registering again after the green report -> still exactly one ready line
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=no-mistakes
+  state/task-x1.status:
+    | working [at=1792641605]: waiting for CI on https://github.com/kunchenguid/firstmate/pull/7407
+    | done [at=1792641607]: PR https://github.com/kunchenguid/firstmate/pull/7155 checks green
+    | done [at=1792641610]: PR https://github.com/kunchenguid/firstmate/pull/74070 checks green, held for captain merge
+    | done [at=1792641612]: PR https://github.com/kunchenguid/firstmate/pull/7407 checks green, held for captain merge.
+  parent channel parent/state/mate-x.status:
+    | done [key=child-pr-task-x1] [at=1792641615]: child task-x1 PR ready: https://github.com/kunchenguid/firstmate/pull/7407 mode=no-mistakes
+  ready lines on channel: 1
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S7 flag on: a later done line that does not report green withdraws the earlier green -> withheld
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=no-mistakes
+  state/task-x1.status:
+    | done [at=1792641618]: PR https://github.com/kunchenguid/firstmate/pull/7407 checks green
+    | done [at=1792641618]: PR https://github.com/kunchenguid/firstmate/pull/7407 opened, checks pending
+  parent channel parent/state/mate-x.status:
+    (absent)
+  ready lines on channel: 0
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S8 flag on: the exact unstamped DoD line 'done: PR <url> checks green' -> ready line published
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=no-mistakes
+  state/task-x1.status:
+    | done: PR https://github.com/kunchenguid/firstmate/pull/7407 checks green
+  parent channel parent/state/mate-x.status:
+    | done [key=child-pr-task-x1] [at=1792641622]: child task-x1 PR ready: https://github.com/kunchenguid/firstmate/pull/7407 mode=no-mistakes
+  ready lines on channel: 1
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+== S9 flag on, direct-PR mode: ready means opened for review -> published at registration despite the flag
+$ FM_HOME=$LAB/home bin/fm-pr-check.sh task-x1 https://github.com/kunchenguid/firstmate/pull/7407
+exit=0
+  stdout: armed: state/task-x1.check.sh
+  stderr: WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+  config/ready-after-green: present; meta mode=direct-PR
+  state/task-x1.status:
+    | working [at=1792641623]: opened https://github.com/kunchenguid/firstmate/pull/7407
+  parent channel parent/state/mate-x.status:
+    | done [key=child-pr-task-x1] [at=1792641625]: child task-x1 PR ready: https://github.com/kunchenguid/firstmate/pull/7407 mode=direct-PR
+  ready lines on channel: 1
+  recorded pr=https://github.com/kunchenguid/firstmate/pull/7407 pr_head=0f2ff2de65d6e29af735030e382902c934a41ed0; merge poll: armed
+
+# teardown: rm -rf /tmp/fm-ready-green.KJA0FP
