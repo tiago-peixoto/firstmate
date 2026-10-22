@@ -1,0 +1,35 @@
+# Live watcher: fm-watch-checkpoint.sh runs the registered check against real GitHub and queues the wake
+registered: state/pr-health.check.sh
+## watcher checkpoint 1 (expects a wake, exit 0)
+exit=0
+stdout:
+check: /tmp/fm-prhealth-live.e4W7p5/watch/state/pr-health.check.sh: pr-health: https://github.com/kunchenguid/firstmate/pull/7625 conflicts with its base at latest commit f7451b9 (task ship1)
+stderr:
+## wake queue rows
+1792650870	1	check	contribution-529ead448a53c2dd8a98012feaae71be0fbca5d1f1cff33aa7054a9f732bbc6b	check: contributions ship1 529ead448a53c2dd8a98012feaae71be0fbca5d1f1cff33aa7054a9f732bbc6b
+1792650872	2	check	/tmp/fm-prhealth-live.e4W7p5/watch/state/pr-health.check.sh	check: /tmp/fm-prhealth-live.e4W7p5/watch/state/pr-health.check.sh: pr-health: https://github.com/kunchenguid/firstmate/pull/7625 conflicts with its base at latest commit f7451b9 (task ship1)
+## watcher checkpoint 2 (nothing new, expects timeout exit 124)
+exit=0
+stdout:
+check: /tmp/fm-prhealth-live.e4W7p5/watch/state/contributions.check.sh: contributions: observation unavailable for https://github.com/kunchenguid/firstmate/pull/7625 - core read exited 1 with 19s of budget left: gh: HTTP 503
+## wake queue rows after
+1792650870	1	check	contribution-529ead448a53c2dd8a98012feaae71be0fbca5d1f1cff33aa7054a9f732bbc6b	check: contributions ship1 529ead448a53c2dd8a98012feaae71be0fbca5d1f1cff33aa7054a9f732bbc6b
+1792650872	2	check	/tmp/fm-prhealth-live.e4W7p5/watch/state/pr-health.check.sh	check: /tmp/fm-prhealth-live.e4W7p5/watch/state/pr-health.check.sh: pr-health: https://github.com/kunchenguid/firstmate/pull/7625 conflicts with its base at latest commit f7451b9 (task ship1)
+1792650876	3	check	/tmp/fm-prhealth-live.e4W7p5/watch/state/contributions.check.sh	check: /tmp/fm-prhealth-live.e4W7p5/watch/state/contributions.check.sh: contributions: observation unavailable for https://github.com/kunchenguid/firstmate/pull/7625 - core read exited 1 with 19s of budget left: gh: HTTP 503
+## forge calls
+api repos/kunchenguid/firstmate/pulls/7625
+api repos/kunchenguid/firstmate/pulls/7625/comments?per_page=100 --paginate --sl
+api repos/kunchenguid/firstmate/commits/f7451b9be7b15d8af1d0922b1ea91ba1d07f4713
+api repos/kunchenguid/firstmate/commits/f7451b9be7b15d8af1d0922b1ea91ba1d07f4713
+api repos/kunchenguid/firstmate
+api repos/kunchenguid/firstmate/pulls/7625/reviews?per_page=100 --paginate --slu
+api repos/kunchenguid/firstmate/issues/7625/comments?per_page=100 --paginate --s
+pr view https://github.com/kunchenguid/firstmate/pull/7625 --json headRefOid,rev
+api repos/kunchenguid/firstmate/pulls/7625
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endC
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$n
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$numbe
+api repos/kunchenguid/firstmate/pulls/7625
+api repos/kunchenguid/firstmate/pulls/7625

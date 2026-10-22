@@ -1,0 +1,45 @@
+# Live branch discovery and retirement: task copy on the head branch of open PR 7625, no pr= recorded
+copy branch: fm/wedge-cap-clean-2605  origin: git@github.com:kunchenguid/firstmate.git
+registered: state/pr-health.check.sh
+## owned before pass 1
+[]
+## pass 1 (expects discovery, enrollment and one conflict line)
+pr-health: https://github.com/kunchenguid/firstmate/pull/7625 conflicts with its base at latest commit f7451b9 (task early)
+exit=0
+## owned after pass 1
+[
+  {
+    "url": "https://github.com/kunchenguid/firstmate/pull/7625",
+    "tasks": [
+      "early"
+    ],
+    "final": false
+  }
+]
+## durable record
+{"url":"https://github.com/kunchenguid/firstmate/pull/7625","kind":"pr","checked_at":null}
+## branch cache
+{"early":{"branch":"fm/wedge-cap-clean-2605","url":"https://github.com/kunchenguid/firstmate/pull/7625"}}
+## pass 2 (same state, silent)
+exit=0
+## captain retires the contribution
+exit=0
+## owned after retire
+[]
+## pass 3 and 4 after retirement (copy still on the branch; expects silence and no PR read)
+exit=0
+exit=0
+REST reads of pulls/7625 before retirement: 2, after: 2
+## enroll refused for the retired pair
+fm-contributions: contribution is retired for this task; enrollment refused
+exit=1
+## fingerprints after
+{"schema":"fm-pr-health.v1","prs":{},"branches":{"early":{"branch":"fm/wedge-cap-clean-2605","url":"https://github.com/kunchenguid/firstmate/pull/7625"}},"ownership_error":false}
+## forge calls (first 80 chars)
+pr list --json number,title,state,author,isDraft,reviewDecision --state open --l
+api graphql -f query=query($q: String!) { search(query: $q, type: ISSUE) { issue
+pr view 7625 --json url -q .url
+api repos/kunchenguid/firstmate/pulls/7625
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=
+api repos/kunchenguid/firstmate/pulls/7625

@@ -1,0 +1,16 @@
+# Live fresh branch lookup after retirement: copy on the head branch of conflicting open PR 7617, record enrolled then retired before the first pass
+enroll exit=0
+retire exit=0
+registered: state/pr-health.check.sh
+## pass 1 and 2 (expects silence)
+exit=0
+exit=0
+## owned
+[]
+## fingerprints
+{"schema":"fm-pr-health.v1","prs":{},"branches":{"early":{"branch":"fm/contributions-shasum-linux-2","url":"https://github.com/kunchenguid/firstmate/pull/7617"}},"ownership_error":false}
+## forge calls (first 80 chars); the branch lookup ran, the PR itself was never read
+pr list --json number,title,state,author,isDraft,reviewDecision --state open --l
+api graphql -f query=query($q: String!) { search(query: $q, type: ISSUE) { issue
+pr view 7617 --json url -q .url
+PR 7617 reads: 0

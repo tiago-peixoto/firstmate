@@ -1,0 +1,112 @@
+# Live PR health monitor transcript (real GitHub forge, disposable FM_HOME)
+# Owned PRs recorded in the lab home's task records:
+pr=https://github.com/kunchenguid/firstmate/pull/7617
+pr=https://github.com/kunchenguid/firstmate/pull/7627
+pr=https://github.com/kunchenguid/firstmate/pull/7625
+
+## arm
+registered: state/pr-health.check.sh
+arm exit=0
+conflict1.meta
+conflict2.meta
+contributions.check-trust
+contributions.check.sh
+green1.meta
+pr-health.check-trust
+pr-health.check.sh
+
+## pass 1 (registered check, as the watcher runs it)
+pr-health: https://github.com/kunchenguid/firstmate/pull/7617 conflicts with its base at latest commit c1ea074 (task conflict1)
+pr-health: https://github.com/kunchenguid/firstmate/pull/7625 conflicts with its base at latest commit f7451b9 (task conflict2)
+
+real	0m2.886s
+user	0m1.060s
+sys	0m1.101s
+exit=0
+
+## pass 2 (same forge state, must be silent)
+exit=0
+
+## pass 3 (still silent)
+exit=0
+
+## state/pr-health.json fingerprints
+{
+  "schema": "fm-pr-health.v1",
+  "prs": {
+    "https://github.com/kunchenguid/firstmate/pull/7617": {
+      "conflicts": [
+        "c1ea0746c6cf3bcf3abb5634f0aa84cde5245db5"
+      ],
+      "checks": []
+    },
+    "https://github.com/kunchenguid/firstmate/pull/7625": {
+      "conflicts": [
+        "f7451b9be7b15d8af1d0922b1ea91ba1d07f4713"
+      ],
+      "checks": []
+    },
+    "https://github.com/kunchenguid/firstmate/pull/7627": {
+      "conflicts": [],
+      "checks": []
+    }
+  },
+  "branches": {},
+  "ownership_error": false
+}
+
+## forge calls the monitor made (gh shim log, query bodies truncated)
+api repos/kunchenguid/firstmate/pulls/7617
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7617 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api repos/kunchenguid/firstmate/pulls/7625
+api repos/kunchenguid/firstmate/pulls/7627
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7625 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7627 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api repos/kunchenguid/firstmate/pulls/7625
+api repos/kunchenguid/firstmate/pulls/7617
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7625 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7627 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7617 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api repos/kunchenguid/firstmate/pulls/7627
+api repos/kunchenguid/firstmate/pulls/7617
+api repos/kunchenguid/firstmate/pulls/7625
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7625 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7627 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7617 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String)
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}
+api repos/kunchenguid/firstmate/pulls/7627
