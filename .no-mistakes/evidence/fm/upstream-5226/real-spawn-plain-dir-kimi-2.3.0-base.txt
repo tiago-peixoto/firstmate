@@ -1,0 +1,34 @@
+## BASE commit 05a68cb2 fm-spawn.sh (full-history clone) + real Kimi Code CLI 2.3.0, plain project (no project MCP)
+
+### spawn stdout/stderr
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.zSQn7E
+warning: /tmp/fm-lab.zSQn7E/data/real-plain-base/launch-brief.md records no ship branch; defaulting to legacy branch fm/real-plain-base
+warning: /tmp/fm-lab.zSQn7E/data/real-plain-base/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready; inspect window primary:fm-real-plain-base
+warning: leaving task real-plain-base's slot claim on /tmp/fm-lab.zSQn7E/.treehouse/plain-964fea/1/plain in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+rc=1
+
+### status
+failed [at=1792687090]: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready
+
+### spawn window pane
+treehouse get
+firstmate@firstmate-hz:~/projects/plain$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/plain-964fea/1/plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/plain-964fea/1/plain$ cd -- '/tmp/fm-lab.zSQn7E/.treehouse/plain-964fea/1/plain'
+firstmate@firstmate-hz:~/.treehouse/plain-964fea/1/plain$ export GOTMPDIR=/tmp/fm-real-plain-base/gotmp
+firstmate@firstmate-hz:~/.treehouse/plain-964fea/1/plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/plain-964fea/1/plain$ export FM_TASK_ID=real-plain-base
+firstmate@firstmate-hz:~/.treehouse/plain-964fea/1/plain$ . '/tmp/fm-real-plain-base+1f3af9d191944a3dae4f1abf68d44a0f6a0
+ef3565eb6d4d6ff5020b459626baa/launch.s1792687079.463464.30030.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  /tmp/fm-lab.zSQn7E/.treehouse/plain-964fea/1/plain
+  No project integrations or instructions to activate.
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

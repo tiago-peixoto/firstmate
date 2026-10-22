@@ -1,0 +1,38 @@
+## ADVERSARIAL: real fm-spawn.sh (target) + real Kimi 2.3.0, project declares servers only in root .mcp.json (undocumented location Kimi 2.3.0 reads; no .kimi-code/mcp.json)
+
+### spawn stdout/stderr
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.zSQn7E
+warning: /tmp/fm-lab.zSQn7E/data/real-altmcp/launch-brief.md records no ship branch; defaulting to legacy branch fm/real-altmcp
+warning: /tmp/fm-lab.zSQn7E/data/real-altmcp/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready. No key was sent.; inspect window primary:fm-real-altmcp
+warning: leaving task real-altmcp's slot claim on /tmp/fm-lab.zSQn7E/.treehouse/altmcp-cd9150/1/altmcp in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+rc=1
+
+### status
+failed [at=1792687122]: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready. No key was sent.
+
+### spawn window pane - Kimi started and shows the 2.3.0 wording, no 'Project MCP targets:' header
+treehouse get
+firstmate@firstmate-hz:~/projects/altmcp$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/altmcp-cd9150/1/altmcp. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/altmcp-cd9150/1/altmcp$ cd -- '/tmp/fm-lab.zSQn7E/.treehouse/altmcp-cd9150/1/altmcp'
+firstmate@firstmate-hz:~/.treehouse/altmcp-cd9150/1/altmcp$ export GOTMPDIR=/tmp/fm-real-altmcp/gotmp
+firstmate@firstmate-hz:~/.treehouse/altmcp-cd9150/1/altmcp$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/altmcp-cd9150/1/altmcp$ export FM_TASK_ID=real-altmcp
+firstmate@firstmate-hz:~/.treehouse/altmcp-cd9150/1/altmcp$ . '/tmp/fm-real-altmcp+1f3af9d191944a3dae4f1abf68d44a0f6a0ef
+3565eb6d4d6ff5020b459626baa/launch.s1792687110.509326.28609.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  /tmp/fm-lab.zSQn7E/.treehouse/altmcp-cd9150/1/altmcp
+  Start 1 MCP server automatically
+    Config: .mcp.json
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+### project MCP marker log (empty = no project command started)
+(end marker.log)

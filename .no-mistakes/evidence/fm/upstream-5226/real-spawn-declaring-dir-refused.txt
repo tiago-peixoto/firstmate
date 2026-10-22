@@ -1,0 +1,29 @@
+## real fm-spawn.sh (target commit) + real Kimi Code CLI 2.3.0, project declares .kimi-code/mcp.json
+
+### spawn stdout/stderr
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.zSQn7E
+warning: /tmp/fm-lab.zSQn7E/data/real-decl/launch-brief.md records no ship branch; defaulting to legacy branch fm/real-decl
+warning: /tmp/fm-lab.zSQn7E/data/real-decl/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode no-mistakes - confirm its definition of done matches
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.; inspect window primary:fm-real-decl
+warning: leaving task real-decl's slot claim on /tmp/fm-lab.zSQn7E/.treehouse/decl-d970ff/1/decl in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+rc=1
+
+### state/real-decl.status
+failed [at=1792686966]: refusing Kimi launch: .kimi-code/mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.
+
+### spawn window pane (primary:fm-real-decl) - Kimi was never launched
+treehouse get
+firstmate@firstmate-hz:~/projects/decl$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/decl-d970ff/1/decl. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/decl-d970ff/1/decl$ cd -- '/tmp/fm-lab.zSQn7E/.treehouse/decl-d970ff/1/decl'
+firstmate@firstmate-hz:~/.treehouse/decl-d970ff/1/decl$ export GOTMPDIR=/tmp/fm-real-decl/gotmp
+firstmate@firstmate-hz:~/.treehouse/decl-d970ff/1/decl$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/decl-d970ff/1/decl$ export FM_TASK_ID=real-decl
+firstmate@firstmate-hz:~/.treehouse/decl-d970ff/1/decl$
+
+### project MCP marker log (empty = no project command started)
+(end marker.log)
+
+### real kimi processes
+none

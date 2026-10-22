@@ -1,0 +1,21 @@
+## Hazard reproduction: real Kimi Code CLI 2.3.0 (installed into a disposable dir, no login), worktree declaring .kimi-code/mcp.json
+
+Declaration (.kimi-code/mcp.json):
+  mcpServers.repro-marker  (stdio) command=<lab>/wt-mcp/repro-mcp-marker.sh args=["--from-project-mcp"]
+  mcpServers.repro-remote  (http)  url=http://127.0.0.1:9/mcp
+
+Folder prompt shown (see real-kimi-2.3.0-trust-prompt-declaring-dir.txt):
+  Trust this folder?
+  Start 2 MCP servers automatically
+    Config: .kimi-code/mcp.json
+   ❯ Trust and continue
+     Exit
+
+One Enter sent to that prompt via the private tmux socket (no login, model "not set").
+Pane afterwards: Welcome to Kimi Code! banner, composer open (see real-kimi-2.3.0-after-enter-declaring-dir.txt).
+
+marker.log afterwards:
+--from-project-mcp
+
+So a single Enter on the prompt starts the declared project stdio command even before any login.
+This is the keypress the change stops the spawn from sending for a declaring directory.
