@@ -552,6 +552,13 @@ The one exception is `respond`: it sent its answer before it began waiting, so r
 A wait your shell can watch this way needs no `paused:` line, except your own pipeline run, a long foreground command, or your own validation round, which you declare once just before its blocking hold: append `paused:` once just before its first blocking command, then stay in the command, and never append it again as you reissue that command.
 EOF
 WAIT_SECTION=${WAIT_SECTION%$'\n'}
+# config/pr-health-monitor (docs/configuration.md) lets a PR wait end the turn,
+# but only for a PR the monitor owns and only for the conditions it wakes on.
+if [ -e "$CONFIG/pr-health-monitor" ]; then
+  WAIT_SECTION+=$'\n'"When you wait on your own PR, first append a status line that names its full URL, then run \`FM_HOME=$(shell_quote "$FM_HOME") $(shell_quote "$FM_ROOT/bin/fm-pr-health.sh") owned <pr-url>\`."
+  WAIT_SECTION+=$'\n'"If it prints \`owned:\`, you may append \`paused:\` naming the PR and end your turn: firstmate is woken when the PR conflicts with its base, a required check fails, or it is green and out of draft with no reviewer requested."
+  WAIT_SECTION+=$'\n'"For any other PR wait, such as checks turning green on a draft, keep the blocking command, or declare \`paused:\` with an \`until\` time."
+fi
 WAIT_BLOCK=
 if [ -e "$CONFIG/wait-no-turns" ]; then
   WAIT_BLOCK="$WAIT_SECTION"$'\n\n'
