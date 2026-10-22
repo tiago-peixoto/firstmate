@@ -1,0 +1,17 @@
+{
+  "schema": "fm-contributions.v1",
+  "task": "conflict1",
+  "records": [
+    {
+      "url": "https://github.com/kunchenguid/firstmate/pull/7612",
+      "kind": "pr",
+      "checked_at": null,
+      "error": null,
+      "observation": null,
+      "verdict": null,
+      "seen": [],
+      "pending": [],
+      "notified": []
+    }
+  ]
+}

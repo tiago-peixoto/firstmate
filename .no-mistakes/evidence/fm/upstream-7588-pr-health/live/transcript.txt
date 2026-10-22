@@ -1,0 +1,59 @@
+started 2026-10-22T15:21:45Z
+== Scenario: flag absent (default off) ==
+
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5J2MS3JJ7PRQ8D02NK7JSS2/bin/fm-pr-health.sh poll
+[exit 0]
+
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5J2MS3JJ7PRQ8D02NK7JSS2/bin/fm-pr-health.sh arm
+stderr: fm-pr-health: config/pr-health-monitor is absent; the PR health monitor stays off
+[exit 1]
+gh calls so far: 0
+state and data unchanged
+== Scenario: opt in, enroll PR with failing reported checks and no required contexts ==
+
+$ touch /tmp/fm-lab.wf712R/config/pr-health-monitor
+[exit 0]
+
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5J2MS3JJ7PRQ8D02NK7JSS2/bin/fm-contributions.sh enroll ship1 https://github.com/kunchenguid/firstmate/pull/7208
+[exit 0]
+
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5J2MS3JJ7PRQ8D02NK7JSS2/bin/fm-pr-health.sh arm
+registered: state/pr-health.check.sh
+[exit 0]
+contributions.check-trust
+contributions.check.sh
+pr-health.check-trust
+pr-health.check.sh
+
+$ bash /tmp/fm-lab.wf712R/state/pr-health.check.sh
+pr-health: https://github.com/kunchenguid/firstmate/pull/7208 has failing checks at latest commit 0648e4a: Behavior portable serial 2, PR must be raised via no-mistakes (task ship1)
+[exit 0]
+
+$ bash /tmp/fm-lab.wf712R/state/pr-health.check.sh
+[exit 0]
+== Scenario: enroll a PR with a definite conflict ==
+
+$ /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5J2MS3JJ7PRQ8D02NK7JSS2/bin/fm-contributions.sh enroll conflict1 https://github.com/kunchenguid/firstmate/pull/7612
+[exit 0]
+
+$ bash /tmp/fm-lab.wf712R/state/pr-health.check.sh
+pr-health: https://github.com/kunchenguid/firstmate/pull/7612 conflicts with its base at latest commit 4c60946 (task conflict1)
+[exit 0]
+
+$ bash /tmp/fm-lab.wf712R/state/pr-health.check.sh
+[exit 0]
+finished 2026-10-22T15:21:52Z
+== gh calls ==
+api repos/kunchenguid/firstmate/pulls/7208 api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F numb
+
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7208 -f query=query($owner:String!,$repo
+
+api repos/kunchenguid/firstmate/pulls/7208 
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7208 -f query=query($owner:String!,$repo
+api repos/kunchenguid/firstmate/pulls/7612 
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7612 -f query=query($owner:String!,$repo
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7208 -f query=query($owner:String!,$repo
+
+api repos/kunchenguid/firstmate/pulls/7612 
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7612 -f query=query($owner:String!,$repo
+== tmux calls (expect none) ==

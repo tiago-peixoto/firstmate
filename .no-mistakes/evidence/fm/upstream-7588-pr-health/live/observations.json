@@ -1,0 +1,91 @@
+{
+ "calls": [
+  {
+   "kind": "GraphQL query",
+   "pr": "7208"
+  },
+  {
+   "kind": "REST GET single PR",
+   "pr": "7208"
+  },
+  {
+   "kind": "REST GET single PR",
+   "pr": "7208"
+  },
+  {
+   "kind": "REST GET single PR",
+   "pr": "7612"
+  },
+  {
+   "kind": "REST GET single PR",
+   "pr": "7208"
+  },
+  {
+   "kind": "GraphQL query",
+   "pr": "7208"
+  },
+  {
+   "kind": "GraphQL query",
+   "pr": "7208"
+  },
+  {
+   "kind": "GraphQL query",
+   "pr": "7208"
+  },
+  {
+   "kind": "GraphQL query",
+   "pr": "7612"
+  },
+  {
+   "kind": "REST GET single PR",
+   "pr": "7208"
+  },
+  {
+   "kind": "GraphQL query",
+   "pr": "7612"
+  },
+  {
+   "kind": "REST GET single PR",
+   "pr": "7612"
+  }
+ ],
+ "pr7208": {
+  "gql_head": "0648e4a371156b819b2c40e9b078c6cc6535e5f7",
+  "contexts": 19,
+  "isRequired_values": [
+   "False"
+  ],
+  "failing": [
+   {
+    "name": "PR must be raised via no-mistakes",
+    "conclusion": "FAILURE",
+    "startedAt": "2026-10-22T02:22:08Z"
+   },
+   {
+    "name": "Behavior portable serial 2",
+    "conclusion": "CANCELLED",
+    "startedAt": "2026-10-22T03:06:13Z"
+   }
+  ],
+  "rest_state": "open",
+  "rest_merged_at": null,
+  "rest_mergeable": true,
+  "rest_head": "0648e4a371156b819b2c40e9b078c6cc6535e5f7"
+ },
+ "pr7612": {
+  "rest_state": "open",
+  "rest_merged_at": null,
+  "rest_mergeable": false,
+  "rest_head": "4c60946a388715d1cfb0a65865f4c2193b0ca0c1",
+  "gql_head": "4c60946a388715d1cfb0a65865f4c2193b0ca0c1",
+  "contexts": 21,
+  "isRequired_values": [
+   "False"
+  ],
+  "failing": []
+ },
+ "call_kinds": [
+  "GraphQL query",
+  "REST GET single PR"
+ ]
+}

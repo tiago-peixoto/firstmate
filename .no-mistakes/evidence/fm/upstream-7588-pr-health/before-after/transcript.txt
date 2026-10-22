@@ -1,0 +1,28 @@
+pre-fix script: 3bc134e6 no-mistakes(review): refuse retired re-enrollment, require marked checks, verify owned records
+<       | ([$ctx[] | select(.required and .failing) | .name] | unique) as $failing
+>       | any($ctx[]; .required) as $has_required
+>       | ([$ctx[] | select(.failing and (.required or ($has_required | not))) | .name] | unique) as $failing
+<             | "pr-health: \($url) has failing required checks \($where): \($new_failing[:3] | join(", "))\(if ($new_failing | length) > 3 then " and \(($new_failing | length) - 3) more" else "" end) (task \($owners))")])}
+>             | "pr-health: \($url) has failing \(if $has_required then "required " else "" end)checks \($where): \($new_failing[:3] | join(", "))\(if ($new_failing | length) > 3 then " and \(($new_failing | length) - 3) more" else "" end) (task \($owners))")])}
+
+$ [pre-fix 3bc134e6] fm-pr-health.sh poll  (same lab home, PR 7208 enrolled, flag on)
+[exit 0]
+state/pr-health.json after pre-fix poll:
+{
+  "schema": "fm-pr-health.v1",
+  "prs": {
+    "https://github.com/kunchenguid/firstmate/pull/7208": {
+      "conflicts": [],
+      "checks": []
+    }
+  },
+  "branches": {},
+  "ownership_error": false
+}
+
+$ [target a986889b] bin/fm-pr-health.sh poll  (same home, same fingerprint file)
+pr-health: https://github.com/kunchenguid/firstmate/pull/7208 has failing checks at latest commit 0648e4a: Behavior portable serial 2, PR must be raised via no-mistakes (task ship1)
+[exit 0]
+$ [target a986889b] bin/fm-pr-health.sh poll  (again, expect silence)
+[exit 0]
+captured 2026-10-22T15:22:58Z

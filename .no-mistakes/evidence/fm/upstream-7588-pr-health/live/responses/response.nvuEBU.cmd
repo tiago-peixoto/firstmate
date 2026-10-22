@@ -1,0 +1,5 @@
+api graphql --paginate --slurp -F owner=kunchenguid -F repo=firstmate -F number=7612 -f query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){
+headRefOid
+statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
+... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
+... on StatusContext{context state createdAt isRequired(pullRequestNumber:$number)}}}}}}}

@@ -1,0 +1,26 @@
+{
+  "schema": "fm-pr-health.v1",
+  "prs": {
+    "https://github.com/kunchenguid/firstmate/pull/7208": {
+      "conflicts": [],
+      "checks": [
+        {
+          "head": "0648e4a371156b819b2c40e9b078c6cc6535e5f7",
+          "name": "Behavior portable serial 2"
+        },
+        {
+          "head": "0648e4a371156b819b2c40e9b078c6cc6535e5f7",
+          "name": "PR must be raised via no-mistakes"
+        }
+      ]
+    },
+    "https://github.com/kunchenguid/firstmate/pull/7612": {
+      "conflicts": [
+        "4c60946a388715d1cfb0a65865f4c2193b0ca0c1"
+      ],
+      "checks": []
+    }
+  },
+  "branches": {},
+  "ownership_error": false
+}

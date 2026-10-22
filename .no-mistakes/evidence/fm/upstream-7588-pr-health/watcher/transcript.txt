@@ -1,0 +1,18 @@
+started 2026-10-22T15:23:14Z
+$ fm-contributions.sh enroll conflict1 https://github.com/kunchenguid/firstmate/pull/7612
+[exit 0]
+$ fm-pr-health.sh arm
+registered: state/pr-health.check.sh
+[exit 0]
+$ FM_POLL=1 FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=0 FM_HEARTBEAT=999999 fm-watch-checkpoint.sh --seconds 20
+check: /tmp/fm-lab.H49vqo/state/pr-health.check.sh: pr-health: https://github.com/kunchenguid/firstmate/pull/7612 conflicts with its base at latest commit 4c60946 (task conflict1)
+[exit 0]
+state/.wake-queue rows:
+1792682598	1	check	contribution-8099a3da003185826467257c0ae2fd4ccd5a2b1054989bb4d971fc078da371d7	check: contributions conflict1 8099a3da003185826467257c0ae2fd4ccd5a2b1054989bb4d971fc078da371d7
+1792682598	2	check	contribution-ab0447e4990618966c9eb8d9b00be22f3d776493a9fc692f002b3b89e1e713ad	check: contributions conflict1 ab0447e4990618966c9eb8d9b00be22f3d776493a9fc692f002b3b89e1e713ad
+1792682599	3	check	/tmp/fm-lab.H49vqo/state/pr-health.check.sh	check: /tmp/fm-lab.H49vqo/state/pr-health.check.sh: pr-health: https://github.com/kunchenguid/firstmate/pull/7612 conflicts with its base at latest commit 4c60946 (task conflict1)
+$ second watcher run with the same state (expect timeout 124: no new wake)
+checkpoint: no actionable wake within 8s
+[exit 124]
+tmux calls:
+finished 2026-10-22T15:23:28Z
