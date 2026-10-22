@@ -1,0 +1,133 @@
+=================== no-mistakes: generated inbox section of /tmp/fm-lab.jCgMt7/data/no-mistakes/brief.md
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.jCgMt7/state/no-mistakes.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fm-lab.jCgMt7/state/no-mistakes.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read each message in numeric order.
+Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/no-mistakes.inbox'/NNN.msg`.
+Do not record a read before actually reading the message.
+If the command fails or cannot run, use your file tools to create /tmp/fm-lab.jCgMt7/state/no-mistakes.inbox/.read/ if needed, then create the empty receipt /tmp/fm-lab.jCgMt7/state/no-mistakes.inbox/.read/NNN.msg for the message you just read.
+Report a read-acknowledgement failure only if the file-tool fallback also fails; never assume a failed write acknowledged the message.
+Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.jCgMt7/state/no-mistakes.inbox'/NNN.msg '/tmp/fm-lab.jCgMt7/state/no-mistakes.inbox'/handled/`.
+The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+An empty or absent inbox needs no action.
+
+PASS: no-mistakes file-tool fallback names the unquoted receipt path
+PASS: no-mistakes fallback carries no shell quotes
+PASS: no-mistakes keeps the quoted handled/ move
+emitted receipt command: '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/no-mistakes.inbox'/NNN.msg
+PASS: no-mistakes emitted receipt command, run as a shell command, created .read/001.msg and left 001.msg pending
+fallback dir as printed: /tmp/fm-lab.jCgMt7/state/no-mistakes.inbox/.read/
+fallback receipt as printed: /tmp/fm-lab.jCgMt7/state/no-mistakes.inbox/.read/NNN.msg
+PASS: no-mistakes fallback paths, used literally as a file tool would, create the same receipt
+PASS: no-mistakes ladder quiet after the file-tool receipt (due action: quiet)
+=================== direct-PR: generated inbox section of /tmp/fm-lab.jCgMt7/data/direct-PR/brief.md
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.jCgMt7/state/direct-PR.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fm-lab.jCgMt7/state/direct-PR.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read each message in numeric order.
+Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/direct-PR.inbox'/NNN.msg`.
+Do not record a read before actually reading the message.
+If the command fails or cannot run, use your file tools to create /tmp/fm-lab.jCgMt7/state/direct-PR.inbox/.read/ if needed, then create the empty receipt /tmp/fm-lab.jCgMt7/state/direct-PR.inbox/.read/NNN.msg for the message you just read.
+Report a read-acknowledgement failure only if the file-tool fallback also fails; never assume a failed write acknowledged the message.
+Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.jCgMt7/state/direct-PR.inbox'/NNN.msg '/tmp/fm-lab.jCgMt7/state/direct-PR.inbox'/handled/`.
+The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+An empty or absent inbox needs no action.
+
+PASS: direct-PR file-tool fallback names the unquoted receipt path
+PASS: direct-PR fallback carries no shell quotes
+PASS: direct-PR keeps the quoted handled/ move
+emitted receipt command: '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/direct-PR.inbox'/NNN.msg
+PASS: direct-PR emitted receipt command, run as a shell command, created .read/001.msg and left 001.msg pending
+fallback dir as printed: /tmp/fm-lab.jCgMt7/state/direct-PR.inbox/.read/
+fallback receipt as printed: /tmp/fm-lab.jCgMt7/state/direct-PR.inbox/.read/NNN.msg
+PASS: direct-PR fallback paths, used literally as a file tool would, create the same receipt
+PASS: direct-PR ladder quiet after the file-tool receipt (due action: quiet)
+=================== local-only: generated inbox section of /tmp/fm-lab.jCgMt7/data/local-only/brief.md
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.jCgMt7/state/local-only.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fm-lab.jCgMt7/state/local-only.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read each message in numeric order.
+Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/local-only.inbox'/NNN.msg`.
+Do not record a read before actually reading the message.
+If the command fails or cannot run, use your file tools to create /tmp/fm-lab.jCgMt7/state/local-only.inbox/.read/ if needed, then create the empty receipt /tmp/fm-lab.jCgMt7/state/local-only.inbox/.read/NNN.msg for the message you just read.
+Report a read-acknowledgement failure only if the file-tool fallback also fails; never assume a failed write acknowledged the message.
+Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.jCgMt7/state/local-only.inbox'/NNN.msg '/tmp/fm-lab.jCgMt7/state/local-only.inbox'/handled/`.
+The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+An empty or absent inbox needs no action.
+
+PASS: local-only file-tool fallback names the unquoted receipt path
+PASS: local-only fallback carries no shell quotes
+PASS: local-only keeps the quoted handled/ move
+emitted receipt command: '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/local-only.inbox'/NNN.msg
+PASS: local-only emitted receipt command, run as a shell command, created .read/001.msg and left 001.msg pending
+fallback dir as printed: /tmp/fm-lab.jCgMt7/state/local-only.inbox/.read/
+fallback receipt as printed: /tmp/fm-lab.jCgMt7/state/local-only.inbox/.read/NNN.msg
+PASS: local-only fallback paths, used literally as a file tool would, create the same receipt
+PASS: local-only ladder quiet after the file-tool receipt (due action: quiet)
+=================== scout: generated inbox section of /tmp/fm-lab.jCgMt7/data/scout/brief.md
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.jCgMt7/state/scout.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fm-lab.jCgMt7/state/scout.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read each message in numeric order.
+Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/scout.inbox'/NNN.msg`.
+Do not record a read before actually reading the message.
+If the command fails or cannot run, use your file tools to create /tmp/fm-lab.jCgMt7/state/scout.inbox/.read/ if needed, then create the empty receipt /tmp/fm-lab.jCgMt7/state/scout.inbox/.read/NNN.msg for the message you just read.
+Report a read-acknowledgement failure only if the file-tool fallback also fails; never assume a failed write acknowledged the message.
+Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.jCgMt7/state/scout.inbox'/NNN.msg '/tmp/fm-lab.jCgMt7/state/scout.inbox'/handled/`.
+The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+An empty or absent inbox needs no action.
+
+PASS: scout file-tool fallback names the unquoted receipt path
+PASS: scout fallback carries no shell quotes
+PASS: scout keeps the quoted handled/ move
+emitted receipt command: '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/scout.inbox'/NNN.msg
+PASS: scout emitted receipt command, run as a shell command, created .read/001.msg and left 001.msg pending
+fallback dir as printed: /tmp/fm-lab.jCgMt7/state/scout.inbox/.read/
+fallback receipt as printed: /tmp/fm-lab.jCgMt7/state/scout.inbox/.read/NNN.msg
+PASS: scout fallback paths, used literally as a file tool would, create the same receipt
+PASS: scout ladder quiet after the file-tool receipt (due action: quiet)
+=================== supervisor: generated inbox section of /tmp/fm-lab.jCgMt7/data/supervisor/brief.md
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.jCgMt7/state/supervisor.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fm-lab.jCgMt7/state/supervisor.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read each message in numeric order.
+Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/supervisor.inbox'/NNN.msg`.
+Do not record a read before actually reading the message.
+If the command fails or cannot run, use your file tools to create /tmp/fm-lab.jCgMt7/state/supervisor.inbox/.read/ if needed, then create the empty receipt /tmp/fm-lab.jCgMt7/state/supervisor.inbox/.read/NNN.msg for the message you just read.
+Report a read-acknowledgement failure only if the file-tool fallback also fails; never assume a failed write acknowledged the message.
+Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.jCgMt7/state/supervisor.inbox'/NNN.msg '/tmp/fm-lab.jCgMt7/state/supervisor.inbox'/handled/`.
+The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+An empty or absent inbox needs no action.
+
+PASS: supervisor file-tool fallback names the unquoted receipt path
+PASS: supervisor fallback carries no shell quotes
+PASS: supervisor keeps the quoted handled/ move
+emitted receipt command: '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.jCgMt7/state/supervisor.inbox'/NNN.msg
+PASS: supervisor emitted receipt command, run as a shell command, created .read/001.msg and left 001.msg pending
+fallback dir as printed: /tmp/fm-lab.jCgMt7/state/supervisor.inbox/.read/
+fallback receipt as printed: /tmp/fm-lab.jCgMt7/state/supervisor.inbox/.read/NNN.msg
+PASS: supervisor fallback paths, used literally as a file tool would, create the same receipt
+PASS: supervisor ladder quiet after the file-tool receipt (due action: quiet)
+=================== polytoken system prompt (rendered by bin/fm-polytoken-lib.sh)
+77:fm_polytoken_binary() {
+106:fm_polytoken_global_config_dir() {
+114:fm_polytoken_config_dir() {  # <state-dir> <id>
+118:fm_polytoken_sessions_root() {  # <state-dir> <id>
+122:fm_polytoken_hooks_file() {  # <worktree>
+126:fm_polytoken_facet_file() {  # <worktree>
+130:fm_polytoken_busy_script() {  # <state-dir> <id>
+138:fm_polytoken_json_escape() {
+143:fm_polytoken_shell_quote() {
+157:fm_polytoken_write_config() {  # <config-dir>
+190:fm_polytoken_write_facet() {  # <worktree> <inbox-path>
+228:fm_polytoken_write_busy_script() {  # <fm-root> <state-real> <id> <busy-gen> <turnend>
+262:fm_polytoken_require_hooks_free() {  # <worktree>
+275:fm_polytoken_require_handler_path() {  # <busy-script>
+284:fm_polytoken_write_hooks() {  # <worktree> <busy-script>
+306:fm_polytoken_models_refs() {  # <bin> [timeout]
+317:fm_polytoken_launch_ref() {  # <bin> <model> <effort> -> <ref>
+331:fm_polytoken_model_ref() {  # <bin> <model> <effort> -> <ref>
+383:fm_polytoken_sessions_json() {  # <bin> <config-dir> <sessions-root>
+392:fm_polytoken_session_for_project() {  # <bin> <config-dir> <sessions-root> <project-path>
+408:fm_polytoken_credential_token() {  # <credential-file>
+420:fm_polytoken_rest() {  # <method> <port> <credential-token> <path> [json-body]
+434:fm_polytoken_rest_json() {  # <method> <port> <credential-token> <path> [json-body]
+448:fm_polytoken_turn_settled() {  # <port> <credential-token>
+462:fm_polytoken_interrupt() {  # <port> <credential-token> [wait-secs]
+488:fm_polytoken_interrupt_task() {  # <bin-dir> <state-dir> <id> <port> <credential-token> [wait-secs]
+RESULT: ALL PASS
