@@ -1,0 +1,13 @@
+lab tmux window: fm:fm-feat-zero
+
+=== S7 terminal failed run, only the ci monitor failed, zero-checks marker ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:05:01] no CI checks reported - still monitoring until merged or closed
+--- base   9fe25bca: state: done · source: run-step · checks green: PR held for merge (ci monitor ended): https://github.com/o/r/pull/203
+--- target 7afb2912: state: failed · source: run-step · run failed
+
+=== S7b same terminal run with a checks-passed marker (held-green guard unchanged) ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:05:01] all CI checks passed - still monitoring until merged or closed
+--- base   9fe25bca: state: done · source: run-step · checks green: PR held for merge (ci monitor ended): https://github.com/o/r/pull/203
+--- target 7afb2912: state: done · source: run-step · checks green: PR held for merge (ci monitor ended): https://github.com/o/r/pull/203

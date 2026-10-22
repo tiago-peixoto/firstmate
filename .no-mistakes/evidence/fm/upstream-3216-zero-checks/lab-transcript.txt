@@ -1,0 +1,63 @@
+lab tmux window: fm:fm-feat-zero
+
+=== S1 zero-checks marker on a plain home (issue 3216 reproduction) ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:00:01] no CI checks reported yet, waiting for checks to register...
+    [10:05:01] no CI checks reported - still monitoring until merged or closed
+--- base   9fe25bca: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- target 7afb2912: state: working · source: run-step · no CI checks reported: nothing has verified the PR (still monitoring for merge/close)
+
+=== S2 crew's own 'checks green' status line with zero-checks ci log ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:00:01] no CI checks reported yet, waiting for checks to register...
+    [10:05:01] no CI checks reported - still monitoring until merged or closed
+--- status log: done: PR https://github.com/o/r/pull/2 checks green
+--- base   9fe25bca: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- target 7afb2912: state: working · source: run-step · no CI checks reported: nothing has verified the PR (still monitoring for merge/close)
+
+=== S3 adversarial: the earlier opt-in flag file must change nothing ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:00:01] no CI checks reported yet, waiting for checks to register...
+    [10:05:01] no CI checks reported - still monitoring until merged or closed
+--- old opt-in flag present: config/ci-no-checks-not-green
+--- base   9fe25bca: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- target 7afb2912: state: working · source: run-step · no CI checks reported: nothing has verified the PR (still monitoring for merge/close)
+
+=== S4 checks-passed marker still reads done / checks green ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:00:01] CI checks running
+    [10:09:01] all CI checks passed - still monitoring until merged or closed
+--- base   9fe25bca: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- target 7afb2912: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+
+=== S5 'no CI checks reported yet' still reads working ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:00:01] no CI checks reported yet, waiting for checks to register...
+--- base   9fe25bca: state: working · source: run-step · validating (running)
+--- target 7afb2912: state: working · source: run-step · validating (running)
+
+=== S6a zero-checks then later checks passed: latest marker wins (done) ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:05:01] no CI checks reported - still monitoring until merged or closed
+    [10:30:01] all CI checks passed - still monitoring until merged or closed
+--- base   9fe25bca: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- target 7afb2912: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+
+=== S6b checks passed then later zero-checks: latest marker wins (working) ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:05:01] all CI checks passed - still monitoring until merged or closed
+    [10:30:01] no CI checks reported - still monitoring until merged or closed
+--- base   9fe25bca: state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- target 7afb2912: state: working · source: run-step · no CI checks reported: nothing has verified the PR (still monitoring for merge/close)
+
+=== S7 terminal failed run, only the ci monitor failed, zero-checks marker ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:05:01] no CI checks reported - still monitoring until merged or closed
+--- base   9fe25bca: state: failed · source: run-step · run failed
+--- target 7afb2912: state: failed · source: run-step · run failed
+
+=== S7b same terminal run with a checks-passed marker (held-green guard unchanged) ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:05:01] all CI checks passed - still monitoring until merged or closed
+--- base   9fe25bca: state: failed · source: run-step · run failed
+--- target 7afb2912: state: failed · source: run-step · run failed

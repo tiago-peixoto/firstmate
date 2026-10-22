@@ -1,0 +1,7 @@
+lab tmux window: fm:fm-feat-zero
+
+=== S8 no-mistakes v1.84.0 marker for a repository that declares no CI (no_ci: true) ===
+--- ci log tail (as served by `axi logs --step ci --full`):
+    [10:05:01] repository declares no CI (no_ci: true) - treating as all checks passed - still monitoring until merged or closed
+--- base   9fe25bca: state: working · source: run-step · validating (running)
+--- target 7afb2912: state: working · source: run-step · validating (running)
