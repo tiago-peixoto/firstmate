@@ -1,0 +1,15 @@
+### Scenario 2: guard OFF (default, flag absent), same unguarded brief launches as before
+$ rm $LAB/config/herdr-lifecycle-spawn-guard
+$ FM_HOME=$LAB bin/fm-spawn.sh herdr-unguarded $LAB/projects/proj --mode direct-PR --yolo off --harness 'sleep 300'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+warning: $LAB/data/herdr-unguarded/launch-brief.md records no ship branch; defaulting to legacy branch fm/herdr-unguarded
+notice: herdr-unguarded ships mode=direct-PR while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned herdr-unguarded harness=sleep kind=ship mode=direct-PR yolo=off window=firstmate:fm-herdr-unguarded worktree=/home/firstmate/.treehouse/proj-84ac82/1/proj
+exit=0
+$ ls $LAB/state
+herdr-unguarded.git-hooks
+herdr-unguarded.meta
+home-summary.json
+$ TMUX_TMPDIR=$LAB/tmux tmux list-windows -a
+firstmate:0: bash* (1 panes) [80x24] 
+firstmate:1: fm-herdr-unguarded (1 panes) [80x24] 

@@ -1,0 +1,9 @@
+### Scenario 1: guard ON, hand-written brief naming `herdr session stop`, no isolation contract
+$ touch $LAB/config/herdr-lifecycle-spawn-guard
+$ FM_HOME=$LAB bin/fm-spawn.sh herdr-unguarded $LAB/projects/proj --mode direct-PR --yolo off --harness 'sleep 300'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+error: $LAB/data/herdr-unguarded/brief.md names the Herdr lifecycle command `herdr session stop` but lacks the Herdr isolation contract; regenerate it with bin/fm-brief.sh --herdr-lab
+exit=1
+$ ls $LAB/state
+$ TMUX_TMPDIR=$LAB/tmux tmux list-sessions
+error connecting to $LAB/tmux/tmux-1000/default (No such file or directory)

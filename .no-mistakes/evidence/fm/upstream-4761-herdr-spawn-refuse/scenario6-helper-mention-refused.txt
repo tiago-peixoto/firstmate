@@ -1,0 +1,10 @@
+### Scenario 6: guard ON, brief naming bin/fm-herdr-lab.sh without the contract is refused
+$ ls $LAB/config
+herdr-lifecycle-spawn-guard
+$ FM_HOME=$LAB bin/fm-spawn.sh herdr-helper-mention $LAB/projects/proj --mode direct-PR --yolo off --harness sleep 300
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: $LAB/data/herdr-helper-mention/brief.md names the Herdr lifecycle command `bin/fm-herdr-lab.sh` but lacks the Herdr isolation contract; regenerate it with bin/fm-brief.sh --herdr-lab
+exit=1
+$ ls $LAB/state | grep herdr-helper-mention
+(no task record)

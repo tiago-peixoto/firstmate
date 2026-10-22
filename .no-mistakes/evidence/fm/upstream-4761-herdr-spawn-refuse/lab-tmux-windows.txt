@@ -1,0 +1,5 @@
+firstmate:0: bash* (1 panes) [80x24] 
+firstmate:1: fm-herdr-unguarded (1 panes) [80x24] 
+firstmate:2: fm-herdr-lab-ship (1 panes) [80x24] 
+firstmate:3: fm-plain-ship (1 panes) [80x24] 
+firstmate:4: fm-herdr-near-miss (1 panes) [80x24] 

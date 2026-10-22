@@ -1,0 +1,12 @@
+### Scenario 4: guard ON, ordinary scaffold whose NOT ENABLED gate text lists lifecycle verbs is not refused
+$ ls $LAB/config
+herdr-lifecycle-spawn-guard
+$ FM_HOME=$LAB bin/fm-spawn.sh plain-ship $LAB/projects/proj --mode direct-PR --yolo off --harness sleep 300
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+notice: plain-ship ships mode=direct-PR while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned plain-ship harness=sleep kind=ship mode=direct-PR yolo=off window=firstmate:fm-plain-ship worktree=/home/firstmate/.treehouse/proj-84ac82/3/proj
+exit=0
+$ ls $LAB/state | grep plain-ship
+plain-ship.git-hooks
+plain-ship.meta

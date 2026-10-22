@@ -1,0 +1,13 @@
+### Scenario 7: guard ON, near-miss mentions (herdr session profile, myherdr session stop, stopped, stop-gap, sessions stop, bare fm-herdr-lab.sh) are not refused
+$ ls $LAB/config
+herdr-lifecycle-spawn-guard
+$ FM_HOME=$LAB bin/fm-spawn.sh herdr-near-miss $LAB/projects/proj --mode direct-PR --yolo off --harness sleep 300
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+warning: $LAB/data/herdr-near-miss/launch-brief.md records no ship branch; defaulting to legacy branch fm/herdr-near-miss
+notice: herdr-near-miss ships mode=direct-PR while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned herdr-near-miss harness=sleep kind=ship mode=direct-PR yolo=off window=firstmate:fm-herdr-near-miss worktree=/home/firstmate/.treehouse/proj-84ac82/4/proj
+exit=0
+$ ls $LAB/state | grep herdr-near-miss
+herdr-near-miss.git-hooks
+herdr-near-miss.meta

@@ -1,0 +1,18 @@
+### Scenario 3: guard ON, brief scaffolded by bin/fm-brief.sh --herdr-lab (carries the contract and names herdr session stop) launches
+$ ls $LAB/config
+herdr-lifecycle-spawn-guard
+$ FM_HOME=$LAB bin/fm-spawn.sh herdr-lab-ship $LAB/projects/proj --mode direct-PR --yolo off --harness sleep 300
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+notice: herdr-lab-ship ships mode=direct-PR while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned herdr-lab-ship harness=sleep kind=ship mode=direct-PR yolo=off window=firstmate:fm-herdr-lab-ship worktree=/home/firstmate/.treehouse/proj-84ac82/2/proj
+exit=0
+$ ls $LAB/state | grep herdr-lab-ship
+herdr-lab-ship.git-hooks
+herdr-lab-ship.meta

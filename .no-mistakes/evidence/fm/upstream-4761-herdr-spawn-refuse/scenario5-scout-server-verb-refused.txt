@@ -1,0 +1,10 @@
+### Scenario 5: guard ON, scout brief with herdr server reload-config deep in the spec (then herdr session delete) is refused naming the first match
+$ ls $LAB/config
+herdr-lifecycle-spawn-guard
+$ FM_HOME=$LAB bin/fm-spawn.sh herdr-scout $LAB/projects/proj --scout --harness sleep 300
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: $LAB/data/herdr-scout/brief.md names the Herdr lifecycle command `herdr server reload-config` but lacks the Herdr isolation contract; regenerate it with bin/fm-brief.sh --herdr-lab
+exit=1
+$ ls $LAB/state | grep herdr-scout
+(no task record)
