@@ -1,0 +1,119 @@
+
+===== scenario: flag-on-zero-checks =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-on-zero-checks
+flag config/ci-no-checks-not-green: present
+status log: <none>
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+no CI checks reported - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-on-zero-checks bin/fm-crew-state.sh task-flag-on-zero-checks
+state: working · source: run-step · no CI checks reported: nothing has verified the PR (still monitoring for merge/close)
+--- exit=0
+
+===== scenario: flag-on-crew-says-green-zero-checks =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-on-crew-says-green-zero-checks
+flag config/ci-no-checks-not-green: present
+status log: done: PR https://github.com/o/r/pull/2 checks green
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+no CI checks reported - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-on-crew-says-green-zero-checks bin/fm-crew-state.sh task-flag-on-crew-says-green-zero-checks
+state: working · source: run-step · no CI checks reported: nothing has verified the PR (still monitoring for merge/close)
+--- exit=0
+
+===== scenario: flag-off-zero-checks-default =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-off-zero-checks-default
+flag config/ci-no-checks-not-green: absent
+status log: <none>
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+no CI checks reported - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-off-zero-checks-default bin/fm-crew-state.sh task-flag-off-zero-checks-default
+state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- exit=0
+
+===== scenario: flag-off-crew-says-green-zero-checks =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-off-crew-says-green-zero-checks
+flag config/ci-no-checks-not-green: absent
+status log: done: PR https://github.com/o/r/pull/2 checks green
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+no CI checks reported - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-off-crew-says-green-zero-checks bin/fm-crew-state.sh task-flag-off-crew-says-green-zero-checks
+state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- exit=0
+
+===== scenario: flag-on-real-green =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-on-real-green
+flag config/ci-no-checks-not-green: present
+status log: <none>
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+all CI checks passed - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-on-real-green bin/fm-crew-state.sh task-flag-on-real-green
+state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- exit=0
+
+===== scenario: flag-on-zero-then-green =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-on-zero-then-green
+flag config/ci-no-checks-not-green: present
+status log: <none>
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+no CI checks reported - still monitoring until merged or closed
+all CI checks passed - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-on-zero-then-green bin/fm-crew-state.sh task-flag-on-zero-then-green
+state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- exit=0
+
+===== scenario: flag-on-green-then-zero =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-on-green-then-zero
+flag config/ci-no-checks-not-green: present
+status log: <none>
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+all CI checks passed - still monitoring until merged or closed
+no CI checks reported - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-on-green-then-zero bin/fm-crew-state.sh task-flag-on-green-then-zero
+state: working · source: run-step · no CI checks reported: nothing has verified the PR (still monitoring for merge/close)
+--- exit=0
+
+===== scenario: flag-on-not-yet =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-on-not-yet
+flag config/ci-no-checks-not-green: present
+status log: <none>
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+no CI checks reported yet, waiting for checks to register...
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-on-not-yet bin/fm-crew-state.sh task-flag-on-not-yet
+state: working · source: run-step · validating (running)
+--- exit=0
+
+===== scenario: flag-near-miss-name-zero-checks =====
+home: /tmp/fm-crewstate-lab.ukTuB5/home-flag-near-miss-name-zero-checks
+flag config/ci-no-checks-not-green: absent
+status log: <none>
+axi status (fake):
+  status: running
+    ci,running,0,0
+axi logs --step ci --full (fake):
+no CI checks reported - still monitoring until merged or closed
+--- $ FM_HOME=/tmp/fm-crewstate-lab.ukTuB5/home-flag-near-miss-name-zero-checks bin/fm-crew-state.sh task-flag-near-miss-name-zero-checks
+state: done · source: run-step · checks green: PR ready for review (still monitoring for merge/close): https://github.com/o/r/pull/2
+--- exit=0
