@@ -1,0 +1,168 @@
+# Live watcher transcript - lab home /tmp/fm-lab.NvVHt6, private tmux socket fm-lab, real bin/fm-watch.sh inbox_steer_check per fresh process, FM_TASK_INBOX_GRACE_SECS=0, FM_TASK_INBOX_BUSY_MAX default (2)
+## Scenario A: never-read steer on a continuously busy worker still escalates (baseline alarm preserved)
+pane capture before steer:
+    grok lab worker
+    Working on long task...
+    Ctrl+c:cancel
+fm-send.sh t1 'please continue (A)':
+    fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.NvVHt6
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ●  WATCHER DOWN - SUPERVISION IS OFF
+    ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+    ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+    ●  This is a supervision warning only; the requested message WILL still be sent.
+    ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    rc=0
+    total 4
+    drwxrwxr-x 3 firstmate firstmate  80 Oct 22 05:11 .
+    drwxrwxr-x 3 firstmate firstmate 100 Oct 22 05:11 ..
+    -rw------- 1 firstmate firstmate  70 Oct 22 05:11 001.msg
+    drwxrwxr-x 2 firstmate firstmate  40 Oct 22 05:11 handled
+/home/firstmate/.no-mistakes/evidence/01M5GRRMHRYG31NEF21A4KBD99/lab-check.sh: line 12: /tmp/fm-lab.NvVHt6/state/.wake-queue: No such file or directory
+[A1 busy, 001 unread] check rc=0 | inbox root: 001.msg  | .read:  | .busy-state: 001.msg:1 | wake-queue lines: 0
+[A2 busy, 001 unread] check rc=0 | inbox root: 001.msg  | .read:  | .busy-state: 001.msg:2 | wake-queue lines: 1
+    check stderr: stale: primary:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.NvVHt6/state/t1.inbox/001.msg stays unhandled and no doorbell was typed; inspect the worker)
+[A3 busy, 001 unread (no repeat)] check rc=0 | inbox root: 001.msg  | .read:  | .busy-state: 001.msg:2 | wake-queue lines: 1
+wake-queue after scenario A:
+    1792638719	1	stale	primary:fm-t1	stale: primary:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.NvVHt6/state/t1.inbox/001.msg stays unhandled and no doorbell was typed; inspect the worker)
+typed into pane so far: 0 lines
+worker finishes A: mv 001.msg handled/
+[A4 after handled mv (ladder reset)] check rc=0 | inbox root:  | .read:  | .busy-state:  | wake-queue lines: 1
+
+## Scenario B: busy worker records an early read receipt on a long-running steer and is never escalated
+fm-send wrote: /tmp/fm-lab.NvVHt6/state/t1.inbox/002.msg
+[B1 busy, 002 unread (one busy deferral consumed)] check rc=0 | inbox root: 002.msg  | .read:  | .busy-state: 002.msg:1 | wake-queue lines: 1
+worker reads 002 then records the receipt with the real command from the brief:
+    msg: schema=fm-task-inbox.v1
+    msg: at=2026-10-22T03:12:02Z
+    msg: --
+    msg: long-running steer (B)    fm-task-inbox-read.sh rc=0
+    repeated receipt rc=0 (idempotent)
+[B2 busy, 002 read, fresh watcher process] check rc=0 | inbox root: 002.msg  | .read: 002.msg  | .busy-state:  | wake-queue lines: 1
+[B3 busy, 002 read, fresh watcher process] check rc=0 | inbox root: 002.msg  | .read: 002.msg  | .busy-state:  | wake-queue lines: 1
+[B4 busy, 002 read, fresh watcher process] check rc=0 | inbox root: 002.msg  | .read: 002.msg  | .busy-state:  | wake-queue lines: 1
+[B5 busy, 002 read, fresh watcher process] check rc=0 | inbox root: 002.msg  | .read: 002.msg  | .busy-state:  | wake-queue lines: 1
+[B6 busy, 002 read, fresh watcher process] check rc=0 | inbox root: 002.msg  | .read: 002.msg  | .busy-state:  | wake-queue lines: 1
+wake-queue lines now: 1 (unchanged from scenario A => no escalation for the read steer)
+worker turns idle (busy flag removed):
+    pane: grok lab worker
+    pane: idle
+    pane: ╭────╮
+    pane: │    │
+    pane: ╰────╯
+    pane: typed: : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbo
+    pane: x, read each in numeric order, record read as briefed, act, then mv into handled/.
+[B7 idle, 002 read] check rc=0 | inbox root: 002.msg  | .read: 002.msg  | .busy-state:  | wake-queue lines: 1
+typed into pane after idle check: 1 lines (0 => read steer was not re-rung)
+
+## Scenario C: an unread successor behind a read steer still escalates
+fm-send wrote: /tmp/fm-lab.NvVHt6/state/t1.inbox/002.msg /tmp/fm-lab.NvVHt6/state/t1.inbox/003.msg 
+[C1 busy, 002 read + 003 unread] check rc=0 | inbox root: 002.msg 003.msg  | .read: 002.msg  | .busy-state: 003.msg:1 | wake-queue lines: 1
+[C2 busy, 002 read + 003 unread] check rc=0 | inbox root: 002.msg 003.msg  | .read: 002.msg  | .busy-state: 003.msg:2 | wake-queue lines: 2
+    check stderr: stale: primary:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.NvVHt6/state/t1.inbox/003.msg stays unhandled and no doorbell was typed; inspect the worker)
+wake-queue after scenario C:
+    1792638719	1	stale	primary:fm-t1	stale: primary:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.NvVHt6/state/t1.inbox/001.msg stays unhandled and no doorbell was typed; inspect the worker)
+    1792638741	2	stale	primary:fm-t1	stale: primary:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.NvVHt6/state/t1.inbox/003.msg stays unhandled and no doorbell was typed; inspect the worker)
+worker finishes 002: mv handled/ then a late receipt retry:
+    late receipt rc=0
+
+## Scenario D: idle pane - an unread steer is re-rung with the new doorbell wording, a read steer is not
+worker finishes 003 (mv handled/), pane goes idle, buffered fm-send doorbells drain:
+typed.log lines after drain: 3 (fm-send typed one doorbell per send: 001, 002, 003)
+[D0 idle, inbox empty (reset)] check rc=0 | inbox root:  | .read: 002.msg  | .busy-state:  | wake-queue lines: 2
+fm-send wrote: /tmp/fm-lab.NvVHt6/state/t1.inbox/004.msg 
+typed.log after fm-send only: 1 line(s)
+[D1 idle, 004 unread -> watcher rings] check rc=0 | inbox root: 004.msg  | .read: 002.msg  | .busy-state:  | wake-queue lines: 2
+typed.log after watcher ring: 2 line(s); last line:
+    : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read each in numeric order, record read as briefed, act, then mv into handled/.
+pane capture:
+    grok lab worker
+    idle
+    ╭────╮
+    │    │
+    ╰────╯
+worker records the read receipt for 004:
+    rc=0
+[D2 idle, 004 read] check rc=0 | inbox root: 004.msg  | .read: 002.msg 004.msg  | .busy-state:  | wake-queue lines: 2
+[D3 idle, 004 read] check rc=0 | inbox root: 004.msg  | .read: 002.msg 004.msg  | .busy-state:  | wake-queue lines: 2
+[D4 idle, 004 read] check rc=0 | inbox root: 004.msg  | .read: 002.msg 004.msg  | .busy-state:  | wake-queue lines: 2
+typed.log after three idle checks on the read steer: 2 line(s) (unchanged => no re-ring)
+wake-queue lines: 2 (unchanged)
+
+## Scenario D2: pane capture right after the watcher re-rings an unread steer (idle pane)
+[D2 idle, 005 unread -> watcher rings] check rc=0 | inbox root: 005.msg  | .read: 002.msg 004.msg  | .busy-state:  | wake-queue lines: 2
+    pane: grok lab worker
+    pane: idle
+    pane: ╭────╮
+    pane: │    │
+    pane: ╰────╯
+    pane: typed: : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbo
+    pane: x, read each in numeric order, record read as briefed, act, then mv into handled/.
+## Scenario G: a worker launch (real bin/fm-spawn.sh, harness claude) clears the previous worker's read receipts
+scaffolded: /tmp/fm-lab.NvVHt6/data/lab1/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+before launch: record=/tmp/fm-lab.NvVHt6/state/lab1.inbox/001.msg .read=001.msg 
+due action before launch (grace 0): quiet
+$ fm-spawn.sh lab1 /tmp/fm-lab.NvVHt6/projects/labproj --mode no-mistakes --yolo off --harness claude
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.NvVHt6
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+error: /tmp/fm-lab.NvVHt6/data/lab1/brief.md still contains {TASK} or {FIRSTMATE_SPEC}; fill ## Captain's intent and ## Firstmate spec before spawn
+  rc=1
+after launch: 001.msg present=yes .read dir present=yes
+due action after launch (grace 0): quiet
+lab tmux windows: primary:fm-t1 
+0
+$ fm-spawn.sh lab1 /tmp/fm-lab.NvVHt6/projects/labproj --mode no-mistakes --yolo off --harness claude   (retry with placeholders filled)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.NvVHt6
+spawned lab1 harness=claude kind=ship mode=no-mistakes yolo=off window=primary:fm-lab1 worktree=/home/firstmate/.treehouse/labproj-b08bb3/1/labproj
+  rc=0
+after launch: 001.msg present=yes .read dir present=no
+due action after launch (grace 0): ring /tmp/fm-lab.NvVHt6/state/lab1.inbox/001.msg
+lab tmux windows: primary:fm-t1 primary:fm-lab1 
+task meta:
+    window=primary:fm-lab1
+    endpoint_task_id=lab1
+    worktree=/home/firstmate/.treehouse/labproj-b08bb3/1/labproj
+    project=/tmp/fm-lab.NvVHt6/projects/labproj
+    harness=claude
+    kind=ship
+    mode=no-mistakes
+    yolo=off
+    branch=fm/lab1
+    tasktmp=/tmp/fm-lab1
+    model=default
+    effort=default
+
+## Scenario H: real Claude worker (lab1, launched by fm-spawn) receives a long-running steer through fm-send
+$ fm-send.sh lab1 'Run sleep 120 ... '
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.NvVHt6
+  rc=0
+lab1 inbox now: 001.msg 002.msg 
+--- 45s later: lab1 pane
+    pane: ● Message 002 asks me to run a two-minute foreground sleep and then write a marker file. I'll record
+    pane:   the read receipt and declare the wait, then run the sleep.
+    pane: ● Bash('/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5GRRMHRYG31NEF21A4KBD99/bin/fm-task-i
+    pane:       nbox-read.sh' '/tmp/fm-lab.NvVHt6/state/lab1.inbox'/002.msg; echo "…)
+    pane:   ⎿  receipt-exit=0
+    pane:      paused [at=1792639075]: steer 002 foreground sleep 120, resumes when it exits, until 2026-
+    pane:      10-22T03:19Z
+    pane: ● Bash(sleep 120; echo "sleep-exit=$?")
+    pane:   ⎿  Error: Blocked: sleep 120 followed by: echo "sleep-exit=$?". To wait for a condition, use
+    pane:      Monitor with an until-loop (e.g. `until <check>; do sleep 2; done`). To wait for a command you
+    pane:      started, use run_in_background: true. Do not chain shorter sleeps to work around this block.
+    pane: ● The harness refuses a foreground sleep, so I'll run the same command in the background and write
+    pane:   the marker when it exits.
+    pane: ● Bash(sleep 120)
+    pane:   ⎿  Running in the background (↓ to manage)
+    pane: ● The sleep is running. I'll wait for its exit notification before writing the marker file.
+    pane: ✻ Worked for 1m 25s · done 5:18 AM · 1 shell still running
+    pane: ────────────────────────────────────────────────────────────────────────────────────────────────────
+    pane: ❯ 
+    pane: ────────────────────────────────────────────────────────────────────────────────────────────────────
+    pane:   ⏵⏵ bypass permissions on · 1 shell · ↓ to manage
+--- lab1 inbox: root=002.msg  .read=001.msg 002.msg  handled=001.msg 
+--- product busy classification of the real claude pane: idle claude-hook
+[H1 real claude] check rc=0 | root: 002.msg  | .read: 001.msg 002.msg  | .busy-state:  | wake-queue lines: 2
+[H2 real claude] check rc=0 | root: 002.msg  | .read: 001.msg 002.msg  | .busy-state:  | wake-queue lines: 2
+[H3 real claude] check rc=0 | root: 002.msg  | .read: 001.msg 002.msg  | .busy-state:  | wake-queue lines: 2

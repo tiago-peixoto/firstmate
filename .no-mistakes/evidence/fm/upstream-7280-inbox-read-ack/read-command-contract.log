@@ -1,0 +1,26 @@
+## Scenario E: bin/fm-task-inbox-read.sh command contract (lab inbox /tmp/fm-lab.NvVHt6/state/t1.inbox)
+$ bin/fm-task-inbox-read.sh --help
+Usage: fm-task-inbox-read.sh <path/to/task.inbox/NNN.msg>
+Record that you read the message before acting. Move it to handled/ only after handling.
+  rc=0
+$ bin/fm-task-inbox-read.sh            (no argument)
+error: expected one steering-message path; use --help
+  rc=2
+$ bin/fm-task-inbox-read.sh a b        (two arguments)
+error: expected one steering-message path; use --help
+  rc=2
+$ bin/fm-task-inbox-read.sh /tmp/fm-lab.NvVHt6/state/t1.inbox/009.msg   (record never written)
+error: could not record reading steering message: /tmp/fm-lab.NvVHt6/state/t1.inbox/009.msg
+  rc=1
+$ bin/fm-task-inbox-read.sh /tmp/fm-lab.NvVHt6/state/t1.inbox/notes.txt  (not a sequenced record)
+error: could not record reading steering message: /tmp/fm-lab.NvVHt6/state/t1.inbox/notes.txt
+  rc=1
+$ bin/fm-task-inbox-read.sh /tmp/fm-lab.NvVHt6/state/001.msg            (outside an .inbox dir)
+error: could not record reading steering message: /tmp/fm-lab.NvVHt6/state/001.msg
+  rc=1
+$ bin/fm-task-inbox-read.sh /tmp/fm-lab.NvVHt6/state/t1.inbox/handled/003.msg  (path inside handled/ is not an .inbox root)
+error: could not record reading steering message: /tmp/fm-lab.NvVHt6/state/t1.inbox/handled/003.msg
+  rc=1
+unread detection after the failed receipts (FM_TASK_INBOX_GRACE_SECS=0, 004 is read, so quiet expected):
+quiet
+.read entries: 002.msg 004.msg 

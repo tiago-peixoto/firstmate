@@ -1,0 +1,7 @@
+grok lab worker
+idle
+╭────╮
+│    │
+╰────╯
+typed: : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbo
+x, read each in numeric order, record read as briefed, act, then mv into handled/.

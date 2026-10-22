@@ -1,0 +1,28 @@
+$ FM_HOME=/tmp/fm-lab.NvVHt6 bin/fm-brief.sh ship arbitrary-project-name --mode no-mistakes
+scaffolded: /tmp/fm-lab.NvVHt6/data/ship/brief.md (ship, mode=no-mistakes; replace {TASK} and {FIRSTMATE_SPEC})
+  rc=0
+--- generated inbox section of /tmp/fm-lab.NvVHt6/data/ship/brief.md:
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-lab.NvVHt6/state/ship.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fm-lab.NvVHt6/state/ship.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read each message in numeric order.
+Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5GRRMHRYG31NEF21A4KBD99/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.NvVHt6/state/ship.inbox'/NNN.msg`.
+Do not record a read before actually reading the message; if the command fails, report the failure rather than assuming it was acknowledged.
+Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.NvVHt6/state/ship.inbox'/NNN.msg '/tmp/fm-lab.NvVHt6/state/ship.inbox'/handled/`.
+The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+An empty or absent inbox needs no action.
+
+--- executing the brief's own receipt command against the real record /tmp/fm-lab.NvVHt6/state/ship.inbox/001.msg:
+extracted: '/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5GRRMHRYG31NEF21A4KBD99/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.NvVHt6/state/ship.inbox'/NNN.msg
+due action before the receipt (grace 0): ring /tmp/fm-lab.NvVHt6/state/ship.inbox/001.msg
+  rc=0
+total 0
+drwxrwxr-x 2 firstmate firstmate  60 Oct 22 05:14 .
+drwxrwxr-x 4 firstmate firstmate 100 Oct 22 05:14 ..
+-rw-rw-r-- 1 firstmate firstmate   0 Oct 22 05:14 001.msg
+due action after the receipt (grace 0): quiet
+--- the brief's handled move, then the final state:
+/tmp/fm-lab.NvVHt6/state/ship.inbox:
+handled
+
+/tmp/fm-lab.NvVHt6/state/ship.inbox/handled:
+001.msg
