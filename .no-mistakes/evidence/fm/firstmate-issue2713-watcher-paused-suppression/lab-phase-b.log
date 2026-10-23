@@ -1,0 +1,20 @@
+ack: through 1
+--- real pane unchanged:
+idle, holding for the upstream tool release
+lab$
+watcher[b]: exited rc=0 after 1s
+--- watcher stdout
+stale: fmlab:crew (paused 553s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+--- watcher stderr
+--- state markers for fmlab_crew
+.stale-fmlab_crew = 0d1dd6863cb42ac42fb8214e3d4a8518 (age 0s)
+.paused-fmlab_crew = '' (age 0s)
+.paused-resurfaced-fmlab_crew = declared:r1:3436007374726f6e673a34343a38313836323535333a323032362d31302d32332031383a33303a30382e353032393930373131202b3032303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65 (age 0s)
+.paused-rechecked-fmlab_crew = 1792773018 (age 43s)
+.stale-since-fmlab_crew absent
+.wedge-escalations-fmlab_crew absent
+.hash-fmlab_crew = 0d1dd6863cb42ac42fb8214e3d4a8518 (age 46s)
+.count-fmlab_crew = 3 (age 0s)
+--- wake queue
+1792773061	2	stale	fmlab:crew	stale: fmlab:crew (paused 553s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+--- triage log tail

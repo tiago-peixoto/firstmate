@@ -1,0 +1,17 @@
+watcher[d1-target]: still alive after 20s (absorbing); stopping it
+--- tree: /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5MRX3KG4WRKZ0G9F3GJYVGR
+--- stdout
+--- stderr
+--- polls (triage-log absorb lines):  ; crew-state reads: 9
+--- state markers for fmlab_crew
+.stale-fmlab_crew absent
+.paused-fmlab_crew absent
+.paused-resurfaced-fmlab_crew absent
+.paused-rechecked-fmlab_crew = 1792773360 (age 1s)
+.stale-since-fmlab_crew absent
+.wedge-escalations-fmlab_crew absent
+.hash-fmlab_crew = f700c579688e0a504ffcb9df85102130 (age 2s)
+.count-fmlab_crew = 0 (age 2s)
+--- wake queue
+(empty)
+--- triage log tail

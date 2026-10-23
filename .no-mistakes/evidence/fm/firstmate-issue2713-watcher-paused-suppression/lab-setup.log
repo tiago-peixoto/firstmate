@@ -1,0 +1,9 @@
+lab=/tmp/fm-lab.XKT7rX
+--- real pane (tmux capture-pane on the private socket)
+idle, holding for the upstream tool release
+lab$
+--- pane_current_command: bash
+--- agent liveness as the backend sees it:
+dead
+--- real fm-crew-state.sh verdict:
+state: unknown · source: none · worktree gone (torn down?)

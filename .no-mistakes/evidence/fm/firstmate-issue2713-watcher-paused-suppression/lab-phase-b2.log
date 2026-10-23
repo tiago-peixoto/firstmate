@@ -1,0 +1,22 @@
+ack: through 2
+watcher[b2]: still alive after 12s (absorbing); stopping it
+--- watcher stdout
+--- watcher stderr
+--- state markers for fmlab_crew
+.stale-fmlab_crew = 0d1dd6863cb42ac42fb8214e3d4a8518 (age 1s)
+.paused-fmlab_crew = '' (age 1s)
+.paused-resurfaced-fmlab_crew = declared:r1:3436007374726f6e673a34343a38313836323535333a323032362d31302d32332031383a33303a30382e353032393930373131202b3032303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65 (age 22s)
+.paused-rechecked-fmlab_crew = 1792773018 (age 65s)
+.stale-since-fmlab_crew absent
+.wedge-escalations-fmlab_crew absent
+.hash-fmlab_crew = 0d1dd6863cb42ac42fb8214e3d4a8518 (age 68s)
+.count-fmlab_crew = 10 (age 1s)
+--- wake queue
+--- triage log tail
+[2026-10-23T18:31:12+0200] absorbed stale (paused, awaiting external, age 564s): fmlab:crew
+[2026-10-23T18:31:14+0200] absorbed stale (paused, awaiting external, age 565s): fmlab:crew
+[2026-10-23T18:31:15+0200] absorbed stale (paused, awaiting external, age 567s): fmlab:crew
+[2026-10-23T18:31:17+0200] absorbed stale (paused, awaiting external, age 569s): fmlab:crew
+[2026-10-23T18:31:19+0200] absorbed stale (paused, awaiting external, age 571s): fmlab:crew
+[2026-10-23T18:31:21+0200] absorbed stale (paused, awaiting external, age 573s): fmlab:crew
+[2026-10-23T18:31:22+0200] absorbed stale (paused, awaiting external, age 574s): fmlab:crew

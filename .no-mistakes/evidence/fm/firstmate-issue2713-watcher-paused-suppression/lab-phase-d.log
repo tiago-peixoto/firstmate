@@ -1,0 +1,76 @@
+--- real pane now ticks:
+18:33:54.072184268
+18:33:54.378913150
+18:33:54.690975034
+--- pane_current_command: sleep
+watcher[d1]: still alive after 15s (absorbing); stopping it
+--- inside the cadence: stdout
+--- stderr
+--- polls completed (beacon) vs crew-state reads: reads=8
+--- state markers for fmlab_crew
+.stale-fmlab_crew absent
+.paused-fmlab_crew absent
+.paused-resurfaced-fmlab_crew absent
+.paused-rechecked-fmlab_crew = 1792773248 (age 2s)
+.stale-since-fmlab_crew absent
+.wedge-escalations-fmlab_crew absent
+.hash-fmlab_crew = b12f52f44db3aaa79108f73b84864575 (age 2s)
+.count-fmlab_crew = 0 (age 2s)
+--- wake queue
+(empty)
+--- triage log tail
+[2026-10-23T18:33:18+0200] absorbed stale (paused, awaiting external, age 611s): fmlab:crew
+[2026-10-23T18:33:20+0200] absorbed stale (paused, awaiting external, age 613s): fmlab:crew
+[2026-10-23T18:33:22+0200] absorbed stale (paused, awaiting external, age 615s): fmlab:crew
+[2026-10-23T18:33:42+0200] absorbed non-terminal stale (declared wait or open captain call already re-surfaced this window): fmlab:crew
+[2026-10-23T18:33:43+0200] absorbed stale (paused until 31476377s from now, declared time not reached): fmlab:crew
+[2026-10-23T18:33:45+0200] absorbed stale (paused until 31476375s from now, declared time not reached): fmlab:crew
+[2026-10-23T18:33:47+0200] absorbed stale (paused until 31476373s from now, declared time not reached): fmlab:crew
+[2026-10-23T18:33:49+0200] absorbed stale (paused until 31476371s from now, declared time not reached): fmlab:crew
+watcher[d2]: exited rc=0 after 1s
+--- past the cadence: stdout
+stale: fmlab:crew (paused 518s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+--- stderr
+--- state markers for fmlab_crew
+.stale-fmlab_crew = 259d3d73dd825b77da057b217342e72d (age 1s)
+.paused-fmlab_crew = '' (age 1s)
+.paused-resurfaced-fmlab_crew = declared:r1:3438007374726f6e673a34343a38313836323535333a323032362d31302d32332031383a33303a30382e353032393930373131202b3032303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65 (age 1s)
+.paused-rechecked-fmlab_crew = 1792773251 (age 1s)
+.stale-since-fmlab_crew absent
+.wedge-escalations-fmlab_crew absent
+.hash-fmlab_crew = 259d3d73dd825b77da057b217342e72d (age 1s)
+.count-fmlab_crew = 0 (age 1s)
+--- wake queue
+1792773251	6	stale	fmlab:crew	stale: fmlab:crew (paused 518s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+--- triage log tail
+[2026-10-23T18:33:18+0200] absorbed stale (paused, awaiting external, age 611s): fmlab:crew
+[2026-10-23T18:33:20+0200] absorbed stale (paused, awaiting external, age 613s): fmlab:crew
+[2026-10-23T18:33:22+0200] absorbed stale (paused, awaiting external, age 615s): fmlab:crew
+[2026-10-23T18:33:42+0200] absorbed non-terminal stale (declared wait or open captain call already re-surfaced this window): fmlab:crew
+[2026-10-23T18:33:43+0200] absorbed stale (paused until 31476377s from now, declared time not reached): fmlab:crew
+[2026-10-23T18:33:45+0200] absorbed stale (paused until 31476375s from now, declared time not reached): fmlab:crew
+[2026-10-23T18:33:47+0200] absorbed stale (paused until 31476373s from now, declared time not reached): fmlab:crew
+[2026-10-23T18:33:49+0200] absorbed stale (paused until 31476371s from now, declared time not reached): fmlab:crew
+ack: through 6
+watcher[d3]: still alive after 15s (absorbing); stopping it
+--- after the recheck, still ticking: stdout
+--- stderr
+--- state markers for fmlab_crew
+.stale-fmlab_crew absent
+.paused-fmlab_crew = '' (age 0s)
+.paused-resurfaced-fmlab_crew = declared:r1:3438007374726f6e673a34343a38313836323535333a323032362d31302d32332031383a33303a30382e353032393930373131202b3032303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65 (age 18s)
+.paused-rechecked-fmlab_crew = 1792773251 (age 18s)
+.stale-since-fmlab_crew absent
+.wedge-escalations-fmlab_crew absent
+.hash-fmlab_crew = 512f0268c086c79cd1967ec2f6cc5d21 (age 0s)
+.count-fmlab_crew = 0 (age 0s)
+--- wake queue
+--- triage log tail
+[2026-10-23T18:34:17+0200] absorbed stale (paused, awaiting external, age 523s): fmlab:crew
+[2026-10-23T18:34:18+0200] absorbed stale (paused, awaiting external, age 525s): fmlab:crew
+[2026-10-23T18:34:20+0200] absorbed stale (paused, awaiting external, age 527s): fmlab:crew
+[2026-10-23T18:34:22+0200] absorbed stale (paused, awaiting external, age 529s): fmlab:crew
+[2026-10-23T18:34:24+0200] absorbed stale (paused, awaiting external, age 531s): fmlab:crew
+[2026-10-23T18:34:25+0200] absorbed stale (paused, awaiting external, age 532s): fmlab:crew
+[2026-10-23T18:34:27+0200] absorbed stale (paused, awaiting external, age 534s): fmlab:crew
+[2026-10-23T18:34:29+0200] absorbed stale (paused, awaiting external, age 536s): fmlab:crew

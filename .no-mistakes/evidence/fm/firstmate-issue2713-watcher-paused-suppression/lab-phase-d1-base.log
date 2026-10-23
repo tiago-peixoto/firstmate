@@ -1,0 +1,17 @@
+watcher[d1-base]: still alive after 20s (absorbing); stopping it
+--- tree: /tmp/fm-base.1nWocT
+--- stdout
+--- stderr
+--- polls (triage-log absorb lines):  ; crew-state reads: 9
+--- state markers for fmlab_crew
+.stale-fmlab_crew absent
+.paused-fmlab_crew absent
+.paused-resurfaced-fmlab_crew absent
+.paused-rechecked-fmlab_crew absent
+.stale-since-fmlab_crew absent
+.wedge-escalations-fmlab_crew absent
+.hash-fmlab_crew = b01708966c7863ac900576a8400d7fb1 (age 2s)
+.count-fmlab_crew = 0 (age 2s)
+--- wake queue
+(empty)
+--- triage log tail
