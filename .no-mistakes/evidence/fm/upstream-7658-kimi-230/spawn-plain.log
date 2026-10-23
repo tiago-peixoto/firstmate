@@ -1,0 +1,5 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.yxCS1y
+warning: /tmp/fm-lab.yxCS1y/data/kimi230-plain/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi230-plain
+error: kimi brief pointer delivery was not confirmed; inspect window primary:fm-kimi230-plain
+warning: leaving task kimi230-plain's slot claim on /tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+spawn exit code: 1

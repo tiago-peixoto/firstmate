@@ -1,0 +1,156 @@
+=== window @0 (bash) 160x50 ===
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=== window @1 (fm-kimi230-plain) 160x50 ===
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/projects/plain$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ cd -- '/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain'
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ export GOTMPDIR=/tmp/fm-kimi230-plain/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ export FM_TASK_ID=kimi230-plain
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ . '/tmp/fm-kimi230-plain+ec2ed413d0b0dd45b272ea8aea984e07288885d7553a130754
+02529e1c1d2572/launch.s1792770616.3896538.32263.sh'
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Run /login or /provider to get started.                                                                                                          │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain                                                                                   │
+ │  Session:                                                                                                                                                  │
+ │  Model:     not set, run /login or /provider                                                                                                               │
+ │  Version:   2.3.0                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ✦ Kimi Code Desktop is here — Everything you love about Kimi Code, now on desktop
+   Run /desktop or visit https://www.kimi.com/code to install
+
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+   Error: LLM not set, send "/login" to login
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  …/plain-f2c562/1/plain                                                                                  @: mention files | ! to run a shell command
+                                                                                                                                                    context: 0%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=== window @2 (fm-kimi230-rootmcp) 160x50 ===
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/projects/rootmcp$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp$ cd -- '/tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp
+'
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp$ export GOTMPDIR=/tmp/fm-kimi230-rootmcp/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp$ export FM_TASK_ID=kimi230-rootmcp
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp$ . '/tmp/fm-kimi230-rootmcp+ec2ed413d0b0dd45b272ea8aea984e07288885d7553a
+13075402529e1c1d2572/launch.s1792770655.3943517.20844.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+
+  /tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp
+
+  Start 1 MCP server automatically
+    Config: .mcp.json
+
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--- state/kimi230-rootmcp.status ---
+failed [at=1792770658]: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.
+--- marker.log (0 bytes) ---

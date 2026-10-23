@@ -1,0 +1,5 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.yxCS1y
+warning: /tmp/fm-lab.yxCS1y/data/kimi230-rootmcp/launch-brief.md records no ship branch; defaulting to legacy branch fm/kimi230-rootmcp
+error: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.; inspect window primary:fm-kimi230-rootmcp
+warning: leaving task kimi230-rootmcp's slot claim on /tmp/fm-lab.yxCS1y/treehouse/.treehouse/rootmcp-746bfb/1/rootmcp in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+spawn exit code: 1

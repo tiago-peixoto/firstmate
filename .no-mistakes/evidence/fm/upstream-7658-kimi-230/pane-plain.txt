@@ -1,0 +1,105 @@
+=== window @0 (bash) 160x50 ===
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=== window @1 (fm-kimi230-plain) 160x50 ===
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/projects/plain$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at /tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain. Type 'exit' to return.
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ cd -- '/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain'
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ export GOTMPDIR=/tmp/fm-kimi230-plain/gotmp
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ export FM_TASK_ID=kimi230-plain
+firstmate@firstmate-hz:/tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain$ . '/tmp/fm-kimi230-plain+ec2ed413d0b0dd45b272ea8aea984e07288885d7553a130754
+02529e1c1d2572/launch.s1792770616.3896538.32263.sh'
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Run /login or /provider to get started.                                                                                                          │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.yxCS1y/treehouse/.treehouse/plain-f2c562/1/plain                                                                                   │
+ │  Session:                                                                                                                                                  │
+ │  Model:     not set, run /login or /provider                                                                                                               │
+ │  Version:   2.3.0                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ✦ Kimi Code Desktop is here — Everything you love about Kimi Code, now on desktop
+   Run /desktop or visit https://www.kimi.com/code to install
+
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+   Error: LLM not set, send "/login" to login
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  …/plain-f2c562/1/plain                                                                                  @: mention files | ! to run a shell command
+                                                                                                                                                    context: 0%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--- state/kimi230-plain.status ---
+failed [at=1792770649]: kimi brief pointer delivery was not confirmed
+--- marker.log (0 bytes) ---

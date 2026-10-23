@@ -1,0 +1,15 @@
+FM_TEST_BEGIN 2026-10-23T15:43:32Z tests/fm-kimi-trust-prompt-live-e2e.test.sh family=live-harness-optin expected_gate_skip=live-capability
+# kimi 2.3.0: plain prompt options read 'Trust and continue' / 'Exit'
+ok - kimi 2.3.0: a plain directory's folder prompt is the complete dialog, and Enter clears it into a ready pane
+# kimi 2.3.0: root-mcp-json prompt announces: Start 1 MCP server automatically;Config: .mcp.json;
+ok - kimi 2.3.0: a root-mcp-json declaration is announced on the folder prompt, which receives no answer, and its command never ran
+# kimi 2.3.0: kimi-code-mcp-json prompt announces: Start 1 MCP server automatically;Config: .kimi-code/mcp.json;
+ok - kimi 2.3.0: a kimi-code-mcp-json declaration is announced on the folder prompt, which receives no answer, and its command never ran
+# kimi 2.3.0: 100x7 pane shows: Trust this folder?;Enlarge terminal to review sources. Esc exit.;
+# kimi 2.3.0: 100x12 pane: the announcement is on a hidden page, so only the page marker refuses this prompt
+ok - kimi 2.3.0: a short pane collapses the prompt below the complete dialog, and a slightly taller one pages it with the page marker on screen
+ok - kimi 2.3.0: folder-prompt predicates agree with the installed Kimi on every recorded wording
+FM_TEST_END 2026-10-23T15:43:50Z tests/fm-kimi-trust-prompt-live-e2e.test.sh exit=0 duration_ms=17379 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=17533
+FM_TEST_SUMMARY_FAMILY family=live-harness-optin count=1 duration_ms=17379 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-kimi-trust-prompt-live-e2e.test.sh duration_ms=17379
