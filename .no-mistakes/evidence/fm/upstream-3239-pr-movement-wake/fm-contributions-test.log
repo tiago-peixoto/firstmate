@@ -11,6 +11,9 @@ ok - a newly requested reviewer wakes once and stays pending until acknowledged
 ok - a newly requested review team wakes once and stays pending until acknowledged
 ok - review requests present at the first observation are its baseline, not movement
 ok - review requests present at the legacy observation are its baseline, not movement
+ok - a listed collaborator bot and its re-raise remain review-bot fleet signals
+ok - review-bot watching is off until a home lists a bot
+ok - the armed allowlist is stable across working directories and policy toggles
 ok - ready-for-pr on a filed issue becomes a planning wake
 ok - a fresh open issue remains measured maintainer triage
 ok - an absent check lane remains missing across repeated observations
@@ -46,7 +49,7 @@ ok - two transient failures wake once and name the failed read in the record
 ok - an HTTP 404 is reported without retrying
 ok - real gh error shapes drive the intended retry decision and keep their error
 ok - a URL never inherits the previous URL read diagnostic
-jq: error (at /tmp/fm-contributions.yg7SGD/after.json:1): null (null) cannot be matched, as it is not a string
+jq: error (at /tmp/fm-contributions.ubFzjy/after.json:1): null (null) cannot be matched, as it is not a string
 ok - a URL owned by two tasks is observed once and every owner receives the result
 ok - a merged or closed contribution settles once, is not re-read, and never wakes again
 ok - a head change observed as merged or closed settles without a movement wake
@@ -73,7 +76,7 @@ ok - the unanswered re-raise and the review-thread read stay off unless a reply 
 ok - arm copies a configured reply age into the generated check
 ok - a many-review PR stores only classified review fields and stays readable
 
-real	4m41.064s
-user	1m1.920s
-sys	2m3.943s
+real	5m1.770s
+user	1m9.536s
+sys	2m18.701s
 exit=0

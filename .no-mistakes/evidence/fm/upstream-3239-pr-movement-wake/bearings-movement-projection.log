@@ -1,0 +1,10 @@
+Bearings after the baseline observation:
+{"known":1,"checked":1,"counts":{"captain":0,"fleet":0,"maintainer":1,"nobody":0},"complete":true,"proven_clear":true}
+OK   baseline: the delivery is measured maintainer work, nothing for the fleet
+Bearings after the head moved:
+{"known":1,"checked":1,"counts":{"captain":0,"fleet":1,"maintainer":0,"nobody":0},"complete":true,"proven_clear":true}
+projected rows:
+{"url":"https://github.com/o/r/pull/8","actor":"fleet","reason":"incoming forge signal needs triage","pending":null}
+OK   pending head movement is fleet triage with the forge-signal reason
+
+RESULT: 0 failed expectations

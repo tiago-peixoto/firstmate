@@ -1,0 +1,22 @@
+gh identity: tiago-peixoto
+real PR core fields: {"comments":10,"draft":false,"head":"bb59292a0ed16af7a815ea4773d90aacb6a39ab2","requested_reviewers":[],"requested_teams":[],"review_comments":2,"state":"open"}
++ fm-contributions.sh enroll delivery https://github.com/kunchenguid/firstmate/pull/5341
+  -> exit 0
++ fm-contributions.sh poll (first observation)
+  -> exit 0 in 4s stdout=[contribution-wake: check: contributions delivery 6dddb009c469ccab66a9a51a32094b2feec9c8b2df81a2c0c1b7f5a6a0923198
+contribution-wake: check: contributions delivery 0fe82c8502c944538d9d577d39dc8e1718b6b7026aa5ded1cc9d536b003dc864
+contribution-wake: check: contributions delivery f93d157dbc090edb882a3344ad39d80e576aa768f590ec9716dab92e2ed15397
+contribution-wake: check: contributions delivery 30d8fc1ae7afdf4f5b2532f162e38a6979a3e1854ada34fd838b081191215afc]
+{"url":"https://github.com/kunchenguid/firstmate/pull/5341","checked_at":"2026-10-23T22:35:49Z","error":null,"observation":{"head":"bb59292a0ed16af7a815ea4773d90aacb6a39ab2","state":"open","draft":false,"mergeable":"conflicting","review_requests":[],"review_decision":""}}
+pending types after first poll: {"comment":4}
+OK   first real observation succeeded (error null, real head recorded)
+OK   review_requests recorded as the baseline array
+OK   first observation produced no movement signal
+check wakes after first poll: 4 (pending signals: 4)
++ fm-contributions.sh poll (second observation, nothing changed on the forge)
+  -> exit 0 in 2s stdout=[]
+check wakes after second poll: 4 (pending signals: 4)
+OK   second observation of the unchanged real PR added no signal and no wake
+OK   still no movement signal
+
+RESULT: 0 failed expectations

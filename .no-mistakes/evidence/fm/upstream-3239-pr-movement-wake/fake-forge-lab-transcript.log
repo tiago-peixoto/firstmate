@@ -1,0 +1,192 @@
+
+===== A. register the owned delivery (fm-pr-check.sh) and take the first observation =====
++ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+  -> exit 0
+state/contributions.check.sh
+state/delivery.check.sh
++ bash state/contributions.check.sh
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+wake queue (check wakes): 
+observation: {"head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","state":"open","draft":false,"review_requests":[]}
+OK   first observation is the baseline: no pending signal
+OK   first observation queued no wake
+
+===== B. an unchanged pull request re-polled stays quiet =====
++ bash state/contributions.check.sh
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+wake queue (check wakes): 
+observation: {"head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","state":"open","draft":false,"review_requests":[]}
+OK   unchanged re-poll: still no pending signal
+
+===== C. the head is replaced on the forge: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -> bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb =====
++ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery cc7c7c15db134bb041829446d4b24a1c3bddf79efe01dcdb7daf40db0181603f
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-10-23T22:37:04Z"}
+wake queue (check wakes): 1
+observation: {"head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","state":"open","draft":false,"review_requests":[]}
+OK   one head signal pending
+OK   exactly one durable check wake
+wake queue:
+1792795025	1	check	contribution-cc7c7c15db134bb041829446d4b24a1c3bddf79efe01dcdb7daf40db0181603f	check: contributions delivery cc7c7c15db134bb041829446d4b24a1c3bddf79efe01dcdb7daf40db0181603f
+
+===== C2. re-poll with the new head unchanged: no second wake =====
++ bash state/contributions.check.sh
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-10-23T22:37:04Z"}
+wake queue (check wakes): 1
+observation: {"head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","state":"open","draft":false,"review_requests":[]}
+OK   still one pending signal and one wake
+
+===== C3. acknowledge the head signal =====
++ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-10-23T22:37:04Z
+  -> exit 0
+pending:
+wake queue (check wakes): 1
+observation: {"head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","state":"open","draft":false,"review_requests":[]}
+OK   ack cleared the pending signal
+
+===== D. converting to draft is not movement; leaving draft is =====
++ bash state/contributions.check.sh
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+wake queue (check wakes): 1
+observation: {"head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","state":"open","draft":true,"review_requests":[]}
+OK   entering draft woke nothing
++ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery e6b73aac0c5dab9dee9c89f6d9ec9d8296b67e20c773f3ed8d03725470100954
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"ready-for-review:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-10-23T22:37:08Z"}
+wake queue (check wakes): 2
+observation: {"head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","state":"open","draft":false,"review_requests":[]}
+OK   leaving draft is one ready-for-review signal
++ bash state/contributions.check.sh
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+OK   re-poll after leaving draft adds nothing
++ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 ready-for-review:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-10-23T22:37:08Z
+  -> exit 0
+
+===== E. a reviewer and a team are requested in one observation =====
++ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery 7e65f896d33adc62b51daf7dbbb5810dff6aed4145e08dceae88cadf3d5140cc
+contribution-wake: check: contributions delivery 80d07047fb441c811553e4b55fbfd0cf382009744160b03ceba92e87030392c6
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+{"type":"review-requested","body":"review requested from alice","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"review-requested:alice:2026-10-23T22:37:11Z"}
+{"type":"review-requested","body":"review requested from team:core","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"review-requested:team:core:2026-10-23T22:37:11Z"}
+wake queue (check wakes): 4
+observation: {"head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","state":"open","draft":false,"review_requests":["alice","team:core"]}
+OK   two review-requested signals: alice and team:core
++ bash state/contributions.check.sh
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+OK   re-poll with the same requests adds nothing
+
+===== E2. a second reviewer is added; removing alice is not movement =====
++ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery d20351536a637f3cee1da715b5487c925b78ad81b5cdf99a7ba4e88b12b71dc0
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+{"type":"review-requested","body":"review requested from alice","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"review-requested:alice:2026-10-23T22:37:11Z"}
+{"type":"review-requested","body":"review requested from bob","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"review-requested:bob:2026-10-23T22:37:13Z"}
+{"type":"review-requested","body":"review requested from team:core","source":"https://github.com/o/r/pull/8","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","token":"review-requested:team:core:2026-10-23T22:37:11Z"}
+wake queue (check wakes): 5
+observation: {"head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","state":"open","draft":false,"review_requests":["bob","team:core"]}
+OK   exactly one new signal, for bob
++ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-requested:alice:2026-10-23T22:37:11Z
+  -> exit 0
++ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-requested:bob:2026-10-23T22:37:13Z
+  -> exit 0
++ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-requested:team:core:2026-10-23T22:37:11Z
+  -> exit 0
+OK   all review-requested signals acknowledged
+
+===== F. a fresh home, as an operator gets it: register, first observation, then a watcher on an unchanged pull request =====
++ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+  -> exit 0
++ bash state/contributions.check.sh
+  -> exit 0
++ bash state/delivery.check.sh
+  -> exit 0
+pending:
+wake queue (check wakes): 
+observation: {"head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","state":"open","draft":false,"review_requests":[]}
+watcher exit=124 stdout=[checkpoint: no actionable wake within 8s] stderr=[]
+OK   quiet watcher expired (124) without a contribution wake line
+OK   quiet watcher queued no durable wake
+
+===== F2. the head moves while the watcher runs: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -> cccccccccccccccccccccccccccccccccccccccc =====
+watcher exit=0
+watcher stdout:
+check: contributions delivery 94d4ce7d856f74514ee5cc48989aa22a439d8f3937d51f0a24224ec3e6c49b03
+
+watcher stderr:
+OK   watcher returned 0 and surfaced 'check: contributions delivery <sha>'
+pending:
+{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to cccccccccccccccccccccccccccccccccccccccc","source":"https://github.com/o/r/pull/8","head":"cccccccccccccccccccccccccccccccccccccccc","token":"head:cccccccccccccccccccccccccccccccccccccccc:2026-10-23T22:37:28Z"}
+wake queue (check wakes): 1
+observation: {"head":"cccccccccccccccccccccccccccccccccccccccc","state":"open","draft":false,"review_requests":[]}
+OK   one head signal pending and one durable wake after the watcher wake
+
+===== F3. a second watcher on the already surfaced head stays quiet =====
+watcher exit=124 stdout=[checkpoint: no actionable wake within 5s]
+OK   already surfaced head did not re-ring (124, no contribution wake line)
+OK   no second durable wake for the unchanged head
++ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 head:cccccccccccccccccccccccccccccccccccccccc:2026-10-23T22:37:28Z
+  -> exit 0
+
+===== G. settlement is not movement: the forge reports merged with a new head dddddddddddddddddddddddddddddddddddddddd =====
++ fm-contributions.sh poll
+  -> exit 0 stdout=[]
+pending:
+wake queue (check wakes): 1
+observation: {"head":"dddddddddddddddddddddddddddddddddddddddd","state":"merged","draft":false,"review_requests":[]}
+OK   merged observation with a new head left nothing pending and printed nothing
+OK   merged observation queued no wake
+OK   record settled on merged + new head
+
+===== final durable record =====
+{
+  "url": "https://github.com/o/r/pull/8",
+  "kind": "pr",
+  "checked_at": "2026-10-23T22:37:35Z",
+  "error": null,
+  "pending": [],
+  "seen": [
+    "head:cccccccccccccccccccccccccccccccccccccccc:2026-10-23T22:37:28Z"
+  ],
+  "observation": {
+    "head": "dddddddddddddddddddddddddddddddddddddddd",
+    "state": "merged",
+    "draft": false,
+    "review_requests": []
+  }
+}
+
+RESULT: 0 failed expectations
