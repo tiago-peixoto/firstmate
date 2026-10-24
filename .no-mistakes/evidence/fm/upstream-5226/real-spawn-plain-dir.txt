@@ -1,0 +1,53 @@
+# Real bin/fm-spawn.sh run (tmux backend) in a disposable lab home against Kimi Code CLI 2.3.1 from a pinned, checksum-verified download. Filtered: launch-brief/posture warnings.
+# The lab home has no Kimi login and no real model, so Kimi cannot open a session after the brief pointer is submitted; delivery confirmation therefore fails. The folder prompt handling is in real-spawn-plain-dir-frames.txt (frame 7 = Kimi 2.3.1 prompt, frame 8 = cleared composer, frame 9 = brief pointer typed).
+=== spawn kp1 (plain-dir)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.xcB3QD
+error: kimi brief pointer delivery was not confirmed; inspect window firstmate:fm-kp1
+warning: leaving task kp1's slot claim on /tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+spawn-exit=1
+=== status file
+failed [at=1792854076]: kimi brief pointer delivery was not confirmed
+=== pane (visible viewport)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain'
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export GOTMPDIR=/tmp/fm-kp1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export FM_TASK_ID=kp1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ . '/tmp/fm-kp1+ed5198cd00e35844b3782356ce2394df287a2e8a0c1c65d64e018e659f2acda0/launch.s1792
+854044.2317403.21124.sh'
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Send /help for help information.                                                                                                                 │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain                                                                              │
+ │  Session:                                                                                                                                                  │
+ │  Model:     test                                                                                                                                           │
+ │  Version:   2.3.1                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi K3.1 Pro is ready - use the model in a fresh session for the best results
+   Standard: Plus/Moderato and above; Highspeed: Pro/Allegretto and above
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+   Error: Failed to start a session: Model "test" is not configured in config.toml.
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  test  …/proj-plain-6d2877/1/proj-plain                                                                                    /init: generate AGENTS.md
+                                                                                                                                                    context: 0%
+=== kimi processes
+=== marker.log
+(end marker)
+
+=== lab Kimi home trust record written when Firstmate answered the prompt (lab home only; real ~/.kimi-code does not exist)
+wd_proj-plain_8fa726cf3f7a
+{"root":"/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain","trustedAt":1792854047019}
+=== Kimi user-history (what was submitted into the composer)
+{"content":"Read the brief at /tmp/fm-lab.xcB3QD/data/kp1/launch-brief.md and follow it exactly."}
+

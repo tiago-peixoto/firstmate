@@ -1,0 +1,154 @@
+##### frame 3 (t=3s)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$
+##### frame 5 (t=5s)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain'
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$
+##### frame 6 (t=6s)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain'
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export GOTMPDIR=/tmp/fm-kp1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export FM_TASK_ID=kp1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ . '/tmp/fm-kp1+ed5198cd00e35844b3782356ce2394df287a2e8a0c1c65d64e018e659f2acda0/launch.s1792
+854044.2317403.21124.sh'
+##### frame 7 (t=7s)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain'
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export GOTMPDIR=/tmp/fm-kp1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export FM_TASK_ID=kp1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ . '/tmp/fm-kp1+ed5198cd00e35844b3782356ce2394df287a2e8a0c1c65d64e018e659f2acda0/launch.s1792
+854044.2317403.21124.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+  /tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain
+  No project integrations or instructions to activate.
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+##### frame 8 (t=8s)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain'
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export GOTMPDIR=/tmp/fm-kp1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export FM_TASK_ID=kp1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ . '/tmp/fm-kp1+ed5198cd00e35844b3782356ce2394df287a2e8a0c1c65d64e018e659f2acda0/launch.s1792
+854044.2317403.21124.sh'
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Send /help for help information.                                                                                                                 │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain                                                                              │
+ │  Session:                                                                                                                                                  │
+ │  Model:     test                                                                                                                                           │
+ │  Version:   2.3.1                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi K3.1 Pro is ready - use the model in a fresh session for the best results
+   Standard: Plus/Moderato and above; Highspeed: Pro/Allegretto and above
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  test  …/proj-plain-6d2877/1/proj-plain                                                                                    /init: generate AGENTS.md
+                                                                                                                                                    context: 0%
+##### frame 9 (t=9s)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain'
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export GOTMPDIR=/tmp/fm-kp1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export FM_TASK_ID=kp1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ . '/tmp/fm-kp1+ed5198cd00e35844b3782356ce2394df287a2e8a0c1c65d64e018e659f2acda0/launch.s1792
+854044.2317403.21124.sh'
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Send /help for help information.                                                                                                                 │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain                                                                              │
+ │  Session:                                                                                                                                                  │
+ │  Model:     test                                                                                                                                           │
+ │  Version:   2.3.1                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi K3.1 Pro is ready - use the model in a fresh session for the best results
+   Standard: Plus/Moderato and above; Highspeed: Pro/Allegretto and above
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ > Read the brief at /tmp/fm-lab.xcB3QD/data/kp1/launch-brief.md and follow it exactly.                                                                     │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  test  …/proj-plain-6d2877/1/proj-plain                                                                                    /init: generate AGENTS.md
+                                                                                                                                                    context: 0%
+##### frame 10 (t=10s)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-plain-6d2877/1/proj-plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain'
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export GOTMPDIR=/tmp/fm-kp1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ export FM_TASK_ID=kp1
+firstmate@firstmate-hz:~/.treehouse/proj-plain-6d2877/1/proj-plain$ . '/tmp/fm-kp1+ed5198cd00e35844b3782356ce2394df287a2e8a0c1c65d64e018e659f2acda0/launch.s1792
+854044.2317403.21124.sh'
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Send /help for help information.                                                                                                                 │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.xcB3QD/home/.treehouse/proj-plain-6d2877/1/proj-plain                                                                              │
+ │  Session:                                                                                                                                                  │
+ │  Model:     test                                                                                                                                           │
+ │  Version:   2.3.1                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ✦ Kimi K3.1 Pro is ready - use the model in a fresh session for the best results
+   Standard: Plus/Moderato and above; Highspeed: Pro/Allegretto and above
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+   Error: Failed to start a session: Model "test" is not configured in config.toml.
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  test  …/proj-plain-6d2877/1/proj-plain                                                                                    /init: generate AGENTS.md
+                                                                                                                                                    context: 0%

@@ -1,0 +1,10 @@
+$ kimi -p 'Reply with the word hello.'  (cwd declares lab-marker in .kimi-code/mcp.json; disposable HOME, no login)
+kimi version 2.3.1
+Warning: this folder is not trusted; skipped 1 project-level MCP server: lab-marker (stdio: /tmp/fm-lab.xcB3QD/marker-p.sh --from-kimi-p).
+  Run `kimi` here and choose "Trust this folder", or set KIMI_CODE_TRUST_WORKSPACE=1, to enable them.
+
+error: failed to run prompt: No model configured. Run `kimi` and use /login to sign in, then retry; or set default_model in config.toml.
+See log: /tmp/fm-lab.xcB3QD/home-p/.kimi-code/logs/kimi-code.log
+kimi-exit=1
+=== marker-p.log
+(end marker)

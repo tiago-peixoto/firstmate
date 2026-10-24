@@ -1,0 +1,26 @@
+# Real bin/fm-spawn.sh run (tmux backend) in a disposable lab home against Kimi Code CLI 2.3.1 from a pinned, checksum-verified download. Filtered: launch-brief/posture warnings.
+# Note: the PIDs under '=== kimi processes' belong to tests/fm-kimi-trust-prompt-live-e2e.test.sh, which ran concurrently on its own socket (fm-kimi-trust-*); the fm-km1 pane itself shows no kimi command was ever run.
+=== spawn km1 (malformed-kimi-code-mcp-json)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.xcB3QD
+error: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.; inspect window firstmate:fm-km1
+warning: leaving task km1's slot claim on /tmp/fm-lab.xcB3QD/home/.treehouse/proj-malformed-09f5b0/1/proj-malformed in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+spawn-exit=1
+=== status file
+failed [at=1792854040]: refusing Kimi launch: .kimi-code/mcp.json in this directory could not be read. Firstmate cannot prove it declares no project MCP servers, so Kimi was not started. Fix or remove that file, or wait for a later consent design.
+=== pane (visible viewport)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-malformed$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-malformed-09f5b0/1/proj-malformed. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-malformed-09f5b0/1/proj-malformed$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-malformed-09f5b0/1/proj-malformed'
+firstmate@firstmate-hz:~/.treehouse/proj-malformed-09f5b0/1/proj-malformed$ export GOTMPDIR=/tmp/fm-km1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-malformed-09f5b0/1/proj-malformed$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-malformed-09f5b0/1/proj-malformed$ export FM_TASK_ID=km1
+firstmate@firstmate-hz:~/.treehouse/proj-malformed-09f5b0/1/proj-malformed$
+=== kimi processes
+2312597 /usr/bin/tmux -L fm-kimi-trust-2311345 new-session -d -s plain -x 120 -y 40 -c /tmp/fm-kimi-trust.9l49SQ/plain -- env -u KIMI_CODE_TRUST_WORKSPACE HOME=/tmp/fm-kimi-trust.9l49SQ/home-plain KIMI_CODE_HOME=/tmp/fm-kimi-trust.9l49SQ/home-plain/.kimi-code KIMI_CODE_NO_AUTO_UPDATE=1 /tmp/fm-kimi-bin.xswwiB/prefix/bin/kimi --auto
+2317104 /tmp/fm-kimi-bin.xswwiB/prefix/bin/kimi --auto
+=== marker.log
+(end marker)

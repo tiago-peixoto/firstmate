@@ -1,0 +1,23 @@
+# Real bin/fm-spawn.sh run (tmux backend) in a disposable lab home against Kimi Code CLI 2.3.1 from a pinned, checksum-verified download. Filtered: launch-brief/posture warnings.
+=== spawn kr1 (root-mcp-json)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.xcB3QD
+error: refusing Kimi launch: .mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.; inspect window firstmate:fm-kr1
+warning: leaving task kr1's slot claim on /tmp/fm-lab.xcB3QD/home/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+spawn-exit=1
+=== status file
+failed [at=1792854035]: refusing Kimi launch: .mcp.json in this directory declares project MCP servers. Firstmate will not start Kimi, because answering the folder prompt can start those targets without a consent decision that covers them. Remove the project servers from that file, or wait for a later consent design. This directory cannot use Kimi until then.
+=== pane (visible viewport)
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.xcB3QD/proj-rootmcp$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp$ cd -- '/tmp/fm-lab.xcB3QD/home/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp'
+firstmate@firstmate-hz:~/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp$ export GOTMPDIR=/tmp/fm-kr1/gotmp
+firstmate@firstmate-hz:~/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp$ export FM_TASK_ID=kr1
+firstmate@firstmate-hz:~/.treehouse/proj-rootmcp-3174ee/1/proj-rootmcp$
+=== kimi processes
+=== marker.log
+(end marker)
