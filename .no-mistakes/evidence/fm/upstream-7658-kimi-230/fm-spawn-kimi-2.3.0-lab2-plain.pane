@@ -1,0 +1,50 @@
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.YUqcdj/projects-src/plain$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/plain-d77725/1/plain. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/plain-d77725/1/plain$ cd -- '/tmp/fm-lab.YUqcdj/home/.treehouse/plain-d77725/1/plain'
+firstmate@firstmate-hz:~/.treehouse/plain-d77725/1/plain$ export GOTMPDIR=/tmp/fm-lab2-plain/gotmp
+firstmate@firstmate-hz:~/.treehouse/plain-d77725/1/plain$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/plain-d77725/1/plain$ export FM_TASK_ID=lab2-plain
+firstmate@firstmate-hz:~/.treehouse/plain-d77725/1/plain$ . '/tmp/fm-lab2-plain+40b7ae062d291029018cf3374925c3e23dc9164eaab62cc2998eb401aa7e3509/launch.s1792812
+264.319679.30750.sh'
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │                                                                                                                                                            │
+ │  ▐█▛█▛█▌  Welcome to Kimi Code!                                                                                                                            │
+ │  ▐█████▌  Run /login or /provider to get started.                                                                                                          │
+ │                                                                                                                                                            │
+ │  Directory: /tmp/fm-lab.YUqcdj/home/.treehouse/plain-d77725/1/plain                                                                                        │
+ │  Session:                                                                                                                                                  │
+ │  Model:     not set, run /login or /provider                                                                                                               │
+ │  Version:   2.3.0                                                                                                                                          │
+ │                                                                                                                                                            │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ ✦ Kimi K3.1 Pro is ready - use the model in a fresh session for the best results
+   Standard: Plus/Moderato and above; Highspeed: Pro/Allegretto and above
+
+   No session yet — one will be created on your first message.
+   tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+   Error: LLM not set, send "/login" to login
+
+ ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+ │ >                                                                                                                                                          │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Never Ask  …/plain-d77725/1/plain                                                                           /goal for multi-step work with a clear finish line
+                                                                                                                                                    context: 0%
+
+
+
+
+
+
+
+
+
+
+
+

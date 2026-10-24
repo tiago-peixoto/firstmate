@@ -1,0 +1,50 @@
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.YUqcdj/projects-src/kimi-code-mcp-json$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json$ cd -- '/tmp/fm-lab.YUqcdj/home/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-c
+ode-mcp-json'
+firstmate@firstmate-hz:~/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json$ export GOTMPDIR=/tmp/fm-lab2-kimimcp/gotmp
+firstmate@firstmate-hz:~/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json$ export FM_TASK_ID=lab2-kimimcp
+firstmate@firstmate-hz:~/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json$ . '/tmp/fm-lab2-kimimcp+40b7ae062d291029018cf3374925c3e23dc9164eaab62cc2998e
+b401aa7e3509/launch.s1792812257.313179.1813.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+
+  /tmp/fm-lab.YUqcdj/home/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json
+
+  Start 1 MCP server automatically
+    Config: .kimi-code/mcp.json
+
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

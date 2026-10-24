@@ -1,0 +1,93 @@
+Real bin/fm-spawn.sh --harness kimi runs inside a disposable lab FM_HOME (/tmp/fm-lab.YUqcdj) on a private tmux socket (fm-lab).
+Kimi Code CLI binaries were downloaded from code.kimi.com into a disposable prefix with manifest checksums verified; KIMI_CODE_NO_AUTO_UPDATE=1 and HOME=/tmp/fm-lab.YUqcdj/home were set on the lab tmux session so Kimi used only the lab home.
+Each project is a throwaway git repo; the declaring ones commit a .mcp.json or .kimi-code/mcp.json whose server command appends to /tmp/fm-lab.YUqcdj/marker.log.
+
+################ task lab2-rootmcp
+--- fm-spawn exit: rc=1
+--- fm-spawn stderr/stdout:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YUqcdj
+warning: /tmp/fm-lab.YUqcdj/data/lab2-rootmcp/launch-brief.md records no ship branch; defaulting to legacy branch fm/lab2-rootmcp
+warning: /tmp/fm-lab.YUqcdj/data/lab2-rootmcp/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: lab2-rootmcp ships mode=local-only while the standing posture for root-mcp-json is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.; inspect window primary:fm-lab2-rootmcp
+warning: leaving task lab2-rootmcp's slot claim on /tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/1/root-mcp-json in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- state/lab2-rootmcp.status:
+failed [at=1792812253]: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.
+
+################ task lab2-kimimcp
+--- fm-spawn exit: rc=1
+--- fm-spawn stderr/stdout:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YUqcdj
+warning: /tmp/fm-lab.YUqcdj/data/lab2-kimimcp/launch-brief.md records no ship branch; defaulting to legacy branch fm/lab2-kimimcp
+warning: /tmp/fm-lab.YUqcdj/data/lab2-kimimcp/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: lab2-kimimcp ships mode=local-only while the standing posture for kimi-code-mcp-json is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.; inspect window primary:fm-lab2-kimimcp
+warning: leaving task lab2-kimimcp's slot claim on /tmp/fm-lab.YUqcdj/home/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- state/lab2-kimimcp.status:
+failed [at=1792812260]: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.
+
+################ task lab2-plain
+--- fm-spawn exit: rc=1
+--- fm-spawn stderr/stdout:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YUqcdj
+warning: /tmp/fm-lab.YUqcdj/data/lab2-plain/launch-brief.md records no ship branch; defaulting to legacy branch fm/lab2-plain
+warning: /tmp/fm-lab.YUqcdj/data/lab2-plain/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: lab2-plain ships mode=local-only while the standing posture for plain is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi brief pointer delivery was not confirmed; inspect window primary:fm-lab2-plain
+warning: leaving task lab2-plain's slot claim on /tmp/fm-lab.YUqcdj/home/.treehouse/plain-d77725/1/plain in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- state/lab2-plain.status:
+failed [at=1792812296]: kimi brief pointer delivery was not confirmed
+
+################ task lab2-rootmcp-231
+--- fm-spawn exit: rc=1
+--- fm-spawn stderr/stdout:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YUqcdj
+warning: /tmp/fm-lab.YUqcdj/data/lab2-rootmcp-231/launch-brief.md records no ship branch; defaulting to legacy branch fm/lab2-rootmcp-231
+warning: /tmp/fm-lab.YUqcdj/data/lab2-rootmcp-231/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: lab2-rootmcp-231 ships mode=local-only while the standing posture for root-mcp-json is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.; inspect window primary:fm-lab2-rootmcp-231
+warning: leaving task lab2-rootmcp-231's slot claim on /tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/2/root-mcp-json in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- state/lab2-rootmcp-231.status:
+failed [at=1792812304]: kimi's folder prompt announces project MCP servers, so Firstmate did not answer it and did not send the brief; answering would start those servers without a consent decision that covers them. Remove the project MCP servers this directory declares (the prompt's Config line names the file), or wait for a later consent design.
+
+################ task lab2-paged12
+--- fm-spawn exit: rc=1
+--- fm-spawn stderr/stdout:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YUqcdj
+warning: /tmp/fm-lab.YUqcdj/data/lab2-paged12/launch-brief.md records no ship branch; defaulting to legacy branch fm/lab2-paged12
+warning: /tmp/fm-lab.YUqcdj/data/lab2-paged12/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: lab2-paged12 ships mode=local-only while the standing posture for root-mcp-json is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi's folder prompt pages what trusting would activate, so Firstmate could not read all of it and did not answer it; give the worker pane more rows and relaunch.; inspect window short12:fm-lab2-paged12
+warning: leaving task lab2-paged12's slot claim on /tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/3/root-mcp-json in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- state/lab2-paged12.status:
+failed [at=1792812367]: kimi's folder prompt pages what trusting would activate, so Firstmate could not read all of it and did not answer it; give the worker pane more rows and relaunch.
+
+################ task lab2-small7
+--- fm-spawn exit: rc=1
+--- fm-spawn stderr/stdout:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YUqcdj
+warning: /tmp/fm-lab.YUqcdj/data/lab2-small7/launch-brief.md records no ship branch; defaulting to legacy branch fm/lab2-small7
+warning: /tmp/fm-lab.YUqcdj/data/lab2-small7/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: lab2-small7 ships mode=local-only while the standing posture for root-mcp-json is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+error: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready; inspect window short7:fm-lab2-small7
+warning: leaving task lab2-small7's slot claim on /tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/4/root-mcp-json in place; the Treehouse project lock is no longer held, so the next spawn's claim replaces it
+--- state/lab2-small7.status:
+failed [at=1792812403]: kimi did not show a verified ready signal before brief delivery; trust dialog text stayed on screen without the complete dialog, so the pane was never safe to answer or to treat as ready
+
+################ Kimi binaries behind the lab windows
+pid=311428 cwd=/tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/1/root-mcp-json exe=/tmp/fm-kimi-tool.3836342/kimi-2.3.0/bin/kimi --version=2.3.0
+pid=317687 cwd=/tmp/fm-lab.YUqcdj/home/.treehouse/kimi-code-mcp-json-c532dc/1/kimi-code-mcp-json exe=/tmp/fm-kimi-tool.3836342/kimi-2.3.0/bin/kimi --version=2.3.0
+pid=323521 cwd=/tmp/fm-lab.YUqcdj/home/.treehouse/plain-d77725/1/plain exe=/tmp/fm-kimi-tool.3836342/kimi-2.3.0/bin/kimi --version=2.3.0
+pid=361156 cwd=/tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/2/root-mcp-json exe=/tmp/fm-kimi-tool.3836342/kimi-2.3.1/bin/kimi --version=2.3.1
+pid=407160 cwd=/tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/3/root-mcp-json exe=/tmp/fm-kimi-tool.3836342/kimi-2.3.0/bin/kimi --version=2.3.0
+pid=421508 cwd=/tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/4/root-mcp-json exe=/tmp/fm-kimi-tool.3836342/kimi-2.3.0/bin/kimi --version=2.3.0
+
+################ declared project MCP server marker log (/tmp/fm-lab.YUqcdj/marker.log)
+bytes: 0
+
+################ Kimi workspace-trust records in the lab home (only the plain worktree was trusted)
+wd_plain_1ea2e0027fac
+{"root":"/tmp/fm-lab.YUqcdj/home/.treehouse/plain-d77725/1/plain","trustedAt":1792812267248}
+
+################ brief pointer Kimi received in the plain case (from the lab home's user-history)
+Read the brief at /tmp/fm-lab.YUqcdj/data/lab2-plain/launch-brief.md and follow it exactly.

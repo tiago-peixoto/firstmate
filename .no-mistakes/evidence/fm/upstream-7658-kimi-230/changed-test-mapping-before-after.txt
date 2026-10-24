@@ -1,0 +1,9 @@
+### base commit d22640f4 runner (copied in as bin/fm-test-run-base-tmp.sh for this call only): --list --changed --base d22640f4
+fm-test-run: no changed-test mapping for source path: tests/captures/kimi-code-2.3.0/README.md
+
+### target commit runner: bin/fm-test-run.sh --list --changed --base d22640f4
+exit=0
+selected 115 scripts; the readers of tests/captures/* among them:
+tests/fm-crew-state.test.sh
+tests/fm-kimi-harness.test.sh
+tests/fm-kimi-trust-prompt-live-e2e.test.sh

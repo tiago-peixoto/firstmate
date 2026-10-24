@@ -1,0 +1,50 @@
+treehouse get
+firstmate@firstmate-hz:/tmp/fm-lab.YUqcdj/projects-src/root-mcp-json$ treehouse get
+A new version of treehouse is available: v2.3.0 → v3.1.5
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/root-mcp-json-7848a3/2/root-mcp-json. Type 'exit' to return.
+firstmate@firstmate-hz:~/.treehouse/root-mcp-json-7848a3/2/root-mcp-json$ cd -- '/tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/2/root-mcp-json'
+firstmate@firstmate-hz:~/.treehouse/root-mcp-json-7848a3/2/root-mcp-json$ export GOTMPDIR=/tmp/fm-lab2-rootmcp-231/gotmp
+firstmate@firstmate-hz:~/.treehouse/root-mcp-json-7848a3/2/root-mcp-json$ export COMPACT_ADVISER_DISABLE=1
+firstmate@firstmate-hz:~/.treehouse/root-mcp-json-7848a3/2/root-mcp-json$ export FM_TASK_ID=lab2-rootmcp-231
+firstmate@firstmate-hz:~/.treehouse/root-mcp-json-7848a3/2/root-mcp-json$ . '/tmp/fm-lab2-rootmcp-231+40b7ae062d291029018cf3374925c3e23dc9164eaab62cc2998eb401aa
+7e3509/launch.s1792812301.358054.4575.sh'
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Trust this folder?
+  ↑↓ navigate · Enter select · Esc exit
+
+  /tmp/fm-lab.YUqcdj/home/.treehouse/root-mcp-json-7848a3/2/root-mcp-json
+
+  Start 1 MCP server automatically
+    Config: .mcp.json
+
+  Trust is remembered for this folder, including future project config changes.
+  Tool approvals follow your permission settings.
+
+   ❯ Trust and continue
+     Exit
+ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
