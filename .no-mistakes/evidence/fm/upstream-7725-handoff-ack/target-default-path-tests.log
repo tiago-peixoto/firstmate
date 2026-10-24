@@ -1,0 +1,8 @@
+ok - host+hook: an attended main-only pass-through rewakes main and keeps its successor watcher
+ok - host+hook: a successor close that lands during main's turn is delivered at the next turn end
+ok - host: the park ends itself with a boundary wake and a stopped watcher
+
+real	0m25.170s
+user	0m6.985s
+sys	0m18.156s
+rc=0

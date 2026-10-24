@@ -1,0 +1,2 @@
+without: host log HAS the pass-through row
+with: host log LACKS the pass-through row

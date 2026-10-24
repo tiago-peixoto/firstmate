@@ -1,0 +1,9 @@
+not ok - ack turns-main-only: the hand-back dropped the pass-through row
+--- /tmp/fm-supervision-host.BhXs84/hook-turns-main-only-ack/state/.supervision-host.log ---
+1792861446	start	gen=host-3733886-1792861445	primary=claude
+1792861452	handoff	host-3733886-1792861445
+
+real	0m8.780s
+user	0m2.862s
+sys	0m7.381s
+rc=1

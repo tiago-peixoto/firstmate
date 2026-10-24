@@ -1,0 +1,6 @@
+not ok - pass-through: lost continuation left no verified watcher
+
+real	0m6.195s
+user	0m1.993s
+sys	0m5.352s
+rc=1

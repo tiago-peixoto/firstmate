@@ -1,0 +1,4 @@
+ok - evidence: boundary hand-back survives a lost continuation and ends with one host-owned watcher
+ok - evidence: pass-through hand-back survives a lost continuation and ends with one host-owned watcher
+ok - evidence: removing the opt-in stops the retry owner, keeps the current watcher, and the next park takes it over
+rc=0

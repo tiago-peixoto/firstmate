@@ -1,0 +1,99 @@
+# Real Claude lab: PARK BOUNDARY acknowledged hand-back (one project meta, no status appends, so the only hand-back is the park bound)
+
+Lab checkout: /tmp/fm-sh-handoff-live.UCTZJl/fm (a plain git checkout of the target tree, FM_HOME is the checkout). 2.1.310 (Claude Code), model haiku, park bound 60s, retry 45s. Claude runs interactively in a private tmux server; nobody types after the setup prompt.
+
+- 16:48:47Z step 1: primary idle (claude pid 2864511, 2.1.310 (Claude Code), model haiku); host 2879288 parked on watcher 2880310; pending= owner=(alive=no) watcher=2880310(alive=yes) host=2879288 arms=[2880241 2879288] queue_rows=0
+
+<details><summary>pane: step 1: idle primary, host parked</summary>
+
+```text
+ ▐▛███▛█   Claude Code v2.1.310
+▝▜██████▀  Haiku 5.5 with low effort · Claude Max
+ ▝▝   ▝▝   /tmp/fm-sh-handoff-live.UCTZJl/fm
+
+
+❯ This is an isolated Firstmate test lab, not a real fleet. Reply with exactly READY now and use no tools. Later, whenever a "Stop hook feedback" message wakes you, do exactly this and nothing else:
+  run bin/fm-wake-drain.sh once with the Bash tool, then run the exact bin/fm-wake-drain.sh --ack-through ... command that its WAKE_ACK_REQUIRED line prints, then reply with exactly ACKED. Never run
+  any other command, never run bin/fm-watch-arm.sh, and never use any other tool.
+
+● READY
+
+✻ Worked for 8s · done 6:48 PM
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+</details>
+
+not ok - boundary: the park never reached its bound
+--- host log
+1792860526	start	gen=host-2879288-1792860525	primary=claude
+1792860588	handoff	host-2879288-1792860525
+1792860598	start	gen=host-2945114-1792860597	primary=claude
+1792860598	take-over	arm=2936136
+--- handoff log
+
+--- queue
+
+--- pending:  owner: 
+--- ledger: epoch=2 owner_pid=2944114 outcome=arming updated_at=1792860597 owner_session_id=4f912dd3-e7bf-4f36-836f-fc51e2ebbfb6
+--- arms
+2945851 2945114
+--- screen
+ ▐▛███▛█   Claude Code v2.1.310
+▝▜██████▀  Haiku 5.5 with low effort · Claude Max
+ ▝▝   ▝▝   /tmp/fm-sh-handoff-live.UCTZJl/fm
+❯ This is an isolated Firstmate test lab, not a real fleet. Reply with exactly READY now and use no tools. Later, whenever a "Stop hook feedback" message wakes you, do exactly this and nothing else:
+  run bin/fm-wake-drain.sh once with the Bash tool, then run the exact bin/fm-wake-drain.sh --ack-through ... command that its WAKE_ACK_REQUIRED line prints, then reply with exactly ACKED. Never run
+  any other command, never run bin/fm-watch-arm.sh, and never use any other tool.
+● READY
+✻ Worked for 8s · done 6:48 PM
+● Stop hook feedback
+● Bash(bin/fm-wake-drain.sh)
+  ⎿  1792860586      1       check   supervision-handoff:host-2879288-1792860525     check: supervision-handoff - the host handed supervision to main; drain, handle, and acknowledge this
+     hand-back
+     WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2880310.1792860586.jdTxfH
+     WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+● Bash(bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2880310.1792860586.jdTxfH)
+  ⎿  (No output)
+● ACKED
+✻ Brewed for 7s · done 6:49 PM
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

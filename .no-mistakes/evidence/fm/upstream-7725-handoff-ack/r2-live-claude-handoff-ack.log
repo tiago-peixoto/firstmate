@@ -1,0 +1,45 @@
+- 17:09:31Z step 1: primary idle (claude pid 3999174, lock=3999174); waiting for the host park
+- 17:09:32Z step 1: host parked: pending= owner=(alive=no) watcher=4008673(alive=yes) host=4007999(alive=yes) arms[pid ppid]=[4008598 4007999;] queue_rows=0
+- 17:09:32Z step 2 (boundary): nobody types; waiting up to 120s for the park bound
+- 17:10:33Z step 2 (boundary): hand-back at +61s; host log: start	gen=host-4007999-1792861771	primary=claude|boundary	after 60s|handoff	host-4007999-1792861771|
+- 17:10:33Z step 2 (boundary): BEFORE main runs: pending=host-4007999-1792861771 owner=4060444(alive=yes) watcher=4061220(alive=yes) host=(alive=no) arms[pid ppid]=[4061122 4060444;] queue_rows=1
+- 17:10:33Z PASS: boundary: the host log keeps its boundary row before the handoff row (round-1 fix)
+- 17:10:33Z PASS: boundary: a hand-back receipt is pending
+- 17:10:33Z PASS: boundary: the detached owner is alive before main runs
+- 17:10:33Z PASS: boundary: a watcher is alive before main runs
+- 17:10:33Z PASS: boundary: the token-bound check is queued
+- 17:10:33Z step 2 (boundary): queue: check	supervision-handoff:host-4007999-1792861771	check: supervision-handoff - the host handed supervision to main; drain, handle, and acknowledge this hand-back|
+- 17:10:33Z step 3 (boundary): waiting for the real primary to drain and acknowledge
+- 17:10:38Z PASS: boundary: main's acknowledgement cleared the pending receipt
+- 17:10:39Z step 3 (boundary): after the primary's own ack: pending= owner=(alive=no) watcher=4061220(alive=yes) host=(alive=no) arms[pid ppid]=[4061122 5856;] queue_rows=0
+- 17:10:39Z PASS: boundary: the watcher is still alive after the acknowledgement
+- 17:10:42Z step 4 (boundary): next park: start	gen=host-4070911-1792861840	primary=claude|take-over	arm=4061122|; pending= owner=(alive=no) watcher=4071830(alive=yes) host=4070911(alive=yes) arms[pid ppid]=[4071227 4070911;] queue_rows=0
+- 17:10:42Z PASS: boundary: after the acknowledgement the next park owns exactly one watcher (one arm, the host's child, parent of the watcher)
+- 17:10:42Z step 5 (pass-through): needs-decision appended to demo.status
+- 17:11:15Z step 5 (pass-through): host log since the park: pass-through	attended	main-only	signal: /tmp/fm-sh-handoff-live.MthGaY/fm/state/demo.status|handoff	host-4070911-1792861840|
+- 17:11:15Z step 5 (pass-through): BEFORE main runs: pending=host-4070911-1792861840 owner=4099360(alive=yes) watcher=4099670(alive=yes) host=(alive=no) arms[pid ppid]=[4099647 4099360;] queue_rows=3
+- 17:11:15Z PASS: pass-through: the host log keeps its pass-through row before the handoff row (round-1 fix)
+- 17:11:15Z PASS: pass-through: a hand-back receipt is pending
+- 17:11:15Z PASS: pass-through: the detached owner is alive before main runs
+- 17:11:15Z PASS: pass-through: a watcher is alive before main runs
+- 17:11:21Z PASS: pass-through: main's acknowledgement cleared the pending receipt
+- 17:11:23Z step 6 (pass-through): after the primary's own ack: pending= owner=(alive=no) watcher=4099670(alive=yes) host=(alive=no) arms[pid ppid]=[4099647 5856;] queue_rows=0
+- 17:11:23Z PASS: pass-through: the watcher is still alive after the acknowledgement
+- 17:11:25Z step 7 (pass-through): next park: start	gen=host-4107850-1792861883	primary=claude|take-over	arm=4099647|; pending= owner=(alive=no) watcher=4109260(alive=yes) host=4107850(alive=yes) arms[pid ppid]=[4108480 4107850;] queue_rows=0
+- 17:11:25Z PASS: pass-through: after the acknowledgement the next park owns exactly one watcher
+- 17:11:31Z step 8 (busy): primary asked to run sleep 110 at +6s into the park; the bound is at +60s
+- 17:12:25Z step 8 (busy): hand-back at +60s while the primary was busy (sleep ends at +116s): pending=host-4107850-1792861883 owner=4172275(alive=yes) watcher=4172950(alive=yes) host=4107850(alive=yes) arms[pid ppid]=[4172895 4172275;] queue_rows=1
+- 17:13:26Z step 8 (busy): retries while busy: 
+- 17:13:26Z PASS: busy: the watcher stayed alive through the whole busy turn
+- 17:13:26Z FAIL: busy: at least one retry was attempted while the hand-back stayed unacknowledged
+- 17:13:26Z FAIL: busy: no retry typed into the busy pane (every retry before the sleep ended is deferred)
+- 17:14:26Z WARN: SLEPT not seen yet
+- 17:14:26Z step 9 (busy): after the sleep turn: host log since the park: boundary	after 60s|handoff	host-4107850-1792861883|start	gen=host-4183058-1792861953	primary=claude|take-over	arm=4172895|boundary	after 60s|handoff	host-4183058-1792861953|start	gen=host-53959-1792862022	primary=claude|take-over	arm=48898|; pending= owner=(alive=no) watcher=55217(alive=yes) host=53959(alive=yes) arms[pid ppid]=[54462 53959;] queue_rows=0
+- 17:14:26Z step 9 (busy): pending receipt now: ''; handoff log: 
+- 17:14:26Z step 9 (busy): pending= owner=(alive=no) watcher=55217(alive=yes) host=53959(alive=yes) arms[pid ppid]=[54462 53959;] queue_rows=0
+- 17:14:26Z PASS: busy: the hand-back was eventually acknowledged by main
+- 17:14:26Z step 10 (busy): host log since the park: boundary	after 60s|handoff	host-4107850-1792861883|start	gen=host-4183058-1792861953	primary=claude|take-over	arm=4172895|boundary	after 60s|handoff	host-4183058-1792861953|start	gen=host-53959-1792862022	primary=claude|take-over	arm=48898|; pending= owner=(alive=no) watcher=55217(alive=yes) host=53959(alive=yes) arms[pid ppid]=[54462 53959;] queue_rows=0
+- 17:14:26Z PASS: busy: supervision ends with exactly one host-owned watcher
+- 17:14:26Z not ok - live Claude: at least one check failed (see FAIL rows above)
+- 17:14:26Z teardown: killing the lab tmux server and every process still running from /tmp/fm-sh-handoff-live.MthGaY/fm
+- 17:14:29Z teardown done: ls: cannot access '/tmp/fm-sh-handoff-live.MthGaY': No such file or directory

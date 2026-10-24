@@ -1,0 +1,6 @@
+not ok - boundary: lost continuation left no verified watcher
+
+real	0m4.685s
+user	0m1.329s
+sys	0m3.890s
+rc=1

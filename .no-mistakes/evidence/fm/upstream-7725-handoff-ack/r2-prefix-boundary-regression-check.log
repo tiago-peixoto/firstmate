@@ -1,0 +1,9 @@
+not ok - boundary: the hand-back dropped the boundary row
+--- /tmp/fm-supervision-host.ioDcga/lost-handoff-boundary/state/.supervision-host.log ---
+1792861563	start	gen=host-3831880-1792861563	primary=claude
+1792861566	handoff	host-3831880-1792861563
+
+real	0m5.963s
+user	0m1.758s
+sys	0m4.497s
+rc=1

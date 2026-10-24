@@ -1,0 +1,14 @@
+- 16:42:56Z step 1: primary idle (claude pid 2571260, 2.1.310 (Claude Code), model haiku); host 2584804 parked on watcher 2585483; pending= owner=(alive=no) watcher=2585483(alive=yes) host=2584804 arms=[2585410 2584804] queue_rows=0
+- 16:43:02Z step 2 (boundary): host log: 1792860182	handoff	host-2584804-1792860175|
+- 16:43:02Z step 2 (boundary): hand-back pending for host-2584804-1792860175, owner alive, watcher alive BEFORE main runs: pending=host-2584804-1792860175 owner=2590411(alive=yes) watcher=2590995(alive=yes) host=2584804 arms=[2590952 2590411] queue_rows=3
+- 16:43:02Z step 2 (boundary): queue: signal	demo.status	signal: /tmp/fm-sh-handoff-live.xmy9nd/fm/state/demo.status|signal	demo.status	signal: /tmp/fm-sh-handoff-live.xmy9nd/fm/state/demo.status|check	supervision-handoff:host-2584804-1792860175	check: supervision-handoff - the host handed supervision to main; drain, handle, and acknowledge this hand-back|
+- 16:43:10Z step 3 (boundary): rewake delivered at 1792860182; primary ran: bin/fm-wake-drain.sh;bin/fm-wake-drain.sh --ack-through 3 --recovery-generation 2585483.1792860177.Jz50Ct;
+- 16:43:11Z step 3 (boundary): after the primary's own ack: pending= owner=(alive=no) watcher=2590995(alive=yes) host= arms=[2590952 5856] queue_rows=0; handoff log: 
+- 16:43:15Z step 4 (boundary): next park: start	gen=host-2604182-1792860193|take-over	arm=2590952|; exactly one arm, the host's child, owns the watcher: pending= owner=(alive=no) watcher=2606142(alive=yes) host=2604182 arms=[2605176 2604182] queue_rows=0
+- 16:43:18Z step 5 (pass-through): needs-decision appended to demo.status at 1792860198
+- 16:43:24Z step 5 (pass-through): host log: pass-through	attended	main-only|handoff	host-2604182-1792860193|; BEFORE main runs: pending=host-2604182-1792860193 owner=2614127(alive=yes) watcher=2615257(alive=yes) host= arms=[2615157 2614127] queue_rows=3
+- 16:43:33Z step 6 (pass-through): rewake at 1792860205; primary ran: bin/fm-wake-drain.sh;bin/fm-wake-drain.sh --ack-through 6 --recovery-generation 2606142.1792860199.Ukoo5t;
+- 16:43:33Z step 6 (pass-through): after the primary's own ack: pending= owner=2614127(alive=yes) watcher=2615257(alive=yes) host= arms=[2615157 2614127] queue_rows=0
+- 16:43:38Z step 7 (pass-through): next park: start	gen=host-2632751-1792860216|take-over	arm=2615157|; exactly one host-owned watcher: pending= owner=(alive=no) watcher=2635061(alive=yes) host=2632751 arms=[2633917 2632751] queue_rows=0
+ok - live Claude: boundary and pass-through hand-backs are acknowledged by the primary and leave one host-owned watcher
+rc=0

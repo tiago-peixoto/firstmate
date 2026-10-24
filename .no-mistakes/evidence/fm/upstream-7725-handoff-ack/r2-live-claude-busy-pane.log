@@ -1,0 +1,28 @@
+- 17:16:16Z step 1: primary idle (claude pid 176319, lock=176319); waiting for the host park
+- 17:16:17Z step 1: host parked: pending= owner=(alive=no) watcher=191010(alive=yes) host=190626(alive=yes) arms[pid ppid]=[190959 190626;] queue_rows=0
+- 17:16:21Z step 2 (busy): primary asked to block in a wait loop at +4s into the park; the bound is at +60s
+- 17:17:19Z step 3 (busy): hand-back at +62s while the primary was busy: host log since the park: boundary	after 60s|handoff	host-190626-1792862176|; pending=host-190626-1792862176 owner=244662(alive=yes) watcher=245254(alive=yes) host=(alive=no) arms[pid ppid]=[245204 244662;] queue_rows=1
+- 17:17:19Z PASS: busy: the host log keeps its boundary row before the handoff row
+- 17:17:19Z PASS: busy: a hand-back receipt is pending
+- 17:17:19Z PASS: busy: the detached owner is alive
+- 17:18:11Z step 4 (busy): 52s after the hand-back, still busy and unacknowledged: pending=host-190626-1792862176 owner=244662(alive=yes) watcher=245254(alive=yes) host=(alive=no) arms[pid ppid]=[245204 244662;] queue_rows=1
+- 17:18:11Z step 4 (busy): retries while busy: retry	host-190626-1792862176	deferred|retry	host-190626-1792862176	deferred|
+- 17:18:11Z step 4 (busy): pane still shows the running loop: 1 line(s) with 'esc to interrupt'
+- 17:18:11Z PASS: busy: the watcher stayed alive the whole time the hand-back was unacknowledged
+- 17:18:11Z PASS: busy: the hand-back stayed pending while the primary was busy
+- 17:18:11Z PASS: busy: the retry owner attempted at least one retry
+- 17:18:11Z PASS: busy: every retry while busy was deferred (nothing typed into the busy pane)
+- 17:18:11Z PASS: busy: the primary received no retry text while busy
+- 17:18:11Z step 5 (busy): released the wait loop
+- 17:19:11Z WARN: SLEPT not seen
+- 17:19:11Z step 5 (busy): the busy turn ended 60s after the release: pending= owner=(alive=no) watcher=297297(alive=yes) host=295787(alive=yes) arms[pid ppid]=[296471 295787;] queue_rows=0
+- 17:19:11Z step 6 (busy): 60s after the release: pending=''; host log since the park: boundary	after 60s|handoff	host-190626-1792862176|start	gen=host-295787-1792862301	primary=claude|take-over	arm=245204|
+- 17:19:11Z step 6 (busy): handoff log: retry	host-190626-1792862176	deferred|retry	host-190626-1792862176	deferred|retry	host-190626-1792862176	deferred|
+- 17:19:11Z step 6 (busy): pending= owner=(alive=no) watcher=297297(alive=yes) host=295787(alive=yes) arms[pid ppid]=[296471 295787;] queue_rows=0
+- 17:19:11Z PASS: busy: the hand-back was acknowledged by main after the primary became free
+- 17:19:11Z PASS: busy: main acknowledged through its own drain (Stop hook feedback or retry doorbell visible in the pane)
+- 17:19:11Z step 7 (busy): pending= owner=(alive=no) watcher=297297(alive=yes) host=295787(alive=yes) arms[pid ppid]=[296471 295787;] queue_rows=0
+- 17:19:11Z PASS: busy: supervision ends with exactly one host-owned watcher
+- 17:19:11Z ok - live Claude: a hand-back onto a busy primary keeps its boundary row, keeps a watcher, never types into the busy pane, is acknowledged once the primary is free, and ends with one host-owned watcher
+- 17:19:11Z teardown: killing the lab tmux server and every process still running from /tmp/fm-sh-handoff-live.5FqQrH/fm
+- 17:19:14Z teardown done: ls: cannot access '/tmp/fm-sh-handoff-live.5FqQrH': No such file or directory
