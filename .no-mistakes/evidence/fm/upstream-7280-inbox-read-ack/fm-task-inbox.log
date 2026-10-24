@@ -49,3 +49,4 @@ ok - watcher: spending a retry keeps a newer record's mark written during its ri
 ok - watcher: a spent ring budget emits exactly one ordinary stale wake for recovery
 ok - watcher: a positively dead pane is never typed into and surfaces exactly one stale wake
 ok - watcher: dead-pane recovery overrides stale busy state
+exit=0 elapsed=92s

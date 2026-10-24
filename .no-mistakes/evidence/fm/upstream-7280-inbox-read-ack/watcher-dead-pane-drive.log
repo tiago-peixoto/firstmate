@@ -1,0 +1,3 @@
+unread  record: wake-queue lines=1 typed=no
+    1792859362	1	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: /tmp/fm-task-inbox.B4TVLD/dead-unread/state/t1.inbox/001.msg is unhandled and the worker's agent has exited or its endpoint is missing, so the doorbell was not typed; recover the worker)
+read    record: wake-queue lines=0 typed=no
