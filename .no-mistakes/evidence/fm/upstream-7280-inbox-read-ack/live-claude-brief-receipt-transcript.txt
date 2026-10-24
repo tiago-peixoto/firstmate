@@ -1,0 +1,105 @@
+
+### S0 scaffold the real brief and extract its inbox section
+    # Firstmate instruction inbox
+    Firstmate steers you through durable message files in '/tmp/fm-lab.KvFMvr/state/live-claude.inbox'.
+    When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/fm-lab.KvFMvr/state/live-claude.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V` and read the complete contents of each record (including its final line even when it is not newline-terminated) in numeric order.
+    Prefer the format-aware `fm_task_inbox_body` reader from `bin/fm-task-inbox-lib.sh` when it is available. If you read manually, a header line `body-terminator=1` means the writer added exactly one synthetic final newline to terminate the record file; that marked newline is not part of the logical message body, so remove only it and preserve any intentional trailing newlines. Legacy records without that marker may end without a newline; read them through the file end.
+    Immediately after reading each message, before acting, record that you read it: `'/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5HXHGY1THEVG4NG5BXFY84V/bin/fm-task-inbox-read.sh' '/tmp/fm-lab.KvFMvr/state/live-claude.inbox'/NNN.msg`.
+    Do not record a read before actually reading the message.
+    If the command fails or cannot run, use your file tools to create /tmp/fm-lab.KvFMvr/state/live-claude.inbox/.read/ if needed, then create the empty receipt /tmp/fm-lab.KvFMvr/state/live-claude.inbox/.read/NNN.msg for the message you just read.
+    Report a read-acknowledgement failure only if the file-tool fallback also fails; never assume a failed write acknowledged the message.
+    Then act on the message and acknowledge completed handling by moving it: `mv '/tmp/fm-lab.KvFMvr/state/live-claude.inbox'/NNN.msg '/tmp/fm-lab.KvFMvr/state/live-claude.inbox'/handled/`.
+    The read receipt stops unread-instruction alarms while you work; it does not mean the work is complete or replace the handled/ move.
+    An empty or absent inbox needs no action.
+    
+PASS: brief names the receipt command
+
+### S1 launch a real claude worker on private tmux socket fm-lab-claude-2482045 (cwd /tmp/fm-lab.KvFMvr/work)
+2.1.310 (Claude Code)
+trust dialog at 1s: default is "No, exit", so move to "Yes, I trust this folder" (throwaway lab dir) and confirm
+composer verdict after 1s: empty
+pane capture (idle claude):
+    |  ▐▛███▛█   Claude Code v2.1.310
+    | ▝▜██████▀  Fable 5.1 · Claude Max
+    |  ▝▝   ▝▝   /tmp/fm-lab.KvFMvr/work
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    | ❯ 
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    |   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents                                                                                                                        ● high · /effort
+
+### S2 hand the worker its inbox contract (one short turn)
+contract acknowledged after 120s (composer=empty)
+pane capture (after contract):
+    |   waiting, follow that contract exactly, step by step, in order. Reply with the single word ready and then wait.
+    |   Read 1 file (ctrl+o to expand)
+    | ● ready
+    | ✻ Crunched for 7s · done 4:48 AM
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    | ❯ 
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    |   ⏵⏵ bypass permissions on (shift+tab to cycle)
+
+### S3 steer through the REAL bin/fm-send.sh with a long-running instruction
+PASS: fm-send wrote the record and rang the doorbell
+    fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.KvFMvr
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ●  WATCHER DOWN - SUPERVISION IS OFF
+    ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+    ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+    ●  This is a supervision warning only; the requested message WILL still be sent.
+    ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+    ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASS: durable record /tmp/fm-lab.KvFMvr/state/live-claude.inbox/001.msg
+pane capture (doorbell typed):
+    | ✻ Forging…
+    |   ⎿  Tip: Run /ultrareview for a cloud-based multi-agent review that finds and verifies bugs in your branch — 2 free reviews left
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    | ❯ 
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    |   ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt
+
+### S4 watch for the read receipt, the finished work, and the handled move
++35s read receipt .read/001.msg appeared
+pane capture (receipt moment):
+    |   ⎿  exit=0
+    |      total 0
+    |      drwxrwxr-x 2 firstmate firstmate  60 Oct 24 04:51 .
+    |      … +2 lines (ctrl+o to expand)
+    | ✢ Forging… (32s · ↓ 762 tokens)
+    |   ⎿  Tip: Use /btw to ask a quick side question without interrupting Claude's current work
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    | ❯ 
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    |   ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt
++39s real watcher inbox_steer_check #1 while the worker is mid-sleep: exit=0 wake-queue=0 busy-state=<absent>
++43s real watcher inbox_steer_check #2 while the worker is mid-sleep: exit=0 wake-queue=0 busy-state=<absent>
++48s real watcher inbox_steer_check #3 while the worker is mid-sleep: exit=0 wake-queue=0 busy-state=<absent>
++123s work finished (acted file)
++130s handled/001.msg appeared
+pane capture (end state):
+    | ● Bash(sleep 75 && touch /tmp/fm-lab.KvFMvr/acted)
+    |   ⎿  Running in the background (↓ to manage)
+    | ● The 75-second command is running in the background. I will move the message to handled/ once it completes and the marker file exists.
+    | ✻ Cogitated for 48s · done 4:51 AM
+    | ● Background command "Run the live-check command in the background: wait 75 seconds then create the acted marker" completed (exit code 0)
+    | ● Bash(ls -la /tmp/fm-lab.KvFMvr/acted && mv '/tmp/fm-lab.KvFMvr/state/live-claude.inbox'/001.msg '/tmp/fm-lab.KvFMvr/state/live-claude.inbox'/handled/ && ls /tmp/fm-l…)
+    |   ⎿  -rw-rw-r-- 1 firstmate firstmate 0 Oct 24 04:53 /tmp/fm-lab.KvFMvr/acted
+    |      001.msg
+    | ✶ Cerebrating… (7s · ↓ 205 tokens)
+    |   ⎿  Tip: Connect Claude to your IDE · /ide
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    | ❯ 
+    | ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    |   ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt
+inbox root:  | .read/: 001.msg  | handled/: 001.msg 
+wake-queue:
+    <empty>
+PASS: worker recorded the read receipt (+35s)
+PASS: worker finished the long-running work (+123s)
+PASS: receipt preceded the work by 88s: read-before-act
+PASS: 3 real watcher checks ran during the long-running work
+PASS: no stale wake for the read, still-running steer
+PASS: no doorbell re-typed while the worker was busy (doorbells on screen: 1 -> 1)
+PASS: worker still acknowledged completed handling with the mv (+130s)
+
+### RESULT: ALL PASS

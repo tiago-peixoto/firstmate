@@ -1,0 +1,165 @@
+
+### S0 setup: real tmux pane, agent liveness and busy verdict as the watcher sees them
+tmux socket dir: /tmp/fm-lab.KBz3A1/tmux
+window=fm-t1 cmd=bash tty=/dev/pts/1
+fm_backend_agent_state tmux sess:fm-t1 -> alive
+PASS: pane classifies as a live agent
+pane capture (last 6 non-empty lines):
+    | BUSYTOKEN active
+
+### S1 busy worker, unread aged steer 001: first due check defers (busy budget 1 of default 2), no wake
+steer written: /tmp/fm-lab.KBz3A1/state/t1.inbox/001.msg
+watcher check exit=0
+inbox root  : 001.msg 
+handled/    : 
+.read/      : 
+.busy-state : 001.msg 1
+.ring-state : <absent>
+.escalated  : <absent>
+wake-queue  :
+    <empty>
+PASS: no wake after first busy deferral
+PASS: busy budget consumed for 001.msg
+
+### S2 worker reads 001 and records the read receipt with bin/fm-task-inbox-read.sh (twice: idempotent)
+receipt exit=0
+repeat receipt exit=0
+PASS: receipt .read/001.msg exists
+PASS: 001.msg still in the inbox root (work not finished)
+
+### S3 worker stays busy for four more due polls (would have escalated at poll 2 before the fix)
+watcher check exit=0
+watcher check exit=0
+watcher check exit=0
+watcher check exit=0
+inbox root  : 001.msg 
+handled/    : 
+.read/      : 001.msg 
+.busy-state : <absent>
+.ring-state : <absent>
+.escalated  : <absent>
+wake-queue  :
+    <empty>
+pane capture (last 6 non-empty lines):
+    | BUSYTOKEN active
+PASS: no stale wake across 4 busy polls after the read receipt
+PASS: busy budget reset by the receipt
+PASS: 001.msg still pending in root
+PASS: nothing typed into the busy pane
+
+### S4 never-read successor 002 on the same busy worker still escalates at the default busy budget
+steer written: /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg
+watcher check exit=0
+inbox root  : 001.msg 002.msg 
+handled/    : 
+.read/      : 001.msg 
+.busy-state : 002.msg 1
+.ring-state : <absent>
+.escalated  : <absent>
+wake-queue  :
+    <empty>
+PASS: poll 1 for 002: deferred, no wake
+stale: sess:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg stays unhandled and no doorbell was typed; inspect the worker)
+watcher check exit=0
+inbox root  : 001.msg 002.msg 
+handled/    : 
+.read/      : 001.msg 
+.busy-state : 002.msg 2
+.ring-state : <absent>
+.escalated  : 002.msg
+wake-queue  :
+    1792809771	1	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg stays unhandled and no doorbell was typed; inspect the worker)
+PASS: 002 escalated as stuck-busy after 2 polls
+PASS: alarm names 002.msg
+PASS: alarm does not blame read 001.msg
+watcher check exit=0
+PASS: escalation surfaced once, not repeated
+PASS: receipt for 001 did not leak onto 002
+
+### S5 adversarial: receipts for missing, out-of-inbox, or non-record paths are refused
+PASS: refused /tmp/fm-lab.KBz3A1/state/t1.inbox/009.msg -> error: could not record reading steering message: /tmp/fm-lab.KBz3A1/state/t1.inbox/009.msg
+PASS: refused /tmp/fm-lab.KBz3A1/state/001.msg -> error: could not record reading steering message: /tmp/fm-lab.KBz3A1/state/001.msg
+PASS: refused /tmp/fm-lab.KBz3A1/state/t1.inbox/notes.txt -> error: could not record reading steering message: /tmp/fm-lab.KBz3A1/state/t1.inbox/notes.txt
+PASS: refused /tmp/fm-lab.KBz3A1/state/t1.inbox/handled/../001.msgx -> error: could not record reading steering message: /tmp/fm-lab.KBz3A1/state/t1.inbox/handled/../001.msgx
+.read/ now: 001.msg 
+PASS: no forged receipts created
+
+### S6 file-tool fallback: worker handles 001+002, reads 003 and creates .read/003.msg by hand (no script)
+watcher check exit=0
+watcher check exit=0
+inbox root  : 003.msg 
+handled/    : 001.msg 002.msg 
+.read/      : 001.msg 
+.busy-state : 003.msg 1
+.ring-state : <absent>
+.escalated  : <absent>
+wake-queue  :
+    1792809771	1	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg stays unhandled and no doorbell was typed; inspect the worker)
+PASS: busy budget 1 for unread 003
+watcher check exit=0
+watcher check exit=0
+inbox root  : 003.msg 
+handled/    : 001.msg 002.msg 
+.read/      : 001.msg 003.msg 
+.busy-state : <absent>
+.ring-state : <absent>
+.escalated  : <absent>
+wake-queue  :
+    1792809771	1	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg stays unhandled and no doorbell was typed; inspect the worker)
+PASS: hand-made receipt silenced stuck-busy for 003
+PASS: busy budget reset by the hand-made receipt
+
+### S7 idle worker: an unread aged steer gets the real doorbell typed; a read receipt stops the ladder
+pane capture (last 6 non-empty lines):
+    | worker idle, waiting for input
+watcher check exit=0
+inbox root  : 004.msg 
+handled/    : 001.msg 002.msg 003.msg 
+.read/      : 001.msg 003.msg 
+.busy-state : <absent>
+.ring-state : 004.msg 1 1792809776
+.escalated  : <absent>
+wake-queue  :
+    1792809771	1	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg stays unhandled and no doorbell was typed; inspect the worker)
+pane capture (last 6 non-empty lines):
+    | worker idle, waiting for input
+    | : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read
+    |  each in numeric order, record read as briefed, act, then mv into handled/.
+PASS: doorbell typed into the idle pane with the read-receipt wording
+PASS: ring ladder advanced for 004
+PASS: worker recorded reading 004
+watcher check exit=0
+watcher check exit=0
+inbox root  : 004.msg 
+handled/    : 001.msg 002.msg 003.msg 
+.read/      : 001.msg 003.msg 004.msg 
+.busy-state : <absent>
+.ring-state : <absent>
+.escalated  : <absent>
+wake-queue  :
+    1792809771	1	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg stays unhandled and no doorbell was typed; inspect the worker)
+pane capture (last 6 non-empty lines):
+    | worker idle, waiting for input
+    | : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read
+    |  each in numeric order, record read as briefed, act, then mv into handled/.
+PASS: spent ring ladder (max 1) does not escalate a read steer
+PASS: no further doorbell after the receipt (still 1 on screen)
+PASS: 004.msg still pending until the handled move
+
+### S8 unread idle steer with a spent ladder still escalates (alarm meaning preserved)
+watcher check exit=0
+watcher check exit=0
+stale: sess:fm-t1 (unread firstmate instruction: /tmp/fm-lab.KBz3A1/state/t1.inbox/005.msg still unhandled after 1 doorbell delivery attempts with an idle pane; inspect the worker)
+watcher check exit=0
+inbox root  : 005.msg 
+handled/    : 001.msg 002.msg 003.msg 004.msg 
+.read/      : 001.msg 003.msg 004.msg 
+.busy-state : <absent>
+.ring-state : 005.msg 1 1792809779
+.escalated  : 005.msg
+wake-queue  :
+    1792809771	1	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: stuck-busy after 2 consecutive busy-deferred due doorbells; /tmp/fm-lab.KBz3A1/state/t1.inbox/002.msg stays unhandled and no doorbell was typed; inspect the worker)
+    1792809779	2	stale	sess:fm-t1	stale: sess:fm-t1 (unread firstmate instruction: /tmp/fm-lab.KBz3A1/state/t1.inbox/005.msg still unhandled after 1 doorbell delivery attempts with an idle pane; inspect the worker)
+PASS: unread 005 escalated after the ring budget
+
+### RESULT: ALL PASS
