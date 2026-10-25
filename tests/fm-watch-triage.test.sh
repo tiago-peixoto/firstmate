@@ -1196,6 +1196,94 @@ test_turn_ended_malformed_prior_hash_surfaced() {
   pass "a bare turn-end backed by a malformed prior hash surfaces"
 }
 
+# A Codex pane can be recovery-grade alive while its busy state remains
+# unverified. Its first stale sight must still wake for inspection. A new render
+# after that handled wake is bounded only while the pane shows progress evidence
+# (its own status log or task worktree written within FM_STALE_ESCALATE_SECS);
+# without it every new hash keeps surfacing, so an animated wedge stays loud.
+unknown_alive_stale_case() {  # <evidence: status|worktree|none>
+  local evidence=$1 dir state fakebin out capture_file window key previous wakes pid old
+  dir=$(make_case "unknown-alive-stale-$evidence"); state="$dir/state"; fakebin="$dir/fakebin"
+  out="$dir/watch.out"; capture_file="$dir/pane.txt"; window="test:fm-codexunknown"
+  old=$(( $(date +%s) - 1000 ))
+  printf 'unreadable long Codex turn\n' > "$capture_file"
+  printf 'window=%s\nkind=ship\nharness=codex\nbackend=tmux\n' "$window" > "$state/codexunknown.meta"
+  printf 'working: recovering source files\n' > "$state/codexunknown.status"
+  if [ "$evidence" != status ]; then
+    set_mtime "$old" "$state/codexunknown.status"
+    mkdir -p "$dir/wt/src"
+    printf 'worktree=%s\n' "$dir/wt" >> "$state/codexunknown.meta"
+    : > "$dir/wt/src/old.c"; set_mtime "$old" "$dir/wt/src/old.c"
+    [ "$evidence" != worktree ] || printf 'recovered\n' > "$dir/wt/src/recovered.c"
+  fi
+  printf '%s' "$(seen_sig "$state/codexunknown.status")" > "$state/.seen-codexunknown_status"
+  key=$(printf '%s' "$window" | tr ':/. ' '____')
+  printf '%s' "$(hash_text 'unreadable long Codex turn')" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+  export FM_FAKE_CREW_STATE='state: unknown · source: pane · harness state unavailable (unknown codex-unverified)'
+  export FM_FAKE_TMUX_WINDOW="$window" FM_FAKE_TMUX_CAPTURE="$capture_file" FM_FAKE_TMUX_CURRENT_COMMAND=codex
+  export FM_PAUSE_RESURFACE_SECS=999
+
+  watch_bg "$state" "$fakebin" "$out"
+  pid=$!
+  wait_for_exit "$pid" 100 || fail "[$evidence] the first unknown-but-alive stale sight did not surface"
+  grep -Fx "stale: $window" "$out" >/dev/null || fail "[$evidence] the first unknown-but-alive alarm changed its wording"
+  if [ "$evidence" = none ]; then
+    [ ! -e "$state/.paused-resurfaced-$key" ] || fail "[none] an alarm without progress evidence recorded a repeat bound"
+  else
+    [ -s "$state/.paused-resurfaced-$key" ] || fail "[$evidence] the first alarm with progress evidence did not record its bound"
+  fi
+  ack_stopped_cycle "$state" || fail "[$evidence] could not acknowledge the first unknown-but-alive alarm"
+
+  # A successor sees a different rendered hash, exactly as a long Codex turn
+  # updates its viewport, but the same known-live, unclassifiable endpoint.
+  printf 'unreadable long Codex turn, later viewport\n' > "$capture_file"
+  previous=$(hash_text 'earlier unreadable Codex turn')
+  printf '%s' "$previous" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+  : > "$out"
+  watch_bg "$state" "$fakebin" "$out"
+  pid=$!
+  if [ "$evidence" = none ]; then
+    wait_for_exit "$pid" 100 || fail "[none] an unknown-but-alive pane without progress evidence went quiet"
+    grep -Fx "stale: $window" "$out" >/dev/null \
+      || fail "[none] an unknown-but-alive pane without progress evidence did not re-surface: $(cat "$out")"
+    unset FM_FAKE_CREW_STATE FM_FAKE_TMUX_WINDOW FM_FAKE_TMUX_CURRENT_COMMAND FM_FAKE_TMUX_CAPTURE FM_PAUSE_RESURFACE_SECS
+    return 0
+  fi
+  wait_poll_cycle "$state" "$pid" || { reap "$pid"; fail "[$evidence] a bounded unknown-but-alive successor exited"; }
+  reap "$pid"
+  ack_stopped_cycle "$state" || fail "[$evidence] could not acknowledge the bounded unknown-but-alive successor stop"
+  [ ! -s "$out" ] || fail "[$evidence] a bounded unknown-but-alive successor printed a stale wake: $(cat "$out")"
+  wakes=$(awk -F '\t' -v w="$window" '$3 == "stale" && $4 == w { n++ } END { print n + 0 }' "$state/.wake-queue" 2>/dev/null || echo 0)
+  [ "$wakes" -eq 0 ] || fail "[$evidence] a bounded unknown-but-alive successor queued $wakes repeat wakes"
+
+  # Expiring the bound restores the original first-sight alarm without changing
+  # its wake type or wording.
+  set_mtime "$(( $(date +%s) - 1000 ))" "$state/.paused-resurfaced-$key"
+  printf 'unreadable long Codex turn, another later viewport\n' > "$capture_file"
+  previous=$(hash_text 'yet another unreadable Codex turn')
+  printf '%s' "$previous" > "$state/.hash-$key"
+  printf '1\n' > "$state/.count-$key"
+  : > "$out"
+  watch_bg "$state" "$fakebin" "$out"
+  pid=$!
+  wait_for_exit "$pid" 100 || fail "[$evidence] an expired unknown-but-alive bound did not re-surface"
+  grep -Fx "stale: $window" "$out" >/dev/null || fail "[$evidence] the expired unknown-but-alive bound changed wake wording: $(cat "$out")"
+  unset FM_FAKE_CREW_STATE FM_FAKE_TMUX_WINDOW FM_FAKE_TMUX_CAPTURE FM_FAKE_TMUX_CURRENT_COMMAND FM_PAUSE_RESURFACE_SECS
+}
+
+test_unknown_alive_stale_is_bounded_after_its_first_alarm() {
+  unknown_alive_stale_case status
+  unknown_alive_stale_case worktree
+  pass "an unknown-but-alive pane with progress evidence alarms once per bounded pause-resurface window"
+}
+
+test_unknown_alive_stale_without_progress_keeps_surfacing() {
+  unknown_alive_stale_case none
+  pass "an unknown-but-alive pane without progress evidence keeps surfacing every new hash"
+}
+
 test_turn_ended_trailing_newline_prior_hash_surfaced() {
   local dir state fakebin out drain_out capture_file window key pid
   dir=$(make_case turn-ended-newline-hash); state="$dir/state"; fakebin="$dir/fakebin"
@@ -4385,6 +4473,152 @@ test_wedge_defer_refuses_a_half_filled_wait_record() {
   pass "a wait record missing a field the recheck must print, or carrying one it must not, is refused and the lane escalates exactly as it would have"
 }
 
+# --- an executing no-mistakes run is liveness, not a wedge candidate ---------
+# While the pipeline runs or fixes a round the worker is idle behind its own
+# blocking drive call, so a static pane is exactly what a healthy lane looks
+# like. The attributed run step says so, and in a home that armed
+# config/wedge-defer-validating the wedge timer defers to it on the same long
+# recheck cadence as every other deferral instead of re-escalating a possible
+# wedge each FM_STALE_ESCALATE_SECS.
+arm_validating() {  # <case-dir>
+  : > "$1/config/wedge-defer-validating"
+}
+
+test_wedge_threshold_defers_to_an_executing_validation_run() {
+  local dir state fakebin out capture window key n verdict step queued
+  window="test:fm-wedge"; key=$(printf '%s' "$window" | tr ':/.' '___')
+
+  for step in running fixing; do
+    verdict="state: working · source: run-step · validating ($step) · run: 01RUNLIVE"
+    dir=$(wedge_threshold_fixture "validating-$step" 'working: handed to validation' 0)
+    arm_validating "$dir"
+    state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"; capture="$dir/pane.txt"
+    n=1
+    while [ "$n" -le 3 ]; do
+      wedge_threshold_round "$state" "$fakebin" "$out" "$capture" "$window" "$verdict" absorb \
+        || fail "a $step validation run wedge-escalated at threshold $n: $(cat "$out")"
+      n=$((n + 1))
+    done
+    [ "$(wedge_stale_wakes "$state" "$window")" -eq 0 ] \
+      || fail "a $step validation run queued a stale wake: $(cat "$state/.wake-queue")"
+    grep -F 'possible wedge' "$out" >/dev/null \
+      && fail "a $step validation run was reported as a possible wedge: $(cat "$out")"
+    [ ! -e "$state/.wedge-escalations-$key" ] \
+      || fail "a $step validation run counted $(cat "$state/.wedge-escalations-$key") wedge escalation(s)"
+    [ "$(cat "$state/.validating-since-$key" 2>/dev/null || true)" = 01RUNLIVE ] \
+      || fail "the $step deferral chain was not bound to its run"
+  done
+
+  # The deferral is bounded, not a cancellation: a run record that keeps saying
+  # running for longer than the recheck cadence is rechecked once, worded as the
+  # validating run it is rather than as a wedge, and then quiet again.
+  # The wedge timer is pre-armed so the first poll is already at the threshold
+  # rather than a timer repair, which would restart the chain under test.
+  verdict='state: working · source: run-step · validating (running) · run: 01RUNLIVE'
+  dir=$(wedge_threshold_fixture validating-aged 'working: handed to validation' 0 5)
+  arm_validating "$dir"
+  state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"; capture="$dir/pane.txt"
+  printf '01RUNLIVE' > "$state/.validating-since-$key"
+  set_mtime "$(( $(date +%s) - 2000 ))" "$state/.validating-since-$key"
+  FM_TEST_PAUSE_RESURFACE=240 wedge_threshold_round "$state" "$fakebin" "$out" "$capture" "$window" "$verdict" exit \
+    || fail "a validation run older than the recheck cadence was never rechecked: $(cat "$out")"
+  grep -F 'no-mistakes run 01RUNLIVE validating (running)' "$out" >/dev/null \
+    || fail "the validating recheck did not name its run: $(cat "$out")"
+  grep -F 'rechecked on a long cadence not a wedge; confirm the run is still progressing' "$out" >/dev/null \
+    || fail "the validating recheck lost its action: $(cat "$out")"
+  grep -F 'possible wedge' "$out" >/dev/null \
+    && fail "the validating recheck was worded as a possible wedge: $(cat "$out")"
+  ack_stopped_cycle "$state" || fail "could not acknowledge the validating recheck"
+  queued=$(wedge_stale_wakes "$state" "$window")
+  FM_TEST_PAUSE_RESURFACE=240 wedge_threshold_round "$state" "$fakebin" "$out" "$capture" "$window" "$verdict" absorb \
+    || fail "the validating recheck repeated inside its cadence: $(cat "$out")"
+  [ "$(wedge_stale_wakes "$state" "$window")" -eq "$queued" ] \
+    || fail "the validating recheck queued a further wake inside its cadence"
+
+  # A replacement run starts its own chain, so an old run's age cannot make the
+  # new one re-surface at once.
+  dir=$(wedge_threshold_fixture validating-new-run 'working: handed to validation' 0 5)
+  arm_validating "$dir"
+  state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"; capture="$dir/pane.txt"
+  printf '01RUNOLD' > "$state/.validating-since-$key"
+  set_mtime "$(( $(date +%s) - 2000 ))" "$state/.validating-since-$key"
+  FM_TEST_PAUSE_RESURFACE=240 wedge_threshold_round "$state" "$fakebin" "$out" "$capture" "$window" "$verdict" absorb \
+    || fail "a replacement run inherited the previous run's recheck age: $(cat "$out")"
+  [ "$(cat "$state/.validating-since-$key")" = 01RUNLIVE ] \
+    || fail "a replacement run did not rebind the deferral chain"
+  pass "a running or fixing validation run is deferred on the long recheck cadence rather than wedge-escalated"
+}
+
+# Every run state that does not prove a round is executing keeps the unchanged
+# ladder even where the flag is armed: a parked gate, a terminal run, a ci
+# monitor, a coarse ledger row, a verdict naming no run, no run at all, and an
+# unreadable verdict.
+test_wedge_threshold_escalates_when_no_run_is_executing() {
+  local dir state fakebin out capture window key n spec name verdict
+  window="test:fm-wedge"; key=$(printf '%s' "$window" | tr ':/.' '___')
+  for spec in \
+    'parked|state: parked · source: run-step · parked at awaiting_approval: 2 finding(s) · run: 01RUNLIVE' \
+    'failed|state: failed · source: run-step · run failed · run: 01RUNLIVE' \
+    'done|state: done · source: run-step · checks green: PR ready for review · run: 01RUNLIVE' \
+    'ci|state: working · source: run-step · ci running · run: 01RUNLIVE' \
+    'coarse|state: working · source: run-step · validating (background run)' \
+    'runless|state: working · source: run-step · validating (running)' \
+    'absent|state: working · source: pane · busy' \
+    'unreadable|error: no-mistakes status timed out'; do
+    name=${spec%%|*}; verdict=${spec#*|}
+    dir=$(wedge_threshold_fixture "not-executing-$name" 'working: handed to validation' 0)
+    arm_validating "$dir"
+    state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"; capture="$dir/pane.txt"
+    n=1
+    while [ "$n" -le 3 ]; do
+      wedge_threshold_round "$state" "$fakebin" "$out" "$capture" "$window" "$verdict" exit \
+        || fail "a $name run stopped escalating at threshold $n: $(cat "$out")"
+      ack_stopped_cycle "$state" || fail "could not acknowledge $name escalation $n"
+      grep -F "possible wedge, escalation $n" "$out" >/dev/null \
+        || fail "a $name run did not reach escalation $n: $(cat "$out")"
+      n=$((n + 1))
+    done
+    grep -F 'demand-deep-inspection: same pane has wedge-escalated 3 times in a row' "$out" >/dev/null \
+      || fail "a $name run lost the demand-deep-inspection wording: $(cat "$out")"
+    [ ! -e "$state/.validating-since-$key" ] \
+      || fail "a $name run started a validating deferral chain"
+  done
+  pass "parked, terminal, ci-monitoring, coarse, runless, absent and unreadable runs keep the unchanged wedge ladder"
+}
+
+# Absent config/wedge-defer-validating an executing run is no deferral at all:
+# the lane escalates on the unchanged schedule and wording, and the consult is
+# never reached, so no current-state read is spent and no chain is started.
+test_wedge_threshold_validating_run_is_off_until_armed() {
+  local dir state fakebin out capture window key n probes
+  local verdict='state: working · source: run-step · validating (running) · run: 01RUNLIVE'
+  window="test:fm-wedge"; key=$(printf '%s' "$window" | tr ':/.' '___')
+  dir=$(wedge_threshold_fixture validating-unarmed 'working: handed to validation' 0)
+  state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"; capture="$dir/pane.txt"
+  [ ! -e "$dir/config/wedge-defer-validating" ] \
+    || fail "the unarmed fixture armed the flag, so it proves nothing"
+  export FM_FAKE_CREW_STATE_LOG="$dir/crew-state.calls"
+  : > "$FM_FAKE_CREW_STATE_LOG"
+  n=1
+  while [ "$n" -le 3 ]; do
+    wedge_threshold_round "$state" "$fakebin" "$out" "$capture" "$window" "$verdict" exit \
+      || fail "an unarmed home stopped escalating a running validation at threshold $n: $(cat "$out")"
+    ack_stopped_cycle "$state" || fail "could not acknowledge unarmed validating escalation $n"
+    grep -F "possible wedge, escalation $n" "$out" >/dev/null \
+      || fail "an unarmed home did not reach escalation $n: $(cat "$out")"
+    n=$((n + 1))
+  done
+  probes=$(wc -l < "$FM_FAKE_CREW_STATE_LOG" | tr -d ' ')
+  unset FM_FAKE_CREW_STATE_LOG
+  grep -F 'demand-deep-inspection: same pane has wedge-escalated 3 times in a row' "$out" >/dev/null \
+    || fail "an unarmed home lost the demand-deep-inspection wording: $(cat "$out")"
+  [ "$probes" -eq 0 ] \
+    || fail "an unarmed home spent $probes current-state read(s) on a running validation over three thresholds"
+  [ ! -e "$state/.validating-since-$key" ] \
+    || fail "an unarmed home started a validating deferral chain"
+  pass "with config/wedge-defer-validating absent a running validation keeps the unchanged ladder, wording and reads"
+}
+
 
 # --- a record whose agent is GONE reports once, instead of alarming forever ---
 # Observed on a live fleet: two finished lanes reached 226 and 203 CONSECUTIVE
@@ -5001,7 +5235,7 @@ test_open_captain_call_bounds_stale_churn() {
 
     # The pane churns while the SAME call stands. Every one of these alarmed.
     hold_watch_churn "$dir" "$out" "$capture" 'idle, tick' 2 \
-      || fail "[$name] watcher exited during pane churn instead of supervising through it"
+      || fail "[$name] watcher exited during pane churn instead of supervising through it: $(cat "$out")"
     wakes=$(hold_stale_wakes "$state")
     [ "$wakes" -eq 0 ] \
       || fail "[$name] pane churn re-alarmed held work $wakes time(s) inside the re-surface window"
@@ -7644,6 +7878,8 @@ test_turn_ended_churn_resets_wedge_state_before_stale_poll
 test_turn_ended_churn_existing_marker_absorbed
 test_turn_ended_still_pane_surfaced
 test_turn_ended_malformed_prior_hash_surfaced
+test_unknown_alive_stale_is_bounded_after_its_first_alarm
+test_unknown_alive_stale_without_progress_keeps_surfacing
 test_turn_ended_trailing_newline_prior_hash_surfaced
 test_secondmate_turn_ended_churning_pane_surfaced
 test_turn_ended_colliding_window_key_surfaced
@@ -7730,6 +7966,9 @@ test_wedge_threshold_parked_gate_is_off_until_armed
 test_wedge_threshold_defers_to_a_worker_blocker
 test_wedge_threshold_worker_wait_is_off_until_armed
 test_wedge_defer_refuses_a_half_filled_wait_record
+test_wedge_threshold_defers_to_an_executing_validation_run
+test_wedge_threshold_escalates_when_no_run_is_executing
+test_wedge_threshold_validating_run_is_off_until_armed
 test_open_captain_call_bounds_stale_churn
 test_stale_churn_without_a_captain_call_still_alarms
 test_failed_wake_append_does_not_arm_the_captain_hold_throttle
