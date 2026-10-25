@@ -92,6 +92,11 @@ BASH_BIN=$(command -v bash) || fail "bash not found"
 ln -s "$BASH_BIN" "$HARNESSBIN/opencode-agent"
 cat > "$HARNESSBIN/opencode" <<SH
 #!/usr/bin/env bash
+# Spawn probes the version before launching a worker in its pane.
+if [ "\${1:-}" = --version ]; then
+  printf '1.0.0\\n'
+  exit 0
+fi
 env PATH="$HERDR_ORIGINAL_PATH" "$HERDR_LAB_HELPER" run "$HERDR_LAB_SESSION" pane report-agent "\$HERDR_PANE_ID" \\
   --source fm-relaunch-space-e2e --agent opencode --state idle >/dev/null 2>&1
 exec "$HARNESSBIN/opencode-agent" -c 'sleep 86400; :'
