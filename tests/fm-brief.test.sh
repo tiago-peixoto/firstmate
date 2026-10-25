@@ -1117,6 +1117,8 @@ test_ship_and_scout_teach_validation_round_pause() {
       "$kind brief's Waiting section does not declare the validation round once and then hold it"
     assert_no_grep "is not a \`paused:\` wait" "$brief" \
       "$kind brief still tells workers never to declare a wait they hold in a command"
+    assert_no_grep "heavy-test slot" "$brief" \
+      "$kind brief names a heavy-test slot that nothing defines"
     assert_grep "your own validation round" "$brief" \
       "$kind brief did not teach workers to declare their validation-round wait"
     assert_grep 'Before ending your turn with your own background shell or monitor still running' "$brief" \
@@ -1306,28 +1308,33 @@ test_wait_no_turns_absent_keeps_the_previous_brief() {
   pass "fm-brief: without config/wait-no-turns the brief and drive text stay as they were"
 }
 
-# config/pr-health-monitor lets a PR wait end the turn only for an owned PR.
-test_pr_wait_rule_follows_the_monitor_flag() {
-  local home brief
-  home="$TMP_ROOT/pr-wait-on"
-  mkdir -p "$home/data" "$home/config"
-  : > "$home/config/wait-no-turns"
-  : > "$home/config/pr-health-monitor"
-  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-pr-wait some-proj --mode direct-PR >/dev/null 2>&1 \
-    || fail "fm-brief.sh ship scaffold exited non-zero"
-  brief="$home/data/brief-pr-wait/brief.md"
-  assert_grep "fm-pr-health.sh' owned <pr-url>" "$brief" "the PR wait rule does not name the ownership check"
-  assert_grep "If it prints \`owned:\`, you may append \`paused:\` naming the PR and end your turn" "$brief" \
-    "an owned PR wait may not end the turn"
-  assert_grep "keep the blocking command, or declare \`paused:\` with an \`until\` time" "$brief" \
-    "an unwatched PR wait lost its blocking or until fallback"
-  home="$TMP_ROOT/pr-wait-off"
-  mkdir -p "$home/data" "$home/config"
-  : > "$home/config/wait-no-turns"
-  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-pr-wait some-proj --mode direct-PR >/dev/null 2>&1 \
-    || fail "fm-brief.sh ship scaffold exited non-zero"
-  assert_no_grep "fm-pr-health.sh" "$home/data/brief-pr-wait/brief.md" "an absent monitor flag still added the PR wait rule"
-  pass "fm-brief: a PR wait ends the turn only when the PR health monitor owns the PR"
+test_inbox_guidance_explains_marked_body_terminator() {
+  local home brief kind id
+  home="$TMP_ROOT/inbox-guidance"
+  for kind in no-mistakes scout secondmate; do
+    id="inbox-$kind"
+    case "$kind" in
+      no-mistakes)
+        FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --mode no-mistakes >/dev/null \
+          || fail "ship scaffold failed"
+        ;;
+      scout)
+        FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj --scout >/dev/null \
+          || fail "scout scaffold failed"
+        ;;
+      secondmate)
+        FM_HOME="$home" FM_SECONDMATE_CHARTER='Supervise assigned work.' \
+          "$ROOT/bin/fm-brief.sh" "$id" --secondmate --no-projects >/dev/null \
+          || fail "secondmate scaffold failed"
+        ;;
+    esac
+    brief="$home/data/$id/brief.md"
+    assert_grep 'fm_task_inbox_body' "$brief" "$kind scaffold omitted the format-aware inbox reader"
+    assert_grep 'body-terminator=1' "$brief" "$kind scaffold omitted the body terminator marker"
+    assert_grep 'not part of the logical message body' "$brief" "$kind scaffold omitted the synthetic terminator meaning"
+    assert_grep 'preserve any intentional trailing newlines' "$brief" "$kind scaffold omitted trailing-newline preservation"
+  done
+  pass "fm-brief: inbox guidance explains marked synthetic terminators in every scaffold"
 }
 
 test_worker_role_scope() {
@@ -1879,7 +1886,7 @@ test_scout_lavish_line_follows_presentation_floor
 test_inbox_listing_command_is_safe_on_empty_inbox
 test_workers_wait_without_spending_turns
 test_wait_no_turns_absent_keeps_the_previous_brief
-test_pr_wait_rule_follows_the_monitor_flag
+test_inbox_guidance_explains_marked_body_terminator
 test_home_brief_include_is_appended_last
 test_base_branch_is_rendered_and_bounded
 test_ship_branch_prefix_defaults_to_legacy_fm

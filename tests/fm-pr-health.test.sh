@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 # PR health monitor behavior through its registered check and the watcher.
 #
-# Every case drives bin/fm-pr-health.sh through the check shim that arm
-# registers, against a fake forge whose REST single-PR read reports a stale
-# base commit, as GitHub's does, so only the GraphQL base branch commit can
-# move the fingerprint. Ownership comes from real task records, status lines,
-# task copies and contribution records in a throwaway home.
+# Cases drive the registered check against a fake forge, with ownership from
+# real task records, task copies and durable contributions.
+# A barrier at the forge boundary proves reads fan out across owned PRs.
 set -u
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -31,19 +29,36 @@ new_home() { # name -> home with the monitor flag on
 #!/usr/bin/env bash
 set -eu
 printf '%s\n' "$*" >> "$FORGE/calls.log"
-model() { cat "$FORGE/pr-$1.json"; }
+model() {
+  local n=$1 attempt
+  if [ -f "$FORGE/barrier-count" ]; then
+    : > "$FORGE/arrived-$n"
+    for attempt in $(seq 1 100); do
+      [ "$(find "$FORGE" -name 'arrived-*' | wc -l)" -ge "$(cat "$FORGE/barrier-count")" ] && break
+      sleep 0.02
+    done
+    [ "$(find "$FORGE" -name 'arrived-*' | wc -l)" -ge "$(cat "$FORGE/barrier-count")" ] || exit 1
+  fi
+  cat "$FORGE/pr-$n.json"
+}
 case "$1 $2" in
   'api graphql')
     n=
     for arg in "$@"; do case "$arg" in number=*) n=${arg#number=} ;; esac; done
-    model "$n" | jq '{data:{repository:{pullRequest:{
+    model "$n" | jq '[{data:{repository:{pullRequest:{
       headRefOid:(.graphql_head // .head),isDraft:.draft,baseRef:{target:{oid:.base}},
       reviewRequests:{nodes:[range(.requests) | {requestedReviewer:{__typename:"User"}}]},
       latestReviews:{nodes:[range(.reviews) | {author:{__typename:"User",login:"reviewer"}}]},
       statusCheckRollup:(if (.checks | length) == 0 then null else {
         contexts:{pageInfo:{hasNextPage:false},nodes:[.checks[] | {__typename:"CheckRun",name,
           status:(if .conclusion == null then "IN_PROGRESS" else "COMPLETED" end),
-          conclusion,startedAt:(.at // "2026-10-21T00:00:00Z"),isRequired:.required}]}} end)}}}}' ;;
+          conclusion,startedAt:(.at // "2026-10-21T00:00:00Z"),isRequired:.required}]}} end)}}}}]
+      | if (.[0].data.repository.pullRequest.statusCheckRollup.contexts.nodes | length) > 100 then
+          .[0] as $page | $page.data.repository.pullRequest.statusCheckRollup.contexts.nodes as $nodes
+          | [$page | .data.repository.pullRequest.statusCheckRollup.contexts.nodes = $nodes[:100]
+                   | .data.repository.pullRequest.statusCheckRollup.contexts.pageInfo = {hasNextPage:true,endCursor:"page2"},
+             ($page | .data.repository.pullRequest.statusCheckRollup.contexts.nodes = $nodes[100:])]
+        else . end' ;;
   'pr view')
     case "$*" in
       *headRefOid,reviewDecision*) model "${3##*/}" | jq '{headRefOid:.head,reviewDecision:""}' ;;
@@ -68,8 +83,17 @@ SH
   # gh-axi resolves the open PR for a branch, as fm-teardown.sh's lookup reads it.
   cat > "$home/fakebin/gh-axi" <<'SH'
 #!/usr/bin/env bash
+printf 'gh-axi %s\n' "$*" >> "$FORGE/calls.log"
 branch=
 while [ "$#" -gt 0 ]; do [ "$1" = --head ] && branch=$2; shift; done
+if [ -f "$FORGE/branch-barrier-count" ]; then
+  : > "$FORGE/branch-arrived-$(printf '%s' "$branch" | tr '/' '_')"
+  for attempt in $(seq 1 100); do
+    [ "$(find "$FORGE" -name 'branch-arrived-*' | wc -l)" -ge "$(cat "$FORGE/branch-barrier-count")" ] && break
+    sleep 0.02
+  done
+  [ "$(find "$FORGE" -name 'branch-arrived-*' | wc -l)" -ge "$(cat "$FORGE/branch-barrier-count")" ] || exit 1
+fi
 file="$FORGE/branch-$(printf '%s' "$branch" | tr '/' '_')"
 if [ -f "$file" ]; then
   printf '%s\n' 'count: 1' 'pull_requests[1]{number,title,state,author,draft,review}:' "  $(cat "$file"),\"t\",open,author,yes,none"
@@ -156,7 +180,7 @@ test_dirty_again_at_same_commits_is_silent() {
   pass 'DIRTY seen again at the same commits wakes nothing'
 }
 
-test_conflict_clears_and_returns_at_new_base() {
+test_conflict_once_per_latest_commit() {
   local home
   home=$(new_home conflict-returns)
   task "$home" ship1 pr=https://github.com/o/r/pull/8
@@ -166,10 +190,14 @@ test_conflict_clears_and_returns_at_new_base() {
   set_pr "$home" 8 ".mergeable = true | .base = \"$BASE_2\""
   expect_silent "$home" 'a cleared conflict must not wake'
   set_pr "$home" 8 ".mergeable = false | .base = \"$BASE_3\""
-  expect_one "$home" 'conflicts with its base' 'a conflict that returns at a new base commit must wake again'
+  expect_silent "$home" 'a returning conflict at the same latest commit must not repeat'
   set_pr "$home" 8 ".base = \"$BASE_1\""
-  expect_one "$home" 'conflicts with its base' 'a new base commit must start a fresh conflict fingerprint'
-  pass 'a conflict that clears and returns at a new base commit wakes again'
+  expect_silent "$home" 'a base move must not repeat a conflict at the same latest commit'
+  set_pr "$home" 8 ".head = \"$HEAD_B\""
+  expect_one "$home" 'conflicts with its base at latest commit bbbbbbb' 'a new latest commit must notify again'
+  set_pr "$home" 8 ".head = \"$HEAD_A\""
+  expect_silent "$home" 'returning to an already notified latest commit must not repeat'
+  pass 'a conflict notifies once per latest commit despite recovery or base movement'
 }
 
 test_adopted_draft_red_required_check_after_pause_wakes_once() {
@@ -177,6 +205,7 @@ test_adopted_draft_red_required_check_after_pause_wakes_once() {
   home=$(new_home adopted-draft)
   wt="$home/copy"
   git init -q -b ART-9999-infer-tree-diameter "$wt"
+  git -C "$wt" remote add origin git@github.com:o/r.git
   # The recorded branch does not match the adopted branch the PR uses.
   task "$home" slot9999 "worktree=$wt" branch=fm/artemis-slot-art-9999
   printf '5\n' > "$home/forge/branch-ART-9999-infer-tree-diameter"
@@ -187,11 +216,35 @@ test_adopted_draft_red_required_check_after_pause_wakes_once() {
   printf 'paused [at=1792500000]: Checks are still running on the draft.\n' > "$home/state/slot9999.status"
   expect_silent "$home" 'running checks on a draft must not wake'
   set_pr "$home" 5 '.checks[2].conclusion = "FAILURE" | .checks[1].conclusion = "FAILURE"'
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/5 has failing required checks at latest commit aaaaaaa: Backend .*slot9999' \
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/5 has failing required checks at latest commit aaaaaaa: Backend \(task slot9999\)$' \
     'a failing required check on an adopted draft must wake once'
-  set_pr "$home" 5 '.checks[0].conclusion = "FAILURE"'
-  expect_silent "$home" 'a second failing required check at the same commits must not wake again'
-  pass 'a draft on an adopted branch whose required check fails after its worker pauses wakes once'
+  expect_silent "$home" 'the same failing required check at the same commit must not wake again'
+  # The worker reruns Backend, it passes, and the slow required check then fails at the same commit.
+  set_pr "$home" 5 '.checks[1].conclusion = "SUCCESS" | .checks[0].conclusion = "FAILURE"'
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/5 has failing required checks at latest commit aaaaaaa: CI Status \(task slot9999\)$' \
+    'a required check that newly fails at an already reported commit must wake once'
+  set_pr "$home" 5 '.checks[1].conclusion = "FAILURE"'
+  expect_silent "$home" 'a check already reported at this commit must not repeat when it fails again'
+  pass 'each required check that fails on an adopted draft wakes once per latest commit'
+}
+
+test_reported_failure_does_not_hide_a_later_required_failure() {
+  local home
+  home=$(new_home optional-then-required)
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 '.checks = [{name:"E2E Tests (independent)",conclusion:"FAILURE",required:false}]'
+  arm "$home"
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 has failing checks at latest commit aaaaaaa: E2E Tests \(independent\) \(task ship1\)$' \
+    'a reported failure must wake when no check is required'
+  expect_silent "$home" 'the reported failure must not repeat at the same commit'
+  set_pr "$home" 8 '.checks += [{name:"Backend",conclusion:"FAILURE",required:true}]'
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 has failing required checks at latest commit aaaaaaa: Backend \(task ship1\)$' \
+    'a required check that appears and fails at the same commit must wake'
+  expect_silent "$home" 'the reported required failure must not repeat'
+  set_pr "$home" 8 '.checks += [{name:"optional-later",conclusion:"FAILURE",required:false}]'
+  expect_silent "$home" 'a newly failing optional check must not wake once a required check has reported'
+  pass 'a fallback notification does not hide a later required failure at the same commit'
 }
 
 test_replaced_cancelled_run_is_not_failing() {
@@ -233,53 +286,76 @@ test_other_homes_red_check_is_silent() {
   cp "$other/forge/pr-20.json" "$home/forge/pr-20.json"
   task "$home" mine pr=https://github.com/o/r/pull/8
   pr "$home" 8 "$HEAD_A" "$BASE_1" true false
-  # A secondmate's status names the PR its own home owns.
-  printf 'kind=secondmate\n' > "$home/state/mate.meta"
-  printf 'working [at=1792500000]: The child home opened https://github.com/o/r/pull/20 for review.\n' > "$home/state/mate.status"
+  # This home's worker mentions the other home's PR in a status line.
+  printf 'working [at=1792500000]: Reviewed https://github.com/o/r/pull/20 for a teammate.\n' > "$home/state/mine.status"
+  # A secondmate's copy sits on a branch whose PR belongs to the secondmate's own home.
+  git init -q -b mate-branch "$home/mate-copy"
+  git -C "$home/mate-copy" remote add origin git@github.com:o/r.git
+  printf 'kind=secondmate\nworktree=%s\n' "$home/mate-copy" > "$home/state/mate.meta"
+  printf '20\n' > "$home/forge/branch-mate-branch"
   arm "$home"
   arm "$other"
   out=$(pass_once "$other")
   printf '%s\n' "$out" | grep -F 'https://github.com/o/r/pull/20 has failing required checks' >/dev/null \
     || fail "the owning home must wake for its own red PR: $out"
   expect_silent "$home" "another home's red PR must wake nothing in this home"
-  if grep -E 'pulls/20$|number=20( |$)' "$home/forge/calls.log" >/dev/null; then
+  if grep -E 'pulls/20$|number=20( |$)|--head mate-branch' "$home/forge/calls.log" >/dev/null; then
     fail "this home read another home's PR: $(cat "$home/forge/calls.log")"
   fi
+  out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" owned) || fail 'owned PRs could not be listed'
+  printf '%s\n' "$out" | jq -e 'any(.[]; .url == "https://github.com/o/r/pull/20") | not' >/dev/null \
+    || fail "a PR named only in a status line became owned: $out"
   pass "a red check on another home's PR wakes nothing in this home"
 }
 
 test_enrolled_before_ready_and_after_cleanup_still_wake() {
-  local home out cmd
+  local home wt
   home=$(new_home enrolled-early)
-  task "$home" early
+  wt="$home/copy"
+  git init -q -b feature-12 "$wt"
+  git -C "$wt" remote add origin git@github.com:o/r.git
+  # The task opened its PR but has recorded no pr= yet.
+  task "$home" early "worktree=$wt"
+  printf '12\n' > "$home/forge/branch-feature-12"
   pr "$home" 12 "$HEAD_A" "$BASE_1" true false
   set_pr "$home" 12 '.checks = [{name:"CI Status",conclusion:null,required:true}]'
-  printf 'working [at=1792500000]: The draft is open at https://github.com/o/r/pull/12 and its checks are running.\n' \
-    > "$home/state/early.status"
   arm "$home"
-  # Run the ownership check exactly as the worker's brief spells it.
-  : > "$home/config/wait-no-turns"
-  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" early sample --mode direct-PR >/dev/null 2>&1 || fail 'could not write a brief'
-  # shellcheck disable=SC2016  # The pattern matches literal backticks.
-  cmd=$(grep -o '`FM_HOME=[^`]*owned <pr-url>`' "$home/data/early/brief.md" | tr -d '`') \
-    || fail 'the brief names no ownership check'
-  out=$(PATH="$home/fakebin:$PATH" FORGE="$home/forge" FM_ROOT_OVERRIDE="$home/root" \
-    bash -c "${cmd%<pr-url>}https://github.com/o/r/pull/12") \
-    || fail "a PR named in a live task's status line must be owned before any ready report: $out"
-  [ "$out" = 'owned: https://github.com/o/r/pull/12' ] || fail "the ownership check printed: $out"
-  out=$(PATH="$home/fakebin:$PATH" FORGE="$home/forge" FM_ROOT_OVERRIDE="$home/root" \
-    bash -c "${cmd%<pr-url>}https://github.com/o/r/pull/13") && fail "an unnamed PR read as owned: $out"
   expect_silent "$home" 'running checks must not wake'
   set_pr "$home" 12 '.checks[0].conclusion = "FAILURE"'
   expect_one "$home" 'pull/12 has failing required checks' 'a PR enrolled before its ready report must wake'
-  # Worker cleanup removes the task record and its status lines.
-  rm -f "$home/state/early.meta" "$home/state/early.status"
+  # Worker cleanup removes the task record and its copy.
+  rm -f "$home/state/early.meta"
+  rm -rf "$wt"
   set_pr "$home" 12 ".head = \"$HEAD_B\" | .mergeable = false | .checks[0].conclusion = null"
   expect_one "$home" 'pull/12 conflicts with its base at latest commit bbbbbbb' 'a PR kept after cleanup must wake'
   pass 'a PR enrolled before any ready report, and one kept after cleanup, both still wake'
 }
 
-test_green_ready_with_no_reviewer_wakes_once_per_latest_commit() {
+test_open_pr_replacing_a_closed_one_on_the_same_branch_is_discovered() {
+  local home wt
+  home=$(new_home replaced-pr)
+  wt="$home/copy"
+  git init -q -b feature-12 "$wt"
+  git -C "$wt" remote add origin git@github.com:o/r.git
+  task "$home" early "worktree=$wt"
+  printf '12\n' > "$home/forge/branch-feature-12"
+  pr "$home" 12 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 12 '.checks = [{name:"CI Status",conclusion:null,required:true}]'
+  arm "$home"
+  expect_silent "$home" 'running checks must not wake'
+  # Still before any ready report, the worker closes PR 12 and opens PR 13 from the unchanged branch.
+  set_pr "$home" 12 '.state = "closed"'
+  printf '13\n' > "$home/forge/branch-feature-12"
+  pr "$home" 13 "$HEAD_B" "$BASE_1" true false
+  set_pr "$home" 13 '.checks = [{name:"CI Status",conclusion:"FAILURE",required:true}]'
+  expect_silent "$home" 'closing the cached PR must not wake'
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/13 has failing required checks at latest commit bbbbbbb: CI Status \(task early\)$' \
+    'the open PR on the unchanged branch must replace the closed one'
+  expect_silent "$home" 'the replacement PR must dedupe like any other'
+  pass 'an open PR that replaces a closed one on the same task branch is discovered'
+}
+
+test_green_without_reviewer_is_silent() {
   local home
   home=$(new_home no-reviewer)
   task "$home" hotfix pr=https://github.com/o/r/pull/40
@@ -288,21 +364,19 @@ test_green_ready_with_no_reviewer_wakes_once_per_latest_commit() {
   arm "$home"
   expect_silent "$home" 'a PR whose required check is still running is not green yet'
   set_pr "$home" 40 '.checks[0].conclusion = "SUCCESS"'
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/40 is green and out of draft with no reviewer requested at latest commit aaaaaaa' \
-    'a green ready PR with no reviewer requested must wake'
+  expect_silent "$home" 'a green PR without a reviewer is outside the notification scope'
   expect_silent "$home" 'the same green PR must not wake twice at one latest commit'
   set_pr "$home" 40 ".base = \"$BASE_2\""
   expect_silent "$home" 'a base move alone must not repeat the missing-reviewer wake'
   set_pr "$home" 40 ".head = \"$HEAD_B\""
-  expect_one "$home" 'is green and out of draft with no reviewer requested at latest commit bbbbbbb' \
-    'a new latest commit that is still unreviewed must wake again'
+  expect_silent "$home" 'a new green latest commit without a reviewer must stay silent'
   set_pr "$home" 40 ".head = \"$HEAD_A\" | .base = \"$BASE_3\" | .requests = 1"
   expect_silent "$home" 'a PR with a requested reviewer must not wake'
   set_pr "$home" 40 '.requests = 0 | .reviews = 1'
   expect_silent "$home" 'a PR a reviewer already reviewed must not wake'
   set_pr "$home" 40 '.reviews = 0 | .draft = true'
   expect_silent "$home" 'a green draft must not ask for a reviewer'
-  pass 'green, out of draft, no reviewer requested wakes once per latest commit'
+  pass 'a green PR without a reviewer never notifies'
 }
 
 test_base_without_required_checks_counts_any_failing_check() {
@@ -315,9 +389,79 @@ test_base_without_required_checks_counts_any_failing_check() {
   set_pr "$home" 30 '.checks = [{name:"lint",conclusion:"SUCCESS",required:false},{name:"test",conclusion:"FAILURE",required:false}]'
   set_pr "$home" 31 '.checks = [{name:"CI Status",conclusion:"SUCCESS",required:true},{name:"test",conclusion:"FAILURE",required:false}]'
   arm "$home"
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/30 has failing checks at latest commit aaaaaaa: test' \
-    'a failing check must count when the base requires none, and an optional one must not when it does'
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/30 has failing checks at latest commit aaaaaaa: test \(task a\)$' \
+    'only the base with no required checks must notify for its reported failure'
+  [ "$(grep -c 'pulls/3[01]$' "$home/forge/calls.log")" = 2 ] || fail "both owned PRs must still be read: $(cat "$home/forge/calls.log")"
+  expect_silent "$home" 'the fallback must retain once-per-check deduplication'
   pass 'a base with no required checks counts a failing reported check'
+}
+
+test_retired_contribution_is_not_reclaimed_from_the_cached_branch() {
+  local home wt before
+  home=$(new_home retired-cached)
+  wt="$home/copy"
+  git init -q -b feature-12 "$wt"
+  git -C "$wt" remote add origin git@github.com:o/r.git
+  task "$home" early "worktree=$wt"
+  printf '12\n' > "$home/forge/branch-feature-12"
+  pr "$home" 12 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 12 '.checks = [{name:"CI Status",conclusion:null,required:true}]'
+  arm "$home"
+  expect_silent "$home" 'running checks must not wake'
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" retire early https://github.com/o/r/pull/12 captain 'handed to another home' >/dev/null \
+    || fail 'could not retire the discovered contribution'
+  set_pr "$home" 12 '.checks[0].conclusion = "FAILURE" | .mergeable = false'
+  before=$(grep -c 'pulls/12$' "$home/forge/calls.log")
+  expect_silent "$home" 'a retired PR must not wake while its branch is still cached'
+  expect_silent "$home" 'a retired PR must stay silent on later passes'
+  [ "$(grep -c 'pulls/12$' "$home/forge/calls.log")" = "$before" ] || fail "a retired PR was read again: $(cat "$home/forge/calls.log")"
+  pass 'a retired contribution is not reclaimed through the cached branch lookup'
+}
+
+test_retired_contribution_is_not_reclaimed_by_a_fresh_branch_lookup() {
+  local home wt out
+  home=$(new_home retired-fresh)
+  wt="$home/copy"
+  git init -q -b feature-12 "$wt"
+  git -C "$wt" remote add origin git@github.com:o/r.git
+  task "$home" early "worktree=$wt"
+  printf '12\n' > "$home/forge/branch-feature-12"
+  pr "$home" 12 "$HEAD_A" "$BASE_1" false false
+  set_pr "$home" 12 '.checks = [{name:"CI Status",conclusion:"FAILURE",required:true}]'
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" enroll early https://github.com/o/r/pull/12 >/dev/null || fail 'could not enroll the PR'
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" retire early https://github.com/o/r/pull/12 captain 'handed to another home' >/dev/null \
+    || fail 'could not retire the contribution'
+  arm "$home"
+  expect_silent "$home" 'a retired PR found afresh on the task branch must not wake'
+  if grep -E 'pulls/12$|number=12( |$)' "$home/forge/calls.log" >/dev/null; then
+    fail "a retired PR was read: $(cat "$home/forge/calls.log")"
+  fi
+  out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" owned) || fail 'owned PRs could not be listed'
+  printf '%s\n' "$out" | jq -e 'any(.[]; .url == "https://github.com/o/r/pull/12") | not' >/dev/null \
+    || fail "a retired PR became owned again: $out"
+  pass 'a retired contribution is not reclaimed by a fresh branch lookup'
+}
+
+test_unreadable_contribution_record_pauses_the_monitor_once() {
+  local home before
+  home=$(new_home unreadable-record)
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" false false
+  arm "$home"
+  expect_one "$home" 'conflicts with its base' 'the first conflict must wake'
+  rm -f "$home/state/ship1.meta"
+  expect_silent "$home" 'the durable record must keep the PR owned after cleanup'
+  cp "$home/data/ship1/contributions.json" "$home/contributions.saved"
+  printf 'not a record\n' > "$home/data/ship1/contributions.json"
+  before=$(grep -c 'pulls/8$' "$home/forge/calls.log")
+  expect_one "$home" '^pr-health: owned PRs could not be read: ' 'an unreadable durable record must be reported once'
+  expect_silent "$home" 'the same unreadable record must not be reported again'
+  [ "$(grep -c 'pulls/8$' "$home/forge/calls.log")" = "$before" ] || fail 'a PR was read while ownership was unverified'
+  mv "$home/contributions.saved" "$home/data/ship1/contributions.json"
+  expect_silent "$home" 'a conflict already reported must not repeat once the record is readable again'
+  set_pr "$home" 8 ".head = \"$HEAD_B\""
+  expect_one "$home" 'conflicts with its base at latest commit bbbbbbb' 'the PR must be watched again once the record is readable'
+  pass 'an unreadable durable record pauses the monitor once and keeps its fingerprints'
 }
 
 test_nothing_prints_while_nothing_changed() {
@@ -356,16 +500,12 @@ test_absent_flag_changes_nothing() {
   home=$(new_home flag-off)
   rm -f "$home/config/pr-health-monitor"
   task "$home" ship1 pr=https://github.com/o/r/pull/8
-  printf 'working [at=1792500000]: Opened https://github.com/o/r/pull/9 for review.\n' > "$home/state/ship1.status"
   pr "$home" 8 "$HEAD_A" "$BASE_1" false false
   before=$(ls -A "$home/state" "$home/data")
   out=$(with_home "$home" "$ROOT/bin/fm-pr-health.sh" poll 2>&1) || fail "poll failed with the flag absent: $out"
   [ -z "$out" ] || fail "poll printed with the flag absent: $out"
   if with_home "$home" "$ROOT/bin/fm-pr-health.sh" arm >/dev/null 2>&1; then
     fail 'arm succeeded with the flag absent'
-  fi
-  if with_home "$home" "$ROOT/bin/fm-pr-health.sh" owned https://github.com/o/r/pull/9 >/dev/null 2>&1; then
-    fail 'owned claimed a PR with the flag absent'
   fi
   [ "$(ls -A "$home/state" "$home/data")" = "$before" ] \
     || fail "the flag-off monitor wrote records: $(ls -A "$home/state" "$home/data")"
@@ -394,14 +534,89 @@ test_watcher_surfaces_one_wake() {
   pass 'the watcher turns one conflict into one durable wake'
 }
 
+test_failure_once_per_latest_commit_after_cleanup() {
+  local home
+  home=$(new_home durable-dedupe)
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 '.checks = [{name:"test",conclusion:"FAILURE",required:true}]'
+  arm "$home"
+  expect_one "$home" 'has failing required checks' 'the first failure must notify'
+  rm -f "$home/state/ship1.meta" "$home/state/ship1.status"
+  expect_silent "$home" 'worker cleanup must not erase dedupe'
+  set_pr "$home" 8 '.checks[0].conclusion = "SUCCESS"'
+  expect_silent "$home" 'recovery must not notify'
+  set_pr "$home" 8 ".checks[0].conclusion = \"FAILURE\" | .base = \"$BASE_2\""
+  expect_silent "$home" 'a failure returning at the same latest commit must not repeat'
+  set_pr "$home" 8 ".head = \"$HEAD_B\""
+  expect_one "$home" 'has failing required checks at latest commit bbbbbbb' 'a later latest commit must notify'
+  pass 'check notifications survive cleanup and repeat only at a new latest commit'
+}
+
+test_unsupported_provider_has_no_github_reads() {
+  local home
+  home=$(new_home unsupported)
+  git init -q -b feature "$home/copy"
+  git -C "$home/copy" remote add origin git@gitlab.com:o/r.git
+  task "$home" ship1 "worktree=$home/copy" pr=https://gitlab.com/o/r/-/merge_requests/8
+  arm "$home"
+  expect_silent "$home" 'an unsupported provider must not notify'
+  [ ! -s "$home/forge/calls.log" ] || fail 'an unsupported provider triggered a GitHub read'
+  pass 'GitLab ownership and branch discovery make no GitHub reads'
+}
+
+test_checks_on_later_pages() {
+  local home
+  home=$(new_home paged)
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 '.checks = ([range(100) | {name:("optional-" + tostring),conclusion:"FAILURE",required:false}]
+    + [{name:"required-later",conclusion:"SUCCESS",required:true}])'
+  arm "$home"
+  expect_silent "$home" 'optional failures must not notify while the required check on a later page passes'
+  set_pr "$home" 8 '.checks[100].conclusion = "FAILURE"'
+  expect_one "$home" 'has failing required checks.*required-later' 'a required failure after page one must notify'
+  pass 'all check pages contribute to required-check classification'
+}
+
+test_all_owned_pr_reads_start_in_one_wave() {
+  local home n out
+  home=$(new_home concurrent)
+  for n in $(seq 1 8); do
+    if [ "$n" -le 4 ]; then
+      task "$home" "ship$n" "pr=https://github.com/o/r/pull/$n"
+    else
+      git init -q -b "feature$n" "$home/copy$n"
+      git -C "$home/copy$n" remote add origin git@github.com:o/r.git
+      task "$home" "ship$n" "worktree=$home/copy$n"
+      printf '%s\n' "$n" > "$home/forge/branch-feature$n"
+    fi
+    pr "$home" "$n" "$HEAD_A" "$BASE_1" false false
+  done
+  printf '4\n' > "$home/forge/branch-barrier-count"
+  printf '8\n' > "$home/forge/barrier-count"
+  arm "$home"
+  out=$(pass_once "$home")
+  [ "$(printf '%s\n' "$out" | grep -c 'conflicts with its base')" = 8 ] \
+    || fail "every owned PR must start before a slow read completes: $out"
+  pass 'all owned PR reads start in one wave without rotating a backlog'
+}
+
 failures=0
 for test_name in test_unknown_then_dirty_wakes_once test_dirty_again_at_same_commits_is_silent \
-  test_conflict_clears_and_returns_at_new_base test_adopted_draft_red_required_check_after_pause_wakes_once \
+  test_conflict_once_per_latest_commit test_adopted_draft_red_required_check_after_pause_wakes_once \
+  test_reported_failure_does_not_hide_a_later_required_failure \
   test_replaced_cancelled_run_is_not_failing test_latest_commit_moving_between_reads_waits \
   test_other_homes_red_check_is_silent test_enrolled_before_ready_and_after_cleanup_still_wake \
-  test_green_ready_with_no_reviewer_wakes_once_per_latest_commit test_base_without_required_checks_counts_any_failing_check \
+  test_open_pr_replacing_a_closed_one_on_the_same_branch_is_discovered \
+  test_green_without_reviewer_is_silent test_base_without_required_checks_counts_any_failing_check \
+  test_retired_contribution_is_not_reclaimed_from_the_cached_branch \
+  test_retired_contribution_is_not_reclaimed_by_a_fresh_branch_lookup \
+  test_unreadable_contribution_record_pauses_the_monitor_once \
   test_nothing_prints_while_nothing_changed test_merged_pr_is_not_read_again test_absent_flag_changes_nothing \
-  test_watcher_surfaces_one_wake; do
+  test_watcher_surfaces_one_wake test_failure_once_per_latest_commit_after_cleanup \
+  test_all_owned_pr_reads_start_in_one_wave test_checks_on_later_pages \
+  test_unsupported_provider_has_no_github_reads; do
   ( "$test_name" ) || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures PR health regressions"
