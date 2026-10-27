@@ -1,0 +1,152 @@
+===== scenario: one-preferred-unknown-other-measured =====
+--- config/crew-dispatch.json ---
+{
+  "preferred_provider": "codex",
+  "rules": [
+    {
+      "when": "A simple bug fix with a stated root cause.",
+      "use": [
+        {
+          "harness": "claude",
+          "model": "opus"
+        },
+        {
+          "harness": "codex",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "harness": "pi",
+          "model": "openai-codex-work/gpt-5.6-sol",
+          "provider": "codex"
+        }
+      ],
+      "why": "SECRET-WHY-TEXT bug fixes are cheap"
+    }
+  ]
+}
+--- quota-axi --json rows (provider accountKey pct spendPriority runway status) ---
+claude default pct=26 spendPriority=0.8 runway=through_reset quota=known
+codex codex-home pct=- spendPriority=- runway=- quota=unknown
+codex openai-codex-work pct=70 spendPriority=0.3 runway=through_reset quota=known
+--- $ FM_HOME=$LAB bin/fm-dispatch-resolve.sh brief.md --project lab ---
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 12   tokens: 100/10
+  rule: rule_1 (A simple bug fix with a stated root cause.)   confidence: 0.9
+  probabilities: rule_1=0.95 default=0.05
+  note: rule matched
+  preferred_provider: codex: prefer eligible family candidates
+  note: 1 eligible candidate(s) unranked (codex)
+  candidate: claude:opus  provider=claude  scope=all_models  remaining=26%  spendPriority=0.8  runway=through_reset  -> eligible
+  candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex unmeasured (unknown): disclosed uncertainty
+  candidate: pi:openai-codex-work/gpt-5.6-sol  provider=codex  scope=all_models  remaining=70%  spendPriority=0.3  runway=through_reset  -> eligible
+  profile: --harness 'pi' --model 'openai-codex-work/gpt-5.6-sol'
+--- stderr ---
+--- exit: 0 ---
+--- model request body: mentions preferred_provider? 0; mentions why text? 0 ---
+--- quota-axi calls: --json; ---
+
+===== scenario: rule-floor-falls-through-to-default-with-preference =====
+--- config/crew-dispatch.json ---
+{
+  "preferred_provider": "codex",
+  "rules": [
+    {
+      "when": "A simple bug fix with a stated root cause.",
+      "use": [
+        {
+          "harness": "claude",
+          "model": "opus"
+        },
+        {
+          "harness": "codex",
+          "model": "gpt-5.6-sol"
+        }
+      ],
+      "why": "SECRET-WHY-TEXT bug fixes are cheap",
+      "floor": {
+        "scope": "all_models",
+        "min_percent": 50,
+        "provider": "claude"
+      }
+    }
+  ],
+  "default": [
+    {
+      "harness": "claude",
+      "model": "sonnet"
+    },
+    {
+      "harness": "codex",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    }
+  ]
+}
+--- quota-axi --json rows (provider accountKey pct spendPriority runway status) ---
+claude default pct=26 spendPriority=0.8 runway=through_reset quota=known
+codex codex-home pct=82 spendPriority=0.2 runway=through_reset quota=known
+codex openai-codex-work pct=70 spendPriority=0.3 runway=through_reset quota=known
+--- $ FM_HOME=$LAB bin/fm-dispatch-resolve.sh brief.md --project lab ---
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 12   tokens: 100/10
+  rule: rule_1 (A simple bug fix with a stated root cause.)   confidence: 0.9
+  probabilities: rule_1=0.95 default=0.05
+  note: rule rule_1 floor all_models below 50%: fall through to default
+  preferred_provider: codex: prefer eligible family candidates
+  candidate: claude:sonnet  provider=claude  scope=all_models  remaining=26%  spendPriority=0.8  runway=through_reset  -> eligible
+  candidate: codex:gpt-5.6-sol  provider=codex  scope=all_models  remaining=82%  spendPriority=0.2  runway=through_reset  -> eligible
+  profile: --harness 'codex' --model 'gpt-5.6-sol' --effort 'medium'
+--- stderr ---
+--- exit: 0 ---
+--- model request body: mentions preferred_provider? 0; mentions why text? 0 ---
+--- quota-axi calls: --json; ---
+
+===== scenario: preferred-family-all-exhausted-two-accounts =====
+--- config/crew-dispatch.json ---
+{
+  "preferred_provider": "codex",
+  "rules": [
+    {
+      "when": "A simple bug fix with a stated root cause.",
+      "use": [
+        {
+          "harness": "claude",
+          "model": "opus"
+        },
+        {
+          "harness": "codex",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "harness": "pi",
+          "model": "openai-codex-work/gpt-5.6-sol",
+          "provider": "codex"
+        }
+      ],
+      "why": "SECRET-WHY-TEXT bug fixes are cheap"
+    }
+  ]
+}
+--- quota-axi --json rows (provider accountKey pct spendPriority runway status) ---
+claude default pct=26 spendPriority=0.8 runway=through_reset quota=known
+codex codex-home pct=82 spendPriority=0.2 runway=exhausted_now quota=known
+codex openai-codex-work pct=70 spendPriority=0.3 runway=exhausted_now quota=known
+--- $ FM_HOME=$LAB bin/fm-dispatch-resolve.sh brief.md --project lab ---
+dispatch-resolve:
+  status: clear
+  model: jev-1.13.0   latency_ms: 13   tokens: 100/10
+  rule: rule_1 (A simple bug fix with a stated root cause.)   confidence: 0.9
+  probabilities: rule_1=0.95 default=0.05
+  note: rule matched
+  preferred_provider: codex: fall back; every matched family candidate is ineligible
+  candidate: claude:opus  provider=claude  scope=all_models  remaining=26%  spendPriority=0.8  runway=through_reset  -> eligible
+  candidate: codex:gpt-5.6-sol  provider=codex  scope=all_models  remaining=82%  spendPriority=-  runway=exhausted_now  -> not eligible: runway exhausted_now at all_models
+  candidate: pi:openai-codex-work/gpt-5.6-sol  provider=codex  scope=all_models  remaining=70%  spendPriority=-  runway=exhausted_now  -> not eligible: runway exhausted_now at all_models
+  profile: --harness 'claude' --model 'opus'
+--- stderr ---
+--- exit: 0 ---
+--- model request body: mentions preferred_provider? 0; mentions why text? 0 ---
+--- quota-axi calls: --json; ---
+

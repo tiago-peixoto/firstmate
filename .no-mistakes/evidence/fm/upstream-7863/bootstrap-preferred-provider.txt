@@ -1,0 +1,70 @@
+===== bootstrap: preferred_provider="Codex" TYPESAFE_API_KEY= =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider="" TYPESAFE_API_KEY= =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider=null TYPESAFE_API_KEY= =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider=" codex" TYPESAFE_API_KEY= =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider="codex" TYPESAFE_API_KEY= =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+(no CREW_DISPATCH line)
+exit 0; other bootstrap lines: 1
+
+===== bootstrap: preferred_provider="claude" TYPESAFE_API_KEY= =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+(no CREW_DISPATCH line)
+exit 0; other bootstrap lines: 1
+
+===== bootstrap: preferred_provider="future-provider" TYPESAFE_API_KEY= =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+(no CREW_DISPATCH line)
+exit 0; other bootstrap lines: 1
+
+===== bootstrap: preferred_provider="Codex" TYPESAFE_API_KEY=<set> =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider="" TYPESAFE_API_KEY=<set> =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider=null TYPESAFE_API_KEY=<set> =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider=" codex" TYPESAFE_API_KEY=<set> =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+CREW_DISPATCH: invalid config/crew-dispatch.json - preferred_provider must be a lowercase provider ID (for example codex)
+exit 0; other bootstrap lines: 0
+
+===== bootstrap: preferred_provider="codex" TYPESAFE_API_KEY=<set> =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+(no CREW_DISPATCH line)
+exit 0; other bootstrap lines: 1
+
+===== bootstrap: preferred_provider="claude" TYPESAFE_API_KEY=<set> =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+(no CREW_DISPATCH line)
+exit 0; other bootstrap lines: 1
+
+===== bootstrap: preferred_provider="future-provider" TYPESAFE_API_KEY=<set> =====
+$ FM_HOME=$LAB FM_BOOTSTRAP_NETWORK_PHASE=skip bin/fm-bootstrap.sh | grep CREW_DISPATCH
+(no CREW_DISPATCH line)
+exit 0; other bootstrap lines: 1
+
