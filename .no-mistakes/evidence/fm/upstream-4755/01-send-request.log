@@ -1,0 +1,16 @@
+$ fm-send.sh mate "finish the report and post the summary"   # mate.meta kind=secondmate
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.JufiLO
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell not typed because the agent in fmlab:fm-mate has exited; the steer is durably recorded at /tmp/fm-lab.JufiLO/state/mate.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+
+# pending-reply records:
+aa8f22813f359553
+corr_id=aa8f22813f359553
+task_id=mate
+request_summary=finish the report and post the summary
+phase=awaiting_report
+surfaced_session=
+delivered_epoch=1793072751
+
+# mate.status:

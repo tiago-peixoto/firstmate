@@ -1,0 +1,19 @@
+## Step 08 - adversarial: an unkeyed "resolved:" line does not dismiss; a later session D is reminded again after the earlier wake was acknowledged
+$ fm-wake-drain.sh --ack-through 1 --recovery-generation 2001840.1793072914.m4ILOm   # session C handled its wake
+# wake-queue pending-reply-escalated rows: 0
+$ printf "resolved: looked at it\n" >> state/mate.status
+$ fm-session-start.sh   # session D (CLAUDE_CODE_SESSION_ID=dddddddd-0000-4000-8000-00000000000d)
+exit=0
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793072968	2	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary; task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 2076055.1793072968.hECCPf
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-aa8f22813f359553] blocked: pending-reply-missed: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary
+mate [key=pending-reply-d6148271e838ccb4] blocked: pending-reply-missed: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+# wake-queue pending-reply-escalated rows: 1
+$ fm-bearings-snapshot.sh --json | jq -c "[.decisions_open[].key]"
+["pending-reply-aa8f22813f359553","pending-reply-d6148271e838ccb4"]
+# records: aa8f22813f359553 phase=escalated dismissed=; d6148271e838ccb4 phase=escalated dismissed=; 
+# blocked lines in mate.status: 2

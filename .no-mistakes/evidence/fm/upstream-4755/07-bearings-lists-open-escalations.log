@@ -1,0 +1,26 @@
+## Step 07 - Bearings with the flag present lists both open escalations (JSON model and default TOON render)
+$ fm-bearings-snapshot.sh --json | jq .decisions_open
+exit=0
+[
+  {
+    "id": "mate",
+    "key": "pending-reply-aa8f22813f359553",
+    "verb": "blocked",
+    "summary": "pending-reply escalated: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary",
+    "owner": "(main)"
+  },
+  {
+    "id": "mate",
+    "key": "pending-reply-d6148271e838ccb4",
+    "verb": "blocked",
+    "summary": "pending-reply escalated: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers",
+    "owner": "(main)"
+  }
+]
+
+$ fm-bearings-snapshot.sh   # default TOON render
+exit=0
+27:decisions_open[2]{id,key,verb,summary,owner}:
+28-  mate,pending-reply-aa8f22813f359553,blocked,"pending-reply escalated: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary",(main)
+29-  mate,pending-reply-d6148271e838ccb4,blocked,"pending-reply escalated: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers",(main)
+30-landed: []

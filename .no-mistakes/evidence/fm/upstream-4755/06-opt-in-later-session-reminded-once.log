@@ -1,0 +1,32 @@
+## Step 06 - opt-in: a later session C (CLAUDE_CODE_SESSION_ID=cccccccc-0000-4000-8000-00000000000c) is reminded once, with no second recovery and no second blocked line
+$ touch config/pending-reply-resurface
+session-start exit=0
+8:lock acquired: harness pid 1541196
+--- WAKE QUEUE section as presented to the agent:
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793072914	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary; task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2001840.1793072914.m4ILOm
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-aa8f22813f359553] blocked: pending-reply-missed: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary
+mate [key=pending-reply-d6148271e838ccb4] blocked: pending-reply-missed: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+# wake-queue pending-reply-escalated rows: 1
+# raw wake-queue rows:
+1793072914	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary; task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers;
+# token now: 1541196:cccccccc-0000-4000-8000-00000000000c
+# records:
+-- aa8f22813f359553 phase=escalated surfaced_session=1541196:cccccccc-0000-4000-8000-00000000000c recovery_attempted_epoch=1793073036
+-- d6148271e838ccb4 phase=escalated surfaced_session=1541196:cccccccc-0000-4000-8000-00000000000c recovery_attempted_epoch=1793073036
+# blocked lines in mate.status: 2
+# inbox records (recovery resends would add one): 4
+
+--- repeat poll in the same session C: remind script, then session-start again
+remind exit=0
+# wake-queue pending-reply-escalated rows: 1
+session-start rerun exit=0
+# wake-queue pending-reply-escalated rows: 1
+# blocked lines in mate.status: 2

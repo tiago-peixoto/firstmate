@@ -1,0 +1,99 @@
+{
+  "schema": "fm-bearings.v1",
+  "home": "tmp/fm-lab.JufiLO",
+  "generated": "2026-10-27T03:49:19Z",
+  "prs": "not_requested (run: /bearings include PRs)",
+  "contributions": {
+    "scope": "owned contributions per home",
+    "known": 0,
+    "checked": 0,
+    "counts": {
+      "captain": 0,
+      "fleet": 0,
+      "maintainer": 0,
+      "nobody": 0
+    },
+    "complete": false,
+    "proven_clear": false,
+    "unmeasured_homes": 1,
+    "unreadable_records": 1,
+    "unmeasured": 0,
+    "stale_verdicts": 0,
+    "missing_verdicts": 0,
+    "captain_omitted": 0,
+    "captain": []
+  },
+  "in_flight": [],
+  "secondmates": [
+    {
+      "id": "mate",
+      "state": "unknown",
+      "doing": "secondmate metadata is not registered",
+      "provenance": "parent-event-fallback",
+      "freshness": "historical-event",
+      "age_seconds": 119,
+      "contradiction": false,
+      "reason": "secondmate metadata is not registered"
+    }
+  ],
+  "secondmate_reconcile": [],
+  "decisions_open": [
+    {
+      "id": "mate",
+      "key": "pending-reply-aa8f22813f359553",
+      "verb": "blocked",
+      "summary": "pending-reply escalated: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary",
+      "owner": "(main)"
+    },
+    {
+      "id": "mate",
+      "key": "pending-reply-d6148271e838ccb4",
+      "verb": "blocked",
+      "summary": "pending-reply escalated: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers",
+      "owner": "(main)"
+    }
+  ],
+  "landed": [],
+  "gates": [],
+  "reports": [],
+  "recorded_prs": [],
+  "unhealthy_endpoints": [
+    {
+      "id": "mate",
+      "backend": "tmux",
+      "target": "fmlab:fm-mate",
+      "exists": false,
+      "agent": "dead"
+    }
+  ],
+  "omitted": [
+    {
+      "surface": "backlog item bodies",
+      "reveal": "--fields bodies"
+    },
+    {
+      "surface": "task paths",
+      "reveal": "--fields paths"
+    },
+    {
+      "surface": "watch/steer actions",
+      "reveal": "--fields actions"
+    },
+    {
+      "surface": "healthy endpoint detail",
+      "reveal": "--fields endpoints"
+    },
+    {
+      "surface": "full scout-report inventory",
+      "reveal": "--all-reports"
+    },
+    {
+      "surface": "secondmate home(s) with unreadable structured state: 1",
+      "reveal": "inspect the listed secondmate home ledgers"
+    },
+    {
+      "surface": "live PR discovery + checks",
+      "reveal": "--include-prs"
+    }
+  ]
+}

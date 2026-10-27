@@ -1,0 +1,43 @@
+schema: fm-bearings.v1
+home: tmp/fm-lab.JufiLO
+generated: "2026-10-27T03:49:19Z"
+prs: "not_requested (run: /bearings include PRs)"
+contributions: 
+  scope: owned contributions per home
+  known: 0
+  checked: 0
+  counts: 
+    captain: 0
+    fleet: 0
+    maintainer: 0
+    nobody: 0
+  complete: false
+  proven_clear: false
+  unmeasured_homes: 1
+  unreadable_records: 1
+  unmeasured: 0
+  stale_verdicts: 0
+  missing_verdicts: 0
+  captain_omitted: 0
+  captain: []
+in_flight: []
+secondmates[1]{id,state,doing,provenance,freshness,age_seconds,contradiction,reason}:
+  mate,unknown,secondmate metadata is not registered,parent-event-fallback,historical-event,119,false,secondmate metadata is not registered
+secondmate_reconcile: []
+decisions_open[2]{id,key,verb,summary,owner}:
+  mate,pending-reply-aa8f22813f359553,blocked,"pending-reply escalated: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary",(main)
+  mate,pending-reply-d6148271e838ccb4,blocked,"pending-reply escalated: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers",(main)
+landed: []
+gates: []
+reports: []
+recorded_prs: []
+unhealthy_endpoints[1]{id,backend,target,exists,agent}:
+  mate,tmux,"fmlab:fm-mate",false,dead
+omitted[7]{surface,reveal}:
+  backlog item bodies,"--fields bodies"
+  task paths,"--fields paths"
+  watch/steer actions,"--fields actions"
+  healthy endpoint detail,"--fields endpoints"
+  full scout-report inventory,"--all-reports"
+  "secondmate home(s) with unreadable structured state: 1",inspect the listed secondmate home ledgers
+  live PR discovery + checks,"--include-prs"

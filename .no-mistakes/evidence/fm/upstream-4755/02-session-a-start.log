@@ -1,0 +1,24 @@
+## session A start (excerpt: lock, wake queue, pending-reply lines)
+7:LOCK
+9:lock acquired: harness pid 1541196
+19:WAKE QUEUE
+26:- Lock: held by this session; this session owns normal supervision unless away mode says otherwise.
+29:- Supervision host: on; it takes away-posture wakes and, where the dialog mirror is verified, eligible attended wakes itself, and hands the rest to you (protocol at the end of this block).
+40:3. On a `Stop hook feedback` wake (`signal:`, `stale:`, `check:`, or `heartbeat`), run `bin/fm-wake-drain.sh` first and handle the wake.
+48:7. The durable wake queue preserves actionable events between a rewake and the next Stop-launched arm, while the bounded turn-end guard prevents a blind Stop when recovery did not start.
+50:   [`watcher-continuity.md`](../watcher-continuity.md) owns the exact session-lock recovery boundary.
+62:1. Attended (no away record, including a quiet-mode record; see [Postures](../supervision-host.md#postures)): a headless supervision session takes the wakes the supervision branch may take and never wakes you for a routine outcome, so fewer wakes reach you; check wakes, decision wakes, and whatever it cannot take still reach you exactly as above.
+63:   `supervision-host: branch-outcome: ...` means it handled a wake and recorded captain outcomes for you: run `bin/fm-wake-drain.sh`, process each entry of its `BRANCH OUTCOMES` section as firstmate from the task's current state, because each entry says how long ago it was recorded (tell the captain, land or merge what is ready, answer or escalate a decision, or act on a blocker; your reply covers only entries still open, as if a settled one, such as a PR since merged, had never been listed), then run the `mark-processed` acknowledgement it prints; every drain presents them again until you do.
+71:   Each such visible outcome is also a queued `check: supervision-host outcome <n> ... was recorded after the captain returned` wake, which the drain presents until acknowledged: relay each outcome once, whichever arrives first, and acknowledge its `BRANCH OUTCOMES` entry too when it has one. Silent outcomes remain in the store but do not generate a handoff line or check wake.
+97:  - the NETWORK CHECKS section reported its checks still IN PROGRESS and this
+136:NETWORK CHECKS
+171:Follow the supervision operating instructions block above for harness 'claude'.
+176:exit=0
+
+$ fm-lock.sh status
+lock: held by live harness pid 1541196
+$ cat state/.lock state/.lock-session
+1541196
+aaaaaaaa-0000-4000-8000-00000000000a
+$ fm-pending-reply-remind.sh --token state
+1541196:aaaaaaaa-0000-4000-8000-00000000000a

@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Run the pending-reply step of one watcher poll (the call bin/fm-watch.sh makes).
-# Usage: tick.sh <lab-home>
+# One watcher pass over the lab's pending-reply records: the same
+# fm_pending_reply_tick call bin/fm-watch.sh makes on every cycle.
 set -u
-ROOT=$(pwd)
-export FM_HOME=$1
-. "$ROOT/bin/fm-marker-lib.sh"
-. "$ROOT/bin/fm-pending-reply-lib.sh"
-export FM_PENDING_REPLY_GRACE_SECS=0
-fm_pending_reply_tick "$FM_HOME/state"
+. "$ROOT/bin/fm-wake-lib.sh"; . "$ROOT/bin/fm-marker-lib.sh"; . "$ROOT/bin/fm-pending-reply-lib.sh"
+fm_pending_reply_tick "$1"

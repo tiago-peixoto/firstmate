@@ -1,0 +1,24 @@
+## Step 04 - mid-session opt-in inside the session that received the escalation (session A, same token)
+$ touch config/pending-reply-resurface
+$ fm-pending-reply-remind.sh state   # what the watcher tick runs
+exit=0
+# wake-queue pending-reply-escalated rows: 0
+0
+$ fm-session-start.sh   # re-run in session A (CLAUDE_CODE_SESSION_ID=aaaaaaaa-0000-4000-8000-00000000000a)
+exit=0
+WAKE QUEUE
+--------------------------------------------------------------------------------
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-aa8f22813f359553] blocked: pending-reply-missed: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary
+mate [key=pending-reply-d6148271e838ccb4] blocked: pending-reply-missed: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+================================================================================
+Current state:
+- Lock: held by this session; this session owns normal supervision unless away mode says otherwise.
+# wake-queue pending-reply-escalated rows: 0
+0
+# token now: 1541196:aaaaaaaa-0000-4000-8000-00000000000a
+$ rm config/pending-reply-resurface   # back to the default for the next step

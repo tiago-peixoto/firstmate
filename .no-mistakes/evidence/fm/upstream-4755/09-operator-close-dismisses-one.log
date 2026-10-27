@@ -1,0 +1,29 @@
+## Step 09 - the operator closes one escalation with fm-send --resolve-key; a later session E reminds and lists only the other
+$ fm-wake-drain.sh --ack-through 2 --recovery-generation 2076055.1793072968.hECCPf   # session D handled its wake
+# wake-queue pending-reply-escalated rows: 0
+$ fm-send.sh mate --resolve-key pending-reply-aa8f22813f359553 'ack, I handled the report myself'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.JufiLO
+fm-send: doorbell not typed because the agent in fmlab:fm-mate has exited; the steer is durably recorded at /tmp/fm-lab.JufiLO/state/mate.inbox/005.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+exit=0
+# mate.status tail:
+blocked [key=pending-reply-d6148271e838ccb4] [at=1793072840]: pending-reply-missed: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers
+resolved: looked at it
+resolved [key=pending-reply-aa8f22813f359553] [at=1793073007]: pending-reply-resolved: task=mate pending-reply-id=aa8f22813f359553 via=operator-resolve-key ack, I handled the report myself
+$ fm-session-start.sh   # session E (CLAUDE_CODE_SESSION_ID=eeeeeeee-0000-4000-8000-00000000000e)
+exit=0
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793073014	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 3 --recovery-generation 2122559.1793073014.TBRy8q
+UNREAD STATUS (new since last drain, not re-printed after this presentation):
+mate resolved [key=pending-reply-aa8f22813f359553] [at=1793073007]: pending-reply-resolved: task=mate pending-reply-id=aa8f22813f359553 via=operator-resolve-key ack, I handled the report myself
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-d6148271e838ccb4] blocked: pending-reply-missed: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+# wake-queue pending-reply-escalated rows: 1
+$ fm-bearings-snapshot.sh --json | jq -c "[.decisions_open[].key]"
+["pending-reply-d6148271e838ccb4"]
+# records:
+  1b745aa57e42fa87 phase=awaiting_report dismissed= surfaced=
+  aa8f22813f359553 phase=escalated dismissed=1793073014 surfaced=1541196:dddddddd-000
+  d6148271e838ccb4 phase=escalated dismissed= surfaced=1541196:eeeeeeee-000

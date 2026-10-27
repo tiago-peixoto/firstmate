@@ -1,0 +1,6 @@
+blocked [key=pending-reply-aa8f22813f359553] [at=1793072838]: pending-reply-missed: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary
+blocked [key=pending-reply-d6148271e838ccb4] [at=1793072840]: pending-reply-missed: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers
+resolved: looked at it
+resolved [key=pending-reply-aa8f22813f359553] [at=1793073007]: pending-reply-resolved: task=mate pending-reply-id=aa8f22813f359553 via=operator-resolve-key ack, I handled the report myself
+done [corr=d6148271e838ccb4] [at=1793073018]: blockers: none, design approved (via-helper)
+resolved [key=pending-reply-d6148271e838ccb4] [at=1793073019]: pending-reply-resolved: task=mate pending-reply-id=d6148271e838ccb4 via=helper

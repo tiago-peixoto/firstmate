@@ -1,0 +1,26 @@
+## Step 05 - default (flag ABSENT): a later session B (CLAUDE_CODE_SESSION_ID=bbbbbbbb-0000-4000-8000-00000000000b) gets no reminder and Bearings adds no row
+session-start exit=0
+8:lock acquired: harness pid 1541196
+WAKE QUEUE
+--------------------------------------------------------------------------------
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-aa8f22813f359553] blocked: pending-reply-missed: task=mate pending-reply-id=aa8f22813f359553 request=finish the report and post the summary
+mate [key=pending-reply-d6148271e838ccb4] blocked: pending-reply-missed: task=mate pending-reply-id=d6148271e838ccb4 request=review the design doc and reply with blockers
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+SUPERVISION OPERATING INSTRUCTIONS - primary harness: claude
+================================================================================
+Current state:
+- Lock: held by this session; this session owns normal supervision unless away mode says otherwise.
+# wake-queue pending-reply-escalated rows: 0
+0
+# token now: 1541196:bbbbbbbb-0000-4000-8000-00000000000b
+$ fm-pending-reply-remind.sh --decisions state
+[]
+$ fm-bearings-snapshot.sh --json | jq .decisions_open
+bearings exit=0
+[]
+
+# blocked lines in mate.status:
+2
