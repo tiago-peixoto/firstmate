@@ -1,0 +1,43 @@
+$ cat state/scout-empty.meta   (before)
+window=firstmate:fm-scout-empty
+worktree=$LAB/projects/missing-scout-empty
+project=$LAB/projects/sample
+harness=codex
+kind=scout
+mode=scout
+spawn_gen=fixture-scout-empty
+
+$ FM_HOME='$LAB' bash '$ROOT/bin/fm-captain-hold.sh' complete 'scout-empty' --none
+complete: scout-empty captain-call inventory reviewed
+exit=0
+
+$ cat state/scout-empty.meta   (after)
+window=firstmate:fm-scout-empty
+worktree=$LAB/projects/missing-scout-empty
+project=$LAB/projects/sample
+harness=codex
+kind=scout
+mode=scout
+spawn_gen=fixture-scout-empty
+decisions_reviewed=1
+decision_keys=
+
+$ fm-captain-hold.sh verify scout-empty
+verified: scout-empty captain-call inventory
+exit=0
+
+$ fm-teardown.sh scout-empty   (scout teardown gate)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown scout-empty complete (window firstmate:fm-scout-empty, worktree $LAB/projects/missing-scout-empty)
+Backlog: scout-empty is closed in $LAB/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit=0
+
+$ backlog row after teardown:
+5:- [x] scout-empty - Investigate scout-empty data/scout-empty/report.md (repo: sample) (kind: scout) (reported 2026-10-27)

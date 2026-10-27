@@ -1,0 +1,25 @@
+$ cat state/scout-open.status
+working [at=1]: report drafted
+needs-decision [key=route]: choose route north or route south
+
+$ FM_HOME='$LAB' bash '$ROOT/bin/fm-captain-hold.sh' complete 'scout-open' --none
+fm-captain-hold: origin scout-open still has open captain decisions in its status stream; hold a captain task for what remains, or answer them, before attesting --none
+exit=1
+
+$ grep decisions_reviewed state/scout-open.meta
+0
+
+$ fm-captain-hold.sh verify scout-open
+fm-captain-hold: origin scout-open has no completed captain-call inventory
+exit=1
+
+$ fm-teardown.sh scout-open
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-captain-hold: origin scout-open has no completed captain-call inventory
+REFUSED: scout task scout-open has not passed the captain-call completion gate.
+Inventory its report and any visual review through bin/fm-captain-hold.sh before teardown.
+exit=1
+
+$ ls state/scout-open.meta (must survive the refused teardown)
+$LAB/state/scout-open.meta

@@ -1,0 +1,11 @@
+scout-empty  attestation-exception lines: 1   complete-command lines: 2   other fm-captain-hold.sh subcommands offered: 0
+ship-x       attestation-exception lines: 0   complete-command lines: 0   other fm-captain-hold.sh subcommands offered: 0
+sm-x         attestation-exception lines: 0   complete-command lines: 0   other fm-captain-hold.sh subcommands offered: 0
+
+scout brief: every fm-captain-hold.sh invocation it offers:
+fm-captain-hold.sh complete --none
+fm-captain-hold.sh' complete 'scout-empty' --none
+
+ship brief rule 2:
+23:2. Run `no-mistakes doctor`; if it reports the repo is not initialized here, run `no-mistakes init`.
+27:2. Keep project edits inside this worktree; keep proof and scratch output outside it, under `/tmp/fm-lab.7jBlNV/data/ship-x/` or a temporary directory.

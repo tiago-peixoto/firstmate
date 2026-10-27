@@ -1,0 +1,5 @@
+## new test against BASE commit 7da4c362 (pre-fix bin/fm-brief.sh)
+29:not ok - scout outside-write rule did not name its exact completion gate
+exit=0
+
+(note: "exit=0" above is the grep filter exit status; the "not ok" line is the test harness failing on the pre-fix brief)
