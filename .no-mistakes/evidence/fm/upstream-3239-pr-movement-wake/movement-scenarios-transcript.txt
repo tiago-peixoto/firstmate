@@ -1,0 +1,191 @@
+
+### Scenario 1: register the owned pull request; an unchanged PR produces no wake
+armed: state/delivery.check.sh
+PASS: fm-pr-check.sh registered the delivery
+$ ls state/*.check.sh
+state/contributions.check.sh
+state/delivery.check.sh
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+$ fm-contributions.sh pending
+[]
+PASS: two polls of an unchanged open PR: 0 pending, 0 wakes
+
+### Scenario 2: head replaced -> one 'head' signal, one durable wake, no repeat on re-poll
+$ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+$ bash state/delivery.check.sh
+$ fm-contributions.sh pending
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+$ cat state/.wake-queue
+1793071735	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+PASS: replaced head became exactly one pending head signal and one wake
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+PASS: re-poll with same head: still 1 pending, 1 wake
+
+### Scenario 2b: acknowledge the head signal; a second head move wakes again with a distinct token
+$ with_home /tmp/fm-movement-lab.5CIES4/s1 /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M5XNZ8XZ8KJ129VG6NAJ8K5J/bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z
+PASS: ack cleared the pending head signal
+$ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery ebf7dc9f2bb65f988937f24001d827e59e6e25de761dd8e402853275bc70cebb
+$ bash state/delivery.check.sh
+$ fm-contributions.sh pending
+[
+  {
+    "token": "head:cccccccccccccccccccccccccccccccccccccccc:2026-09-16T08:05:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "cccccccccccccccccccccccccccccccccccccccc",
+    "body": "head moved from bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb to cccccccccccccccccccccccccccccccccccccccc",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+PASS: second head move woke again (2 wakes total)
+
+### Scenario 3: leaving draft -> 'ready-for-review' signal; entering draft is not movement
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+PASS: open -> draft: no signal, no wake
+$ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c
+$ bash state/delivery.check.sh
+$ fm-contributions.sh pending
+[
+  {
+    "token": "ready-for-review:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2026-09-16T08:00:00Z",
+    "type": "ready-for-review",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "pull request left draft",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+$ cat state/.wake-queue
+1793071741	1	check	contribution-ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c	check: contributions delivery ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c
+PASS: draft -> ready: exactly one ready-for-review signal and one wake
+
+### Scenario 4: reviewer and team requested -> one 'review-requested' signal each; removing a reviewer is not movement
+$ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d
+$ bash state/delivery.check.sh
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review-requested:alice:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from alice",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+PASS: newly requested reviewer alice: one signal, one wake
+$ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery 680eabe6d66c35c16f46575452005b8950fab17a5eb0750baf8ccd333b037f26
+contribution-wake: check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+$ bash state/delivery.check.sh
+$ fm-contributions.sh pending
+{"type":"review-requested","body":"review requested from alice"}
+{"type":"review-requested","body":"review requested from bob"}
+{"type":"review-requested","body":"review requested from team:core"}
+$ cat state/.wake-queue
+1793071745	1	check	contribution-b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d	check: contributions delivery b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d
+1793071747	2	check	contribution-680eabe6d66c35c16f46575452005b8950fab17a5eb0750baf8ccd333b037f26	check: contributions delivery 680eabe6d66c35c16f46575452005b8950fab17a5eb0750baf8ccd333b037f26
+1793071747	3	check	contribution-1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d	check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+PASS: bob and team:core added: two new signals (alice not re-raised), one wake each (3 total)
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+PASS: removing alice and team:core: no new signal, no new wake
+
+### Scenario 5 (adversarial): a reviewer already present at the first observation is baseline, not movement
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+$ jq .records[0].observation.review_requests data/delivery/contributions.json
+["alice","team:core"]
+PASS: first observation recorded the reviewers as baseline with no wake
+
+### Scenario 6 (adversarial): a legacy record without review_requests does not infer movement; a head change is still caught
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+PASS: legacy record (no review_requests field) + present reviewer: no inferred movement
+$ bash state/contributions.check.sh
+contribution-wake: check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+$ bash state/delivery.check.sh
+$ fm-contributions.sh pending
+{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+PASS: legacy record still catches a replaced head
+
+### Scenario 7 (adversarial): head change observed as merged or closed settles with no wake
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+$ jq .records[0].observation.state data/delivery/contributions.json -> merged
+PASS: merged PR with new head and new reviewer: settled, no signal, no wake
+$ bash state/contributions.check.sh
+$ bash state/delivery.check.sh
+$ jq .records[0].observation.state data/delivery/contributions.json -> closed
+PASS: closed PR with new head and new reviewer: settled, no signal, no wake
+
+### Scenario 8: the watcher (fm-watch-checkpoint.sh) surfaces a head move once as 'check: contributions delivery <token>' and stays quiet afterwards
+$ fm-watch-checkpoint.sh --seconds 30   (exit 0)
+check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+PASS: watcher woke with the durable contributions check line for the head move
+$ fm-watch-checkpoint.sh --seconds 3   (exit 124)
+checkpoint: no actionable wake within 3s
+PASS: watcher stayed quiet (124) on the unchanged head; still exactly one wake
+
+### Scenario 9: the supervisor snapshot routes the pending movement to the fleet as 'incoming forge signal needs triage'
+$ fm-contributions.sh snapshot input.json --all | jq .rows
+[
+  {
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8",
+    "kind": "pr",
+    "checked_at": "2026-09-16T08:00:00Z",
+    "checked": true,
+    "final": false,
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "verdict": null,
+    "reviews": [],
+    "distinct_checks": 1,
+    "missing_verdicts": 0,
+    "pending_checks": 0,
+    "failed_checks": 0,
+    "stale_verdicts": 0,
+    "signals": [
+      {
+        "token": "review-requested:alice:2026-09-16T08:00:00Z",
+        "type": "review-requested",
+        "source": "https://github.com/o/r/pull/8",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "body": "review requested from alice"
+      }
+    ],
+    "actor": "fleet",
+    "reason": "incoming forge signal needs triage",
+    "tasks": [
+      "delivery"
+    ]
+  }
+]
+PASS: snapshot names the fleet as required actor with reason "incoming forge signal needs triage"
+
+=== 0 scenario assertions failed ===
