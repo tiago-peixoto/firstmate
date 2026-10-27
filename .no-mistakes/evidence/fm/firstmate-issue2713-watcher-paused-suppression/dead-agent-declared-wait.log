@@ -1,0 +1,25 @@
+--- phase 1: status 60s old, cadence 999, stable pane, dead agent: must stay quiet
+phase 1: crew-state reads across 5+ idle polls = 2
+triage log tail:
+[2026-10-27T04:30:51+0100] absorbed stale (paused until 31535987s from now, declared time not reached): test:fm-dead-until
+[2026-10-27T04:30:53+0100] absorbed stale (paused until 31535985s from now, declared time not reached): test:fm-dead-until
+[2026-10-27T04:30:55+0100] absorbed stale (paused until 31535983s from now, declared time not reached): test:fm-dead-until
+--- phase 2: declaration aged 500s, cadence 240, same dead agent: exactly one bounded recheck
+watcher output:
+stale: test:fm-dead-until (paused 501s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+--- phase 3: after the recheck the next cadence holds (no second wake within 5 polls)
+total crew-state reads across all three phases = 2
+ok - a dead ordinary crew with a far-future until is quiet inside the cadence, rechecked once at the cadence, then held again
+--- phase 1: inside the cadence (999) the ticking pane of a dead agent stays quiet
+captures so far: 7
+--- phase 2: at the cadence (240) the declaration gets exactly one recheck
+watcher output:
+stale: test:fm-dead-tick (paused 516s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+--- phase 3: the recheck just fired holds the next cadence
+crew-state reads across all phases = 8
+ok - a dead ordinary crew on a pane that never settles is rechecked once per cadence
+
+real	1m12.773s
+user	0m12.346s
+sys	0m35.890s
+exit=0
