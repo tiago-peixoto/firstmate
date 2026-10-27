@@ -48,3 +48,8 @@ ok - reconciliation makes zero forge or PR API calls
 actionable: inactive terminal outcome awaiting captain presentation: child=child state=done pr=https://example.test/owner/repo/pull/1
 ok - reconciliation state reads set no-forge mode
 all inactive reconciliation tests passed
+
+real	1m15.437s
+user	0m22.187s
+sys	0m47.258s
+exit=0

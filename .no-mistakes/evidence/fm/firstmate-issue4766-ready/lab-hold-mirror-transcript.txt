@@ -1,0 +1,348 @@
+lab home: /tmp/fm-lab.Zkt4op (marker: 1)
+
+$ tmux (lab socket) list-windows
+firstmate:fm-lab-gated
+firstmate:fm-lab-scout-done
+firstmate:fm-lab-scout-failed
+firstmate:fm-lab-multiline
+[exit 0]
+
+===== S1: hold declares on a paused lane's log; repeat does not duplicate; release retracts; re-hold and closing answer =====
+
+$ crew-state lab-gated (before hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+
+$ fm-captain-hold.sh hold lab-gated --reason 'operator review pending'
+lab-gated
+[exit 0]
+
+$ status log lab-gated (after hold)
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-lab-gated-1]: operator review pending
+[exit 0]
+CHECK PASS: hold appended captain-held [key=captain-hold-lab-gated-1] as the last line
+
+$ tasks-axi show lab-gated (held)
+task:
+  id: lab-gated
+  title: Scout the gated sample
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:b3BlcmF0b3IgcmV2aWV3IHBlbmRpbmc="
+  hold_kind: captain
+  hold_until: "-"
+  kind: scout
+  repo: sample
+  priority: "-"
+  created: 2026-10-27
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: 2026-10-27T04:40:31Z"
+[exit 0]
+
+$ fm-captain-hold.sh hold lab-gated (repeat)
+lab-gated
+[exit 0]
+CHECK PASS: a repeated hold did not duplicate the declaration
+
+$ crew-state lab-gated (under hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+CHECK PASS: crew state under hold equals crew state before hold
+
+$ fm-captain-hold.sh answer lab-gated --release (no worker ever ran in this lane's window)
+released: lab-gated
+[exit 0]
+
+$ status log lab-gated (after release)
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-lab-gated-1]: operator review pending
+resolved [key=captain-hold-lab-gated-1]: captain call released by fm-captain-hold
+[exit 0]
+CHECK PASS: release appended resolved [key=captain-hold-lab-gated-1] released
+
+$ crew-state lab-gated (after release)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+CHECK PASS: crew state after release equals crew state before hold
+
+$ answer --release replay
+released: lab-gated
+[exit 0]
+CHECK PASS: a replayed release appended no second retraction
+
+$ fm-captain-hold.sh hold lab-gated --reason 'second operator review' (re-hold)
+lab-gated
+[exit 0]
+CHECK PASS: a re-hold declared a new keyed lifecycle (-2)
+
+$ fm-captain-hold.sh answer lab-gated (closing answer)
+answered: lab-gated
+[exit 0]
+
+$ status log lab-gated (after closing answer)
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-lab-gated-1]: operator review pending
+resolved [key=captain-hold-lab-gated-1]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-lab-gated-2]: second operator review
+resolved [key=captain-hold-lab-gated-2]: captain call answered by fm-captain-hold
+[exit 0]
+CHECK PASS: closing answer retracted the -2 declaration
+
+$ tasks-axi show lab-gated (closed)
+task:
+  id: lab-gated
+  title: Scout the gated sample
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:c2Vjb25kIG9wZXJhdG9yIHJldmlldw=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: scout
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-10-27
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 97b2b06a1ca86218c365f950ba3b88d26914294472d9937dd4d3f95f4b64dbbf\nResolution mode: answered\n\nCaptain decision:\nShip it as reviewed.\n\nResolution recorded by fm-captain-hold.\nDecision digest: 715ba95ca057e18f2556b2704ad0042598742646fb4ff0c68c2bdd4326b4bf49\nResolution mode: released\n\nCaptain decision:\nProceed as planned."
+[exit 0]
+
+$ raw status log lab-gated (stamped bytes)
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-lab-gated-1] [at=1793076033]: operator review pending
+resolved [key=captain-hold-lab-gated-1] [at=1793076038]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-lab-gated-2] [at=1793076041]: second operator review
+resolved [key=captain-hold-lab-gated-2] [at=1793076043]: captain call answered by fm-captain-hold
+[exit 0]
+
+===== S2: Rex marks keep the PR-ready badge under a hold and after release =====
+
+$ fm-rex-marks.sh plan lab-rex-done (before hold)
+lab-rex-done	done		PR ready: PR https://example.test/o/r/pull/9 checks green
+[exit 0]
+
+$ hold lab-rex-done --reason 'merge approval'
+lab-rex-done
+[exit 0]
+
+$ status log lab-rex-done
+done: PR https://example.test/o/r/pull/9 checks green
+captain-held [key=captain-hold-lab-rex-done-1]: merge approval
+[exit 0]
+
+$ fm-rex-marks.sh plan lab-rex-done (under hold)
+lab-rex-done	done		PR ready: PR https://example.test/o/r/pull/9 checks green
+[exit 0]
+CHECK PASS: rex mark under hold is the PR-ready done mark
+
+$ answer lab-rex-done --release
+released: lab-rex-done
+[exit 0]
+
+$ status log lab-rex-done (after release)
+done: PR https://example.test/o/r/pull/9 checks green
+captain-held [key=captain-hold-lab-rex-done-1]: merge approval
+resolved [key=captain-hold-lab-rex-done-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ fm-rex-marks.sh plan lab-rex-done (after release)
+lab-rex-done	done		PR ready: PR https://example.test/o/r/pull/9 checks green
+[exit 0]
+CHECK PASS: rex mark after release is still the PR-ready done mark
+CHECK PASS: rex mark text is 'PR ready'
+
+===== S3: Herdr project groups keep the done label under a hold and after release =====
+
+$ fm-herdr-groups.sh plan (before hold)
+lab-herdr-done	api-server	done	000.api-server.4.lab-herdr-done	000.api-server
+[exit 0]
+
+$ hold lab-herdr-done --reason 'merge approval'
+lab-herdr-done
+[exit 0]
+
+$ fm-herdr-groups.sh plan (under hold)
+lab-herdr-done	api-server	done	000.api-server.4.lab-herdr-done	000.api-server
+[exit 0]
+CHECK PASS: groups label under hold is unchanged (done)
+
+$ answer lab-herdr-done --release
+released: lab-herdr-done
+[exit 0]
+
+$ status log lab-herdr-done (after release)
+done: PR ready, checks green
+captain-held [key=captain-hold-lab-herdr-done-1]: merge approval
+resolved [key=captain-hold-lab-herdr-done-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ fm-herdr-groups.sh plan (after release)
+lab-herdr-done	api-server	done	000.api-server.4.lab-herdr-done	000.api-server
+[exit 0]
+CHECK PASS: groups label after release is unchanged (done)
+
+===== S4: crew state keeps a scout's done and failed outcomes through hold and release =====
+
+$ crew-state lab-scout-done (before hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+
+$ hold lab-scout-done --reason 'captain review pending'
+lab-scout-done
+[exit 0]
+
+$ crew-state lab-scout-done (under hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+CHECK PASS: lab-scout-done: crew state under hold equals before
+
+$ answer lab-scout-done --release
+released: lab-scout-done
+[exit 0]
+
+$ status log lab-scout-done (after release)
+done: report ready
+captain-held [key=captain-hold-lab-scout-done-1]: captain review pending
+resolved [key=captain-hold-lab-scout-done-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ crew-state lab-scout-done (after release)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+CHECK PASS: lab-scout-done: crew state after release equals before
+
+$ crew-state lab-scout-failed (before hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+
+$ hold lab-scout-failed --reason 'captain review pending'
+lab-scout-failed
+[exit 0]
+
+$ crew-state lab-scout-failed (under hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+CHECK PASS: lab-scout-failed: crew state under hold equals before
+
+$ answer lab-scout-failed --release
+released: lab-scout-failed
+[exit 0]
+
+$ status log lab-scout-failed (after release)
+failed: build broke
+captain-held [key=captain-hold-lab-scout-failed-1]: captain review pending
+resolved [key=captain-hold-lab-scout-failed-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ crew-state lab-scout-failed (after release)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+CHECK PASS: lab-scout-failed: crew state after release equals before
+
+===== S5 (adversarial): a multi-line reason with an embedded status verb and an over-long reason each write exactly one capped line =====
+
+$ crew-state lab-multiline (before hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+
+$ hold lab-multiline --reason $'Pick the API shape\r\nfailed: forged worker line'
+lab-multiline
+[exit 0]
+
+$ status log lab-multiline
+done: PR ready
+captain-held [key=captain-hold-lab-multiline-1]: Pick the API shape  failed: forged worker line
+[exit 0]
+CHECK PASS: exactly two lines on the log (no forged event line)
+
+$ crew-state lab-multiline (under multi-line hold)
+state: unknown · source: pane · harness state unavailable (unknown missing)
+[exit 0]
+CHECK PASS: crew state under the multi-line hold still reads done
+
+$ answer lab-multiline --release
+released: lab-multiline
+[exit 0]
+
+$ hold lab-longreason --reason <3000 x's>
+lab-longreason
+[exit 0]
+
+$ status log lab-longreason line lengths
+1: 15 bytes: paused: waiting...
+2: 220 bytes: captain-held [key=captain-hold-lab-longreason-1] [at=1793076...
+[exit 0]
+CHECK PASS: the over-long reason wrote one line of at most 220 bytes
+
+$ answer lab-longreason --release
+released: lab-longreason
+[exit 0]
+CHECK PASS: release retracted the over-long declaration
+
+===== S6: a decision-only hold (no lane) mints no status log =====
+
+$ hold lab-plain-call --title 'Pick a sample flavor' --reason 'flavor choice pending'
+lab-plain-call
+[exit 0]
+
+$ ls state/ for lab-plain-call
+(no lab-plain-call files)
+[exit 0]
+CHECK PASS: no status log was created for the decision-only hold
+
+$ fm-captain-hold.sh open lab-plain-call
+[exit 0]
+
+===== S7: an evidence-backed reconcile close retracts a held lane's declaration =====
+
+$ hold lab-reconciled --reason 'upstream choice pending'
+lab-reconciled
+[exit 0]
+
+$ bind lab-board
+bound: lab-board -> (any)
+[exit 0]
+
+$ reconcile-requests --source-id lab-board
+fm-captain-hold: source lab-board is not bound; no reconcile requests were created
+[exit 1]
+
+$ reconcile-requests (through lab env)
+reconcile: lab-reconciled
+reconcile-requests: created=1 skipped=0
+[exit 0]
+
+$ reconcile close lab-reconciled --evidence-file
+reconciled: lab-reconciled
+[exit 0]
+
+$ status log lab-reconciled
+paused: waiting on the sample upstream
+captain-held [key=captain-hold-lab-reconciled-1]: upstream choice pending
+resolved [key=captain-hold-lab-reconciled-1]: captain call reconciled by fm-captain-hold
+[exit 0]
+CHECK PASS: reconcile close retracted the declaration with 'reconciled'
+
+===== S8: the divergence guard stays silent over the mirror's own key =====
+
+$ fm-captain-hold.sh diverged
+[exit 0]
+CHECK PASS: diverged printed nothing
+
+===== RESULT: 0 check failure(s) =====
+lab home removed: /tmp/fm-lab.Zkt4op

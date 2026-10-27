@@ -1,0 +1,12 @@
+== test_settled_hold_mirror_over_done_lane_never_wedge_escalates
+ok - a settled hold mirror over a done lane surfaces one terminal stale, then stays inert and never wedge-escalates
+exit=0
+== test_settled_hold_mirror_over_paused_lane_resurfaces_once_per_cadence
+ok - a settled hold mirror over a paused lane resurfaces once per cadence, never once per relaunch
+exit=0
+== test_hold_mirror_transition_keeps_the_stale_throttle
+ok - a hold and its release recorded by firstmate keep the stale throttle and suppressor they found
+exit=0
+== test_settled_transfer_keeps_the_stale_suppressor
+ok - an answered complete transfer reads back to its decision and leaves the surfaced lane inert
+exit=0

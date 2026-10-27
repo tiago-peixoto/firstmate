@@ -1,0 +1,191 @@
+lab home: /tmp/fm-lab.Oy9Vn1
+
+===== lab-done =====
+
+$ status log lab-done (worker's own lines)
+working: scouting
+done: report ready
+[exit 0]
+
+$ crew-state lab-done (before hold)
+state: done · source: status-log · report ready
+[exit 0]
+CHECK PASS: lab-done before hold reads 'state: done'
+
+$ hold lab-done --reason 'captain review pending'
+lab-done
+[exit 0]
+
+$ crew-state lab-done (under hold)
+state: done · source: status-log · report ready
+[exit 0]
+CHECK PASS: lab-done under hold equals before
+
+$ answer lab-done --release
+released: lab-done
+[exit 0]
+
+$ status log lab-done (after release)
+working: scouting
+done: report ready
+captain-held [key=captain-hold-lab-done-1]: captain review pending
+resolved [key=captain-hold-lab-done-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ crew-state lab-done (after release)
+state: done · source: status-log · report ready
+[exit 0]
+CHECK PASS: lab-done after release equals before
+
+===== lab-failed =====
+
+$ status log lab-failed (worker's own lines)
+working: scouting
+failed: build broke
+[exit 0]
+
+$ crew-state lab-failed (before hold)
+state: failed · source: status-log · build broke
+[exit 0]
+CHECK PASS: lab-failed before hold reads 'state: failed'
+
+$ hold lab-failed --reason 'captain review pending'
+lab-failed
+[exit 0]
+
+$ crew-state lab-failed (under hold)
+state: failed · source: status-log · build broke
+[exit 0]
+CHECK PASS: lab-failed under hold equals before
+
+$ answer lab-failed --release
+released: lab-failed
+[exit 0]
+
+$ status log lab-failed (after release)
+working: scouting
+failed: build broke
+captain-held [key=captain-hold-lab-failed-1]: captain review pending
+resolved [key=captain-hold-lab-failed-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ crew-state lab-failed (after release)
+state: failed · source: status-log · build broke
+[exit 0]
+CHECK PASS: lab-failed after release equals before
+
+===== lab-open =====
+
+$ status log lab-open (worker's own lines)
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+[exit 0]
+
+$ crew-state lab-open (before hold)
+state: parked · source: status-log · which sample API shape
+[exit 0]
+CHECK PASS: lab-open before hold reads 'state: parked · source: status-log · which sample API shape'
+
+$ hold lab-open --reason 'captain review pending'
+lab-open
+[exit 0]
+
+$ crew-state lab-open (under hold)
+state: parked · source: status-log · which sample API shape
+[exit 0]
+CHECK PASS: lab-open under hold equals before
+
+$ answer lab-open --release
+released: lab-open
+[exit 0]
+
+$ status log lab-open (after release)
+working: mid implementation
+needs-decision [key=api-shape]: which sample API shape
+paused: waiting on the sample upstream release
+captain-held [key=captain-hold-lab-open-1]: captain review pending
+resolved [key=captain-hold-lab-open-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ crew-state lab-open (after release)
+state: parked · source: status-log · which sample API shape
+[exit 0]
+CHECK PASS: lab-open after release equals before
+
+===== lab-answered =====
+
+$ status log lab-answered (worker's own lines)
+needs-decision [key=q]: pick one
+resolved [key=q]: use a
+[exit 0]
+
+$ crew-state lab-answered (before hold)
+state: unknown · source: none · no current-state source available
+[exit 0]
+CHECK PASS: lab-answered before hold reads 'state:'
+
+$ hold lab-answered --reason 'captain review pending'
+lab-answered
+[exit 0]
+
+$ crew-state lab-answered (under hold)
+state: unknown · source: none · no current-state source available
+[exit 0]
+CHECK PASS: lab-answered under hold equals before
+
+$ answer lab-answered --release
+released: lab-answered
+[exit 0]
+
+$ status log lab-answered (after release)
+needs-decision [key=q]: pick one
+resolved [key=q]: use a
+captain-held [key=captain-hold-lab-answered-1]: captain review pending
+resolved [key=captain-hold-lab-answered-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ crew-state lab-answered (after release)
+state: unknown · source: none · no current-state source available
+[exit 0]
+CHECK PASS: lab-answered after release equals before
+
+===== lab-paused =====
+
+$ status log lab-paused (worker's own lines)
+working: scouting
+paused: waiting on the vendor reply
+[exit 0]
+
+$ crew-state lab-paused (before hold)
+state: paused · source: status-log · waiting on the vendor reply
+[exit 0]
+CHECK PASS: lab-paused before hold reads 'state: paused'
+
+$ hold lab-paused --reason 'captain review pending'
+lab-paused
+[exit 0]
+
+$ crew-state lab-paused (under hold)
+state: paused · source: status-log · waiting on the vendor reply
+[exit 0]
+CHECK PASS: lab-paused under hold equals before
+
+$ answer lab-paused --release
+released: lab-paused
+[exit 0]
+
+$ status log lab-paused (after release)
+working: scouting
+paused: waiting on the vendor reply
+captain-held [key=captain-hold-lab-paused-1]: captain review pending
+resolved [key=captain-hold-lab-paused-1]: captain call released by fm-captain-hold
+[exit 0]
+
+$ crew-state lab-paused (after release)
+state: paused · source: status-log · waiting on the vendor reply
+[exit 0]
+CHECK PASS: lab-paused after release equals before
+
+===== RESULT: 0 check failure(s) =====
+lab home removed: /tmp/fm-lab.Oy9Vn1

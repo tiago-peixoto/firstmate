@@ -1,0 +1,7 @@
+== rerun of test_archived_answer_in_a_user_configured_archive_satisfies_the_gate with the real node dir ahead of the mise shims
+ok - an answered captain call archived to a user-configured location still satisfies the completion gate
+exit=0
+== same case with the stock PATH (node resolves to a mise shim; the case redirects HOME)
+fm-captain-hold: compatible tasks-axi is required
+not ok - could not register the captain-held task
+exit=1
