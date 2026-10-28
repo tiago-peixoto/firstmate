@@ -1,0 +1,6 @@
+## FM_TEST_ONLY=test_busy_pane_below_turn_age_bound_is_absorbed tests/fm-watch-triage.test.sh
+ok - a busy worker below the turn-age bound remains working with no escalation
+exit=0
+## FM_TEST_ONLY=test_busy_pane_stable_hash_escalates_past_turn_age_bound tests/fm-watch-triage.test.sh
+ok - a busy worker with a stable pane hash still escalates once its completed-turn age reaches the bound
+exit=0

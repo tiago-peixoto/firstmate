@@ -1,0 +1,45 @@
+# Live scenario (adversarial, recorded decision): ordinary crew, DEAD agent, stable idle pane, 'paused: ... until <one year ahead>'
+# The far-future until must NOT extend the FM_PAUSE_RESURFACE_SECS bound: a recheck is due once the declaration is a cadence old.
+# window: lab:fm-until   status: paused: rate limited, resuming until 2027-10-28T00:00Z
+# agent liveness probe: dead
+
+=== ROUND [R0 fresh declaration: first poll] mode=exit FM_PAUSE_RESURFACE_SECS=999 status_age=165s
+watcher: exited rc=0
+stdout: signal: /tmp/fm-lab.FdF10L/state/until.status
+wake-queue rows added: 2
+  queue> 1793208255	1	signal	until.status	signal: /tmp/fm-lab.FdF10L/state/until.status
+  queue> 1793208255	2	signal	until.status	signal: /tmp/fm-lab.FdF10L/state/until.status
+markers: 
+
+ack: acknowledged through sequence 2
+
+=== ROUND [R1 first stable sight with until unreached: documented as absorbed (no wake)] mode=absorb FM_PAUSE_RESURFACE_SECS=999 status_age=170s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-until .hash-lab_fm-until .paused-rechecked-lab_fm-until 
+
+# aging the DECLARATION by 500s (status file mtime only; content unchanged), cadence now 240s; until is still a year away
+=== ROUND [R2 declaration a cadence old, until unreached: bounded recheck expected] mode=exit FM_PAUSE_RESURFACE_SECS=240 status_age=500s
+watcher: exited rc=0
+stdout: stale: lab:fm-until (paused 503s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+wake-queue rows added: 1
+  queue> 1793208264	3	stale	lab:fm-until	stale: lab:fm-until (paused 503s, awaiting external - the declared time is beyond the recheck cadence; confirm the wait still holds)
+markers: .count-lab_fm-until .hash-lab_fm-until .paused-lab_fm-until .paused-rechecked-lab_fm-until .paused-resurfaced-lab_fm-until .stale-lab_fm-until 
+  .stale-lab_fm-until = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-until age=1s content=declared:r1:3535007374726f6e673a34343a38383135323631313a323032362d31302d32382031383a32313a32372e373337353835333836202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 3
+
+=== ROUND [R3 recheck just fired: next cadence must hold] mode=absorb FM_PAUSE_RESURFACE_SECS=240 status_age=506s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-until .hash-lab_fm-until .paused-lab_fm-until .paused-rechecked-lab_fm-until .paused-resurfaced-lab_fm-until .stale-lab_fm-until 
+  .stale-lab_fm-until = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-until age=7s content=declared:r1:3535007374726f6e673a34343a38383135323631313a323032362d31302d32382031383a32313a32372e373337353835333836202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# triage log tail:
+[2026-10-28T18:24:22+0100] absorbed non-terminal stale (declared wait or open captain call already re-surfaced this window): lab:fm-until
+[2026-10-28T18:24:28+0100] absorbed stale (paused, declared time beyond recheck cadence, age 507s): lab:fm-until
+[2026-10-28T18:24:29+0100] absorbed stale (paused, declared time beyond recheck cadence, age 508s): lab:fm-until

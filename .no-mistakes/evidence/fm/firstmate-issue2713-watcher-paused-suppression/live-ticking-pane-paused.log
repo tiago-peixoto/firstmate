@@ -1,0 +1,45 @@
+# Live scenario: ordinary crew, pane whose content changes on every capture (a clock loop), 'paused:' declaration
+# window: lab:fm-tick   status: paused: waiting on the validation run to finish
+# agent liveness probe: ambiguous
+# two captures one second apart:
+parked, clock 1793208271.388604334
+parked, clock 1793208272.308179285
+
+=== ROUND [R0 fresh declaration: first poll] mode=exit FM_PAUSE_RESURFACE_SECS=999 status_age=185s
+watcher: exited rc=0
+stdout: signal: /tmp/fm-lab.qKil0Z/state/tick.status
+wake-queue rows added: 2
+  queue> 1793208274	1	signal	tick.status	signal: /tmp/fm-lab.qKil0Z/state/tick.status
+  queue> 1793208274	2	signal	tick.status	signal: /tmp/fm-lab.qKil0Z/state/tick.status
+markers: 
+
+ack: acknowledged through sequence 2
+
+=== ROUND [R1 inside the cadence: the ticking pane must stay quiet] mode=absorb FM_PAUSE_RESURFACE_SECS=999 status_age=190s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-tick .hash-lab_fm-tick .paused-rechecked-lab_fm-tick 
+
+# aging the DECLARATION by 500s (status file mtime only; content unchanged), cadence now 240s
+=== ROUND [R2 declaration a cadence old: exactly one bounded recheck expected] mode=exit FM_PAUSE_RESURFACE_SECS=240 status_age=500s
+watcher: exited rc=0
+stdout: stale: lab:fm-tick (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+wake-queue rows added: 1
+  queue> 1793208282	3	stale	lab:fm-tick	stale: lab:fm-tick (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+markers: .count-lab_fm-tick .hash-lab_fm-tick .paused-lab_fm-tick .paused-rechecked-lab_fm-tick .paused-resurfaced-lab_fm-tick .stale-lab_fm-tick 
+  .stale-lab_fm-tick = 56f461a837552019ab56c4ac97988e8d
+  .paused-resurfaced-lab_fm-tick age=1s content=declared:r1:3438007374726f6e673a34343a38383135323537373a323032362d31302d32382031383a32313a32372e333934353935393033202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 3
+
+=== ROUND [R3 pane keeps ticking: the recheck just fired holds the next cadence] mode=absorb FM_PAUSE_RESURFACE_SECS=240 status_age=504s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-tick .hash-lab_fm-tick .paused-lab_fm-tick .paused-rechecked-lab_fm-tick .paused-resurfaced-lab_fm-tick 
+  .paused-resurfaced-lab_fm-tick age=7s content=declared:r1:3438007374726f6e673a34343a38383135323537373a323032362d31302d32382031383a32313a32372e333934353935393033202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# triage log tail:
+[2026-10-28T18:24:46+0100] absorbed stale (paused, awaiting external, age 505s): lab:fm-tick
+[2026-10-28T18:24:47+0100] absorbed stale (paused, awaiting external, age 506s): lab:fm-tick

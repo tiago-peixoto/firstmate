@@ -1,0 +1,113 @@
+# Live scenario: ordinary crew, DEAD agent (pane runs bare bash), stable idle pane, 'paused:' declaration
+# window: lab:fm-paused   status: paused: waiting on the upstream tool release
+# agent liveness probe (fm_backend_agent_state tmux lab:fm-paused): dead
+# pane capture: bash-5.3$
+
+/home/firstmate/.no-mistakes/evidence/01M61QVXQ0C12GNEDD7PV227W3/live-driver.sh: line 13: /tmp/fm-lab.XgG8lF/state/.wake-queue: No such file or directory
+=== ROUND [R0 fresh declaration: first poll] mode=exit FM_PAUSE_RESURFACE_SECS=999 status_age=125s
+watcher: exited rc=0
+stdout: signal: /tmp/fm-lab.XgG8lF/state/paused.status
+wake-queue rows added: 2
+  queue> 1793207966	1	signal	paused.status	signal: /tmp/fm-lab.XgG8lF/state/paused.status
+  queue> 1793207966	2	signal	paused.status	signal: /tmp/fm-lab.XgG8lF/state/paused.status
+markers: 
+
+ack: acknowledged through sequence 2
+
+=== ROUND [R1 pane idle on the same declaration: first stable sight] mode=exit FM_PAUSE_RESURFACE_SECS=999 status_age=150s
+watcher: exited rc=0
+stdout: stale: lab:fm-paused
+wake-queue rows added: 1
+  queue> 1793207992	3	stale	lab:fm-paused	stale: lab:fm-paused
+markers: .count-lab_fm-paused .hash-lab_fm-paused .paused-lab_fm-paused .paused-rechecked-lab_fm-paused .paused-resurfaced-lab_fm-paused .stale-lab_fm-paused 
+  .stale-lab_fm-paused = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-paused age=0s content=declared:r1:3435007374726f6e673a34343a38383134373434363a323032362d31302d32382031383a31373a31382e343436323238333230202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 3
+
+=== ROUND [R2 same hash, same declaration, throttle fresh: must absorb] mode=absorb FM_PAUSE_RESURFACE_SECS=999 status_age=157s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-paused .hash-lab_fm-paused .paused-lab_fm-paused .paused-rechecked-lab_fm-paused .paused-resurfaced-lab_fm-paused .stale-lab_fm-paused 
+  .stale-lab_fm-paused = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-paused age=6s content=declared:r1:3435007374726f6e673a34343a38383134373434363a323032362d31302d32382031383a31373a31382e343436323238333230202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# aging the re-surface throttle by 500s (declaration unchanged), cadence now 240s
+=== ROUND [R3 cadence elapsed: bounded recheck expected] mode=exit FM_PAUSE_RESURFACE_SECS=240 status_age=161s
+watcher: exited rc=0
+stdout: check: rearm-resurface
+wake-queue rows added: 0
+markers: .count-lab_fm-paused .hash-lab_fm-paused .paused-lab_fm-paused .paused-rechecked-lab_fm-paused .paused-resurfaced-lab_fm-paused .stale-lab_fm-paused 
+  .stale-lab_fm-paused = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-paused age=501s content=declared:r1:3435007374726f6e673a34343a38383134373434363a323032362d31302d32382031383a31373a31382e343436323238333230202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 0
+
+=== ROUND [R4 recheck just fired: next cadence must hold] mode=absorb FM_PAUSE_RESURFACE_SECS=240 status_age=164s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-paused .hash-lab_fm-paused .paused-lab_fm-paused .paused-rechecked-lab_fm-paused .paused-resurfaced-lab_fm-paused .stale-lab_fm-paused 
+  .stale-lab_fm-paused = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-paused age=507s content=declared:r1:3435007374726f6e673a34343a38383134373434363a323032362d31302d32382031383a31373a31382e343436323238333230202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# triage log tail:
+.
+..
+.count-lab_fm-paused
+.hash-lab_fm-paused
+.hb-surfaced-paused
+.heartbeat-streak
+.inactive-outcome-reconcile
+.inactive-outcome-reconcile.lock
+.inactive-outcome-reconcile.lock.owner.nMXn9u
+.last-check
+.last-heartbeat
+.last-watcher-beat
+.paused-lab_fm-paused
+.paused-rechecked-lab_fm-paused
+.paused-resurfaced-lab_fm-paused
+.paused.open-decisions-cursor
+.seen-paused_status
+.stale-lab_fm-paused
+.status-presentation-cursor
+.wake-queue
+.wake-queue.seq
+.watch-deliveries.log
+.watch-triage.log
+.watcher-down
+home-summary.json
+paused.meta
+paused.status
+terminal-outcomes
+# NOTE: R3 above exited on 'check: rearm-resurface' - the downtime re-announce after R2's watcher was stopped by the driver,
+#       the same artifact tests/fm-watch-triage-pause.test.sh notes for parked_watch_round. Rounds from here pass
+#       FM_WATCH_HANDLING_SUCCESSOR=1 (the successor-watcher flag that skips that re-announce); the pause state is untouched.
+# throttle age now: 572s
+=== ROUND [R3b cadence elapsed: bounded recheck expected] mode=exit FM_PAUSE_RESURFACE_SECS=240 status_age=233s
+watcher: exited rc=0
+stdout: stale: lab:fm-paused (paused 241s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+wake-queue rows added: 1
+  queue> 1793208079	4	stale	lab:fm-paused	stale: lab:fm-paused (paused 241s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+markers: .count-lab_fm-paused .hash-lab_fm-paused .paused-lab_fm-paused .paused-rechecked-lab_fm-paused .paused-resurfaced-lab_fm-paused .stale-lab_fm-paused 
+  .stale-lab_fm-paused = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-paused age=0s content=declared:r1:3435007374726f6e673a34343a38383134373434363a323032362d31302d32382031383a31373a31382e343436323238333230202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 4
+
+=== ROUND [R4b recheck just fired: next cadence must hold] mode=absorb FM_PAUSE_RESURFACE_SECS=240 status_age=244s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-paused .hash-lab_fm-paused .paused-lab_fm-paused .paused-rechecked-lab_fm-paused .paused-resurfaced-lab_fm-paused .stale-lab_fm-paused 
+  .stale-lab_fm-paused = 0d34c66df78da3883725b52f25e65c4a
+  .paused-resurfaced-lab_fm-paused age=7s content=declared:r1:3435007374726f6e673a34343a38383134373434363a323032362d31302d32382031383a31373a31382e343436323238333230202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# triage log tail:
+[2026-10-28T18:21:12+0100] absorbed stale (paused, awaiting external, age 234s): lab:fm-paused
+[2026-10-28T18:21:13+0100] absorbed stale (paused, awaiting external, age 235s): lab:fm-paused
+[2026-10-28T18:21:15+0100] absorbed stale (paused, awaiting external, age 237s): lab:fm-paused
+[2026-10-28T18:21:17+0100] absorbed stale (paused, awaiting external, age 239s): lab:fm-paused
+[2026-10-28T18:21:23+0100] absorbed stale (paused, awaiting external, age 245s): lab:fm-paused
+[2026-10-28T18:21:25+0100] absorbed stale (paused, awaiting external, age 247s): lab:fm-paused

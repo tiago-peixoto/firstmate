@@ -1,0 +1,87 @@
+# Live scenario: ordinary crew, ALIVE agent (pane foreground process argv0 'grok', a stand-in for the harness), stable idle pane, 'paused:' declaration
+# window: lab:fm-alive   status: paused: waiting on the upstream tool release
+# agent liveness probe: alive   pane_current_command: grok
+
+=== ROUND [R0 fresh declaration: first poll] mode=exit FM_PAUSE_RESURFACE_SECS=999 status_age=80s
+watcher: exited rc=0
+stdout: signal: /tmp/fm-lab.grmWOm/state/alive.status
+wake-queue rows added: 2
+  queue> 1793208168	1	signal	alive.status	signal: /tmp/fm-lab.grmWOm/state/alive.status
+  queue> 1793208169	2	signal	alive.status	signal: /tmp/fm-lab.grmWOm/state/alive.status
+markers: 
+
+ack: acknowledged through sequence 2
+
+=== ROUND [R1 pane idle on the same declaration: first stable sight] mode=exit FM_PAUSE_RESURFACE_SECS=999 status_age=85s
+watcher: exited rc=0
+stdout: stale: lab:fm-alive
+wake-queue rows added: 1
+  queue> 1793208176	3	stale	lab:fm-alive	stale: lab:fm-alive
+markers: .count-lab_fm-alive .hash-lab_fm-alive .paused-lab_fm-alive .paused-rechecked-lab_fm-alive .paused-resurfaced-lab_fm-alive .stale-lab_fm-alive 
+  .stale-lab_fm-alive = d41d8cd98f00b204e9800998ecf8427e
+  .paused-resurfaced-lab_fm-alive age=0s content=declared:r1:3435007374726f6e673a34343a38383135323534353a323032362d31302d32382031383a32313a32362e363935353537313635202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 3
+
+=== ROUND [R2 same hash, same declaration, throttle fresh: must absorb] mode=absorb FM_PAUSE_RESURFACE_SECS=999 status_age=92s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-alive .hash-lab_fm-alive .paused-lab_fm-alive .paused-rechecked-lab_fm-alive .paused-resurfaced-lab_fm-alive .stale-lab_fm-alive 
+  .stale-lab_fm-alive = d41d8cd98f00b204e9800998ecf8427e
+  .paused-resurfaced-lab_fm-alive age=6s content=declared:r1:3435007374726f6e673a34343a38383135323534353a323032362d31302d32382031383a32313a32362e363935353537313635202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# aging the re-surface throttle by 500s (declaration unchanged), cadence now 240s
+=== ROUND [R3 cadence elapsed: bounded recheck expected] mode=exit FM_PAUSE_RESURFACE_SECS=240 status_age=96s
+watcher: STILL-ALIVE-after-20s rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-alive .hash-lab_fm-alive .paused-lab_fm-alive .paused-rechecked-lab_fm-alive .paused-resurfaced-lab_fm-alive .stale-lab_fm-alive 
+  .stale-lab_fm-alive = d41d8cd98f00b204e9800998ecf8427e
+  .paused-resurfaced-lab_fm-alive age=521s content=declared:r1:3435007374726f6e673a34343a38383135323534353a323032362d31302d32382031383a32313a32362e363935353537313635202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 0
+
+=== ROUND [R4 recheck just fired: next cadence must hold] mode=absorb FM_PAUSE_RESURFACE_SECS=240 status_age=119s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-alive .hash-lab_fm-alive .paused-lab_fm-alive .paused-rechecked-lab_fm-alive .paused-resurfaced-lab_fm-alive .stale-lab_fm-alive 
+  .stale-lab_fm-alive = d41d8cd98f00b204e9800998ecf8427e
+  .paused-resurfaced-lab_fm-alive age=527s content=declared:r1:3435007374726f6e673a34343a38383135323534353a323032362d31302d32382031383a32313a32362e363935353537313635202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# agent liveness probe at the end: alive
+# triage log tail:
+[2026-10-28T18:23:17+0100] absorbed stale (paused, awaiting external, age 111s): lab:fm-alive
+[2026-10-28T18:23:19+0100] absorbed stale (paused, awaiting external, age 113s): lab:fm-alive
+[2026-10-28T18:23:21+0100] absorbed stale (paused, awaiting external, age 115s): lab:fm-alive
+[2026-10-28T18:23:26+0100] absorbed stale (paused, awaiting external, age 120s): lab:fm-alive
+[2026-10-28T18:23:27+0100] absorbed stale (paused, awaiting external, age 121s): lab:fm-alive
+# NOTE: R3 above fired nothing because the DECLARATION was only ~96s old: the recheck is bounded by the status-file age
+#       (min age FM_PAUSE_RESURFACE_SECS) as well as the throttle age, so inside the cadence it is correctly absorbed.
+#       Now aging the declaration by 500s too (mtime only; content unchanged) and repeating.
+=== ROUND [R3b declaration and throttle both a cadence old: bounded recheck expected] mode=exit FM_PAUSE_RESURFACE_SECS=240 status_age=500s
+watcher: exited rc=0
+stdout: stale: lab:fm-alive (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+wake-queue rows added: 1
+  queue> 1793208317	4	stale	lab:fm-alive	stale: lab:fm-alive (paused 501s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+markers: .count-lab_fm-alive .hash-lab_fm-alive .paused-lab_fm-alive .paused-rechecked-lab_fm-alive .paused-resurfaced-lab_fm-alive .stale-lab_fm-alive 
+  .stale-lab_fm-alive = d41d8cd98f00b204e9800998ecf8427e
+  .paused-resurfaced-lab_fm-alive age=0s content=declared:r1:3435007374726f6e673a34343a38383135323534353a323032362d31302d32382031383a32313a32362e363935353537313635202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+ack: acknowledged through sequence 4
+
+=== ROUND [R4b recheck just fired: next cadence must hold] mode=absorb FM_PAUSE_RESURFACE_SECS=240 status_age=504s
+watcher: alive-through-3-poll-cycles rc=143
+stdout: 
+wake-queue rows added: 0
+markers: .count-lab_fm-alive .hash-lab_fm-alive .paused-lab_fm-alive .paused-rechecked-lab_fm-alive .paused-resurfaced-lab_fm-alive .stale-lab_fm-alive 
+  .stale-lab_fm-alive = d41d8cd98f00b204e9800998ecf8427e
+  .paused-resurfaced-lab_fm-alive age=7s content=declared:r1:3435007374726f6e673a34343a38383135323534353a323032362d31302d32382031383a32313a32362e363935353537313635202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+
+# agent liveness probe at the end: alive
+# triage log tail:
+[2026-10-28T18:23:26+0100] absorbed stale (paused, awaiting external, age 120s): lab:fm-alive
+[2026-10-28T18:23:27+0100] absorbed stale (paused, awaiting external, age 121s): lab:fm-alive
+[2026-10-28T18:25:21+0100] absorbed stale (paused, awaiting external, age 505s): lab:fm-alive
+[2026-10-28T18:25:23+0100] absorbed stale (paused, awaiting external, age 507s): lab:fm-alive

@@ -1,0 +1,3 @@
+## FM_TEST_ONLY=test_wedge_threshold_defers_to_a_declared_wait_under_a_working_verdict tests/fm-watch-triage-wedge-defer.test.sh
+ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
+exit=0
