@@ -1,0 +1,7 @@
+1..4
+ok - a settled hold mirror over a done lane surfaces one terminal stale, then stays inert and never wedge-escalates
+ok - a settled hold mirror over a paused lane resurfaces once per cadence, never once per relaunch
+ok - a hold and its release recorded by firstmate keep the stale throttle and suppressor they found
+ok - a delivery the captain already holds is never rechecked while the away-posture record exists
+FM_TEST_COMPLETE
+pause exit=0

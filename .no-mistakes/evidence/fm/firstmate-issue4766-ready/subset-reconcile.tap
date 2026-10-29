@@ -1,0 +1,3 @@
+all inactive reconciliation tests passed
+actionable: inactive terminal outcome awaiting captain presentation: child=child state=done pr=https://example.test/owner/repo/pull/1
+ok - a captain hold and release never repeat a delivered child outcome

@@ -1,0 +1,201 @@
+
+### S1 hold mirror on a delivered worker lane, then release
+-- before hold
+  raw last line           : done:\ PR\ https://example.test/pull/1\ checks\ green
+  last_status_line (hold) : done:\ PR\ https://example.test/pull/1\ checks\ green
+  last_worker_status_line : done:\ PR\ https://example.test/pull/1\ checks\ green
+  status_current_line     : done:\ PR\ https://example.test/pull/1\ checks\ green
+  status_declared_wait    : ''
+  status_open_decisions   : ''
+  open_decisions_increm.  : ''
+  crew-state              : state: unknown · source: none · backend target gone: firstmate:fm-sample-held-lane
+$ fm-captain-hold.sh hold sample-held-lane --reason 'merge approval (captain must approve the merge)'
+sample-held-lane
+-- status log after hold:
+  | working: opening the PR
+  | done: PR https://example.test/pull/1 checks green
+  | captain-held [key=captain-hold-sample-held-lane-1]: merge approval (captain must approve the merge)
+  raw last line           : captain-held\ \[key=captain-hold-sample-held-lane-1\]:\ merge\ approval\ \(captain\ must\ approve\ the\ merge\)
+  last_status_line (hold) : captain-held\ \[key=captain-hold-sample-held-lane-1\]:\ merge\ approval\ \(captain\ must\ approve\ the\ merge\)
+  last_worker_status_line : done:\ PR\ https://example.test/pull/1\ checks\ green
+  status_current_line     : done:\ PR\ https://example.test/pull/1\ checks\ green
+  status_declared_wait    : captain-held\ \[key=captain-hold-sample-held-lane-1\]:\ merge\ approval\ \(captain\ must\ approve\ the\ merge\)
+  status_open_decisions   : ''
+  open_decisions_increm.  : ''
+  crew-state              : state: unknown · source: none · backend target gone: firstmate:fm-sample-held-lane
+CHECK ok   S1 mirror is one line and current line stays done: done:\ PR\ https://example.test/pull/1\ checks\ green
+CHECK ok   S1 mirror line shape: captain-held\ \[key=captain-hold-sample-held-lane-1\]:\ merge\ approval\ \(captain\ must\ approve\ the\ merge\)
+CHECK ok   S1 declared wait is the standing mirror: captain-held\ \[key=captain-hold-sample-held-lane-1\]:\ merge\ approval\ \(captain\ must\ approve\ the\ merge\)
+CHECK ok   S1 crew state unchanged by the hold: state:\ unknown\ ·\ source:\ none\ ·\ backend\ target\ gone:\ firstmate:fm-sample-held-lane
+$ fm-captain-hold.sh hold sample-held-lane --reason ... (repeat: no duplicate mirror)
+CHECK ok   S1 repeated hold appends nothing: 3
+$ fm-captain-hold.sh open sample-held-lane (exit code, 0 = open captain call)
+  exit=0
+$ fm-captain-hold.sh answer sample-held-lane --decision-file answer.txt --release
+released: sample-held-lane
+-- status log after release:
+  | working: opening the PR
+  | done: PR https://example.test/pull/1 checks green
+  | captain-held [key=captain-hold-sample-held-lane-1]: merge approval (captain must approve the merge)
+  | resolved [key=captain-hold-sample-held-lane-1]: captain call released by fm-captain-hold
+  raw last line           : resolved\ \[key=captain-hold-sample-held-lane-1\]:\ captain\ call\ released\ by\ fm-captain-hold
+  last_status_line (hold) : done:\ PR\ https://example.test/pull/1\ checks\ green
+  last_worker_status_line : done:\ PR\ https://example.test/pull/1\ checks\ green
+  status_current_line     : done:\ PR\ https://example.test/pull/1\ checks\ green
+  status_declared_wait    : ''
+  status_open_decisions   : ''
+  open_decisions_increm.  : ''
+  crew-state              : state: unknown · source: none · backend target gone: firstmate:fm-sample-held-lane
+CHECK ok   S1 retraction line shape: resolved\ \[key=captain-hold-sample-held-lane-1\]:\ captain\ call\ released\ by\ fm-captain-hold
+CHECK ok   S1 last_status_line reads past settled pair: done:\ PR\ https://example.test/pull/1\ checks\ green
+CHECK ok   S1 crew state unchanged by the release: state:\ unknown\ ·\ source:\ none\ ·\ backend\ target\ gone:\ firstmate:fm-sample-held-lane
+$ fm-captain-hold.sh open sample-held-lane (after release)
+  exit=1
+CHECK ok   S1 open reports released: 1
+$ fm-captain-hold.sh answer ... --release (exact replay appends nothing)
+  exit=0
+CHECK ok   S1 replayed settlement appends nothing: 4
+-- backlog row:
+  | task:
+  |   id: sample-held-lane
+  |   title: Ship the held sample
+  |   state: queued
+  |   blocked: no
+  |   blocked_by: none
+  |   held: no
+  |   hold_reason: "-"
+  |   hold_kind: "-"
+  |   hold_until: "-"
+  |   kind: ship
+  |   repo: sample
+  |   priority: "-"
+  |   created: 2026-10-30
+  |   closed: "-"
+  |   deps: none
+  |   links: none
+  |   body: "Resolution recorded by fm-captain-hold.\nDecision digest: 4e88e56dd8e4f0b5e96e87e6a9c05187db9191af37de52bf16e90f60be0ca512\nResolution mode: released\n\nCaptain decision:\nApproved, merge it."
+
+### S2 transfer a worker question to a captain call, then answer it
+-- before transfer
+  raw last line           : needs-decision\ \[key=route\]:\ choose\ route\ north\ or\ route\ south
+  last_status_line (hold) : needs-decision\ \[key=route\]:\ choose\ route\ north\ or\ route\ south
+  last_worker_status_line : needs-decision\ \[key=route\]:\ choose\ route\ north\ or\ route\ south
+  status_current_line     : needs-decision\ \[key=route\]:\ choose\ route\ north\ or\ route\ south
+  status_declared_wait    : ''
+  status_open_decisions   : $'route\tneeds-decision\tchoose route north or route south'
+  open_decisions_increm.  : $'route\tneeds-decision\tchoose route north or route south'
+$ fm-captain-hold.sh hold sample-route-call --title ... --reason ... --origin sample-route-lane
+sample-route-call
+$ fm-captain-hold.sh complete sample-route-lane sample-route-call
+complete: sample-route-lane captain-call inventory reviewed (sample-route-call)
+-- status log after complete:
+  | needs-decision [key=route]: choose route north or route south
+  | captain-held [key=route]: tracked by sample-route-call
+  raw last line           : captain-held\ \[key=route\]:\ tracked\ by\ sample-route-call
+  last_status_line (hold) : captain-held\ \[key=route\]:\ tracked\ by\ sample-route-call
+  last_worker_status_line : captain-held\ \[key=route\]:\ tracked\ by\ sample-route-call
+  status_current_line     : captain-held\ \[key=route\]:\ tracked\ by\ sample-route-call
+  status_declared_wait    : captain-held\ \[key=route\]:\ tracked\ by\ sample-route-call
+  status_open_decisions   : ''
+  open_decisions_increm.  : ''
+CHECK ok   S2 transfer line: captain-held\ \[key=route\]:\ tracked\ by\ sample-route-call
+CHECK ok   S2 transfer closes the worker question: ''
+$ fm-captain-hold.sh verify sample-route-lane
+verified: sample-route-lane captain-call inventory
+  exit=0
+$ fm-captain-hold.sh answer sample-route-call --decision-file route.txt
+answered: sample-route-call
+-- status log after answer:
+  | needs-decision [key=route]: choose route north or route south
+  | captain-held [key=route]: tracked by sample-route-call
+  | resolved [key=route]: captain call answered by fm-captain-hold
+  raw last line           : resolved\ \[key=route\]:\ captain\ call\ answered\ by\ fm-captain-hold
+  last_status_line (hold) : needs-decision\ \[key=route\]:\ choose\ route\ north\ or\ route\ south
+  last_worker_status_line : needs-decision\ \[key=route\]:\ choose\ route\ north\ or\ route\ south
+  status_current_line     : needs-decision\ \[key=route\]:\ choose\ route\ north\ or\ route\ south
+  status_declared_wait    : ''
+  status_open_decisions   : ''
+  open_decisions_increm.  : ''
+CHECK ok   S2 retraction line: resolved\ \[key=route\]:\ captain\ call\ answered\ by\ fm-captain-hold
+CHECK ok   S2 original question stays settled (whole-file): ''
+CHECK ok   S2 original question stays settled (incremental): ''
+$ fm-captain-hold.sh open sample-route-call
+  exit=1
+CHECK ok   S2 call is closed: 1
+
+### S3 adversarial: worker re-asks the same key between the final check and the retraction append
+$ fm-captain-hold.sh answer sample-race-call (worker appends a re-ask of key=route right before the retraction append)
+answered: sample-race-call
+  (hook fired: the worker re-ask landed before the retraction append)
+-- status log after the raced answer:
+  | needs-decision [key=route]: choose route north or route south
+  | captain-held [key=route]: tracked by sample-race-call
+  | needs-decision [key=route]: choose route east or route west
+  | resolved [key=route]: captain call answered by fm-captain-hold
+  raw last line           : resolved\ \[key=route\]:\ captain\ call\ answered\ by\ fm-captain-hold
+  last_status_line (hold) : needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+  last_worker_status_line : needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+  status_current_line     : needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+  status_declared_wait    : ''
+  status_open_decisions   : $'route\tneeds-decision\tchoose route east or route west'
+  open_decisions_increm.  : $'route\tneeds-decision\tchoose route east or route west'
+CHECK ok   S3 hook fired: yes
+CHECK ok   S3 re-asked question open (whole-file fold): $'route\tneeds-decision\tchoose route east or route west'
+CHECK ok   S3 re-asked question open (incremental fold, cursor persisted before the race): $'route\tneeds-decision\tchoose route east or route west'
+CHECK ok   S3 re-asked question is the current line: needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+CHECK ok   S3 re-asked question is last_status_line: needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+
+### S3b control: the same race against a copy of bin/ with the fold guard removed (pre-fix behaviour)
+  guard removed, fold version pinned to 9: count=1
+$ fm-captain-hold.sh answer sample-race-call (worker appends a re-ask of key=route right before the retraction append)
+answered: sample-race-call
+  (hook fired: the worker re-ask landed before the retraction append)
+-- status log after the raced answer:
+  | needs-decision [key=route]: choose route north or route south
+  | captain-held [key=route]: tracked by sample-race-call
+  | needs-decision [key=route]: choose route east or route west
+  | resolved [key=route]: captain call answered by fm-captain-hold
+  raw last line           : resolved\ \[key=route\]:\ captain\ call\ answered\ by\ fm-captain-hold
+  last_status_line (hold) : needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+  last_worker_status_line : needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+  status_current_line     : needs-decision\ \[key=route\]:\ choose\ route\ east\ or\ route\ west
+  status_declared_wait    : ''
+  status_open_decisions   : ''
+  open_decisions_increm.  : ''
+CHECK ok   S3b pre-fix whole-file fold loses the re-asked question (expected pre-fix defect): ''
+CHECK ok   S3b pre-fix incremental fold loses the re-asked question (expected pre-fix defect): ''
+
+### S4 a persisted version-9 cursor that lost the question rebuilds under fold version 10
+-- cursor written by the pre-fix code:
+  | version=9:scout
+  | offset=271
+  | ident=strong:44:89080757:2026-10-30 00:24:39.827977593 +0100
+
+$ status_open_decisions_incremental (fixed lib) over the same log and cursor
+  -> $'route\tneeds-decision\tchoose route east or route west'
+CHECK ok   S4 rebuilt cursor reports the re-asked question: $'route\tneeds-decision\tchoose route east or route west'
+-- cursor after the rebuild:
+  | version=10:scout
+  | offset=271
+  | ident=strong:44:89080757:2026-10-30 00:24:39.827977593 +0100
+  | route	needs-decision	choose route east or route west
+CHECK ok   S4 cursor now carries fold version 10: version=10:scout
+
+### S5 an ordinary worker 'resolved' line still closes its question; only hold bookkeeping is ignored
+  raw last line           : resolved\ \[key=route\]:\ took\ route\ north
+  last_status_line (hold) : resolved\ \[key=route\]:\ took\ route\ north
+  last_worker_status_line : resolved\ \[key=route\]:\ took\ route\ north
+  status_current_line     : resolved\ \[key=route\]:\ took\ route\ north
+  status_declared_wait    : ''
+  status_open_decisions   : ''
+  open_decisions_increm.  : ''
+CHECK ok   S5 worker resolved closes (whole-file): ''
+CHECK ok   S5 worker resolved closes (incremental): ''
+CHECK ok   S5 hold-shaped retraction alone never closes a worker question: $'route\tneeds-decision\tchoose route north or route south'
+
+### S6 a long worker key keeps its whole retraction (key and closing text survive the line cap)
+  retraction (221 bytes): resolved [key=kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk]: captain call  [truncated] by fm-captain-hold
+CHECK ok   S6 retraction keeps the whole key and the closing text (only the note is capped): paired
+CHECK ok   S6 reader reads past the settled long-key transfer: needs-decision\ \[key=kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\]:\ which\ one
+
+=== live driver finished: 0 check failure(s)
