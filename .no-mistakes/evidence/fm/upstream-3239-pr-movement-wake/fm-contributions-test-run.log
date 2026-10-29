@@ -1,4 +1,4 @@
-FM_TEST_BEGIN 2026-10-27T03:25:10Z tests/fm-contributions.test.sh family=snapshot-bearings expected_gate_skip=optional-binary
+FM_TEST_BEGIN 2026-10-29T22:08:17Z tests/fm-contributions.test.sh family=snapshot-bearings expected_gate_skip=optional-binary
 ok - only required-captain contributions are rows; other actors are counted
 ok - replaced-head verdict is stale and cannot create a captain requirement
 ok - unchecked ownership is disclosed and cannot prove silence
@@ -50,7 +50,7 @@ ok - two transient failures wake once and name the failed read in the record
 ok - an HTTP 404 is reported without retrying
 ok - real gh error shapes drive the intended retry decision and keep their error
 ok - a URL never inherits the previous URL read diagnostic
-jq: error (at /tmp/fm-contributions.HXBbZk/after.json:1): null (null) cannot be matched, as it is not a string
+jq: error (at /tmp/fm-contributions.nQkn07/after.json:1): null (null) cannot be matched, as it is not a string
 ok - a URL owned by two tasks is observed once and every owner receives the result
 ok - a merged or closed contribution settles once, is not re-read, and never wakes again
 ok - a head change observed as merged or closed settles without a movement wake
@@ -76,8 +76,8 @@ ok - a closed pull request stops raising its threads
 ok - the unanswered re-raise and the review-thread read stay off unless a reply age is configured
 ok - arm copies a configured reply age into the generated check
 ok - a many-review PR stores only classified review fields and stays readable
-FM_TEST_END 2026-10-27T03:30:55Z tests/fm-contributions.test.sh exit=0 duration_ms=345108 gate_skip=false
-FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=345211
-FM_TEST_SUMMARY_FAMILY family=snapshot-bearings count=1 duration_ms=345108 failed=0
-FM_TEST_SLOWEST rank=1 script=tests/fm-contributions.test.sh duration_ms=345108
+FM_TEST_END 2026-10-29T22:14:14Z tests/fm-contributions.test.sh exit=0 duration_ms=357669 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=357767
+FM_TEST_SUMMARY_FAMILY family=snapshot-bearings count=1 duration_ms=357669 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-contributions.test.sh duration_ms=357669
 exit=0

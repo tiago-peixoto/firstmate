@@ -1,0 +1,250 @@
+
+### scenario: head-replaced
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+$ ls state/*.check.sh
+./contributions.check.sh
+./delivery.check.sh
+$ sweep registered checks (baseline observation)
+OK   unchanged pull request queues no wake
+$ forge: head aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa -> bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+$ sweep registered checks (after movement)
+contribution-wake: check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+$ fm-contributions.sh pending
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+OK   exactly one pending head signal with body 'head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+$ cat state/.wake-queue
+1793311914	1	check	contribution-ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755	check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+OK   exactly one durable check wake queued
+$ sweep registered checks (unchanged re-poll)
+OK   re-poll does not duplicate the wake
+OK   re-poll does not add a signal
+$ fm-bearings-snapshot.sh --json | .contributions
+{"counts":{"captain":0,"fleet":1,"maintainer":0,"nobody":0},"fleet":null}
+$ contributions.json .records[0].verdict_actor/pending types
+{"state":"open","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","review_requests":[],"pending":["head"]}
+
+### scenario: left-draft
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+$ ls state/*.check.sh
+./contributions.check.sh
+./delivery.check.sh
+$ sweep registered checks (baseline observation)
+OK   unchanged pull request queues no wake
+$ forge: convert to draft (adversarial: must not wake)
+OK   converting to draft does not wake
+$ forge: mark ready for review
+$ sweep registered checks (after movement)
+contribution-wake: check: contributions delivery ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c
+$ fm-contributions.sh pending
+[
+  {
+    "token": "ready-for-review:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2026-09-16T08:00:00Z",
+    "type": "ready-for-review",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "pull request left draft",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+OK   exactly one pending ready-for-review signal with body 'pull request left draft'
+$ cat state/.wake-queue
+1793311919	1	check	contribution-ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c	check: contributions delivery ae8dba7e52a9c9f5d024526ed4c5816cea03c35b6113bba8293b3ea81d1e0e8c
+OK   exactly one durable check wake queued
+$ sweep registered checks (unchanged re-poll)
+OK   re-poll does not duplicate the wake
+OK   re-poll does not add a signal
+$ fm-bearings-snapshot.sh --json | .contributions
+{"counts":{"captain":0,"fleet":1,"maintainer":0,"nobody":0},"fleet":null}
+$ contributions.json .records[0].verdict_actor/pending types
+{"state":"open","head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","review_requests":[],"pending":["ready-for-review"]}
+
+### scenario: reviewer-requested
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+$ ls state/*.check.sh
+./contributions.check.sh
+./delivery.check.sh
+$ sweep registered checks (baseline observation)
+OK   unchanged pull request queues no wake
+$ forge: request review from reviewer
+$ sweep registered checks (after movement)
+contribution-wake: check: contributions delivery 9258c1fbd22feba6773f7dd8e51870eb96b4ca634404b12072e60a7dc4404678
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review-requested:reviewer:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from reviewer",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+OK   exactly one pending review-requested signal with body 'review requested from reviewer'
+$ cat state/.wake-queue
+1793311923	1	check	contribution-9258c1fbd22feba6773f7dd8e51870eb96b4ca634404b12072e60a7dc4404678	check: contributions delivery 9258c1fbd22feba6773f7dd8e51870eb96b4ca634404b12072e60a7dc4404678
+OK   exactly one durable check wake queued
+$ sweep registered checks (unchanged re-poll)
+OK   re-poll does not duplicate the wake
+OK   re-poll does not add a signal
+$ fm-bearings-snapshot.sh --json | .contributions
+{"counts":{"captain":0,"fleet":1,"maintainer":0,"nobody":0},"fleet":null}
+$ contributions.json .records[0].verdict_actor/pending types
+{"state":"open","head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","review_requests":["reviewer"],"pending":["review-requested"]}
+
+### scenario: team-requested
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+$ ls state/*.check.sh
+./contributions.check.sh
+./delivery.check.sh
+$ sweep registered checks (baseline observation)
+OK   unchanged pull request queues no wake
+$ forge: request review from team core
+$ sweep registered checks (after movement)
+contribution-wake: check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review-requested:team:core:2026-09-16T08:00:00Z",
+    "type": "review-requested",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "review requested from team:core",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+OK   exactly one pending review-requested signal with body 'review requested from team:core'
+$ cat state/.wake-queue
+1793311927	1	check	contribution-1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d	check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+OK   exactly one durable check wake queued
+$ sweep registered checks (unchanged re-poll)
+OK   re-poll does not duplicate the wake
+OK   re-poll does not add a signal
+$ fm-bearings-snapshot.sh --json | .contributions
+{"counts":{"captain":0,"fleet":1,"maintainer":0,"nobody":0},"fleet":null}
+$ contributions.json .records[0].verdict_actor/pending types
+{"state":"open","head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","review_requests":["team:core"],"pending":["review-requested"]}
+
+### scenario: maintainer-comment
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+$ ls state/*.check.sh
+./contributions.check.sh
+./delivery.check.sh
+$ sweep registered checks (baseline observation)
+OK   unchanged pull request queues no wake
+$ forge: maintainer comment
+$ sweep registered checks (after movement)
+contribution-wake: check: contributions delivery ee89cced8f63efe97f93a052f98e52a4acd99e50badd2edee5d2d192cc414177
+$ fm-contributions.sh pending
+[
+  {
+    "token": "comment:12:2026-09-16T08:01:00Z:",
+    "type": "comment",
+    "source": "https://github.com/o/r/pull/8#issuecomment-12",
+    "head": null,
+    "author": "maintainer",
+    "body": "Please clarify the contract",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+OK   exactly one pending comment signal with body 'Please clarify the contract'
+$ cat state/.wake-queue
+1793311931	1	check	contribution-ee89cced8f63efe97f93a052f98e52a4acd99e50badd2edee5d2d192cc414177	check: contributions delivery ee89cced8f63efe97f93a052f98e52a4acd99e50badd2edee5d2d192cc414177
+OK   exactly one durable check wake queued
+$ sweep registered checks (unchanged re-poll)
+OK   re-poll does not duplicate the wake
+OK   re-poll does not add a signal
+$ fm-bearings-snapshot.sh --json | .contributions
+{"counts":{"captain":0,"fleet":1,"maintainer":0,"nobody":0},"fleet":null}
+$ contributions.json .records[0].verdict_actor/pending types
+{"state":"open","head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","review_requests":[],"pending":["comment"]}
+
+### scenario: existing review requests at the first observation are a baseline, not movement
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8 (reviewer and team already requested)
+armed: state/delivery.check.sh
+$ fm-contributions.sh pending
+[]
+OK   no pending signal
+OK   no wake queued
+$ recorded baseline
+["reviewer","team:core"]
+OK   baseline recorded
+
+### scenario: a legacy observation without review_requests treats the current value as baseline
+armed: state/delivery.check.sh
+$ fm-contributions.sh pending
+[]
+OK   legacy record: no pending signal
+OK   legacy record: no wake
+OK   legacy record: baseline recorded
+
+### scenario: a head change observed as merged settles without a movement wake
+armed: state/delivery.check.sh
+$ fm-contributions.sh poll
+(no output)
+OK   merged: poll printed nothing
+OK   merged: no wake queued
+$ recorded observation
+{"state":"merged","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","pending":[]}
+OK   merged: settled with the new head and no pending
+
+### scenario: a head change observed as closed settles without a movement wake
+armed: state/delivery.check.sh
+$ fm-contributions.sh poll
+(no output)
+OK   closed: poll printed nothing
+OK   closed: no wake queued
+$ recorded observation
+{"state":"closed","head":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","pending":[]}
+OK   closed: settled with the new head and no pending
+
+### scenario: the checkpoint watcher surfaces a replaced head as a check wake, then acknowledging it clears pending
+armed: state/delivery.check.sh
+OK   armed, unchanged: no wake
+$ fm-watch-checkpoint.sh --seconds 30 (FM_POLL=1)
+exit=0
+stdout:
+check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+stderr:
+OK   watcher exited 0 with a wake
+OK   watcher printed check: contributions delivery <sha>
+OK   one durable wake
+$ fm-contributions.sh pending
+[
+  {
+    "token": "head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z",
+    "type": "head",
+    "source": "https://github.com/o/r/pull/8",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "body": "head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z
+$ fm-contributions.sh pending (after ack)
+[]
+OK   ack clears pending
+OK   after ack an unchanged re-poll stays quiet
+OK   after ack an unchanged re-poll adds no signal
+
+### result: all checks passed
