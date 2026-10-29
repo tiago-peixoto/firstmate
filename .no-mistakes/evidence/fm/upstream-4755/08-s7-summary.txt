@@ -1,0 +1,16 @@
+session-start rc=0 -> 08-s7-other-closes-sidD.log
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793313716	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 3 --recovery-generation 2662908.1793313716.n9MhOJ
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+mate done [at=1793313710]: shipped everything
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-64f1335f8f7bb37a] blocked: pending-reply-missed: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+--- .wake-queue:
+1793313716	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report;
+--- token: 1521672:155aebab-5252-4589-a3df-c2cbeefbc54f

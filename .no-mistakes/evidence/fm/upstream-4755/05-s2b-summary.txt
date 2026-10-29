@@ -1,0 +1,14 @@
+session-start rc=0 -> 05-s2b-same-session-again-sidB.log
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793313663	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2588375.1793313664.Eb1NbE
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-64f1335f8f7bb37a] blocked: pending-reply-missed: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+--- .wake-queue:
+1793313663	1	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report;
+--- token: 1521672:884889ca-d0ed-4acd-8333-ac59f0212f26

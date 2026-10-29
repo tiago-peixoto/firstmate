@@ -1,0 +1,12 @@
+session-start rc=0 -> 09-s5-after-resolve-sidE.log
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793313753	4	check	secondmate-relaunch-bound-mate	check: secondmate mate auto-relaunch paused after 3 attempts in 3600s; endpoint still missing - relaunch it manually or retire the route
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 4 --recovery-generation 2662908.1793313716.n9MhOJ
+UNREAD STATUS (new since last drain, not re-printed after this presentation):
+mate resolved [key=pending-reply-64f1335f8f7bb37a] [at=1793313753]: pending-reply-resolved: task=mate pending-reply-id=64f1335f8f7bb37a via=helper
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+--- .wake-queue:
+1793313753	4	check	secondmate-relaunch-bound-mate	check: secondmate mate auto-relaunch paused after 3 attempts in 3600s; endpoint still missing - relaunch it manually or retire the route
+--- token: 1521672:50916e42-15ba-4799-94bd-326309c311ca

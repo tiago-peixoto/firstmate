@@ -1,0 +1,13 @@
+session-start rc=0 -> 11-s6b-dismissal-sticks-sidG.log
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793313818	6	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=9be4b83105ef1900 request=write the changelog;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 6 --recovery-generation 2767578.1793313818.26aJBl
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-9be4b83105ef1900] blocked: pending-reply-missed: task=mate pending-reply-id=9be4b83105ef1900 request=write the changelog
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+--- .wake-queue:
+1793313818	6	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=9be4b83105ef1900 request=write the changelog;
+--- token: 1521672:a6968cb0-6446-4b66-a1cb-b50bdea36623

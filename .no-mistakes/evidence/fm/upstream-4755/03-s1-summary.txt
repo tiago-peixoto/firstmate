@@ -1,0 +1,10 @@
+session-start rc=0 -> 03-s1-default-off-sidB.log
+WAKE QUEUE
+--------------------------------------------------------------------------------
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-64f1335f8f7bb37a] blocked: pending-reply-missed: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+================================================================================
+--- .wake-queue:
+--- token: 1521672:884889ca-d0ed-4acd-8333-ac59f0212f26

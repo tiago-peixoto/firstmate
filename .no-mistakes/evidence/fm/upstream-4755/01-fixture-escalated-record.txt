@@ -1,0 +1,35 @@
+corr1=64f1335f8f7bb37a
+--- record
+schema=fm-pending-reply.v1
+corr_id=64f1335f8f7bb37a
+task_id=mate
+parent_home=/tmp/fm-lab.laUhuA
+parent_status=/tmp/fm-lab.laUhuA/state/mate.status
+parent_status_scan_signature=
+request_summary=finish the audit report
+created_epoch=1793313544
+turn_seen_busy=0
+escalation_dismiss_scan=
+resolved_epoch=
+resolved_via=
+wrong_home_hits=0
+wrong_home_first_sighting=
+wrong_home_sightings=
+grace_secs=0
+delivered_epoch=1793313544
+request_turn_completed_epoch=1793313544
+recovery_sender_pid=2449298
+recovery_sender_identity=Thu Oct 29 23:39:03 2026 bash /tmp/fm-lab-scratch.cU5kXz/fixture.sh /home/firstmate/.no-mistakes/worktrees/5284051b2355/01M64W6WS4VYVY6A41T72Y2QWN /tmp/fm-lab.laUhuA /tmp/fm-lab-scratch.cU5kXz/mate-home finish the audit report
+recovery_attempted_epoch=1793313544
+recovery_delivery_outcome=confirmed
+recovery_sent_epoch=1793313544
+recovery_turn_seen_busy=0
+recovery_turn_completed_epoch=1793313544
+wrong_home_scan_signature=4294967295-0
+escalated_epoch=1793313545
+phase=escalated
+surfaced_session=1521672:54b894b1-a383-42ad-8ec6-f0f8d53837ab
+escalation_dismissed_epoch=
+--- mate.status
+blocked [key=pending-reply-64f1335f8f7bb37a] [at=1793313545]: pending-reply-missed: task=mate pending-reply-id=64f1335f8f7bb37a request=finish the audit report
+--- wake-queue

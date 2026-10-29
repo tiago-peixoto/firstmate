@@ -1,0 +1,3 @@
+blocked [key=pending-reply-ac68f4b495df1c6a] [at=1793313763]: pending-reply-missed: task=mate pending-reply-id=ac68f4b495df1c6a request=deploy the hotfix
+blocked [key=pending-reply-9be4b83105ef1900] [at=1793313764]: pending-reply-missed: task=mate pending-reply-id=9be4b83105ef1900 request=write the changelog
+resolved [key=pending-reply-ac68f4b495df1c6a] [at=1793313800]: pending-reply-resolved: task=mate pending-reply-id=ac68f4b495df1c6a via=operator-resolve-key handled out of band, no reply needed

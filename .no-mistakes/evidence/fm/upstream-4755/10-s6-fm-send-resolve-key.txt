@@ -1,0 +1,2 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.laUhuA
+fm-send: doorbell not typed because the agent in fm-lab-sess:fm-mate has exited; the steer is durably recorded at /tmp/fm-lab.laUhuA/state/mate.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane

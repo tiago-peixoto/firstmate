@@ -1,0 +1,15 @@
+session-start rc=0 -> 10-s6-after-operator-close-sidF.log
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793313807	5	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=9be4b83105ef1900 request=write the changelog;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 5 --recovery-generation 2748395.1793313807.Zbx7He
+UNREAD STATUS (new since last drain, not re-printed after this presentation):
+mate resolved [key=pending-reply-ac68f4b495df1c6a] [at=1793313800]: pending-reply-resolved: task=mate pending-reply-id=ac68f4b495df1c6a via=operator-resolve-key handled out of band, no reply needed
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+mate [key=pending-reply-9be4b83105ef1900] blocked: pending-reply-missed: task=mate pending-reply-id=9be4b83105ef1900 request=write the changelog
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+================================================================================
+--- .wake-queue:
+1793313807	5	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=9be4b83105ef1900 request=write the changelog;
+--- token: 1521672:fe5a9c77-ff45-4c12-97cc-95dd313af40d
