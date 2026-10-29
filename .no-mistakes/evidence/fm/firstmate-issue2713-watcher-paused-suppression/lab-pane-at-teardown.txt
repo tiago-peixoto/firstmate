@@ -1,0 +1,5 @@
+# tmux pane of the lab crew window at teardown (fmlab:parked, private socket under the lab home)
+fresh window, line A
+bash-5.3$ echo "one more line, then quiet"
+one more line, then quiet
+bash-5.3$

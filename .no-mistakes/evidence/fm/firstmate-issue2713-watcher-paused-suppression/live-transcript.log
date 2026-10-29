@@ -1,0 +1,136 @@
+[23:06:01] === S1: standing paused: declaration, stable idle pane, agent is a bare bash shell (dead agent), cadence 30s real time
+[23:06:02] status written: paused: holding for the upstream tool release
+[23:06:02] pane: idle, holding for upstream|bash-5.3$|
+[23:06:05] watch_round exit: watcher exited; stdout=[signal: /tmp/fm-lab.l69JWZ/state/parked.status]
+[23:06:05] wake-queue stale rows: 
+[23:06:05] markers:  paused-resurfaced=[]
+[23:06:18] drain output: 1793311565	2	signal	parked.status	signal: /tmp/fm-lab.l69JWZ/state/parked.status|wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: holding for the upstream tool release|
+[23:06:18] acked through 2
+[23:06:18] --- S1 phase A: first stable sight of the declaration
+[23:06:23] watch_round exit: watcher exited; stdout=[stale: fmlab:parked]
+[23:06:23] wake-queue stale rows: #3 stale: fmlab:parked|
+[23:06:23] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383737353930343a323032362d31302d32392032333a30343a33322e373538343436303932202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:06:25] drain output: 1793311583	3	stale	fmlab:parked	stale: fmlab:parked|
+[23:06:25] acked through 3
+[23:06:25] --- S1 phase B: same hash inside the cadence must stay quiet (4 poll cycles)
+[23:06:31] watch_round absorb: watcher survived 4 poll cycles silently; stdout=[]
+[23:06:31] wake-queue stale rows: 
+[23:06:31] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383737353930343a323032362d31302d32392032333a30343a33322e373538343436303932202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:06:31] status age now 29s; sleeping until the 30s cadence has elapsed
+[23:06:34] --- S1 phase C: cadence elapsed, expect one bounded 'awaiting external' recheck
+[23:06:49] watch_round exit: watcher did NOT exit in 15s; stdout=[]
+[23:07:09] throttle marker age: 46s, status age: 67s
+[23:07:09] --- S1 phase C (retry): both ages past the 30s cadence, expect one bounded 'awaiting external' recheck
+[23:07:10] watch_round exit: watcher exited; stdout=[stale: fmlab:parked (paused 68s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)]
+[23:07:10] wake-queue stale rows: #4 stale: fmlab:parked (paused 68s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|
+[23:07:10] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383737353930343a323032362d31302d32392032333a30343a33322e373538343436303932202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:07:12] drain output: 1793311630	4	stale	fmlab:parked	stale: fmlab:parked (paused 68s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|
+[23:07:12] acked through 4
+[23:07:12] --- S1 phase D: after the recheck, the same hash stays quiet again
+[23:07:16] watch_round absorb: watcher survived 3 poll cycles silently; stdout=[]
+[23:07:16] wake-queue stale rows: 
+[23:07:16] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383737353930343a323032362d31302d32392032333a30343a33322e373538343436303932202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:08:25] === S2: standing captain-held declaration, stable idle pane, bare shell agent, cadence 30s real time
+[23:08:26] status written: captain-held [key=route]: tracked by held-decision-route
+[23:08:29] watch_round exit: watcher exited; stdout=[signal: /tmp/fm-lab.l69JWZ/state/parked.status]
+[23:08:30] drain output: 1793311708	6	signal	parked.status	needs-decision: /tmp/fm-lab.l69JWZ/state/parked.status|wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: captain-held [key=route]: tracked by held-decision-route|
+[23:08:30] acked through 6
+[23:08:30] --- S2 phase A: first stable sight
+[23:08:36] watch_round exit: watcher exited; stdout=[stale: fmlab:parked]
+[23:08:36] wake-queue stale rows: #7 stale: fmlab:parked|
+[23:08:36] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3537007374726f6e673a34343a38383738313330323a323032362d31302d32392032333a30383a32362e313132323736373637202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:08:37] drain output: 1793311715	7	stale	fmlab:parked	stale: fmlab:parked|
+[23:08:37] acked through 7
+[23:08:37] --- S2 phase B: quiet inside the cadence
+[23:08:42] watch_round absorb: watcher survived 3 poll cycles silently; stdout=[]
+[23:09:07] throttle marker age 32s, status age 41s
+[23:09:07] --- S2 phase C: cadence elapsed, expect one 'awaiting the captain' recheck
+[23:09:08] watch_round exit: watcher exited; stdout=[stale: fmlab:parked (captain-held 42s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)]
+[23:09:08] wake-queue stale rows: #8 stale: fmlab:parked (captain-held 42s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)|
+[23:09:08] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3537007374726f6e673a34343a38383738313330323a323032362d31302d32392032333a30383a32362e313132323736373637202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:09:10] drain output: 1793311748	8	stale	fmlab:parked	stale: fmlab:parked (captain-held 42s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)|
+[23:09:10] acked through 8
+[23:09:10] --- S2 phase D: quiet again after the recheck
+[23:09:14] watch_round absorb: watcher survived 3 poll cycles silently; stdout=[]
+[23:09:14] wedge rows in queue: 0
+[23:09:35] === S3: standing paused: declaration on a pane that never settles (a clock printing every second), cadence 30s real time
+[23:09:37] pane tail: parked, clock 1793311775|parked, clock 1793311776| cmd=sleep
+[23:09:40] watch_round exit: watcher exited; stdout=[signal: /tmp/fm-lab.l69JWZ/state/parked.status]
+[23:09:41] drain output: 1793311779	10	signal	parked.status	signal: /tmp/fm-lab.l69JWZ/state/parked.status|wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: waiting on the validation run to finish|
+[23:09:42] acked through 10
+[23:09:42] --- S3 phase A: inside the cadence the ticking pane must stay quiet (5 poll cycles)
+[23:09:50] watch_round absorb: watcher survived 5 poll cycles silently; stdout=[]
+[23:09:50] count marker=[0] stale suppressor present? no
+[23:09:50] wake-queue stale rows: 
+[23:09:50] markers: .count-fmlab_parked .hash-fmlab_parked .paused-rechecked-fmlab_parked  paused-resurfaced=[]
+[23:10:09] status age 32s; --- S3 phase B: declaration stood a whole cadence, expect exactly one bounded recheck
+[23:10:11] watch_round exit: watcher exited; stdout=[stale: fmlab:parked (paused 33s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)]
+[23:10:11] wake-queue stale rows: #11 stale: fmlab:parked (paused 33s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|
+[23:10:11] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3438007374726f6e673a34343a38383738373531313a323032362d31302d32392032333a30393a33372e313639303933363930202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:10:12] drain output: 1793311811	11	stale	fmlab:parked	stale: fmlab:parked (paused 33s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)|
+[23:10:13] acked through 11
+[23:10:13] --- S3 phase C: pane keeps ticking, the recheck just fired holds the next cadence (4 cycles)
+[23:10:19] watch_round absorb: watcher survived 4 poll cycles silently; stdout=[]
+[23:10:19] wake-queue stale rows: 
+[23:10:19] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked  paused-resurfaced=[declared:r1:3438007374726f6e673a34343a38383738373531313a323032362d31302d32392032333a30393a33372e313639303933363930202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65]
+[23:10:19] wedge rows in queue: 0
+[23:10:53] === S4: paused: with an until time that already passed (2026-10-29T22:10:23Z), on the still-ticking pane, status fresh (inside the 999s cadence)
+[23:10:53] pane tail: parked, clock 1793311852
+[23:10:56] watch_round exit: watcher exited; stdout=[signal: /tmp/fm-lab.l69JWZ/state/parked.status]
+[23:10:58] drain output: 1793311856	13	signal	parked.status	signal: /tmp/fm-lab.l69JWZ/state/parked.status|wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: rate limit until 2026-10-29T22:10:23Z|
+[23:10:58] acked through 13
+[23:10:58] --- S4 phase A: expect the due recheck on the second consecutive changing poll, not after the cadence
+[23:11:02] watch_round exit: watcher exited; stdout=[stale: fmlab:parked (paused 8s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)]
+[23:11:02] fired after 4s; count marker=[0]
+[23:11:02] wake-queue stale rows: #14 stale: fmlab:parked (paused 8s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)|
+[23:11:02] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383739343239353a323032362d31302d32392032333a31303a35332e353732373436333433202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due]
+[23:11:03] drain output: 1793311861	14	stale	fmlab:parked	stale: fmlab:parked (paused 8s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)|
+[23:11:04] acked through 14
+[23:11:04] --- S4 phase B: once per declaration: the pane keeps ticking and the same elapsed time stays quiet (5 cycles)
+[23:11:12] watch_round absorb: watcher survived 5 poll cycles silently; stdout=[]
+[23:11:12] wake-queue stale rows: 
+[23:11:12] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383739343239353a323032362d31302d32392032333a31303a35332e353732373436333433202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due]
+[23:11:12] wedge rows in queue: 0
+[23:11:41] === S5: paused: until already passed (2026-10-29T22:11:11Z); pane stable at line A, then changes ONCE and settles; the watcher had already polled A
+[23:11:44] watch_round exit: watcher exited; stdout=[signal: /tmp/fm-lab.l69JWZ/state/parked.status]
+[23:11:45] drain output: 1793311903	16	signal	parked.status	signal: /tmp/fm-lab.l69JWZ/state/parked.status|wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: rate limit until 2026-10-29T22:11:11Z|
+[23:11:45] acked through 16
+[23:11:45] --- establishing prior-poll bookkeeping live: one poll cycle on the stable pane
+[23:11:46] watch_round absorb: watcher survived 1 poll cycles silently; stdout=[]
+[23:11:46] after one cycle: hash=[] count=[] (watcher-written)
+[23:11:46] pane changed once: idle external-decision gate, line A|bash-5.3$ echo "one more line, then quiet"|one more line, then quiet|bash-5.3$|
+[23:11:46] --- S5 phase A: expect the PLAIN first sight (bare 'stale: fmlab:parked'), not the due recheck
+[23:11:52] watch_round exit: watcher exited; stdout=[stale: fmlab:parked]
+[23:11:52] fired after 6s
+[23:11:52] wake-queue stale rows: #17 stale: fmlab:parked|
+[23:11:52] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383830313435333a323032362d31302d32392032333a31313a34312e313731323833393734202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due]
+[23:11:53] drain output: 1793311911	17	stale	fmlab:parked	stale: fmlab:parked|
+[23:11:54] acked through 17
+[23:11:54] --- S5 phase B: the settled pane then gets its owed due recheck through the stable-hash path
+[23:12:09] watch_round exit: watcher did NOT exit in 15s; stdout=[]
+[23:13:15] === S5 (redo): paused: until already passed (2026-10-29T22:12:45Z); watcher has seen the pane stable at line A (its own bookkeeping), pane then changes ONCE and settles
+[23:13:18] watch_round exit: watcher exited; stdout=[signal: /tmp/fm-lab.l69JWZ/state/parked.status]
+[23:13:19] drain output: 1793311997	19	signal	parked.status	signal: /tmp/fm-lab.l69JWZ/state/parked.status|wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: rate limit until 2026-10-29T22:12:45Z|
+[23:13:20] acked through 19
+[23:13:23] warm_to_count: watcher-written hash=[bde6a7df4376d784a53ce8b6fc903498] count=[1] stale-suppressor? no
+[23:13:23] pane changed once: idle external-decision gate, line A|bash-5.3$ echo "one more line, then quiet"|one more line, then quiet|bash-5.3$|
+[23:13:23] --- S5 phase A: expect the PLAIN first sight (bare 'stale: fmlab:parked'), not the due-recheck wording
+[23:13:28] watch_round exit: watcher exited; stdout=[stale: fmlab:parked]
+[23:13:28] fired after 5s
+[23:13:28] wake-queue stale rows: #20 stale: fmlab:parked|
+[23:13:28] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383830353937313a323032362d31302d32392032333a31333a31352e343038333838373330202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due]
+[23:13:30] drain output: 1793312008	20	stale	fmlab:parked	stale: fmlab:parked|
+[23:13:30] acked through 20
+[23:13:30] --- S5 phase B: once per declaration: the settled pane stays quiet afterwards (4 cycles)
+[23:13:36] watch_round absorb: watcher survived 4 poll cycles silently; stdout=[]
+[23:13:36] wake-queue stale rows: 
+[23:13:36] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383830353937313a323032362d31302d32392032333a31333a31352e343038333838373330202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due]
+[23:13:39] watch_round exit: watcher exited; stdout=[signal: /tmp/fm-lab.l69JWZ/state/parked.status]
+[23:13:41] drain output: 1793312019	22	signal	parked.status	signal: /tmp/fm-lab.l69JWZ/state/parked.status|wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: rate limit until 2026-10-29T22:12:45Z|
+[23:13:41] acked through 22
+[23:13:42] poll 1 recorded hash; changing the pane once now (count=[0])
+[23:13:45] S5b watcher stdout=[stale: fmlab:parked (paused 9s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)]
+[23:13:45] wake-queue stale rows: #23 stale: fmlab:parked (paused 9s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)|
+[23:13:45] markers: .count-fmlab_parked .hash-fmlab_parked .paused-fmlab_parked .paused-rechecked-fmlab_parked .paused-resurfaced-fmlab_parked .stale-fmlab_parked  paused-resurfaced=[declared:r1:3436007374726f6e673a34343a38383830373539363a323032362d31302d32392032333a31333a33362e393835373235383130202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due]
+[23:13:46] drain output: 1793312025	23	stale	fmlab:parked	stale: fmlab:parked (paused 9s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)|
+[23:13:47] acked through 23
