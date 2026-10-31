@@ -495,6 +495,32 @@ test_merged_pr_is_not_read_again() {
   pass 'a merged PR leaves the monitor'
 }
 
+test_final_contributions_are_not_enrolled_on_every_pass() {
+  local home n out
+  home=$(new_home final-enroll)
+  for n in 61 62 63; do
+    task "$home" "done$n" "pr=https://github.com/o/r/pull/$n"
+    pr "$home" "$n" "$HEAD_A" "$BASE_1" false false
+    set_pr "$home" "$n" '.state = "merged"'
+  done
+  task "$home" live1 pr=https://github.com/o/r/pull/70
+  pr "$home" 70 "$HEAD_A" "$BASE_1" false false
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" poll >/dev/null || fail 'could not record the merged PRs'
+  out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" owned) || fail 'owned PRs could not be listed'
+  [ "$(printf '%s\n' "$out" | jq '[.[] | select(.final)] | length')" = 3 ] || fail "the merged PRs must be final records: $out"
+  # A copy of bin/ whose fm-contributions.sh logs each call before running the real one.
+  cp -R "$ROOT/bin" "$home/bin-logged"
+  printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >> %q\nexec bash %q "$@"\n' \
+    "$home/contributions.log" "$ROOT/bin/fm-contributions.sh" > "$home/bin-logged/fm-contributions.sh"
+  out=$(with_home "$home" bash "$home/bin-logged/fm-pr-health.sh" poll) || fail 'the PR health poll failed'
+  printf '%s\n' "$out" | grep -E 'pull/70 conflicts with its base' >/dev/null || fail "the open PR must still be read: $out"
+  with_home "$home" bash "$home/bin-logged/fm-pr-health.sh" poll >/dev/null || fail 'the second PR health poll failed'
+  if grep -E '^enroll .*pull/6[123]$' "$home/contributions.log" >/dev/null; then
+    fail "final contributions were enrolled again: $(cat "$home/contributions.log")"
+  fi
+  pass 'a final contribution is not enrolled again on each pass'
+}
+
 test_absent_flag_changes_nothing() {
   local home out before
   home=$(new_home flag-off)
@@ -613,7 +639,8 @@ for test_name in test_unknown_then_dirty_wakes_once test_dirty_again_at_same_com
   test_retired_contribution_is_not_reclaimed_from_the_cached_branch \
   test_retired_contribution_is_not_reclaimed_by_a_fresh_branch_lookup \
   test_unreadable_contribution_record_pauses_the_monitor_once \
-  test_nothing_prints_while_nothing_changed test_merged_pr_is_not_read_again test_absent_flag_changes_nothing \
+  test_nothing_prints_while_nothing_changed test_merged_pr_is_not_read_again \
+  test_final_contributions_are_not_enrolled_on_every_pass test_absent_flag_changes_nothing \
   test_watcher_surfaces_one_wake test_failure_once_per_latest_commit_after_cleanup \
   test_all_owned_pr_reads_start_in_one_wave test_checks_on_later_pages \
   test_unsupported_provider_has_no_github_reads; do

@@ -11,7 +11,9 @@
 # Ownership is fm-contributions.sh owned: each task's recorded pr= and the
 # durable records in data/<task>/contributions.json. poll adds one source and
 # records each new URL through fm-contributions.sh enroll, so ownership
-# outlives the worker: the open PR whose head is a live task copy's current
+# outlives the worker (a final record is already durable and is never
+# enrolled again, which keeps a home with many merged PRs inside the read
+# budget): the open PR whose head is a live task copy's current
 # branch (fm_pr_number_from_branch). Drafts and adopted branches count. A PR
 # URL that merely appears in a status line is not owned, and a record the
 # captain retired is never re-enrolled, so retirement ends the monitor's
@@ -203,7 +205,7 @@ enroll_new() { # deadline : enroll recorded and branch PRs not yet durably owned
   local pids=()
   : > "$TMP/enroll.tsv"
   jq -r --slurpfile health "$TMP/health.json" '
-    .[] | select($health[0].prs[.url] == null) | .url as $url | .tasks[] | [., $url] | @tsv' \
+    .[] | select(.final | not) | select($health[0].prs[.url] == null) | .url as $url | .tasks[] | [., $url] | @tsv' \
     "$TMP/owned.json" >> "$TMP/enroll.tsv"
   mkdir "$TMP/branches"
   while IFS=$'\t' read -r id wt; do
