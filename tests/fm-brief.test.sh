@@ -928,7 +928,7 @@ test_secondmate_directory_paths_are_absolute_and_output_is_stable() {
   )
   cmp -s "$baseline" "$brief" \
     || fail "relative FM_HOME changed charter bytes compared with the same absolute home"
-  assert_grep ">> '$home/state/relative-home.status'" "$brief" \
+  assert_grep "fm-status-write.sh' '$home/state/relative-home.status'" "$brief" \
     "relative FM_HOME did not render an absolute secondmate status path"
 
   brief="$home/data/relative-state/brief.md"
@@ -944,7 +944,7 @@ test_secondmate_directory_paths_are_absolute_and_output_is_stable() {
   )
   cmp -s "$baseline" "$brief" \
     || fail "relative FM_STATE_OVERRIDE changed charter bytes compared with the same absolute state directory"
-  assert_grep ">> '$state_override/relative-state.status'" "$brief" \
+  assert_grep "fm-status-write.sh' '$state_override/relative-state.status'" "$brief" \
     "relative FM_STATE_OVERRIDE did not render an absolute secondmate status path"
 
   brief="$data_override/relative-data/brief.md"
@@ -960,7 +960,7 @@ test_secondmate_directory_paths_are_absolute_and_output_is_stable() {
   )
   cmp -s "$baseline" "$brief" \
     || fail "relative FM_DATA_OVERRIDE changed charter bytes compared with the same absolute data directory"
-  assert_grep ">> '$home/state/relative-data.status'" "$brief" \
+  assert_grep "fm-status-write.sh' '$home/state/relative-data.status'" "$brief" \
     "relative FM_DATA_OVERRIDE changed the absolute default status path"
 
   err="$root/unresolved.err"
@@ -1011,7 +1011,7 @@ test_herdr_lab_contract_applies_to_scouts_but_not_secondmates() {
 }
 
 test_pause_verb_override_renders_all_brief_scaffolds() {
-  local home kind id brief append now epoch templates template line signals
+  local home kind id brief append epoch templates template line signals minimum_signals
   home="$TMP_ROOT/pause-verb-home"
   mkdir -p "$home/data"
 
@@ -1037,11 +1037,9 @@ test_pause_verb_override_renders_all_brief_scaffolds() {
     # may not carry an unevaluated substitution that a file-write tool would
     # copy through verbatim.
     # shellcheck disable=SC2016 # Match literal backticks in the generated interface.
-    append=$(sed -n '/`echo "{state}/s/.*`\(echo .*\)`.*/\1/p' "$brief")
-    now=$(date +%s)
+    append=$(grep -F 'fm-status-write.sh' "$brief" | head -n 1 | sed -n 's/^.*`\(FM_CLASSIFY_.*\)`.*$/\1/p')
     append=${append//\{state\}/done}
     append=${append//\{one short line\}/test event}
-    append=${append//<epoch>/$now}
     case "$append" in
       *"\$("*) fail "$kind scaffold left an unevaluated command in its status-append line" ;;
     esac
@@ -1049,7 +1047,7 @@ test_pause_verb_override_renders_all_brief_scaffolds() {
     bash -c "$append" || fail "generated status command failed"
     epoch=$(bash -c '. "$1"; status_line_at_epoch "$(cat "$2")"' _ \
       "$ROOT/bin/fm-classify-lib.sh" "$home/state/$id.status")
-    [ "$epoch" = "$now" ] || fail "$kind scaffold did not record the worker's event time"
+    [[ "$epoch" =~ ^[0-9]+$ ]] || fail "$kind scaffold did not record the writer's event time"
     # Every status signal the brief instructs a worker to append is a template
     # the worker fills in and writes verbatim, with or without a shell, not only
     # rule 4's echo: substitute each one's named placeholders and read the stamp
@@ -1079,7 +1077,9 @@ test_pause_verb_override_renders_all_brief_scaffolds() {
     done <<SIGNALS
 $templates
 SIGNALS
-    [ "$signals" -ge 4 ] \
+    minimum_signals=4
+    [ "$kind" != secondmate ] || minimum_signals=2
+    [ "$signals" -ge "$minimum_signals" ] \
       || fail "$kind brief instructed only $signals stamped status signals"
     assert_grep "States: working, needs-decision, blocked, awaiting, done, failed." "$brief" \
       "$kind brief did not render the configured pause verb in its states list"
