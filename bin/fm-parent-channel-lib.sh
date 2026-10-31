@@ -168,8 +168,22 @@ fm_parent_channel_append_once() {  # <path> <line>
 
 # Publish one parent-facing line from <home>. See the return codes above.
 fm_parent_channel_report() {  # <home> <state> <line>
-  local home=$1 state=$2 line=$3 destination rc=0
+  local home=$1 state=$2 line=$3 destination rc=0 head verb key='' corr='' body word
   destination=$(fm_parent_channel_destination "$home" "$state") || rc=$?
   [ "$rc" -eq 0 ] || return "$rc"
-  fm_parent_channel_append_once "$destination" "$(status_stamp_line "$line")" || return 4
+  _fm_status_unstamped "$line" head
+  verb=$(status_line_verb "$head")
+  body=$(status_line_note "$line")
+  case "${head%%:*}" in
+    *'[key='*']'*) word=${head#*'[key='}; key=${word%%]*} ;;
+  esac
+  case "${head%%:*}" in
+    *'[corr='*']'*) word=${head#*'[corr='}; corr=${word%%]*} ;;
+  esac
+  if status_event_recorded "$destination" "$(status_stamp_line "$line")"; then return 0; fi
+  local -a args=("$destination" "$verb")
+  [ -z "$key" ] || args+=(--key "$key")
+  [ -z "$corr" ] || args+=(--corr "$corr")
+  args+=(-- "$body")
+  "$_FM_PARENT_CHANNEL_LIB_DIR/fm-status-write.sh" "${args[@]}" || return 4
 }

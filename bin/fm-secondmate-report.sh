@@ -88,18 +88,16 @@ if [ ! -d "$(dirname "$DESTINATION")" ]; then
   exit 1
 fi
 
-token=$(fm_pending_reply_corr_token "$CORR")
 if [ "$DOC_MODE" = 1 ]; then
   DOC_PATH=$1
   shift
   NOTE=$*
   if [ -n "$NOTE" ]; then
-    printf -v line '%s [%s]: %s (%s via-helper)' "$VERB" "$token" "$NOTE" "$DOC_PATH"
+    BODY="$NOTE ($DOC_PATH via-helper)"
   else
-    printf -v line '%s [%s]: %s (via-helper)' "$VERB" "$token" "$DOC_PATH"
+    BODY="$DOC_PATH (via-helper)"
   fi
 else
-  NOTE=$*
-  printf -v line '%s [%s]: %s (via-helper)' "$VERB" "$token" "$NOTE"
+  BODY="$* (via-helper)"
 fi
-printf '%s\n' "$(status_stamp_line "$line")" >> "$DESTINATION"
+"$SCRIPT_DIR/fm-status-write.sh" "$DESTINATION" "$VERB" --corr "$CORR" -- "$BODY"
