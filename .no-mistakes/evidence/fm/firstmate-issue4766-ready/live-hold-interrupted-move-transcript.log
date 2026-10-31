@@ -1,0 +1,56 @@
++ verify origin-a before the move:
+verified: origin-a captain-call inventory
+exit=0
++ hold moved-call --origin origin-b, process killed with TERM inside the backend hold:
+Terminated                 PATH="$H/fakebin:$PATH" FM_HOME="$H" FM_STATE_OVERRIDE="$H/state" FM_DATA_OVERRIDE="$H/data" FM_CONFIG_OVERRIDE="$H/config" bash -c 'printf "%s\n" "$$" > "$FM_HOME/hold-pid"; exec "$@"' _ "$ROOT/bin/fm-captain-hold.sh" hold "$ID" --reason "Choose for B" --origin origin-b
+exit=143
+ok   - S7 hold process died from TERM (143)
+ok   - S7 origin-b was not published before the backend hold
++ task after the interrupted move:
+task:
+  id: moved-call
+  title: Separate call
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-10-31
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: 2026-10-31T14:43:11Z\n\nResolution recorded by fm-captain-hold.\nDecision digest: 0997182b49f485b83a468b293bcf5fa07ab2e70a52b93c9cc18014eb135eb9e1\nResolution mode: released\n\nCaptain decision:\nRelease this work.\n\nCaptain hold origin: origin-a\n\nOrigin: origin-a"
+ok   - S7 task keeps A's association and the uncommitted stamp
++ complete origin-b with the stale call:
+fm-captain-hold: captain-held task moved-call carries a recorded answer from an earlier call, but its newer hold never completed; re-run the hold or answer it again
+exit=1
+ok   - S7 complete refuses the previous call for B
++ complete origin-a again (released answer beneath an incomplete hold):
+fm-captain-hold: captain-held task moved-call carries a recorded answer from an earlier call, but its newer hold never completed; re-run the hold or answer it again
+exit=1
+ok   - S7 the stamp guard refuses the earlier answer under the incomplete re-hold
++ replay A's answer, then the healthy move to B:
+released: moved-call
+exit=0
+verified: origin-a captain-call inventory
+verify-a exit=0
+moved-call
+exit=0
+complete: origin-b captain-call inventory reviewed (moved-call)
+exit=0
+released: moved-call
+exit=0
+complete: origin-b captain-call inventory reviewed (moved-call)
+exit=0
++ verify origin-b after the genuine answer:
+verified: origin-b captain-call inventory
+exit=0
+ok   - S7 genuine answer for B verifies B
+
+RESULT: ok=6 fail=0
+driver exit=0

@@ -1,0 +1,12 @@
+== real bin/fm-crew-state.sh reading lane-a (claude harness, idle hook record, real tmux window on a private socket) ==
+0: fm-lane-a* (1 panes) [120x30] [layout a8fd,120x30,0,0,0] @0 (active)
+--- log tail: paused: waiting on upstream release
+state: parked · source: status-log · which API shape
+--- log tail: captain-held [key=captain-hold-lane-a-1] [at=1793457617]: operator review pending
+state: parked · source: status-log · which API shape
+--- log tail: resolved [key=captain-hold-lane-a-1] [at=1793457620]: captain call released by fm-captain-hold
+state: parked · source: status-log · which API shape
+--- log tail: captain-held [key=captain-hold-lane-a-2] [at=1793457621]: second review
+state: parked · source: status-log · which API shape
+--- log tail: resolved [key=captain-hold-lane-a-2] [at=1793457623]: captain call answered by fm-captain-hold
+state: parked · source: status-log · which API shape

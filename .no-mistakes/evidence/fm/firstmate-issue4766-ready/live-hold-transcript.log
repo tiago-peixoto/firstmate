@@ -1,0 +1,227 @@
+===== S1/S2: hold mirrors onto the worker lane log; release and answer retract it =====
++ crew-state before hold:
+state: unknown · source: none · worktree gone (torn down?)
++ hold:
+lane-a
+exit=0
+--- status log after hold ---
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on upstream release
+captain-held [key=captain-hold-lane-a-1] [at=1793457617]: operator review pending
+---
+ok   - S1 mirror line captain-hold-lane-a-1 appended
++ tasks-axi show after hold:
+task:
+  id: lane-a
+  title: Ship lane a
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:b3BlcmF0b3IgcmV2aWV3IHBlbmRpbmc="
+  hold_kind: captain
+  hold_until: "-"
+  kind: ship
+  repo: sample
++ hold-aware last_status_line: captain-held [key=captain-hold-lane-a-1] [at=1793457617]: operator review pending
++ hold-aware status_current_line ship: needs-decision [key=api-shape]: which API shape
++ hold-aware status_declared_wait_line: captain-held [key=captain-hold-lane-a-1] [at=1793457617]: operator review pending
++ crew-state while held:
+state: unknown · source: none · worktree gone (torn down?)
+ok   - S1 declared wait is the hold mirror
++ repeated hold:
+lane-a
+exit=0
+ok   - S1 repeated hold does not duplicate the mirror
++ answer --release:
+released: lane-a
+exit=0
+--- status log after release ---
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on upstream release
+captain-held [key=captain-hold-lane-a-1] [at=1793457617]: operator review pending
+resolved [key=captain-hold-lane-a-1] [at=1793457620]: captain call released by fm-captain-hold
+---
+ok   - S2 release retracts under its own key
++ last_status_line after release: paused: waiting on upstream release
+ok   - S2 readers read past the settled pair to the worker's paused line
++ open decisions: api-shape	needs-decision	which API shape
+ok   - S2 worker's own open decision api-shape untouched
++ crew-state after release:
+state: unknown · source: none · worktree gone (torn down?)
++ re-hold:
+lane-a
+exit=0
+ok   - S2 re-hold declares occurrence 2
++ answer (close):
+answered: lane-a
+exit=0
+ok   - S2 closing answer retracts occurrence 2
++ answer replay:
+answered: lane-a
+exit=0
+ok   - S2 replayed answer appends no second retraction
+--- final status log ---
+working: mid implementation
+needs-decision [key=api-shape]: which API shape
+paused: waiting on upstream release
+captain-held [key=captain-hold-lane-a-1] [at=1793457617]: operator review pending
+resolved [key=captain-hold-lane-a-1] [at=1793457620]: captain call released by fm-captain-hold
+captain-held [key=captain-hold-lane-a-2] [at=1793457621]: second review
+resolved [key=captain-hold-lane-a-2] [at=1793457623]: captain call answered by fm-captain-hold
+---
++ tasks-axi show after close:
+task:
+  id: lane-a
+  title: Ship lane a
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:c2Vjb25kIHJldmlldw=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: ship
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-10-31
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 0a14835d955ea31e4ed165449136f2a21b5b3976b4fca9fdd51fb91627386bed\nResolution mode: answered\n\nCaptain decision:\nShip it.\n\nResolution recorded by fm-captain-hold.\nDecision digest: 715ba95ca057e18f2556b2704ad0042598742646fb4ff0c68c2bdd4326b4bf49\nResolution mode: released\n\nCaptain decision:\nProceed as planned."
+
+===== S3: a refused backend hold publishes no mirror and no origin =====
++ verify origin-a after answered hold:
+verified: origin-a captain-call inventory
+exit=0
+ok   - S3 baseline: earlier answer satisfies origin-a
++ hold call-1 --origin origin-b with backend refusing:
+error: backend refused the hold
+fm-captain-hold: could not hold task call-1 for the captain
+exit=1
+ok   - S3 backend refusal observed
+ok   - S3 hold exits non-zero
+--- origin-b status log after refused hold ---
+done: report ready
+---
+ok   - S3 no mirror on origin-b lane
++ call-1 after refused hold:
+task:
+  id: call-1
+  title: Separate call
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-10-31
+  closed: "-"
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: bf1632582c84c3a2389b456fc65dbe075ba86a87fc30b1ab2716b15c396ef37d\nResolution mode: released\n\nCaptain decision:\nPick A.\n\nCaptain hold origin: origin-a\n\nOrigin: origin-a"
+ok   - S3 new origin origin-b not published
+ok   - S3 backlog restored to pre-attempt bytes
++ verify origin-a still passes (earlier answer stays valid):
+verified: origin-a captain-call inventory
+exit=0
+ok   - S3 earlier answer still satisfies origin-a
++ verify origin-b (never completed, must not pass):
+fm-captain-hold: origin origin-b has no completed captain-call inventory
+exit=1
+ok   - S3 origin-b does not inherit the answer
+
+===== S4: successful backend hold mirrors the held lane before a failed origin write =====
++ hold lane-c --origin origin-a with origin write refused:
+fm-captain-hold: could not record the hold origin on lane-c
+exit=1
+ok   - S4 origin write refusal observed
+--- lane-c log captured at the moment of the origin write ---
+done: PR https://example.test/pull/7 checks green
+captain-held [key=captain-hold-lane-c-1] [at=1793457637]: Merge approval
+---
+ok   - S4 mirror (occurrence 1) was on lane-c before the origin write
++ tasks-axi show lane-c:
+task:
+  id: lane-c
+  title: Ship lane c
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:TWVyZ2UgYXBwcm92YWw="
+  hold_kind: captain
+  hold_until: "-"
+  kind: ship
+  repo: sample
+  priority: "-"
+  created: 2026-10-31
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: 2026-10-31T14:40:36Z"
+ok   - S4 lane-c is backend-held for the captain
+ok   - S4 origin-a not published after the failed write
++ crew-state of the held lane:
+state: unknown · source: none · worktree gone (torn down?)
++ retry the hold with the backend healthy:
+lane-c
+exit=0
+ok   - S4 retry does not duplicate the mirror
+ok   - S4 retry publishes the origin
+--- lane-c log after retry ---
+done: PR https://example.test/pull/7 checks green
+captain-held [key=captain-hold-lane-c-1] [at=1793457637]: Merge approval
+---
+
+===== S5: transfer settlement, concurrent re-ask during checks, long key =====
++ complete (transfer):
+complete: raced-lane captain-call inventory reviewed (raced-choice) [no recorded origin on: raced-choice; not checked against raced-lane]
+exit=0
+--- lane log after transfer ---
+needs-decision [key=route]: choose route north or route south
+captain-held [key=route] [at=1793457641]: tracked by raced-choice
+---
++ verify lane:
+verified: raced-lane captain-call inventory
+exit=0
++ answer raced-choice while worker re-asks during the checks:
+answered: raced-choice
+exit=0
+ok   - S5 re-ask landed during settlement
+--- lane log after raced answer ---
+needs-decision [key=route]: choose route north or route south
+captain-held [key=route] [at=1793457641]: tracked by raced-choice
+needs-decision [key=route]: choose route east or route west
+---
+ok   - S5 no retraction of the re-asked key route
++ open decisions: route	needs-decision	choose route east or route west
+ok   - S5 new question stays open
++ status_current_line scout: needs-decision [key=route]: choose route east or route west
++ crew-state:
+state: unknown · source: none · worktree gone (torn down?)
++ answer long-choice:
+answered: long-choice
+exit=0
+--- long-key lane log ---
+needs-decision [key=kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk]: north or south
+captain-held [key=kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk] [at=1793457647]: tracked by long-choice
+resolved [key=kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk] [at=1793457649]: captain call  [truncated] by fm-captain-hold
+---
+ok   - S5 long key retraction keeps key and closing text
++ last_status_line: needs-decision [key=kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk]: north or south
+ok   - S5 long-key transfer settles for the hold reader
+
+===== S6: hold a decision-only task (no lane) mints no status log =====
+exit=0
+ok   - S6 no status log minted for a lane-less hold
+
+
+RESULT: ok=29 fail=0
+driver exit=0
