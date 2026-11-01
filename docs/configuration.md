@@ -884,6 +884,7 @@ state/<task>.{meta,status}
 state/<task>.inbox/{,handled/}NNN.msg
 ```
 
+Sync skips every `state/` name that starts with a dot, such as `.startup-network.status`, because those are Firstmate's own records and not task records.
 The command is one-shot and starts no network transfer, daemon, timer, or watcher.
 It does not recursively copy `data/` or `state/`, accept arbitrary sources, discover secrets, or redact content.
 The exporter opens source and destination components relative to verified directory descriptors with no-follow semantics, then rechecks source identity and content before publication.
