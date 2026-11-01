@@ -186,7 +186,7 @@ worker_status_command() {  # <state> <note> [<state-dir> [<config-dir>]]
     "$ROOT/bin/fm-brief.sh" "$TASK" sample --mode no-mistakes >/dev/null) \
     || fail "brief scaffold failed"
   # shellcheck disable=SC2016 # Match literal backticks in the generated brief.
-  cmd=$(sed -n '/`echo "{state}/s/.*`\(echo .*\)`.*/\1/p' "$HOME_DIR/data/$TASK/brief.md" | head -1)
+  cmd=$(sed -n '/fm-status-write.sh/s/.*`\(FM_CLASSIFY.*fm-status-write.sh.*\)`.*/\1/p' "$HOME_DIR/data/$TASK/brief.md" | head -1)
   [ -n "$cmd" ] || fail "the brief carries no status command"
   cmd=${cmd//\{state\}/$1}
   cmd=${cmd//<epoch>/1790000000}
@@ -205,8 +205,8 @@ test_worker_status_line_is_recorded_when_written() {
   mkdir -p "$HOME_DIR/data"
   out=$(run_worker_command "$(worker_status_command needs-decision 'pick a lamp colour')" 2>&1) \
     || fail "the worker status command failed: $out"
-  assert_equals "needs-decision [at=1790000000]: pick a lamp colour" \
-    "$(cat "$HOME_DIR/state/$TASK.status")" "status log"
+  grep -Eq '^needs-decision \[at=[0-9]+\]: pick a lamp colour$' "$HOME_DIR/state/$TASK.status" \
+    || fail "status writer did not append a timestamped decision: $(cat "$HOME_DIR/state/$TASK.status")"
   assert_equals '["task.status","needs-decision"," pick a lamp colour"]' \
     "$(ledger_rows '[.event, .state, .text]')" "ledger rows right after the append"
   out=$(in_home "$ROOT/bin/fm-fleet-ledger.sh" capture 2>&1) || fail "backstop capture failed: $out"
@@ -222,7 +222,7 @@ test_worker_status_line_is_recorded_under_a_state_override() {
   mkdir -p "$HOME_DIR/data" "$state_dir"
   out=$(run_worker_command "$(worker_status_command blocked 'need a token' "$state_dir")" 2>&1) \
     || fail "the worker status command failed: $out"
-  assert_equals "blocked [at=1790000000]: need a token" "$(cat "$state_dir/$TASK.status")" "status log"
+  grep -Eq '^blocked \[at=[0-9]+\]: need a token$' "$state_dir/$TASK.status" || fail "status writer did not append a timestamped blocker"
   assert_equals '["task.status","blocked"]' \
     "$(jq -c '[.event, .state]' "$state_dir/fleet-ledger.jsonl" 2>/dev/null)" \
     "ledger rows right after the append"
@@ -258,8 +258,7 @@ test_worker_status_line_lands_when_the_ledger_fails() {
   out=$(run_worker_command "$(worker_status_command failed 'tests broke')" 2>&1) \
     || fail "a ledger failure changed the worker status command's result: $out"
   assert_equals "" "$out" "worker status command output"
-  assert_equals "failed [at=1790000000]: tests broke" \
-    "$(cat "$HOME_DIR/state/$TASK.status")" "status log"
+  grep -Eq '^failed \[at=[0-9]+\]: tests broke$' "$HOME_DIR/state/$TASK.status" || fail "status writer did not append a timestamped failure"
   rmdir "$HOME_DIR/state/fleet-ledger.jsonl"
   out=$(in_home "$ROOT/bin/fm-fleet-ledger.sh" capture 2>&1) || fail "backstop capture failed: $out"
   assert_equals '["task.status","failed"]' "$(ledger_rows '[.event, .state]')" \
@@ -274,7 +273,7 @@ test_worker_status_line_with_the_flag_absent() {
   out=$(run_worker_command "$(worker_status_command 'done' 'ready')" 2>&1) \
     || fail "the worker status command failed: $out"
   assert_equals "" "$out" "worker status command output"
-  assert_equals "done [at=1790000000]: ready" "$(cat "$HOME_DIR/state/$TASK.status")" "status log"
+  grep -Eq '^done \[at=[0-9]+\]: ready$' "$HOME_DIR/state/$TASK.status" || fail "status writer did not append a timestamped completion"
   leftovers=$(cd "$HOME_DIR/state" && find . -name '*fleet-ledger*')
   assert_equals "" "$leftovers" "ledger files with the flag absent"
   pass "flag off: the worker's status command is a plain append and leaves no ledger file, offset, or lock"
