@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # tests/fm-status-write.test.sh - validated status writer and decision recovery.
 set -u
+# shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 TMP_ROOT=$(fm_test_tmproot fm-status-write)
 WRITER="$ROOT/bin/fm-status-write.sh"

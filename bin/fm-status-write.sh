@@ -3,12 +3,11 @@
 # Usage: fm-status-write.sh <status-file> <verb> [--key <slug>] [--corr <16-hex>] -- <body>
 set -eu
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 usage() { echo "Usage: fm-status-write.sh <status-file> <verb> [--key <slug>] [--corr <16-hex>] -- <body>" >&2; exit 2; }
 [ "$#" -ge 4 ] || usage
 status_file=$1 verb=$2
 shift 2
-key= corr=
+key='' corr=''
 while [ "${1:-}" != -- ]; do
   case "${1:-}" in
     --key) [ "$#" -ge 3 ] || usage; key=$2; shift 2 ;;
