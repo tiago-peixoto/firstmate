@@ -116,18 +116,16 @@ if [ -n "$CHILD" ]; then
 fi
 CHILD_MARKER=$(fm_pending_reply_child_marker "$CHILD" "$CHILD_STATE")
 
-token=$(fm_pending_reply_corr_token "$CORR")
 if [ "$DOC_MODE" = 1 ]; then
   DOC_PATH=$1
   shift
   NOTE=$*
   if [ -n "$NOTE" ]; then
-    printf -v line '%s [%s]: %s (%s via-helper %s)' "$VERB" "$token" "$NOTE" "$DOC_PATH" "$CHILD_MARKER"
+    BODY="$NOTE ($DOC_PATH via-helper $CHILD_MARKER)"
   else
-    printf -v line '%s [%s]: %s (via-helper %s)' "$VERB" "$token" "$DOC_PATH" "$CHILD_MARKER"
+    BODY="$DOC_PATH (via-helper $CHILD_MARKER)"
   fi
 else
-  NOTE=$*
-  printf -v line '%s [%s]: %s (via-helper %s)' "$VERB" "$token" "$NOTE" "$CHILD_MARKER"
+  BODY="$* (via-helper $CHILD_MARKER)"
 fi
-printf '%s\n' "$(status_stamp_line "$line")" >> "$DESTINATION"
+"$SCRIPT_DIR/fm-status-write.sh" "$DESTINATION" "$VERB" --corr "$CORR" -- "$BODY"
