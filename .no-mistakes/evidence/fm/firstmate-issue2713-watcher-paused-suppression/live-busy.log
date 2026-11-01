@@ -1,0 +1,54 @@
+lab: /tmp/fm-lab.IpPA4w  tmux dir: /tmp/fml.cPkNwJ  group: busy
+status line: paused: waiting on the validation run to finish (mtime age 500s)
+meta:
+    window=fm-lab:parked
+    kind=ship
+    harness=grok
+    backend=tmux
+    worktree=/tmp/fm-lab.IpPA4w/projects/parked
+--- pane_current_command: grok
+--- pane capture:
+    | lab$ echo 'grok  working on the fix'; echo 'Thinking... Ctrl+c:cancel'; exec -a grok sleep 100000
+    | grok  working on the fix
+    | Thinking... Ctrl+c:cancel
+--- real fm-crew-state.sh verdict: state: working · source: pane · harness busy (grok-regex)
+=== round r0-signal (absorb, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher alive after 4 completed poll cycles - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-busy-r0-signal.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .seen-parked_status
+--- triage log tail:
+    [2026-11-01T15:29:29+0100] absorbed benign signal: /tmp/fm-lab.IpPA4w/state/parked.status
+--- stale wakes after: 0
+--- wake queue:
+    (none)
+CHECK PASS: r0: fresh declaration under a busy pane is absorbed as a benign signal (watcher keeps polling)
+CHECK PASS: r0: triage log records the benign-signal absorb
+CHECK PASS: r0: no stale wake
+--- pane_current_command: grok
+--- pane capture:
+    | lab$ echo 'grok  working on the fix'; echo 'Thinking... Ctrl+c:cancel'; exec -a grok sleep 100000
+    | grok  working on the fix
+    | Thinking... Ctrl+c:cancel
+=== round r1-busy-past-cadence (absorb, FM_PAUSE_RESURFACE_SECS=240) stale wakes before: 0
+watcher alive after 4 completed poll cycles - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-busy-r1-busy-past-cadence.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .seen-parked_status
+--- triage log tail:
+    [2026-11-01T15:29:29+0100] absorbed benign signal: /tmp/fm-lab.IpPA4w/state/parked.status
+--- stale wakes after: 0
+--- wake queue:
+    (none)
+CHECK PASS: r1: a busy pane under a standing declaration never enters the stale path (absorbing)
+CHECK PASS: r1: zero stale wakes even past the cadence
+CHECK PASS: r1: no pause tracking recorded for a busy pane
+CHECK PASS: r1: no stale suppressor recorded for a busy pane
+=== GROUP busy DONE: 0 check failure(s)
+lab removed: /tmp/fm-lab.IpPA4w (exists: no)

@@ -31,8 +31,3 @@ ok - a declared wait whose until time has passed is rechecked at once, then held
 ok - without until, a worker paused on its own ended background job is not rechecked inside the cadence
 ok - until set to a background job's timeout rechecks the worker paused on it once the job must have ended
 FM_TEST_COMPLETE
-
-real	11m13.876s
-user	2m22.231s
-sys	6m4.093s
-exit=0

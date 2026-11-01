@@ -1,0 +1,110 @@
+lab: /tmp/fm-lab.OtORzx  tmux dir: /tmp/fml.Idgs8Z  group: ticking
+status line: paused: waiting on the validation run to finish (mtime age 500s)
+meta:
+    window=fm-lab:parked
+    kind=ship
+    harness=grok
+    backend=tmux
+    worktree=/tmp/fm-lab.OtORzx/projects/parked
+--- pane_current_command: grok
+--- pane capture:
+    | lab$ exec -a grok bash -c 'echo "grok  idle - clock"; while :; do date +%s.%N; sleep 0.3; done'
+    | grok  idle - clock
+    | 1793542872.733818582
+    | 1793542873.041247809
+    | 1793542873.348544050
+    | 1793542873.655241792
+--- real fm-crew-state.sh verdict: state: paused · source: status-log · waiting on the validation run to finish
+=== round r0-signal (exit, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-ticking-r0-signal.out):
+signal: /tmp/fm-lab.OtORzx/state/parked.status
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+--- stale wakes after: 0
+--- wake queue:
+    1793542876	1	signal	parked.status	signal: /tmp/fm-lab.OtORzx/state/parked.status
+    1793542876	2	signal	parked.status	signal: /tmp/fm-lab.OtORzx/state/parked.status
+CHECK PASS: r0: watcher surfaced the fresh declaration signal and exited
+CHECK PASS: r0: no stale wake yet
+acked wakes through 2
+--- pane_current_command: grok
+--- pane capture:
+    | 1793542877.033167854
+    | 1793542877.339836017
+    | 1793542877.647240265
+    | 1793542877.954350580
+    | 1793542878.262415664
+    | 1793542878.570138455
+=== round r1-inside-cadence (absorb, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher alive after 4 completed poll cycles - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-ticking-r1-inside-cadence.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+--- stale wakes after: 0
+--- wake queue:
+CHECK PASS: r1: never-settling pane inside the cadence: watcher keeps absorbing
+CHECK PASS: r1: zero stale wakes inside the cadence
+CHECK PASS: r1: unsettled hash kept no stale suppressor
+CHECK PASS: r1: wedge timer not started
+=== round r2-cadence-recheck (exit, FM_PAUSE_RESURFACE_SECS=240) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-ticking-r2-cadence-recheck.out):
+stale: fm-lab:parked (paused 514s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .paused-resurfaced-fm-lab_parked
+    .seen-parked_status
+    .stale-fm-lab_parked
+    .wake-queue
+    .wake-queue.seq
+    .paused-resurfaced-fm-lab_parked = 'declared:r1:3438007374726f6e673a34343a39313531363334393a323032362d31312d30312031353a32313a31332e373333313630353530202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65'
+--- stale wakes after: 1
+--- wake queue:
+    1793542888	3	stale	fm-lab:parked	stale: fm-lab:parked (paused 514s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+CHECK PASS: r2: declaration standing a whole cadence: bounded recheck fires on the ticking pane
+CHECK PASS: r2: exactly one recheck wake
+CHECK PASS: r2: recheck names the declared wait ('awaiting external')
+CHECK PASS: r2: not a possible wedge
+acked wakes through 3
+--- pane_current_command: grok
+--- pane capture:
+    | 1793542888.397734387
+    | 1793542888.704640365
+    | 1793542889.011527344
+    | 1793542889.318383583
+    | 1793542889.625770822
+    | 1793542889.933118461
+=== round r3-cadence-holds (absorb, FM_PAUSE_RESURFACE_SECS=240) stale wakes before: 0
+watcher alive after 4 completed poll cycles - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-ticking-r3-cadence-holds.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .paused-resurfaced-fm-lab_parked
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+    .paused-resurfaced-fm-lab_parked = 'declared:r1:3438007374726f6e673a34343a39313531363334393a323032362d31312d30312031353a32313a31332e373333313630353530202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65'
+--- stale wakes after: 0
+--- wake queue:
+CHECK PASS: r3: ticking pane after the recheck holds the next cadence (absorbing)
+CHECK PASS: r3: no further wake
+=== GROUP ticking DONE: 0 check failure(s)
+lab removed: /tmp/fm-lab.OtORzx (exists: no)

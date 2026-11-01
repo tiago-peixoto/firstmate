@@ -1,0 +1,17 @@
+## docs/configuration.md: lines present in upstream main (49dc31b2) but not in the merge result (4ad69774)
+< FM_STALE_ESCALATE_SECS=240         # idle seconds before a provably-working stale pane escalates, unless that pane's own worker declared a wait that has not e
+< FM_PAUSE_RESURFACE_SECS=14400      # four hours between bounded rechecks of a declared external wait or verified captain-held transfer, repeated new-hash stal
+
+## docs/configuration.md: lines present in the merge result but not in upstream main
+> FM_STALE_ESCALATE_SECS=240         # idle seconds before a provably-working stale pane escalates, unless that pane's own worker declared a wait that has not e
+> FM_PAUSE_RESURFACE_SECS=14400      # four hours between bounded rechecks of a declared external wait or verified captain-held transfer, repeated new-hash stal
+
+## upstream's new text retained in the merge result:
+3200:Set `FM_STREAM_SILENT_MAX_SECS=300` before launching workers and their watcher to inspect a foreground request that stops producing substantive content for five minutes.
+3336:FM_BUSY_TURN_MAX_SECS=3600         # maximum age without a completed turn, explicit native-harness progress, or opted-in model progress (see the stream option above; bin/fm-watch.sh owns marker s
+3337:FM_STREAM_SILENT_MAX_SECS=         # opt-in Pi worker foreground model-stream silence threshold; off by default; see the option above and bin/fm-busy-lib.sh
+
+## PR phrases present in the merge result:
+an idle declared wait, whatever its agent liveness, still surfaces once before that cadence bounds repeats
+an idle declared-wait pane after its first stale wake
+

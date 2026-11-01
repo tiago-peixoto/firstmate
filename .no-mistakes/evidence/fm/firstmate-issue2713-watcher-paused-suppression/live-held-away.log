@@ -1,0 +1,95 @@
+lab: /tmp/fm-lab.qM4Jvy  tmux dir: /tmp/fml.Q8KVlB  group: held-away
+status line: captain-held [key=route]: awaiting the captain on the routing call (mtime age 500s)
+meta:
+    window=fm-lab:parked
+    kind=ship
+    harness=grok
+    backend=tmux
+    worktree=/tmp/fm-lab.qM4Jvy/projects/parked
+--- pane_current_command: grok
+--- pane capture:
+    | lab$ exec -a grok bash -c 'echo "grok  idle - clock"; while :; do date +%s.%N; sleep 0.3; done'
+    | grok  idle - clock
+    | 1793543299.851029966
+    | 1793543300.157599432
+    | 1793543300.464263955
+    | 1793543300.771033346
+--- real fm-crew-state.sh verdict: state: unknown · source: none · no current-state source available
+=== round r0-signal (exit, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-held-away-r0-signal.out):
+signal: /tmp/fm-lab.qM4Jvy/state/parked.status
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+--- triage log tail:
+--- stale wakes after: 0
+--- wake queue:
+    1793543303	1	signal	parked.status	needs-decision: /tmp/fm-lab.qM4Jvy/state/parked.status
+    1793543303	2	signal	parked.status	needs-decision: /tmp/fm-lab.qM4Jvy/state/parked.status
+CHECK PASS: r0: watcher surfaced the fresh declaration signal and exited
+CHECK PASS: r0: no stale wake yet
+acked wakes through 2
+away-posture record entered rc=0 (0 afk file(s))
+--- pane_current_command: grok
+--- pane capture:
+    | 1793543304.148127515
+    | 1793543304.455324207
+    | 1793543304.762448631
+    | 1793543305.070010496
+    | 1793543305.377731488
+    | 1793543305.685104086
+=== round r1-held-under-away (absorb, FM_PAUSE_RESURFACE_SECS=240) stale wakes before: 0
+watcher alive after 4 completed poll cycles - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-held-away-r1-held-under-away.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+--- triage log tail:
+    [2026-11-01T15:28:27+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+    [2026-11-01T15:28:28+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+    [2026-11-01T15:28:30+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+    [2026-11-01T15:28:32+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+--- stale wakes after: 0
+--- wake queue:
+CHECK PASS: r1: captain-held under the away-posture record: never rechecked even past the cadence
+CHECK PASS: r1: zero stale wakes
+away-posture record archived rc=0
+=== round r2-held-after-archive (exit, FM_PAUSE_RESURFACE_SECS=240) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-held-away-r2-held-after-archive.out):
+stale: fm-lab:parked (captain-held 514s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .paused-resurfaced-fm-lab_parked
+    .seen-parked_status
+    .stale-fm-lab_parked
+    .wake-queue
+    .wake-queue.seq
+    .paused-resurfaced-fm-lab_parked = 'declared:r1:3637007374726f6e673a34343a39313532383230373a323032362d31312d30312031353a32383a32302e383334353530393632202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65'
+--- triage log tail:
+    [2026-11-01T15:28:27+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+    [2026-11-01T15:28:28+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+    [2026-11-01T15:28:30+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+    [2026-11-01T15:28:32+0100] absorbed stale (captain-held, never rechecked while the away-posture record exists): fm-lab:parked
+--- stale wakes after: 1
+--- wake queue:
+    1793543314	3	stale	fm-lab:parked	stale: fm-lab:parked (captain-held 514s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+CHECK PASS: r2: archiving the record restores the bounded recheck
+CHECK PASS: r2: exactly one recheck wake
+CHECK PASS: r2: recheck names the captain
+CHECK PASS: r2: not a possible wedge
+=== GROUP held-away DONE: 0 check failure(s)
+lab removed: /tmp/fm-lab.qM4Jvy (exists: no)

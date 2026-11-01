@@ -1,0 +1,110 @@
+lab: /tmp/fm-lab.WNHJ7x  tmux dir: /tmp/fml.yh1Z0c  group: held-ticking
+status line: captain-held [key=route]: awaiting the captain on the routing call (mtime age 500s)
+meta:
+    window=fm-lab:parked
+    kind=ship
+    harness=grok
+    backend=tmux
+    worktree=/tmp/fm-lab.WNHJ7x/projects/parked
+--- pane_current_command: grok
+--- pane capture:
+    | lab$ exec -a grok bash -c 'echo "grok  idle - clock"; while :; do date +%s.%N; sleep 0.3; done'
+    | grok  idle - clock
+    | 1793542898.561871963
+    | 1793542898.869567485
+    | 1793542899.176951674
+    | 1793542899.483818863
+--- real fm-crew-state.sh verdict: state: unknown · source: none · no current-state source available
+=== round r0-signal (exit, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-held-ticking-r0-signal.out):
+signal: /tmp/fm-lab.WNHJ7x/state/parked.status
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+--- stale wakes after: 0
+--- wake queue:
+    1793542901	1	signal	parked.status	needs-decision: /tmp/fm-lab.WNHJ7x/state/parked.status
+    1793542902	2	signal	parked.status	needs-decision: /tmp/fm-lab.WNHJ7x/state/parked.status
+CHECK PASS: r0: watcher surfaced the fresh declaration signal and exited
+CHECK PASS: r0: no stale wake yet
+acked wakes through 2
+--- pane_current_command: grok
+--- pane capture:
+    | 1793542902.862147747
+    | 1793542903.171705300
+    | 1793542903.478110349
+    | 1793542903.785401839
+    | 1793542904.092977914
+    | 1793542904.399811754
+=== round r1-inside-cadence (absorb, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher alive after 4 completed poll cycles - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-held-ticking-r1-inside-cadence.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+--- stale wakes after: 0
+--- wake queue:
+CHECK PASS: r1: never-settling pane inside the cadence: watcher keeps absorbing
+CHECK PASS: r1: zero stale wakes inside the cadence
+CHECK PASS: r1: unsettled hash kept no stale suppressor
+CHECK PASS: r1: wedge timer not started
+=== round r2-cadence-recheck (exit, FM_PAUSE_RESURFACE_SECS=240) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-held-ticking-r2-cadence-recheck.out):
+stale: fm-lab:parked (captain-held 514s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .paused-resurfaced-fm-lab_parked
+    .seen-parked_status
+    .stale-fm-lab_parked
+    .wake-queue
+    .wake-queue.seq
+    .paused-resurfaced-fm-lab_parked = 'declared:r1:3637007374726f6e673a34343a39313531373537303a323032362d31312d30312031353a32313a33392e353630323137323032202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65'
+--- stale wakes after: 1
+--- wake queue:
+    1793542913	3	stale	fm-lab:parked	stale: fm-lab:parked (captain-held 514s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+CHECK PASS: r2: declaration standing a whole cadence: bounded recheck fires on the ticking pane
+CHECK PASS: r2: exactly one recheck wake
+CHECK PASS: r2: recheck names the captain ('awaiting the captain')
+CHECK PASS: r2: not a possible wedge
+acked wakes through 3
+--- pane_current_command: grok
+--- pane capture:
+    | 1793542914.236991357
+    | 1793542914.543938764
+    | 1793542914.850458170
+    | 1793542915.157485136
+    | 1793542915.464762877
+    | 1793542915.771528218
+=== round r3-cadence-holds (absorb, FM_PAUSE_RESURFACE_SECS=240) stale wakes before: 0
+watcher alive after 4 completed poll cycles - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-held-ticking-r3-cadence-holds.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .paused-resurfaced-fm-lab_parked
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+    .paused-resurfaced-fm-lab_parked = 'declared:r1:3637007374726f6e673a34343a39313531373537303a323032362d31312d30312031353a32313a33392e353630323137323032202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65'
+--- stale wakes after: 0
+--- wake queue:
+CHECK PASS: r3: ticking pane after the recheck holds the next cadence (absorbing)
+CHECK PASS: r3: no further wake
+=== GROUP held-ticking DONE: 0 check failure(s)
+lab removed: /tmp/fm-lab.WNHJ7x (exists: no)

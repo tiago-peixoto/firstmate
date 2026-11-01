@@ -1,0 +1,75 @@
+lab: /tmp/fm-lab.SawB6G  tmux dir: /tmp/fml.XkTqVu  group: until-settle
+status line: paused: rate limit until 2026-11-01T14:21:53Z (mtime age 500s)
+meta:
+    window=fm-lab:parked
+    kind=ship
+    harness=grok
+    backend=tmux
+    worktree=/tmp/fm-lab.SawB6G/projects/parked
+--- pane_current_command: bash
+--- pane capture:
+    | lab$
+--- real fm-crew-state.sh verdict: state: paused · source: status-log · rate limit until 2026-11-01T14:21:53Z
+=== round r0-signal (exit, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-until-settle-r0-signal.out):
+signal: /tmp/fm-lab.SawB6G/state/parked.status
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .seen-parked_status
+    .wake-queue
+    .wake-queue.seq
+--- stale wakes after: 0
+--- wake queue:
+    1793542947	1	signal	parked.status	signal: /tmp/fm-lab.SawB6G/state/parked.status
+    1793542947	2	signal	parked.status	signal: /tmp/fm-lab.SawB6G/state/parked.status
+CHECK PASS: r0: watcher surfaced the fresh declaration signal and exited
+CHECK PASS: r0: no stale wake yet
+acked wakes through 2
+--- pane_current_command: bash
+--- pane capture:
+    | lab$ x
+=== round r1-first-sight (exit, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher exited rc=0
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-until-settle-r1-first-sight.out):
+stale: fm-lab:parked
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .paused-resurfaced-fm-lab_parked
+    .seen-parked_status
+    .stale-fm-lab_parked
+    .wake-queue
+    .wake-queue.seq
+    .paused-resurfaced-fm-lab_parked = 'declared:r1:3436007374726f6e673a34343a39313531393639303a323032362d31312d30312031353a32323a32352e303038333438323934202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due'
+--- stale wakes after: 1
+--- wake queue:
+    1793542954	3	stale	fm-lab:parked	stale: fm-lab:parked
+CHECK PASS: r1: pane that changed once and settled: plain first-sight wake
+CHECK PASS: r1: exactly one wake
+CHECK PASS: r1: the first sight is NOT the due recheck
+CHECK PASS: r1: not a possible wedge
+acked wakes through 3
+=== round r2-after-first-sight (exit, FM_PAUSE_RESURFACE_SECS=999) stale wakes before: 0
+watcher STILL RUNNING after 90s (expected exit) - stopping it
+--- watcher stdout (/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6/live-until-settle-r2-after-first-sight.out):
+--- watcher stderr (last 15 lines):
+--- state markers:
+    .count-fm-lab_parked
+    .hash-fm-lab_parked
+    .paused-fm-lab_parked
+    .paused-rechecked-fm-lab_parked
+    .paused-resurfaced-fm-lab_parked
+    .seen-parked_status
+    .stale-fm-lab_parked
+    .wake-queue
+    .wake-queue.seq
+    .paused-resurfaced-fm-lab_parked = 'declared:r1:3436007374726f6e673a34343a39313531393639303a323032362d31312d30312031353a32323a32352e303038333438323934202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due'
+--- stale wakes after: 0
+--- wake queue:
+observational: after the plain first sight, the stable pane's elapsed until -> 0 due recheck line(s), result=running
+=== GROUP until-settle DONE: 0 check failure(s)
+lab removed: /tmp/fm-lab.SawB6G (exists: no)
