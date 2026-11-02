@@ -4319,6 +4319,10 @@ EOF
   # remembers the hash already classified, or the declaration a busy pane's
   # crossed turn bound already handed to the away-mode daemon).
   while IFS= read -r w; do
+    # Between windows, as between checks: a pane seen stable for the first time
+    # can spend a whole bounded state read, so many windows together can outlast
+    # the grace. Each window stays one step, so one that hangs still goes stale.
+    refresh_watcher_beacon
     kind=$(window_kind "$w")
     task=$(window_to_task "$w" "$STATE")
     # Steering-inbox loss detection runs before the secondmate stale
