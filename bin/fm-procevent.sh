@@ -1591,7 +1591,12 @@ cmd_owner_watchdog() {  # <source-id> <runner-pid> <runner-identity> <ready-file
 
 # Start a runner outside the watcher cycle that noticed it was missing. The
 # public start boundary establishes its own process group before claiming.
+# The runner's owner guard refuses to start on a stale lease, and the work a
+# caller does before launching - reconcile republishes every unacknowledged
+# result first - can outlast the refresh that caller made on entry. Refreshing
+# here gives the runner the fresh lease an attached start gives its own.
 detach_runner() {  # <source-id>
+  owner_lease_refresh
   isolate_runner detach "$1"
 }
 
