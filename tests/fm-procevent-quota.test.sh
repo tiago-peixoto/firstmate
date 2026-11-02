@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Behavioral tests for bin/fm-procevent-quota.sh.
 set -u
+# This suite does not source tests/lib.sh, so pin its fixture umask here too:
+# under a permissive ambient umask such as 0002 the retire fixture's state
+# directory fails the private-directory contract before the behavior runs.
+umask 022
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"

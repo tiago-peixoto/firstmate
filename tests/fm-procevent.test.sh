@@ -3769,6 +3769,35 @@ assert_contains "$(cat "$TMP_ROOT/attached.out")" "captured:" \
   "the attached source result was not captured"
 pass "a foreground start refreshes its lease while its caller remains attached"
 
+# reconcile refreshes the lease once, then republishes every unacknowledged
+# result before it launches anything. This fixture adapter makes that republish
+# outlast the lease, so a runner launched on that earlier refresh meets a stale
+# lease when its owner guard starts, while an attached start of the same source
+# runs.
+cat > "$ADAPTER_ROOT/bin/fm-procevent-slowsilent.sh" <<'SH'
+#!/usr/bin/env bash
+case "${1-}" in
+  silent) sleep 6; exit 1 ;;
+esac
+exit 2
+SH
+chmod +x "$ADAPTER_ROOT/bin/fm-procevent-slowsilent.sh"
+HLATELEASE="$TMP_ROOT/late-lease"; new_home "$HLATELEASE"
+fm_test_track_procevent_home "$HLATELEASE"
+LATE_LEASE_STARTED="$TMP_ROOT/late-lease.started"
+pe_adapter "$HLATELEASE" register openended late-lease-src -- \
+  "$STARTED_BLOCKER" "$LATE_LEASE_STARTED" "$BLOCKER" "$TMP_ROOT/late-lease.trigger" "late lease payload" >/dev/null
+mkdir -p "$HLATELEASE/state/procevent-inbox"
+printf 'unacknowledged result\n' > "$HLATELEASE/state/procevent-inbox/slow-src.1.result"
+printf 'slowsilent\n' > "$HLATELEASE/state/procevent-inbox/slow-src.1.adapter"
+chmod 0600 "$HLATELEASE/state/procevent-inbox/slow-src.1.result" "$HLATELEASE/state/procevent-inbox/slow-src.1.adapter"
+FM_PROCEVENT_OWNER_LEASE_SECONDS=3 FM_PROCEVENT_OWNER_CHECK_SECONDS=1 \
+  pe_adapter "$HLATELEASE" reconcile >/dev/null || true
+wait_for "$LATE_LEASE_STARTED" 50 \
+  || fail "a detached launch ran its runner on a lease that went stale while reconcile republished"
+pe_adapter "$HLATELEASE" retire late-lease-src >/dev/null 2>&1 || true
+pass "a detached launch refreshes its owner lease right before it starts the runner"
+
 HCLOCK="$TMP_ROOT/lease-clock"; new_home "$HCLOCK"
 fm_test_track_procevent_home "$HCLOCK"
 CLOCK_TRIGGER="$TMP_ROOT/lease-clock.trigger"
