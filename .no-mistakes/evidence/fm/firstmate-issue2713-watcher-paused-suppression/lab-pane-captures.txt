@@ -1,0 +1,26 @@
+# Real lab panes on the private tmux socket /tmp/fm-lab.hQUAdb/tmux/tmux-1000/fm-lab, captured 2026-11-03T17:01:17+0100
+
+## lab:fm-crew  (pane_current_command=sleep)
+parked, waiting on the upstream release
+
+## lab:fm-tick  (pane_current_command=bash)
+17:01:14.338234403
+17:01:14.945164985
+17:01:15.551877131
+17:01:16.158648285
+17:01:16.765612776
+17:01:17.372404221
+
+## lab:fm-once  (pane_current_command=bash)
+waiting on the rate limit
+bash-5.3$ echo "still waiting on the rate limit"
+still waiting on the rate limit
+bash-5.3$
+
+## lab:fm-busy  (pane_current_command=bash)
+17:01:16
+working on it...  esc to interrupt  Ctrl+c:cancel
+17:01:16
+working on it...  esc to interrupt  Ctrl+c:cancel
+17:01:17
+working on it...  esc to interrupt  Ctrl+c:cancel

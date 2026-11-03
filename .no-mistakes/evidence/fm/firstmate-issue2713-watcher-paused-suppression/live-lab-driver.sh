@@ -1,283 +1,264 @@
 #!/usr/bin/env bash
-# live-lab-driver.sh <group> - drive bin/fm-watch.sh against a REAL tmux pane in
-# a disposable lab home (bin/fm-lab-home.sh), with the real bin/fm-crew-state.sh
-# reader. No fake tmux, no fake crew state. Groups:
-#   stable        live agent (fake `grok` foreground), idle stable pane, paused:
-#   ticking       live agent whose pane prints a clock every 0.3s, paused:
-#   held-ticking  same ticking pane, captain-held declaration
-#   until-ticking dead agent (shell), ticking pane, paused: ... until <elapsed>
-#   until-settle  dead agent (shell), pane changes once and settles, until <elapsed>
-#   secondmate    kind=secondmate, idle stable pane, paused:
+# Live drive of bin/fm-watch.sh against a real tmux server on the lab's private
+# socket. Every scenario uses real time: no mtime backdating, no fake tmux, no
+# fake crew-state. One scenario at a time; the lab state is reset between them.
 set -u
-ROOT=/home/firstmate/.no-mistakes/worktrees/5284051b2355/01M6BPZ4RGGQW935JHCHPYWND6
-EV=/home/firstmate/.no-mistakes/evidence/01M6BPZ4RGGQW935JHCHPYWND6
-GROUP=${1:?group}
-LOG=$EV/live-$GROUP.log
-: > "$LOG"
-exec > >(tee -a "$LOG") 2>&1
-
-LAB=$(mktemp -d "${TMPDIR:-/tmp}/fm-lab.XXXXXX")
-"$ROOT/bin/fm-lab-home.sh" create "$LAB" >/dev/null || { echo "lab create failed"; exit 2; }
-TMUXDIR=$("$ROOT/bin/fm-lab-home.sh" tmux-dir "$LAB") || { echo "lab tmux-dir failed"; exit 2; }
-STATE=$LAB/state
-WINDOW=fm-lab:parked
-KEY=$(printf '%s' "$WINDOW" | tr ':/.' '___')
+ROOT=$1; LAB=$2; EV=$3
+SOCK="$LAB/tmux/tmux-$(id -u)/fm-lab"
+export FM_HOME="$LAB" TMUX_TMPDIR="$LAB/tmux" TMUX="$SOCK,0,0" FM_CREW_STATE_NO_FORGE=1
+STATE="$LAB/state"
+WATCH="$ROOT/bin/fm-watch.sh"
+DRAIN="$ROOT/bin/fm-wake-drain.sh"
+T="$EV/live-lab-transcript.log"
 FAILS=0
 
-tm() { env -u TMUX TMUX_TMPDIR="$TMUXDIR" tmux "$@"; }
-cleanup() {
-  tm kill-server >/dev/null 2>&1 || true
-  "$ROOT/bin/fm-lab-home.sh" teardown "$LAB" >/dev/null 2>&1 || true
-  rm -rf "$LAB"
-  echo "lab removed: $LAB (exists: $([ -e "$LAB" ] && echo yes || echo no))"
+log() { printf '[%s] %s\n' "$(date +%T)" "$*" | tee -a "$T"; }
+check() {  # <condition-result> <description>
+  if [ "$1" -eq 0 ]; then log "  ok   - $2"; else log "  FAIL - $2"; FAILS=$((FAILS + 1)); fi
 }
-trap cleanup EXIT
+tm() { tmux "$@"; }
+key_of() { printf '%s' "$1" | tr ':/.' '___'; }
+beat_mtime() { stat -c %Y "$STATE/.last-watcher-beat" 2>/dev/null || true; }
 
-check() {  # <name> <cmd...>
-  local name=$1; shift
-  if "$@"; then echo "CHECK PASS: $name"; else echo "CHECK FAIL: $name"; FAILS=$((FAILS + 1)); fi
+launch() {  # <cadence-secs> <out> -> pid in $PID
+  local cadence=$1 out=$2
+  FM_POLL=1 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
+    FM_SECONDMATE_LIVENESS_SECS=99999999 FM_PAUSE_RESURFACE_SECS="$cadence" \
+    "$WATCH" > "$out" 2> "$out.err" &
+  PID=$!
+  log "watcher pid=$PID launched (FM_PAUSE_RESURFACE_SECS=$cadence, FM_POLL=1)"
 }
-not_grep() { ! grep "$@"; }
-stale_wakes() { awk -F '\t' -v w="$WINDOW" '$3 == "stale" && $4 == w { n++ } END { print n + 0 }' "$STATE/.wake-queue" 2>/dev/null || echo 0; }
-mtime() { stat -c %Y "$1" 2>/dev/null; }
-backdate() { touch -m -d "@$1" "$2"; }
-
-WENV=(env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE
-  -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE -u TMUX
-  TMUX_TMPDIR="$TMUXDIR" FM_HOME="$LAB" FM_POLL=1 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999
-  FM_HEARTBEAT=999999 FM_SECONDMATE_LIVENESS_SECS=99999999 FM_WATCH_HANDLING_SUCCESSOR=1)
-
-# run_watch <round> <exit|absorb> <resurface-secs>: start the real watcher; in
-# `exit` mode wait up to 90s for it to surface and exit, in `absorb` mode wait
-# for 4 completed poll cycles (liveness beacon advancing) and then stop it.
-run_watch() {
-  local round=$1 mode=$2 secs=$3 out pid i=0 beat first now cycles=0
-  out=$EV/live-$GROUP-$round.out
-  echo "=== round $round ($mode, FM_PAUSE_RESURFACE_SECS=$secs) stale wakes before: $(stale_wakes)"
-  beat=$STATE/.last-watcher-beat; rm -f "$beat"
-  "${WENV[@]}" FM_PAUSE_RESURFACE_SECS="$secs" "$ROOT/bin/fm-watch.sh" > "$out" 2> "$out.err" &
-  pid=$!
-  if [ "$mode" = exit ]; then
-    while [ "$i" -lt 900 ]; do kill -0 "$pid" 2>/dev/null || break; sleep 0.1; i=$((i + 1)); done
-    if kill -0 "$pid" 2>/dev/null; then
-      echo "watcher STILL RUNNING after 90s (expected exit) - stopping it"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; RESULT=running
-    else
-      wait "$pid"; echo "watcher exited rc=$?"; RESULT=exited
-    fi
-  else
-    while [ "$cycles" -lt 4 ] && [ "$i" -lt 900 ]; do
-      kill -0 "$pid" 2>/dev/null || break
-      first=$(mtime "$beat")
-      if [ -n "$first" ]; then
-        while [ "$i" -lt 900 ]; do
-          kill -0 "$pid" 2>/dev/null || break
-          now=$(mtime "$beat")
-          if [ -n "$now" ] && [ "$now" != "$first" ]; then cycles=$((cycles + 1)); break; fi
-          sleep 0.1; i=$((i + 1))
-        done
-      else
-        sleep 0.1; i=$((i + 1))
-      fi
-    done
-    if kill -0 "$pid" 2>/dev/null; then
-      echo "watcher alive after $cycles completed poll cycles - stopping it"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; RESULT=alive
-    else
-      wait "$pid"; echo "watcher EXITED early rc=$? after $cycles cycles (expected to stay absorbing)"; RESULT=exited
-    fi
-  fi
-  echo "--- watcher stdout ($out):"; cat "$out"
-  echo "--- watcher stderr (last 15 lines):"; tail -15 "$out.err"
-  echo "--- state markers:"; ls -a "$STATE" | grep -E '^\.(stale|paused|hash|count|seen|wake)' | sed 's/^/    /'
-  [ -e "$STATE/.paused-resurfaced-$KEY" ] && echo "    .paused-resurfaced-$KEY = '$(cat "$STATE/.paused-resurfaced-$KEY")'"
-  echo "--- triage log tail:"; tail -4 "$STATE/.watch-triage.log" 2>/dev/null | sed 's/^/    /'
-  echo "--- stale wakes after: $(stale_wakes)"
-  echo "--- wake queue:"; sed 's/^/    /' "$STATE/.wake-queue" 2>/dev/null || echo "    (none)"
+wait_exit() {  # <pid> <secs> -> 0 exited, 1 still alive
+  local i=0 n=$(( $2 * 10 ))
+  while [ "$i" -lt "$n" ]; do kill -0 "$1" 2>/dev/null || { wait "$1" 2>/dev/null; return 0; }; sleep 0.1; i=$((i + 1)); done
+  return 1
 }
-
+reap() { kill "$1" 2>/dev/null || true; wait_exit "$1" 15 || log "  WARN watcher $1 did not exit after TERM"; }
+# Count whole poll cycles (beacon advances at the top of every poll) while the
+# watcher stays alive; returns 1 if it exited first.
+watch_polls() {  # <pid> <cycles> -> prints wakes seen? no: returns 1 on exit
+  local pid=$1 want=$2 seen=0 last="" cur i=0
+  while [ "$seen" -lt "$want" ]; do
+    kill -0 "$pid" 2>/dev/null || { wait "$pid" 2>/dev/null; return 1; }
+    cur=$(beat_mtime)
+    if [ -n "$cur" ] && [ "$cur" != "$last" ]; then last=$cur; seen=$((seen + 1)); fi
+    sleep 0.1; i=$((i + 1)); [ "$i" -lt 3000 ] || return 2
+  done
+  return 0
+}
 ack() {
   local err seq gen
   err=$(mktemp)
-  "${WENV[@]}" "$ROOT/bin/fm-wake-drain.sh" >/dev/null 2> "$err" || { echo "drain failed: $(cat "$err")"; rm -f "$err"; return 1; }
-  seq=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through \([0-9][0-9]*\) --recovery-generation [A-Za-z0-9._-]*$/\1/p' "$err")
-  gen=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through [0-9][0-9]* --recovery-generation \([A-Za-z0-9._-]*\)$/\1/p' "$err")
+  "$DRAIN" > /dev/null 2> "$err" || true
+  seq=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through \([0-9][0-9]*\) --recovery-generation [A-Za-z0-9._-][A-Za-z0-9._-]*$/\1/p' "$err")
+  gen=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through [0-9][0-9]* --recovery-generation \([A-Za-z0-9._-][A-Za-z0-9._-]*\)$/\1/p' "$err")
   rm -f "$err"
-  [ -n "$seq" ] && [ -n "$gen" ] || { echo "no WAKE_ACK_REQUIRED line"; return 1; }
-  "${WENV[@]}" "$ROOT/bin/fm-wake-drain.sh" --ack-through "$seq" --recovery-generation "$gen" >/dev/null 2>&1
-  echo "acked wakes through $seq"
+  [ -n "$seq" ] && [ -n "$gen" ] || { log "  WARN no WAKE_ACK_REQUIRED from drain"; return 1; }
+  "$DRAIN" --ack-through "$seq" --recovery-generation "$gen" > /dev/null 2>&1 \
+    && log "acked wake queue through sequence $seq"
+}
+stale_wakes() {  # <window> [pattern]
+  awk -F '\t' -v w="$1" -v p="${2-}" '$3 == "stale" && $4 == w && (p == "" || index($5, p)) { n++ } END { print n + 0 }' "$STATE/.wake-queue" 2>/dev/null
+}
+queue_tail() { log "  wake-queue:"; sed 's/^/      /' "$STATE/.wake-queue" 2>/dev/null | tee -a "$T" >/dev/null; sed 's/^/      /' "$STATE/.wake-queue" 2>/dev/null; }
+markers() {  # <key>
+  local k=$1 f
+  log "  markers for $k: $(cd "$STATE" && ls -a | grep -E -- "-$k\$" | tr '\n' ' ')"
+  for f in .count-$k .paused-resurfaced-$k; do [ -e "$STATE/$f" ] && log "    $f = $(cat "$STATE/$f")"; done
+  return 0
+}
+pane_tail() { log "  pane $1 tail: $(tm capture-pane -p -t "$1" | grep -v '^$' | tail -2 | tr '\n' '|')"; }
+reset_lab_state() {
+  rm -rf "$STATE"; mkdir -p "$STATE"
+}
+status_age() { echo $(( $(date +%s) - $(stat -c %Y "$STATE/$1.status") )); }
+write_crew() {  # <task> <window> <kind> <status-line>
+  printf 'window=%s\nkind=%s\nharness=grok\nbackend=tmux\nworktree=%s\n' "$2" "$3" "$LAB/projects/demo-wt" > "$STATE/$1.meta"
+  printf '%s\n' "$4" > "$STATE/$1.status"
+  log "crew $1: kind=$3 window=$2 status='$4'"
+  log "  real crew-state read: $("$ROOT/bin/fm-crew-state.sh" "$1")"
+}
+# The fresh status line is first a status signal (pre-existing behaviour, not
+# under test): let the real watcher surface it, then ack it as a supervisor would.
+settle_signal() {  # <task>
+  local out="$LAB/signal-$1.out"
+  launch 999999 "$out"
+  if wait_exit "$PID" 30; then log "  signal wake: $(cat "$out")"; else reap "$PID"; log "  WARN no signal wake"; fi
+  ack
+  : > "$STATE/.wake-queue"
+}
+iso_at() { date -u -d "@$1" +%Y-%m-%dT%H:%M:%SZ; }
+
+# ---------------------------------------------------------------------------
+scenario_S1_stable_pane_first_sight_then_cadence() {
+  local w=lab:fm-crew k out age cadence
+  k=$(key_of "$w")
+  log "=== S1: ordinary crew, idle STABLE pane (dead agent: bash+sleep), paused: declaration"
+  reset_lab_state
+  write_crew crew1 "$w" ship 'paused: waiting on the upstream release'
+  pane_tail "$w"
+  settle_signal crew1
+  out="$LAB/s1a.out"; launch 999 "$out"
+  if wait_exit "$PID" 30; then log "  first sight wake: $(cat "$out")"; else reap "$PID"; log "  no wake in 30s"; fi
+  check "$([ "$(stale_wakes "$w")" -eq 1 ]; echo $?)" "exactly one stale wake on first sight"
+  check "$(grep -Fxq "stale: $w" "$out"; echo $?)" "first sight is the PLAIN stale wake (no recheck wording)"
+  check "$([ ! -e "$STATE/.stale-since-$k" ]; echo $?)" "no wedge timer started"
+  check "$([ -e "$STATE/.paused-$k" ] && [ -e "$STATE/.paused-resurfaced-$k" ]; echo $?)" "paused flag and re-surface throttle recorded"
+  markers "$k"; queue_tail; ack
+  age=$(status_age crew1); cadence=$(( age + 20 ))
+  log "status age ${age}s; relaunch with cadence ${cadence}s: expect quiet for ~20s then ONE recheck"
+  out="$LAB/s1b.out"; launch "$cadence" "$out"
+  if watch_polls "$PID" 8; then log "  alive after 8 polls, wakes so far: $(stale_wakes "$w")"; check "$([ "$(stale_wakes "$w")" -eq 0 ]; echo $?)" "quiet inside the cadence (8 polls)"; else check 1 "watcher exited inside the cadence: $(cat "$out")"; fi
+  if wait_exit "$PID" 60; then log "  cadence wake at status age $(status_age crew1)s: $(cat "$out")"; else reap "$PID"; log "  no wake in 60s"; fi
+  check "$([ "$(stale_wakes "$w" 'awaiting external - declared pause')" -eq 1 ]; echo $?)" "one bounded recheck with the external-wait wording once the cadence elapsed"
+  check "$([ "$(status_age crew1)" -ge "$cadence" ]; echo $?)" "recheck fired only after the status aged past the cadence"
+  check "$(grep -q 'possible wedge' "$STATE/.wake-queue"; [ $? -ne 0 ]; echo $?)" "never labelled a possible wedge"
+  queue_tail; ack
 }
 
-pane_show() {
-  echo "--- pane_current_command: $(tm display-message -p -t "$WINDOW" '#{pane_current_command}')"
-  echo "--- pane capture:"; tm capture-pane -p -t "$WINDOW" | grep -v '^[[:space:]]*$' | tail -6 | sed 's/^/    | /'
+scenario_S2_clock_pane_paused() {  # also S3 via args: <name> <status-line> <wording>
+  local name=$1 status=$2 wording=$3 w=lab:fm-tick k out age cadence
+  k=$(key_of "$w")
+  log "=== $name: ordinary crew, pane whose display CHANGES EVERY POLL (real clock), '$status'"
+  reset_lab_state
+  write_crew crew2 "$w" ship "$status"
+  pane_tail "$w"
+  settle_signal crew2
+  age=$(status_age crew2); cadence=$(( age + 20 ))
+  log "status age ${age}s; launch with cadence ${cadence}s: expect NO wake while inside the cadence"
+  out="$LAB/${name}a.out"; launch "$cadence" "$out"
+  if watch_polls "$PID" 10; then
+    check 0 "alive after 10 polls on a churning pane"
+    check "$([ "$(stale_wakes "$w")" -eq 0 ]; echo $?)" "no wake queued inside the cadence"
+    check "$([ ! -e "$STATE/.stale-$k" ]; echo $?)" "an unsettled hash keeps no stale suppressor"
+    log "  .count-$k now: $(cat "$STATE/.count-$k" 2>/dev/null) (0 = hash changed again this poll)"
+    pane_tail "$w"
+  else
+    check 1 "watcher exited inside the cadence: $(cat "$out")"
+  fi
+  if wait_exit "$PID" 60; then log "  cadence wake at status age $(status_age crew2)s: $(cat "$out")"; else reap "$PID"; log "  no wake in 60s"; fi
+  check "$([ "$(stale_wakes "$w")" -eq 1 ]; echo $?)" "exactly one stale wake once the declaration stood a whole cadence"
+  check "$([ "$(stale_wakes "$w" "$wording")" -eq 1 ]; echo $?)" "the recheck carries the '$wording' wording"
+  check "$(grep -q 'possible wedge' "$STATE/.wake-queue"; [ $? -ne 0 ]; echo $?)" "never labelled a possible wedge"
+  check "$([ "$(status_age crew2)" -ge "$cadence" ]; echo $?)" "recheck fired only after the status aged past the cadence"
+  markers "$k"; queue_tail; ack
+  log "relaunch, same cadence: the recheck just fired must hold the next cadence"
+  out="$LAB/${name}b.out"; launch "$cadence" "$out"
+  if watch_polls "$PID" 8; then check "$([ "$(stale_wakes "$w")" -eq 0 ]; echo $?)" "quiet for 8 more polls after the recheck"; else check 1 "rechecked again inside the cadence: $(cat "$out")"; fi
+  reap "$PID"
 }
 
-# ----- fixture -----------------------------------------------------------
-mkdir -p "$LAB/projects/parked"
-# The pane runs bash so `exec -a grok` can give the stand-in agent process the
-# harness's name as its argv[0]; tmux reports that as pane_current_command.
-IDLE_AGENT="echo 'grok  idle - waiting for input'; exec -a grok sleep 100000"
-BUSY_AGENT="echo 'grok  working on the fix'; echo 'Thinking... Ctrl+c:cancel'; exec -a grok sleep 100000"
-TICKING_AGENT="exec -a grok bash -c 'echo \"grok  idle - clock\"; while :; do date +%s.%N; sleep 0.3; done'"
-env -u TMUX TMUX_TMPDIR="$TMUXDIR" tmux new-session -d -s fm-lab -n parked -x 120 -y 30 -c "$LAB" \
-  env PS1='lab$ ' bash --norc --noprofile
-sleep 0.5
+scenario_S4_clock_pane_elapsed_until() {
+  local w=lab:fm-tick k out until
+  k=$(key_of "$w")
+  until=$(iso_at $(( $(date +%s) - 30 )))
+  log "=== S4: ordinary crew, clock pane, paused: with an ELAPSED until ($until), cadence 999"
+  reset_lab_state
+  write_crew crew3 "$w" ship "paused: rate limit until $until"
+  settle_signal crew3
+  out="$LAB/s4a.out"; launch 999 "$out"
+  if wait_exit "$PID" 30; then log "  due recheck at status age $(status_age crew3)s: $(cat "$out")"; else reap "$PID"; log "  no wake in 30s"; fi
+  check "$([ "$(stale_wakes "$w")" -eq 1 ]; echo $?)" "exactly one wake, well inside the 999s cadence"
+  check "$([ "$(stale_wakes "$w" 'declared clearing time has passed')" -eq 1 ]; echo $?)" "it is the elapsed-until recheck"
+  case "$(cat "$STATE/.paused-resurfaced-$k" 2>/dev/null)" in *:due) check 0 "throttle recorded as :due";; *) check 1 "throttle not :due";; esac
+  markers "$k"; queue_tail; ack
+  log "relaunch: once per declaration, the ticking pane must stay quiet"
+  out="$LAB/s4b.out"; launch 999 "$out"
+  if watch_polls "$PID" 8; then check "$([ "$(stale_wakes "$w")" -eq 0 ]; echo $?)" "no repeat of the due recheck across 8 polls"; else check 1 "due recheck repeated: $(cat "$out")"; fi
+  reap "$PID"
+}
 
-KIND=ship
-STATUS_LINE='paused: waiting on the validation run to finish'
-case "$GROUP" in
-  stable)        tm send-keys -t "$WINDOW" "$IDLE_AGENT" Enter ;;
-  ticking)       tm send-keys -t "$WINDOW" "$TICKING_AGENT" Enter ;;
-  held-ticking)  tm send-keys -t "$WINDOW" "$TICKING_AGENT" Enter
-                 STATUS_LINE='captain-held [key=route]: awaiting the captain on the routing call' ;;
-  until-ticking) tm send-keys -t "$WINDOW" 'while :; do date +%s.%N; sleep 0.3; done' Enter
-                 STATUS_LINE="paused: rate limit until $(date -u -d "@$(( $(date +%s) - 30 ))" +%Y-%m-%dT%H:%M:%SZ)" ;;
-  until-settle)  STATUS_LINE="paused: rate limit until $(date -u -d "@$(( $(date +%s) - 30 ))" +%Y-%m-%dT%H:%M:%SZ)" ;;
-  secondmate)    KIND=secondmate; tm send-keys -t "$WINDOW" "$IDLE_AGENT" Enter ;;
-  busy)          tm send-keys -t "$WINDOW" "$BUSY_AGENT" Enter ;;
-  held-away)     tm send-keys -t "$WINDOW" "$TICKING_AGENT" Enter
-                 STATUS_LINE='captain-held [key=route]: awaiting the captain on the routing call' ;;
-  *) echo "unknown group"; exit 2 ;;
+scenario_S5_pane_changes_once_then_settles() {
+  local w=lab:fm-once k out until c i=0 changed=0 observed
+  k=$(key_of "$w")
+  until=$(iso_at $(( $(date +%s) - 30 )))
+  log "=== S5: ordinary crew, pane that changes ONCE then settles, paused: with an ELAPSED until ($until)"
+  reset_lab_state
+  write_crew crew4 "$w" ship "paused: rate limit until $until"
+  pane_tail "$w"
+  settle_signal crew4
+  out="$LAB/s5.out"; launch 999 "$out"
+  # Change the pane exactly once, after its first hash was seen once (count 1,
+  # not yet stable), mirroring a pane that changes once on its way to settling.
+  while [ "$i" -lt 300 ]; do
+    c=$(cat "$STATE/.count-$k" 2>/dev/null || echo none)
+    if [ "$c" = 1 ] && [ "$changed" -eq 0 ]; then
+      tm send-keys -t "$w" -l 'echo "still waiting on the rate limit"'; tm send-keys -t "$w" Enter
+      changed=1; log "  pane changed once at .count=$c"
+    fi
+    kill -0 "$PID" 2>/dev/null || break
+    sleep 0.05; i=$((i + 1))
+  done
+  if wait_exit "$PID" 30; then log "  wake at status age $(status_age crew4)s: $(cat "$out")"; else reap "$PID"; log "  no wake in 30s"; fi
+  observed=$(tm capture-pane -p -t "$w" | grep -c 'still waiting')
+  check "$([ "$changed" -eq 1 ] && [ "$observed" -ge 1 ]; echo $?)" "the pane changed exactly once before the stale sight (echo visible: $observed)"
+  check "$([ "$(stale_wakes "$w")" -eq 1 ]; echo $?)" "exactly one wake"
+  check "$(grep -Fxq "stale: $w" "$out"; echo $?)" "it is the PLAIN first sight, not the elapsed-until recheck wording"
+  check "$([ "$(cat "$STATE/.stale-$k")" = "$(cat "$STATE/.hash-$k")" ]; echo $?)" "the sight is of the settled (post-change) hash"
+  case "$(cat "$STATE/.paused-resurfaced-$k" 2>/dev/null)" in *:due) check 0 "throttle recorded as :due";; *) check 1 "throttle not :due";; esac
+  pane_tail "$w"; markers "$k"; queue_tail; ack
+}
+
+scenario_S6_secondmate_stable_pane() {
+  local w=lab:fm-crew k out age cadence
+  k=$(key_of "$w")
+  log "=== S6: SECONDMATE on the stable pane, paused: declaration - no first sight, cadence only"
+  reset_lab_state
+  write_crew mate1 "$w" secondmate 'paused: waiting on the upstream release'
+  settle_signal mate1
+  age=$(status_age mate1); cadence=$(( age + 15 ))
+  out="$LAB/s6.out"; launch "$cadence" "$out"
+  if watch_polls "$PID" 8; then
+    check "$([ "$(stale_wakes "$w")" -eq 0 ]; echo $?)" "no plain first sight for a secondmate (8 polls quiet)"
+    check "$([ -e "$STATE/.paused-$k" ] && [ -e "$STATE/.stale-$k" ]; echo $?)" "absorbed from first sight under the pause cadence"
+  else check 1 "secondmate surfaced inside the cadence: $(cat "$out")"; fi
+  if wait_exit "$PID" 60; then log "  cadence wake at status age $(status_age mate1)s: $(cat "$out")"; else reap "$PID"; log "  no wake in 60s"; fi
+  check "$([ "$(stale_wakes "$w" 'awaiting external - declared pause')" -eq 1 ]; echo $?)" "one bounded recheck once the cadence elapsed"
+  queue_tail; ack
+}
+
+scenario_S7_busy_pane_not_surfaced() {
+  local w=lab:fm-busy k out
+  k=$(key_of "$w")
+  log "=== S7: ordinary crew on a BUSY pane (grok busy footer 'Ctrl+c:cancel', ticking), paused: aged past a 5s cadence"
+  reset_lab_state
+  write_crew crew5 "$w" ship 'paused: waiting on the validation run to finish'
+  pane_tail "$w"
+  settle_signal crew5
+  sleep 6
+  log "status age $(status_age crew5)s, cadence 5s: a busy pane must not take the stale path at all"
+  out="$LAB/s7.out"; launch 5 "$out"
+  if watch_polls "$PID" 10; then
+    check "$([ "$(stale_wakes "$w")" -eq 0 ]; echo $?)" "no stale wake across 10 polls of a busy pane"
+    check "$([ ! -e "$STATE/.paused-$k" ] && [ ! -e "$STATE/.stale-$k" ]; echo $?)" "no pause or stale bookkeeping for a busy pane"
+  else check 1 "busy pane surfaced: $(cat "$out")"; fi
+  reap "$PID"
+}
+
+scenario_S8_captain_held_clock_pane_under_away_record() {
+  local w=lab:fm-tick k out
+  k=$(key_of "$w")
+  log "=== S8: captain-held on the clock pane while the AWAY-POSTURE record exists: never rechecked"
+  reset_lab_state
+  write_crew crew6 "$w" ship 'captain-held [key=route]: awaiting the captain on the routing call'
+  settle_signal crew6
+  "$ROOT/bin/fm-afk-contract.sh" enter > /dev/null 2>&1 && log "  away record written: $(ls "$STATE" | grep -c afk-contract) file(s)"
+  sleep 6
+  out="$LAB/s8.out"; launch 5 "$out"
+  if watch_polls "$PID" 10; then check "$([ "$(stale_wakes "$w")" -eq 0 ]; echo $?)" "no recheck across 10 polls past the cadence under the away record"; else check 1 "surfaced under the away record: $(cat "$out")"; fi
+  reap "$PID"
+  "$ROOT/bin/fm-afk-contract.sh" archive > /dev/null 2>&1 && log "  away record archived"
+}
+
+case "${4:-all}" in
+  S1) scenario_S1_stable_pane_first_sight_then_cadence ;;
+  S2) scenario_S2_clock_pane_paused S2 'paused: waiting on the validation run to finish' 'awaiting external - declared pause' ;;
+  S3) scenario_S2_clock_pane_paused S3 'captain-held [key=route]: awaiting the captain on the routing call' 'awaiting the captain' ;;
+  S4) scenario_S4_clock_pane_elapsed_until ;;
+  S5) scenario_S5_pane_changes_once_then_settles ;;
+  S6) scenario_S6_secondmate_stable_pane ;;
+  S7) scenario_S7_busy_pane_not_surfaced ;;
+  S8) scenario_S8_captain_held_clock_pane_under_away_record ;;
 esac
-sleep 1
-if [ "$KIND" = secondmate ]; then
-  printf 'window=%s\nkind=secondmate\n' "$WINDOW" > "$STATE/parked.meta"
-else
-  printf 'window=%s\nkind=ship\nharness=grok\nbackend=tmux\nworktree=%s\n' "$WINDOW" "$LAB/projects/parked" > "$STATE/parked.meta"
-fi
-printf '%s\n' "$STATUS_LINE" > "$STATE/parked.status"
-# The declaration has stood 500s before the watcher first sees it (same aging
-# the pause suite uses, so FM_PAUSE_RESURFACE_SECS=999 is inside the cadence
-# and 240 is past it).
-backdate "$(( $(date +%s) - 500 ))" "$STATE/parked.status"
-echo "lab: $LAB  tmux dir: $TMUXDIR  group: $GROUP"
-echo "status line: $STATUS_LINE (mtime age $(( $(date +%s) - $(mtime "$STATE/parked.status") ))s)"
-echo "meta:"; sed 's/^/    /' "$STATE/parked.meta"
-pane_show
-echo "--- real fm-crew-state.sh verdict: $("${WENV[@]}" "$ROOT/bin/fm-crew-state.sh" parked 2>&1)"
-
-# Round 0: the crew's fresh declaration is a status signal the watcher surfaces
-# and firstmate acknowledges; this primes the seen marker exactly as production
-# does, so later rounds exercise only the stale path.
-if [ "$GROUP" = busy ]; then
-  # A provably-busy pane is the one proof that absorbs a routine paused: signal.
-  run_watch r0-signal absorb 999
-  check "r0: fresh declaration under a busy pane is absorbed as a benign signal (watcher keeps polling)" [ "$RESULT" = alive ]
-  check "r0: triage log records the benign-signal absorb" grep -Fq 'absorbed benign signal' "$STATE/.watch-triage.log"
-  check "r0: no stale wake" [ "$(stale_wakes)" -eq 0 ]
-else
-  run_watch r0-signal exit 999
-  check "r0: watcher surfaced the fresh declaration signal and exited" [ "$RESULT" = exited ]
-  check "r0: no stale wake yet" [ "$(stale_wakes)" -eq 0 ]
-  ack || FAILS=$((FAILS + 1))
-fi
-
-case "$GROUP" in
-stable|secondmate)
-  if [ "$GROUP" = stable ]; then
-    run_watch r1-first-sight exit 999
-    check "r1: first stable sight of the idle declaration is ONE plain stale wake" grep -Fxq "stale: $WINDOW" "$EV/live-$GROUP-r1-first-sight.out"
-    check "r1: exactly one stale wake queued" [ "$(stale_wakes)" -eq 1 ]
-    check "r1: not labelled a possible wedge" not_grep -Fq 'possible wedge' "$EV/live-$GROUP-r1-first-sight.out"
-    check "r1: paused flag recorded" [ -e "$STATE/.paused-$KEY" ]
-    check "r1: resurface throttle recorded" [ -e "$STATE/.paused-resurfaced-$KEY" ]
-    check "r1: wedge timer not started" [ ! -e "$STATE/.stale-since-$KEY" ]
-    ack || FAILS=$((FAILS + 1))
-  else
-    run_watch r1-no-first-sight absorb 999
-    check "r1: a secondmate's standing declaration is absorbed from first sight (no plain wake)" [ "$RESULT" = alive ]
-    check "r1: zero stale wakes" [ "$(stale_wakes)" -eq 0 ]
-  fi
-  tm send-keys -t "$WINDOW" 'x'  # a typed stray char echoes once, then the pane settles
-  sleep 0.3
-  pane_show
-  run_watch r2-inside-cadence absorb 999
-  check "r2: pane changed once and settled inside the cadence: watcher keeps absorbing" [ "$RESULT" = alive ]
-  check "r2: no new stale wake inside the cadence" [ "$(stale_wakes)" -eq 0 ]
-  [ -e "$STATE/.paused-resurfaced-$KEY" ] && backdate "$(( $(date +%s) - 500 ))" "$STATE/.paused-resurfaced-$KEY"
-  run_watch r3-cadence-recheck exit 240
-  check "r3: declaration standing a whole cadence: bounded recheck fires" [ "$RESULT" = exited ]
-  check "r3: exactly one recheck wake" [ "$(stale_wakes)" -eq 1 ]
-  check "r3: recheck names the declared wait ('awaiting external')" grep -Fq 'awaiting external' "$EV/live-$GROUP-r3-cadence-recheck.out"
-  check "r3: recheck says 'rechecked on a long cadence not a wedge'" grep -Fq 'rechecked on a long cadence not a wedge' "$EV/live-$GROUP-r3-cadence-recheck.out"
-  check "r3: not a possible wedge" not_grep -Fq 'possible wedge' "$EV/live-$GROUP-r3-cadence-recheck.out"
-  check "r3: wedge timer not started" [ ! -e "$STATE/.stale-since-$KEY" ]
-  ack || FAILS=$((FAILS + 1))
-  run_watch r4-cadence-holds absorb 240
-  check "r4: the recheck just fired holds the next cadence (absorbing)" [ "$RESULT" = alive ]
-  check "r4: no further wake" [ "$(stale_wakes)" -eq 0 ]
-  ;;
-ticking|held-ticking)
-  pane_show
-  run_watch r1-inside-cadence absorb 999
-  check "r1: never-settling pane inside the cadence: watcher keeps absorbing" [ "$RESULT" = alive ]
-  check "r1: zero stale wakes inside the cadence" [ "$(stale_wakes)" -eq 0 ]
-  check "r1: unsettled hash kept no stale suppressor" [ ! -e "$STATE/.stale-$KEY" ]
-  check "r1: wedge timer not started" [ ! -e "$STATE/.stale-since-$KEY" ]
-  run_watch r2-cadence-recheck exit 240
-  check "r2: declaration standing a whole cadence: bounded recheck fires on the ticking pane" [ "$RESULT" = exited ]
-  check "r2: exactly one recheck wake" [ "$(stale_wakes)" -eq 1 ]
-  if [ "$GROUP" = held-ticking ]; then
-    check "r2: recheck names the captain ('awaiting the captain')" grep -Fq 'awaiting the captain' "$EV/live-$GROUP-r2-cadence-recheck.out"
-  else
-    check "r2: recheck names the declared wait ('awaiting external')" grep -Fq 'awaiting external' "$EV/live-$GROUP-r2-cadence-recheck.out"
-  fi
-  check "r2: not a possible wedge" not_grep -Fq 'possible wedge' "$EV/live-$GROUP-r2-cadence-recheck.out"
-  ack || FAILS=$((FAILS + 1))
-  pane_show
-  run_watch r3-cadence-holds absorb 240
-  check "r3: ticking pane after the recheck holds the next cadence (absorbing)" [ "$RESULT" = alive ]
-  check "r3: no further wake" [ "$(stale_wakes)" -eq 0 ]
-  ;;
-until-ticking)
-  pane_show
-  run_watch r1-due-recheck exit 999
-  check "r1: elapsed until on a never-settling pane is rechecked before the cadence" [ "$RESULT" = exited ]
-  check "r1: exactly one wake" [ "$(stale_wakes)" -eq 1 ]
-  check "r1: the wake says the declared clearing time has passed" grep -Fq 'declared clearing time has passed' "$EV/live-$GROUP-r1-due-recheck.out"
-  check "r1: not a possible wedge" not_grep -Fq 'possible wedge' "$EV/live-$GROUP-r1-due-recheck.out"
-  check "r1: recorded as the due recheck (:due)" sh -c "case \"\$(cat '$STATE/.paused-resurfaced-$KEY' 2>/dev/null)\" in *:due) exit 0;; *) exit 1;; esac"
-  ack || FAILS=$((FAILS + 1))
-  run_watch r2-once-per-declaration absorb 999
-  check "r2: the same elapsed declaration does not recheck again (absorbing)" [ "$RESULT" = alive ]
-  check "r2: no further wake" [ "$(stale_wakes)" -eq 0 ]
-  ;;
-until-settle)
-  # The pane changes ONCE (a typed character) and then settles: the first sight
-  # must stay the plain stale wake, not the due recheck.
-  tm send-keys -t "$WINDOW" 'x'
-  sleep 0.2
-  pane_show
-  run_watch r1-first-sight exit 999
-  check "r1: pane that changed once and settled: plain first-sight wake" grep -Fxq "stale: $WINDOW" "$EV/live-$GROUP-r1-first-sight.out"
-  check "r1: exactly one wake" [ "$(stale_wakes)" -eq 1 ]
-  check "r1: the first sight is NOT the due recheck" not_grep -Fq 'declared clearing time has passed' "$EV/live-$GROUP-r1-first-sight.out"
-  check "r1: not a possible wedge" not_grep -Fq 'possible wedge' "$EV/live-$GROUP-r1-first-sight.out"
-  ack || FAILS=$((FAILS + 1))
-  run_watch r2-after-first-sight exit 999
-  echo "observational: after the plain first sight, the stable pane's elapsed until -> $(grep -c 'declared clearing time has passed' "$EV/live-$GROUP-r2-after-first-sight.out") due recheck line(s), result=$RESULT"
-  ;;
-busy)
-  pane_show
-  run_watch r1-busy-past-cadence absorb 240
-  check "r1: a busy pane under a standing declaration never enters the stale path (absorbing)" [ "$RESULT" = alive ]
-  check "r1: zero stale wakes even past the cadence" [ "$(stale_wakes)" -eq 0 ]
-  check "r1: no pause tracking recorded for a busy pane" [ ! -e "$STATE/.paused-$KEY" ]
-  check "r1: no stale suppressor recorded for a busy pane" [ ! -e "$STATE/.stale-$KEY" ]
-  ;;
-held-away)
-  "${WENV[@]}" "$ROOT/bin/fm-afk-contract.sh" enter >/dev/null 2>&1; echo "away-posture record entered rc=$? ($(ls "$STATE" | grep -c afk) afk file(s))"
-  pane_show
-  run_watch r1-held-under-away absorb 240
-  check "r1: captain-held under the away-posture record: never rechecked even past the cadence" [ "$RESULT" = alive ]
-  check "r1: zero stale wakes" [ "$(stale_wakes)" -eq 0 ]
-  "${WENV[@]}" "$ROOT/bin/fm-afk-contract.sh" archive >/dev/null 2>&1; echo "away-posture record archived rc=$?"
-  run_watch r2-held-after-archive exit 240
-  check "r2: archiving the record restores the bounded recheck" [ "$RESULT" = exited ]
-  check "r2: exactly one recheck wake" [ "$(stale_wakes)" -eq 1 ]
-  check "r2: recheck names the captain" grep -Fq 'awaiting the captain' "$EV/live-$GROUP-r2-held-after-archive.out"
-  check "r2: not a possible wedge" not_grep -Fq 'possible wedge' "$EV/live-$GROUP-r2-held-after-archive.out"
-  ;;
-esac
-
-echo "=== GROUP $GROUP DONE: $FAILS check failure(s)"
+log "scenario ${4:-all} finished with $FAILS failed check(s)"
 exit "$FAILS"

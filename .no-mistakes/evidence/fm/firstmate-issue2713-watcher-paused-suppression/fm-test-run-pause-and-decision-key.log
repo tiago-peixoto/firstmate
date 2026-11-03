@@ -1,0 +1,66 @@
+FM_TEST_BEGIN 2026-11-03T15:49:19Z tests/fm-watch-triage-pause.test.sh family=watcher-wake-lock expected_gate_skip=none
+1..31
+ok - all four required captain-hold tests fail when tasks-axi is unavailable
+ok - a not-provably-working non-terminal stale is surfaced immediately (never left to wait out the timer)
+ok - a declared pause surfaces once, then re-surfaces on the cadence, never wedge-escalated
+ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
+ok - own-work waits keep one first alert, then bounded rechecks without wedges; undeclared idle still alarms
+ok - paused and captain-held replacements each get their own first sight
+ok - a parked live worker surfaces once, absorbs pane churn for the whole re-surface window, then re-surfaces when it elapses
+ok - a declared wait on a pane whose hash changes every poll is rechecked once per cadence
+ok - an elapsed until time on a pane whose hash changes every poll is rechecked before the cadence, then once per declaration
+ok - a live paused worker stays absorbed until its declared time, then rechecks
+ok - work under an open captain call surfaces once, absorbs pane churn, then re-surfaces when the window elapses
+ok - a stale window with no open captain call keeps alarming on every new hash
+ok - a wake that never reached the durable queue arms no re-surface throttle
+ok - a released-then-re-held task is a distinct captain call whose first sight still alarms
+ok - a declared paused secondmate re-surfaces on the bounded normal-mode cadence
+ok - a captain-held secondmate re-surfaces on the bounded normal-mode cadence
+ok - a non-paused secondmate retains normal stale suppression
+ok - a resumed secondmate clears pause and stale tracking before stale exemption
+ok - unchanged stale hashes reclassify when a crew enters or leaves pause
+ok - a declared pause is periodically rechecked against authoritative active-run state
+ok - a paused status overridden by authoritative working preserves its wedge timer, is rechecked rather than wedge-escalated while the declaration stands, and escalates once it is lifted
+ok - a captain-held item is never rechecked while the away-posture record exists, and the recheck returns once the record is archived
+ok - a live captain-held pane is absorbed on first sight while the away-posture record exists
+ok - a delivery the captain already holds is never rechecked while the away-posture record exists
+ok - the daemon-owned one-shot never hands off a captain-held pane while the away-posture record exists
+ok - quiet mode's record silences no captain-held recheck, on the watcher's cadence or through a quiet daemon's one-shot
+ok - a declared wait naming a near-future until time stays quiet until that time
+ok - a wrong-year declared time cannot silence the watcher beyond the recheck cadence
+ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence
+ok - without until, a worker paused on its own ended background job is not rechecked inside the cadence
+ok - until set to a background job's timeout rechecks the worker paused on it once the job must have ended
+FM_TEST_COMPLETE
+FM_TEST_END 2026-11-03T16:01:16Z tests/fm-watch-triage-pause.test.sh exit=0 duration_ms=717832 gate_skip=false
+FM_TEST_BEGIN 2026-11-03T16:01:16Z tests/fm-classify-decision-key.test.sh family=pure-contract-unit expected_gate_skip=none
+ok - a stated [key=X] opens X whether it precedes or follows the verb colon
+ok - a keyless needs-decision still opens and closes the default key
+ok - a resolution closes its decision regardless of either line's key position
+ok - blocked [key=X] opens X in both key positions
+ok - two colon-form keyed decisions never collapse into one shared bucket
+ok - a [key=x] mentioned mid-note is prose, never an opened or closed key
+ok - a malformed stated key is rejected in both positions, never folded as default
+ok - status_line_verb strips every bracket tag before the colon, in any order, and recovers the bare verb
+ok - a [corr=...] tag ahead of [key=...] no longer swallows the verb: opens and closes under the stated key
+ok - a [corr=...] tag with no stated key opens under 'default', exactly like a bare needs-decision line
+ok - a [key=x] tag alone (no corr tag) still opens x - no regression from the tag-stripping fix
+ok - blocked/resolved parse their bare verb with any bracket-tag order preceding the colon
+ok - the incremental fold matches the full fold across appends in both key positions
+ok - status_key_closing_verb separates resolution, durable transfer, and still-open
+ok - status_key_closing_verb reports the last real transition, in either key position
+ok - per-key reads retain resolutions without subprocess work growing with unrelated history
+ok - overridden resolve and durable-transfer verbs still close keys behind unrelated history
+ok - per-key filtering retains ship/scout terminals, reopenings, and secondmate blockers
+ok - prose without a colon cannot impersonate a ship or scout terminal declaration
+ok - a stated default retraction closes its decision and leaves an unrelated keyless wait standing
+ok - a declared wait outlives answers for other keys beyond the event window, and its own resolved line retracts it
+ok - only a colon-bearing or keyed line is a decision transition in the fold
+ok - a recorded line stays recorded across a later resolve
+FM_TEST_END 2026-11-03T16:01:21Z tests/fm-classify-decision-key.test.sh exit=0 duration_ms=4894 gate_skip=false
+FM_TEST_SUMMARY total=2 failed=0 skipped_gate=0 duration_ms=723044
+FM_TEST_SUMMARY_FAMILY family=pure-contract-unit count=1 duration_ms=4894 failed=0
+FM_TEST_SUMMARY_FAMILY family=watcher-wake-lock count=1 duration_ms=717832 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-watch-triage-pause.test.sh duration_ms=717832
+FM_TEST_SLOWEST rank=2 script=tests/fm-classify-decision-key.test.sh duration_ms=4894
+exit=0

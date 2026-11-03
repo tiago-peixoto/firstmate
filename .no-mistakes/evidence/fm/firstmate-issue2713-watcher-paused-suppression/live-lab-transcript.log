@@ -1,0 +1,171 @@
+[16:55:42] === S1: ordinary crew, idle STABLE pane (dead agent: bash+sleep), paused: declaration
+[16:55:42] crew crew1: kind=ship window=lab:fm-crew status='paused: waiting on the upstream release'
+[16:55:42]   real crew-state read: state: paused · source: status-log · waiting on the upstream release
+[16:55:42]   pane lab:fm-crew tail: parked, waiting on the upstream release|
+[16:55:42] watcher pid=1456969 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[16:55:46]   signal wake: signal: /tmp/fm-lab.hQUAdb/state/crew1.status
+[16:55:48] acked wake queue through sequence 2
+[16:55:48] watcher pid=1471148 launched (FM_PAUSE_RESURFACE_SECS=999, FM_POLL=1)
+[16:55:54]   first sight wake: stale: lab:fm-crew
+[16:55:54]   ok   - exactly one stale wake on first sight
+[16:55:54]   ok   - first sight is the PLAIN stale wake (no recheck wording)
+[16:55:54]   ok   - no wedge timer started
+[16:55:54]   ok   - paused flag and re-surface throttle recorded
+[16:55:54]   markers for lab_fm-crew: .count-lab_fm-crew .hash-lab_fm-crew .paused-lab_fm-crew .paused-rechecked-lab_fm-crew .paused-resurfaced-lab_fm-crew .stale-lab_fm-crew 
+[16:55:54]     .count-lab_fm-crew = 2
+[16:55:54]     .paused-resurfaced-lab_fm-crew = declared:r1:3430007374726f6e673a34343a39333932343731353a323032362d31312d30332031363a35353a34322e343135373833393432202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+[16:55:54]   wake-queue:
+      1793721353	3	stale	lab:fm-crew	stale: lab:fm-crew
+[16:55:56] acked wake queue through sequence 3
+[16:55:56] status age 14s; relaunch with cadence 34s: expect quiet for ~20s then ONE recheck
+[16:55:56] watcher pid=1489174 launched (FM_PAUSE_RESURFACE_SECS=34, FM_POLL=1)
+[16:56:07]   alive after 8 polls, wakes so far: 0
+[16:56:07]   ok   - quiet inside the cadence (8 polls)
+[16:56:28]   cadence wake at status age 46s: stale: lab:fm-crew (paused 46s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[16:56:28]   ok   - one bounded recheck with the external-wait wording once the cadence elapsed
+[16:56:28]   ok   - recheck fired only after the status aged past the cadence
+[16:56:28]   ok   - never labelled a possible wedge
+[16:56:28]   wake-queue:
+      1793721388	4	stale	lab:fm-crew	stale: lab:fm-crew (paused 46s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[16:56:30] acked wake queue through sequence 4
+[16:56:30] scenario S1 finished with 0 failed check(s)
+[16:56:42] === S2: ordinary crew, pane whose display CHANGES EVERY POLL (real clock), 'paused: waiting on the validation run to finish'
+[16:56:42] crew crew2: kind=ship window=lab:fm-tick status='paused: waiting on the validation run to finish'
+[16:56:42]   real crew-state read: state: paused · source: status-log · waiting on the validation run to finish
+[16:56:42]   pane lab:fm-tick tail: 16:56:41.523397839|16:56:42.131242672|
+[16:56:42] watcher pid=1572536 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[16:56:45]   signal wake: signal: /tmp/fm-lab.hQUAdb/state/crew2.status
+[16:56:48] acked wake queue through sequence 2
+[16:56:48] status age 6s; launch with cadence 26s: expect NO wake while inside the cadence
+[16:56:48] watcher pid=1587279 launched (FM_PAUSE_RESURFACE_SECS=26, FM_POLL=1)
+[16:57:05]   ok   - alive after 10 polls on a churning pane
+[16:57:05]   ok   - no wake queued inside the cadence
+[16:57:05]   ok   - an unsettled hash keeps no stale suppressor
+[16:57:05]   .count-lab_fm-tick now: 0 (0 = hash changed again this poll)
+[16:57:05]   pane lab:fm-tick tail: 16:57:04.612252172|16:57:05.220030726|
+[16:57:08]   cadence wake at status age 26s: stale: lab:fm-tick (paused 26s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[16:57:08]   ok   - exactly one stale wake once the declaration stood a whole cadence
+[16:57:08]   ok   - the recheck carries the 'awaiting external - declared pause' wording
+[16:57:08]   ok   - never labelled a possible wedge
+[16:57:08]   ok   - recheck fired only after the status aged past the cadence
+[16:57:08]   markers for lab_fm-tick: .count-lab_fm-tick .hash-lab_fm-tick .paused-lab_fm-tick .paused-rechecked-lab_fm-tick .paused-resurfaced-lab_fm-tick .stale-lab_fm-tick 
+[16:57:08]     .count-lab_fm-tick = 0
+[16:57:08]     .paused-resurfaced-lab_fm-tick = declared:r1:3438007374726f6e673a34343a39333933363038303a323032362d31312d30332031363a35363a34322e303737373431363932202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+[16:57:08]   wake-queue:
+      1793721428	3	stale	lab:fm-tick	stale: lab:fm-tick (paused 26s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[16:57:11] acked wake queue through sequence 3
+[16:57:11] relaunch, same cadence: the recheck just fired must hold the next cadence
+[16:57:11] watcher pid=1634511 launched (FM_PAUSE_RESURFACE_SECS=26, FM_POLL=1)
+[16:57:22]   ok   - quiet for 8 more polls after the recheck
+[16:57:22] scenario S2 finished with 0 failed check(s)
+[16:57:22] === S3: ordinary crew, pane whose display CHANGES EVERY POLL (real clock), 'captain-held [key=route]: awaiting the captain on the routing call'
+[16:57:22] crew crew2: kind=ship window=lab:fm-tick status='captain-held [key=route]: awaiting the captain on the routing call'
+[16:57:23]   real crew-state read: state: unknown · source: none · no current-state source available
+[16:57:23]   pane lab:fm-tick tail: 16:57:22.233096737|16:57:22.840753304|
+[16:57:23] watcher pid=1659642 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[16:57:26]   signal wake: signal: /tmp/fm-lab.hQUAdb/state/crew2.status
+[16:57:28] acked wake queue through sequence 2
+[16:57:28] status age 6s; launch with cadence 26s: expect NO wake while inside the cadence
+[16:57:28] watcher pid=1671846 launched (FM_PAUSE_RESURFACE_SECS=26, FM_POLL=1)
+[16:57:45]   ok   - alive after 10 polls on a churning pane
+[16:57:45]   ok   - no wake queued inside the cadence
+[16:57:45]   ok   - an unsettled hash keeps no stale suppressor
+[16:57:45]   .count-lab_fm-tick now: 0 (0 = hash changed again this poll)
+[16:57:45]   pane lab:fm-tick tail: 16:57:44.725876825|16:57:45.333077601|
+[16:57:49]   cadence wake at status age 27s: stale: lab:fm-tick (captain-held 26s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[16:57:49]   ok   - exactly one stale wake once the declaration stood a whole cadence
+[16:57:49]   ok   - the recheck carries the 'awaiting the captain' wording
+[16:57:49]   ok   - never labelled a possible wedge
+[16:57:49]   ok   - recheck fired only after the status aged past the cadence
+[16:57:49]   markers for lab_fm-tick: .count-lab_fm-tick .hash-lab_fm-tick .paused-lab_fm-tick .paused-rechecked-lab_fm-tick .paused-resurfaced-lab_fm-tick .stale-lab_fm-tick 
+[16:57:49]     .count-lab_fm-tick = 0
+[16:57:49]     .paused-resurfaced-lab_fm-tick = declared:r1:3637007374726f6e673a34343a39333934333331383a323032362d31312d30332031363a35373a32322e383532383231343136202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65
+[16:57:49]   wake-queue:
+      1793721468	3	stale	lab:fm-tick	stale: lab:fm-tick (captain-held 26s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+[16:57:51] acked wake queue through sequence 3
+[16:57:51] relaunch, same cadence: the recheck just fired must hold the next cadence
+[16:57:51] watcher pid=1722817 launched (FM_PAUSE_RESURFACE_SECS=26, FM_POLL=1)
+[16:58:02]   ok   - quiet for 8 more polls after the recheck
+[16:58:03] scenario S3 finished with 0 failed check(s)
+[16:58:03] === S4: ordinary crew, clock pane, paused: with an ELAPSED until (2026-11-03T15:57:33Z), cadence 999
+[16:58:03] crew crew3: kind=ship window=lab:fm-tick status='paused: rate limit until 2026-11-03T15:57:33Z'
+[16:58:03]   real crew-state read: state: paused · source: status-log · rate limit until 2026-11-03T15:57:33Z
+[16:58:03] watcher pid=1745840 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[16:58:06]   signal wake: signal: /tmp/fm-lab.hQUAdb/state/crew3.status
+[16:58:09] acked wake queue through sequence 2
+[16:58:09] watcher pid=1758916 launched (FM_PAUSE_RESURFACE_SECS=999, FM_POLL=1)
+[16:58:13]   due recheck at status age 10s: stale: lab:fm-tick (paused 10s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)
+[16:58:13]   ok   - exactly one wake, well inside the 999s cadence
+[16:58:13]   ok   - it is the elapsed-until recheck
+[16:58:13]   ok   - throttle recorded as :due
+[16:58:13]   markers for lab_fm-tick: .count-lab_fm-tick .hash-lab_fm-tick .paused-lab_fm-tick .paused-rechecked-lab_fm-tick .paused-resurfaced-lab_fm-tick .stale-lab_fm-tick 
+[16:58:13]     .count-lab_fm-tick = 0
+[16:58:13]     .paused-resurfaced-lab_fm-tick = declared:r1:3436007374726f6e673a34343a39333935303935363a323032362d31312d30332031363a35383a30332e313538303736323039202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due
+[16:58:13]   wake-queue:
+      1793721493	3	stale	lab:fm-tick	stale: lab:fm-tick (paused 10s, awaiting external - the declared clearing time has passed, rechecked on a long cadence not a wedge; confirm the wait cleared)
+[16:58:16] acked wake queue through sequence 3
+[16:58:16] relaunch: once per declaration, the ticking pane must stay quiet
+[16:58:16] watcher pid=1774172 launched (FM_PAUSE_RESURFACE_SECS=999, FM_POLL=1)
+[16:58:27]   ok   - no repeat of the due recheck across 8 polls
+[16:58:28] scenario S4 finished with 0 failed check(s)
+[16:58:28] === S5: ordinary crew, pane that changes ONCE then settles, paused: with an ELAPSED until (2026-11-03T15:57:58Z)
+[16:58:28] crew crew4: kind=ship window=lab:fm-once status='paused: rate limit until 2026-11-03T15:57:58Z'
+[16:58:28]   real crew-state read: state: paused · source: status-log · rate limit until 2026-11-03T15:57:58Z
+[16:58:28]   pane lab:fm-once tail: waiting on the rate limit|bash-5.3$|
+[16:58:28] watcher pid=1797541 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[16:58:31]   signal wake: signal: /tmp/fm-lab.hQUAdb/state/crew4.status
+[16:58:34] acked wake queue through sequence 2
+[16:58:34] watcher pid=1812396 launched (FM_PAUSE_RESURFACE_SECS=999, FM_POLL=1)
+[16:58:37]   pane changed once at .count=1
+[16:58:43]   wake at status age 15s: stale: lab:fm-once
+[16:58:43]   ok   - the pane changed exactly once before the stale sight (echo visible: 2)
+[16:58:43]   ok   - exactly one wake
+[16:58:43]   ok   - it is the PLAIN first sight, not the elapsed-until recheck wording
+[16:58:43]   ok   - the sight is of the settled (post-change) hash
+[16:58:43]   ok   - throttle recorded as :due
+[16:58:43]   pane lab:fm-once tail: still waiting on the rate limit|bash-5.3$|
+[16:58:43]   markers for lab_fm-once: .count-lab_fm-once .hash-lab_fm-once .paused-lab_fm-once .paused-rechecked-lab_fm-once .paused-resurfaced-lab_fm-once .stale-lab_fm-once 
+[16:58:44]     .count-lab_fm-once = 2
+[16:58:44]     .paused-resurfaced-lab_fm-once = declared:r1:3436007374726f6e673a34343a39333935363035363a323032362d31312d30332031363a35383a32382e313336343038393535202b3031303000726567756c61722066696c653a38316234002d007265616461626c65007265616461626c65:due
+[16:58:44]   wake-queue:
+      1793721523	3	stale	lab:fm-once	stale: lab:fm-once
+[16:58:46] acked wake queue through sequence 3
+[16:58:46] scenario S5 finished with 0 failed check(s)
+[16:58:53] === S6: SECONDMATE on the stable pane, paused: declaration - no first sight, cadence only
+[16:58:53] crew mate1: kind=secondmate window=lab:fm-crew status='paused: waiting on the upstream release'
+[16:58:54]   real crew-state read: state: paused · source: status-log · waiting on the upstream release
+[16:58:54] watcher pid=1853785 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[16:58:57]   signal wake: signal: /tmp/fm-lab.hQUAdb/state/mate1.status
+[16:58:59] acked wake queue through sequence 2
+[16:58:59] watcher pid=1863693 launched (FM_PAUSE_RESURFACE_SECS=21, FM_POLL=1)
+[16:59:11]   ok   - no plain first sight for a secondmate (8 polls quiet)
+[16:59:11]   ok   - absorbed from first sight under the pause cadence
+[16:59:16]   cadence wake at status age 23s: stale: lab:fm-crew (paused 22s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[16:59:16]   ok   - one bounded recheck once the cadence elapsed
+[16:59:16]   wake-queue:
+      1793721555	3	stale	lab:fm-crew	stale: lab:fm-crew (paused 22s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+[16:59:18] acked wake queue through sequence 3
+[16:59:18] scenario S6 finished with 0 failed check(s)
+[16:59:18] === S7: ordinary crew on a BUSY pane (grok busy footer 'Ctrl+c:cancel', ticking), paused: aged past a 5s cadence
+[16:59:18] crew crew5: kind=ship window=lab:fm-busy status='paused: waiting on the validation run to finish'
+[16:59:18]   real crew-state read: state: working · source: pane · harness busy (grok-regex)
+[16:59:18]   pane lab:fm-busy tail: 16:59:18|working on it...  esc to interrupt  Ctrl+c:cancel|
+[16:59:18] watcher pid=1911053 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[16:59:50]   WARN no signal wake
+[16:59:52] acked wake queue through sequence 0
+[16:59:58] status age 40s, cadence 5s: a busy pane must not take the stale path at all
+[16:59:58] watcher pid=1990118 launched (FM_PAUSE_RESURFACE_SECS=5, FM_POLL=1)
+[17:00:12]   ok   - no stale wake across 10 polls of a busy pane
+[17:00:12]   ok   - no pause or stale bookkeeping for a busy pane
+[17:00:12] scenario S7 finished with 0 failed check(s)
+[17:00:12] === S8: captain-held on the clock pane while the AWAY-POSTURE record exists: never rechecked
+[17:00:12] crew crew6: kind=ship window=lab:fm-tick status='captain-held [key=route]: awaiting the captain on the routing call'
+[17:00:12]   real crew-state read: state: unknown · source: none · no current-state source available
+[17:00:12] watcher pid=2014226 launched (FM_PAUSE_RESURFACE_SECS=999999, FM_POLL=1)
+[17:00:15]   signal wake: signal: /tmp/fm-lab.hQUAdb/state/crew6.status
+[17:00:18] acked wake queue through sequence 2
+[17:00:18]   away record written: 0 file(s)
+[17:00:24] watcher pid=2034620 launched (FM_PAUSE_RESURFACE_SECS=5, FM_POLL=1)
+[17:00:40]   ok   - no recheck across 10 polls past the cadence under the away record
+[17:00:40]   away record archived
+[17:00:40] scenario S8 finished with 0 failed check(s)
