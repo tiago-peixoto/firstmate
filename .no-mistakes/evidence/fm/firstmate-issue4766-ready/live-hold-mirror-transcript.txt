@@ -1,134 +1,77 @@
-################ Scenario 1: hold mirrors onto the status log; worker state preserved
---- before hold: crew-state
-state: done · source: status-log · PR ready https://example.test/pr/1 checks green
---- status log after hold:
-working: implementing
-done: PR ready https://example.test/pr/1 checks green
-captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
-PASS  exactly one captain-held line with key captain-hold-t1-1
-PASS  two-line reason folded: no stray blocked: line
-PASS  hold appended exactly one physical line
-PASS  hold declaration was self-announced (does not re-wake the recording home)
-last_status_line        = captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
-PASS  last_status_line (watcher/daemon view) sees the standing hold raw
-last_worker_status_line = done: PR ready https://example.test/pr/1 checks green
-PASS  last_worker_status_line keeps the worker's done line
-status_current_line     = done: PR ready https://example.test/pr/1 checks green
-PASS  status_current_line keeps the worker's done line under the hold
-status_open_decisions   = []
-PASS  hold opens no worker decision
---- crew-state while held:
-state: done · source: status-log · PR ready https://example.test/pr/1 checks green
-PASS  fm-crew-state reports done while held
---- idempotent re-hold
-PASS  repeated hold does not duplicate the mirror
-################ Scenario 2: release and close retract the mirror; readers return the worker's line
---- status log after release:
-working: implementing
-done: PR ready https://example.test/pr/1 checks green
-captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
-resolved [key=captain-hold-t1-1] [at=1792579587]: captain call released by fm-captain-hold
-PASS  release appended the keyed retraction
-PASS  release retraction was self-announced
-last_status_line        = done: PR ready https://example.test/pr/1 checks green
-PASS  settled mirror pair reads through to the worker's done line
-status_current_line     = done: PR ready https://example.test/pr/1 checks green
-PASS  status_current_line after release is the done line
-state: done · source: status-log · PR ready https://example.test/pr/1 checks green
-PASS  fm-crew-state reports done after release
---- re-hold starts lifecycle 2, close answer retracts it, replay appends nothing
-PASS  re-hold declares key captain-hold-t1-2
-PASS  close appended the keyed retraction for lifecycle 2
-PASS  replayed settlement appended no second retraction
-last_status_line        = done: PR ready https://example.test/pr/1 checks green
-PASS  after close the lane still reads its done line
---- final status log:
-working: implementing
-done: PR ready https://example.test/pr/1 checks green
-captain-held [key=captain-hold-t1-1] [at=1792579584]: Pick the API shape blocked: on vendor reply
-resolved [key=captain-hold-t1-1] [at=1792579587]: captain call released by fm-captain-hold
-captain-held [key=captain-hold-t1-2] [at=1792579589]: second review
-resolved [key=captain-hold-t1-2] [at=1792579590]: captain call answered by fm-captain-hold
---- backlog after close:
-## In flight
+# S1: hold a task that has a worker lane
+lab tmux (private socket /tmp/fm-lab.qqHe2f/tmux): firstmate:fm-lab-gated-work
+--- state/lab-gated-work.status:
+    working: mid implementation
+    needs-decision [key=api-shape]: which sample API shape
+    paused: waiting on the sample upstream release
+$ fm-captain-hold hold lab-gated-work --reason $'operator review pending\nsecond line of the reason'
+lab-gated-work
+exit=0
+--- state/lab-gated-work.status:
+    working: mid implementation
+    needs-decision [key=api-shape]: which sample API shape
+    paused: waiting on the sample upstream release
+    captain-held [key=captain-hold-lab-gated-work-1] [at=1793741265]: operator review pending second line of the reason
+$ fm-captain-hold hold lab-gated-work --reason 'operator review pending' (repeat)
+lab-gated-work
+exit=0
+captain-held line count: 1
+$ fm-crew-state lab-gated-work (while held)
+state: parked · source: status-log · which sample API shape
+$ tasks-axi show lab-gated-work (backlog)
+task:
+  id: lab-gated-work
+  title: Ship the lab sample
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:b3BlcmF0b3IgcmV2aWV3IHBlbmRpbmc="
+  hold_kind: captain
+  hold_until: "-"
+  kind: ship
+  repo: sample
 
-## Queued
-## Done
-- [x] t1 - Ship the sample (repo: sample) (kind: ship) (done 2026-10-21) (hold: fm-hold-v1:c2Vjb25kIHJldmlldw==) (hold-kind: captain)
-  Resolution recorded by fm-captain-hold.
-  Decision digest: 0a14835d955ea31e4ed165449136f2a21b5b3976b4fca9fdd51fb91627386bed
-  Resolution mode: answered
+# S2: release retracts the declaration and readers see the worker's own last event
+$ fm-captain-hold answer lab-gated-work --decision-file go.txt --release
+released: lab-gated-work
+exit=0
+--- state/lab-gated-work.status:
+    working: mid implementation
+    needs-decision [key=api-shape]: which sample API shape
+    paused: waiting on the sample upstream release
+    captain-held [key=captain-hold-lab-gated-work-1] [at=1793741265]: operator review pending second line of the reason
+    resolved [key=captain-hold-lab-gated-work-1] [at=1793741268]: captain call released by fm-captain-hold
+$ fm-crew-state lab-gated-work (after release)
+state: parked · source: status-log · which sample API shape
+last_status_line (watcher read): paused: waiting on the sample upstream release
+status_open_decisions: api-shape needs-decision which sample API shape
 
-  Captain decision:
-  Ship it.
+# S3: a decision-only hold (no worker lane) creates no status log
+$ fm-captain-hold hold lab-decision-only --title 'Pick the vendor' --reason 'captain must pick' --repo sample
+lab-decision-only
+exit=0
+    state/lab-gated-work.busy-gen
+    state/lab-gated-work.busy-state
+    state/lab-gated-work.meta
+    state/lab-gated-work.status
+no state/lab-decision-only.status (expected)
 
-PASS  closing answer moved the task to Done in the backlog
-################ Scenario 3 (adversarial): hold after an answered worker decision does not revive it
---- crew-state before hold:
-state: unknown · source: none · no current-state source available
-needs-decision [key=q]: pick
-resolved [key=q]: use a
-captain-held [key=captain-hold-t2-1] [at=1792579593]: captain review
-status_current_line = captain-held [key=captain-hold-t2-1] [at=1792579593]: captain review
-PASS  answered needs-decision is not revived by the hold (current line is the mirror, not the answered question)
-status_open_decisions = []
-PASS  no decision is open under the hold
---- crew-state while held:
-state: unknown · source: none · no current-state source available
-PASS  fm-crew-state state word unchanged by the hold (before: state: unknown / held: state: unknown)
-blocked: daemon socket refused
-resolved [key=default]: restarted
-captain-held [key=captain-hold-t2-2] [at=1792579596]: captain review again
-keyless: status_current_line = captain-held [key=captain-hold-t2-2] [at=1792579596]: captain review again
-PASS  answered keyless blocked is not revived by the hold
-state: unknown · source: none · no current-state source available
-PASS  fm-crew-state does not report the answered blocked under the re-hold
-################ Scenario 4: failed lane stays failed under a standing hold
-working: start
-failed: build broke
-captain-held [key=captain-hold-t3-1] [at=1792579598]: retry or drop?
-last_worker_status_line = failed: build broke
-PASS  worker failure visible under the standing hold
-state: failed · source: status-log · build broke
-PASS  fm-crew-state reports failed while held
-################ Scenario 5 (boundary): a decision-only hold mints no status log
-PASS  no status log created for a lane-less hold
---- divergence guard over the mirrored home:
-
-PASS  diverged reports nothing for the hold lifecycle's own keyed pair
-################ Scenario 6 (live watcher): hold and release never re-surface a delivered lane
---- round 1: first sight of the delivered idle lane surfaces one terminal stale
-watcher output:
-stale: firstmate:fm-t4
-PASS  first terminal stale surfaced for firstmate:fm-t4
-PASS  no wedge label on the delivered lane
-wake queue:
-1792579605	1	stale	firstmate:fm-t4	stale: firstmate:fm-t4
-stale suppressor hash = 8b332bc73bac775fb7902a2646336dc3
-wake queue after ack:
---- round 2: firstmate holds the lane for the captain (real fm-captain-hold.sh), watcher re-armed
-done: PR https://example.test/pull/4 checks green
-captain-held [key=captain-hold-t4-1] [at=1792579609]: merge approval
-watcher output:
-PASS  watcher stayed alive through 3 poll cycles after the hold (rc=0)
-PASS  the hold firstmate just recorded printed no wake
-PASS  no new stale row for the held lane (rows before=0 after=0)
-PASS  held done lane took the captain-held cadence (.paused marker present)
---- round 3: captain releases (real answer --release), watcher re-armed with a 1s wedge bound
-done: PR https://example.test/pull/4 checks green
-captain-held [key=captain-hold-t4-1] [at=1792579609]: merge approval
-resolved [key=captain-hold-t4-1] [at=1792579615]: captain call released by fm-captain-hold
-watcher output:
-PASS  watcher stayed alive through 4 poll cycles after the release (rc=0)
-PASS  the release printed no wake (delivered outcome not re-surfaced)
-PASS  no new stale row after release (rows=0)
-PASS  release lifted the hold's pause marker
-PASS  settled mirror over a done lane never wedge-escalated
-PASS  stale suppressor hash unchanged across hold and release
-PASS  no wedge alarm fired
---- state markers for firstmate_fm-t4:
-.count-firstmate_fm-t4
-.hash-firstmate_fm-t4
-.stale-firstmate_fm-t4
-
-TOTAL FAILS: 0
+# S4: adversarial - the worker keeps writing over a standing hold; the later worker line wins, the hold is still retracted on close
+re-hold exit=0
+last_status_line while held with a later done line: done: PR https://example.test/pull/7 checks green
+answered: lab-gated-work
+answer (close) exit=0
+--- state/lab-gated-work.status:
+    working: mid implementation
+    needs-decision [key=api-shape]: which sample API shape
+    paused: waiting on the sample upstream release
+    captain-held [key=captain-hold-lab-gated-work-1] [at=1793741265]: operator review pending second line of the reason
+    resolved [key=captain-hold-lab-gated-work-1] [at=1793741268]: captain call released by fm-captain-hold
+    captain-held [key=captain-hold-lab-gated-work-2] [at=1793741271]: second operator review
+    done: PR https://example.test/pull/7 checks green
+    resolved [key=captain-hold-lab-gated-work-2] [at=1793741273]: captain call answered by fm-captain-hold
+$ fm-crew-state lab-gated-work (after closing answer)
+state: done · source: status-log · PR https://example.test/pull/7 checks green
+retraction count for key 2: 1
+lab home removed on exit: /tmp/fm-lab.qqHe2f

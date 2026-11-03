@@ -1,0 +1,5 @@
+1..2
+ok - parked, terminal, ci-monitoring, coarse, runless, absent and unreadable runs keep the unchanged wedge ladder
+ok - with config/wedge-defer-validating absent a running validation keeps the unchanged ladder, wording and reads
+FM_TEST_COMPLETE
+exit=0

@@ -1,0 +1,13 @@
+ok - hold and release mirror the hold on the status log the classifier reads
+ok - release and close retract a hold mirror buried under a later answer
+ok - settling a transferred call leaves a re-asked transfer key open
+ok - a transfer key re-asked while settlement checks its calls takes no retraction
+ok - a retraction keeps a long transfer key and its closing text whole
+ok - a question appended at retraction stays open in full, incremental, and current-state reads
+ok - release frees held work with the captain's words recorded and the body preserved
+ok - answer records the captain's words, closes idempotently, and releases routed work
+ok - the completion gate attests captain-held inventory and transfers open status decisions
+ok - reconcile closes a moot call with evidence and keeps an active one open with a note
+ok - a secondmate home publishes each hold occurrence and its answer on the parent channel
+ok - a captain hold is released only in an attended session: away refuses, quiet and no record release
+exit=0

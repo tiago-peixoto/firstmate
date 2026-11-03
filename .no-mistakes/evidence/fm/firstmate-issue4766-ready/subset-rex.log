@@ -1,0 +1,3 @@
+ok - rex: a hold mirror and its retraction never change the planned mark
+ok - rex: the marks producer plans from status, writes once, repairs without re-notifying, clears on resolve, and honors off
+exit=0
