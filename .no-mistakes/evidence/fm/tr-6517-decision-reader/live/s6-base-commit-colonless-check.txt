@@ -1,0 +1,10 @@
+Check: does the colonless key form render its note as the whole line on the BASE commit too?
+Fixture: state/d.status = "needs-decision [key=d3] colonless form call"
+Base commit 37e9a365 bin/fm-wake-drain.sh (extracted with git archive into a temp dir), normal drain preview row:
+  d [key=d3] needs-decision: needs-decision [key=d3] colonless form call
+Base commit with --open-decisions:
+  usage: fm-wake-drain.sh [--ack-through SEQUENCE --recovery-generation GENERATION]
+  rc=2
+Conclusion: the whole-line note for the colonless form predates this change; the target commit's
+full reader and bounded preview both render it the same way, so S6's first-run diff was an
+oracle mistake in the driver, corrected before the re-run.

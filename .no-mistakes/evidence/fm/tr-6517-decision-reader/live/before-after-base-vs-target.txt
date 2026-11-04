@@ -1,0 +1,16 @@
+### BASE COMMIT 37e9a365: normal drain over 96 long decisions + one queued wake
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+OPEN DECISIONS: 78 more omitted (byte cap)
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+(preview rows: 18)
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1927018.1793805448.Qhkxda
+
+### TARGET COMMIT 6026ec80: same fixture (fresh queue), normal drain
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+OPEN DECISIONS: 78 more omitted (byte cap). Read and reconcile the full set: bin/fm-wake-drain.sh --open-decisions
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+WAKE_ACK_REQUIRED: open-decisions=96 (full reader: bin/fm-wake-drain.sh --open-decisions). After full-set reconciliation and handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1939137.1793805455.KyKv6F
+### TARGET COMMIT: bin/fm-wake-drain.sh --open-decisions | wc -l
+96

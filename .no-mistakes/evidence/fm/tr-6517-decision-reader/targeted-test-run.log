@@ -1,0 +1,3 @@
+FM_TEST_BEGIN 2026-11-04T15:11:59Z tests/fm-captain-hold-lifecycle.test.sh family=pure-contract-unit expected_gate_skip=none
+
+[stopped by the test agent at 2026-11-04T15:18:51Z before completion: the structured-output deadline arrived while tests/fm-captain-hold-lifecycle.test.sh was still running; no file reached FM_TEST_END]

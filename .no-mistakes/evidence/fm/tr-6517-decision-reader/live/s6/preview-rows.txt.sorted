@@ -1,0 +1,5 @@
+a [key=a2] blocked: infra outage
+c [key=c1] needs-decision: mate question
+d [key=d2] needs-decision: second call again
+d [key=d3] needs-decision: needs-decision [key=d3] colonless form call
+e [key=pending-reply-abcdef0123456789] blocked: pending-reply-missed: task=ios pending-reply-id=abcdef0123456789 request=ship it

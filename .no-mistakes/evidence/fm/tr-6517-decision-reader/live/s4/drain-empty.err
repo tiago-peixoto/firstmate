@@ -1,0 +1,1 @@
+WAKE_ACK_REQUIRED: open-decisions=0 (full reader: bin/fm-wake-drain.sh --open-decisions). After full-set reconciliation and handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1871504.1793805412.KhIhZQ

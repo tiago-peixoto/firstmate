@@ -1,0 +1,11 @@
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+b done: report written
+c done: finished a turn
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+a [key=a2] blocked: infra outage
+c [key=c1] needs-decision: mate question
+d [key=d2] needs-decision: second call again
+d [key=d3] needs-decision: needs-decision [key=d3] colonless form call
+e [key=pending-reply-abcdef0123456789] blocked: pending-reply-missed: task=ios pending-reply-id=abcdef0123456789 request=ship it
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.

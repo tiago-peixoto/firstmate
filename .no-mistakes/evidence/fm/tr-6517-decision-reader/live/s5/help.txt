@@ -1,0 +1,2 @@
+usage: fm-wake-drain.sh [--open-decisions | --ack-through SEQUENCE --recovery-generation GENERATION]
+rc=2

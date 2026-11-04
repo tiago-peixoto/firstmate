@@ -1,0 +1,22 @@
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+many [key=call-1] needs-decision: Question 1? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-2] needs-decision: Question 2? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-3] needs-decision: Question 3? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-4] needs-decision: Question 4? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-5] needs-decision: Question 5? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-6] needs-decision: Question 6? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-7] needs-decision: Question 7? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-8] needs-decision: Question 8? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-9] needs-decision: Question 9? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context C [truncated]
+many [key=call-10] needs-decision: Question 10? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-11] needs-decision: Question 11? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-12] needs-decision: Question 12? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-13] needs-decision: Question 13? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-14] needs-decision: Question 14? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-15] needs-decision: Question 15? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-16] needs-decision: Question 16? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-17] needs-decision: Question 17? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+many [key=call-18] needs-decision: Question 18? Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context Context [truncated]
+OPEN DECISIONS: 78 more omitted (byte cap). Read and reconcile the full set: bin/fm-wake-drain.sh --open-decisions
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.

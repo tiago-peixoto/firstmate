@@ -1,0 +1,2 @@
+wake drain: --open-decisions takes no arguments
+rc=2
