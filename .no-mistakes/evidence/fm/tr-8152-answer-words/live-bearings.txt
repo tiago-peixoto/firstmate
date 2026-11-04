@@ -1,0 +1,2 @@
+## S7: Bearings after answering start-state, free-text, direct-letter; still-open remains held
+[{"path":"decisions_open.0.id","v":"still-open"},{"path":"decisions_open.0.key","v":"still-open"}]

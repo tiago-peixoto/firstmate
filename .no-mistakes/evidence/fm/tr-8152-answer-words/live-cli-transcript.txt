@@ -1,0 +1,74 @@
+$ fm-captain-hold.sh hold start-state --reason "Should the feature start enabled? A: Off until checks pass. B: On now."
+start-state
+exit=0
+free-text
+exit=0
+direct-letter
+exit=0
+
+## S1: answers with bare letter A and empty label (issue #8152 reproduction)
+skipped: start-state (option A requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+  state: queued
+  held: yes
+
+## S1b: lowercase b, digit, punctuated
+skipped: start-state (option b requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+skipped: start-state (option 7 requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+skipped: start-state (option (c) requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+skipped: start-state (option D. requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+
+## S2: answers with A and displayed label
+closed: start-state
+answers: closed=1 skipped=0
+exit=0
+task:
+  id: start-state
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-04
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: af09b57a4378d95f2c768400f29de72d5980aacd1d70bdb5fdff3727bc12270f\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: start-state\nAnswer: A\nAnswer as shown to the captain: Off until checks pass.\nSelected answer: Off until checks pass."
+
+## S3: idempotent replay of same row
+closed: start-state
+answers: closed=1 skipped=0
+exit=0
+
+## S4: free-text answer without label
+closed: free-text
+answers: closed=1 skipped=0
+exit=0
+  state: done
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: d82c939ab9a87bd9b6a756ec014f605dedc8369ef01bcf7b921fa7530ee6636d\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: free-text\nAnswer: beta-launch\nSelected answer: beta-launch"
+
+## S5: direct answer with decision file containing only A
+fm-captain-hold: decision file contains only option A; include the displayed option words
+exit=1
+  state: queued
+  held: yes
+
+## S6: direct answer with multi-line Answer: decision
+answered: direct-letter
+exit=0
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 862307d587bd8b75a0858c7edeb47465c82f6c2c5ba574265b616174e7b80552\nResolution mode: answered\n\nCaptain decision:\nFrom chat:\nAnswer: Off until checks pass.\nBecause the gate is flaky.\nSelected answer: Off until checks pass."
