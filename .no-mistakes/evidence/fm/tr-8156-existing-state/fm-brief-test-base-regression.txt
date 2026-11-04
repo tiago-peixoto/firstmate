@@ -1,0 +1,4 @@
+== base tree bin/fm-brief.sh (bb8dd209) + target tests/fm-brief.test.sh (0fe5dee7) ==
+0
+30:not ok - scout report contract must require existing-work evidence per proposal
+exit=1
