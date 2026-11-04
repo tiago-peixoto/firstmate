@@ -1,0 +1,42 @@
+########## /tmp/fm-base.WPugkq base-missing missing yes
+--- windows before teardown:
+fm-lab-scout-base-missing
+--- root=/tmp/fm-base.WPugkq
+--- $ fm-teardown.sh lab-scout-base-missing --force
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.TpFVZj
+teardown lab-scout-base-missing complete (window firstmate:fm-lab-scout-base-missing, worktree /tmp/fm-lab.TpFVZj/absent-worktree)
+Backlog: lab-scout-base-missing is closed in /tmp/fm-lab.TpFVZj/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+teardown exit=0
+--- windows after teardown:
+no server running on /tmp/fml.wTV94Z/tmux-1000/fm-lab
+--- backlog row:
+task:
+  id: lab-scout-base-missing
+  state: done
+  kind: scout
+  closed: 2026-11-04
+  links: "report:data/lab-scout-base-missing/report.md"
+  body: ""
+--- landed projection (fm-bearings-snapshot.sh --json | .landed):
+[{"id":"lab-scout-base-missing","kind":null,"report_path":null}]
+########## /tmp/fm-base.WPugkq base-partial partial yes
+--- windows before teardown:
+fm-lab-scout-base-partial
+--- root=/tmp/fm-base.WPugkq
+--- $ fm-teardown.sh lab-scout-base-partial --force
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.YFGT8x
+teardown lab-scout-base-partial complete (window firstmate:fm-lab-scout-base-partial, worktree /tmp/fm-lab.YFGT8x/absent-worktree)
+Backlog: lab-scout-base-partial is closed in /tmp/fm-lab.YFGT8x/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+teardown exit=0
+--- windows after teardown:
+no server running on /tmp/fml.edWIkd/tmux-1000/fm-lab
+--- backlog row:
+task:
+  id: lab-scout-base-partial
+  state: done
+  kind: scout
+  closed: 2026-11-04
+  links: "report:data/lab-scout-base-partial/report.md"
+  body: ""
+--- landed projection (fm-bearings-snapshot.sh --json | .landed):
+[{"id":"lab-scout-base-partial","kind":null,"report_path":null}]

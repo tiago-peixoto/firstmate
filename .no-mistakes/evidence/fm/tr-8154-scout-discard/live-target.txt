@@ -1,0 +1,65 @@
+########## {run-worktree} target-missing missing yes
+--- windows before teardown:
+fm-lab-scout-target-missing
+--- root={run-worktree}
+--- $ fm-teardown.sh lab-scout-target-missing --force
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.mU3Lh8
+teardown lab-scout-target-missing complete (window firstmate:fm-lab-scout-target-missing, worktree /tmp/fm-lab.mU3Lh8/absent-worktree)
+Backlog: lab-scout-target-missing is closed in /tmp/fm-lab.mU3Lh8/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+teardown exit=0
+--- windows after teardown:
+no server running on /tmp/fml.Aopy5X/tmux-1000/fm-lab
+--- backlog row:
+task:
+  id: lab-scout-target-missing
+  state: done
+  kind: scout
+  closed: 2026-11-04
+  links: none
+  body: discarded
+--- landed projection (fm-bearings-snapshot.sh --json | .landed):
+[]
+########## {run-worktree} target-partial partial yes
+--- windows before teardown:
+fm-lab-scout-target-partial
+--- root={run-worktree}
+--- $ fm-teardown.sh lab-scout-target-partial --force
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.EiySDc
+teardown lab-scout-target-partial complete (window firstmate:fm-lab-scout-target-partial, worktree /tmp/fm-lab.EiySDc/absent-worktree)
+Backlog: lab-scout-target-partial is closed in /tmp/fm-lab.EiySDc/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+teardown exit=0
+--- windows after teardown:
+no server running on /tmp/fml.xSL43r/tmux-1000/fm-lab
+--- backlog row:
+task:
+  id: lab-scout-target-partial
+  state: done
+  kind: scout
+  closed: 2026-11-04
+  links: none
+  body: discarded
+--- landed projection (fm-bearings-snapshot.sh --json | .landed):
+[]
+########## {run-worktree} target-finished finished no
+--- windows before teardown:
+fm-lab-scout-target-finished
+--- $ fm-captain-hold.sh complete lab-scout-target-finished --none
+complete: lab-scout-target-finished captain-call inventory reviewed
+--- root={run-worktree}
+--- $ fm-teardown.sh lab-scout-target-finished
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.bNT6lR
+teardown lab-scout-target-finished complete (window firstmate:fm-lab-scout-target-finished, worktree /tmp/fm-lab.bNT6lR/absent-worktree)
+Backlog: lab-scout-target-finished is closed in /tmp/fm-lab.bNT6lR/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+teardown exit=0
+--- windows after teardown:
+no server running on /tmp/fml.U4gvuk/tmux-1000/fm-lab
+--- backlog row:
+task:
+  id: lab-scout-target-finished
+  state: done
+  kind: scout
+  closed: 2026-11-04
+  links: "report:data/lab-scout-target-finished/report.md"
+  body: ""
+--- landed projection (fm-bearings-snapshot.sh --json | .landed):
+[{"id":"lab-scout-target-finished","kind":null,"report_path":null}]
