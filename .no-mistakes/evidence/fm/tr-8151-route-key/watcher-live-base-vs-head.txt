@@ -1,0 +1,35 @@
+=== base (37e9a365)
+[route-working] watcher ABSORBED (kept running); stdout='' queue=no
+[plain-working] watcher ABSORBED (kept running); stdout='' queue=no
+[route-resolved] watcher ABSORBED (kept running); stdout='' queue=no
+[route-behind-open] watcher EXITED with wake; stdout:
+    signal: /tmp/fm-route-live.0Eb0Rh/route-behind-open/state/task.status
+    queue:
+      1793807851	1	signal	task.status	signal: /tmp/fm-route-live.0Eb0Rh/route-behind-open/state/task.status
+      1793807851	2	signal	task.status	signal: /tmp/fm-route-live.0Eb0Rh/route-behind-open/state/task.status
+[ship-done-after-route] fold (status_open_decisions):
+[ship-done-after-route] actionable span events:
+      74	strong:44:96929093:2026-11-04 16:57:32.056586779 +0100	done: finished the task[ship-route-resolved] fold (status_open_decisions):
+[ship-route-resolved] actionable span events:
+      100	strong:44:96929101:2026-11-04 16:57:32.104585322 +0100	done: finished[route-captain-held] fold (status_open_decisions):
+[route-captain-held] actionable span events:
+      96	strong:44:96929109:2026-11-04 16:57:32.159583652 +0100=== head (c62e93d8)
+[route-working] watcher EXITED with wake; stdout:
+    signal: /tmp/fm-route-live.vpDnOF/route-working/state/task.status
+    queue:
+      1793807855	1	signal	task.status	signal: /tmp/fm-route-live.vpDnOF/route-working/state/task.status
+      1793807855	2	signal	task.status	signal: /tmp/fm-route-live.vpDnOF/route-working/state/task.status
+[plain-working] watcher ABSORBED (kept running); stdout='' queue=no
+[route-resolved] watcher ABSORBED (kept running); stdout='' queue=no
+[route-behind-open] watcher EXITED with wake; stdout:
+    signal: /tmp/fm-route-live.vpDnOF/route-behind-open/state/task.status
+    queue:
+      1793807865	1	signal	task.status	signal: /tmp/fm-route-live.vpDnOF/route-behind-open/state/task.status
+      1793807865	2	signal	task.status	signal: /tmp/fm-route-live.vpDnOF/route-behind-open/state/task.status
+[ship-done-after-route] fold (status_open_decisions):
+      route-check	working	run the real-app check[ship-done-after-route] actionable span events:
+      74	strong:44:96930077:2026-11-04 16:57:45.864167560 +0100	working [key=route-check]: run the real-app check ; done: finished the task[ship-route-resolved] fold (status_open_decisions):
+[ship-route-resolved] actionable span events:
+      100	strong:44:96930086:2026-11-04 16:57:45.949164979 +0100	done: finished[route-captain-held] fold (status_open_decisions):
+[route-captain-held] actionable span events:
+      96	strong:44:96930094:2026-11-04 16:57:46.045162065 +0100

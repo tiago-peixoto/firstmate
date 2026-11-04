@@ -1,0 +1,30 @@
+=== base
+[route-captain-held] rc=1 events=
+[route-captain-held] open=
+[plain-captain-held] rc=1 events=
+[plain-captain-held] open=
+[route-behind-open] rc=0 events=blocked [key=vendor]: waiting on vendor
+[route-behind-open] open=vendor|blocked|waiting on vendor
+[two-routes] rc=1 events=
+[two-routes] open=
+[route-unrelated-later] rc=1 events=
+[route-unrelated-later] open=
+[route-note-text] rc=1 events=
+[route-note-text] open=
+[route-other-key-resolved] rc=1 events=
+[route-other-key-resolved] open=
+=== head
+[route-captain-held] rc=1 events=
+[route-captain-held] open=
+[plain-captain-held] rc=1 events=
+[plain-captain-held] open=
+[route-behind-open] rc=0 events=blocked [key=vendor]: waiting on vendor ; working [key=route-check]: run the real-app check
+[route-behind-open] open=vendor|blocked|waiting on vendor;route-check|working|run the real-app check
+[two-routes] rc=0 events=working [key=route-a]: first ; working [key=route-b]: second
+[two-routes] open=route-a|working|first;route-b|working|second
+[route-unrelated-later] rc=0 events=working [key=route-check]: req
+[route-unrelated-later] open=route-check|working|req
+[route-note-text] rc=1 events=
+[route-note-text] open=
+[route-other-key-resolved] rc=0 events=working [key=route-check]: req
+[route-other-key-resolved] open=route-check|working|req
