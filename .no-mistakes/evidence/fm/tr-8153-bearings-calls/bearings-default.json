@@ -1,0 +1,147 @@
+{
+  "schema": "fm-bearings.v1",
+  "home": "fm-lab.Fkc4k5/home",
+  "generated": "2026-07-11T18:00:00Z",
+  "prs": "not_requested (run: /bearings include PRs)",
+  "contributions": {
+    "scope": "owned contributions per home",
+    "known": 0,
+    "checked": 0,
+    "counts": {
+      "captain": 0,
+      "fleet": 0,
+      "maintainer": 0,
+      "nobody": 0
+    },
+    "complete": true,
+    "proven_clear": true,
+    "unmeasured_homes": 0,
+    "unreadable_records": 0,
+    "unmeasured": 0,
+    "stale_verdicts": 0,
+    "missing_verdicts": 0,
+    "captain_omitted": 0,
+    "captain": []
+  },
+  "in_flight": [],
+  "secondmates": [],
+  "secondmate_reconcile": [],
+  "decisions_open": [
+    {
+      "id": "waiting-call",
+      "key": "waiting-call",
+      "verb": "captain-hold",
+      "summary": "Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely…",
+      "question": "Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely.",
+      "presentation": "presented",
+      "stops_worker": true,
+      "owner": "(main)"
+    },
+    {
+      "id": "cleared-call",
+      "key": "cleared-call",
+      "verb": "captain-hold",
+      "summary": "Worker waits behind landed groundwork: Ship now? A: Yes. B: No.",
+      "question": "Worker waits behind landed groundwork: Ship now? A: Yes. B: No.",
+      "presentation": "presented",
+      "stops_worker": true,
+      "owner": "(main)"
+    },
+    {
+      "id": "long-call",
+      "key": "long-call",
+      "verb": "captain-hold",
+      "summary": "Choose how to configure this detailed feature: Should the feature start enabled? A: Keep i…",
+      "question": "Choose how to configure this detailed feature: Should the feature start enabled? A: Keep it disabled until checks pass. B: Enable it now and accept the initial risk. C: Enable it only for the fleet owner.",
+      "presentation": "presented",
+      "stops_worker": false,
+      "owner": "(main)"
+    },
+    {
+      "id": "prose-path-call",
+      "key": "prose-path-call",
+      "verb": "captain-hold",
+      "summary": "Read then decide: See data/prose/report.md and choose A or B",
+      "question": "Read then decide: See data/prose/report.md and choose A or B",
+      "presentation": "presented",
+      "stops_worker": false,
+      "owner": "(main)"
+    },
+    {
+      "id": "path-call",
+      "key": "path-call",
+      "verb": "captain-hold",
+      "summary": "Review proposal: data/proposal/report.md",
+      "question": "Review proposal: data/proposal/report.md",
+      "presentation": "needs presenting",
+      "stops_worker": false,
+      "owner": "(main)"
+    }
+  ],
+  "landed": [
+    {
+      "id": "finished-prerequisite",
+      "what": "Groundwork that landed",
+      "artifact": "-",
+      "owner": "(main)"
+    }
+  ],
+  "gates": [
+    {
+      "id": "blocked-call",
+      "title": "Choice with unmet prerequisites",
+      "blocked_by": "missing-prerequisite",
+      "reason": "blocked-by missing-prerequisite: Pick a …",
+      "owner": "(main)",
+      "filed": null
+    },
+    {
+      "id": "pending-prerequisite",
+      "title": "Groundwork still queued",
+      "blocked_by": "-",
+      "reason": "-",
+      "owner": "(main)",
+      "filed": null
+    },
+    {
+      "id": "gated-call",
+      "title": "Worker waits behind queued groundwork",
+      "blocked_by": "pending-prerequisite",
+      "reason": "blocked-by pending-prerequisite: Ship la…",
+      "owner": "(main)",
+      "filed": null
+    }
+  ],
+  "reports": [],
+  "recorded_prs": [],
+  "omitted": [
+    {
+      "surface": "backlog item bodies",
+      "reveal": "--fields bodies"
+    },
+    {
+      "surface": "task paths",
+      "reveal": "--fields paths"
+    },
+    {
+      "surface": "watch/steer actions",
+      "reveal": "--fields actions"
+    },
+    {
+      "surface": "healthy endpoint detail",
+      "reveal": "--fields endpoints"
+    },
+    {
+      "surface": "full scout-report inventory",
+      "reveal": "--all-reports"
+    },
+    {
+      "surface": "captain holds bucketed blocked, dated, or aged: 2",
+      "reveal": "--all-decisions"
+    },
+    {
+      "surface": "live PR discovery + checks",
+      "reveal": "--include-prs"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+schema: fm-bearings.v1
+home: fm-lab.Fkc4k5/home
+generated: "2026-07-11T18:00:00Z"
+prs: "not_requested (run: /bearings include PRs)"
+contributions: 
+  scope: owned contributions per home
+  known: 0
+  checked: 0
+  counts: 
+    captain: 0
+    fleet: 0
+    maintainer: 0
+    nobody: 0
+  complete: true
+  proven_clear: true
+  unmeasured_homes: 0
+  unreadable_records: 0
+  unmeasured: 0
+  stale_verdicts: 0
+  missing_verdicts: 0
+  captain_omitted: 0
+  captain: []
+in_flight: []
+secondmates: []
+secondmate_reconcile: []
+decisions_open[7]{id,key,verb,summary,question,presentation,stops_worker,owner}:
+  waiting-call,waiting-call,captain-hold,"Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely…","Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely.",presented,true,(main)
+  cleared-call,cleared-call,captain-hold,"Worker waits behind landed groundwork: Ship now? A: Yes. B: No.","Worker waits behind landed groundwork: Ship now? A: Yes. B: No.",presented,true,(main)
+  blocked-call,blocked-call,captain-hold,"Choice with unmet prerequi…: blocked-by missing-prerequisite: Pick a route","Choice with unmet prerequisites: Pick a route",presented,false,(main)
+  long-call,long-call,captain-hold,"Choose how to configure this detailed feature: Should the feature start enabled? A: Keep i…","Choose how to configure this detailed feature: Should the feature start enabled? A: Keep it disabled until checks pass. B: Enable it now and accept the initial risk. C: Enable it only for the fleet owner.",presented,false,(main)
+  prose-path-call,prose-path-call,captain-hold,"Read then decide: See data/prose/report.md and choose A or B","Read then decide: See data/prose/report.md and choose A or B",presented,false,(main)
+  path-call,path-call,captain-hold,"Review proposal: data/proposal/report.md","Review proposal: data/proposal/report.md",needs presenting,false,(main)
+  gated-call,gated-call,captain-hold,"Worker waits behind queued…: blocked-by pending-prerequisite: Ship later? A: Yes. B: No.","Worker waits behind queued groundwork: Ship later? A: Yes. B: No.",presented,false,(main)
+landed[1]{id,what,artifact,owner}:
+  finished-prerequisite,Groundwork that landed,"-",(main)
+gates[1]{id,title,blocked_by,reason,owner,filed}:
+  pending-prerequisite,Groundwork still queued,"-","-",(main),null
+reports: []
+recorded_prs: []
+omitted[6]{surface,reveal}:
+  backlog item bodies,"--fields bodies"
+  task paths,"--fields paths"
+  watch/steer actions,"--fields actions"
+  healthy endpoint detail,"--fields endpoints"
+  full scout-report inventory,"--all-reports"
+  live PR discovery + checks,"--include-prs"

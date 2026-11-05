@@ -1,0 +1,100 @@
+== real producer: fm-captain-hold.sh hold path-call --reason data/proposal/report.md
+path-call
+hold exit=0
+== stored backlog row for path-call (producer storage form):
+- [ ] prose-path-call - Read then decide (repo: firstmate) (kind: captain) (hold: See data/prose/report.md and choose A or B) (hold-kind: captain)
+- [ ] path-call - Review proposal (repo: firstmate) (kind: captain) (since 2026-11-05) (hold: fm-hold-v1:ZGF0YS9wcm9wb3NhbC9yZXBvcnQubWQ=) (hold-kind: captain)
+== bin/fm-bearings-snapshot.sh --json --all-decisions
+exit=0
+[
+  {
+    "id": "waiting-call",
+    "key": "waiting-call",
+    "verb": "captain-hold",
+    "summary": "Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely…",
+    "question": "Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely.",
+    "presentation": "presented",
+    "stops_worker": true,
+    "owner": "(main)"
+  },
+  {
+    "id": "cleared-call",
+    "key": "cleared-call",
+    "verb": "captain-hold",
+    "summary": "Worker waits behind landed groundwork: Ship now? A: Yes. B: No.",
+    "question": "Worker waits behind landed groundwork: Ship now? A: Yes. B: No.",
+    "presentation": "presented",
+    "stops_worker": true,
+    "owner": "(main)"
+  },
+  {
+    "id": "blocked-call",
+    "key": "blocked-call",
+    "verb": "captain-hold",
+    "summary": "Choice with unmet prerequi…: blocked-by missing-prerequisite: Pick a route",
+    "question": "Choice with unmet prerequisites: Pick a route",
+    "presentation": "presented",
+    "stops_worker": false,
+    "owner": "(main)"
+  },
+  {
+    "id": "long-call",
+    "key": "long-call",
+    "verb": "captain-hold",
+    "summary": "Choose how to configure this detailed feature: Should the feature start enabled? A: Keep i…",
+    "question": "Choose how to configure this detailed feature: Should the feature start enabled? A: Keep it disabled until checks pass. B: Enable it now and accept the initial risk. C: Enable it only for the fleet owner.",
+    "presentation": "presented",
+    "stops_worker": false,
+    "owner": "(main)"
+  },
+  {
+    "id": "prose-path-call",
+    "key": "prose-path-call",
+    "verb": "captain-hold",
+    "summary": "Read then decide: See data/prose/report.md and choose A or B",
+    "question": "Read then decide: See data/prose/report.md and choose A or B",
+    "presentation": "presented",
+    "stops_worker": false,
+    "owner": "(main)"
+  },
+  {
+    "id": "path-call",
+    "key": "path-call",
+    "verb": "captain-hold",
+    "summary": "Review proposal: data/proposal/report.md",
+    "question": "Review proposal: data/proposal/report.md",
+    "presentation": "needs presenting",
+    "stops_worker": false,
+    "owner": "(main)"
+  },
+  {
+    "id": "gated-call",
+    "key": "gated-call",
+    "verb": "captain-hold",
+    "summary": "Worker waits behind queued…: blocked-by pending-prerequisite: Ship later? A: Yes. B: No.",
+    "question": "Worker waits behind queued groundwork: Ship later? A: Yes. B: No.",
+    "presentation": "presented",
+    "stops_worker": false,
+    "owner": "(main)"
+  }
+]
+== bin/fm-bearings-snapshot.sh --all-decisions (default TOON)
+exit=0
+26:decisions_open[7]{id,key,verb,summary,question,presentation,stops_worker,owner}:
+27-  waiting-call,waiting-call,captain-hold,"Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely…","Worker needs a captain choice: Should the worker continue? A: Continue now. B: Stop safely.",presented,true,(main)
+28-  cleared-call,cleared-call,captain-hold,"Worker waits behind landed groundwork: Ship now? A: Yes. B: No.","Worker waits behind landed groundwork: Ship now? A: Yes. B: No.",presented,true,(main)
+29-  blocked-call,blocked-call,captain-hold,"Choice with unmet prerequi…: blocked-by missing-prerequisite: Pick a route","Choice with unmet prerequisites: Pick a route",presented,false,(main)
+30-  long-call,long-call,captain-hold,"Choose how to configure this detailed feature: Should the feature start enabled? A: Keep i…","Choose how to configure this detailed feature: Should the feature start enabled? A: Keep it disabled until checks pass. B: Enable it now and accept the initial risk. C: Enable it only for the fleet owner.",presented,false,(main)
+31-  prose-path-call,prose-path-call,captain-hold,"Read then decide: See data/prose/report.md and choose A or B","Read then decide: See data/prose/report.md and choose A or B",presented,false,(main)
+32-  path-call,path-call,captain-hold,"Review proposal: data/proposal/report.md","Review proposal: data/proposal/report.md",needs presenting,false,(main)
+33-  gated-call,gated-call,captain-hold,"Worker waits behind queued…: blocked-by pending-prerequisite: Ship later? A: Yes. B: No.","Worker waits behind queued groundwork: Ship later? A: Yes. B: No.",presented,false,(main)
+34-landed[1]{id,what,artifact,owner}:
+== bin/fm-bearings-snapshot.sh --json (default bucket, no --all-decisions)
+exit=0
+{"id":"waiting-call","stops_worker":true,"presentation":"presented"}
+{"id":"cleared-call","stops_worker":true,"presentation":"presented"}
+{"id":"long-call","stops_worker":false,"presentation":"presented"}
+{"id":"prose-path-call","stops_worker":false,"presentation":"presented"}
+{"id":"path-call","stops_worker":false,"presentation":"needs presenting"}
+== network log (expect empty):
+(no network calls)
