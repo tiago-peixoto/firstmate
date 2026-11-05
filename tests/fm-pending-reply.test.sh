@@ -337,6 +337,7 @@ test_tick_invalidates_changed_decision_evidence() (
       done
       original=$(declare -f status_own_open_decisions)
       eval "${original/status_own_open_decisions/uncounted_decisions}"
+      # shellcheck disable=SC2329 # fm_pending_reply_tick invokes this counting wrapper.
       status_own_open_decisions() {
         printf 'fold\n' >> "$folds"
         uncounted_decisions "$@"
