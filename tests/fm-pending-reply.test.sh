@@ -325,7 +325,7 @@ test_tick_invalidates_changed_decision_evidence() (
         identity) expected_sends=0 ;;
         kind) printf 'done: The turn finished.\n' >> "$state/mate.status" ;;
         resolve|held) printf 'answered [key=scope]: The scope is narrow.\n' >> "$state/mate.status" ;;
-        during-fold) printf 'working: No decision is open.\n' > "$state/mate.status"; expected_sends=0 ;;
+        during-fold) printf 'working: No decision is open.\n' > "$state/mate.status" ;;
       esac
       for n in 1 2 3; do
         corr=$(fm_pending_reply_create "$home" "$state" mate "request $n")

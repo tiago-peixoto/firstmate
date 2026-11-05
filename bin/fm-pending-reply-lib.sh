@@ -1045,7 +1045,7 @@ _fm_pending_reply_decision_signature() {  # <status-file>
 }
 
 _fm_pending_reply_decisions_allow_recovery() {  # <status-file>
-  local file=$1 signature after decisions result=0 i
+  local file=$1 signature after result=0 i
   if [ "${_fm_pending_reply_decision_cache_active:-0}" != 1 ] \
     || ! signature=$(_fm_pending_reply_decision_signature "$file"); then
     [ -z "$(status_own_open_decisions "$file")" ]
@@ -1058,12 +1058,11 @@ _fm_pending_reply_decisions_allow_recovery() {  # <status-file>
     fi
     break
   done
-  decisions=$(status_own_open_decisions "$file") || return 1
+  [ -z "$(status_own_open_decisions "$file")" ] || result=1
   # A fold can be slow enough for an answer or a new blocker to land while it
-  # runs. Defer this repost rather than trust or retain a mixed snapshot.
-  after=$(_fm_pending_reply_decision_signature "$file") || return 1
-  [ "$signature" = "$after" ] || return 1
-  [ -z "$decisions" ] || result=1
+  # runs. Its verdict then stands for this request only.
+  after=$(_fm_pending_reply_decision_signature "$file") || return "$result"
+  [ "$signature" = "$after" ] || return "$result"
   _fm_pending_reply_decision_files[i]=$file
   _fm_pending_reply_decision_signatures[i]=$signature
   _fm_pending_reply_decision_results[i]=$result
