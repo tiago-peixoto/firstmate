@@ -27,8 +27,8 @@
 # source host, home, and supplied path in the correlated report. Local delivery
 # verifies the parent's copy before appending. Remote delivery queues a required
 # snapshot offer: bin/fm-procevent-remote-reply.sh copies and verifies it, and
-# raises a keyed escalation on the parent when it cannot, so queuing is not a
-# receipt from the parent.
+# escalates on the parent only a snapshot it refuses or cannot verify, so
+# queuing is not a receipt from the parent.
 # That adapter uses the existing remote-file transport, including documents
 # above its ordinary 256 KiB report limit, up to the snapshot safety bound.
 # Never pass a credential file or a document not reviewed for secret content.
