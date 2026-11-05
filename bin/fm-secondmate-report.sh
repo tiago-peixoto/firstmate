@@ -21,6 +21,18 @@
 # records beside the request outcome (bin/fm-pending-reply-lib.sh). Without
 # --task, or when the child cannot be read, the verdict is unknown.
 #
+# --doc offers reviewed, non-secret Markdown/text from this home's data/.
+# bin/fm-document-snapshot.sh owns capture, safety checks, and the 1 MiB bound.
+# It freezes the bytes in data/report-snapshots/<sha256>.md and retains the
+# source host, home, and supplied path in the correlated report. Local delivery
+# verifies the parent's copy before appending. Remote delivery queues a required
+# snapshot offer: bin/fm-procevent-remote-reply.sh copies and verifies it, and
+# escalates on the parent only a snapshot it refuses or cannot verify, so
+# queuing is not a receipt from the parent.
+# That adapter uses the existing remote-file transport, including documents
+# above its ordinary 256 KiB report limit, up to the snapshot safety bound.
+# Never pass a credential file or a document not reviewed for secret content.
+#
 # Usage:
 #   fm-secondmate-report.sh [--task <child>] <verb> <corr_id> <note...>
 #   fm-secondmate-report.sh [--task <child>] --doc <verb> <corr_id> <doc-path> <note...>
@@ -45,6 +57,11 @@ usage() {
 Usage:
   fm-secondmate-report.sh [--task <child>] <verb> <corr_id> <note...>
   fm-secondmate-report.sh [--task <child>] --doc <verb> <corr_id> <doc-path> <note...>
+
+--doc captures a reviewed non-secret .md/.txt document under this home's data/.
+A local parent verifies its copy before the answer is written. Remote success
+queues the offer, not a receipt: that parent verifies its copy or escalates.
+The maximum is 1048576 bytes.
 EOF
   exit 2
 }
@@ -106,6 +123,23 @@ if [ ! -d "$(dirname "$DESTINATION")" ]; then
   exit 1
 fi
 
+DOCUMENT_MARKER=
+if [ "$DOC_MODE" = 1 ]; then
+  DOC_PATH=$1
+  shift
+  SNAPSHOT=$(FM_HOME="$HOME_DIR" "$SCRIPT_DIR/fm-document-snapshot.sh" capture "$DOC_PATH")
+  DIGEST=${SNAPSHOT##*/}
+  DIGEST=${DIGEST%.md}
+  BYTES=$(wc -c < "$HOME_DIR/$SNAPSHOT" | tr -d ' ')
+  fm_parent_channel_destination "$HOME_DIR" "$STATE_DIR" >/dev/null
+  if [ "$FM_PARENT_CHANNEL_ROUTE" = local ]; then
+    FM_HOME="$FM_SECONDMATE_PARENT_HOME" "$SCRIPT_DIR/fm-document-snapshot.sh" receive "$DIGEST" "$BYTES" \
+      < "$HOME_DIR/$SNAPSHOT" >/dev/null
+  fi
+  printf -v DOCUMENT_MARKER 'report=%s source-host=%q source-home=%q source-document=%q' \
+    "$SNAPSHOT" "$(hostname)" "$HOME_DIR" "$DOC_PATH"
+fi
+
 # The child's state is read last, immediately before the line is written.
 CHILD_STATE=unknown
 if [ -n "$CHILD" ]; then
@@ -117,14 +151,7 @@ fi
 CHILD_MARKER=$(fm_pending_reply_child_marker "$CHILD" "$CHILD_STATE")
 
 if [ "$DOC_MODE" = 1 ]; then
-  DOC_PATH=$1
-  shift
-  NOTE=$*
-  if [ -n "$NOTE" ]; then
-    BODY="$NOTE ($DOC_PATH via-helper $CHILD_MARKER)"
-  else
-    BODY="$DOC_PATH (via-helper $CHILD_MARKER)"
-  fi
+  BODY="${*:+$* }($DOCUMENT_MARKER via-helper $CHILD_MARKER)"
 else
   BODY="$* (via-helper $CHILD_MARKER)"
 fi

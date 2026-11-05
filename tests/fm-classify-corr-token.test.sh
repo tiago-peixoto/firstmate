@@ -534,6 +534,8 @@ EOF
   status_is_terminal_verb "$helper_line" \
     || fail "the helper's own line is not seen as a terminal captain verb"
 
+  mkdir -p "$mate/data/x"
+  printf '# Report\n' > "$mate/data/x/report.md"
   FM_HOME="$mate" "$REPORT" --doc needs-decision "$corr" data/x/report.md "see the report" \
     || fail "$REPORT failed writing a correlated doc-pointer report"
   helper_line=$(tail -1 "$state/pinned.status")

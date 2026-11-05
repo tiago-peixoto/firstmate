@@ -597,6 +597,23 @@ A refused document is not re-attempted automatically.
 It stays on the remote, and a later structured offer of the same path fetches it.
 An SSH exit status of 255 while fetching a referenced document leaves the delta uncommitted for the process-event runner's normal retry, because remote completion is unknown.
 
+### Required document snapshots
+
+A `report=data/report-snapshots/<sha256>.md` pointer comes from `bin/fm-secondmate-report.sh --doc`.
+It names frozen bytes, and `bin/fm-document-snapshot.sh receive` verifies them against their digest before the pointer is rewritten to the local copy.
+Only exit status 1 from the remote reader is a refusal.
+Any other failed fetch, such as SSH exit status 255 or a remote job failure, leaves the delta uncommitted for the process-event runner's normal retry.
+When a snapshot is refused or fails verification, the channel still fails open:
+
+- The mate's line is mirrored with its original pointer, so its correlated answer settles the request.
+- The cursor still advances.
+- Instead of a note, the adapter raises one keyed `blocked [key=remote-reply-snapshot-<id>-<checksum>]` escalation that names the snapshot and the reason.
+
+A malformed snapshot pointer raises the same escalation without a fetch.
+The escalation is keyed because the answer arrived without its required input, so it stays open until an operator closes it.
+It is the parent's own blocker, so it never counts as the mate waiting on its own decision.
+A local storage failure while storing a snapshot leaves the delta uncommitted, like the same failure for any other document.
+
 ### Reply settlement
 
 The process-event runner applies each captured delta through this adapter as soon as it is captured.
