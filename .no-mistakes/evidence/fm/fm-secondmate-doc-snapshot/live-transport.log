@@ -1,0 +1,6 @@
+run fm-remote-delta-read.sh state/parent-replies.status 797 7658b2320b4f76c249fa445cb204be4f5e85d6f88b1a9f3df9764878dc0d569e 5 
+run fm-remote-file.sh get data/report-snapshots/6940db36d4c25e100cef6ae08bc7626c9889861232bc2ca966e9bb762cb28a78.md 1048576 
+run fm-remote-file.sh get data/report-snapshots/0000000000000000000000000000000000000000000000000000000000000001.md 1048576 
+run fm-remote-delta-read.sh state/parent-replies.status 1473 48b611118e6cd5ac2e0b3f2018cc2be5b8d1e4d7ab70b27fee2c19f132bd8e98 5 
+run fm-document-snapshot.sh receive 383db0f0717879f8f9b0a0953ad79de7121574e27ae808bd0617398c4be67b45 300000 
+run fm-document-snapshot.sh receive 0000000000000000000000000000000000000000000000000000000000000002 20 
