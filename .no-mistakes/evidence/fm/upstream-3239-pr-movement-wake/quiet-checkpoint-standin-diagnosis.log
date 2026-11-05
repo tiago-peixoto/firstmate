@@ -1,0 +1,13 @@
+[t+21s] checkpoint returned rc=124 stdout=checkpoint: no actionable wake within 20s stderr=
+
+Diagnosis: the monitor above never saw $FORGE/quiet-watcher, so the test's timeout
+stand-in (quiet_checkpoint_clock) never ran for the watcher on this host. Cause:
+/usr/bin/timeout here is "timeout (uutils coreutils) 0.8.0", so
+bin/fm-watch-checkpoint.sh find_gnu_timeout rejects it and bounds the watcher with
+its perl fallback, which bypasses PATH lookups of `timeout`. Invoked directly with
+`timeout --signal=INT --kill-after=2s 3 .../fm-watch.sh`, the stand-in engaged
+(wrote quiet-watcher) and exited 125 as designed because that fake watcher never
+reached the merge poll. On a GNU coreutils host (CI) the stand-in applies. The
+product behavior is unaffected: the quiet checkpoint still returned 124 with no
+wake, and the movement checkpoint surfaced the head wake once (see
+watcher-timing-transcript.md).

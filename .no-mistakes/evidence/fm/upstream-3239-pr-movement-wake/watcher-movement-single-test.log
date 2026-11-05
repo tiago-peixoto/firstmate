@@ -1,0 +1,6 @@
+ok - watcher stays quiet on an unchanged pull request and surfaces its movement once
+
+real	1m6.869s
+user	0m14.239s
+sys	0m33.929s
+exit=0
