@@ -321,7 +321,10 @@ test_tick_invalidates_changed_decision_evidence() (
       printf 'blocked [key=scope]: Choose a scope.\n' > "$state/mate.status"
       expected_sends=1
       case "$mode" in
-        rewrite) printf 'working [key=scope]: Choose a scope.\n' > "$state/mate.status"; expected_sends=2 ;;
+        rewrite)
+          printf 'working [key=scope]: Choose a scope.\n' > "$state/mate.status"; expected_sends=2
+          fm_pending_reply_file_signature() { printf 'unchanged'; }
+          ;;
         identity) expected_sends=0 ;;
         kind) printf 'done: The turn finished.\n' >> "$state/mate.status" ;;
         resolve|held) printf 'answered [key=scope]: The scope is narrow.\n' >> "$state/mate.status" ;;
@@ -349,11 +352,7 @@ test_tick_invalidates_changed_decision_evidence() (
         [ "$processed" = 2 ] || return 0
         case "$mode" in
           append) printf 'resolved [key=scope]: The scope is narrow.\n' >> "$state/mate.status" ;;
-          rewrite)
-            cp -p "$state/mate.status" "$home/stamp"
-            printf 'blocked [key=scope]: Choose a scope.\n' > "$state/mate.status"
-            touch -r "$home/stamp" "$state/mate.status"
-            ;;
+          rewrite) printf 'blocked [key=scope]: Choose a scope.\n' > "$state/mate.status" ;;
           identity) cp -p "$state/mate.status" "$home/replacement"; mv "$home/replacement" "$state/mate.status" ;;
           kind) printf 'kind=ship\n' > "$state/mate.meta" ;;
           resolve) FM_CLASSIFY_RESOLVE_VERB=answered ;;
