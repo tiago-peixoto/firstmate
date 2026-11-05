@@ -55,10 +55,11 @@
 # and rejecting one line failed the whole delta, so the cursor could never
 # advance past it. No single line can stop or wedge the stream. A
 # data/report-snapshots/<sha256>.md offer from fm-secondmate-report.sh --doc is
-# a required input, so the line offering it is mirrored only once the frozen
-# bytes arrive and their digest verifies. When that snapshot is refused or its
-# pointer is malformed, only that line is withheld: a note names the snapshot,
-# later lines still mirror, and the request it answered stays unresolved.
+# a required input whose frozen bytes must verify against their digest. A
+# transient fetch failure is retried a bounded number of times before the line
+# is mirrored. A malformed pointer, a refused snapshot, or one still failing
+# after those retries is mirrored with its original pointer and raises one
+# keyed escalation naming the snapshot, so the missing input stays visible.
 #
 # What remains here is only what crossing a machine boundary genuinely adds:
 #   - cursor continuity and identity (offset plus prefix digest)
@@ -86,13 +87,16 @@ REMOTE_LOG='state/parent-replies.status'
 WAIT_SECONDS=${FM_REMOTE_REPLY_WAIT_SECONDS:-55}
 MAX_DOC_BYTES=${FM_REMOTE_REPLY_MAX_DOC_BYTES:-262144}
 # fm-on.sh returns ssh's status unchanged, so 255 alone means unavailable
-# transport or unknown remote completion. Any other nonzero status is the remote
-# reader's own refusal of that path at that moment. The reader has no permanence
+# transport or unknown remote completion. The reader refuses a path only with
+# exit 1. The remote job layer reports its own failures with other statuses,
+# which an ordinary report treats as a refusal and a snapshot fetch retries
+# (see fetch_document). The reader has no permanence
 # vocabulary - a report the mate has not finished writing refuses exactly like a
 # path that will never exist - so a refusal fails open rather than being read as
 # final (see cmd_ingest).
 SSH_UNAVAILABLE=255
 DOCUMENT_LOCAL_FAILURE=2
+SNAPSHOT_FETCH_ATTEMPTS=3
 
 # shellcheck source=bin/fm-wake-lib.sh
 . "$SCRIPT_DIR/fm-wake-lib.sh"
@@ -342,9 +346,9 @@ safe_doc_path() {
 # mention, not an offer: fetching every mention made a mate's sentence about a
 # report it had not written yet trigger a transfer it never offered.
 #
-# One boundary-valid recognition serves extraction, withholding, and rewriting,
-# so they can never disagree about what counts as a pointer. A pointer must
-# start and end at a token boundary: `child-report=` is not this tag, and
+# One boundary-valid recognition serves both extraction and rewriting, so the two
+# can never disagree about what counts as a pointer. A pointer must start and end
+# at a token boundary: `child-report=` is not this tag, and
 # `report=data/x.md.bak` offers nothing, not even its `data/x.md` prefix. Each
 # line is scanned behind a sentinel byte that normalized payload can never
 # contain, so every candidate needs a real preceding boundary character. A
@@ -356,7 +360,7 @@ safe_doc_path() {
 # exec argument limit; awk would then fail to start, and a caller that did not
 # check would append the empty result as a blank line and advance the cursor past
 # dropped status content. Every caller checks the exit status.
-process_document_pointers() { # <extract|withhold|rewrite> <pointer-map-file>
+process_document_pointers() { # <extract|rewrite> <pointer-map-file>
   LC_ALL=C awk -v mode="$1" -v mapfile="$2" '
     BEGIN {
       if (mapfile != "") {
@@ -371,7 +375,6 @@ process_document_pointers() { # <extract|withhold|rewrite> <pointer-map-file>
     {
       rest = "\001" $0
       rewritten = ""
-      withheld = 0
       while (match(rest, /[^A-Za-z0-9._\/-]report=data\/[A-Za-z0-9._\/-]+[.]md/)) {
         doc = substr(rest, RSTART + 8, RLENGTH - 8)
         next_index = RSTART + RLENGTH
@@ -379,8 +382,6 @@ process_document_pointers() { # <extract|withhold|rewrite> <pointer-map-file>
         if (next_char == "" || next_char !~ /[A-Za-z0-9._\/-]/) {
           if (mode == "extract") {
             if (!seen[doc]++) print doc
-          } else if (mode == "withhold") {
-            if (doc in replacements) withheld = 1
           } else {
             replacement = doc in replacements ? replacements[doc] : doc
             rewritten = rewritten substr(rest, 1, RSTART + 7) replacement
@@ -392,17 +393,13 @@ process_document_pointers() { # <extract|withhold|rewrite> <pointer-map-file>
           rewritten = rewritten substr(rest, 1, next_index - 1)
         rest = substr(rest, next_index)
       }
-      if (mode != "extract" && !withheld) print substr(rewritten rest, 2)
+      if (mode != "extract") print substr(rewritten rest, 2)
     }
   '
 }
 
 extract_document_pointers() { # <payload-file>
   process_document_pointers extract '' < "$1"
-}
-
-withhold_document_offers() { # <input-file> <withheld-pointer-file> <output-file>
-  process_document_pointers withhold "$2" < "$1" > "$3"
 }
 
 rewrite_document_pointers() { # <input-file> <pointer-map-file> <output-file>
@@ -427,14 +424,15 @@ summarize_fetch_reason() { # <stderr-file> <remote-relative>
 }
 
 # Fetch one referenced remote document. Returns 0 on success, 1 when the remote
-# reader refused the path or size or a snapshot failed verification,
+# reader refused the path or size, a snapshot failed verification, or a
+# snapshot fetch still failed after SNAPSHOT_FETCH_ATTEMPTS tries,
 # DOCUMENT_LOCAL_FAILURE when local storage failed, and SSH_UNAVAILABLE when
 # transport completion is unknown. A refusal leaves the reader's own
 # explanation in FETCH_DOC_REASON.
 FETCH_DOC_REASON=''
 fetch_document() { # <id> <remote-relative> <result-var>
   local id=$1 rel=$2 result_var=$3 base destination parent parent_real tmp err local_rel rc=0
-  local limit=$MAX_DOC_BYTES digest='' bytes
+  local limit=$MAX_DOC_BYTES digest='' bytes attempt=1
   FETCH_DOC_REASON=''
   if ! safe_doc_path "$rel"; then
     FETCH_DOC_REASON='pointer is not a confined data/*.md path'
@@ -461,10 +459,20 @@ fetch_document() { # <id> <remote-relative> <result-var>
   [ ! -L "$destination" ] || return "$DOCUMENT_LOCAL_FAILURE"
   err=$(umask 077; mktemp "${TMPDIR:-/tmp}/fm-remote-doc-reason.XXXXXX") || return "$DOCUMENT_LOCAL_FAILURE"
   tmp=$(umask 077; mktemp "$parent/.remote-doc.XXXXXX") || { rm -f -- "$err"; return "$DOCUMENT_LOCAL_FAILURE"; }
-  "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-file.sh get "$rel" "$limit" < /dev/null > "$tmp" 2> "$err" || rc=$?
+  while :; do
+    rc=0
+    "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-file.sh get "$rel" "$limit" < /dev/null > "$tmp" 2> "$err" || rc=$?
+    [ -n "$digest" ] && [ "$rc" -gt 1 ] && [ "$attempt" -lt "$SNAPSHOT_FETCH_ATTEMPTS" ] || break
+    attempt=$((attempt + 1))
+    sleep 1
+  done
   if [ "$rc" -ne 0 ]; then
     FETCH_DOC_REASON=$(summarize_fetch_reason "$err" "$rel")
     rm -f -- "$tmp" "$err"
+    if [ -n "$digest" ]; then
+      [ "$rc" -eq 1 ] || FETCH_DOC_REASON="$FETCH_DOC_REASON (exit $rc after $attempt attempts)"
+      return 1
+    fi
     [ "$rc" -ne "$SSH_UNAVAILABLE" ] || return "$SSH_UNAVAILABLE"
     return 1
   fi
@@ -558,7 +566,6 @@ cmd_ingest() {
   local id=${1:-} result=${2:-} seq=${3:-} class blank payload normalized_payload schema status path from to from_hash to_hash payload_hash payload_bytes reason
   local actual_bytes actual_hash line doc local_doc appended=0 cursor_already=0 lock status_file source_record tmp
   local fetch_rc append_rc offered='' delivered_map='' mirrored='' status_additions='' source_additions='' undelivered=''
-  local withheld='' mirrorable=''
   validate_id "$id"
   [ -f "$result" ] && [ ! -L "$result" ] || die "result file is unavailable or unsafe: $result"
   class=$(classify_result "$result")
@@ -646,25 +653,18 @@ cmd_ingest() {
   fi
   delivered_map="$tmp/delivered.map"
   : > "$delivered_map" || { fm_lock_release "$lock"; die "cannot stage the delivered document map"; }
-  withheld="$tmp/withheld.map"
-  : > "$withheld" || { fm_lock_release "$lock"; die "cannot stage the withheld snapshot list"; }
   while IFS= read -r doc || [ -n "$doc" ]; do
     [ -n "$doc" ] || continue
     fetch_rc=0
     local_doc=''
     fetch_document "$id" "$doc" local_doc || fetch_rc=$?
     if [ "$fetch_rc" -eq 1 ]; then
-      case "$doc" in
-        data/report-snapshots/*)
-          printf '%s\t\n' "$doc" >> "$withheld" \
-            || { fm_lock_release "$lock"; die "cannot stage the withheld snapshot list"; }
-          ;;
-      esac
-      # Fail open. A refusal is never a decision: the mate's line keeps its own
-      # pointer (a snapshot offer's line is withheld instead), the cursor still
-      # advances, and one unkeyed note says why. A
-      # keyed escalation raised here once stood open forever describing a report
-      # that had in fact arrived, because nothing could ever resolve it.
+      # Fail open. The mate's line keeps its own pointer and the cursor still
+      # advances. An ordinary report's refusal is never a decision: a keyed
+      # escalation raised here once stood open forever describing a report that
+      # had in fact arrived, because nothing could ever resolve it. A required
+      # snapshot is the exception: its answer arrived without its input, so one
+      # keyed escalation stays open until an operator closes it.
       undelivered="${undelivered}${undelivered:+$'\n'}${doc}"$'\t'"${FETCH_DOC_REASON}"
       continue
     fi
@@ -677,11 +677,8 @@ cmd_ingest() {
   done <<EOF
 $offered
 EOF
-  mirrorable="$tmp/mirrorable"
-  withhold_document_offers "$normalized_payload" "$withheld" "$mirrorable" \
-    || { fm_lock_release "$lock"; die "cannot withhold unverified document snapshots"; }
   mirrored="$tmp/mirrored"
-  rewrite_document_pointers "$mirrorable" "$delivered_map" "$mirrored" \
+  rewrite_document_pointers "$normalized_payload" "$delivered_map" "$mirrored" \
     || { fm_lock_release "$lock"; die "cannot rewrite remote document pointers"; }
   status_additions="$tmp/status-additions"
   source_additions="$tmp/source-additions"
@@ -689,7 +686,7 @@ EOF
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
   : > "$source_additions" \
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
-  stage_mirror_lines "$mirrorable" "$mirrored" "$source_record" "$status_file" \
+  stage_mirror_lines "$normalized_payload" "$mirrored" "$source_record" "$status_file" \
     "$status_additions" "$source_additions" \
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
   cat "$status_additions" >> "$status_file" \
@@ -698,12 +695,16 @@ EOF
     || { fm_lock_release "$lock"; die "cannot count appended remote replies"; }
   cat "$source_additions" >> "$source_record" \
     || { fm_lock_release "$lock"; die "cannot commit remote reply mirror identity"; }
-  # A note, never a decision: it stays visible without entering the open-decision
+  # An ordinary report's note stays visible without entering the open-decision
   # fold, so it cannot stand open the way a keyed block did.
   while IFS=$'\t' read -r doc reason || [ -n "$doc" ]; do
     [ -n "$doc" ] || continue
-    line="note: remote document did not transfer for $id: $doc - $reason"
-    case "$doc" in data/report-snapshots/*) line="$line; the line offering it was withheld" ;; esac
+    case "$doc" in
+      data/report-snapshots/*)
+        line="blocked [key=remote-reply-snapshot-$id-$(printf '%s' "$doc" | cksum | awk '{print $1}')]: required document snapshot did not transfer for $id: $doc - $reason"
+        ;;
+      *) line="note: remote document did not transfer for $id: $doc - $reason" ;;
+    esac
     append_rc=0
     if status_event_recorded "$status_file" "$line"; then
       append_rc=1
@@ -718,7 +719,7 @@ EOF
   while IFS= read -r corr; do
     [ -n "$corr" ] || continue
     fm_pending_reply_try_resolve "$STATE" "$corr" "$status_file" >/dev/null 2>&1 || true
-  done < <(grep -Eo 'corr=[A-Fa-f0-9]{16}' "$mirrorable" | cut -d= -f2- | tr 'A-F' 'a-f' | awk '!seen[$0]++')
+  done < <(grep -Eo 'corr=[A-Fa-f0-9]{16}' "$normalized_payload" | cut -d= -f2- | tr 'A-F' 'a-f' | awk '!seen[$0]++')
   if [ -n "$seq" ]; then
     write_ingest_receipt "$id" "$seq" "$result" \
       || { fm_lock_release "$lock"; die "cannot commit remote reply ingestion receipt"; }

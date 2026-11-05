@@ -26,8 +26,9 @@
 # It freezes the bytes in data/report-snapshots/<sha256>.md and retains the
 # source host, home, and supplied path in the correlated report. Local delivery
 # verifies the parent's copy before appending. Remote delivery queues a required
-# snapshot offer: bin/fm-procevent-remote-reply.sh copies and verifies it before
-# mirroring the correlated answer, so queuing is not a receipt from the parent.
+# snapshot offer: bin/fm-procevent-remote-reply.sh copies and verifies it, and
+# raises a keyed escalation on the parent when it cannot, so queuing is not a
+# receipt from the parent.
 # That adapter uses the existing remote-file transport, including documents
 # above its ordinary 256 KiB report limit, up to the snapshot safety bound.
 # Never pass a credential file or a document not reviewed for secret content.
@@ -58,8 +59,9 @@ Usage:
   fm-secondmate-report.sh [--task <child>] --doc <verb> <corr_id> <doc-path> <note...>
 
 --doc captures a reviewed non-secret .md/.txt document under this home's data/.
-The receiving home must verify the snapshot before the answer is delivered.
-Remote success queues the offer, not a receipt. The maximum is 1048576 bytes.
+A local parent verifies its copy before the answer is written. Remote success
+queues the offer, not a receipt: that parent verifies its copy or escalates.
+The maximum is 1048576 bytes.
 EOF
   exit 2
 }
@@ -134,8 +136,8 @@ if [ "$DOC_MODE" = 1 ]; then
     FM_HOME="$FM_SECONDMATE_PARENT_HOME" "$SCRIPT_DIR/fm-document-snapshot.sh" receive "$DIGEST" "$BYTES" \
       < "$HOME_DIR/$SNAPSHOT" >/dev/null
   fi
-  printf -v DOCUMENT_MARKER 'report=%s source-host=%q source-home=%q source-document=%q document-bytes=%s' \
-    "$SNAPSHOT" "$(hostname)" "$HOME_DIR" "$DOC_PATH" "$BYTES"
+  printf -v DOCUMENT_MARKER 'report=%s source-host=%q source-home=%q source-document=%q' \
+    "$SNAPSHOT" "$(hostname)" "$HOME_DIR" "$DOC_PATH"
 fi
 
 # The child's state is read last, immediately before the line is written.

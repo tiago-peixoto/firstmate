@@ -54,6 +54,13 @@ if [ -n "${FM_REMOTE_REPLY_POLL_LOG:-}" ]; then
   printf 'x\n' >> "$FM_REMOTE_REPLY_POLL_LOG"
 fi
 [ "${FM_REMOTE_REPLY_FAIL_READ:-}" != 1 ] || exit 255
+if [ -n "${FM_REMOTE_REPLY_FAIL_CALLS:-}" ]; then
+  remaining=$(cat "$FM_REMOTE_REPLY_FAIL_CALLS")
+  if [ "$remaining" -gt 0 ]; then
+    printf '%s\n' "$((remaining - 1))" > "$FM_REMOTE_REPLY_FAIL_CALLS"
+    exit 124
+  fi
+fi
 host=$1
 entry=$2
 shift 2
@@ -580,24 +587,55 @@ assert_no_document_decision "an oversize document raised a document decision"
 mirrored_cursor_is_current "an oversize document held the cursor back"
 pass "a remote refusal surfaces its own reason without opening a decision"
 
-# A snapshot offer that cannot be verified withholds only the line offering it.
-# The capture is still applied and the source re-arms, so later lines mirror.
+# A required snapshot that is missing, malformed, or corrupt never holds the
+# stream: its line is mirrored with its original pointer and one keyed
+# escalation names the snapshot, while the source re-arms for later lines.
 MISSING_SNAPSHOT="data/report-snapshots/$(printf '%064d' 0).md"
+CORRUPT_SNAPSHOT="data/report-snapshots/$(printf '%064d' 1).md"
+mkdir -p "$REMOTE/data/report-snapshots"
+printf 'bytes that do not match their digest\n' > "$REMOTE/$CORRUPT_SNAPSHOT"
 mirror_lines \
   "done [corr=5555555555555555]: plan attached (report=$MISSING_SNAPSHOT via-helper)" \
   'done [corr=6666666666666666]: malformed report=data/report-snapshots/not-a-digest.md' \
-  'working [key=after-withheld-snapshot]: the line after a withheld snapshot'
-assert_no_grep 'corr=5555555555555555' "$PARENT/state/ios.status" "an unverified snapshot's line was mirrored"
-assert_no_grep 'corr=6666666666666666' "$PARENT/state/ios.status" "a malformed snapshot pointer's line was mirrored"
-assert_grep "note: remote document did not transfer for ios: $MISSING_SNAPSHOT - file parent is unavailable; the line offering it was withheld" \
-  <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a snapshot missing with its directory left no visible note"
-assert_grep 'note: remote document did not transfer for ios: data/report-snapshots/not-a-digest.md - invalid required snapshot digest; the line offering it was withheld' \
-  <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a malformed snapshot pointer left no visible note"
-assert_grep 'the line after a withheld snapshot' "$PARENT/state/ios.status" "a withheld snapshot held back the line after it"
-mirrored_cursor_is_current "a withheld snapshot held the cursor back"
-mirror_lines 'working [key=after-withheld-snapshot-next]: the next generation still mirrors'
-assert_grep 'the next generation still mirrors' "$PARENT/state/ios.status" "a withheld snapshot left the source unarmed"
-pass "an unverifiable snapshot withholds only its own line and the channel keeps mirroring"
+  "done [corr=7777777777777777]: corrupt report=$CORRUPT_SNAPSHOT" \
+  'working [key=after-unverified-snapshot]: the line after an unverified snapshot'
+assert_grep "done [corr=5555555555555555]: plan attached (report=$MISSING_SNAPSHOT via-helper)" "$PARENT/state/ios.status" \
+  "a missing snapshot's line was not mirrored with its original pointer"
+assert_grep 'done [corr=6666666666666666]: malformed report=data/report-snapshots/not-a-digest.md' "$PARENT/state/ios.status" \
+  "a malformed snapshot pointer's line was not mirrored"
+assert_grep "done [corr=7777777777777777]: corrupt report=$CORRUPT_SNAPSHOT" "$PARENT/state/ios.status" \
+  "a corrupt snapshot's line was not mirrored with its original pointer"
+assert_absent "$PARENT/data/remote-secondmates/ios/$CORRUPT_SNAPSHOT" "a corrupt snapshot was stored locally"
+unstamped_status=$(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status")
+assert_contains "$unstamped_status" \
+  "required document snapshot did not transfer for ios: $MISSING_SNAPSHOT - file is not a non-symlink regular file" \
+  "a missing snapshot raised no escalation"
+assert_contains "$unstamped_status" \
+  'required document snapshot did not transfer for ios: data/report-snapshots/not-a-digest.md - invalid required snapshot digest' \
+  "a malformed snapshot pointer raised no escalation"
+assert_contains "$unstamped_status" \
+  "required document snapshot did not transfer for ios: $CORRUPT_SNAPSHOT - cannot deliver document snapshot: snapshot bytes do not match their commitment" \
+  "a corrupt snapshot raised no escalation"
+[ "$(status_open_decisions "$PARENT/state/ios.status" | grep -c '^remote-reply-snapshot-ios-')" -eq 3 ] \
+  || fail "each unverified snapshot did not open exactly one keyed escalation"
+if status_own_open_decisions "$PARENT/state/ios.status" | grep -q '^remote-reply-snapshot-'; then
+  fail "a snapshot escalation counted as the mate's own open decision"
+fi
+assert_grep 'the line after an unverified snapshot' "$PARENT/state/ios.status" \
+  "an unverified snapshot held back the line after it"
+mirrored_cursor_is_current "an unverified snapshot held the cursor back"
+mirror_lines 'working [key=after-unverified-snapshot-next]: the next generation still mirrors'
+assert_grep 'the next generation still mirrors' "$PARENT/state/ios.status" "an unverified snapshot left the source unarmed"
+[ "$(status_open_decisions "$PARENT/state/ios.status" | grep -c '^remote-reply-snapshot-ios-')" -eq 3 ] \
+  || fail "a later generation repeated or lost a snapshot escalation"
+status_open_decisions "$PARENT/state/ios.status" | awk -F '\t' '/^remote-reply-snapshot-ios-/ { print $1 }' \
+  | while IFS= read -r snapshot_key; do
+      printf 'resolved [key=%s]: operator supplied the document\n' "$snapshot_key" >> "$PARENT/state/ios.status"
+    done
+if status_open_decisions "$PARENT/state/ios.status" | grep -q '^remote-reply-snapshot-'; then
+  fail "an operator could not close a snapshot escalation"
+fi
+pass "an unverified snapshot mirrors its line, raises one keyed escalation, and keeps the channel flowing"
 
 # A failed extraction pass must leave the delta wholly uncommitted. Once the
 # parser works again, the same captured delta applies in full.
@@ -1352,33 +1390,18 @@ for snapshot_size in 48 300000; do
   assert_no_grep 'the line after the snapshot offer' "$PARENT/state/ios.status" \
     "a local snapshot storage failure committed part of the delta"
   rmdir "$PARENT/data/remote-secondmates/ios/$SNAPSHOT"
-  cp "$REMOTE/$SNAPSHOT" "$TMP_ROOT/frozen-document"
-  rm "$REMOTE/$SNAPSHOT"
-  remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/missing-snapshot.out" 2>&1 \
-    || fail "a missing required snapshot wedged the reply channel"
-  assert_no_grep "corr=$DOC_CORR" "$PARENT/state/ios.status" "a missing snapshot's answer reached the parent"
-  assert_grep "note: remote document did not transfer for ios: $SNAPSHOT - file is not a non-symlink regular file; the line offering it was withheld" \
-    <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a missing snapshot left no visible note"
-  assert_grep 'the line after the snapshot offer' "$PARENT/state/ios.status" "a missing snapshot held back the line after it"
-  assert_grep "offset=$(LC_ALL=C wc -c < "$REMOTE/state/parent-replies.status" | tr -d ' ')" \
-    "$PARENT/state/remote-replies/ios.cursor" "a missing snapshot held the cursor back"
-  [ "$(fm_pending_reply_get "$PARENT/state/pending-replies/$DOC_CORR" phase)" != resolved ] \
-    || fail "a missing snapshot resolved the request"
-  printf 'Corrupted document.\n' > "$REMOTE/$SNAPSHOT"
-  remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/corrupt-snapshot.out" 2>&1 \
-    || fail "a corrupt required snapshot wedged the reply channel"
-  assert_no_grep "corr=$DOC_CORR" "$PARENT/state/ios.status" "a corrupt snapshot's answer reached the parent"
-  assert_grep "note: remote document did not transfer for ios: $SNAPSHOT - cannot deliver document snapshot: snapshot bytes do not match their commitment; the line offering it was withheld" \
-    <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a corrupt snapshot left no visible note"
-  [ "$(fm_pending_reply_get "$PARENT/state/pending-replies/$DOC_CORR" phase)" != resolved ] \
-    || fail "a corrupt snapshot resolved the request"
-  cp "$TMP_ROOT/frozen-document" "$REMOTE/$SNAPSHOT"
-  remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" >/dev/null \
-    || fail "a restored snapshot could not be retried"
+  printf '1\n' > "$TMP_ROOT/failing-calls"
+  FM_REMOTE_REPLY_FAIL_CALLS="$TMP_ROOT/failing-calls" remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" >/dev/null \
+    || fail "a transient snapshot fetch failure was not retried"
+  [ "$(cat "$TMP_ROOT/failing-calls")" = 0 ] || fail "the transient snapshot fetch failure was never exercised"
   cmp -s "$TMP_ROOT/expected-document" "$PARENT/data/remote-secondmates/ios/$SNAPSHOT" \
     || fail "the snapshot did not deliver the originally reviewed bytes"
+  assert_grep "report=data/remote-secondmates/ios/$SNAPSHOT" "$PARENT/state/ios.status" \
+    "the delivered snapshot pointer was not rewritten to its local copy"
   assert_grep "source-home=$REMOTE" "$PARENT/state/ios.status" "remote delivery lost source provenance"
   assert_grep 'source-document=data/plans/route.md' "$PARENT/state/ios.status" "remote delivery lost the source path"
+  assert_no_grep 'remote-reply-snapshot-' "$PARENT/state/ios.status" "a retried snapshot still raised an escalation"
+  assert_grep 'the line after the snapshot offer' "$PARENT/state/ios.status" "the snapshot delta lost the line after it"
   assert_contains "$(fm_pending_reply_result "$PARENT/state" "$DOC_CORR")" 'request: answered' \
     "a verified snapshot did not resolve the request"
   remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" >/dev/null \
@@ -1393,7 +1416,33 @@ for snapshot_size in 48 300000; do
     < "$PARENT/data/remote-secondmates/ios/$SNAPSHOT" > "$TMP_ROOT/snapshot-receipt" \
     || fail "the existing transport could not copy the artifact onward"
   [ "$(cat "$TMP_ROOT/snapshot-receipt")" = "$SNAPSHOT" ] || fail "onward copy did not confirm its receiving-home path"
-  pass "a $snapshot_size-byte required snapshot reaches the receiving home before its request is answered"
+  # A transport failure that outlasts the bounded retry no longer holds the stream.
+  SECOND_CORR=$(fm_pending_reply_create "$PARENT" "$PARENT/state" ios 'send the second plan')
+  fm_pending_reply_mark_delivered "$PARENT/state" "$SECOND_CORR"
+  SECOND_OFFSET=$(LC_ALL=C wc -c < "$REMOTE/state/parent-replies.status" | tr -d ' ')
+  SECOND_PREFIX=$(sha256_file "$REMOTE/state/parent-replies.status")
+  printf 'Second plan for the %s-byte case.\n' "$snapshot_size" > "$REMOTE/data/plans/second.md"
+  FM_HOME="$REMOTE" "$ROOT/bin/fm-secondmate-report.sh" --doc 'done' "$SECOND_CORR" \
+    data/plans/second.md 'The second plan is attached.' || fail "second snapshot report failed"
+  SECOND_SNAPSHOT=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$REMOTE/state/parent-replies.status" | tail -1 | cut -d= -f2-)
+  FM_HOME="$REMOTE" "$ROOT/bin/fm-remote-delta-read.sh" state/parent-replies.status "$SECOND_OFFSET" "$SECOND_PREFIX" 1 \
+    > "$TMP_ROOT/second-snapshot-delta" || fail "second snapshot delta capture failed"
+  printf '3\n' > "$TMP_ROOT/failing-calls"
+  FM_REMOTE_REPLY_FAIL_CALLS="$TMP_ROOT/failing-calls" remote_env "$ADAPTER" ingest ios "$TMP_ROOT/second-snapshot-delta" >/dev/null \
+    || fail "a lasting transport failure held the reply channel"
+  [ "$(cat "$TMP_ROOT/failing-calls")" = 0 ] || fail "the snapshot fetch was not retried up to its bound"
+  assert_grep "report=$SECOND_SNAPSHOT" "$PARENT/state/ios.status" \
+    "a lasting transport failure did not mirror the answer with its original pointer"
+  assert_absent "$PARENT/data/remote-secondmates/ios/$SECOND_SNAPSHOT" "an undelivered snapshot was stored locally"
+  assert_contains "$(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status")" \
+    "required document snapshot did not transfer for ios: $SECOND_SNAPSHOT - " \
+    "a lasting transport failure raised no escalation"
+  assert_grep '(exit 124 after 3 attempts)' "$PARENT/state/ios.status" "the escalation did not name the exhausted retry"
+  assert_contains "$(fm_pending_reply_result "$PARENT/state" "$SECOND_CORR")" 'request: answered' \
+    "the answer without its snapshot did not settle the request"
+  assert_grep "offset=$(LC_ALL=C wc -c < "$REMOTE/state/parent-replies.status" | tr -d ' ')" \
+    "$PARENT/state/remote-replies/ios.cursor" "a lasting transport failure held the cursor back"
+  pass "a $snapshot_size-byte required snapshot survives a transient failure and never holds the channel"
 done
 
 echo "ALL TESTS PASSED"
