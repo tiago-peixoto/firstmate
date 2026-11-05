@@ -5,8 +5,8 @@
 #   FM_HOME=<receiving-home> fm-document-snapshot.sh receive <sha256> <bytes> < document
 # Both print data/report-snapshots/<sha256>.md only after verified publication.
 # capture accepts an absolute or home-relative .md/.txt file under data/.
-# Hidden/credential paths, symlinks, hardlinks, non-UTF-8 text, control bytes,
-# and recognizable credential content are refused. These checks are not proof
+# Hidden or key-file paths, symlinks, hardlinks, non-UTF-8 text, and
+# high-confidence secret values are refused. These checks are not proof
 # that arbitrary prose is non-secret: callers must review the document first.
 # The snapshot is at most 1 MiB, the existing remote-file transport safety bound.
 # A larger input must be reduced to the relevant non-secret document, never
@@ -59,19 +59,14 @@ def check_content(content):
     if len(content) > MAX_BYTES:
         refuse('document exceeds the 1048576-byte safety bound')
     text = content.decode('utf-8')
-    if re.search(r'[\x00-\x08\x0b-\x1f\x7f]', text):
-        refuse('document contains control bytes')
     patterns = (
         r'-----BEGIN [A-Z ]*PRIVATE KEY-----',
         r'\b(?:AKIA|ASIA)[A-Z0-9]{16}\b',
-        r'\b(?:gh[pousr]_|github_pat_|xox[baprs]-)[A-Za-z0-9_-]+',
-        r'\b(?:sk_live_|sk-proj-)[A-Za-z0-9_-]+',
-        r'\b(?:password|passwd|secret|token|api[_-]?key|access[_-]?key|'
-        r'client[_-]?secret|authorization)[\w-]*[\s\"\x27]*[:=]\s*\S+',
-        r'\bBearer\s+[A-Za-z0-9._~-]+',
-        r'://[^\s/:]+:[^\s/@]+@',
+        r'\b(?:gh[pousr]_|github_pat_|xox[baprs]-|sk_live_|sk-proj-)[A-Za-z0-9_-]{20,}',
+        r'(?i:password|passwd|secret|token|api[_-]?key|access[_-]?key)\w*[\"\x27]?\s*[:=]\s*[\"\x27]?'
+        r'(?=[A-Za-z0-9+/=_-]*[0-9])(?=[A-Za-z0-9+/=_-]*[A-Za-z])[A-Za-z0-9+/=_-]{20,}',
     )
-    if any(re.search(pattern, text, re.IGNORECASE) for pattern in patterns):
+    if any(re.search(pattern, text) for pattern in patterns):
         refuse('document contains possible credentials; provide a reviewed non-secret extract')
 
 
@@ -98,19 +93,6 @@ def publish(home, content, digest):
         os.replace(temporary, name, src_dir_fd=snapshots, dst_dir_fd=snapshots)
         if read_file(snapshots, name) != content:
             refuse('snapshot read-back differs from the reviewed bytes')
-        # A successful write through an old directory descriptor is not proof
-        # the receiving home can still reach that directory by its named path.
-        current_data = directory(home, 'data')
-        try:
-            current = directory(current_data, 'report-snapshots')
-        finally:
-            os.close(current_data)
-        try:
-            current_info, stored_info = os.fstat(current), os.fstat(snapshots)
-            if (current_info.st_dev, current_info.st_ino) != (stored_info.st_dev, stored_info.st_ino):
-                refuse('snapshot directory changed during publication')
-        finally:
-            os.close(current)
     finally:
         try:
             os.unlink(temporary, dir_fd=snapshots)
@@ -136,7 +118,7 @@ def main():
                 refuse("document must be a non-hidden path under this home's data directory")
             if not path.endswith(('.md', '.txt')):
                 refuse('document must be Markdown or plain text')
-            if re.search(r'(?:credential|secret|password|token|id_rsa|id_ed25519|\.pem|\.key)', path, re.I):
+            if re.search(r'(?:id_rsa|id_ed25519|\.pem|\.key)', path, re.I):
                 refuse('credential paths cannot be snapshotted')
             parent = os.dup(home)
             try:

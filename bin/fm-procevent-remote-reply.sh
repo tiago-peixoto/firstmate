@@ -53,10 +53,12 @@
 # on the stream. Gating on it here made a remote mate's own progress lines and
 # newly raised decisions - which carry no corr= by contract - unrepresentable,
 # and rejecting one line failed the whole delta, so the cursor could never
-# advance past it. Ordinary status lines never gate the stream. A required
+# advance past it. No single line can stop or wedge the stream. A
 # data/report-snapshots/<sha256>.md offer from fm-secondmate-report.sh --doc is
-# different: its correlated answer is withheld until the frozen bytes arrive
-# and their digest verifies. A failed copy leaves the captured delta retryable.
+# a required input, so the line offering it is mirrored only once the frozen
+# bytes arrive and their digest verifies. When that snapshot is refused or its
+# pointer is malformed, only that line is withheld: a note names the snapshot,
+# later lines still mirror, and the request it answered stays unresolved.
 #
 # What remains here is only what crossing a machine boundary genuinely adds:
 #   - cursor continuity and identity (offset plus prefix digest)
@@ -340,9 +342,9 @@ safe_doc_path() {
 # mention, not an offer: fetching every mention made a mate's sentence about a
 # report it had not written yet trigger a transfer it never offered.
 #
-# One boundary-valid recognition serves both extraction and rewriting, so the two
-# can never disagree about what counts as a pointer. A pointer must start and end
-# at a token boundary: `child-report=` is not this tag, and
+# One boundary-valid recognition serves extraction, withholding, and rewriting,
+# so they can never disagree about what counts as a pointer. A pointer must
+# start and end at a token boundary: `child-report=` is not this tag, and
 # `report=data/x.md.bak` offers nothing, not even its `data/x.md` prefix. Each
 # line is scanned behind a sentinel byte that normalized payload can never
 # contain, so every candidate needs a real preceding boundary character. A
@@ -354,7 +356,7 @@ safe_doc_path() {
 # exec argument limit; awk would then fail to start, and a caller that did not
 # check would append the empty result as a blank line and advance the cursor past
 # dropped status content. Every caller checks the exit status.
-process_document_pointers() { # <extract|rewrite> <pointer-map-file>
+process_document_pointers() { # <extract|withhold|rewrite> <pointer-map-file>
   LC_ALL=C awk -v mode="$1" -v mapfile="$2" '
     BEGIN {
       if (mapfile != "") {
@@ -369,6 +371,7 @@ process_document_pointers() { # <extract|rewrite> <pointer-map-file>
     {
       rest = "\001" $0
       rewritten = ""
+      withheld = 0
       while (match(rest, /[^A-Za-z0-9._\/-]report=data\/[A-Za-z0-9._\/-]+[.]md/)) {
         doc = substr(rest, RSTART + 8, RLENGTH - 8)
         next_index = RSTART + RLENGTH
@@ -376,6 +379,8 @@ process_document_pointers() { # <extract|rewrite> <pointer-map-file>
         if (next_char == "" || next_char !~ /[A-Za-z0-9._\/-]/) {
           if (mode == "extract") {
             if (!seen[doc]++) print doc
+          } else if (mode == "withhold") {
+            if (doc in replacements) withheld = 1
           } else {
             replacement = doc in replacements ? replacements[doc] : doc
             rewritten = rewritten substr(rest, 1, RSTART + 7) replacement
@@ -387,13 +392,17 @@ process_document_pointers() { # <extract|rewrite> <pointer-map-file>
           rewritten = rewritten substr(rest, 1, next_index - 1)
         rest = substr(rest, next_index)
       }
-      if (mode != "extract") print substr(rewritten rest, 2)
+      if (mode != "extract" && !withheld) print substr(rewritten rest, 2)
     }
   '
 }
 
 extract_document_pointers() { # <payload-file>
   process_document_pointers extract '' < "$1"
+}
+
+withhold_document_offers() { # <input-file> <withheld-pointer-file> <output-file>
+  process_document_pointers withhold "$2" < "$1" > "$3"
 }
 
 rewrite_document_pointers() { # <input-file> <pointer-map-file> <output-file>
@@ -546,6 +555,7 @@ cmd_ingest() {
   local id=${1:-} result=${2:-} seq=${3:-} class blank payload normalized_payload schema status path from to from_hash to_hash payload_hash payload_bytes reason
   local actual_bytes actual_hash line doc local_doc appended=0 cursor_already=0 lock status_file source_record tmp
   local fetch_rc append_rc offered='' delivered_map='' mirrored='' status_additions='' source_additions='' undelivered=''
+  local withheld='' mirrorable=''
   validate_id "$id"
   [ -f "$result" ] && [ ! -L "$result" ] || die "result file is unavailable or unsafe: $result"
   class=$(classify_result "$result")
@@ -633,6 +643,8 @@ cmd_ingest() {
   fi
   delivered_map="$tmp/delivered.map"
   : > "$delivered_map" || { fm_lock_release "$lock"; die "cannot stage the delivered document map"; }
+  withheld="$tmp/withheld.map"
+  : > "$withheld" || { fm_lock_release "$lock"; die "cannot stage the withheld snapshot list"; }
   while IFS= read -r doc || [ -n "$doc" ]; do
     [ -n "$doc" ] || continue
     fetch_rc=0
@@ -641,12 +653,13 @@ cmd_ingest() {
     if [ "$fetch_rc" -eq 1 ]; then
       case "$doc" in
         data/report-snapshots/*)
-          fm_lock_release "$lock"
-          die "required document snapshot did not transfer: $doc - $FETCH_DOC_REASON"
+          printf '%s\t\n' "$doc" >> "$withheld" \
+            || { fm_lock_release "$lock"; die "cannot stage the withheld snapshot list"; }
           ;;
       esac
       # Fail open. A refusal is never a decision: the mate's line keeps its own
-      # pointer, the cursor still advances, and one unkeyed note says why. A
+      # pointer (a snapshot offer's line is withheld instead), the cursor still
+      # advances, and one unkeyed note says why. A
       # keyed escalation raised here once stood open forever describing a report
       # that had in fact arrived, because nothing could ever resolve it.
       undelivered="${undelivered}${undelivered:+$'\n'}${doc}"$'\t'"${FETCH_DOC_REASON}"
@@ -661,8 +674,11 @@ cmd_ingest() {
   done <<EOF
 $offered
 EOF
+  mirrorable="$tmp/mirrorable"
+  withhold_document_offers "$normalized_payload" "$withheld" "$mirrorable" \
+    || { fm_lock_release "$lock"; die "cannot withhold unverified document snapshots"; }
   mirrored="$tmp/mirrored"
-  rewrite_document_pointers "$normalized_payload" "$delivered_map" "$mirrored" \
+  rewrite_document_pointers "$mirrorable" "$delivered_map" "$mirrored" \
     || { fm_lock_release "$lock"; die "cannot rewrite remote document pointers"; }
   status_additions="$tmp/status-additions"
   source_additions="$tmp/source-additions"
@@ -670,7 +686,7 @@ EOF
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
   : > "$source_additions" \
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
-  stage_mirror_lines "$normalized_payload" "$mirrored" "$source_record" "$status_file" \
+  stage_mirror_lines "$mirrorable" "$mirrored" "$source_record" "$status_file" \
     "$status_additions" "$source_additions" \
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
   cat "$status_additions" >> "$status_file" \
@@ -684,6 +700,7 @@ EOF
   while IFS=$'\t' read -r doc reason || [ -n "$doc" ]; do
     [ -n "$doc" ] || continue
     line="note: remote document did not transfer for $id: $doc - $reason"
+    case "$doc" in data/report-snapshots/*) line="$line; the line offering it was withheld" ;; esac
     append_rc=0
     if status_event_recorded "$status_file" "$line"; then
       append_rc=1
@@ -698,7 +715,7 @@ EOF
   while IFS= read -r corr; do
     [ -n "$corr" ] || continue
     fm_pending_reply_try_resolve "$STATE" "$corr" "$status_file" >/dev/null 2>&1 || true
-  done < <(grep -Eo 'corr=[A-Fa-f0-9]{16}' "$normalized_payload" | cut -d= -f2- | tr 'A-F' 'a-f' | awk '!seen[$0]++')
+  done < <(grep -Eo 'corr=[A-Fa-f0-9]{16}' "$mirrorable" | cut -d= -f2- | tr 'A-F' 'a-f' | awk '!seen[$0]++')
   if [ -n "$seq" ]; then
     write_ingest_receipt "$id" "$seq" "$result" \
       || { fm_lock_release "$lock"; die "cannot commit remote reply ingestion receipt"; }

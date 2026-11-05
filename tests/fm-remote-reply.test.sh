@@ -580,6 +580,25 @@ assert_no_document_decision "an oversize document raised a document decision"
 mirrored_cursor_is_current "an oversize document held the cursor back"
 pass "a remote refusal surfaces its own reason without opening a decision"
 
+# A snapshot offer that cannot be verified withholds only the line offering it.
+# The capture is still applied and the source re-arms, so later lines mirror.
+MISSING_SNAPSHOT="data/report-snapshots/$(printf '%064d' 0).md"
+mirror_lines \
+  "done [corr=5555555555555555]: plan attached (report=$MISSING_SNAPSHOT via-helper)" \
+  'done [corr=6666666666666666]: malformed report=data/report-snapshots/not-a-digest.md' \
+  'working [key=after-withheld-snapshot]: the line after a withheld snapshot'
+assert_no_grep 'corr=5555555555555555' "$PARENT/state/ios.status" "an unverified snapshot's line was mirrored"
+assert_no_grep 'corr=6666666666666666' "$PARENT/state/ios.status" "a malformed snapshot pointer's line was mirrored"
+assert_grep "note: remote document did not transfer for ios: $MISSING_SNAPSHOT - file parent is unavailable; the line offering it was withheld" \
+  <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a snapshot missing with its directory left no visible note"
+assert_grep 'note: remote document did not transfer for ios: data/report-snapshots/not-a-digest.md - invalid required snapshot digest; the line offering it was withheld' \
+  <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a malformed snapshot pointer left no visible note"
+assert_grep 'the line after a withheld snapshot' "$PARENT/state/ios.status" "a withheld snapshot held back the line after it"
+mirrored_cursor_is_current "a withheld snapshot held the cursor back"
+mirror_lines 'working [key=after-withheld-snapshot-next]: the next generation still mirrors'
+assert_grep 'the next generation still mirrors' "$PARENT/state/ios.status" "a withheld snapshot left the source unarmed"
+pass "an unverifiable snapshot withholds only its own line and the channel keeps mirroring"
+
 # A failed extraction pass must leave the delta wholly uncommitted. Once the
 # parser works again, the same captured delta applies in full.
 printf '# extraction-failure probe\n' > "$REMOTE/data/reply/extractfail.md"
@@ -1317,24 +1336,31 @@ for snapshot_size in 48 300000; do
     data/plans/route.md 'The reviewed plan is attached.' || fail "snapshot report failed"
   SNAPSHOT=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$REMOTE/state/parent-replies.status" | cut -d= -f2-)
   [ -n "$SNAPSHOT" ] || fail "--doc emitted no transferable snapshot"
+  printf 'working [key=after-snapshot]: the line after the snapshot offer\n' >> "$REMOTE/state/parent-replies.status"
   printf 'The original plan changed.\n' > "$REMOTE/data/plans/route.md"
   EMPTY_HASH=$(printf '' | shasum -a 256 | awk '{print $1}')
   FM_HOME="$REMOTE" "$ROOT/bin/fm-remote-delta-read.sh" state/parent-replies.status 0 "$EMPTY_HASH" 1 \
     > "$TMP_ROOT/snapshot-delta" || fail "snapshot delta capture failed"
   cp "$REMOTE/$SNAPSHOT" "$TMP_ROOT/frozen-document"
   rm "$REMOTE/$SNAPSHOT"
-  if remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/missing-snapshot.out" 2>&1; then
-    fail "a missing required snapshot acknowledged the routed request"
-  fi
+  remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/missing-snapshot.out" 2>&1 \
+    || fail "a missing required snapshot wedged the reply channel"
   assert_no_grep "corr=$DOC_CORR" "$PARENT/state/ios.status" "a missing snapshot's answer reached the parent"
-  assert_absent "$PARENT/state/remote-replies/ios.cursor" "a missing snapshot advanced the cursor"
-  printf 'Corrupted document.\n' > "$REMOTE/$SNAPSHOT"
-  if remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/corrupt-snapshot.out" 2>&1; then
-    fail "a corrupt snapshot acknowledged the routed request"
-  fi
-  assert_no_grep "corr=$DOC_CORR" "$PARENT/state/ios.status" "a corrupt snapshot's answer reached the parent"
+  assert_grep "note: remote document did not transfer for ios: $SNAPSHOT - file is not a non-symlink regular file; the line offering it was withheld" \
+    <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a missing snapshot left no visible note"
+  assert_grep 'the line after the snapshot offer' "$PARENT/state/ios.status" "a missing snapshot held back the line after it"
+  assert_grep "offset=$(LC_ALL=C wc -c < "$REMOTE/state/parent-replies.status" | tr -d ' ')" \
+    "$PARENT/state/remote-replies/ios.cursor" "a missing snapshot held the cursor back"
   [ "$(fm_pending_reply_get "$PARENT/state/pending-replies/$DOC_CORR" phase)" != resolved ] \
-    || fail "an undelivered snapshot resolved the request"
+    || fail "a missing snapshot resolved the request"
+  printf 'Corrupted document.\n' > "$REMOTE/$SNAPSHOT"
+  remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/corrupt-snapshot.out" 2>&1 \
+    || fail "a corrupt required snapshot wedged the reply channel"
+  assert_no_grep "corr=$DOC_CORR" "$PARENT/state/ios.status" "a corrupt snapshot's answer reached the parent"
+  assert_grep "note: remote document did not transfer for ios: $SNAPSHOT - cannot deliver document snapshot: snapshot bytes do not match their commitment; the line offering it was withheld" \
+    <(sed -E 's/ \[at=[0-9]+\]//' "$PARENT/state/ios.status") "a corrupt snapshot left no visible note"
+  [ "$(fm_pending_reply_get "$PARENT/state/pending-replies/$DOC_CORR" phase)" != resolved ] \
+    || fail "a corrupt snapshot resolved the request"
   cp "$TMP_ROOT/frozen-document" "$REMOTE/$SNAPSHOT"
   remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" >/dev/null \
     || fail "a restored snapshot could not be retried"
@@ -1347,6 +1373,8 @@ for snapshot_size in 48 300000; do
   remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" >/dev/null \
     || fail "a snapshot replay failed"
   [ "$(grep -c "corr=$DOC_CORR" "$PARENT/state/ios.status")" -eq 1 ] || fail "snapshot replay duplicated the answer"
+  [ "$(grep -c 'the line after the snapshot offer' "$PARENT/state/ios.status")" -eq 1 ] \
+    || fail "snapshot replay duplicated the line after it"
   # The same artifact contract supports onward routing into another home.
   DIGEST=${SNAPSHOT##*/}
   DIGEST=${DIGEST%.md}

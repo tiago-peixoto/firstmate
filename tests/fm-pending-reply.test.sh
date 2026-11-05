@@ -1899,18 +1899,34 @@ test_mechanical_helper_writes_parent_channel() {
   assert_grep 'source-document=data/plans/route.md' "$state/mate.status" "the snapshot lost its source path"
   printf 'Changed after reporting.\n' > "$sm_home/data/plans/route.md"
   assert_grep 'Run the documented checks.' "$home/$snapshot" "the delivered snapshot changed with its source"
+  printf 'Send a Bearer token in the header.\n' > "$sm_home/data/plans/bearer.md"
+  printf 'const token = await getToken();\n' > "$sm_home/data/plans/code.md"
+  printf 'apiKey: process.env.API_KEY\n' > "$sm_home/data/plans/config.md"
+  printf 'Tokens: about 1200 per run\n' > "$sm_home/data/plans/usage.md"
+  printf '# Plan\r\n\r\nRun the checks.\r\n' > "$sm_home/data/plans/crlf.md"
+  printf 'Lint output: \033[32mpassed\033[0m\n' > "$sm_home/data/plans/ansi.md"
+  printf 'Rotate the refresh flow.\n' > "$sm_home/data/plans/token-refresh-plan.md"
+  printf 'Ordinary prose in a credential file.\n' > "$sm_home/data/plans/credentials.md"
+  local accepted
+  for accepted in bearer.md code.md config.md usage.md crlf.md ansi.md token-refresh-plan.md credentials.md; do
+    FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" "data/plans/$accepted" \
+      || fail "an ordinary plan document was refused: $accepted"
+    snapshot=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$state/mate.status" | tail -1 | cut -d= -f2-)
+    cmp -s "$sm_home/data/plans/$accepted" "$home/$snapshot" \
+      || fail "the parent did not receive the exact ordinary document: $accepted"
+  done
   local before
   before=$(wc -l < "$state/mate.status")
-  printf 'password=actual-private-value\n' > "$sm_home/data/plans/private.md"
+  printf 'aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n' > "$sm_home/data/plans/private.md"
   if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" data/plans/private.md 2>/dev/null; then
     fail "a document containing a credential was reported"
   fi
   ln -s route.md "$sm_home/data/plans/link.md"
   ln "$sm_home/data/plans/route.md" "$sm_home/data/plans/hardlink.md"
-  printf 'Ordinary prose in a credential file.\n' > "$sm_home/data/plans/credentials.md"
+  printf 'Ordinary prose in a key file.\n' > "$sm_home/data/plans/id_rsa.txt"
   head -c 1048577 /dev/zero | tr '\0' x > "$sm_home/data/plans/oversized.md"
   local refused
-  for refused in missing.md link.md hardlink.md credentials.md oversized.md; do
+  for refused in missing.md link.md hardlink.md id_rsa.txt oversized.md; do
     if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" "data/plans/$refused" 2>/dev/null; then
       fail "an unsafe or unavailable document was reported: $refused"
     fi
