@@ -1,0 +1,15 @@
+## exporter: /tmp/fm-8045-live.b0l4dH/base/bin/fm-record-export.sh (base-4869cf58)
+## home: /tmp/fm-8045-live.b0l4dH/repro-base-4869cf58.jPUqVE/home
+--- empty overrides
+$ FM_HOME="$home" FM_ROOT_OVERRIDE='' FM_CONFIG_OVERRIDE='' FM_DATA_OVERRIDE='' FM_STATE_OVERRIDE='' fm-record-export.sh sync
+error: record export config directory must be absolute: 
+exit=1
+live tree after empty-overrides sync:
+--- hidden status file
+$ FM_HOME="$home" fm-record-export.sh sync
+error: unsafe task status name: .startup-network
+exit=1
+live tree after hidden-file sync:
+live/data/projects.md content: cat: /tmp/fm-8045-live.b0l4dH/repro-base-4869cf58.jPUqVE/export/live/data/projects.md: No such file or directory
+live/state/task-a.status content: cat: /tmp/fm-8045-live.b0l4dH/repro-base-4869cf58.jPUqVE/export/live/state/task-a.status: No such file or directory
+hidden .startup-network.status not exported (expected)

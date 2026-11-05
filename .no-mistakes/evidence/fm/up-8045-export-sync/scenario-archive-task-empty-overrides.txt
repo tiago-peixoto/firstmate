@@ -1,0 +1,59 @@
+## teardown archive path: bin/fm-record-export.sh archive-task with the four FM_*_OVERRIDE variables set to empty strings
+$ ls -A state/
+.startup-network.status
+task-a.inbox
+task-a.meta
+task-a.status
+$ FM_HOME="$home" FM_ROOT_OVERRIDE='' FM_CONFIG_OVERRIDE='' FM_DATA_OVERRIDE='' FM_STATE_OVERRIDE='' bin/fm-record-export.sh archive-task task-a
+exit=0
+archive tree:
+  export/archive/task-a
+  export/archive/task-a/gen-1
+  export/archive/task-a/gen-1/inbox
+  export/archive/task-a/gen-1/inbox/001.msg
+  export/archive/task-a/gen-1/inbox/handled
+  export/archive/task-a/gen-1/inbox/handled/002.msg
+  export/archive/task-a/gen-1/manifest.v1.json
+  export/archive/task-a/gen-1/meta
+  export/archive/task-a/gen-1/status
+manifest.v1.json:
+  {
+      "schema": "firstmate-record-export-archive.v1",
+      "schema_version": 1,
+      "task": "task-a",
+      "spawn_gen": "gen-1",
+      "captured_at": "2026-11-05T14:39:39Z",
+      "complete": true,
+      "files": [
+          {
+              "source": "state/task-a.meta",
+              "archive": "meta",
+              "bytes": 53,
+              "sha256": "821aa7672d9c8ac854a92ed13f133819e9ad3ae82f48dea4789e47be5754741b"
+          },
+          {
+              "source": "state/task-a.status",
+              "archive": "status",
+              "bytes": 18,
+              "sha256": "f305664b1d411df298e437e551e39963cbb66cedab80327d5ce239e323a3b705"
+          },
+          {
+              "source": "state/task-a.inbox/001.msg",
+              "archive": "inbox/001.msg",
+              "bytes": 8,
+              "sha256": "52d26753462488ad21852bc6718e21b84835f53765304d0a1e1b89d05a2a71b1"
+          },
+          {
+              "source": "state/task-a.inbox/handled/002.msg",
+              "archive": "inbox/handled/002.msg",
+              "bytes": 8,
+              "sha256": "1b9c2f410a9adbce7718696caf7f7f97f936b35b4618002103fa724eba715965"
+          }
+      ]
+  }
+
+## same archive-task on the base commit 4869cf58 engine (python3 fm-record-export.py archive-task task-a, lock held flag set as teardown does)
+$ FM_HOME="$home2" FM_ROOT_OVERRIDE='' FM_CONFIG_OVERRIDE='' FM_DATA_OVERRIDE='' FM_STATE_OVERRIDE='' FM_RECORD_EXPORT_META_LOCK_HELD=1 base/bin/fm-record-export.sh archive-task task-a
+error: record export config directory must be absolute: 
+exit=1
+archive tree:

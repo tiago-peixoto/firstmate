@@ -1,0 +1,25 @@
+## exporter: {run-worktree}/bin/fm-record-export.sh (fixed-e188cf73)
+## home: /tmp/fm-8045-live.b0l4dH/repro-fixed-e188cf73.EfIMOM/home
+--- empty overrides
+$ FM_HOME="$home" FM_ROOT_OVERRIDE='' FM_CONFIG_OVERRIDE='' FM_DATA_OVERRIDE='' FM_STATE_OVERRIDE='' fm-record-export.sh sync
+exit=0
+live tree after empty-overrides sync:
+  export/.firstmate-record-export-root.v1.json
+  export/.live-generations
+  export/.live-generations/g1793889530173667748.4107344.7512d4ebde864baba6e1b7895ecbacb5
+  export/.live-generations/g1793889530173667748.4107344.7512d4ebde864baba6e1b7895ecbacb5/data
+  export/.live-generations/g1793889530173667748.4107344.7512d4ebde864baba6e1b7895ecbacb5/data/projects.md
+  export/.live-generations/g1793889530173667748.4107344.7512d4ebde864baba6e1b7895ecbacb5/state
+  export/.live-generations/g1793889530173667748.4107344.7512d4ebde864baba6e1b7895ecbacb5/state/task-a.status
+  export/live
+--- hidden status file
+$ FM_HOME="$home" fm-record-export.sh sync
+exit=0
+live tree after hidden-file sync:
+  export/live/data
+  export/live/data/projects.md
+  export/live/state
+  export/live/state/task-a.status
+live/data/projects.md content: projects
+live/state/task-a.status content: working: underway
+hidden .startup-network.status not exported (expected)

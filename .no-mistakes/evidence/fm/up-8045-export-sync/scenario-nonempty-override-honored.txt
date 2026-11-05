@@ -1,0 +1,11 @@
+## non-empty FM_STATE_OVERRIDE and FM_DATA_OVERRIDE are still honored after the empty-means-unset change
+$ FM_HOME="$home" FM_STATE_OVERRIDE="$alt/state" FM_DATA_OVERRIDE="$alt/data" bin/fm-record-export.sh sync
+exit=0
+live tree:
+  export/live/data
+  export/live/data/projects.md
+  export/live/state
+  export/live/state/task-b.status
+live/data/projects.md: alt projects
+live/state/task-b.status: alt status
+home task-a.status not exported (expected: override honored)

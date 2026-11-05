@@ -1,0 +1,21 @@
+## adversarial: malformed non-hidden task status name must still stop the sync
+$ ls -A state/
+bad name.status
+task-a.status
+$ FM_HOME="$home" bin/fm-record-export.sh sync
+error: unsafe task status name: bad name
+exit=1
+export tree:
+  export/.firstmate-record-export-root.v1.json
+no live/ published (expected: malformed record stops the sync)
+
+## adversarial: hidden malformed name is skipped, but a hidden .meta / .inbox are skipped too (only non-hidden names are validated)
+$ ls -A state/
+.ghost.inbox
+.hidden-task.meta
+task-a.meta
+$ FM_HOME="$home2" bin/fm-record-export.sh sync
+exit=0
+live tree:
+  export/live/state
+  export/live/state/task-a.meta
