@@ -1886,7 +1886,44 @@ test_mechanical_helper_writes_parent_channel() {
   rc=0
   FM_HOME="$home" "$REPORT" "done" "$corr" "from a main home" 2>/dev/null || rc=$?
   [ "$rc" -ne 0 ] || fail "helper must refuse a main home that has no parent channel"
-  pass "mechanical helper writes the parent channel from verb, corr, and note"
+  mkdir -p "$sm_home/data/plans"
+  printf '# Required plan\n\nRun the documented checks.\n' > "$sm_home/data/plans/route.md"
+  FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" data/plans/route.md "The plan is attached." \
+    || fail "document report failed"
+  local snapshot
+  snapshot=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$state/mate.status" | tail -1 | cut -d= -f2-)
+  [ -n "$snapshot" ] || fail "document report still carries only the inaccessible source path"
+  cmp -s "$sm_home/data/plans/route.md" "$home/$snapshot" \
+    || fail "the parent did not receive the exact plan before the reply"
+  assert_grep "source-home=$sm_home" "$state/mate.status" "the snapshot lost its source home"
+  assert_grep 'source-document=data/plans/route.md' "$state/mate.status" "the snapshot lost its source path"
+  printf 'Changed after reporting.\n' > "$sm_home/data/plans/route.md"
+  assert_grep 'Run the documented checks.' "$home/$snapshot" "the delivered snapshot changed with its source"
+  local before
+  before=$(wc -l < "$state/mate.status")
+  printf 'password=actual-private-value\n' > "$sm_home/data/plans/private.md"
+  if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" data/plans/private.md 2>/dev/null; then
+    fail "a document containing a credential was reported"
+  fi
+  ln -s route.md "$sm_home/data/plans/link.md"
+  ln "$sm_home/data/plans/route.md" "$sm_home/data/plans/hardlink.md"
+  printf 'Ordinary prose in a credential file.\n' > "$sm_home/data/plans/credentials.md"
+  head -c 1048577 /dev/zero | tr '\0' x > "$sm_home/data/plans/oversized.md"
+  local refused
+  for refused in missing.md link.md hardlink.md credentials.md oversized.md; do
+    if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" "data/plans/$refused" 2>/dev/null; then
+      fail "an unsafe or unavailable document was reported: $refused"
+    fi
+  done
+  mkdir -p "$sm_home/data/blocked-parent"
+  printf 'A different safe document.\n' > "$sm_home/data/blocked-parent/plan.md"
+  mv "$home/data/report-snapshots" "$home/data/saved-snapshots"
+  ln -s saved-snapshots "$home/data/report-snapshots"
+  if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" data/blocked-parent/plan.md 2>/dev/null; then
+    fail "an unsafe receiving directory still acknowledged the request"
+  fi
+  [ "$(wc -l < "$state/mate.status")" = "$before" ] || fail "a refused document still acknowledged the request"
+  pass "mechanical helper delivers an immutable non-secret document before reporting its parent-channel answer"
 }
 
 test_remote_parent_replies_is_not_wrong_home() {
@@ -2212,6 +2249,8 @@ test_finished_child_reads_finished() {
   assert_contains "$out" "child-state: done" "a completed scout reads done"
   assert_contains "$out" "overall: finished" "a completed scout reads finished"
   make_child "$mate" shipready ship idle 'done: ready for merge'
+  mkdir -p "$mate/data/x"
+  printf '# Ready ship report\n' > "$mate/data/x/report.md"
   out=$(received_result "$fb" "$mate" "$home" kid shipready data/x/report.md)
   assert_contains "$out" "child-state: done" "a ready ship reads done"
   assert_contains "$out" "overall: finished" "a ready ship reads finished"

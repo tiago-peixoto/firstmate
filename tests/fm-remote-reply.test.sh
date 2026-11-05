@@ -10,6 +10,7 @@ TMP_ROOT=$(fm_test_tmproot fm-remote-reply)
 mkdir -p "$TMP_ROOT"
 TMP_ROOT=$(cd "$TMP_ROOT" && pwd -P)
 PARENT="$TMP_ROOT/parent"
+RELAY_PARENT=$PARENT
 REMOTE="$TMP_ROOT/remote"
 FAKEBIN=$(fm_fakebin "$TMP_ROOT/fake")
 CLAIMS="$TMP_ROOT/claims"
@@ -21,7 +22,7 @@ mkdir -p "$PARENT/data" "$PARENT/state" "$REMOTE/state" "$REMOTE/data/reply" "$C
 # tests/fm-remote-job-orphan-reap.test.sh pins. Stop the whole worker tree.
 cleanup() {
   local worker_pid=''
-  FM_HOME="$PARENT" FM_PROCEVENT_CLAIM_ROOT="$CLAIMS" \
+  FM_HOME="$RELAY_PARENT" FM_PROCEVENT_CLAIM_ROOT="$CLAIMS" \
     "$ROOT/bin/fm-procevent.sh" sweep-home >/dev/null 2>&1 || true
   if [ -f "$TMP_ROOT/remote-jobs/worker.pid" ]; then
     worker_pid=$(cat "$TMP_ROOT/remote-jobs/worker.pid")
@@ -1297,5 +1298,63 @@ assert_absent "$PARENT/state/remote-replies/ios.cursor" \
 [ "$(cat "$PARENT/state/remote-replies/ios.retirements")" = "$count_before" ] \
   || fail "a retirement that stopped after removal changed the count"
 pass "a retirement that stops after removing the cursor leaves the old count"
+
+# --doc is a required, immutable input, unlike an ordinary best-effort report.
+# Exercise the real helper, delta reader, SSH transport, and pending reply fold.
+for snapshot_size in 48 300000; do
+  PARENT="$TMP_ROOT/snapshot-parent-$snapshot_size"
+  REMOTE="$TMP_ROOT/snapshot-remote-$snapshot_size"
+  mkdir -p "$PARENT/data" "$PARENT/state" "$REMOTE/data/plans" "$REMOTE/state"
+  printf '%s\n' ios > "$REMOTE/.fm-secondmate-home"
+  printf 'schema=fm-secondmate-parent.v1\nroute=remote\nparent_host=parent\n' > "$REMOTE/.fm-secondmate-parent"
+  printf '%s\n' "- ios - documents (host: remote-mac; root: $ROOT; home: $REMOTE; scope: documents; projects: alpha; added 2026-11-05)" \
+    > "$PARENT/data/secondmates.md"
+  head -c "$snapshot_size" /dev/zero | tr '\0' x > "$REMOTE/data/plans/route.md"
+  cp "$REMOTE/data/plans/route.md" "$TMP_ROOT/expected-document"
+  DOC_CORR=$(fm_pending_reply_create "$PARENT" "$PARENT/state" ios 'send the required plan')
+  fm_pending_reply_mark_delivered "$PARENT/state" "$DOC_CORR"
+  FM_HOME="$REMOTE" "$ROOT/bin/fm-secondmate-report.sh" --doc 'done' "$DOC_CORR" \
+    data/plans/route.md 'The reviewed plan is attached.' || fail "snapshot report failed"
+  SNAPSHOT=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$REMOTE/state/parent-replies.status" | cut -d= -f2-)
+  [ -n "$SNAPSHOT" ] || fail "--doc emitted no transferable snapshot"
+  printf 'The original plan changed.\n' > "$REMOTE/data/plans/route.md"
+  EMPTY_HASH=$(printf '' | shasum -a 256 | awk '{print $1}')
+  FM_HOME="$REMOTE" "$ROOT/bin/fm-remote-delta-read.sh" state/parent-replies.status 0 "$EMPTY_HASH" 1 \
+    > "$TMP_ROOT/snapshot-delta" || fail "snapshot delta capture failed"
+  cp "$REMOTE/$SNAPSHOT" "$TMP_ROOT/frozen-document"
+  rm "$REMOTE/$SNAPSHOT"
+  if remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/missing-snapshot.out" 2>&1; then
+    fail "a missing required snapshot acknowledged the routed request"
+  fi
+  assert_no_grep "corr=$DOC_CORR" "$PARENT/state/ios.status" "a missing snapshot's answer reached the parent"
+  assert_absent "$PARENT/state/remote-replies/ios.cursor" "a missing snapshot advanced the cursor"
+  printf 'Corrupted document.\n' > "$REMOTE/$SNAPSHOT"
+  if remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/corrupt-snapshot.out" 2>&1; then
+    fail "a corrupt snapshot acknowledged the routed request"
+  fi
+  assert_no_grep "corr=$DOC_CORR" "$PARENT/state/ios.status" "a corrupt snapshot's answer reached the parent"
+  [ "$(fm_pending_reply_get "$PARENT/state/pending-replies/$DOC_CORR" phase)" != resolved ] \
+    || fail "an undelivered snapshot resolved the request"
+  cp "$TMP_ROOT/frozen-document" "$REMOTE/$SNAPSHOT"
+  remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" >/dev/null \
+    || fail "a restored snapshot could not be retried"
+  cmp -s "$TMP_ROOT/expected-document" "$PARENT/data/remote-secondmates/ios/$SNAPSHOT" \
+    || fail "the snapshot did not deliver the originally reviewed bytes"
+  assert_grep "source-home=$REMOTE" "$PARENT/state/ios.status" "remote delivery lost source provenance"
+  assert_grep 'source-document=data/plans/route.md' "$PARENT/state/ios.status" "remote delivery lost the source path"
+  assert_contains "$(fm_pending_reply_result "$PARENT/state" "$DOC_CORR")" 'request: answered' \
+    "a verified snapshot did not resolve the request"
+  remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" >/dev/null \
+    || fail "a snapshot replay failed"
+  [ "$(grep -c "corr=$DOC_CORR" "$PARENT/state/ios.status")" -eq 1 ] || fail "snapshot replay duplicated the answer"
+  # The same artifact contract supports onward routing into another home.
+  DIGEST=${SNAPSHOT##*/}
+  DIGEST=${DIGEST%.md}
+  remote_env "$ROOT/bin/fm-on.sh" --stdin ios fm-document-snapshot.sh receive "$DIGEST" "$snapshot_size" \
+    < "$PARENT/data/remote-secondmates/ios/$SNAPSHOT" > "$TMP_ROOT/snapshot-receipt" \
+    || fail "the existing transport could not copy the artifact onward"
+  [ "$(cat "$TMP_ROOT/snapshot-receipt")" = "$SNAPSHOT" ] || fail "onward copy did not confirm its receiving-home path"
+  pass "a $snapshot_size-byte required snapshot reaches the receiving home before its request is answered"
+done
 
 echo "ALL TESTS PASSED"
