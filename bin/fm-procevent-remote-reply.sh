@@ -56,10 +56,11 @@
 # advance past it. No single line can stop or wedge the stream. A
 # data/report-snapshots/<sha256>.md offer from fm-secondmate-report.sh --doc is
 # a required input whose frozen bytes must verify against their digest. A
-# transient fetch failure is retried a bounded number of times before the line
-# is mirrored. A malformed pointer, a refused snapshot, or one still failing
-# after those retries is mirrored with its original pointer and raises one
-# keyed escalation naming the snapshot, so the missing input stays visible.
+# transport or remote job failure leaves the delta uncommitted for the runner's
+# retry, as 255 does for any report. A malformed pointer, or a snapshot the
+# reader refuses or that fails verification, is mirrored with its original
+# pointer and raises one keyed escalation naming the snapshot, so the missing
+# input stays visible.
 #
 # What remains here is only what crossing a machine boundary genuinely adds:
 #   - cursor continuity and identity (offset plus prefix digest)
@@ -89,14 +90,13 @@ MAX_DOC_BYTES=${FM_REMOTE_REPLY_MAX_DOC_BYTES:-262144}
 # fm-on.sh returns ssh's status unchanged, so 255 alone means unavailable
 # transport or unknown remote completion. The reader refuses a path only with
 # exit 1. The remote job layer reports its own failures with other statuses,
-# which an ordinary report treats as a refusal and a snapshot fetch retries
+# which an ordinary report treats as a refusal and a snapshot treats like 255
 # (see fetch_document). The reader has no permanence
 # vocabulary - a report the mate has not finished writing refuses exactly like a
 # path that will never exist - so a refusal fails open rather than being read as
 # final (see cmd_ingest).
 SSH_UNAVAILABLE=255
 DOCUMENT_LOCAL_FAILURE=2
-SNAPSHOT_FETCH_ATTEMPTS=3
 
 # shellcheck source=bin/fm-wake-lib.sh
 . "$SCRIPT_DIR/fm-wake-lib.sh"
@@ -424,15 +424,14 @@ summarize_fetch_reason() { # <stderr-file> <remote-relative>
 }
 
 # Fetch one referenced remote document. Returns 0 on success, 1 when the remote
-# reader refused the path or size, a snapshot failed verification, or a
-# snapshot fetch still failed after SNAPSHOT_FETCH_ATTEMPTS tries,
+# reader refused the path or size or a snapshot failed verification,
 # DOCUMENT_LOCAL_FAILURE when local storage failed, and SSH_UNAVAILABLE when
-# transport completion is unknown. A refusal leaves the reader's own
-# explanation in FETCH_DOC_REASON.
+# transport completion is unknown or, for a snapshot, the remote job layer
+# failed. A refusal leaves the reader's own explanation in FETCH_DOC_REASON.
 FETCH_DOC_REASON=''
 fetch_document() { # <id> <remote-relative> <result-var>
   local id=$1 rel=$2 result_var=$3 base destination parent parent_real tmp err local_rel rc=0
-  local limit=$MAX_DOC_BYTES digest='' bytes attempt=1
+  local limit=$MAX_DOC_BYTES digest='' bytes
   FETCH_DOC_REASON=''
   if ! safe_doc_path "$rel"; then
     FETCH_DOC_REASON='pointer is not a confined data/*.md path'
@@ -459,21 +458,12 @@ fetch_document() { # <id> <remote-relative> <result-var>
   [ ! -L "$destination" ] || return "$DOCUMENT_LOCAL_FAILURE"
   err=$(umask 077; mktemp "${TMPDIR:-/tmp}/fm-remote-doc-reason.XXXXXX") || return "$DOCUMENT_LOCAL_FAILURE"
   tmp=$(umask 077; mktemp "$parent/.remote-doc.XXXXXX") || { rm -f -- "$err"; return "$DOCUMENT_LOCAL_FAILURE"; }
-  while :; do
-    rc=0
-    "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-file.sh get "$rel" "$limit" < /dev/null > "$tmp" 2> "$err" || rc=$?
-    [ -n "$digest" ] && [ "$rc" -gt 1 ] && [ "$attempt" -lt "$SNAPSHOT_FETCH_ATTEMPTS" ] || break
-    attempt=$((attempt + 1))
-    sleep 1
-  done
+  "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-file.sh get "$rel" "$limit" < /dev/null > "$tmp" 2> "$err" || rc=$?
   if [ "$rc" -ne 0 ]; then
     FETCH_DOC_REASON=$(summarize_fetch_reason "$err" "$rel")
     rm -f -- "$tmp" "$err"
-    if [ -n "$digest" ]; then
-      [ "$rc" -eq 1 ] || FETCH_DOC_REASON="$FETCH_DOC_REASON (exit $rc after $attempt attempts)"
-      return 1
-    fi
     [ "$rc" -ne "$SSH_UNAVAILABLE" ] || return "$SSH_UNAVAILABLE"
+    [ "$rc" -eq 1 ] || [ -z "$digest" ] || return "$SSH_UNAVAILABLE"
     return 1
   fi
   if [ -n "$digest" ]; then

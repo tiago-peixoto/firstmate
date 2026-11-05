@@ -578,8 +578,8 @@ An SSH exit status of 255 while fetching a referenced document leaves the delta 
 A `report=data/report-snapshots/<sha256>.md` pointer comes from `bin/fm-secondmate-report.sh --doc`.
 It names frozen bytes, and `bin/fm-document-snapshot.sh receive` verifies them against their digest before the pointer is rewritten to the local copy.
 Only exit status 1 from the remote reader is a refusal.
-Any other failed fetch, including SSH exit status 255, is retried in place up to three times.
-When a snapshot is refused, fails verification, or still fails after those attempts, the channel still fails open:
+Any other failed fetch, such as SSH exit status 255 or a remote job failure, leaves the delta uncommitted for the process-event runner's normal retry.
+When a snapshot is refused or fails verification, the channel still fails open:
 
 - The mate's line is mirrored with its original pointer, so its correlated answer settles the request.
 - The cursor still advances.
