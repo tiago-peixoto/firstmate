@@ -427,9 +427,10 @@ summarize_fetch_reason() { # <stderr-file> <remote-relative>
 }
 
 # Fetch one referenced remote document. Returns 0 on success, 1 when the remote
-# reader refused the path or size, DOCUMENT_LOCAL_FAILURE when local storage
-# failed, and SSH_UNAVAILABLE when transport completion is unknown. A refusal
-# leaves the reader's own explanation in FETCH_DOC_REASON.
+# reader refused the path or size or a snapshot failed verification,
+# DOCUMENT_LOCAL_FAILURE when local storage failed, and SSH_UNAVAILABLE when
+# transport completion is unknown. A refusal leaves the reader's own
+# explanation in FETCH_DOC_REASON.
 FETCH_DOC_REASON=''
 fetch_document() { # <id> <remote-relative> <result-var>
   local id=$1 rel=$2 result_var=$3 base destination parent parent_real tmp err local_rel rc=0
@@ -469,9 +470,11 @@ fetch_document() { # <id> <remote-relative> <result-var>
   fi
   if [ -n "$digest" ]; then
     bytes=$(wc -c < "$tmp" | tr -d ' ')
-    if ! FM_HOME="$base" "$SCRIPT_DIR/fm-document-snapshot.sh" receive "$digest" "$bytes" < "$tmp" > /dev/null 2> "$err"; then
+    FM_HOME="$base" "$SCRIPT_DIR/fm-document-snapshot.sh" receive "$digest" "$bytes" < "$tmp" > /dev/null 2> "$err" || rc=$?
+    if [ "$rc" -ne 0 ]; then
       FETCH_DOC_REASON=$(summarize_fetch_reason "$err" "$rel")
       rm -f -- "$tmp" "$err"
+      [ "$rc" -eq 1 ] || return "$DOCUMENT_LOCAL_FAILURE"
       return 1
     fi
     rm -f -- "$tmp" "$err"

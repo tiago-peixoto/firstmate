@@ -1341,6 +1341,17 @@ for snapshot_size in 48 300000; do
   EMPTY_HASH=$(printf '' | shasum -a 256 | awk '{print $1}')
   FM_HOME="$REMOTE" "$ROOT/bin/fm-remote-delta-read.sh" state/parent-replies.status 0 "$EMPTY_HASH" 1 \
     > "$TMP_ROOT/snapshot-delta" || fail "snapshot delta capture failed"
+  mkdir -p "$PARENT/data/remote-secondmates/ios/$SNAPSHOT"
+  if remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/local-snapshot-failure.out" 2>&1; then
+    fail "a local snapshot storage failure committed the delta"
+  fi
+  assert_grep 'could not store referenced remote document' "$TMP_ROOT/local-snapshot-failure.out" \
+    "a local snapshot storage failure was treated as a refused snapshot"
+  assert_absent "$PARENT/state/remote-replies/ios.cursor" "a local snapshot storage failure advanced the cursor"
+  assert_no_grep "$SNAPSHOT" "$PARENT/state/ios.status" "a local snapshot storage failure recorded a delivery problem"
+  assert_no_grep 'the line after the snapshot offer' "$PARENT/state/ios.status" \
+    "a local snapshot storage failure committed part of the delta"
+  rmdir "$PARENT/data/remote-secondmates/ios/$SNAPSHOT"
   cp "$REMOTE/$SNAPSHOT" "$TMP_ROOT/frozen-document"
   rm "$REMOTE/$SNAPSHOT"
   remote_env "$ADAPTER" ingest ios "$TMP_ROOT/snapshot-delta" > "$TMP_ROOT/missing-snapshot.out" 2>&1 \

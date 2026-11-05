@@ -4,9 +4,11 @@
 #   FM_HOME=<source-home> fm-document-snapshot.sh capture <document-path>
 #   FM_HOME=<receiving-home> fm-document-snapshot.sh receive <sha256> <bytes> < document
 # Both print data/report-snapshots/<sha256>.md only after verified publication.
+# Exit 1 refuses the document. Exit 2 means this home's storage failed, so a
+# retry may succeed.
 # capture accepts an absolute or home-relative .md/.txt file under data/.
 # Hidden or key-file paths, symlinks, hardlinks, non-UTF-8 text, and
-# high-confidence secret values are refused. These checks are not proof
+# recognizable secret formats are refused. These checks are not proof
 # that arbitrary prose is non-secret: callers must review the document first.
 # The snapshot is at most 1 MiB, the existing remote-file transport safety bound.
 # A larger input must be reduced to the relevant non-secret document, never
@@ -16,7 +18,7 @@
 # Source-home and source-document provenance travel with the referring message.
 set -eu
 case "${1:-}" in
-  --help|-h) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  --help|-h) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
 esac
 # Descriptor-relative IO keeps components confined across directory replacement.
 python3 - "$@" 3<&0 <<'PY'
@@ -63,8 +65,7 @@ def check_content(content):
         r'-----BEGIN [A-Z ]*PRIVATE KEY-----',
         r'\b(?:AKIA|ASIA)[A-Z0-9]{16}\b',
         r'\b(?:gh[pousr]_|github_pat_|xox[baprs]-|sk_live_|sk-proj-)[A-Za-z0-9_-]{20,}',
-        r'(?i:password|passwd|secret|token|api[_-]?key|access[_-]?key)\w*[\"\x27]?\s*[:=]\s*[\"\x27]?'
-        r'(?=[A-Za-z0-9+/=_-]*[0-9])(?=[A-Za-z0-9+/=_-]*[A-Za-z])[A-Za-z0-9+/=_-]{20,}',
+        r'://[^\s/:]+:[^\s/@]+@',
     )
     if any(re.search(pattern, text) for pattern in patterns):
         refuse('document contains possible credentials; provide a reviewed non-secret extract')
@@ -112,7 +113,8 @@ def main():
             if re.search(r'[\x00-\x1f\x7f]', path):
                 refuse('document path contains control bytes')
             if os.path.isabs(path):
-                path = os.path.relpath(path, home_path)
+                lexical = os.path.relpath(path, os.path.abspath(os.environ['FM_HOME']))
+                path = lexical if lexical.startswith('data/') else os.path.relpath(path, home_path)
             parts = path.split('/')
             if parts[0] != 'data' or any(not part or part.startswith('.') for part in parts):
                 refuse("document must be a non-hidden path under this home's data directory")
@@ -127,6 +129,8 @@ def main():
                     os.close(parent)
                     parent = child
                 content = read_file(parent, parts[-1])
+            except OSError as error:
+                refuse(str(error))
             finally:
                 os.close(parent)
             digest = hashlib.sha256(content).hexdigest()
@@ -143,13 +147,19 @@ def main():
         else:
             refuse('usage: fm-document-snapshot.sh capture <path> | receive <sha256> <bytes>')
         check_content(content)
-        publish(home, content, digest)
+        try:
+            publish(home, content, digest)
+        except ValueError as error:
+            raise OSError(str(error)) from error
     finally:
         os.close(home)
 
 
 try:
     main()
-except (OSError, ValueError, KeyError) as error:
+except ValueError as error:
     sys.exit('error: cannot deliver document snapshot: ' + str(error))
+except (OSError, KeyError) as error:
+    print('error: cannot store document snapshot: ' + str(error), file=sys.stderr)
+    sys.exit(2)
 PY
