@@ -1,0 +1,33 @@
+### S5 operator keyed close: bin/fm-send.sh mate --resolve-key pending-reply-<corr> dismisses only that escalation
+closed=371bfee4d3770c42 kept=934517c5afd68b1f
+--- operator closes the first escalation through fm-send (fake tmux pane backend logs the typed text)
+error: no-mistakes gate agent must not drive the fleet (NO_MISTAKES_GATE set)
+fm-send exit=3
+cat: /tmp/fm-lab.okmSvl/send.log: No such file or directory
+typed to mate pane: 
+--- mate.status tail
+blocked [key=pending-reply-371bfee4d3770c42] [at=1793895419]: pending-reply-missed: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report
+resolved: looked at it
+blocked [key=pending-reply-934517c5afd68b1f] [at=1793895599]: pending-reply-missed: task=mate pending-reply-id=934517c5afd68b1f request=request left open
+--- a new session (re-key) polls the watcher three times
+queue (expect one row naming only 934517c5afd68b1f):
+1793895600	3	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report; task=mate pending-reply-id=934517c5afd68b1f request=request left open;
+closed named: 1  kept named: 1
+--- closed record (phase stays escalated, dismissal recorded)
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=1243762:session-three
+--- Bearings decisions_open (expect only kept)
+["pending-reply-371bfee4d3770c42","pending-reply-934517c5afd68b1f"]
+
+### S6 correlated reply resolves: the mate reports done [corr=934517c5afd68b1f]
+kept record after tick:
+surfaced_session=1243762:session-three
+phase=resolved
+resolved_via=status
+queue in session-four (expect empty): [1793895603	4	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report;]
+Bearings decisions_open (expect []): [{"id":"mate","key":"pending-reply-371bfee4d3770c42","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report","question":"pending-reply escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report","owner":"(main)"}]
+mate.status tail:
+resolved: looked at it
+blocked [key=pending-reply-934517c5afd68b1f] [at=1793895599]: pending-reply-missed: task=mate pending-reply-id=934517c5afd68b1f request=request left open
+done [corr=934517c5afd68b1f]: the report is in

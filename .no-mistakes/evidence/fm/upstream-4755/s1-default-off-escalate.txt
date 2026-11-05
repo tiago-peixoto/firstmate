@@ -1,0 +1,12 @@
+### S1 default-off: escalate in session s1 with no config/pending-reply-resurface
+corr=371bfee4d3770c42
+--- record after escalation
+parent_status=/tmp/fm-lab.okmSvl/state/mate.status
+escalated_epoch=4000
+phase=escalated
+surfaced_session=s1
+escalation_dismissed_epoch=
+--- parent status log state/mate.status
+blocked [key=pending-reply-371bfee4d3770c42] [at=1793895419]: pending-reply-missed: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report
+--- wake queue after escalation (same session s1)
+(no queue file)

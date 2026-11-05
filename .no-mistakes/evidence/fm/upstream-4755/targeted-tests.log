@@ -1,0 +1,4 @@
+fm-heavy-slot: waiting for a slot: /tmp/fm-heavy-suite.lock-3 held by up-8046-ack-receipt (idle)
+Terminated                 sleep "$POLL"
+
+Stopped at 2026-11-05T16:43:21Z: the wrapper never obtained /tmp/fm-heavy-suite.lock-3 (held idle by task up-8046-ack-receipt for the whole 22-minute wait), so neither test file ran in this step.

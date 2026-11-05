@@ -1,0 +1,12 @@
+### S4 adversarial: an unkeyed 'resolved:' line does not dismiss; a new session (re-keyed session id, same harness process) is reminded once
+--- new session id written to state/.lock-session (the /clear re-key the watcher sees)
+token now: 1243762:session-two-after-clear
+--- queue after three watcher polls in the new session (expect exactly one pending-reply-escalated row)
+1793895557	2	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report;
+rows: 1
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=1243762:session-two-after-clear
+blocked lines in mate.status: 1
+--- Bearings still lists the escalation
+[{"key":"pending-reply-371bfee4d3770c42","verb":"blocked","question":"string"}]

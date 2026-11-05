@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Drive one delivered pending-reply record through its missed recovery to the
-# product's own escalation (the same library calls bin/fm-watch.sh's tick makes
-# when it observes the mate's turns complete without a correlated report).
-# Usage: escalate.sh <state-dir> <corr> <base-epoch>
+# Drive one pending-reply record through request, missed recovery, and escalation
+# with the product library, in session token $FM_PENDING_REPLY_SESSION. Prints corr.
+# Usage: escalate.sh <repo-root> <home> <summary>
 set -u
-. "$ROOT/bin/fm-wake-lib.sh"; . "$ROOT/bin/fm-meta-lib.sh"; . "$ROOT/bin/fm-marker-lib.sh"
+ROOT=$1 HOME_DIR=$2 SUMMARY=$3 TASK=${4:-mate}
+. "$ROOT/bin/fm-marker-lib.sh"
 . "$ROOT/bin/fm-pending-reply-lib.sh"
-state=$1 corr=$2 t0=$3
-FM_PENDING_REPLY_NOW=$t0 fm_pending_reply_mark_turn_completed "$state" "$corr" request || { echo "mark request turn failed"; exit 1; }
-FM_PENDING_REPLY_NOW=$((t0+200)) fm_pending_reply_send_recovery "$state" "$corr" >/dev/null 2>&1 || { echo "recovery send failed"; exit 1; }
-echo "recovery phase: $(fm_pending_reply_get "$(fm_pending_reply_path "$state" "$corr")" phase)"
-FM_PENDING_REPLY_NOW=$((t0+200)) fm_pending_reply_mark_turn_completed "$state" "$corr" recovery || { echo "mark recovery turn failed"; exit 1; }
-FM_PENDING_REPLY_NOW=$((t0+400)) fm_pending_reply_maybe_escalate "$state" "$corr" || { echo "escalation did not fire"; exit 1; }
-echo "escalated: $corr"
+export FM_HOME=$HOME_DIR
+export FM_PENDING_REPLY_SEND_HOOK='true'   # recovery delivery stands in for the mate pane
+state="$HOME_DIR/state"
+corr=$(FM_PENDING_REPLY_NOW=1000 fm_pending_reply_create "$HOME_DIR" "$state" "$TASK" "$SUMMARY") || exit 1
+FM_PENDING_REPLY_NOW=1000 fm_pending_reply_mark_delivered "$state" "$corr"
+FM_PENDING_REPLY_NOW=1000 fm_pending_reply_mark_turn_completed "$state" "$corr" request
+FM_PENDING_REPLY_NOW=2000 fm_pending_reply_send_recovery "$state" "$corr" || { echo "recovery send failed" >&2; exit 1; }
+FM_PENDING_REPLY_NOW=3000 fm_pending_reply_mark_turn_completed "$state" "$corr" recovery
+FM_PENDING_REPLY_NOW=4000 fm_pending_reply_maybe_escalate "$state" "$corr" || { echo "escalation did not fire" >&2; exit 1; }
+printf '%s\n' "$corr"

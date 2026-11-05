@@ -1,0 +1,32 @@
+### S5 (clean run) operator keyed close: bin/fm-send.sh mate --resolve-key pending-reply-<corr> dismisses only that escalation
+(the earlier attempt in s5-s6-keyed-close-and-reply.txt was refused because the gate env var was still set; this run unsets it as the runbook does for lab fixtures)
+closed=371bfee4d3770c42 kept=ba061de6fa2aedf5
+--- S7 decision limit: FM_BEARINGS_DECISIONS=0 still lists both open escalations (exempt from the captain-hold limit)
+--- operator closes 371bfee4d3770c42 through fm-send (fake tmux pane backend logs the typed text)
+error: refusing fleet lifecycle from inside a no-mistakes gate worktree (~/.no-mistakes/repos/5284051b2355.git)
+fm-send exit=3
+typed to mate pane: 
+--- mate.status tail
+blocked [key=pending-reply-934517c5afd68b1f] [at=1793895599]: pending-reply-missed: task=mate pending-reply-id=934517c5afd68b1f request=request left open
+done [corr=934517c5afd68b1f]: the report is in
+blocked [key=pending-reply-ba061de6fa2aedf5] [at=1793895687]: pending-reply-missed: task=mate pending-reply-id=ba061de6fa2aedf5 request=second request left open
+--- a new session (re-key to session-five) polls the watcher three times
+queue (expect one row naming only ba061de6fa2aedf5):
+1793895688	5	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report; task=mate pending-reply-id=ba061de6fa2aedf5 request=second request left open;
+closed named: 1  kept named: 1
+--- closed record (phase stays escalated, dismissal recorded)
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=1243762:session-five
+--- Bearings decisions_open keys (expect only kept)
+["pending-reply-371bfee4d3770c42","pending-reply-ba061de6fa2aedf5"]
+--- another new session (session-six): closed stays quiet, kept reminded once
+closed named: 1  kept named: 1  rows: 1
+
+### S6 (clean run) correlated reply resolves: the mate reports done [corr=ba061de6fa2aedf5]
+kept record after tick:
+phase=resolved
+resolved_via=status
+queue in session-seven (expect empty): [1793895694	7	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report;]
+Bearings decisions_open (expect []): [{"id":"mate","key":"pending-reply-371bfee4d3770c42","verb":"blocked","summary":"pending-reply escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report","question":"pending-reply escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report","owner":"(main)"}]
+blocked lines in mate.status: 3 (one per escalation, none added by reminders)

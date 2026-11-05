@@ -1,0 +1,17 @@
+### S3 same session: ack the reminder, then the same session starts again and the watcher polls
+--- ack the wake with the printed WAKE_ACK_REQUIRED command
+queue after ack: []
+--- same session runs bin/fm-session-start.sh again
+session-start exit=0
+WAKE QUEUE
+--------------------------------------------------------------------------------
+pending-reply-escalated rows in digest: 0
+queue after second session start: []
+--- watcher tick (fm_pending_reply_tick) polls three times in the same session
+queue after three polls: []
+--- bin/fm-pending-reply-remind.sh called directly in the same session
+remind exit=0
+queue after direct remind: []
+blocked lines in mate.status: 1
+phase=escalated
+surfaced_session=1243762:bf89142f-0d99-431b-a2a8-eeb690b4fdeb

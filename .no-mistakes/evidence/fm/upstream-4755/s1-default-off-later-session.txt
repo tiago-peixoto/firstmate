@@ -1,0 +1,15 @@
+### S1 default-off: a later real session starts (bin/fm-session-start.sh) with the flag absent
+session-start exit=0
+--- lock / token
+1243762
+bf89142f-0d99-431b-a2a8-eeb690b4fdeb
+token: 1243762:bf89142f-0d99-431b-a2a8-eeb690b4fdeb
+--- session-start output lines mentioning pending-reply (expect none)
+21:mate [key=pending-reply-371bfee4d3770c42] blocked: pending-reply-missed: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report
+142:blocked [key=pending-reply-371bfee4d3770c42] [at=1793895419]: pending-reply-missed: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report
+--- wake queue after later session (expect empty)
+--- record surfaced_session (expect still s1)
+phase=escalated
+surfaced_session=s1
+--- Bearings decisions_open with the flag absent (expect no pending-reply row)
+[]

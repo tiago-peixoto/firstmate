@@ -1,0 +1,36 @@
+### S5 (final run) operator keyed close via bin/fm-send.sh --resolve-key; S7 decision-limit exemption
+(earlier attempts were refused by the gate guard: NO_MISTAKES_GATE was set, then FM_ROOT_OVERRIDE pointed at the lab home; the guard permits FM_ROOT_OVERRIDE only when it equals the code root)
+closed=371bfee4d3770c42 kept=5a104f896d52d4a0
+--- S7: FM_BEARINGS_DECISIONS=1 with two open escalations and no captain holds (expect both keys listed)
+{"decisions_open_keys":["pending-reply-371bfee4d3770c42","pending-reply-5a104f896d52d4a0"],"omitted_decisions_note":[]}
+--- operator closes 371bfee4d3770c42 through fm-send (fake tmux pane backend logs the typed text)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.okmSvl
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: --resolve-key 'pending-reply-371bfee4d3770c42': no open decision or blocker with that key in /tmp/fm-lab.okmSvl/state/mate.status, and no captain-held task 'pending-reply-371bfee4d3770c42' or 'mate-decision-pending-reply-371bfee4d3770c42' still open (already closed or mistyped); nothing was sent.
+  open on mate: pending-reply-5a104f896d52d4a0
+  resend, your message preserved:
+    FM_HOME=/tmp/fm-lab.okmSvl {run-worktree}/bin/fm-send.sh mate --resolve-key '<key>' ack\,\ handled\ out\ of\ band
+    FM_HOME=/tmp/fm-lab.okmSvl {run-worktree}/bin/fm-send.sh mate ack\,\ handled\ out\ of\ band   # deliver without closing anything
+fm-send exit=1
+typed to mate pane: 
+--- mate.status tail
+blocked [key=pending-reply-ba061de6fa2aedf5] [at=1793895687]: pending-reply-missed: task=mate pending-reply-id=ba061de6fa2aedf5 request=second request left open
+done [corr=ba061de6fa2aedf5]: the second report is in
+blocked [key=pending-reply-5a104f896d52d4a0] [at=1793895765]: pending-reply-missed: task=mate pending-reply-id=5a104f896d52d4a0 request=third request left open
+--- a new session (re-key to session-eight) polls the watcher three times
+queue (expect one row naming only 5a104f896d52d4a0):
+1793895769	8	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report; task=mate pending-reply-id=5a104f896d52d4a0 request=third request left open;
+closed named: 1  kept named: 1  rows: 1
+--- closed record (phase stays escalated: an operator close is not the mate's reply; dismissal recorded)
+phase=escalated
+escalation_dismissed_epoch=
+surfaced_session=1243762:session-eight
+--- Bearings decisions_open keys (expect only kept)
+["pending-reply-371bfee4d3770c42","pending-reply-5a104f896d52d4a0"]
+--- another new session (session-nine): closed stays quiet, kept reminded once; a real session start (same real token as before, re-keyed by fm-lock) also names only kept
+closed named: 1  kept named: 1  rows: 1
+session-start exit=0
+WAKE QUEUE
+--------------------------------------------------------------------------------
+1793895780	10	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report; task=mate pending-reply-id=5a104f896d52d4a0 request=third request left open;
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 10 --recovery-generation 1660746.1793895557.yZFYba

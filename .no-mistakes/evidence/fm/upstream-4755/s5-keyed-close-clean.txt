@@ -1,0 +1,28 @@
+### S5 (clean parent log) operator keyed close on task mate2, whose status log holds only the two escalation lines
+(on task mate, the earlier unkeyed 'resolved:' and the mate's terminal 'done [corr=...]' lines had already folded the first decision closed, so fm-send found no open key to close; that fold is base open-decision behaviour, so this run uses a fresh task)
+closed=1a3134d6f2259d0c kept=3f2a9dd5807f0867
+--- state/mate2.status
+blocked [key=pending-reply-1a3134d6f2259d0c] [at=1793895841]: pending-reply-missed: task=mate2 pending-reply-id=1a3134d6f2259d0c request=request to close
+blocked [key=pending-reply-3f2a9dd5807f0867] [at=1793895842]: pending-reply-missed: task=mate2 pending-reply-id=3f2a9dd5807f0867 request=request left open
+--- operator closes 1a3134d6f2259d0c through fm-send (fake tmux pane backend logs the typed text)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.okmSvl
+fm-send: doorbell not typed because the agent in sess:fm-mate2 has exited; the steer is durably recorded at /tmp/fm-lab.okmSvl/state/mate2.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+fm-send exit=0
+typed to mate2 pane: 
+--- state/mate2.status after the close
+blocked [key=pending-reply-1a3134d6f2259d0c] [at=1793895841]: pending-reply-missed: task=mate2 pending-reply-id=1a3134d6f2259d0c request=request to close
+blocked [key=pending-reply-3f2a9dd5807f0867] [at=1793895842]: pending-reply-missed: task=mate2 pending-reply-id=3f2a9dd5807f0867 request=request left open
+resolved [key=pending-reply-1a3134d6f2259d0c] [at=1793895843]: pending-reply-resolved: task=mate2 pending-reply-id=1a3134d6f2259d0c via=operator-resolve-key ack, handled out of band
+--- a new session (re-key to session-ten) polls the watcher three times
+queue rows: 1
+1793895845	11	check	pending-reply-escalated	pending-reply-escalated: task=mate pending-reply-id=371bfee4d3770c42 request=finish the report; task=mate2 pending-reply-id=3f2a9dd5807f0867 request=request left open; task=mate pending-reply-id=5a104f896d52d4a0 request=third request left open;
+closed named: 0  kept named: 1
+--- closed record (phase stays escalated: an operator close is not the mate's reply; dismissal recorded)
+phase=escalated
+surfaced_session=s1
+escalation_dismissed_epoch=1793895845
+--- Bearings decisions_open keys (expect kept present, closed absent)
+{"keys":["pending-reply-371bfee4d3770c42","pending-reply-3f2a9dd5807f0867","pending-reply-5a104f896d52d4a0"],"closed_listed":false,"kept_listed":true}
+--- another new session (session-eleven): closed stays quiet
+closed named: 0  kept named: 1  rows: 1
+blocked lines in mate2.status: 2 (one per escalation, none added by reminders)
