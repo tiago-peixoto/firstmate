@@ -2175,8 +2175,8 @@ received_result() {  # <fakebin> <mate-home> <parent-home> <mate-id> <task> <doc
   [ -z "$doc" ] || { flags+=(--doc); tail+=("$doc"); }
   corr=$(FM_PENDING_REPLY_NOW=9300 fm_pending_reply_create "$home" "$home/state" "$mate_id" "how far is the repacking")
   FM_PENDING_REPLY_NOW=9300 fm_pending_reply_mark_delivered "$home/state" "$corr"
-  PATH="$fb:$PATH" FM_HOME="$mate" "$REPORT" "${flags[@]}" "done" "$corr" \
-    "${tail[@]}" "narrow fix done" > /dev/null || fail "helper report failed"
+  PATH="$fb:$PATH" FM_HOME="$mate" "$REPORT" ${flags[@]+"${flags[@]}"} "done" "$corr" \
+    ${tail[@]+"${tail[@]}"} "narrow fix done" > /dev/null || fail "helper report failed"
   FM_PENDING_REPLY_NOW=9300 fm_pending_reply_try_resolve "$home/state" "$corr" || fail "helper report should resolve the request"
   fm_pending_reply_result "$home/state" "$corr"
 }
