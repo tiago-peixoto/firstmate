@@ -1,0 +1,17 @@
+# commit=86439bc2 real fm_pending_reply_tick in a lab home; the first ready repost writes a correlated report for the last ready request
+tick order:
+  ready 059a3837fe849b56
+  waiting 41fe378e9710b571
+  waiting 497f100a2dc25cd6
+  ready 5e5de75e7e9a2edd
+  ready 84c4f10777ed8745
+  waiting aa8eae32ed1df11f
+last ready request (gets a correlated report mid-tick): 84c4f10777ed8745
+tick rc=0
+sends: waiting=0 ready=2
+  ready 059a3837fe849b56 phase=recovery_sent resolved_via=
+  waiting 41fe378e9710b571 phase=awaiting_report resolved_via=
+  waiting 497f100a2dc25cd6 phase=awaiting_report resolved_via=
+  ready 5e5de75e7e9a2edd phase=recovery_sent resolved_via=
+  ready 84c4f10777ed8745 phase=resolved resolved_via=status
+  waiting aa8eae32ed1df11f phase=awaiting_report resolved_via=

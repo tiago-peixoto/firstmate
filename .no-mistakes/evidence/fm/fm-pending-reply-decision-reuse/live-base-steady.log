@@ -1,0 +1,9 @@
+# commit=base-steady bin=/tmp/fm-live-drv/base/bin args=34 3 200 steady
+one_fold_secs=2.390
+tick_start=1793908685.806
+tick_secs=140.947
+sends_waiting=0 sends_ready=3
+first_waiting_send_at=
+   3 ready recovery_sent
+  34 waiting awaiting_report
+exit=0

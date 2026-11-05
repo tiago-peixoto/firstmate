@@ -1,0 +1,8 @@
+# Mutation M1: content checksum removed from _fm_pending_reply_decision_signature (bin/fm-pending-reply-lib.sh:1041), suite run in a throwaway copy of 86439bc2. Expect the rewrite mode to fail.
+ok - normal correlated reply resolves once (idempotent)
+ok - completed turn with no report triggers exactly one recovery
+ok - recovery never pokes a mate waiting on its own decision, and runs once it closes
+ok - recovery sends during an open decision when config/wait-no-turns is absent
+ok - one tick reuses empty and nonempty decisions per task without leaking to later calls
+not ok - rewrite must invalidate the decision reuse and fold twice
+exit=1

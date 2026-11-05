@@ -1,0 +1,14 @@
+# commit=head-between bin=/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M6P8FB9MGTR8FTBTDDVHFN2S/bin args=34 3 200 between
+one_fold_secs=2.388
+tick_start=1793908685.807
+tick_secs=62.648
+sends_waiting=0 sends_ready=3
+first_waiting_send_at=
+   3 ready recovery_sent
+  34 waiting awaiting_report
+--- answered between ticks; second tick
+tick2_secs=71.726
+sends_waiting=34 sends_ready=3
+   3 ready recovery_sent
+  34 waiting recovery_sent
+exit=0

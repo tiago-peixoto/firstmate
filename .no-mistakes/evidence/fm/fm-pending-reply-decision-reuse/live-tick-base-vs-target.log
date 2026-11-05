@@ -1,0 +1,24 @@
+# Live lab: 12 marked requests to mate 'waiting' (open blocked [key=scope]) and 6 to mate 'ready' (no open decision),
+# sent through the real bin/fm-send.sh; config/wait-no-turns present; each status file holds 300 settled decisions.
+# A priming tick recorded each request's idle turn completion (real tmux pane observation); grace (2s) has elapsed, so every request is due.
+# Each tree runs its real fm_pending_reply_tick once from that same primed snapshot; reposts go through real fm-send to lab tmux panes.
+== base (timed)
+base tick: rc=0 wall=111.62s (bash 5.3.20(1)-release)
+  waiting  phases: 12 awaiting_report | inbox records: 12 total, 0 carry recovery text
+  ready    phases: 6 recovery_sent | inbox records: 12 total, 6 carry recovery text
+== target (timed)
+target tick: rc=0 wall=57.13s (bash 5.3.20(1)-release)
+  waiting  phases: 12 awaiting_report | inbox records: 12 total, 0 carry recovery text
+  ready    phases: 6 recovery_sent | inbox records: 12 total, 6 carry recovery text
+== base (traced)
+base tick: rc=0 wall=106.43s (bash 5.3.20(1)-release)
+  folds of waiting.status: 12
+  folds of ready.status: 6
+  waiting  phases: 12 awaiting_report | inbox records: 12 total, 0 carry recovery text
+  ready    phases: 6 recovery_sent | inbox records: 12 total, 6 carry recovery text
+== target (traced)
+target tick: rc=0 wall=57.72s (bash 5.3.20(1)-release)
+  folds of waiting.status: 1
+  folds of ready.status: 1
+  waiting  phases: 12 awaiting_report | inbox records: 12 total, 0 carry recovery text
+  ready    phases: 6 recovery_sent | inbox records: 12 total, 6 carry recovery text

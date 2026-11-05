@@ -1,0 +1,48 @@
+# Live lab, target tree: evidence changes while one tick runs. The ready mate's pane runs a trigger on its first repost doorbell:
+# it appends 'resolved [key=scope]' to waiting.status and a correlated 'done [corr=...]' report for a later ready request.
+tick order (index task corr):
+   0 waiting 138cf129310d3739
+   1 waiting 30ee809b8a18af18
+   2 waiting 31c0a4aed638c15e
+   3 waiting 4443f078020d39d1
+   4 waiting 7db0254185c1f821
+   5 waiting 89f34e95873cbf80
+   6 ready   9120a577a2e3f5dc
+   7 ready   9936355d9135a2d5
+   8 ready   9b9832a4e00c8c55
+   9 waiting a348fd7fa23b0a19
+  10 waiting ac009a5960b180bc
+  11 ready   bcdada7b6c2cddfe
+  12 ready   c9d128288bcaeabd
+  13 waiting d1c3d840871a3b76
+  14 ready   e792024eb9f663e5
+  15 waiting ea6e5feb000d30cf
+  16 waiting efbb3ec6fb44cb9e
+  17 waiting fb858effa6c0c071
+first ready request (its repost doorbell fires the trigger): index 6; correlated report written for ready index 14
+target-midtick tick: rc=0 wall=74.53s (bash 5.3.20(1)-release)
+trigger fired at 16:00:21
+  folds of waiting.status: 2
+  folds of ready.status: 2
+per-request outcome (expected vs actual):
+   0 waiting want=awaiting_report got=awaiting_report ok
+   1 waiting want=awaiting_report got=awaiting_report ok
+   2 waiting want=awaiting_report got=awaiting_report ok
+   3 waiting want=awaiting_report got=awaiting_report ok
+   4 waiting want=awaiting_report got=awaiting_report ok
+   5 waiting want=awaiting_report got=awaiting_report ok
+   6 ready   want=recovery_sent   got=recovery_sent   ok
+   7 ready   want=recovery_sent   got=recovery_sent   ok
+   8 ready   want=recovery_sent   got=recovery_sent   ok
+   9 waiting want=recovery_sent   got=recovery_sent   ok
+  10 waiting want=recovery_sent   got=recovery_sent   ok
+  11 ready   want=recovery_sent   got=recovery_sent   ok
+  12 ready   want=recovery_sent   got=recovery_sent   ok
+  13 waiting want=recovery_sent   got=recovery_sent   ok
+  14 ready   want=resolved        got=resolved        ok
+  15 waiting want=recovery_sent   got=recovery_sent   ok
+  16 waiting want=recovery_sent   got=recovery_sent   ok
+  17 waiting want=recovery_sent   got=recovery_sent   ok
+  waiting  phases: 6 awaiting_report 6 recovery_sent | inbox records: 18 total, 6 carry recovery text
+  ready    phases: 5 recovery_sent 1 resolved | inbox records: 11 total, 5 carry recovery text
+midtick verdict: PASS

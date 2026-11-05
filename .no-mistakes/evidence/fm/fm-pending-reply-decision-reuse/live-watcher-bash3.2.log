@@ -1,0 +1,2 @@
+# Live lab: the real bin/fm-watch.sh under stock macOS /bin/bash drives the tick from the primed 18-request state.
+watcher first armed: pid 84398 (interpreter /bin/bash 3.2.57(1)-release)

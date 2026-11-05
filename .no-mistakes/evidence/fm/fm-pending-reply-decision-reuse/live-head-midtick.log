@@ -1,0 +1,11 @@
+# commit=head-midtick bin=/Users/tiago/.no-mistakes/worktrees/bbb16e1f0808/01M6P8FB9MGTR8FTBTDDVHFN2S/bin args=34 3 200 midtick 15
+one_fold_secs=2.356
+tick_start=1793908685.777
+answered_at=1793908700.883
+tick_secs=96.028
+sends_waiting=30 sends_ready=3
+first_waiting_send_at=1793908705.882
+   3 ready recovery_sent
+   4 waiting awaiting_report
+  30 waiting recovery_sent
+exit=0

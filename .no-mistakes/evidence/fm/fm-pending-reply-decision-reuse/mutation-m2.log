@@ -1,0 +1,8 @@
+# Mutation M2: mid-fold deferral restored (after-signature mismatch returns 1, bin/fm-pending-reply-lib.sh:1064-1065), suite run in a throwaway copy of 86439bc2. Expect the during-fold mode to fail.
+ok - normal correlated reply resolves once (idempotent)
+ok - completed turn with no report triggers exactly one recovery
+ok - recovery never pokes a mate waiting on its own decision, and runs once it closes
+ok - recovery sends during an open decision when config/wait-no-turns is absent
+ok - one tick reuses empty and nonempty decisions per task without leaking to later calls
+not ok - during-fold must apply the current waiting-worker protection
+exit=1
