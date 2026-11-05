@@ -1,0 +1,233 @@
+=== checkout: /tmp/fm-8154-base.SMloZy (base-archive)
+
+##### S1-missing: forced teardown of an unheld scout with a missing report
+$ fm-teardown.sh scout-forced-missing --force
+teardown scout-forced-missing complete (window firstmate:fm-scout-forced-missing, worktree /tmp/fm-backlog-atomicity.vPlt85/forced-missing/absent-worktree)
+Backlog: scout-forced-missing is closed in /tmp/fm-backlog-atomicity.vPlt85/forced-missing/home/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ tasks-axi show scout-forced-missing --full
+task:
+  id: scout-forced-missing
+  title: item for scout-forced-missing data/scout-forced-missing/report.md
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-05
+  deps: none
+  links: "report:data/scout-forced-missing/report.md"
+  body: ""
+$ fm-bearings-snapshot.sh --json | .landed
+[{"id":"scout-forced-missing","what":"item for scout-forced-missing","artifact":"data/scout-forced-missing/report.md"}]
+
+##### S1-partial: forced teardown of an unheld scout with a partial report
+$ fm-teardown.sh scout-forced-partial --force
+teardown scout-forced-partial complete (window firstmate:fm-scout-forced-partial, worktree /tmp/fm-backlog-atomicity.vPlt85/forced-partial/absent-worktree)
+Backlog: scout-forced-partial is closed in /tmp/fm-backlog-atomicity.vPlt85/forced-partial/home/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ tasks-axi show scout-forced-partial --full
+task:
+  id: scout-forced-partial
+  title: item for scout-forced-partial data/scout-forced-partial/report.md
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-05
+  deps: none
+  links: "report:data/scout-forced-partial/report.md"
+  body: ""
+$ fm-bearings-snapshot.sh --json | .landed
+[{"id":"scout-forced-partial","what":"item for scout-forced-partial","artifact":"data/scout-forced-partial/report.md"}]
+
+##### S2: forced teardown of an unheld scout WITHOUT --force is still refused when the report is missing
+$ fm-teardown.sh scout-unforced-missing
+REFUSED: scout task scout-unforced-missing has no report at /tmp/fm-backlog-atomicity.vPlt85/unforced-missing/home/data/scout-unforced-missing/report.md.
+The report is the work product. Have the crewmate write it, or use --force after explicit discard approval.
+exit=1
+$ tasks-axi show scout-unforced-missing --full
+task:
+  id: scout-unforced-missing
+  title: item for scout-unforced-missing
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-05
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+##### S3: ordinary scout completion with its report (no --force) still records the report path
+$ fm-teardown.sh scout-reported
+teardown scout-reported complete (window firstmate:fm-scout-reported, worktree /tmp/fm-backlog-atomicity.vPlt85/reported/absent-worktree)
+Backlog: scout-reported is closed in /tmp/fm-backlog-atomicity.vPlt85/reported/home/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ tasks-axi show scout-reported --full
+task:
+  id: scout-reported
+  title: item for scout-reported data/scout-reported/report.md
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-05
+  deps: none
+  links: "report:data/scout-reported/report.md"
+  body: ""
+$ fm-bearings-snapshot.sh --json | .landed
+[{"id":"scout-reported","what":"item for scout-reported","artifact":"data/scout-reported/report.md"}]
+
+##### S4-present: forced teardown of a CAPTAIN-HELD scout whose report is present
+$ fm-teardown.sh scout-held-present --force
+teardown scout-held-present complete (window firstmate:fm-scout-held-present, worktree /tmp/fm-backlog-atomicity.vPlt85/held-present/absent-worktree)
+Backlog: scout-held-present stays open in /tmp/fm-backlog-atomicity.vPlt85/held-present/home/data/backlog.md, still held for the captain with its deliverable recorded. Relay the question and close it only with bin/fm-captain-hold.sh answer.
+exit=0
+$ tasks-axi show scout-held-present --full
+task:
+  id: scout-held-present
+  title: item for scout-held-present data/scout-held-present/report.md
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:Y2FwdGFpbiBtdXN0IGNob29zZQ=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-05
+  closed: "-"
+  deps: none
+  links: "report:data/scout-held-present/report.md"
+  body: "Captain hold set: 2026-11-05T01:22:37Z\n\nDeliverable of the finished work: report data/scout-held-present/report.md"
+$ fm-bearings-snapshot.sh --json | .landed
+[]
+
+##### S4-absent: forced teardown of a CAPTAIN-HELD scout whose report is absent
+$ fm-teardown.sh scout-held-absent --force
+teardown scout-held-absent complete (window firstmate:fm-scout-held-absent, worktree /tmp/fm-backlog-atomicity.vPlt85/held-absent/absent-worktree)
+Backlog: scout-held-absent stays open in /tmp/fm-backlog-atomicity.vPlt85/held-absent/home/data/backlog.md, still held for the captain with its deliverable recorded. Relay the question and close it only with bin/fm-captain-hold.sh answer.
+exit=0
+$ tasks-axi show scout-held-absent --full
+task:
+  id: scout-held-absent
+  title: item for scout-held-absent data/scout-held-absent/report.md
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:Y2FwdGFpbiBtdXN0IGNob29zZQ=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-05
+  closed: "-"
+  deps: none
+  links: "report:data/scout-held-absent/report.md"
+  body: "Captain hold set: 2026-11-05T01:22:43Z\n\nDeliverable of the finished work: report data/scout-held-absent/report.md"
+$ fm-bearings-snapshot.sh --json | .landed
+[]
+
+##### S5: session start replays a recorded 'discarded' close marker as the note 'discarded'
+$ cat state/scout-replay-forced.backlog-close
+id=scout-replay-forced
+data=/tmp/fm-backlog-atomicity.vPlt85/replay-forced/home/data
+spawn_gen=spawn-replay
+arg=--note
+arg=discarded
+$ fm-bootstrap.sh
+BACKLOG_RECONCILE: scout-replay-forced: recorded backlog close could not be replayed: invalid pending-close arguments in /tmp/fm-backlog-atomicity.vPlt85/replay-forced/home/state/scout-replay-forced.backlog-close
+$ tasks-axi show scout-replay-forced --full
+task:
+  id: scout-replay-forced
+  title: item for scout-replay-forced
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-05
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+marker remains? yes
+
+##### S6: session start still decodes a recorded 'local%20main' close marker to the note 'local main'
+$ fm-bootstrap.sh
+BOOTSTRAP_INFO: closed the backlog item for ship-replay-local that an interrupted cleanup left open
+$ tasks-axi show ship-replay-local --full
+task:
+  id: ship-replay-local
+  title: item for ship-replay-local
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-05
+  deps: none
+  links: none
+  body: local main
+
+##### S7 (adversarial): a close marker with a note other than local%20main or discarded is rejected
+--- note value: 'evil'
+$ fm-bootstrap.sh
+BACKLOG_RECONCILE: ship-replay-bad: recorded backlog close could not be replayed: invalid pending-close arguments in /tmp/fm-backlog-atomicity.vPlt85/replay-bad-24918/home/state/ship-replay-bad.backlog-close
+row state: in_flight; marker remains? yes
+--- note value: 'discarded%20x'
+$ fm-bootstrap.sh
+BACKLOG_RECONCILE: ship-replay-bad: recorded backlog close could not be replayed: invalid pending-close arguments in /tmp/fm-backlog-atomicity.vPlt85/replay-bad-20914/home/state/ship-replay-bad.backlog-close
+row state: in_flight; marker remains? yes
+--- note value: 'Discarded'
+$ fm-bootstrap.sh
+BACKLOG_RECONCILE: ship-replay-bad: recorded backlog close could not be replayed: invalid pending-close arguments in /tmp/fm-backlog-atomicity.vPlt85/replay-bad-21439/home/state/ship-replay-bad.backlog-close
+row state: in_flight; marker remains? yes
+--- note value: 'local main'
+$ fm-bootstrap.sh
+BACKLOG_RECONCILE: ship-replay-bad: recorded backlog close could not be replayed: invalid pending-close arguments in /tmp/fm-backlog-atomicity.vPlt85/replay-bad-51/home/state/ship-replay-bad.backlog-close
+row state: in_flight; marker remains? yes
+=== driver done

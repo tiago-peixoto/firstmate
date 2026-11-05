@@ -1,0 +1,19 @@
+Live before/after for #8154 - real bin/fm-teardown.sh, bin/fm-bootstrap.sh, bin/fm-bearings-snapshot.sh driven against throwaway homes
+base 4bd1e3aa (bug)                                      | target 6f244064 (fix)
+
+## S1-missing: forced teardown of an unheld scout with a missing report
+  [base] state: done links: "report:data/scout-forced-missing/report.md" body: "" [{"id":"scout-forced-missing","what":"item for scout-forced-missing","artifact":"data/scout-forced-missing/report.md"}] 
+  [target] state: done links: none body: discarded [] 
+
+## S1-partial: forced teardown of an unheld scout with a partial report
+  [base] state: done links: "report:data/scout-forced-partial/report.md" body: "" [{"id":"scout-forced-partial","what":"item for scout-forced-partial","artifact":"data/scout-forced-partial/report.md"}] 
+  [target] state: done links: none body: discarded [] 
+
+## S4-absent: forced teardown of a CAPTAIN-HELD scout whose report is absent
+  [base] state: queued links: "report:data/scout-held-absent/report.md" body: "Captain hold set: 2026-11-05T01:22:43Z\n\nDeliverable of the finished work: report data/scout-held-absent/report.md" [] 
+  [target] state: queued links: none body: "Captain hold set: 2026-11-05T01:21:42Z" [] 
+
+## S5: session start replays a recorded 'discarded' close marker as the note 'discarded'
+  [base] BACKLOG_RECONCILE: scout-replay-forced: recorded backlog close could not be replayed: invalid pending-close arguments
+  [target] state: done links: none body: discarded 
+
