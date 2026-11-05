@@ -1,0 +1,110 @@
+
+### S1 reply with --task repack (child working) answers the request but reads unfinished
+
+### S1
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh --task repack done 2eee4f0bdf994155 narrow fix done
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=2eee4f0bdf994155] [at=1793916721]: narrow fix done (via-helper child=repack child-state=working)
+before tick: phase=awaiting_report
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=repack reply_child_state=working reply_overall=unfinished
+parent channel line count=1 (routine resolution appends nothing)
+pending-reply-resolved notes on channel: 0
+
+### S2 reply with --task scoutdone (child done) reads finished
+
+### S2
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh --task scoutdone done 871aca2f75f8cea2 report delivered
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=871aca2f75f8cea2] [at=1793916722]: report delivered (via-helper child=scoutdone child-state=done)
+before tick: phase=awaiting_report
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=scoutdone reply_child_state=done reply_overall=finished
+
+### S2b document form with --task scoutdone
+
+### S2b
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh --task scoutdone --doc done 6230f90cca6c1c05 data/x/report.md see report
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=6230f90cca6c1c05] [at=1793916722]: see report (data/x/report.md via-helper child=scoutdone child-state=done)
+before tick: phase=awaiting_report
+parent tick exit=0
+record: phase=resolved resolved_via=document reply_child_id=scoutdone reply_child_state=done reply_overall=finished
+
+### S3 reply without --task resolves and reads unknown, never finished
+
+### S3
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh done 7edfcb27ed97e81d all good here
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=7edfcb27ed97e81d] [at=1793916723]: all good here (via-helper child=- child-state=unknown)
+before tick: phase=awaiting_report
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown
+
+### S4a adversarial: path-shaped --task ./scoutdone must not read the real done child
+
+### S4a
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh --task ./scoutdone done 9a4be23aa5e658de finished everything
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=9a4be23aa5e658de] [at=1793916724]: finished everything (via-helper child=- child-state=unknown)
+before tick: phase=awaiting_report
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown
+
+### S4b adversarial: --task no-such-child (no meta) reads unknown
+
+### S4b
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh --task no-such-child done 6825e79a58b55a4d finished everything
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=6825e79a58b55a4d] [at=1793916724]: finished everything (via-helper child=no-such-child child-state=unknown)
+before tick: phase=awaiting_report
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=no-such-child reply_child_state=unknown reply_overall=unknown
+
+### S4c adversarial: --task placed after the note is swallowed into the note and reads unknown
+
+### S4c
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh done 445e458b6a0222ab spinner fix verified --task scoutdone
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=445e458b6a0222ab] [at=1793916725]: spinner fix verified --task scoutdone (via-helper child=- child-state=unknown)
+before tick: phase=awaiting_report
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown
+
+### S5 adversarial: hand-written echo quoting child-state=done resolves but reads unknown
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=1e7bb5e10fc8040f]: all finished (child=scoutdone child-state=done)
+parent tick exit=0
+record: phase=resolved resolved_via=status reply_child_id=- reply_child_state=unknown reply_overall=unknown
+
+### S5b adversarial: forged via-helper marker with no child but verdict done reads unknown
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=ebf74b79f07380af]: all finished (via-helper child=- child-state=done)
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown
+
+### S6 missed-report escalation then late --task repack reply: close note carries child result
+recovery send exit=0 phase=recovery_sent
+escalate exit=0 phase=escalated
+escalation line: blocked [key=pending-reply-016a30763588f5b4] [at=1793916727]: pending-reply-missed: task=kid pending-reply-id=016a30763588f5b4 request=how far is the repacking (escalated)
+
+### S6 late reply
+$ FM_HOME=$MATE bin/fm-secondmate-report.sh --task repack done 016a30763588f5b4 narrow fix done
+helper exit=0
+parent channel (/tmp/fm-lab.1l9Ade/parent/state/kid.status) last line: done [corr=016a30763588f5b4] [at=1793916727]: narrow fix done (via-helper child=repack child-state=working)
+before tick: phase=escalated
+parent tick exit=0
+record: phase=resolved resolved_via=helper reply_child_id=repack reply_child_state=working reply_overall=unfinished
+close note: resolved [key=pending-reply-016a30763588f5b4] [at=1793916728]: pending-reply-resolved: task=kid pending-reply-id=016a30763588f5b4 via=helper child=repack child-state=working overall=unfinished
+open decisions after close: 
+### full parent channel /tmp/fm-lab.1l9Ade/parent/state/kid.status
+done [corr=2eee4f0bdf994155] [at=1793916721]: narrow fix done (via-helper child=repack child-state=working)
+done [corr=871aca2f75f8cea2] [at=1793916722]: report delivered (via-helper child=scoutdone child-state=done)
+done [corr=6230f90cca6c1c05] [at=1793916722]: see report (data/x/report.md via-helper child=scoutdone child-state=done)
+done [corr=7edfcb27ed97e81d] [at=1793916723]: all good here (via-helper child=- child-state=unknown)
+done [corr=9a4be23aa5e658de] [at=1793916724]: finished everything (via-helper child=- child-state=unknown)
+done [corr=6825e79a58b55a4d] [at=1793916724]: finished everything (via-helper child=no-such-child child-state=unknown)
+done [corr=445e458b6a0222ab] [at=1793916725]: spinner fix verified --task scoutdone (via-helper child=- child-state=unknown)
+done [corr=1e7bb5e10fc8040f]: all finished (child=scoutdone child-state=done)
+done [corr=ebf74b79f07380af]: all finished (via-helper child=- child-state=done)
+blocked [key=pending-reply-016a30763588f5b4] [at=1793916727]: pending-reply-missed: task=kid pending-reply-id=016a30763588f5b4 request=how far is the repacking (escalated)
+done [corr=016a30763588f5b4] [at=1793916727]: narrow fix done (via-helper child=repack child-state=working)
+resolved [key=pending-reply-016a30763588f5b4] [at=1793916728]: pending-reply-resolved: task=kid pending-reply-id=016a30763588f5b4 via=helper child=repack child-state=working overall=unfinished

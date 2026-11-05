@@ -1,0 +1,30 @@
+=== tests/fm-pending-reply.test.sh (exit 0, no skips) - last lines
+ok - the summary keeps accented letters, drops control characters, and caps by character
+ok - a done reply for a still-running child or an undelivered ship records unfinished
+ok - a completed scout and a ready ship record finished through the document form too
+ok - a reply with no child result, an unreadable one, or a path-shaped id records unknown
+ok - a routine resolution records the child result without appending to the parent channel
+ok - an escalation closed by a helper reply records the child and its unfinished verdict in the close note
+ok - a hand-written line quoting a child result, or a no-child marker with a verdict, records unknown
+ok - all pending-reply tests passed
+
+=== tests/fm-wake-drain-unread-status.test.sh (exit 0, no skips) - last lines
+ok - presentation cursor advances only through its captured endpoint
+ok - a reused task id starts its replacement status log unread at byte zero
+ok - fallback identity still presents and advances status state
+ok - snapshot failures are reported visibly
+ok - OPEN DECISIONS still folds needs-decision/blocked independently of unread notes
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1330647.1793916895.IaDG26
+ok - an empty-queue backstop presentation still preserves the status for its later signal annotation
+ok - routine working and branch-covered done lines print nothing on an empty-queue drain
+
+=== tests/fm-brief.test.sh (exit 0, no skips) - last lines
+ok - fm-brief.sh: --branch-prefix omitted defaults every ship mode to fm/<task-id>
+ok - fm-brief.sh: a --branch-prefix override renders identically across every generated section
+ok - fm-brief.sh: an empty --branch-prefix override resolves to a bare <task-id> branch
+ok - fm-brief.sh: --branch-prefix is refused on scout and secondmate scaffolds
+ok - fm-brief.sh: --branch-prefix value is validated against embedded spaces and a leading dash
+Switched to a new branch '$(touch${IFS}/tmp/fm-brief.2J9ekA/branch-prefix-shell-safe-marker)brief-branch-safe-g3'
+ok - fm-brief.sh: ref-format-valid shell metacharacters stay literal in generated branch commands
+ok - fm-brief.sh: every crewmate scaffold forbids administering the shared worktree pool
+
