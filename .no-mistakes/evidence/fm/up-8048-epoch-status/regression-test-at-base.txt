@@ -1,0 +1,7 @@
+# new regression test file run against BASE commit 4869cf58 bin/ (expected: raw-epoch case fails)
+ok - a stated [key=X] opens X whether it precedes or follows the verb colon
+not ok - raw epoch lines were not each reported with file and line number: got '' want '/tmp/fm-classify-decision-key-tests.d4TE3p/raw-epoch/task.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked [key=broken] A malformed later event.
+/tmp/fm-classify-decision-key-tests.d4TE3p/raw-epoch/task.status:3: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked: [key=colon] A colon-first raw epoch.
+/tmp/fm-classify-decision-key-tests.d4TE3p/raw-epoch/task.status:4: malformed status line; repair the timestamp to [at=<epoch>] after the verb:  1793378273 needs-decision [key=indent] An indented raw epoch.
+/tmp/fm-classify-decision-key-tests.d4TE3p/raw-epoch/task.status:5: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 captain-held [key=other] A raw epoch transfer.'
+exit=1

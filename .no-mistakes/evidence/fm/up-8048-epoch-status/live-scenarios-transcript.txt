@@ -1,0 +1,68 @@
+=================== Scenario A: issue #8048 reproduction, exact script ===================
+$ status_line_verb "$(<malformed.status)"
+1793378273 blocked
+$ status_open_decisions malformed.status ship   (stdout -> A.out, stderr -> A.err)
+--- A.out (open set, stdout) ---
+
+--- end A.out (open set, stdout) ---
+--- A.err (report, stderr) ---
+malformed.status:1: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked [key=example] An implementation decision needs an answer.
+--- end A.err (report, stderr) ---
+PASS: A1 raw-epoch line folds as nothing on stdout (no fake open key)
+PASS: A2 stderr names file:line and the repair (move epoch to [at=<epoch>] after the verb)
+
+=================== Scenario B: earlier open blocker survives a later raw-epoch line ===================
+--- B stdout (full fold) ---
+example	blocked	An earlier blocker remains open.
+--- end B stdout (full fold) ---
+--- B stderr ---
+/tmp/fm-8048-live.wXH1nh/later.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked [key=broken] A malformed later event.
+--- end B stderr ---
+PASS: B1 earlier canonical blocker stays open
+PASS: B2 incremental fold agrees with the full fold on the open set
+PASS: B3 line 2 reported with its real line number
+
+=================== Scenario C: valid legacy lines stay readable, no false reports ===================
+--- C stdout ---
+default	blocked	legacy keyless blocker with no tags
+access	needs-decision	colon-first stated key
+--- end C stdout ---
+--- C stderr ---
+
+--- end C stderr ---
+PASS: C1 legacy keyless blocker and both key positions fold; resolved closes route
+PASS: C2 incremental fold agrees
+PASS: C3 no report for prose, numbers, clock times, unknown verbs, or glued tokens
+
+=================== Scenario D: adversarial shapes, verb overrides, channel separation ===================
+--- D stdout ---
+valid	needs-decision	a valid line AFTER the malformed ones still opens
+--- end D stdout ---
+--- D stderr ---
+/tmp/fm-8048-live.wXH1nh/shapes.status:1: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked: [key=colon] colon-first raw epoch BEFORE any valid line
+/tmp/fm-8048-live.wXH1nh/shapes.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb:    1793378273 needs-decision [key=indent] indented raw epoch
+/tmp/fm-8048-live.wXH1nh/shapes.status:3: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 captain-held [key=held] raw epoch transfer verb
+/tmp/fm-8048-live.wXH1nh/shapes.status:4: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 answered [key=ans] raw epoch with overridden resolve verb
+/tmp/fm-8048-live.wXH1nh/shapes.status:5: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 napping [key=nap] raw epoch with overridden paused verb
+/tmp/fm-8048-live.wXH1nh/shapes.status:7: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 00001793378273 done [key=zeros]: leading zeros still digits
+--- end D stderr ---
+PASS: D1 stdout carries only the open-set TSV; the later valid decision opens
+PASS: D2 colon-first, indented, captain-held, overridden resolve/paused verbs reported; non-overridden 'resolved' (line 6) not reported
+PASS: D3 report never leaks into stdout consumed by callers
+
+=================== Scenario E: real CLI - fm-captain-hold.sh complete <origin> --none ===================
+$ FM_HOME=<lab> bin/fm-captain-hold.sh complete sample-epoch-review --none
+exit=1
+--- E stdout ---
+
+--- end E stdout ---
+--- E stderr ---
+/tmp/fm-8048-live.wXH1nh/home/state/sample-epoch-review.status:3: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked [key=broken] An implementation decision needs an answer.
+fm-captain-hold: origin sample-epoch-review still has open captain decisions in its status stream; hold a captain task for what remains, or answer them, before attesting --none
+--- end E stderr ---
+PASS: E1 complete --none is refused: the earlier blocker is still open
+PASS: E2 refusal names the open captain decision
+PASS: E3 the CLI surfaces the malformed line 3 with file:line on stderr
+PASS: E4 no false completion attestation written
+
+TOTAL FAILS: 0
