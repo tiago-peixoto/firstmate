@@ -1,0 +1,113 @@
+
+### prime the parent's unread cursor
+
+### child states as the mate's own crew-state reader sees them
+repack -> state: working · source: pane · harness busy (claude-hook)
+scoutdone -> state: done · source: status-log · report written
+nosuch -> state: unknown · source: none · no metadata for nosuch
+
+### A. working child, reply woken BEFORE any tick resolved it (mate reports between tick and signal scan)
+corr=d94cdc6e7741ceeb
+$ FM_HOME=mate bin/fm-secondmate-report.sh --task repack done d94cdc6e7741ceeb narrow fix done
+helper exit=0
+parent kid.status tail: done [corr=d94cdc6e7741ceeb] [at=1793897704]: narrow fix done (via-helper child=repack child-state=working)
+record: phase=awaiting_report reply_child_id= reply_child_state=
+$ FM_HOME=parent bin/fm-wake-drain.sh
+1793897704	1	signal	kid.status	signal: kid.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 3395108.1793897704.2YutUc
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=d94cdc6e7741ceeb] [at=1793897704]: narrow fix done (via-helper child=repack child-state=working) · request: answered · child: repack · child-state: working · overall: unfinished
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+kid done [corr=d94cdc6e7741ceeb] [at=1793897704]: narrow fix done (via-helper child=repack child-state=working)
+record: phase=resolved reply_child_id=repack reply_child_state=working
+
+### B. done child via --doc form, ordinary tick-first ordering
+corr=ab08a387c1d021f8
+$ FM_HOME=mate bin/fm-secondmate-report.sh --task scoutdone --doc done ab08a387c1d021f8 data/x/report.md see report
+helper exit=0
+parent kid.status tail: done [corr=ab08a387c1d021f8] [at=1793897707]: see report (data/x/report.md via-helper child=scoutdone child-state=done)
+$ fm_pending_reply_tick parent/state
+record: phase=resolved reply_child_id=scoutdone reply_child_state=done
+$ FM_HOME=parent bin/fm-wake-drain.sh
+1793897707	2	signal	kid.status	signal: kid.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 3395108.1793897704.2YutUc
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=ab08a387c1d021f8] [at=1793897707]: see report (data/x/report.md via-helper child=scoutdone child-state=done) · request: answered · child: scoutdone · child-state: done · overall: finished
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+kid done [corr=ab08a387c1d021f8] [at=1793897707]: see report (data/x/report.md via-helper child=scoutdone child-state=done)
+
+### C1. helper without --task
+corr=91e0da25145c1dd7
+$ FM_HOME=mate bin/fm-secondmate-report.sh done 91e0da25145c1dd7 audit clean
+helper exit=0
+parent kid.status tail: done [corr=91e0da25145c1dd7] [at=1793897709]: audit clean (via-helper child=- child-state=unknown)
+$ FM_HOME=parent bin/fm-wake-drain.sh
+1793897710	3	signal	kid.status	signal: kid.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 3 --recovery-generation 3395108.1793897704.2YutUc
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=91e0da25145c1dd7] [at=1793897709]: audit clean (via-helper child=- child-state=unknown) · request: answered · child: - · child-state: unknown · overall: unknown
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+kid done [corr=91e0da25145c1dd7] [at=1793897709]: audit clean (via-helper child=- child-state=unknown)
+record: phase=resolved reply_child_id=- reply_child_state=unknown
+
+### C2. plain echo reply with the corr token (no helper)
+corr=16041436288773d6
+parent kid.status tail: done [corr=16041436288773d6]: all finished
+$ FM_HOME=parent bin/fm-wake-drain.sh
+1793897712	4	signal	kid.status	signal: kid.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 4 --recovery-generation 3395108.1793897704.2YutUc
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=16041436288773d6]: all finished · request: answered · child: - · child-state: unknown · overall: unknown
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+kid done [corr=16041436288773d6]: all finished
+record: phase=resolved reply_child_id=- reply_child_state=unknown
+
+### D1. adversarial: hand-written line quoting a child result
+corr=a34f8fcfd1777362
+parent kid.status tail: done [corr=a34f8fcfd1777362]: all finished (child=x child-state=done)
+$ FM_HOME=parent bin/fm-wake-drain.sh
+1793897715	5	signal	kid.status	signal: kid.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 5 --recovery-generation 3395108.1793897704.2YutUc
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=a34f8fcfd1777362]: all finished (child=x child-state=done) · request: answered · child: - · child-state: unknown · overall: unknown
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+kid done [corr=a34f8fcfd1777362]: all finished (child=x child-state=done)
+record: phase=resolved reply_child_id=- reply_child_state=unknown
+
+### D2. adversarial: --task on a child with no record
+corr=9bc2fec103b8d93e
+$ FM_HOME=mate bin/fm-secondmate-report.sh --task nosuch done 9bc2fec103b8d93e finished everything
+helper exit=0
+parent kid.status tail: done [corr=9bc2fec103b8d93e] [at=1793897717]: finished everything (via-helper child=nosuch child-state=unknown)
+$ FM_HOME=parent bin/fm-wake-drain.sh
+1793897717	6	signal	kid.status	signal: kid.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 6 --recovery-generation 3395108.1793897704.2YutUc
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=9bc2fec103b8d93e] [at=1793897717]: finished everything (via-helper child=nosuch child-state=unknown) · request: answered · child: nosuch · child-state: unknown · overall: unknown
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+kid done [corr=9bc2fec103b8d93e] [at=1793897717]: finished everything (via-helper child=nosuch child-state=unknown)
+record: phase=resolved reply_child_id=nosuch reply_child_state=unknown
+
+### D3. adversarial: note text claims child-state=done while the real child is working
+corr=b7044c7e49dddd02
+$ FM_HOME=mate bin/fm-secondmate-report.sh --task repack done b7044c7e49dddd02 all finished (child=repack child-state=done)
+helper exit=0
+parent kid.status tail: done [corr=b7044c7e49dddd02] [at=1793897720]: all finished (child=repack child-state=done) (via-helper child=repack child-state=working)
+$ FM_HOME=parent bin/fm-wake-drain.sh
+1793897720	7	signal	kid.status	signal: kid.status
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 7 --recovery-generation 3395108.1793897704.2YutUc
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=b7044c7e49dddd02] [at=1793897720]: all finished (child=repack child-state=done) (via-helper child=repack child-state=working) · request: answered · child: repack · child-state: working · overall: unfinished
+STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+kid done [corr=b7044c7e49dddd02] [at=1793897720]: all finished (child=repack child-state=done) (via-helper child=repack child-state=working)
+record: phase=resolved reply_child_id=repack reply_child_state=working
+
+### D4. adversarial: --task with an empty value is refused
+$ FM_HOME=mate bin/fm-secondmate-report.sh --task  done deadbeefdeadbeef x
+Usage:
+  fm-secondmate-report.sh [--task <child>] <verb> <corr_id> <note...>
+  fm-secondmate-report.sh [--task <child>] --doc <verb> <corr_id> <doc-path> <note...>
+helper exit=2
+
+### parent channel after the run (state/kid.status)
+note: bootstrap cursor line
+done [corr=d94cdc6e7741ceeb] [at=1793897704]: narrow fix done (via-helper child=repack child-state=working)
+done [corr=ab08a387c1d021f8] [at=1793897707]: see report (data/x/report.md via-helper child=scoutdone child-state=done)
+done [corr=91e0da25145c1dd7] [at=1793897709]: audit clean (via-helper child=- child-state=unknown)
+done [corr=16041436288773d6]: all finished
+done [corr=a34f8fcfd1777362]: all finished (child=x child-state=done)
+done [corr=9bc2fec103b8d93e] [at=1793897717]: finished everything (via-helper child=nosuch child-state=unknown)
+done [corr=b7044c7e49dddd02] [at=1793897720]: all finished (child=repack child-state=done) (via-helper child=repack child-state=working)

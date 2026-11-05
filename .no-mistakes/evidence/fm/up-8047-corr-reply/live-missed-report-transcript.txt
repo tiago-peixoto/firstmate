@@ -1,0 +1,28 @@
+
+### E1. request delivered, mate's turn completes with no report
+corr=72b4ae48e6765de4
+record: phase=awaiting_report reply_child_id= reply_child_state= escalated_epoch=
+
+### E2. recovery fires once
+recovery sent
+record: phase=recovery_sent reply_child_id= reply_child_state= escalated_epoch=
+RECOVERY SENT TO MATE PANE: kid	[fm-from-firstmate]⁣corr=72b4ae48e6765de4 REPOST REQUIRED: previous marked request had no correlated parent report. Reply on the parent status channel including corr=72b4ae48e6765de4. Original request: how far is the repacking
+second recovery refused (ok)
+
+### E3. recovery turn completes with no report -> escalation
+maybe_escalate exit=0
+record: phase=escalated reply_child_id= reply_child_state= escalated_epoch=1793897804
+parent status lines mentioning the corr:
+1:blocked [key=pending-reply-72b4ae48e6765de4] [at=1793897804]: pending-reply-missed: task=kid pending-reply-id=72b4ae48e6765de4 request=how far is the repacking
+
+### E4. late reply through the helper with --task resolves the escalated request and shows the verdict
+helper exit=0
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 8 --recovery-generation 3395108.1793897704.2YutUc
+1793897804	8	signal	kid.status	signal: kid.status
+wake annotation: unread wake-EVENT since last drain, not current state: kid.status: blocked [key=pending-reply-72b4ae48e6765de4] [at=1793897804]: pending-reply-missed: task=kid pending-reply-id=72b4ae48e6765de4 request=how far is the repacking
+wake annotation: latest wake-EVENT observed at drain, not current state: kid.status: done [corr=72b4ae48e6765de4] [at=1793897804]: finally reporting (via-helper child=repack child-state=working) · request: answered · child: repack · child-state: working · overall: unfinished
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+kid [key=pending-reply-72b4ae48e6765de4] blocked: pending-reply-missed: task=kid pending-reply-id=72b4ae48e6765de4 request=how far is the repacking
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+record: phase=resolved reply_child_id=repack reply_child_state=working escalated_epoch=1793897804
