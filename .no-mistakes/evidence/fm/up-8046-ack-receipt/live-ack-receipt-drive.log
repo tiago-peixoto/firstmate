@@ -1,0 +1,136 @@
+
+### lab home (path with a space): /tmp/fm ack lab.kBa5Rb/home
+$ run {run-worktree}/bin/fm-pr-check.sh delivery https://github.com/o/r/pull/8
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+armed: state/delivery.check.sh
+[exit 0]
+baseline poll done; pending: []
+
+### S1 approved review WITH findings text arrives; token-only ack is refused
+[
+  {
+    "token": "review:12:2026-11-05T10:01:00Z:APPROVED",
+    "type": "review",
+    "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "Approved, but the retry loop drops errors and the cache never expires",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+refused (exit 1): fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+ok: refusal names handoff
+ok: signal still pending
+
+### S2 disposition guards: self-evidence, other PR, blank summary are refused
+refused (exit 1): fm-contributions: the signal itself cannot be the evidence for its own disposition
+refused (exit 1): fm-contributions: disposition evidence must be a comment or review on this contribution
+refused (exit 1): fm-contributions: disposition needs a non-empty summary
+refused (exit 1): fm-contributions: disposition needs an evidence URL and a summary
+refused (exit 1): fm-contributions: unknown receipt 'shrug'; expected handoff or disposition
+ok: signal still pending after refused dispositions
+
+### S3 handoff guards: no steer, steer to another task, steer naming review-123 (prefix) are refused
+refused (exit 1): fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+$ run {run-worktree}/bin/fm-send.sh other Read https://github.com/o/r/pull/8#pullrequestreview-12 and fix it
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm ack lab.kBa5Rb/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+fm-send: doorbell not typed because the agent in lab:delivery has exited; the steer is durably recorded at /tmp/fm ack lab.kBa5Rb/home/state/other.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+[exit 0]
+$ run {run-worktree}/bin/fm-send.sh delivery Read https://github.com/o/r/pull/8#pullrequestreview-123 and fix it
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm ack lab.kBa5Rb/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+fm-send: doorbell not typed because the agent in lab:delivery has exited; the steer is durably recorded at /tmp/fm ack lab.kBa5Rb/home/state/delivery.inbox/001.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+[exit 0]
+/tmp/fm ack lab.kBa5Rb/home/state/delivery.inbox:
+001.msg
+handled
+
+/tmp/fm ack lab.kBa5Rb/home/state/delivery.inbox/handled:
+
+/tmp/fm ack lab.kBa5Rb/home/state/other.inbox:
+001.msg
+handled
+
+/tmp/fm ack lab.kBa5Rb/home/state/other.inbox/handled:
+refused (exit 1): fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+ok: signal still pending after refused handoffs
+
+### S4 real fm-send steer to the owning task naming the review, then handoff is accepted and the receipt persists
+$ run {run-worktree}/bin/fm-send.sh delivery Maintainer review: read https://github.com/o/r/pull/8#pullrequestreview-12 and fix the retry loop and cache expiry
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm ack lab.kBa5Rb/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+fm-send: doorbell not typed because the agent in lab:delivery has exited; the steer is durably recorded at /tmp/fm ack lab.kBa5Rb/home/state/delivery.inbox/002.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+[exit 0]
+--- worker pane after doorbell:
+firstmate@firstmate-hz:/tmp/fm ack lab.kBa5Rb/wt$
+accepted: handoff after a steer naming the review
+ok: nothing pending
+--- stored receipts:
+[
+  {
+    "token": "review:12:2026-11-05T10:01:00Z:APPROVED",
+    "task": "delivery",
+    "kind": "handoff",
+    "ref": "002.msg",
+    "at": "2026-11-05T10:00:00Z"
+  }
+]
+true
+ok: receipt bound to token, task delivery, kind handoff, ref 002.msg
+true
+ok: later poll keeps receipt and does not re-raise the review
+
+### S5 inline review comment: token-only ack refused; its 25h re-raise also refused; handoff via steer clears each
+{"type":"review-comment","source":"https://github.com/o/r/pull/8#discussion_r31","token":"review-comment:31:2026-11-05T10:02:00Z:"}
+refused (exit 1): fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+ok: refusal names handoff
+$ run {run-worktree}/bin/fm-send.sh delivery Answer https://github.com/o/r/pull/8#discussion_r31
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm ack lab.kBa5Rb/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+fm-send: doorbell not typed because the agent in lab:delivery has exited; the steer is durably recorded at /tmp/fm ack lab.kBa5Rb/home/state/delivery.inbox/003.msg for recovery (stuck-crewmate-recovery), and the watcher will not re-ring a dead pane
+[exit 0]
+accepted: inline comment handoff
+{"type":"unanswered","source":"https://github.com/o/r/pull/8#discussion_r31","token":"unanswered:review-comment:31:2026-11-06T11:00:00Z"}
+refused (exit 1): fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+ok: refusal names handoff
+ok: unanswered still pending
+accepted: disposition for re-raise citing a reply comment on the PR
+--- receipts now:
+{"token":"review:12:2026-11-05T10:01:00Z:APPROVED","task":"delivery","kind":"handoff","ref":"002.msg","at":"2026-11-05T10:00:00Z"}
+{"token":"review-comment:31:2026-11-05T10:02:00Z:","task":"delivery","kind":"handoff","ref":"003.msg","at":"2026-11-05T10:00:00Z"}
+{"token":"unanswered:review-comment:31:2026-11-06T11:00:00Z","task":"delivery","kind":"disposition","ref":"https://github.com/o/r/pull/8#issuecomment-40","summary":"author replied that the loop is bounded by the caller","at":"2026-11-05T10:00:00Z"}
+true
+ok: disposition receipt stored with evidence and summary
+
+### S6 signals without findings still ack with the token alone: bare approval, PR issue comment, ready-for-pr
+{"type":"comment","source":"https://github.com/o/r/pull/8#issuecomment-40","token":"comment:40:2026-11-05T10:06:00Z:","body":"Thanks, will merge after CI"}
+{"type":"review","source":"https://github.com/o/r/pull/8#pullrequestreview-13","token":"review:13:2026-11-05T10:05:00Z:APPROVED","body":""}
+{"type":"ready-for-pr","source":"https://github.com/o/r/issues/9","token":"ready-for-pr:2026-11-06T11:01:00Z","body":"filed issue reached ready-for-pr"}
+accepted: bare approval token-only ack
+accepted: PR issue comment token-only ack
+accepted: ready-for-pr token-only ack
+ok: pending now empty
+true
+ok: token-only acks stored no receipts
+
+### S7 a task that owns the PR later does not inherit the receipts
+--- latecomer record:
+{"task":"latecomer","receipts":[],"state":"merged"}
+true
+ok: latecomer has no receipts
+true
+ok: delivery still has its receipts
+
+=== RESULT: pass ===
