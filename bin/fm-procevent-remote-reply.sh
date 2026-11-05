@@ -53,7 +53,14 @@
 # on the stream. Gating on it here made a remote mate's own progress lines and
 # newly raised decisions - which carry no corr= by contract - unrepresentable,
 # and rejecting one line failed the whole delta, so the cursor could never
-# advance past it. No single line can stop or wedge the stream.
+# advance past it. No single line can stop or wedge the stream. A
+# data/report-snapshots/<sha256>.md offer from fm-secondmate-report.sh --doc is
+# a required input whose frozen bytes must verify against their digest. A
+# transport or remote job failure leaves the delta uncommitted for the runner's
+# retry, as 255 does for any report. A malformed pointer, or a snapshot the
+# reader refuses or that fails verification, is mirrored with its original
+# pointer and raises one keyed escalation naming the snapshot, so the missing
+# input stays visible.
 #
 # What remains here is only what crossing a machine boundary genuinely adds:
 #   - cursor continuity and identity (offset plus prefix digest)
@@ -81,8 +88,10 @@ REMOTE_LOG='state/parent-replies.status'
 WAIT_SECONDS=${FM_REMOTE_REPLY_WAIT_SECONDS:-55}
 MAX_DOC_BYTES=${FM_REMOTE_REPLY_MAX_DOC_BYTES:-262144}
 # fm-on.sh returns ssh's status unchanged, so 255 alone means unavailable
-# transport or unknown remote completion. Any other nonzero status is the remote
-# reader's own refusal of that path at that moment. The reader has no permanence
+# transport or unknown remote completion. The reader refuses a path only with
+# exit 1. The remote job layer reports its own failures with other statuses,
+# which an ordinary report treats as a refusal and a snapshot treats like 255
+# (see fetch_document). The reader has no permanence
 # vocabulary - a report the mate has not finished writing refuses exactly like a
 # path that will never exist - so a refusal fails open rather than being read as
 # final (see cmd_ingest).
@@ -415,17 +424,30 @@ summarize_fetch_reason() { # <stderr-file> <remote-relative>
 }
 
 # Fetch one referenced remote document. Returns 0 on success, 1 when the remote
-# reader refused the path or size, DOCUMENT_LOCAL_FAILURE when local storage
-# failed, and SSH_UNAVAILABLE when transport completion is unknown. A refusal
-# leaves the reader's own explanation in FETCH_DOC_REASON.
+# reader refused the path or size or a snapshot failed verification,
+# DOCUMENT_LOCAL_FAILURE when local storage failed, and SSH_UNAVAILABLE when
+# transport completion is unknown or, for a snapshot, the remote job layer
+# failed. A refusal leaves the reader's own explanation in FETCH_DOC_REASON.
 FETCH_DOC_REASON=''
 fetch_document() { # <id> <remote-relative> <result-var>
   local id=$1 rel=$2 result_var=$3 base destination parent parent_real tmp err local_rel rc=0
+  local limit=$MAX_DOC_BYTES digest='' bytes
   FETCH_DOC_REASON=''
   if ! safe_doc_path "$rel"; then
     FETCH_DOC_REASON='pointer is not a confined data/*.md path'
     return 1
   fi
+  case "$rel" in
+    data/report-snapshots/*)
+      digest=${rel#data/report-snapshots/}
+      digest=${digest%.md}
+      if [ "${#digest}" -ne 64 ] || [[ "$digest" = *[!a-f0-9]* ]]; then
+        FETCH_DOC_REASON='invalid required snapshot digest'
+        return 1
+      fi
+      limit=1048576
+      ;;
+  esac
   base="$DATA/remote-secondmates/$id"
   destination="$base/$rel"
   parent=$(dirname "$destination")
@@ -436,16 +458,29 @@ fetch_document() { # <id> <remote-relative> <result-var>
   [ ! -L "$destination" ] || return "$DOCUMENT_LOCAL_FAILURE"
   err=$(umask 077; mktemp "${TMPDIR:-/tmp}/fm-remote-doc-reason.XXXXXX") || return "$DOCUMENT_LOCAL_FAILURE"
   tmp=$(umask 077; mktemp "$parent/.remote-doc.XXXXXX") || { rm -f -- "$err"; return "$DOCUMENT_LOCAL_FAILURE"; }
-  "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-file.sh get "$rel" "$MAX_DOC_BYTES" < /dev/null > "$tmp" 2> "$err" || rc=$?
+  "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-file.sh get "$rel" "$limit" < /dev/null > "$tmp" 2> "$err" || rc=$?
   if [ "$rc" -ne 0 ]; then
     FETCH_DOC_REASON=$(summarize_fetch_reason "$err" "$rel")
     rm -f -- "$tmp" "$err"
     [ "$rc" -ne "$SSH_UNAVAILABLE" ] || return "$SSH_UNAVAILABLE"
+    [ "$rc" -eq 1 ] || [ -z "$digest" ] || return "$SSH_UNAVAILABLE"
     return 1
   fi
-  rm -f -- "$err"
-  chmod 600 "$tmp" || { rm -f -- "$tmp"; return "$DOCUMENT_LOCAL_FAILURE"; }
-  mv -f -- "$tmp" "$destination" || { rm -f -- "$tmp"; return "$DOCUMENT_LOCAL_FAILURE"; }
+  if [ -n "$digest" ]; then
+    bytes=$(wc -c < "$tmp" | tr -d ' ')
+    FM_HOME="$base" "$SCRIPT_DIR/fm-document-snapshot.sh" receive "$digest" "$bytes" < "$tmp" > /dev/null 2> "$err" || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      FETCH_DOC_REASON=$(summarize_fetch_reason "$err" "$rel")
+      rm -f -- "$tmp" "$err"
+      [ "$rc" -eq 1 ] || return "$DOCUMENT_LOCAL_FAILURE"
+      return 1
+    fi
+    rm -f -- "$tmp" "$err"
+  else
+    rm -f -- "$err"
+    chmod 600 "$tmp" || { rm -f -- "$tmp"; return "$DOCUMENT_LOCAL_FAILURE"; }
+    mv -f -- "$tmp" "$destination" || { rm -f -- "$tmp"; return "$DOCUMENT_LOCAL_FAILURE"; }
+  fi
   local_rel="data/remote-secondmates/$id/$rel"
   printf -v "$result_var" '%s' "$local_rel"
 }
@@ -614,10 +649,12 @@ cmd_ingest() {
     local_doc=''
     fetch_document "$id" "$doc" local_doc || fetch_rc=$?
     if [ "$fetch_rc" -eq 1 ]; then
-      # Fail open. A refusal is never a decision: the mate's line keeps its own
-      # pointer, the cursor still advances, and one unkeyed note says why. A
-      # keyed escalation raised here once stood open forever describing a report
-      # that had in fact arrived, because nothing could ever resolve it.
+      # Fail open. The mate's line keeps its own pointer and the cursor still
+      # advances. An ordinary report's refusal is never a decision: a keyed
+      # escalation raised here once stood open forever describing a report that
+      # had in fact arrived, because nothing could ever resolve it. A required
+      # snapshot is the exception: its answer arrived without its input, so one
+      # keyed escalation stays open until an operator closes it.
       undelivered="${undelivered}${undelivered:+$'\n'}${doc}"$'\t'"${FETCH_DOC_REASON}"
       continue
     fi
@@ -648,11 +685,16 @@ EOF
     || { fm_lock_release "$lock"; die "cannot count appended remote replies"; }
   cat "$source_additions" >> "$source_record" \
     || { fm_lock_release "$lock"; die "cannot commit remote reply mirror identity"; }
-  # A note, never a decision: it stays visible without entering the open-decision
+  # An ordinary report's note stays visible without entering the open-decision
   # fold, so it cannot stand open the way a keyed block did.
   while IFS=$'\t' read -r doc reason || [ -n "$doc" ]; do
     [ -n "$doc" ] || continue
-    line="note: remote document did not transfer for $id: $doc - $reason"
+    case "$doc" in
+      data/report-snapshots/*)
+        line="blocked [key=remote-reply-snapshot-$id-$(printf '%s' "$doc" | cksum | awk '{print $1}')]: required document snapshot did not transfer for $id: $doc - $reason"
+        ;;
+      *) line="note: remote document did not transfer for $id: $doc - $reason" ;;
+    esac
     append_rc=0
     if status_event_recorded "$status_file" "$line"; then
       append_rc=1

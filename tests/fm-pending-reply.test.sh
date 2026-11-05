@@ -1886,7 +1886,76 @@ test_mechanical_helper_writes_parent_channel() {
   rc=0
   FM_HOME="$home" "$REPORT" "done" "$corr" "from a main home" 2>/dev/null || rc=$?
   [ "$rc" -ne 0 ] || fail "helper must refuse a main home that has no parent channel"
-  pass "mechanical helper writes the parent channel from verb, corr, and note"
+  mkdir -p "$sm_home/data/plans"
+  printf '# Required plan\n\nRun the documented checks.\n' > "$sm_home/data/plans/route.md"
+  FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" data/plans/route.md "The plan is attached." \
+    || fail "document report failed"
+  local snapshot
+  snapshot=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$state/mate.status" | tail -1 | cut -d= -f2-)
+  [ -n "$snapshot" ] || fail "document report still carries only the inaccessible source path"
+  cmp -s "$sm_home/data/plans/route.md" "$home/$snapshot" \
+    || fail "the parent did not receive the exact plan before the reply"
+  assert_grep "source-home=$sm_home" "$state/mate.status" "the snapshot lost its source home"
+  assert_grep 'source-document=data/plans/route.md' "$state/mate.status" "the snapshot lost its source path"
+  printf 'Changed after reporting.\n' > "$sm_home/data/plans/route.md"
+  assert_grep 'Run the documented checks.' "$home/$snapshot" "the delivered snapshot changed with its source"
+  printf 'Send a Bearer token in the header.\n' > "$sm_home/data/plans/bearer.md"
+  printf 'const token = await getToken();\n' > "$sm_home/data/plans/code.md"
+  printf 'apiKey: process.env.API_KEY\n' > "$sm_home/data/plans/config.md"
+  printf 'Tokens: about 1200 per run\n' > "$sm_home/data/plans/usage.md"
+  printf '# Plan\r\n\r\nRun the checks.\r\n' > "$sm_home/data/plans/crlf.md"
+  printf 'Lint output: \033[32mpassed\033[0m\n' > "$sm_home/data/plans/ansi.md"
+  printf 'Rotate the refresh flow.\n' > "$sm_home/data/plans/token-refresh-plan.md"
+  printf 'Ordinary prose in a credential file.\n' > "$sm_home/data/plans/credentials.md"
+  printf 'secretName: artemis-api-tls-2026\n' > "$sm_home/data/plans/manifest.md"
+  printf 'secret: projects/123456/secrets/db-url/versions/3\n' > "$sm_home/data/plans/secret-reference.md"
+  printf 'tokenizer=bert-base-multilingual-cased-v2\n' > "$sm_home/data/plans/model.md"
+  local accepted
+  for accepted in bearer.md code.md config.md usage.md crlf.md ansi.md token-refresh-plan.md credentials.md \
+    manifest.md secret-reference.md model.md; do
+    FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" "data/plans/$accepted" \
+      || fail "an ordinary plan document was refused: $accepted"
+    snapshot=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$state/mate.status" | tail -1 | cut -d= -f2-)
+    cmp -s "$sm_home/data/plans/$accepted" "$home/$snapshot" \
+      || fail "the parent did not receive the exact ordinary document: $accepted"
+  done
+  local aliased_home="$TMP_ROOT/aliased-mate-home" absolute
+  ln -s "$sm_home" "$aliased_home"
+  printf '# Plan named by an absolute path\n' > "$sm_home/data/plans/absolute.md"
+  for absolute in "$aliased_home/data/plans/absolute.md" "$sm_home/data/plans/absolute.md"; do
+    FM_HOME="$aliased_home" "$REPORT" --doc 'done' "$corr" "$absolute" \
+      || fail "an absolute document path under an aliased home was refused: $absolute"
+    snapshot=$(grep -oE 'report=data/report-snapshots/[a-f0-9]{64}\.md' "$state/mate.status" | tail -1 | cut -d= -f2-)
+    cmp -s "$sm_home/data/plans/absolute.md" "$home/$snapshot" \
+      || fail "the parent did not receive the document named by an absolute path: $absolute"
+  done
+  local before
+  before=$(wc -l < "$state/mate.status")
+  printf 'aws_access_key_id = AKIAIOSFODNN7EXAMPLE\naws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n' \
+    > "$sm_home/data/plans/private.md"
+  if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" data/plans/private.md 2>/dev/null; then
+    fail "a document containing a credential was reported"
+  fi
+  ln -s route.md "$sm_home/data/plans/link.md"
+  ln "$sm_home/data/plans/route.md" "$sm_home/data/plans/hardlink.md"
+  printf 'Ordinary prose in a key file.\n' > "$sm_home/data/plans/id_rsa.txt"
+  printf 'DATABASE_URL=postgres://app:Zx8Qw2Lp9Vt4@db.internal:5432/app\n' > "$sm_home/data/plans/database.md"
+  head -c 1048577 /dev/zero | tr '\0' x > "$sm_home/data/plans/oversized.md"
+  local refused
+  for refused in missing.md link.md hardlink.md id_rsa.txt database.md oversized.md; do
+    if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" "data/plans/$refused" 2>/dev/null; then
+      fail "an unsafe or unavailable document was reported: $refused"
+    fi
+  done
+  mkdir -p "$sm_home/data/blocked-parent"
+  printf 'A different safe document.\n' > "$sm_home/data/blocked-parent/plan.md"
+  mv "$home/data/report-snapshots" "$home/data/saved-snapshots"
+  ln -s saved-snapshots "$home/data/report-snapshots"
+  if FM_HOME="$sm_home" "$REPORT" --doc 'done' "$corr" data/blocked-parent/plan.md 2>/dev/null; then
+    fail "an unsafe receiving directory still acknowledged the request"
+  fi
+  [ "$(wc -l < "$state/mate.status")" = "$before" ] || fail "a refused document still acknowledged the request"
+  pass "mechanical helper delivers an immutable non-secret document before reporting its parent-channel answer"
 }
 
 test_remote_parent_replies_is_not_wrong_home() {
@@ -2212,6 +2281,8 @@ test_finished_child_reads_finished() {
   assert_contains "$out" "child-state: done" "a completed scout reads done"
   assert_contains "$out" "overall: finished" "a completed scout reads finished"
   make_child "$mate" shipready ship idle 'done: ready for merge'
+  mkdir -p "$mate/data/x"
+  printf '# Ready ship report\n' > "$mate/data/x/report.md"
   out=$(received_result "$fb" "$mate" "$home" kid shipready data/x/report.md)
   assert_contains "$out" "child-state: done" "a ready ship reads done"
   assert_contains "$out" "overall: finished" "a ready ship reads finished"
