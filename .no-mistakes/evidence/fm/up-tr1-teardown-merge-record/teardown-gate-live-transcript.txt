@@ -1,0 +1,57 @@
+
+===== L1 real GitHub OPEN PR 8263 recorded -> refused, record kept =====
+--- $ fm-teardown.sh task-x1  
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/kunchenguid/firstmate/pull/8263. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+exit=1
+meta=kept wt=kept backlog=in_flight
+
+===== L2 same task, --force (explicit discard) -> torn down =====
+--- $ fm-teardown.sh task-x1 --force 
+exit=0
+meta=removed wt=kept backlog=done
+
+===== L3 real GitHub MERGED PR 8210 recorded, work pushed to fork -> gate skipped, teardown succeeds =====
+--- $ fm-teardown.sh task-x1  
+exit=0
+meta=removed wt=kept backlog=done
+
+===== L4 real GitHub CLOSED PR 8232, unlanded unpushed work -> existing unlanded-work refusal, not the PR gate =====
+--- $ fm-teardown.sh task-x1  
+REFUSED: worktree /tmp/fm-teardown-tests.lcHQUT/live-closed/wt has work not on any remote and not landed.
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+exit=1
+meta=kept wt=kept backlog=in_flight
+
+===== L5 closed PR, content landed on origin/main but uncommitted change -> existing dirty-tree refusal =====
+--- $ fm-teardown.sh task-x1  
+REFUSED: worktree /tmp/fm-teardown-tests.lcHQUT/live-closed/wt has uncommitted changes.
+Commit them (or get the captain's explicit OK to discard, then --force).
+exit=1
+meta=kept wt=kept backlog=in_flight
+
+===== L6 closed PR, landed and clean -> teardown succeeds without --force =====
+--- $ fm-teardown.sh task-x1  
+exit=0
+meta=removed wt=kept backlog=done
+
+===== L7 closed PR with pushed-but-unlanded work and an unpushed extra commit -> existing unpushed refusal =====
+--- $ fm-teardown.sh task-x1  
+REFUSED: worktree /tmp/fm-teardown-tests.lcHQUT/live-closed-unpushed/wt has work not on any remote and not landed.
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+exit=1
+meta=kept wt=kept backlog=in_flight
+
+===== A1 unreadable record: PR number that does not exist (999999999) -> refused =====
+--- $ fm-teardown.sh task-x1  
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/kunchenguid/firstmate/pull/999999999. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+exit=1
+meta=kept wt=kept backlog=in_flight
+
+===== A2 unreadable record: forge CLIs unavailable (gh and gh-axi exit 1) -> refused even though work is pushed =====
+--- $ fm-teardown.sh task-x1  
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/kunchenguid/firstmate/pull/999999999. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+exit=1
+meta=kept wt=kept backlog=in_flight
