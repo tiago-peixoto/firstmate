@@ -1,0 +1,33 @@
+schema=fm-secondmate-parent.v1
+route=local
+parent_home=/tmp/fm-docsnap.AyTTFL/parent
+$ FM_HOME=mate fm-secondmate-report.sh --doc done $CORR data/x/report.md "see report"
+rc=0
+--- parent status line:
+done [corr=0123456789abcdef] [at=1794062015]: see report (report=data/report-snapshots/c9b74676bbcdde0cab750bf093c8d2b44a497d18272a26ab96a3099e43cc101f.md source-host=firstmate-hz source-home=/tmp/fm-docsnap.AyTTFL/mate source-document=data/x/report.md document-bytes=38 via-helper)
+--- parent snapshot:
+c9b74676bbcdde0cab750bf093c8d2b44a497d18272a26ab96a3099e43cc101f.md
+c9b74676bbcdde0cab750bf093c8d2b44a497d18272a26ab96a3099e43cc101f  /tmp/fm-docsnap.AyTTFL/mate/data/x/report.md
+c9b74676bbcdde0cab750bf093c8d2b44a497d18272a26ab96a3099e43cc101f  /tmp/fm-docsnap.AyTTFL/parent/data/report-snapshots/c9b74676bbcdde0cab750bf093c8d2b44a497d18272a26ab96a3099e43cc101f.md
+bytes identical (incl. trailing blank line)
+
+=== adversarial: 1048577-byte doc
+error: cannot deliver document snapshot: document exceeds the 1048576-byte safety bound
+rc=1
+=== boundary: exactly 1048576-byte doc
+rc=0
+=== adversarial: doc outside data/
+error: cannot deliver document snapshot: document must be a non-hidden path under this home's data directory
+rc=1
+=== adversarial: symlinked doc
+error: cannot deliver document snapshot: [Errno 40] Too many levels of symbolic links: 'link.md'
+rc=1
+=== adversarial: parent snapshot destination corrupted (hardlink) before local receive
+error: cannot deliver document snapshot: snapshot destination is unsafe
+rc=1
+--- parent status line count (expect 2: report + max):
+2
+done [corr=0123456789abcdef] [at=1794062015]: see report (report=data/report-snapshots/c9b74676bbcdde0cab750bf093c8d2b44a497d18272a26ab96a3099e43cc101f.md source-host=firstmate-hz source-home=/tmp/fm-
+done [corr=0123456789abcdef] [at=1794062016]: max (report=data/report-snapshots/9bc1b2a288b26af7257a36277ae3816a7d4f16e89c1e7e77d0a5c48bad62b360.md source-host=firstmate-hz source-home=/tmp/fm-docsnap
+--- mate source docs unmodified:
+c9b74676bbcdde0cab750bf093c8d2b44a497d18272a26ab96a3099e43cc101f  /tmp/fm-docsnap.AyTTFL/mate/data/x/report.md
