@@ -1,0 +1,13 @@
+=== GNU bash, version 3.2.57(2)-release (x86_64-unknown-linux-gnu): helper (new) with state CLOSED
+helper exit code: 0
+fake gh pr view -> CLOSED	abc123	https://github.com/example/repo/pull/7
+fake gh-axi pr view -> state: CLOSED
+=== GNU bash, version 3.2.57(2)-release (x86_64-unknown-linux-gnu): helper (old) with state CLOSED
+./helper-old.sh: line 3: #!/usr/bin/env bash
+case "\${1:-} \${2:-}" in
+  "pr view") printf '%s\n' 'state: ${state,,}' ;;
+esac
+: bad substitution
+helper exit code: 0
+fake gh pr view -> CLOSED	abc123	https://github.com/example/repo/pull/7
+fake gh-axi pr view -> 

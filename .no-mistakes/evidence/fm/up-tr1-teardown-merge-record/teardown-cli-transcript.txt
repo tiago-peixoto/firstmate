@@ -1,0 +1,73 @@
+
+=== S1 forge reports PR OPEN (worker already exited)
+$ bin/fm-teardown.sh task-x1 
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+exit code: 1
+task record present: yes | isolated copy present: yes | backlog row: in_flight
+
+=== S1b same task after the forge reports PR MERGED
+$ bin/fm-teardown.sh task-x1 
+<home>/open/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <home>/open/wt)
+Backlog: task-x1 is closed in <home>/open/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit code: 0
+task record present: no | isolated copy present: yes | backlog row: done
+
+=== S2 forge cannot read the PR (gh pr view fails)
+$ bin/fm-teardown.sh task-x1 
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+exit code: 1
+task record present: yes | isolated copy present: yes | backlog row: in_flight
+
+=== S2c GitLab MR reported opened
+$ bin/fm-teardown.sh task-x1 
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.com/example/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+exit code: 1
+task record present: yes | isolated copy present: yes | backlog row: in_flight
+
+=== S3 PR CLOSED, change not landed, not on any remote
+$ bin/fm-teardown.sh task-x1 
+REFUSED: worktree <home>/closed/wt has work not on any remote and not landed.
+unpushed commits:
+1f9928c ready PR
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+exit code: 1
+task record present: yes | isolated copy present: yes | backlog row: in_flight
+
+=== S3b PR CLOSED, change landed on main, uncommitted file in copy
+$ bin/fm-teardown.sh task-x1 
+REFUSED: worktree <home>/closed/wt has uncommitted changes.
+uncommitted changes present (untracked-only leftovers)
+untracked paths (up to 10):
+  notes.txt
+Commit them (or get the captain's explicit OK to discard, then --force).
+exit code: 1
+task record present: yes | isolated copy present: yes | backlog row: in_flight
+
+=== S3c PR CLOSED, change landed on main, clean copy
+$ bin/fm-teardown.sh task-x1 
+<home>/closed/project: synced f5493e1..7544d19
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <home>/closed/wt)
+Backlog: task-x1 is closed in <home>/closed/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit code: 0
+task record present: no | isolated copy present: yes | backlog row: done
+
+=== S3d PR CLOSED, branch pushed but one later commit unpushed
+$ bin/fm-teardown.sh task-x1 
+REFUSED: worktree <home>/closed-unpushed/wt has work not on any remote and not landed.
+unpushed commits:
+dd3b914 unpushed follow-up
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+exit code: 1
+task record present: yes | isolated copy present: yes | backlog row: in_flight
+
+=== S4 PR OPEN, explicit --force after discard approval
+$ bin/fm-teardown.sh task-x1 --force
+<home>/forced/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <home>/forced/wt)
+Backlog: task-x1 is closed in <home>/forced/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit code: 0
+task record present: no | isolated copy present: yes | backlog row: done

@@ -1,0 +1,5 @@
+$ /tmp/b32/bash-3.2.57/bash <targeted runner with the 3 new tests>
+ok - teardown preserves the task record and copy until its pull request is confirmed merged
+ok - forced teardown discards a ship whose pull request is still open
+ok - a closed pull request takes the existing landed-work and dirty-tree checks without --force
+exit=0

@@ -1,0 +1,6 @@
+ok - teardown leaves opencode's busy plugin in the returned pool worktree as on main
+ok - teardown preserves the task record and copy until its pull request is confirmed merged
+ok - forced teardown discards a ship whose pull request is still open
+ok - a closed pull request takes the existing landed-work and dirty-tree checks without --force
+ok - teardown closes its own backlog item before reporting success
+ok - teardown closes a landed GitLab task with its merge request URL as a note and GitHub and Forgejo tasks with --pr
