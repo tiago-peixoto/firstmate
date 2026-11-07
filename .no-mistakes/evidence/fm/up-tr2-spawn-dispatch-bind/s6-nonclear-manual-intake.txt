@@ -1,0 +1,28 @@
+$ fm-dispatch-resolve.sh data/amb2/brief.md  (first run: clear)
+  status: clear
+  profile: --harness 'claude' --model 'haiku' --effort 'low'
+{"task":"amb2","status":"clear","profile":{"harness":"claude","model":"haiku","effort":"low"}}
+$ fm-spawn.sh amb2 ... --harness claude --model opus --effort high  (while clear: refused)
+error: launch flags do not match the clear dispatch selection --harness claude --model haiku --effort low recorded in /tmp/fm-lab.NDuC7n/data/amb2/dispatch-resolution.json; pass those flags, or record this task's override with --dispatch-override <reason>
+exit=1
+$ fm-dispatch-resolve.sh data/amb2/brief.md  (rerun: confidence 0.41 -> ambiguous)
+  status: ambiguous
+  reason: confidence 0.41 below floor 0.6
+{"task":"amb2","status":"ambiguous","profile":null}
+$ fm-spawn.sh amb2 ... --harness claude --model opus --effort high   (manual intake pick, no override)
+spawned amb2 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-amb2 worktree=/tmp/fm-lab.NDuC7n/home/.treehouse/demo-eb3813/1/demo
+exit=0
+harness=claude
+model=opus
+effort=high
+
+$ fm-dispatch-resolve.sh data/off2/brief.md   (default typesafe provider, TYPESAFE_API_KEY absent -> off)
+dispatch-resolve: off (TYPESAFE_API_KEY absent from the environment and /tmp/fm-lab.NDuC7n/.env)
+exit=0
+{"task":"off2","status":"off","profile":null}
+$ fm-spawn.sh off2 ... --harness claude --model sonnet --effort medium
+spawned off2 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-off2 worktree=/tmp/fm-lab.NDuC7n/home/.treehouse/demo-eb3813/1/demo
+exit=0
+harness=claude
+model=sonnet
+effort=medium

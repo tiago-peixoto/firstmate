@@ -1,0 +1,6 @@
+$ ls config; ls data/nocfg   (no crew-dispatch.json, no dispatch record)
+crew-harness
+brief.md
+$ fm-spawn.sh nocfg ... --harness claude --model haiku --effort low
+spawned nocfg harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-nocfg worktree=/tmp/fm-lab.NDuC7n/home/.treehouse/demo-eb3813/1/demo
+exit=0

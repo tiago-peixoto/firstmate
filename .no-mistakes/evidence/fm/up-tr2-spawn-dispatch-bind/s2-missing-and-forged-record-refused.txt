@@ -1,0 +1,13 @@
+$ fm-spawn.sh norec ... --harness claude --model haiku --effort low   (resolver never ran for norec)
+error: config/crew-dispatch.json is active and task norec has no recorded dispatch resolution; run bin/fm-dispatch-resolve.sh /tmp/fm-lab.NDuC7n/data/norec/brief.md --project <name> first
+exit=1
+
+$ cat data/forged/dispatch-resolution.json  (hand-copied record naming another task)
+{"task":"some-other-task","status":"clear","profile":{"harness":"codex","model":"gpt-5","effort":"high"}}
+$ fm-spawn.sh forged ... --harness codex --model gpt-5 --effort high
+error: malformed dispatch resolution /tmp/fm-lab.NDuC7n/data/forged/dispatch-resolution.json for task forged; rerun bin/fm-dispatch-resolve.sh /tmp/fm-lab.NDuC7n/data/forged/brief.md --project <name>
+exit=1
+
+$ fm-spawn.sh fix-a ... --scout --harness codex --model gpt-5 --effort high  (scout path, mismatch)
+error: launch flags do not match the clear dispatch selection --harness claude --model haiku --effort low recorded in /tmp/fm-lab.NDuC7n/data/fix-a/dispatch-resolution.json; pass those flags, or record this task's override with --dispatch-override <reason>
+exit=1

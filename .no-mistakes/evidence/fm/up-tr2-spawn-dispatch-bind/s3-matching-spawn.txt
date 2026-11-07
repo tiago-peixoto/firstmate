@@ -1,0 +1,22 @@
+$ fm-spawn.sh fix-a projects/demo --mode local-only --yolo off --harness claude --model haiku --effort low
+warning: /tmp/fm-lab.NDuC7n/data/fix-a/launch-brief.md records no ship branch; defaulting to legacy branch fm/fix-a
+warning: /tmp/fm-lab.NDuC7n/data/fix-a/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: fix-a ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned fix-a harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-fix-a worktree=/tmp/fm-lab.NDuC7n/home/.treehouse/demo-eb3813/1/demo
+exit=0
+$ cat state/fix-a.meta
+window=firstmate:fm-fix-a
+endpoint_task_id=fix-a
+worktree=/tmp/fm-lab.NDuC7n/home/.treehouse/demo-eb3813/1/demo
+project=/tmp/fm-lab.NDuC7n/projects/demo
+harness=claude
+approval_mode=bypass
+kind=ship
+mode=local-only
+yolo=off
+branch=fm/fix-a
+tasktmp=/tmp/fm-fix-a
+model=haiku
+effort=low
+busy_gen=g1794065269.679747.16964
+spawn_gen=s1794065269.672102.25946

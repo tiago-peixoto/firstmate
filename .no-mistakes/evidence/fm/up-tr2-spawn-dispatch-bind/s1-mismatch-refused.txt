@@ -1,0 +1,12 @@
+$ fm-dispatch-resolve.sh data/fix-a/brief.md -> record:
+{"task":"fix-a","status":"clear","profile":{"harness":"claude","model":"haiku","effort":"low"}}
+
+$ fm-spawn.sh fix-a projects/demo --mode local-only --yolo off --harness codex --model gpt-5 --effort high
+error: launch flags do not match the clear dispatch selection --harness claude --model haiku --effort low recorded in /tmp/fm-lab.NDuC7n/data/fix-a/dispatch-resolution.json; pass those flags, or record this task's override with --dispatch-override <reason>
+exit=1
+$ (same harness, different model) --harness claude --model opus --effort low
+error: launch flags do not match the clear dispatch selection --harness claude --model haiku --effort low recorded in /tmp/fm-lab.NDuC7n/data/fix-a/dispatch-resolution.json; pass those flags, or record this task's override with --dispatch-override <reason>
+exit=1
+$ (no flags)
+error: config/crew-dispatch.json is active - pass an explicit harness resolved from the dispatch rules (the consultation backstop, so the rules are never silently skipped).
+exit=1

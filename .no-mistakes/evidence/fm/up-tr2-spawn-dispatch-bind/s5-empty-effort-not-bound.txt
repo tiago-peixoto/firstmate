@@ -1,0 +1,17 @@
+$ fm-dispatch-resolve.sh data/noeff/brief.md --project demo   (rule_2 profile sets no effort)
+  status: clear
+  profile: --harness 'claude' --model 'haiku'
+{"task":"noeff","status":"clear","profile":{"harness":"claude","model":"haiku","effort":null}}
+$ fm-spawn.sh noeff ... --harness claude --model haiku --effort low   (documented effort fallback, no override)
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  2 task(s) in flight, but no watcher has a fresh beacon (last beat: 659s ago, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+spawned noeff harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-noeff worktree=/tmp/fm-lab.NDuC7n/home/.treehouse/demo-eb3813/1/demo
+exit=0
+harness=claude
+model=haiku
+effort=low

@@ -1,0 +1,15 @@
+$ fm-dispatch-resolve.sh data/ovr/brief.md --project demo
+  status: clear
+  profile: --harness 'claude' --model 'haiku' --effort 'low'
+{"task":"ovr","status":"clear","profile":{"harness":"claude","model":"haiku","effort":"low"}}
+$ fm-spawn.sh ovr ... --harness claude --model sonnet --effort high --dispatch-override "captain asked for sonnet on this task"
+spawned ovr harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-ovr worktree=/tmp/fm-lab.NDuC7n/home/.treehouse/demo-eb3813/1/demo
+exit=0
+$ grep -E "harness|model|effort|dispatch_override" state/ovr.meta
+harness=claude
+model=sonnet
+effort=high
+dispatch_override=captain asked for sonnet on this task
+$ fm-spawn.sh fix-a ... --dispatch-override "$(printf "bad\033[31m")"  (non-printable reason)
+error: --dispatch-override must be a printable reason
+exit=1
