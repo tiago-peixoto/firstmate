@@ -1,0 +1,19 @@
+# PR 7 is MERGED. Case A: uncommitted file in the task copy
+$ bin/fm-teardown.sh lab-pr1
+uncommitted changes present (untracked-only leftovers)
+untracked paths (up to 10):
+  notes.txt
+Commit them (or get the captain's explicit OK to discard, then --force).
+rc=1
+/tmp/fm-lab.kmaGov/pool/.treehouse/demo-790329/1/demo/notes.txt
+/tmp/fm-lab.kmaGov/state/lab-pr1.meta
+
+# Case B: a committed but unpushed change made after the merged PR head
+$ bin/fm-teardown.sh lab-pr1
+REFUSED: worktree /tmp/fm-lab.kmaGov/pool/.treehouse/demo-790329/1/demo has work not on any remote and not landed.
+unpushed commits:
+c72f9ab unlanded follow-up
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+rc=1
+/tmp/fm-lab.kmaGov/state/lab-pr1.meta
+c72f9ab unlanded follow-up

@@ -1,0 +1,24 @@
+$ bin/fm-control.sh lab-pr1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.kmaGov
+stopped lab-pr1 harness=claude backend=tmux endpoint=firstmate:fm-lab-pr1 worktree=/tmp/fm-lab.kmaGov/pool/.treehouse/demo-790329/1/demo
+rc=0
+--- worker pane after exit (tail) ---
+    /usage-credits                    Configure usage credits or request them from your admin when you hit a limit
+Resume this session with:
+claude --resume 65f2d0d6-5519-407e-adaf-58b7e82cf244
+firstmate@firstmate-hz:/tmp/fm-lab.kmaGov/pool/.treehouse/demo-790329/1/demo$
+--- task record still present? ---
+-rw------- 1 firstmate firstmate 425 Nov  7 17:09 /tmp/fm-lab.kmaGov/state/lab-pr1.meta
+worktree=/tmp/fm-lab.kmaGov/pool/.treehouse/demo-790329/1/demo
+pr=https://github.com/example/repo/pull/7
+pr_head=7490cc6b23c6576fcb47dd86ba4a15779a5dcfb2
+
+$ bin/fm-teardown.sh lab-pr1   # PR 7 is OPEN on the forge
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.kmaGov
+REFUSED: ship task lab-pr1 still has an unmerged or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh lab-pr1 exit and keep its task record until the PR merges.
+A closed PR passes only when its change is already in the default branch. Use --force only after explicit discard approval.
+rc=1
+--- after refused teardown ---
+-rw------- 1 firstmate firstmate 425 Nov  7 17:09 /tmp/fm-lab.kmaGov/state/lab-pr1.meta
+/tmp/fm-lab.kmaGov/pool/.treehouse/demo-790329/1/demo
+  state: in_flight

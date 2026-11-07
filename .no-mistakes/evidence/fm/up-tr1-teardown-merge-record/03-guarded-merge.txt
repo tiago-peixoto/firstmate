@@ -1,0 +1,15 @@
+$ bin/fm-pr-merge.sh lab-pr1 https://github.com/example/repo/pull/7 --expected-head 7490cc6b23c6576fcb47dd86ba4a15779a5dcfb2
+armed: state/lab-pr1.check.sh
+verified: https://github.com/example/repo/pull/7 is open and mergeable, with every unwaived required check reported and every unwaived check green at head 7490cc6b23c6576fcb47dd86ba4a15779a5dcfb2
+verified: https://github.com/example/repo/pull/7 is merged (state=MERGED, merged=true, isInMergeQueue=false)
+rc=0
+--- forge calls made by the guarded merge ---
+      1 api graphql -f query=query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){state merged isInMergeQueu
+      1 pr merge 7 --repo example/repo --match-head-commit 7490cc6b23c6576fcb47dd86ba4a15779a5dcfb2 --squash
+      1 pr view https://github.com/example/repo/pull/7 --json headRefOid -q .headRefOid
+      1 pr view https://github.com/example/repo/pull/7 --json state,isDraft,mergeable,mergeStateStatus,headRefOid,baseRefName,statusCheckRollup
+--- forge state after merge ---
+{"state":"MERGED","merged":true}
+--- origin/main log ---
+fd59439 Squash PR 7
+bfd6b3e initial

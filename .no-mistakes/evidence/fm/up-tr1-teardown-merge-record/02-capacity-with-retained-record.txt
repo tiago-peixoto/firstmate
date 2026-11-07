@@ -1,0 +1,13 @@
+$ cat config/project-capacity
+demo 1
+$ grep pr= state/lab-pr1.meta   # retained record of the stopped worker
+pr=https://github.com/example/repo/pull/7
+$ bin/fm-spawn.sh lab-cap2 projects/demo --harness claude --mode direct-PR --yolo off
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.kmaGov
+spawned lab-cap2 harness=claude kind=ship mode=direct-PR yolo=off window=firstmate:fm-lab-cap2 worktree=/tmp/fm-lab.kmaGov/pool/.treehouse/demo-790329/2/demo
+rc=0
+$ bin/fm-spawn.sh lab-cap3 ...   # control: lab-cap2 (no pr=) holds the one place
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.kmaGov
+deferred: project demo admits 1 worker(s) at once on this machine (/tmp/fm-lab.kmaGov/config/project-capacity) and 1 already hold a place (lab-cap2); task lab-cap3 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+rc=75
+ls: cannot access '/tmp/fm-lab.kmaGov/state/lab-cap3.meta': No such file or directory
