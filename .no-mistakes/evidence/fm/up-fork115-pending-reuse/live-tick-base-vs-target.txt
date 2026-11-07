@@ -1,0 +1,18 @@
+=== target
+tick1: folds=2 sends=10 seconds=27.030266375
+     10 ready=recovery_sent
+     10 waiting=awaiting_report
+-- captain answers the open blocker between ticks
+tick2: folds=1 sends_total=20
+     10 ready=recovery_sent
+     10 waiting=recovery_sent
+driver exit=0
+=== base
+tick1: folds=20 sends=10 seconds=63.831510149
+     10 ready=recovery_sent
+     10 waiting=awaiting_report
+-- captain answers the open blocker between ticks
+tick2: folds=10 sends_total=20
+     10 ready=recovery_sent
+     10 waiting=recovery_sent
+driver exit=0
