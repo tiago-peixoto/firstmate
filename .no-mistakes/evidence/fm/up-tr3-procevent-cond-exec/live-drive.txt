@@ -1,0 +1,61 @@
+=== BASE (bf05a4fc): joined script+URL condition
+$ fm-procevent-when.sh arm joined --interval 0.2 --stable 1 --condition {run-worktree}/bin/fm-procevent-when.sh https://example.com --action /tmp/tmp.gof9flTAjl/act.sh
+armed: when-joined
+starts on the watcher's next cycle; or run: bin/fm-procevent.sh reconcile
+reminder: deterministic, safe, reversible actions only; judgment and destructive actions stay on the wake-and-decide path
+[exit=0]
+reconciled: published=0 started=1 stopped=0 uncertain=0 failed=0
+processes:
+964335 bash /tmp/tmp.DFJICN16MO/wt/bin/fm-procevent-when.sh run when-joined
+captured outcome (after error budget):
+--- when-joined.1.result
+when: when-joined
+status: condition-error
+detail: the condition exited 127 on 3 consecutive polls; the action was not run
+condition_polls: 3
+output:
+_: line 4: {run-worktree}/bin/fm-procevent-when.sh https://example.com: No such file or directory
+
+=== TARGET (51cf4457)
+$ fm-procevent-when.sh arm joined --interval 0.2 --stable 1 --condition {run-worktree}/bin/fm-procevent-when.sh https://example.com --action /tmp/tmp.gof9flTAjl/act.sh
+error: condition executable is unavailable: {run-worktree}/bin/fm-procevent-when.sh https://example.com
+[exit=1]
+registration files after rejected arm:
+(end)
+reconciled: published=0 started=0 stopped=0 uncertain=0 failed=0
+processes:
+none
+$ fm-procevent-when.sh arm missing --condition no-such-cmd-xyz --action /tmp/tmp.gof9flTAjl/act.sh
+error: condition executable is unavailable: no-such-cmd-xyz
+[exit=1]
+$ fm-procevent-when.sh arm sep --interval 0.2 --stable 1 --condition grep -q a b /dev/null --action /tmp/tmp.gof9flTAjl/act.sh
+armed: when-sep
+starts on the watcher's next cycle; or run: bin/fm-procevent.sh reconcile
+reminder: deterministic, safe, reversible actions only; judgment and destructive actions stay on the wake-and-decide path
+[exit=0]
+sep spec argv section:
+argv:
+/usr/bin/grep
+-q
+a b
+/dev/null
+/tmp/tmp.gof9flTAjl/act.sh
+$ fm-procevent-when.sh arm spaced --interval 0.2 --stable 1 --condition /tmp/tmp.gof9flTAjl/dir with space/my cond https://example.com x y --action /tmp/tmp.gof9flTAjl/act.sh
+armed: when-spaced
+starts on the watcher's next cycle; or run: bin/fm-procevent.sh reconcile
+reminder: deterministic, safe, reversible actions only; judgment and destructive actions stay on the wake-and-decide path
+[exit=0]
+reconciled: published=0 started=2 stopped=0 uncertain=0 failed=0
+cond.log:
+cond args: https://example.com x y
+action.log:
+fired
+--- when-spaced.1.result
+when: when-spaced
+status: fired
+detail: the condition held and the action exited 0
+condition_polls: 1
+action_exit: 0
+output:
+retired: when-sep
+retired: when-sep

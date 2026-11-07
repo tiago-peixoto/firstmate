@@ -1,0 +1,5 @@
+ok - arm binds, refuses duplicates, and retire cleans up
+armed: when-joined-condition
+starts on the watcher's next cycle; or run: bin/fm-procevent.sh reconcile
+reminder: deterministic, safe, reversible actions only; judgment and destructive actions stay on the wake-and-decide path
+not ok - arm must reject a condition executable joined to its argument
