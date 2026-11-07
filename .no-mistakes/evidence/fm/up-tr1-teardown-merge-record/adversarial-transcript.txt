@@ -1,0 +1,43 @@
+
+=== A. unreadable record: gh and gh-axi both fail, work landed on origin branch ===
+exit=1
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+RESULT A: PASS (refused, meta+copy+backlog kept)
+
+=== B. lowercase gitlab-style open state from GitLab MR ===
+exit=1
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.com/example/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+RESULT B: PASS (refused open MR)
+exit=0
+/tmp/fm-teardown-tests.rqesLI/adv-gitlab-open/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree /tmp/fm-teardown-tests.rqesLI/adv-gitlab-open/wt)
+Backlog: task-x1 is closed in /tmp/fm-teardown-tests.rqesLI/adv-gitlab-open/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+RESULT B2: PASS (merged MR torn down)
+
+=== C. CLOSED PR, landed work on remote, but an unpushed extra commit on top ===
+exit=1
+REFUSED: worktree /tmp/fm-teardown-tests.rqesLI/adv-closed-unpushed/wt has work not on any remote and not landed.
+unpushed commits:
+5e0de74 unpushed extra
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+RESULT C: PASS (existing unpushed refusal, not the PR gate)
+
+=== D. CLOSED PR, work pushed to fork remote, clean tree -> existing path allows without --force ===
+exit=0
+/tmp/fm-teardown-tests.rqesLI/adv-closed-pushed/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree /tmp/fm-teardown-tests.rqesLI/adv-closed-pushed/wt)
+Backlog: task-x1 is closed in /tmp/fm-teardown-tests.rqesLI/adv-closed-pushed/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+RESULT D: PASS
+
+=== E. --force with OPEN PR but uncommitted changes -> force path discards ===
+exit=1
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+RESULT E1: PASS (refused unforced)
+exit=0
+/tmp/fm-teardown-tests.rqesLI/adv-open-force-dirty/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree /tmp/fm-teardown-tests.rqesLI/adv-open-force-dirty/wt)
+Backlog: task-x1 is closed in /tmp/fm-teardown-tests.rqesLI/adv-open-force-dirty/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+RESULT E2: PASS (forced cleanup)

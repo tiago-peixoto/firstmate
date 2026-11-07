@@ -1,0 +1,1 @@
+not ok - cleanup of a ship with an open pull request: expected exit 1, got 0
