@@ -1,0 +1,3 @@
+rc=0 needs_decision=0
+record:$
+152<TAB>strong:44:101525893:2026-11-09 16:03:27.494856050 +0100<TAB>blocked [key=vendor]: waiting on vendor ; working [key=route-check]: run the real-app check ; working [key=route-b]: second request$

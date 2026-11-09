@@ -1,0 +1,57 @@
+----- [base] case=route-working
+status file:
+  | working [key=route-check]: run the real-app check
+drain output:
+drain exit=0
+----- [base] case=plain-working
+status file:
+  | working [key=check]: run the real-app check
+drain output:
+drain exit=0
+----- [base] case=route-blocked
+status file:
+  | blocked [key=route-check]: run the real-app check
+drain output:
+  > OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  > request [key=route-check] blocked: run the real-app check
+  > OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  > OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+drain exit=0
+----- [base] case=route-resolved
+status file:
+  | working [key=route-check]: run the real-app check
+  | resolved [key=route-check]: check ran green
+drain output:
+drain exit=0
+----- [base] case=route-unrelated-after
+status file:
+  | working [key=route-check]: run the real-app check
+  | working: unrelated progress note
+  | working [key=other]: other note
+drain output:
+drain exit=0
+----- [base] case=route-done
+status file:
+  | done [key=route-check]: the check finished
+drain output:
+  > STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+  > request done [key=route-check]: the check finished
+drain exit=0
+----- [base] case=route-after-other-open
+status file:
+  | blocked [key=vendor]: waiting on vendor
+  | working [key=route-check]: run the real-app check
+drain output:
+  > OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+  > request [key=vendor] blocked: waiting on vendor
+  > OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+  > OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+drain exit=0
+----- [base] lib: open-decision fold and actionable span
+fold:
+  = vendor	blocked	waiting on vendorstatus_span_has_actionable rc=0
+first_actionable rc=0 needs_decision=0
+plain key=check working: status_span_has_actionable rc=1
+fold after resolved:
+(end fold)
+lab removed: yes
