@@ -1,0 +1,119 @@
+LAB=/tmp/fm-lab.E1yius
+STATE=/tmp/fm-lab.E1yius/state
+### 1) regular drain with 60 open decisions (stdout)
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+task0 [key=q06] needs-decision: decision number 06 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q12] needs-decision: decision number 12 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q18] needs-decision: decision number 18 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q24] needs-decision: decision number 24 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q30] needs-decision: decision number 30 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q36] needs-decision: decision number 36 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q42] needs-decision: decision number 42 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q48] needs-decision: decision number 48 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q54] needs-decision: decision number 54 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q60] needs-decision: decision number 60 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q01] needs-decision: decision number 01 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q07] needs-decision: decision number 07 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q13] needs-decision: decision number 13 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q19] needs-decision: decision number 19 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q25] needs-decision: decision number 25 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q31] needs-decision: decision number 31 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q37] needs-decision: decision number 37 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q43] needs-decision: decision number 43 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q49] needs-decision: decision number 49 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q55] needs-decision: decision number 55 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q02] needs-decision: decision number 02 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q08] needs-decision: decision number 08 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q14] needs-decision: decision number 14 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q20] needs-decision: decision number 20 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q26] needs-decision: decision number 26 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q32] needs-decision: decision number 32 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q38] needs-decision: decision number 38 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q44] needs-decision: decision number 44 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q50] needs-decision: decision number 50 - choose between option alpha and option beta for the long-running subsystem rework
+OPEN DECISIONS: 31 more omitted (byte cap). Read and reconcile the full set: bin/fm-wake-drain.sh --open-decisions
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+exit=0
+
+### 2) full reader: bin/fm-wake-drain.sh --open-decisions
+exit=0
+task0 [key=q06] needs-decision: decision number 06 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q12] needs-decision: decision number 12 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q18] needs-decision: decision number 18 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q24] needs-decision: decision number 24 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q30] needs-decision: decision number 30 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q36] needs-decision: decision number 36 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q42] needs-decision: decision number 42 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q48] needs-decision: decision number 48 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q54] needs-decision: decision number 54 - choose between option alpha and option beta for the long-running subsystem rework
+task0 [key=q60] needs-decision: decision number 60 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q01] needs-decision: decision number 01 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q07] needs-decision: decision number 07 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q13] needs-decision: decision number 13 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q19] needs-decision: decision number 19 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q25] needs-decision: decision number 25 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q31] needs-decision: decision number 31 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q37] needs-decision: decision number 37 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q43] needs-decision: decision number 43 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q49] needs-decision: decision number 49 - choose between option alpha and option beta for the long-running subsystem rework
+task1 [key=q55] needs-decision: decision number 55 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q02] needs-decision: decision number 02 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q08] needs-decision: decision number 08 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q14] needs-decision: decision number 14 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q20] needs-decision: decision number 20 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q26] needs-decision: decision number 26 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q32] needs-decision: decision number 32 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q38] needs-decision: decision number 38 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q44] needs-decision: decision number 44 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q50] needs-decision: decision number 50 - choose between option alpha and option beta for the long-running subsystem rework
+task2 [key=q56] needs-decision: decision number 56 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q03] needs-decision: decision number 03 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q09] needs-decision: decision number 09 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q15] needs-decision: decision number 15 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q21] needs-decision: decision number 21 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q27] needs-decision: decision number 27 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q33] needs-decision: decision number 33 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q39] needs-decision: decision number 39 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q45] needs-decision: decision number 45 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q51] needs-decision: decision number 51 - choose between option alpha and option beta for the long-running subsystem rework
+task3 [key=q57] needs-decision: decision number 57 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q04] needs-decision: decision number 04 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q10] needs-decision: decision number 10 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q16] needs-decision: decision number 16 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q22] needs-decision: decision number 22 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q28] needs-decision: decision number 28 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q34] needs-decision: decision number 34 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q40] needs-decision: decision number 40 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q46] needs-decision: decision number 46 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q52] needs-decision: decision number 52 - choose between option alpha and option beta for the long-running subsystem rework
+task4 [key=q58] needs-decision: decision number 58 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q05] needs-decision: decision number 05 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q11] needs-decision: decision number 11 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q17] needs-decision: decision number 17 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q23] needs-decision: decision number 23 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q29] needs-decision: decision number 29 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q35] needs-decision: decision number 35 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q41] needs-decision: decision number 41 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q47] needs-decision: decision number 47 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q53] needs-decision: decision number 53 - choose between option alpha and option beta for the long-running subsystem rework
+task5 [key=q59] needs-decision: decision number 59 - choose between option alpha and option beta for the long-running subsystem rework
+line count: 60
+
+### 3) recovery drain after watcher-down marker (captain-hold flow ack line)
+exit=0
+OPEN DECISIONS: 31 more omitted (byte cap). Read and reconcile the full set: bin/fm-wake-drain.sh --open-decisions
+OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+--- stderr:
+WAKE_ACK_REQUIRED: open-decisions=60 (full reader: bin/fm-wake-drain.sh --open-decisions). After full-set reconciliation and handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 1947905.1794234283.xL0w0U
+
+### 4) adversarial: one status log unreadable
+full reader exit=1
+wake drain: cannot read status log /tmp/fm-lab.E1yius/state/task3.status
+drain exit=0
+WAKE_ACK_REQUIRED: open-decisions=unknown (full reader: bin/fm-wake-drain.sh --open-decisions). After full-set reconciliation and handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 1947905.1794234283.xL0w0U
+
+### 5) bad argument
+wake drain: --open-decisions takes no arguments
+exit=2

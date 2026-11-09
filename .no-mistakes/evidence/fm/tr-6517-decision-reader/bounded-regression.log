@@ -1,0 +1,60 @@
+FM_TEST_BEGIN 2026-11-09T14:24:26Z tests/fm-watch-open-decisions.test.sh family=watcher-wake-lock expected_gate_skip=none
+1..17
+ok - absent flag emits nothing and does not fold status
+ok - oldest key surfaces once, and independent per-key backoff doubles up to its cap
+ok - keys 1 and 01 receive separate reminders and retain independent bounded backoff
+ok - tasks 1 and 01 receive separate reminders and retain independent bounded backoff
+ok - resolution stops reminders immediately and a later episode starts fresh
+ok - paused waits, verified transfers, and backlog captain holds are exempt
+ok - captain-hold- keys are exempt by prefix while unrelated and prose-only keys still remind
+ok - a structured [until=] date re-arms a relayed hold; prose never does and a malformed one re-arms at once
+ok - an unchanged republish keeps its backoff while a changed verb or note restarts it
+ok - a resolution and same-text reopen between ticks starts a fresh episode across a restart
+ok - a republish keeps its opened time and takes the newest deferral date
+ok - only explicitly keyed records with valid source timestamps are aged
+ok - quiet polls reuse the timed fold and only new status bytes are folded
+ok - a transient status read failure keeps the trusted open set and its reminder backoff
+watcher: invalid open-decision reminder settings
+watcher: open-decision backoff cap is below threshold
+ok - invalid settings refuse the tick without queueing reminders
+ok - task retirement removes the timed cursor and ends reminders
+ok - the actual watcher wakes and exits on an overdue key without any recorded pane
+FM_TEST_COMPLETE
+FM_TEST_END 2026-11-09T14:24:47Z tests/fm-watch-open-decisions.test.sh exit=0 duration_ms=21235 gate_skip=false
+FM_TEST_BEGIN 2026-11-09T14:24:47Z tests/fm-wake-drain-open-decisions-cursor.test.sh family=standalone expected_gate_skip=none
+FM_TEST_BEGIN 2026-11-09T14:24:47Z tests/fm-wake-drain-open-decisions.test.sh family=standalone expected_gate_skip=none
+ok - the full reader preserves 96 decisions without consuming or claiming wakes
+ok - the full reader fails and names a status log it cannot read instead of omitting its decisions
+ok - a status log the drain cannot read leaves the acknowledgement count unknown while the other logs still list
+ok - empty-queue recovery names all 96 open decisions on the acknowledgement line
+ok - empty, unreadable, and resolved decision sets remain distinct
+ok - a failed open-decisions fold read leaves the acknowledgement count unknown
+ok - a needs-decision buried under later routine/other-key lines still reports as open
+ok - an over-long open decision is cut to its per-item budget with the shared truncation marker
+ok - an explicit resolved [key=X] closes the keyed decision
+ok - a later unrelated terminal line never clears an open decision
+ok - a reserved decision key can only be opened or closed by its owning library
+ok - no open decisions across the fleet prints nothing
+WAKE_ACK_REQUIRED: open-decisions=2 (full reader: bin/fm-wake-drain.sh --open-decisions). After full-set reconciliation and handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2035123.1794234328.QOp1fp
+ok - the open-decision section is fleet-wide, not scoped to this drain's own queued records
+ok - a buried open decision surfaces even when the wake queue itself is empty
+ok - the fleet-wide decision scan does not follow status symlinks
+FM_TEST_END 2026-11-09T14:25:35Z tests/fm-wake-drain-open-decisions.test.sh exit=0 duration_ms=47747 gate_skip=false
+ok - terminal supersession reaches whole-file reads, incremental drains, old caches, and captured spans
+ok - folded decisions are rebuilt when task-kind evidence changes
+ok - a truncated/rewritten log falls back to a full re-fold instead of dropping or misreading the decision
+ok - a same-size file rotation (new inode) is detected and falls back to a full re-fold
+ok - a failed presentation read preserves status state for retry
+ok - a transient status read failure keeps a task's trusted open set in the fleet scan
+ok - a cursor-cache read failure refolds decisions without replaying handled unread status
+ok - a pre-fix cursor is rebuilt so a previously skipped corr-tagged decision surfaces
+ok - an old fold cache is rebuilt once before same-version incremental reads resume
+ok - a buried decision survives many growing drains with bounded read cost, and resolution durably clears it at bounded cost too
+FM_TEST_END 2026-11-09T14:26:42Z tests/fm-wake-drain-open-decisions-cursor.test.sh exit=0 duration_ms=115093 gate_skip=false
+FM_TEST_SUMMARY total=3 failed=0 skipped_gate=0 duration_ms=136751
+FM_TEST_SUMMARY_FAMILY family=standalone count=2 duration_ms=162840 failed=0
+FM_TEST_SUMMARY_FAMILY family=watcher-wake-lock count=1 duration_ms=21235 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-wake-drain-open-decisions-cursor.test.sh duration_ms=115093
+FM_TEST_SLOWEST rank=2 script=tests/fm-wake-drain-open-decisions.test.sh duration_ms=47747
+FM_TEST_SLOWEST rank=3 script=tests/fm-watch-open-decisions.test.sh duration_ms=21235
+exit=0
