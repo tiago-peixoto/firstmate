@@ -1,0 +1,14 @@
+[HEAD] issue repro: working [key=route-check]
+  rc=0 needs_decision=0 events=working [key=route-check]: run the real-app check
+[HEAD] control: working [key=check]
+  rc=1 needs_decision=0 events=strong:44:101404340:2026-11-09 15:27:14.641659197 +0100
+[HEAD] control: route key only in note text
+  rc=1 needs_decision=0 events=strong:44:101404340:2026-11-09 15:27:14.641659197 +0100
+[HEAD] route after other open record
+  rc=0 needs_decision=0 events=blocked [key=vendor]: waiting on vendor ; working [key=route-check]: run the real-app check
+[HEAD] two route records
+  rc=0 needs_decision=0 events=working [key=route-a]: first ; working [key=route-b]: second
+[HEAD] needs-decision on route key keeps decision marker
+  rc=0 needs_decision=1 events=needs-decision [key=route-check]: which env
+[HEAD] route closed in same span
+  rc=1 needs_decision=0 events=strong:44:101404340:2026-11-09 15:27:14.641659197 +0100

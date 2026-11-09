@@ -1,0 +1,29 @@
+### HEAD: issue 8151 repro - working line with [key=route-check]
+--- [HEAD] drain after: working [key=route-check]
+t1 working [key=route-check]: run the real-app check before merge
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=route-check] working: run the real-app check before merge
+(drain exit 0)
+--- [HEAD] drain after: unrelated working line
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=route-check] working: run the real-app check before merge
+(drain exit 0)
+--- [HEAD] drain after: ship terminal done:
+t1 done: finished the task
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t1 [key=route-check] working: run the real-app check before merge
+(drain exit 0)
+--- [HEAD] drain after: resolved [key=route-check]
+(drain exit 0)
+### HEAD: control - non-route key on working stays progress
+--- [HEAD] drain after: working [key=check] + note-text route key
+(drain exit 0)
+### HEAD: captain-held transfer closes a route key
+--- [HEAD] drain after: note [key=route-deploy]
+t3 note [key=route-deploy]: please deploy staging
+t3 note [key=route-deploy]: please deploy staging
+OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+t3 [key=route-deploy] note: please deploy staging
+(drain exit 0)
+--- [HEAD] drain after: captain-held [key=route-deploy]
+(drain exit 0)

@@ -1,0 +1,14 @@
+[BASE] issue repro: working [key=route-check]
+  rc=1 needs_decision=0 events=strong:44:101404370:2026-11-09 15:27:15.012647785 +0100
+[BASE] control: working [key=check]
+  rc=1 needs_decision=0 events=strong:44:101404370:2026-11-09 15:27:15.012647785 +0100
+[BASE] control: route key only in note text
+  rc=1 needs_decision=0 events=strong:44:101404370:2026-11-09 15:27:15.012647785 +0100
+[BASE] route after other open record
+  rc=0 needs_decision=0 events=blocked [key=vendor]: waiting on vendor
+[BASE] two route records
+  rc=1 needs_decision=0 events=strong:44:101404370:2026-11-09 15:27:15.012647785 +0100
+[BASE] needs-decision on route key keeps decision marker
+  rc=0 needs_decision=1 events=needs-decision [key=route-check]: which env
+[BASE] route closed in same span
+  rc=1 needs_decision=0 events=strong:44:101404370:2026-11-09 15:27:15.012647785 +0100

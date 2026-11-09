@@ -1,0 +1,19 @@
+### BASE: issue 8151 repro - working line with [key=route-check]
+--- [BASE] drain after: working [key=route-check]
+(drain exit 0)
+--- [BASE] drain after: unrelated working line
+(drain exit 0)
+--- [BASE] drain after: ship terminal done:
+t1 done: finished the task
+(drain exit 0)
+--- [BASE] drain after: resolved [key=route-check]
+(drain exit 0)
+### BASE: control - non-route key on working stays progress
+--- [BASE] drain after: working [key=check] + note-text route key
+(drain exit 0)
+### BASE: captain-held transfer closes a route key
+--- [BASE] drain after: note [key=route-deploy]
+t3 note [key=route-deploy]: please deploy staging
+(drain exit 0)
+--- [BASE] drain after: captain-held [key=route-deploy]
+(drain exit 0)
