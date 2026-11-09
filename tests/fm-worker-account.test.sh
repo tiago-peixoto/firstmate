@@ -540,6 +540,7 @@ test_no_account_list_keeps_today_and_refuses_account() {
   assert_refused_before_launch "$id-flag" "$out" "--account '$CASE/work' needs config/claude-accounts, which this home does not declare"
   printf '%s\n' "$CASE/work" > "$HOME_DIR/config/claude-account"
   : > "$CASE/claude-checks"
+  rm -f "$HOME_DIR/state/$id.meta"
   out=$(spawn_ship "$id-pin"); rc=$?
   expect_code 0 "$rc" "the single pin must keep working without a list: $out"
   assert_contains "$out" "account=$CASE/work" "the single pin must still report its account"
