@@ -1,0 +1,145 @@
+== disposable lab home /tmp/fm-live-8046/home.OhF1 seeded with owned delivery https://github.com/o/r/pull/8 ==
+
+== S1: approved review WITH findings, token-only ack is refused ==
+
+$ bin/fm-contributions.sh pending
+[
+  {
+    "token": "review:12:2026-09-16T08:02:00Z:APPROVED",
+    "type": "review",
+    "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "Approved, but the retry loop drops errors",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit=0]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:02:00Z:APPROVED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit=1]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:02:00Z:APPROVED disposition https://github.com/o/r/pull/8#pullrequestreview-12 approved, non-blocking
+fm-contributions: the signal itself cannot be the evidence for its own disposition
+[exit=1]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:02:00Z:APPROVED disposition https://github.com/o/r/pull/99#issuecomment-4 fixed elsewhere
+fm-contributions: disposition evidence must be a comment or review on this contribution
+[exit=1]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:02:00Z:APPROVED disposition https://github.com/o/r/pull/8#issuecomment-40    
+fm-contributions: disposition needs a non-empty summary
+[exit=1]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:02:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit=1]
+== S2: steer to wrong review (prefix review-123) and to another task do not count ==
+
+$ bin/fm-send.sh delivery Read https://github.com/o/r/pull/8#pullrequestreview-123 and fix it
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-live-8046/home.OhF1
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+fm-send: doorbell did not reach fm-lab:fm-delivery; the steer is durably recorded at /tmp/fm-live-8046/home.OhF1/state/delivery.inbox/001.msg and the watcher will re-ring
+[exit=0]
+
+$ bin/fm-send.sh other Read https://github.com/o/r/pull/8#pullrequestreview-12 and fix it
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-live-8046/home.OhF1
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+fm-send: doorbell did not reach fm-lab:fm-other; the steer is durably recorded at /tmp/fm-live-8046/home.OhF1/state/other.inbox/001.msg and the watcher will re-ring
+[exit=0]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:02:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit=1]
+== S3: real fm-send steer naming the review, then handoff succeeds ==
+
+$ bin/fm-send.sh delivery Read https://github.com/o/r/pull/8#pullrequestreview-12 and fix it
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-live-8046/home.OhF1
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+fm-send: doorbell did not reach fm-lab:fm-delivery; the steer is durably recorded at /tmp/fm-live-8046/home.OhF1/state/delivery.inbox/002.msg and the watcher will re-ring
+[exit=0]
+001.msg
+002.msg
+handled
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:02:00Z:APPROVED handoff
+[exit=0]
+
+$ bin/fm-contributions.sh pending
+[]
+[exit=0]
+
+$ jq .records[0].receipts data/delivery/contributions.json
+[
+  {
+    "token": "review:12:2026-09-16T08:02:00Z:APPROVED",
+    "task": "delivery",
+    "kind": "handoff",
+    "ref": "002.msg",
+    "at": "2026-09-16T08:00:00Z"
+  }
+]
+
+$ after another poll: pending + receipts
+[]
+[{"token":"review:12:2026-09-16T08:02:00Z:APPROVED","task":"delivery","kind":"handoff","ref":"002.msg","at":"2026-09-16T08:00:00Z"}]
+
+== S4: CHANGES_REQUESTED review, disposition citing other evidence on same PR ==
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:13:2026-09-16T08:03:00Z:CHANGES_REQUESTED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit=1]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:13:2026-09-16T08:03:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#issuecomment-40 author replied that the caller bounds the cache
+[exit=0]
+
+$ receipts
+[
+  {
+    "token": "review:12:2026-09-16T08:02:00Z:APPROVED",
+    "task": "delivery",
+    "kind": "handoff",
+    "ref": "002.msg",
+    "at": "2026-09-16T08:00:00Z"
+  },
+  {
+    "token": "review:13:2026-09-16T08:03:00Z:CHANGES_REQUESTED",
+    "task": "delivery",
+    "kind": "disposition",
+    "ref": "https://github.com/o/r/pull/8#issuecomment-40",
+    "summary": "author replied that the caller bounds the cache",
+    "at": "2026-09-16T08:00:00Z"
+  }
+]
+
+== S5: signals without findings ack with the token alone ==
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:14:2026-09-16T08:04:00Z:APPROVED
+[exit=0]
+
+$ bin/fm-contributions.sh pending
+[
+  {
+    "token": "comment:15:2026-09-16T08:05:00Z:",
+    "type": "comment",
+    "source": "https://github.com/o/r/pull/8#issuecomment-15",
+    "head": null,
+    "author": "maintainer",
+    "body": "Thanks!",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit=0]
+
+$ bin/fm-contributions.sh ack delivery https://github.com/o/r/pull/8 comment:15:2026-09-16T08:05:00Z:
+[exit=0]
+
+$ bin/fm-contributions.sh pending
+[]
+[exit=0]
+HOME=/tmp/fm-live-8046/home.OhF1
