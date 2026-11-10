@@ -1,0 +1,65 @@
+== register PR with config/pr-degraded-watch present
+$ fm-pr-check.sh delivery https://github.com/o/r/pull/8
+armed: state/delivery.check.sh
+rc=0
+armed checks:
+contributions.check.sh
+delivery.check.sh
+delivery.pr-poll
+delivery.pr-poll-registration
+  contains degraded logic: delivery.check.sh
+== baseline poll (PR already has reviewer 'early' requested)
+$ fm-contributions.sh pending
+[]
+durable check wakes queued: 0
+== push new head
+contribution-wake: check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+$ fm-contributions.sh pending
+[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8"}]
+durable check wakes queued: 1
+== unchanged re-poll
+$ fm-contributions.sh pending
+[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8"}]
+durable check wakes queued: 1
+== request reviewer 'alice' and team 'core'
+contribution-wake: check: contributions delivery b43c0ea8d0ae4338c683059da3a4ce88586ff3439d79b37663ec2c3e4573dd3d
+contribution-wake: check: contributions delivery 1fb56c40893df6ca7d04536d8275c3be3094514d502d04626d668546dbf2036d
+$ fm-contributions.sh pending
+[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:core","source":"https://github.com/o/r/pull/8"}]
+durable check wakes queued: 3
+== convert to draft (must not wake)
+$ fm-contributions.sh pending
+[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:core","source":"https://github.com/o/r/pull/8"}]
+durable check wakes queued: 3
+== leave draft
+contribution-wake: check: contributions delivery 2b82b86dd6a15ae3a878fc0680902daae8235152b987b73702e252caa9046e40
+$ fm-contributions.sh pending
+[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8"},{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:core","source":"https://github.com/o/r/pull/8"}]
+durable check wakes queued: 4
+== maintainer comment
+contribution-wake: check: contributions delivery ee89cced8f63efe97f93a052f98e52a4acd99e50badd2edee5d2d192cc414177
+$ fm-contributions.sh pending
+[{"type":"comment","body":"Please clarify","source":"https://github.com/o/r/pull/8#issuecomment-12"},{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","source":"https://github.com/o/r/pull/8"},{"type":"ready-for-review","body":"pull request left draft","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from alice","source":"https://github.com/o/r/pull/8"},{"type":"review-requested","body":"review requested from team:core","source":"https://github.com/o/r/pull/8"}]
+durable check wakes queued: 5
+== ack all pending
+acked comment:12:2026-09-16T08:01:00Z:
+acked head:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z
+acked ready-for-review:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:2026-09-16T08:00:00Z
+acked review-requested:alice:2026-09-16T08:00:00Z
+acked review-requested:team:core:2026-09-16T08:00:00Z
+$ fm-contributions.sh pending
+[]
+durable check wakes queued: 5
+== PR merged with a new head and a new reviewer (settlement is not movement)
+$ fm-contributions.sh pending
+[]
+durable check wakes queued: 5
+{
+  "state": "merged",
+  "head": "cccccccccccccccccccccccccccccccccccccccc",
+  "draft": false,
+  "review_requests": [
+    "bob",
+    "team:core"
+  ]
+}
