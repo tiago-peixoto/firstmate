@@ -1,4 +1,4 @@
-1..31
+1..41
 ok - all four required captain-hold tests fail when tasks-axi is unavailable
 ok - a not-provably-working non-terminal stale is surfaced immediately (never left to wait out the timer)
 ok - a declared pause surfaces once, then re-surfaces on the cadence, never wedge-escalated
@@ -28,6 +28,26 @@ ok - quiet mode's record silences no captain-held recheck, on the watcher's cade
 ok - a declared wait naming a near-future until time stays quiet until that time
 ok - a wrong-year declared time cannot silence the watcher beyond the recheck cadence
 ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence
+ok - with config/pause-ceiling, a dated pause past its ceiling opens one keyed decision that a worker event closes
+date: invalid date '@'
+ok - without config/pause-ceiling an old pause keeps the plain recheck and opens no decision
+ok - overdue publication reconciles resumes before or after the blocker append without a stale alert
+ok - busy overdue decisions suppress wedge alerts until a worker event, then restore ordinary tracking
+date: invalid date '@'
+ok - a fresh overdue marker survives reconciliation and closes when the worker resumes
+ok - an open overdue decision suppresses terminal stale wakes caused only by pane display churn
+date: invalid date '@'
+ok - a reused task id with fresh working status does not inherit overdue pause state
+date: invalid date '@'
+ok - malformed dated pauses remain on bounded recheck
+ok - the undated bound uses the pause timestamp and rejects zero
+date: invalid date '@'
+ok - undated pauses stay quiet through the bound and close their overdue decision on resume
 ok - without until, a worker paused on its own ended background job is not rechecked inside the cadence
 ok - until set to a background job's timeout rechecks the worker paused on it once the job must have ended
 FM_TEST_COMPLETE
+
+real	12m32.485s
+user	2m50.535s
+sys	6m58.544s
+exit=0

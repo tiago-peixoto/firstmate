@@ -1,0 +1,22 @@
+=== scenario: churn-cadence-due (FM_PAUSE_RESURFACE_SECS=60)
+status line: paused: waiting on upstream review   status age: 200s
+pane sample: 06:04:16.502865399
+real crew state: state: paused · source: status-log · waiting on upstream review
+## round 0: watcher sees the fresh status line (signal path)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  signal parked.status signal: /tmp/fm-lab.WxA2G8/state/parked.status
+  row:  signal parked.status signal: /tmp/fm-lab.WxA2G8/state/parked.status
+--- drained wake as firstmate sees it:
+    1794287060	2	signal	parked.status	signal: /tmp/fm-lab.WxA2G8/state/parked.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: waiting on upstream review
+## round 1: status signal acked, watcher polls the real pane (FM_POLL=1, up to 25s)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  stale crew:fm-parked stale: crew:fm-parked (paused 208s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+--- drained wake as firstmate sees it:
+    1794287065	3	stale	crew:fm-parked	stale: crew:fm-parked (paused 208s, awaiting external - declared pause, rechecked on a long cadence not a wedge; confirm the wait still holds)
+## round 2: after ack, same declaration, up to 15s more polling
+watcher exit=124 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+=== end churn-cadence-due

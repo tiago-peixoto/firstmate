@@ -1,0 +1,22 @@
+=== scenario: idle-until-elapsed (FM_PAUSE_RESURFACE_SECS=999)
+status line: paused: rate limit until 2026-11-10T05:04:31Z   status age: 100s
+pane sample: bash-5.3$
+real crew state: state: paused · source: status-log · rate limit until 2026-11-10T05:04:31Z
+## round 0: watcher sees the fresh status line (signal path)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  signal parked.status signal: /tmp/fm-lab.c58DXu/state/parked.status
+  row:  signal parked.status signal: /tmp/fm-lab.c58DXu/state/parked.status
+--- drained wake as firstmate sees it:
+    1794287104	2	signal	parked.status	signal: /tmp/fm-lab.c58DXu/state/parked.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: rate limit until 2026-11-10T05:04:31Z
+## round 1: status signal acked, watcher polls the real pane (FM_POLL=1, up to 25s)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  stale crew:fm-parked stale: crew:fm-parked
+--- drained wake as firstmate sees it:
+    1794287112	3	stale	crew:fm-parked	stale: crew:fm-parked
+## round 2: after ack, same declaration, up to 15s more polling
+watcher exit=124 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+=== end idle-until-elapsed

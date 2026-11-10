@@ -1,0 +1,22 @@
+=== scenario: churn-captain-held-due (FM_PAUSE_RESURFACE_SECS=60)
+status line: captain-held [key=route]: awaiting the captain on the routing call   status age: 200s
+pane sample: 06:04:16.501798321
+real crew state: state: unknown · source: none · no current-state source available
+## round 0: watcher sees the fresh status line (signal path)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  signal parked.status needs-decision: /tmp/fm-lab.yXPn4M/state/parked.status
+  row:  signal parked.status needs-decision: /tmp/fm-lab.yXPn4M/state/parked.status
+--- drained wake as firstmate sees it:
+    1794287060	2	signal	parked.status	needs-decision: /tmp/fm-lab.yXPn4M/state/parked.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: captain-held [key=route]: awaiting the captain on the routing call
+## round 1: status signal acked, watcher polls the real pane (FM_POLL=1, up to 25s)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  stale crew:fm-parked stale: crew:fm-parked (captain-held 208s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+--- drained wake as firstmate sees it:
+    1794287064	3	stale	crew:fm-parked	stale: crew:fm-parked (captain-held 208s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+## round 2: after ack, same declaration, up to 15s more polling
+watcher exit=124 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+=== end churn-captain-held-due

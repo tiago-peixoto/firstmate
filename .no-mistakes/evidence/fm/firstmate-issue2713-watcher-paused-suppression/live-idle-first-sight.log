@@ -1,0 +1,22 @@
+=== scenario: idle-first-sight (FM_PAUSE_RESURFACE_SECS=999)
+status line: paused: waiting on upstream review   status age: 0s
+pane sample: bash-5.3$
+real crew state: state: paused · source: status-log · waiting on upstream review
+## round 0: watcher sees the fresh status line (signal path)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  signal parked.status signal: /tmp/fm-lab.RLZcId/state/parked.status
+  row:  signal parked.status signal: /tmp/fm-lab.RLZcId/state/parked.status
+--- drained wake as firstmate sees it:
+    1794287021	2	signal	parked.status	signal: /tmp/fm-lab.RLZcId/state/parked.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: waiting on upstream review
+## round 1: status signal acked, watcher polls the real pane (FM_POLL=1, up to 25s)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  stale crew:fm-parked stale: crew:fm-parked
+--- drained wake as firstmate sees it:
+    1794287029	3	stale	crew:fm-parked	stale: crew:fm-parked
+## round 2: after ack, same declaration, up to 15s more polling
+watcher exit=124 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+=== end idle-first-sight

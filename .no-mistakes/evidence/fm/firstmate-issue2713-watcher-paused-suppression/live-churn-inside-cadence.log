@@ -1,0 +1,16 @@
+=== scenario: churn-inside-cadence (FM_PAUSE_RESURFACE_SECS=999)
+status line: paused: waiting on upstream review   status age: 100s
+pane sample: 06:03:38.578903941
+real crew state: state: paused · source: status-log · waiting on upstream review
+## round 0: watcher sees the fresh status line (signal path)
+watcher exit=0 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+  row:  signal parked.status signal: /tmp/fm-lab.Wde8Ju/state/parked.status
+  row:  signal parked.status signal: /tmp/fm-lab.Wde8Ju/state/parked.status
+--- drained wake as firstmate sees it:
+    1794287021	2	signal	parked.status	signal: /tmp/fm-lab.Wde8Ju/state/parked.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: parked.status: paused: waiting on upstream review
+## round 1: status signal acked, watcher polls the real pane (FM_POLL=1, up to 25s)
+watcher exit=124 (124 = still polling at timeout, i.e. no wake)
+--- wake queue rows (type, window, text):
+=== end churn-inside-cadence
