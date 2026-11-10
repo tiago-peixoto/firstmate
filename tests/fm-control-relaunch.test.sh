@@ -1242,6 +1242,69 @@ test_prior_harness_turnend_registry_entry_is_cleared() {
   pass "fm-control relaunch: the retired incarnation's global turn-end token is revoked"
 }
 
+test_claude_relaunch_preserves_local_settings() {
+  local dir out settings attempt
+  dir=$(new_case claude-settings rl-settings)
+  add_ship_task "$dir" rl-settings claude
+  settings="$dir/wt/.claude/settings.local.json"
+  mkdir -p "${settings%/*}"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"],"permissions":{"allow":["Bash(ls)"]},"hooks":{"SessionStart":[]}}' > "$settings"
+  for attempt in 1 2; do
+    out=$(run_control "$dir" rl-settings relaunch --note "refresh hooks $attempt")
+    expect_code 0 $? "claude relaunch should preserve local settings: $out"
+    jq -e '.enabledMcpjsonServers == ["postgres-prod"] and
+      .disabledMcpjsonServers == ["postgres-dev"] and
+      .permissions == {"allow":["Bash(ls)"]}' "$settings" >/dev/null \
+      || fail "claude relaunch lost project settings"
+    jq -e '(.hooks | keys) == ["SessionEnd", "Stop", "StopFailure", "UserPromptSubmit"] and
+      ([.hooks[][] | .hooks | length] | all(. == 1)) and
+      ([.hooks[] | length] | all(. == 1))' "$settings" >/dev/null \
+      || fail "claude relaunch must replace hooks without duplication"
+  done
+  printf codex > "$dir/fake/becomes"
+  out=$(run_control "$dir" rl-settings relaunch --harness codex --note "retire Claude hooks")
+  expect_code 0 $? "switching from claude should retain local settings: $out"
+  jq -e '. == {"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"],"permissions":{"allow":["Bash(ls)"]}}' "$settings" >/dev/null \
+    || fail "retiring claude hooks must preserve every other settings key"
+  pass "fm-control relaunch: Claude settings survive repeated relaunches and hook retirement"
+}
+
+test_claude_settings_rewrite_failure_refuses_relaunch() {
+  local dir out settings real_mv
+  dir=$(new_case claude-settings-failure rl-settings-fail)
+  add_ship_task "$dir" rl-settings-fail claude
+  settings="$dir/wt/.claude/settings.local.json"
+  mkdir -p "${settings%/*}"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],"hooks":{}}' > "$settings"
+  cp "$settings" "$dir/prior.json"
+  real_mv=$(command -v mv)
+  make_mv_failure_stub "$dir"
+  out=$(FM_REAL_MV="$real_mv" FM_FAKE_META_PUBLISH_MV_FAIL="$settings" \
+    run_control "$dir" rl-settings-fail relaunch --note "retry settings rewrite")
+  expect_code 1 $? "a failed settings rewrite must refuse the relaunch: $out"
+  assert_contains "$out" "could not retire claude wiring" "the error must identify the failed cleanup"
+  cmp -s "$dir/prior.json" "$settings" || fail "failed rewrite changed the original settings"
+  assert_no_grep "Firstmate operational input waiting: read" "$dir/fake/literal" \
+    "a failed settings rewrite must not launch the replacement"
+  pass "fm-control relaunch: a settings rewrite failure preserves the file and stops the replacement"
+}
+
+test_claude_relaunch_refuses_invalid_settings() {
+  local dir out settings
+  dir=$(new_case claude-invalid-settings rl-settings-invalid)
+  add_ship_task "$dir" rl-settings-invalid claude
+  settings="$dir/wt/.claude/settings.local.json"
+  mkdir -p "${settings%/*}"
+  printf '%s\n' '{"enabledMcpjsonServers":[' > "$settings"
+  cp "$settings" "$dir/prior.json"
+  out=$(run_control "$dir" rl-settings-invalid relaunch --note "keep invalid settings")
+  expect_code 1 $? "invalid settings must refuse relaunch: $out"
+  assert_contains "$out" "$settings" "the error must name the invalid file"
+  assert_contains "$out" "JSON object" "the error must explain the settings requirement"
+  cmp -s "$dir/prior.json" "$settings" || fail "relaunch changed invalid settings"
+  pass "fm-control relaunch: invalid JSON stops cleanup without changing settings"
+}
+
 test_wiring_removal_failure_refuses_before_replacement_arm() {
   local dir hook out rc real_rm
   dir=$(new_case wiring-failure rl29)
@@ -3356,6 +3419,9 @@ SH
   pass "fm-control exit removes the dialog file before it releases the control lock"
 }
 
+test_claude_relaunch_preserves_local_settings
+test_claude_settings_rewrite_failure_refuses_relaunch
+test_claude_relaunch_refuses_invalid_settings
 test_relaunch_off_opencode_removes_tracked_wiring
 test_exit_and_relaunch_remove_the_dialog_file
 test_exit_removes_the_dialog_file_before_releasing_the_lock

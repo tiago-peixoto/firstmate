@@ -2131,7 +2131,7 @@ spawn_herdr_presentation_order_lock_acquire() {
 }
 
 clear_relaunch_harness_wiring() {
-  local harness=$1 wt=$2 state=$3 id=$4 kind=${5-} token_path token auth_path path
+  local harness=$1 wt=$2 state=$3 id=$4 kind=${5-} token_path token auth_path path settings_json settings_tmp
   # The wiring arms above match on harness PREFIXES, because a task launched
   # from a raw command records that command's basename rather than the exact
   # adapter name. The retirement tables are keyed by the exact adapter, so the
@@ -2155,6 +2155,23 @@ clear_relaunch_harness_wiring() {
       case "$path" in
         "$wt"/*) git -C "$wt" ls-files --error-unmatch -- "$path" >/dev/null 2>&1 && continue ;;
       esac
+    fi
+    if [ "$harness" = claude ] && [ "$kind" != secondmate ] && [ "$path" = "$wt/.claude/settings.local.json" ] && [ -e "$path" ]; then
+      settings_json=$(jq -ces '
+        if length == 1 and (.[0] | type) == "object" then .[0] | del(.hooks)
+        else error("expected one JSON object") end
+      ' "$path") || {
+        echo "error: cannot retire hooks in $path; expected a readable JSON object" >&2
+        return 1
+      }
+      if [ "$settings_json" != '{}' ]; then
+        settings_tmp=$(mktemp "$path.XXXXXX") || return 1
+        if ! printf '%s\n' "$settings_json" >"$settings_tmp" || ! mv -- "$settings_tmp" "$path"; then
+          rm -f -- "$settings_tmp"
+          return 1
+        fi
+        continue
+      fi
     fi
     rm -f -- "$path" || return 1
   done <<EOF
@@ -6719,7 +6736,21 @@ BUSY_GEN=
       printf '{%s%s}\n' "$session_keys" "$hooks_json" >"$STATE_REAL/$ID.claude-settings.json"
     else
       mkdir -p "$WT/.claude"
-      printf '{%s}\n' "$hooks_json" >"$WT/.claude/settings.local.json"
+      settings_json="{$hooks_json}"
+      if [ -e "$WT/.claude/settings.local.json" ]; then
+        settings_json=$(jq -ces --argjson fleet "$settings_json" '
+          if length == 1 and (.[0] | type) == "object" then .[0] + $fleet
+          else error("expected one JSON object") end
+        ' "$WT/.claude/settings.local.json") || {
+          echo "error: cannot merge hooks into $WT/.claude/settings.local.json; expected a readable JSON object" >&2
+          exit 1
+        }
+      fi
+      settings_tmp=$(mktemp "$WT/.claude/settings.local.json.XXXXXX") || exit 1
+      if ! printf '%s\n' "$settings_json" >"$settings_tmp" || ! mv -- "$settings_tmp" "$WT/.claude/settings.local.json"; then
+        rm -f -- "$settings_tmp"
+        exit 1
+      fi
       exclude_path '.claude/settings.local.json'
     fi
     ;;
