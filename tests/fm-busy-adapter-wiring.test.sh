@@ -518,6 +518,67 @@ test_claude_hooks_refuse_invalid_local_settings() {
   pass "claude spawn refuses invalid JSON without changing the settings file"
 }
 
+test_claude_hooks_seed_primary_local_settings() {
+  local rec id=busy-cl-seed out settings primary prior
+  rec=$(make_spawn_case claude-seed claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  primary="$PROJ_DIR/.claude/settings.local.json"
+  prior="$CASE_DIR/primary-prior.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$PROJ_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"],"permissions":{"allow":["Bash(ls)"]},"hooks":{"SessionStart":[]}}' > "$primary"
+  cp "$primary" "$prior"
+  rm -rf "$WT_DIR/.claude"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 0 $? "claude spawn into a copy without settings should succeed: $out"
+  jq -e '.enabledMcpjsonServers == ["postgres-prod"] and
+    .disabledMcpjsonServers == ["postgres-dev"] and
+    .permissions == {"allow":["Bash(ls)"]}' "$settings" >/dev/null \
+    || fail "claude spawn did not seed the worker copy from the primary clone's settings"
+  jq -e '.hooks | keys == ["SessionEnd", "Stop", "StopFailure", "UserPromptSubmit"]' "$settings" >/dev/null \
+    || fail "seeded claude settings must carry exactly the fleet hooks"
+  cmp -s "$prior" "$primary" || fail "claude spawn changed the primary clone's settings"
+  pass "claude spawn seeds a copy without settings from the primary clone, then installs hooks"
+}
+
+test_claude_hooks_keep_copy_settings_over_primary() {
+  local rec id=busy-cl-keep out settings
+  rec=$(make_spawn_case claude-keep claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$PROJ_DIR/.claude" "$WT_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["from-primary"],"model":"primary"}' > "$PROJ_DIR/.claude/settings.local.json"
+  printf '%s\n' '{"enabledMcpjsonServers":["from-copy"]}' > "$settings"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 0 $? "claude spawn with copy settings should succeed: $out"
+  jq -e '.enabledMcpjsonServers == ["from-copy"] and (has("model") | not)' "$settings" >/dev/null \
+    || fail "claude spawn overwrote the worker copy's own settings from the primary clone"
+  pass "claude spawn keeps an existing worker-copy settings file instead of reseeding it"
+}
+
+test_claude_hooks_refuse_invalid_primary_settings() {
+  local rec id=busy-cl-badprimary out settings primary prior
+  rec=$(make_spawn_case claude-badprimary claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  primary="$PROJ_DIR/.claude/settings.local.json"
+  prior="$CASE_DIR/primary-prior.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$PROJ_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],' > "$primary"
+  cp "$primary" "$prior"
+  rm -rf "$WT_DIR/.claude"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 1 $? "claude spawn must refuse invalid primary settings: $out"
+  assert_contains "$out" "$primary" "the error must name the invalid primary settings file"
+  assert_contains "$out" "JSON object" "the error must explain the settings requirement"
+  cmp -s "$prior" "$primary" || fail "a refused spawn changed the primary clone's settings"
+  assert_absent "$settings" "a refused spawn wrote worker-copy settings"
+  pass "claude spawn refuses invalid primary settings without changing the source"
+}
+
 test_claude_hooks_stale_incarnation_harmless() {
   local rec id=busy-cl-2 out state settings
   rec=$(make_spawn_case claude-stale claude "$id")
@@ -1170,6 +1231,9 @@ test_secondmate_claude_older_home_guard_keeps_the_stop_idle_hook
 test_secondmate_claude_spawn_leaves_local_settings_untouched
 test_claude_hooks_preserve_local_settings
 test_claude_hooks_refuse_invalid_local_settings
+test_claude_hooks_seed_primary_local_settings
+test_claude_hooks_keep_copy_settings_over_primary
+test_claude_hooks_refuse_invalid_primary_settings
 test_pi_stream_extension_activation_and_lifecycle
 test_secondmate_pi_extension_reports_busy_without_a_parent_turnend
 test_secondmate_omp_extension_reports_busy_without_a_parent_turnend

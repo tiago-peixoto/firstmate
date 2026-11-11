@@ -6737,12 +6737,16 @@ BUSY_GEN=
     else
       mkdir -p "$WT/.claude"
       settings_json="{$hooks_json}"
-      if [ -e "$WT/.claude/settings.local.json" ]; then
+      # The copy never receives the primary clone's untracked file, so seed it
+      # from there: workers need the captain's local MCP servers and permissions.
+      settings_src="$WT/.claude/settings.local.json"
+      [ -e "$settings_src" ] || settings_src="$PROJ_ABS/.claude/settings.local.json"
+      if [ -e "$settings_src" ]; then
         settings_json=$(jq -ces --argjson fleet "$settings_json" '
           if length == 1 and (.[0] | type) == "object" then .[0] + $fleet
           else error("expected one JSON object") end
-        ' "$WT/.claude/settings.local.json") || {
-          echo "error: cannot merge hooks into $WT/.claude/settings.local.json; expected a readable JSON object" >&2
+        ' "$settings_src") || {
+          echo "error: cannot merge hooks from $settings_src into $WT/.claude/settings.local.json; expected a readable JSON object" >&2
           exit 1
         }
       fi
