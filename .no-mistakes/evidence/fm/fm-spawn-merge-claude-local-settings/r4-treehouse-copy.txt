@@ -1,0 +1,12 @@
+## round 4: primary clone untracked .claude/settings.local.json
+{"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"]}
+!! .claude/
+## real 'treehouse get --lease --root /tmp/fmt4.xsXhzY/pool'
+🌳 Setting up worktree...
+🌳 Leased worktree at /tmp/fmt4.xsXhzY/pool/.treehouse/proj-ee3b46/1/proj. Run 'treehouse return /tmp/fmt4.xsXhzY/pool/.treehouse/proj-ee3b46/1/proj' to release it.
+/tmp/fmt4.xsXhzY/pool/.treehouse/proj-ee3b46/1/proj
+worker copy: /tmp/fmt4.xsXhzY/pool/.treehouse/proj-ee3b46/1/proj
+.
+..
+.git
+ls: /tmp/fmt4.xsXhzY/pool/.treehouse/proj-ee3b46/1/proj/.claude: No such file or directory

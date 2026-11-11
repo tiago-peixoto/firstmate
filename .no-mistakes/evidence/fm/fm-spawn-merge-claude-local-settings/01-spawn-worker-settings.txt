@@ -1,0 +1,62 @@
+## primary clone .claude/settings.local.json (untracked)
+{
+  "enabledMcpjsonServers": [
+    "postgres-prod"
+  ],
+  "disabledMcpjsonServers": [
+    "postgres-dev"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(ls)"
+    ]
+  }
+}
+## worker copy /private/tmp/fmst.v5yU7c/treehouse/.treehouse/notes-1962cb/1/notes/.claude/settings.local.json after real fm-spawn.sh
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/tmp/fmst.v5yU7c/home/bin/fm-busy-event.sh' apply '/private/tmp/fmst.v5yU7c/home/state' 'labst4e07bfa3-worker' busy --gen 'g1794408842.48755.19081' --source claude-hook --event user-prompt-submit 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "touch '/private/tmp/fmst.v5yU7c/home/state/labst4e07bfa3-worker.turn-ended'; '/tmp/fmst.v5yU7c/home/bin/fm-busy-event.sh' apply '/private/tmp/fmst.v5yU7c/home/state' 'labst4e07bfa3-worker' idle --gen 'g1794408842.48755.19081' --source claude-hook --event stop 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/tmp/fmst.v5yU7c/home/bin/fm-busy-event.sh' apply '/private/tmp/fmst.v5yU7c/home/state' 'labst4e07bfa3-worker' idle --gen 'g1794408842.48755.19081' --source claude-hook --event stop-failure 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/tmp/fmst.v5yU7c/home/bin/fm-busy-event.sh' apply '/private/tmp/fmst.v5yU7c/home/state' 'labst4e07bfa3-worker' idle --gen 'g1794408842.48755.19081' --source claude-hook --event session-end 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+## checks
+false
+!! .claude/

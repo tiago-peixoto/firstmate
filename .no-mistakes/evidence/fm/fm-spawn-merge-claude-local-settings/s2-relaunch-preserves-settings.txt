@@ -1,0 +1,8 @@
+### before relaunch: /private/tmp/fmlab.iieFMQ/treehouse/.treehouse/notes-252c2f/1/notes/.claude/settings.local.json
+{"keys":["disabledMcpjsonServers","enabledMcpjsonServers","hooks","permissions"],"hooks":["SessionEnd","Stop","StopFailure","UserPromptSubmit"],"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"],"permissions":{"allow":["Bash(ls)"]}}
+### fm-control.sh lab3ae8a5e73659-worker relaunch
+relaunched lab3ae8a5e73659-worker harness=claude from=claude model=sonnet effort=low backend=tmux endpoint=firstmate:fm-lab3ae8a5e73659-worker worktree=/private/tmp/fmlab.iieFMQ/treehouse/.treehouse/notes-252c2f/1/notes
+exit=0
+### after relaunch
+{"keys":["disabledMcpjsonServers","enabledMcpjsonServers","hooks","permissions"],"hooks":["SessionEnd","Stop","StopFailure","UserPromptSubmit"],"hookEntryCounts":[1,1,1,1],"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"],"permissions":{"allow":["Bash(ls)"]}}
+### git status in worker copy (settings must stay excluded)

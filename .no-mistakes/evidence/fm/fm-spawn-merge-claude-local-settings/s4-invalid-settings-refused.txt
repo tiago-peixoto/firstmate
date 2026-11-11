@@ -1,0 +1,10 @@
+### worker copy settings replaced with truncated JSON
+{"enabledMcpjsonServers":[
+### fm-control.sh lab3ae8a5e73659-worker relaunch
+jq: parse error: Unfinished JSON term at EOF at line 2, column 0
+error: cannot retire hooks in /private/tmp/fmlab.iieFMQ/treehouse/.treehouse/notes-252c2f/1/notes/.claude/settings.local.json; expected a readable JSON object
+error: could not retire claude wiring for task lab3ae8a5e73659-worker; refusing to arm the replacement
+error: the replacement agent for lab3ae8a5e73659-worker could not be launched on claude
+error: lab3ae8a5e73659-worker's agent was stopped but the replacement did not launch; no agent is running, and its work plus the recorded progress note are preserved at /private/tmp/fmlab.iieFMQ/treehouse/.treehouse/notes-252c2f/1/notes
+exit=1
+file unchanged: yes

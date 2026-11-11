@@ -1,0 +1,12 @@
+### primary clone untracked settings: /private/tmp/fmlab.iieFMQ/home/projects/notes/.claude/settings.local.json
+{"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"]}
+!! .claude/
+### fm-spawn.sh lab3ae8a5e73659-w2 (claude)
+
+🌳 Setting up worktree...
+exit=
+### worker copy: /private/tmp/fmlab.iieFMQ/treehouse/.treehouse/notes-252c2f/2/notes
+{"keys":["hooks"],"enabledMcpjsonServers":null,"disabledMcpjsonServers":null}
+worktree=/private/tmp/fmlab.iieFMQ/treehouse/.treehouse/notes-252c2f/2/notes
+harness=claude
+kind=ship

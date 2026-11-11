@@ -1,0 +1,5 @@
+## round 2: primary clone .claude/settings.local.json (untracked, excluded)
+{"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"]}
+## real 'treehouse get --lease' worker copy: /tmp/fmt2.JL0eJj/pool/.treehouse/proj-acb9ae/1/proj
+ls: /tmp/fmt2.JL0eJj/pool/.treehouse/proj-acb9ae/1/proj/.claude: No such file or directory
+.git
