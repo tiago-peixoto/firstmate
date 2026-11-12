@@ -1,0 +1,186 @@
+
+=== S1: open GitHub PR (emulated forge) - cleanup refused, then allowed after merge ===
+$ fm-teardown.sh task-x1   # forge says OPEN
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+$ fm-teardown.sh task-x1   # forge says MERGED
+<tmp>/s1/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <tmp>/s1/wt)
+Backlog: task-x1 is closed in <tmp>/s1/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done
+
+=== S1-baseline: same open PR on base commit a9ae3c0c - the record is deleted (the bug) ===
+$ BASE fm-teardown.sh task-x1   # forge says OPEN
+<tmp>/s1base/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <tmp>/s1base/wt)
+Backlog: task-x1 is closed in <tmp>/s1base/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done
+
+=== S3: forge read fails (unreadable PR record) - cleanup refused ===
+$ fm-teardown.sh task-x1   # gh pr view exits 1
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+
+=== S4: open PR with explicit discard (--force) - cleanup proceeds ===
+$ fm-teardown.sh task-x1 --force
+<tmp>/s4/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <tmp>/s4/wt)
+Backlog: task-x1 is closed in <tmp>/s4/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done
+
+=== S2: stopped ready worker -> refused cleanup -> merge approval -> guarded merge -> final cleanup ===
+task record before:
+window=firstmate:fm-task-x1
+endpoint_task_id=task-x1
+worktree=<home>/wt
+project=<home>/project
+kind=ship
+mode=no-mistakes
+spawn_gen=teardown-test-task-x1
+pr=https://github.com/example/repo/pull/7
+$ fm-teardown.sh task-x1   # PR open, worker already stopped
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+
+-- capacity while the record is retained --
+$ fm-capacity.sh
+capacity: free_lanes=unknown reason=no-target lanes=1 target=none secondmates=0 load1=5.01 cores=12 mem_free_pct=82 disk_free_mb=51368
+Lanes: 1 running, no target set (config/lane-capacity absent).
+Host: load 5.01 on 12 cores, memory free 82%, disk free 51368 MB.
+[exit 0]
+$ fm_project_capacity_occupants <project> (real lib)
+occupants=0 ids=[] error=[]
+
+-- later merge approval: guarded merge using the retained record --
+$ fm-pr-merge.sh task-x1 https://github.com/example/repo/pull/7
+armed: state/task-x1.check.sh
+verified: https://github.com/example/repo/pull/7 is open and mergeable, with every unwaived required check reported and every unwaived check green at head a0c53cc5e6619a93fac5191a924d8e12d77b8ffa
+verified: https://github.com/example/repo/pull/7 is merged (state=MERGED, merged=true, isInMergeQueue=false)
+[exit 0]
+forge merge call received: pr merge 7 --repo example/repo --match-head-commit a0c53cc5e6619a93fac5191a924d8e12d77b8ffa --squash
+task record after merge (diff against before; original lines untouched):
+8a9
+> pr_head=a0c53cc5e6619a93fac5191a924d8e12d77b8ffa
+
+-- final cleanup, forge now reports MERGED --
+$ fm-teardown.sh task-x1
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+<tmp>/s2/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <tmp>/s2/wt)
+Backlog: task-x1 is closed in <tmp>/s2/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done
+=== S5: CLOSED PR - unlanded and uncommitted work stay protected, landed work cleans up ===
+$ fm-teardown.sh task-x1   # closed, change on no remote
+REFUSED: worktree <tmp>/s5/wt has work not on any remote and not landed.
+unpushed commits:
+616b64b add feature
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+$ fm-teardown.sh task-x1   # closed, change landed, uncommitted file
+REFUSED: worktree <tmp>/s5/wt has uncommitted changes.
+uncommitted changes present (untracked-only leftovers)
+untracked paths (up to 10):
+  notes.txt
+Commit them (or get the captain's explicit OK to discard, then --force).
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+$ fm-teardown.sh task-x1   # closed, change landed, clean
+<tmp>/s5/project: synced 0e385a4..8ca034c
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <tmp>/s5/wt)
+Backlog: task-x1 is closed in <tmp>/s5/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done
+
+=== S5b: MERGED PR but uncommitted changes in the copy - still refused ===
+$ fm-teardown.sh task-x1   # merged, uncommitted file
+REFUSED: worktree <tmp>/s5b/wt has uncommitted changes.
+uncommitted changes present (untracked-only leftovers)
+untracked paths (up to 10):
+  notes.txt
+Commit them (or get the captain's explicit OK to discard, then --force).
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+
+=== S6: open GitLab merge request - gate follows the opt-in flags ===
+$ fm-teardown.sh task-x1   # config flag: park-on-review
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+glab calls: mr view 7 -R https://gitlab.example.com/team/sub/repo -F json;
+$ fm-teardown.sh task-x1   # config flag: auto-land
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+glab calls: mr view 7 -R https://gitlab.example.com/team/sub/repo -F json;
+$ fm-teardown.sh task-x1   # config flag: none
+<tmp>/s6-none/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <tmp>/s6-none/wt)
+Backlog: task-x1 is closed in <tmp>/s6-none/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done
+glab calls: 
+
+=== S7 REAL: real gh login, read-only views of real upstream PRs ===
+forge truth: gh pr view 8263 -> OPEN mergedAt=null
+$ fm-teardown.sh task-x1   # pr=.../pull/8263
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/kunchenguid/firstmate/pull/8263. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight
+forge truth: gh pr view 7965 -> MERGED mergedAt=2026-11-12T11:27:27Z
+$ fm-teardown.sh task-x1   # pr=.../pull/7965
+<tmp>/s7-7965/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <tmp>/s7-7965/wt)
+Backlog: task-x1 is closed in <tmp>/s7-7965/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done
+=== S8: real claude worker on the lab tmux socket (lab home, emulated forge for PR 7) ===
+-- worker pane before exit --
+claude
+worker-shell:<lab>/wt$ claude
+ ▐▛███▛█   Claude Code v2.1.322
+▝▜██████▀  Fable 5.2 · Claude Ultra
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight | lab windows: [fm-task-x1:claude ]
+$ bin/fm-control.sh task-x1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home <lab>
+stopped task-x1 harness=claude backend=tmux endpoint=firstmate:fm-task-x1 worktree=<lab>/wt
+[exit 0]
+-- worker pane after exit --
+  ❯ /exit                             Exit the CLI
+    /context                          Visualize current context usage as a colored grid
+    /usage-credits                    Configure usage credits or request them from your admin when you hit a limit
+worker-shell:<lab>/wt$
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight | lab windows: [fm-task-x1:bash ]
+task record changed by exit: no
+$ bin/fm-capacity.sh
+capacity: free_lanes=unknown reason=no-target lanes=1 target=none secondmates=0 load1=4.33 cores=12 mem_free_pct=81 disk_free_mb=51322
+Lanes: 1 running, no target set (config/lane-capacity absent).
+$ bin/fm-teardown.sh task-x1   # forge says OPEN
+fm-gate-refuse: gate agent lifecycle permitted only against lab home <lab>
+REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+Use --force only after explicit discard approval.
+[exit 1]
+task record: PRESENT | isolated copy: PRESENT | backlog row: in_flight | lab windows: [fm-task-x1:bash ]
+$ bin/fm-teardown.sh task-x1   # forge says MERGED
+fm-gate-refuse: gate agent lifecycle permitted only against lab home <lab>
+teardown: reaping leaked worktree process(es) for task-x1: 699168
+teardown: force-killing leaked worktree process(es) for task-x1: 699168
+<lab>/project: already current
+teardown task-x1 complete (window firstmate:fm-task-x1, worktree <lab>/wt)
+Backlog: task-x1 is closed in <lab>/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+task record: deleted | isolated copy: PRESENT | backlog row: done | lab windows: [no server running on <lab>/tmux/tmux-1000/fm-lab ]
