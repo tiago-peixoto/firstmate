@@ -1,0 +1,91 @@
+job: runs-on=ubuntu-26.04 continue-on-error=True timeout-minutes=270
+
+##[group] step: Print coreutils versions
+$ timeout --version
+$ sleep --version
+timeout (uutils coreutils) 0.10.0
+sleep (uutils coreutils) 0.10.0
+##[endgroup] exit=0 outcome=success
+
+##[group] step: Require portable test prerequisites
+$ set -eu
+$ command -v jq
+$ command -v python3
+$ command -v tmux
+$ tmux -V
+/usr/bin/jq
+~/.local/share/mise/installs/python/3.12.14/bin/python3
+/usr/bin/tmux
+tmux 3.6
+##[endgroup] exit=0 outcome=success
+
+##[group] step: Install tasks-axi
+$ set -eu
+$ tasks-axi --version
+0.2.6
+##[endgroup] exit=0 outcome=success
+
+##[group] step: Run Ubuntu 26.04 regression canary
+$ bin/fm-test-run.sh --jobs 1 --per-script-timeout-secs 1 \
+$   --json "$RUNNER_TEMP/fm-test/ubuntu-26-canary.json" \
+$   tests/fm-watch-checkpoint.test.sh \
+$   tests/fm-fleet-ledger.test.sh \
+$   tests/fm-herdr-groups.test.sh
+FM_TEST_BEGIN 2026-11-12T06:53:34Z tests/fm-watch-checkpoint.test.sh family=watcher-wake-lock expected_gate_skip=none
+not ok - tests/fm-watch-checkpoint.test.sh exceeded the per-script bound of 1s and was terminated
+FM_TEST_END 2026-11-12T06:53:35Z tests/fm-watch-checkpoint.test.sh exit=124 duration_ms=1031 gate_skip=false
+FM_TEST_BEGIN 2026-11-12T06:53:35Z tests/fm-fleet-ledger.test.sh family=unclassified expected_gate_skip=none
+not ok - tests/fm-fleet-ledger.test.sh exceeded the per-script bound of 1s and was terminated
+FM_TEST_END 2026-11-12T06:53:36Z tests/fm-fleet-ledger.test.sh exit=124 duration_ms=1030 gate_skip=false
+FM_TEST_BEGIN 2026-11-12T06:53:36Z tests/fm-herdr-groups.test.sh family=unclassified expected_gate_skip=none
+ok - absent or off setting: no plan, no key, and not a single Herdr call
+ok - on with zero tasks: plan and sync stay quiet and exit 0
+ok - on: one group per project, status order needs-captain, problem, running, done
+not ok - tests/fm-herdr-groups.test.sh exceeded the per-script bound of 1s and was terminated
+FM_TEST_END 2026-11-12T06:53:37Z tests/fm-herdr-groups.test.sh exit=124 duration_ms=1032 gate_skip=false
+FM_TEST_SUMMARY total=3 failed=3 skipped_gate=0 duration_ms=3205
+FM_TEST_SUMMARY_FAMILY family=unclassified count=2 duration_ms=2062 failed=2
+FM_TEST_SUMMARY_FAMILY family=watcher-wake-lock count=1 duration_ms=1031 failed=1
+FM_TEST_SLOWEST rank=1 script=tests/fm-herdr-groups.test.sh duration_ms=1032
+FM_TEST_SLOWEST rank=2 script=tests/fm-watch-checkpoint.test.sh duration_ms=1031
+FM_TEST_SLOWEST rank=3 script=tests/fm-fleet-ledger.test.sh duration_ms=1030
+fm-test-run: wrote timing artifact: /tmp/canary-drive.YlVeCz/hang/runner-temp/fm-test/ubuntu-26-canary.json
+##[endgroup] exit=1 outcome=failure
+
+##[group] step: Report canary result
+$ failed=
+$ for outcome in $STEP_OUTCOMES; do
+$   case $outcome in
+$     *=success) ;;
+$     *) failed="$failed ${outcome%%=*}" ;;
+$   esac
+$ done
+$ {
+$   echo '### Ubuntu 26.04 canary'
+$   echo
+$   echo "Step outcomes: $STEP_OUTCOMES"
+$   echo
+$   echo '| Suite | Result |'
+$   echo '|---|---|'
+$   # jq or the results file may be what this image is missing.
+$   jq -r '.scripts[] | "| `\(.path)` | \(if .exit != 0 then "fail (exit \(.exit))" elif .gate_skip then "skipped: \(.gate_skip_reason)" else "pass" end) |"' \
+$     "$RUNNER_TEMP/fm-test/ubuntu-26-canary.json" \
+$     || echo '| no per-suite results | unknown |'
+$ } >>"$GITHUB_STEP_SUMMARY"
+$ [ -z "$failed" ] || echo "::warning title=Ubuntu 26.04 canary failed::Failed steps:$failed. The job summary lists each suite. This check stays green so the canary never blocks a merge."
+::warning title=Ubuntu 26.04 canary failed::Failed steps: suites. The job summary lists each suite. This check stays green so the canary never blocks a merge.
+##[endgroup] exit=0 outcome=success
+
+job check conclusion: success
+
+--- job summary ($GITHUB_STEP_SUMMARY) ---
+### Ubuntu 26.04 canary
+
+Step outcomes: versions=success prerequisites=success tasks-axi=success suites=failure
+
+| Suite | Result |
+|---|---|
+| `tests/fm-watch-checkpoint.test.sh` | fail (exit 124) |
+| `tests/fm-fleet-ledger.test.sh` | fail (exit 124) |
+| `tests/fm-herdr-groups.test.sh` | fail (exit 124) |
+
