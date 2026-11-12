@@ -1,0 +1,15 @@
+herdr version: herdr 0.7.4
+scratch mutation applied: slow-base
+Validation round 1
+FM_TEST_BEGIN 2026-11-12T05:23:26Z /tmp/scratch/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+not ok - Part C reached the fallback on a defective release but observed no wrong-focus sample at all, so the sampler proved nothing
+FM_TEST_END 2026-11-12T05:23:39Z /tmp/scratch/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=1 duration_ms=12350 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=1 skipped_gate=0 duration_ms=12422
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=12350 failed=1
+FM_TEST_SLOWEST rank=1 script=/tmp/scratch/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=12350
+round 1 exit status 1
+final exit status 1

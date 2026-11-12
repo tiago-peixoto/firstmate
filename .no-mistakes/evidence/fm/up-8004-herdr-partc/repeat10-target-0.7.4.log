@@ -1,0 +1,142 @@
+herdr version: herdr 0.7.4
+Validation round 1
+FM_TEST_BEGIN 2026-11-12T05:22:40Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:22:43Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3077 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3145
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3077 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3077
+Validation round 2
+FM_TEST_BEGIN 2026-11-12T05:22:43Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:22:46Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3053 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3123
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3053 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3053
+Validation round 3
+FM_TEST_BEGIN 2026-11-12T05:22:46Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:22:49Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3088 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3158
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3088 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3088
+Validation round 4
+FM_TEST_BEGIN 2026-11-12T05:22:49Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:22:52Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=2998 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3070
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=2998 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=2998
+Validation round 5
+FM_TEST_BEGIN 2026-11-12T05:22:52Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:22:55Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=2930 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3000
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=2930 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=2930
+Validation round 6
+FM_TEST_BEGIN 2026-11-12T05:22:55Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:22:58Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3266 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3338
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3266 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3266
+Validation round 7
+FM_TEST_BEGIN 2026-11-12T05:22:59Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:23:02Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3120 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3196
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3120 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3120
+Validation round 8
+FM_TEST_BEGIN 2026-11-12T05:23:02Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:23:05Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3272 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3343
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3272 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3272
+Validation round 9
+FM_TEST_BEGIN 2026-11-12T05:23:05Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:23:08Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3140 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3216
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3140 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3140
+Validation round 10
+FM_TEST_BEGIN 2026-11-12T05:23:08Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path: the explicit last-pane close of a non-focused workspace stole focus (w3	w3:t1 -> w2	w2:t1)
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - mitigation: no explicit close and no corrective focus were needed on the defective release
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a defective release: the explicit close changed focus and the backstop restored the exact anchor
+ok - version floor: herdr 0.7.4 protocol 16 remains conservatively below the floor with steal_live=1
+ok - version floor: an unconfigured home falls back flat on herdr 0.7.4 and the explicit opt-in still projects
+evidence: herdr=0.7.4 protocol=16 steal_live=1 floor_verdict=1 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:23:11Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=2965 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3039
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=2965 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=2965
+final exit status 0

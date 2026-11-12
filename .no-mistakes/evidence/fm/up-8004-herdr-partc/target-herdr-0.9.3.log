@@ -1,0 +1,15 @@
+herdr version: herdr 0.9.3
+Validation round 1
+FM_TEST_BEGIN 2026-11-12T05:22:35Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh family=real-herdr-gated expected_gate_skip=herdr
+ok - old path note: this Herdr release preserves focus across the explicit close; continuing with outcome-only assertions
+ok - mitigation: every in-operation sample preserved exact focus while the doomed workspace was removed
+ok - fallback: a doomed pane holding a persistent child exhausts the proof and takes the plain explicit close
+ok - fallback on a focus-preserving release: the plain explicit close preserved exact focus throughout
+ok - version floor: herdr 0.9.3 protocol 22 is at or above the floor and preserves focus
+ok - version floor: an unconfigured home stays projected on herdr 0.9.3 and the explicit opt-in agrees
+evidence: herdr=0.9.3 protocol=22 steal_live=0 floor_verdict=0 fleet-session-tripwire=armed
+FM_TEST_END 2026-11-12T05:22:38Z /tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=3191 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=3263
+FM_TEST_SUMMARY_FAMILY family=real-herdr-gated count=1 duration_ms=3191 failed=0
+FM_TEST_SLOWEST rank=1 script=/tmp/worktree/tests/fm-backend-herdr-focus-flash-e2e.test.sh duration_ms=3191
+final exit status 0
