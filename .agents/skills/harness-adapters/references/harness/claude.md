@@ -108,6 +108,7 @@ Claude delegation, scheduling, and worktree tools can create work without `state
 `../../../bin/fm-subagent-pretool-check.sh` denies delegation-shaped tool names.
 A primary should also keep an untracked home-local `permissions.deny` for known delegation tools so they disappear from the schema.
 Never track it in project `.claude/settings.json`, which is Claude-only and propagates to worker copies where it would disarm legitimate delegation.
+The untracked file is not worker-free either: spawn seeds a missing worker copy's `.claude/settings.local.json` from the project's primary clone, so a crewmate whose project is a primary home inherits that deny list.
 `../../../docs/subagent-guard.md` owns the contract, recommendation, `FM_ALLOW_SUBAGENT=1`, and applicability review.
 
 On Claude 2.1.217 the tool presents as `Agent`, and both `Agent` and `Task` worked as deny keys in an A/B with nonsense control.

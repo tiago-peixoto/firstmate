@@ -452,7 +452,7 @@ test_claude_hooks_semantic_lifecycle() {
   state="$HOME_DIR/state"
   settings="$WT_DIR/.claude/settings.local.json"
   assert_present "$settings" "claude spawn did not write hook settings"
-  jq -e . "$settings" >/dev/null || fail "claude hook settings are not valid JSON"
+  jq -e 'keys == ["hooks"]' "$settings" >/dev/null || fail "absent claude settings must become a hooks-only object"
   for ev in UserPromptSubmit Stop StopFailure SessionEnd; do
     jq -e ".hooks[\"$ev\"]" "$settings" >/dev/null || fail "claude hook settings lack $ev"
   done
@@ -479,6 +479,104 @@ test_claude_hooks_semantic_lifecycle() {
   out=$(classify claude "$id" "$state")
   [ "$out" = "idle claude-hook" ] || fail "SessionEnd must classify idle, got '$out'"
   pass "claude hooks open on UserPromptSubmit and close on Stop, StopFailure, and SessionEnd"
+}
+
+test_claude_hooks_preserve_local_settings() {
+  local rec id=busy-cl-settings out settings
+  rec=$(make_spawn_case claude-settings claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$WT_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"],"permissions":{"allow":["Bash(ls)"]},"hooks":{"SessionStart":[]}}' > "$settings"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 0 $? "claude spawn with existing settings should succeed: $out"
+  jq -e '.enabledMcpjsonServers == ["postgres-prod"] and
+    .disabledMcpjsonServers == ["postgres-dev"] and
+    .permissions == {"allow":["Bash(ls)"]}' "$settings" >/dev/null \
+    || fail "claude spawn lost project settings while installing hooks"
+  jq -e '.hooks | keys == ["SessionEnd", "Stop", "StopFailure", "UserPromptSubmit"]' "$settings" >/dev/null \
+    || fail "claude spawn must replace the previous hooks"
+  pass "claude spawn preserves project settings and replaces only hooks"
+}
+
+test_claude_hooks_refuse_invalid_local_settings() {
+  local rec id=busy-cl-invalid out settings prior
+  rec=$(make_spawn_case claude-invalid claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  prior="$CASE_DIR/prior.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$WT_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],' > "$settings"
+  cp "$settings" "$prior"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 1 $? "claude spawn must refuse invalid settings: $out"
+  assert_contains "$out" "$settings" "the error must name the invalid settings file"
+  assert_contains "$out" "JSON object" "the error must explain the settings requirement"
+  cmp -s "$prior" "$settings" || fail "a refused spawn changed invalid settings"
+  pass "claude spawn refuses invalid JSON without changing the settings file"
+}
+
+test_claude_hooks_seed_primary_local_settings() {
+  local rec id=busy-cl-seed out settings primary prior
+  rec=$(make_spawn_case claude-seed claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  primary="$PROJ_DIR/.claude/settings.local.json"
+  prior="$CASE_DIR/primary-prior.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$PROJ_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],"disabledMcpjsonServers":["postgres-dev"],"permissions":{"allow":["Bash(ls)"]},"hooks":{"SessionStart":[]}}' > "$primary"
+  cp "$primary" "$prior"
+  rm -rf "$WT_DIR/.claude"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 0 $? "claude spawn into a copy without settings should succeed: $out"
+  jq -e '.enabledMcpjsonServers == ["postgres-prod"] and
+    .disabledMcpjsonServers == ["postgres-dev"] and
+    .permissions == {"allow":["Bash(ls)"]}' "$settings" >/dev/null \
+    || fail "claude spawn did not seed the worker copy from the primary clone's settings"
+  jq -e '.hooks | keys == ["SessionEnd", "Stop", "StopFailure", "UserPromptSubmit"]' "$settings" >/dev/null \
+    || fail "seeded claude settings must carry exactly the fleet hooks"
+  cmp -s "$prior" "$primary" || fail "claude spawn changed the primary clone's settings"
+  pass "claude spawn seeds a copy without settings from the primary clone, then installs hooks"
+}
+
+test_claude_hooks_keep_copy_settings_over_primary() {
+  local rec id=busy-cl-keep out settings
+  rec=$(make_spawn_case claude-keep claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$PROJ_DIR/.claude" "$WT_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["from-primary"],"model":"primary"}' > "$PROJ_DIR/.claude/settings.local.json"
+  printf '%s\n' '{"enabledMcpjsonServers":["from-copy"]}' > "$settings"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 0 $? "claude spawn with copy settings should succeed: $out"
+  jq -e '.enabledMcpjsonServers == ["from-copy"] and (has("model") | not)' "$settings" >/dev/null \
+    || fail "claude spawn overwrote the worker copy's own settings from the primary clone"
+  pass "claude spawn keeps an existing worker-copy settings file instead of reseeding it"
+}
+
+test_claude_hooks_refuse_invalid_primary_settings() {
+  local rec id=busy-cl-badprimary out settings primary prior
+  rec=$(make_spawn_case claude-badprimary claude "$id")
+  read_case_record "$rec"
+  settings="$WT_DIR/.claude/settings.local.json"
+  primary="$PROJ_DIR/.claude/settings.local.json"
+  prior="$CASE_DIR/primary-prior.json"
+  printf '.claude/settings.local.json\n' >> "$PROJ_DIR/.git/info/exclude"
+  mkdir -p "$PROJ_DIR/.claude"
+  printf '%s\n' '{"enabledMcpjsonServers":["postgres-prod"],' > "$primary"
+  cp "$primary" "$prior"
+  rm -rf "$WT_DIR/.claude"
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 1 $? "claude spawn must refuse invalid primary settings: $out"
+  assert_contains "$out" "$primary" "the error must name the invalid primary settings file"
+  assert_contains "$out" "JSON object" "the error must explain the settings requirement"
+  cmp -s "$prior" "$primary" || fail "a refused spawn changed the primary clone's settings"
+  assert_absent "$settings" "a refused spawn wrote worker-copy settings"
+  pass "claude spawn refuses invalid primary settings without changing the source"
 }
 
 test_claude_hooks_stale_incarnation_harmless() {
@@ -1131,6 +1229,11 @@ test_raw_secondmate_launch_writes_no_busy_wiring
 test_secondmate_claude_stop_guard_owns_the_stop_verdict
 test_secondmate_claude_older_home_guard_keeps_the_stop_idle_hook
 test_secondmate_claude_spawn_leaves_local_settings_untouched
+test_claude_hooks_preserve_local_settings
+test_claude_hooks_refuse_invalid_local_settings
+test_claude_hooks_seed_primary_local_settings
+test_claude_hooks_keep_copy_settings_over_primary
+test_claude_hooks_refuse_invalid_primary_settings
 test_pi_stream_extension_activation_and_lifecycle
 test_secondmate_pi_extension_reports_busy_without_a_parent_turnend
 test_secondmate_omp_extension_reports_busy_without_a_parent_turnend
