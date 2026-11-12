@@ -1,0 +1,180 @@
+
+===== S1 merged PR settles declared holds (close and release); undeclared hold on unrelated work stays open =====
+$ {run-worktree}/bin/fm-captain-hold.sh hold q-close --reason Approve this PR?
+q-close
+[exit 0]
+$ {run-worktree}/bin/fm-captain-hold.sh pr-policy q-close https://github.com/o/r/pull/8 merged close
+pr-policy: q-close https://github.com/o/r/pull/8 merged close
+[exit 0]
+$ {run-worktree}/bin/fm-captain-hold.sh hold q-release --reason Wait for the PR
+q-release
+[exit 0]
+$ {run-worktree}/bin/fm-captain-hold.sh pr-policy q-release https://github.com/o/r/pull/8 merged release
+pr-policy: q-release https://github.com/o/r/pull/8 merged release
+[exit 0]
+$ {run-worktree}/bin/fm-captain-hold.sh hold delivery --reason Unrelated unfinished work
+delivery
+[exit 0]
+policy record: {
+  "schema": "fm-hold-pr.v1",
+  "task": "q-close",
+  "url": "https://github.com/o/r/pull/8",
+  "on": "merged",
+  "action": "close",
+  "fingerprint": "6fe107d2088e601ccbd25a127e133a07509386fe6ecf3f71f45286a866708490",
+  "occurrence": 1
+}
+
+(forge emulator: PR 8 is now merged)
+$ bash state/contributions.check.sh   (the shim the watcher runs)
+
+[exit 0] [check output bytes: 0]
+CHECK PASS: watcher check printed nothing, so no wake / model turn
+CHECK PASS: no wake queued
+CHECK PASS: q-close hold settled
+CHECK PASS: q-close task is done
+CHECK PASS: q-release hold released
+CHECK PASS: q-release work NOT completed
+CHECK PASS: unrelated delivery hold still open
+CHECK PASS: forge event recorded as evidence
+CHECK PASS: no captain answer invented
+CHECK PASS: policy files retired
+--- q-close task after settlement ---
+task:
+  id: q-close
+  title: "Approve this PR? https://github.com/o/r/pull/8"
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "Approve this PR?"
+  hold_kind: captain
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-13
+  deps: none
+  links: "pr:https://github.com/o/r/pull/8"
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 7c8b2a021e21d35a92c1aa9e75d12885a52fd37f43d84b9242f8d5b446ab9fcd\nResolution mode: forge-closed\n\nReconciliation evidence:\nForge PR merged: https://github.com/o/r/pull/8\nObserved at: 2026-09-16T08:00:00Z\nSettlement policy: merged -> close"
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: repeat poll is silent and changes nothing
+
+===== S2 PR closed without merging: terminal policy settles; held task without policy is told; unheld task is not =====
+$ {run-worktree}/bin/fm-captain-hold.sh pr-policy q-term https://github.com/o/r/pull/8 terminal close
+pr-policy: q-term https://github.com/o/r/pull/8 terminal close
+[exit 0]
+(forge emulator: PR 8 is now closed)
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 6cbca417a504d1619d611b8f16cb0f791ebe5ea6567a784980c5915aa3903b21
+[exit 0] [poll output bytes: 113]
+CHECK PASS: q-term settled and done with closed evidence
+CHECK PASS: held-without-policy task still open
+pending closed events: ["delivery"]
+CHECK PASS: closed event reported to exactly the still-held task
+CHECK PASS: closure queued a wake
+wake queue: 1794525789	1	check	contribution-6cbca417a504d1619d611b8f16cb0f791ebe5ea6567a784980c5915aa3903b21	check: contributions delivery 6cbca417a504d1619d611b8f16cb0f791ebe5ea6567a784980c5915aa3903b21
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: closure reported once (repeat poll silent, no new wake)
+
+===== S3 opt-in: flag absent -> declaration refused, nothing settles; creating the flag applies the retained observation =====
+$ {run-worktree}/bin/fm-captain-hold.sh pr-policy delivery https://github.com/o/r/pull/8 merged close
+fm-captain-hold: config/hold-pr-settle is required
+[exit 1]
+CHECK PASS: pr-policy refused without config/hold-pr-settle
+$ {run-worktree}/bin/fm-captain-hold.sh pr-policy delivery https://github.com/o/r/pull/8 merged close
+pr-policy: delivery https://github.com/o/r/pull/8 merged close
+[exit 0]
+(forge emulator: PR 8 is now merged)
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: flag absent: hold untouched and poll silent
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: flag created: retained merged observation settles the hold
+
+===== S4 adversarial: policy says merged, PR closed unmerged -> not settled, policy dropped with a diagnostic, closure reported =====
+(forge emulator: PR 8 is now closed)
+$ fm-contributions.sh poll
+contributions: PR hold settlement failed for delivery https://github.com/o/r/pull/8: fm-captain-hold: dropped the PR policy for delivery: the PR is closed and can no longer reach the declared event; the hold stays open
+contribution-wake: check: contributions delivery 6cbca417a504d1619d611b8f16cb0f791ebe5ea6567a784980c5915aa3903b21
+[exit 0] [poll output bytes: 332]
+CHECK PASS: hold stays open
+CHECK PASS: diagnostic names the dropped policy
+CHECK PASS: closed event raised for the still-held task
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: diagnostic is not repeated
+
+===== S5 adversarial: question changed (re-held) after the declaration -> merged PR must not settle the new question =====
+$ {run-worktree}/bin/fm-captain-hold.sh hold delivery --reason A different question about this work
+delivery
+[exit 0]
+(forge emulator: PR 8 is now merged)
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: new question stays open and unfinished
+
+===== S6 follow-up PR link and retained report link do not invalidate the declaration =====
+$ {run-worktree}/bin/fm-tasks-axi.sh update delivery --pr https://github.com/o/r/pull/10 --report data/delivery/report.md
+ok: updated delivery (links)
+task:
+  id: delivery
+  title: "Contribution delivery https://github.com/o/r/pull/8 https://github.com/o/r/pull/\n... (truncated, 106 chars total - use show delivery --full to see complete text)"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:TWVyZ2UgdGhpcyBQUj8="
+  hold_kind: captain
+  hold_until: "-"
+  kind: ship
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/o/r/pull/8,pr:https://github.com/o/r/pull/10,report:data/delivery/report.md"
+  body: "Captain hold set: 2026-11-12T23:23:27Z"
+help[1]:
+  - Run `tasks-axi show delivery --full` to see the result
+[exit 0]
+(forge emulator: PR 8 is now merged)
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: hold settled despite added links
+
+===== S7 away home: release deferred silently, applied on the first attended poll; close action unaffected =====
+(forge emulator: PR 8 is now merged)
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: away: hold stays, poll silent, policy kept
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: attended: hold released, work not completed
+
+===== S8 busy away-record lock: poll returns promptly and defers, then applies =====
+(forge emulator: PR 8 is now merged)
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+poll took 2s under a held away-record lock (no timeout override)
+CHECK PASS: locked: deferred silently within 10s
+$ fm-contributions.sh poll
+
+[exit 0] [poll output bytes: 0]
+CHECK PASS: unlocked: released
+
+===== RESULT: 0 failed checks =====
