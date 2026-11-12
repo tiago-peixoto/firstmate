@@ -107,6 +107,10 @@ It is not tracked for two reasons.
 - A tracked `.claude/settings.json` propagates into linked worktrees and disarms legitimate crewmates.
   This was verified when a Claude session in a task worktree of this repo lost its `Agent` tool.
 
+Untracked local settings can still reach a worker.
+When a Claude crewmate's worker copy has no `.claude/settings.local.json`, `bin/fm-spawn.sh` seeds it from the project's primary clone file and then adds the fleet hooks.
+So when a crewmate's project is itself a primary home, this deny list reaches that crewmate and disarms its delegation too.
+
 The width of the list remains a captain-owned decision, because denying some of these changes how the captain works with the primary session.
 Keep it as one flat local array that is reviewable at a glance and narrowable in one line.
 In particular `TaskOutput`, `TaskStop`, `TaskGet`, `TaskList`, and `CronList` only observe or stop work that already exists, yet the recommended local deny list still removes all five by default.
