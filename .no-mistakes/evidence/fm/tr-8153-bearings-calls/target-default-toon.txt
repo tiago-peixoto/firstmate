@@ -1,0 +1,41 @@
+schema: fm-bearings.v1
+home: tmp/fm-lab.Nyej6q
+generated: "2026-11-12T05:13:48Z"
+prs: "not_requested (run: /bearings include PRs)"
+contributions: 
+  scope: owned contributions per home
+  known: 0
+  checked: 0
+  counts: 
+    captain: 0
+    fleet: 0
+    maintainer: 0
+    nobody: 0
+  complete: true
+  proven_clear: true
+  unmeasured_homes: 0
+  unreadable_records: 0
+  unmeasured: 0
+  stale_verdicts: 0
+  missing_verdicts: 0
+  captain_omitted: 0
+  captain: []
+in_flight: []
+secondmates: []
+secondmate_reconcile: []
+decisions_open[2]{id,key,verb,summary,question,owner}:
+  rollout-call,rollout-call,captain-hold,"Choose the rollout route for the new sync engine: Which rollout? A) Keep the feature disabled until every check passes on main and the staging soak ends. B) Enable it for the internal fleet only and watch error rates for one week. C) Enable it for everyone now and revert on the first regression report.","Choose the rollout route for the new sync engine: Which rollout? A) Keep the feature disabled until every check passes on main and the staging soak ends. B) Enable it for the internal fleet only and watch error rates for one week. C) Enable it for everyone now and revert on the first regression report.",(main)
+  report-call,report-call,captain-hold,"Review the proposal: data/proposal/report.md","Review the proposal: data/proposal/report.md",(main)
+landed: []
+gates[1]{id,title,blocked_by,reason,owner,filed}:
+  deferred-call,Pick the database migration window for the ledger,"-","until 2027-03-01: A) This weekend during…",(main),2026-11-12
+reports: []
+recorded_prs: []
+omitted[7]{surface,reveal}:
+  backlog item bodies,"--fields bodies"
+  task paths,"--fields paths"
+  watch/steer actions,"--fields actions"
+  healthy endpoint detail,"--fields endpoints"
+  full scout-report inventory,"--all-reports"
+  "captain holds bucketed blocked, dated, or aged: 1","--all-decisions"
+  live PR discovery + checks,"--include-prs"
