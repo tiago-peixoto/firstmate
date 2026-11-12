@@ -1,0 +1,51 @@
+== versions ==
+host timeout: timeout (uutils coreutils) 0.10.0  (/usr/bin/timeout)
+release uutils: timeout (uutils coreutils) 0.12.0
+gnu: timeout (GNU coreutils) 9.7
+perl: /usr/bin/perl
+== S0 oracle: raw timeout -k 2 60 with a TERM relayed to a command whose handler exits 3 ==
+Terminated                 sleep 0.1
+  gnu-9.7 -> exit 3
+Terminated                 sleep 0.1
+  uutils-0.12.0 -> exit 124
+Terminated                 sleep 0.1
+  uutils-host -> exit 124
+== S1 Perl present on the host uutils PATH: fm_exec_timed keeps the Perl watchdog ==
+  PASS mechanism (got perl)
+Terminated                 sleep 0.1
+  PASS relayed TERM preserves the command's exit 3 (got 3)
+  PASS deadline reports 124 (got 124)
+  PASS command status passes through (got 5)
+== S2 no Perl, only real uutils timeout: refuse 127, command never runs ==
+  PATH timeout: timeout (uutils coreutils) 0.12.0
+  stderr: fm_exec_timed: cannot bound bash within 5s: perl is unavailable and /tmp/nm7794.4yx5Kc/w/uu1/timeout is not GNU coreutils
+  PASS refusal status (got 127)
+  PASS command did not run (got not-run)
+  PASS mechanism reports none (got 1)
+  PATH timeout: timeout (uutils coreutils) 0.10.0
+  stderr: fm_exec_timed: cannot bound bash within 5s: perl is unavailable and /tmp/nm7794.4yx5Kc/w/uu2/timeout is not GNU coreutils
+  PASS refusal status (got 127)
+  PASS command did not run (got not-run)
+  PASS mechanism reports none (got 1)
+== S3 no Perl, real GNU timeout 9.7 as timeout ==
+  PASS mechanism (got /tmp/nm7794.4yx5Kc/w/gnu/timeout)
+  PASS command status passes through (got 5)
+Terminated                 sleep 0.1
+  PASS relayed TERM preserves the command's exit 3 (got 3)
+  PASS deadline reports 124 (got 124)
+/tmp/nm7794.4yx5Kc/drive.sh: line 22: 34408 Killed                     ( . "$ROOT/bin/fm-timeout-lib.sh"; PATH=$1; shift; "$@" )
+  PASS TERM-ignoring command is KILLed after the grace (got 137)
+  elapsed 2s (bound 1s + grace 1s)
+== S4 no Perl, real uutils timeout plus real GNU gtimeout: gtimeout is selected ==
+  PASS mechanism (got /tmp/nm7794.4yx5Kc/w/mixed/gtimeout)
+Terminated                 sleep 0.1
+  PASS relayed TERM preserves the command's exit 3 (got 3)
+  PASS deadline reports 124 (got 124)
+== S5 attended readiness agrees with the fm_exec_timed gate (real node, jq) ==
+  uutils-only, no Perl: unready because: neither perl nor a GNU coreutils timeout or gtimeout can bound the engine turn
+  PASS uutils-only host is unready for the turn bound (got neither perl nor a GNU coreutils timeout or gtimeout can bound the engine turn)
+  uutils timeout + GNU gtimeout, no Perl: unready because: <ready>
+  PASS turn bound satisfied
+  uutils timeout + Perl: unready because: <ready>
+  PASS turn bound satisfied
+== result: 0 failed checks ==

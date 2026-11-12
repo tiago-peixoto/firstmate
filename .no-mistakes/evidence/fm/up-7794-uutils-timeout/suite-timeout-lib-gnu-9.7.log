@@ -1,0 +1,71 @@
+timeout (GNU coreutils) 9.7
+FM_TEST_BEGIN 2026-11-12T15:16:51Z tests/fm-timeout-lib.test.sh family=pure-contract-unit expected_gate_skip=none
+ok - fm_run_timed perl preserves interruption status during timeout cleanup
+ok - fm_run_timed perl bounds its deadline and cleanup despite wall-clock changes
+ok - fm_run_timed perl reaps owned groups and preserves caller signal dispositions on INT/HUP/TERM and timeout
+ok - fm_run_timed perl cancels before handler installation and preserves caller job control and signal handlers
+ok - fm_run_timed perl preserves stdin, output, completion statuses and caller traps
+ok - fm_run_timed preserves exact inherited pipe stdin through timeout
+ok - fm_run_timed preserves exact pipeline pipe stdin through timeout
+ok - fm_run_timed preserves exact inherited pipe stdin through gtimeout
+ok - fm_run_timed preserves exact pipeline pipe stdin through gtimeout
+ok - fm_run_timed preserves exact inherited pipe stdin through perl
+ok - fm_run_timed preserves exact pipeline pipe stdin through perl
+ok - fm_run_timed preserves exact inherited pipe stdin through bash
+ok - fm_run_timed preserves exact pipeline pipe stdin through bash
+ok - fm_exec_timed passes a command's status and output through unchanged
+ok - system Bash top-level and subshell calls preserve success, failure, and signal status
+Terminated                 "$@"
+ok - fm_run_timed reports 124 when the bound TERMs a read whose wrapper recorded 143
+ok - fm_run_timed passes a natural exit through when the bound fired after completion
+ok - fm_run_timed keeps stdout and nonzero status when a function shadows timeout
+ok - fm_run_timed delivers piped stdin through every available mechanism
+ok - fm_exec_timed sends TERM at the bound and a cooperative command ends there
+ok - fm_exec_timed kills a TERM-ignoring command once the grace has passed
+ok - fm_exec_timed replaces the calling shell instead of wrapping it
+ok - fm_exec_timed reaps a descendant that would otherwise hold the output past the bound
+ok - fm_exec_timed forwards a TERM it receives to the bounded command
+ok - fm_exec_timed forwards a TERM it receives to the bounded command
+ok - fm_exec_timed ends the command when its named owner is already gone
+ok - fm_exec_timed ends the command when its owner dies during watchdog startup
+ok - fm_exec_timed preserves a top-level shell's parent across exec startup
+ok - fm_exec_timed prefers its perl watchdog over timeout
+ok - fm_exec_timed refuses instead of running unbounded when no mechanism exists
+ok - fm_exec_timed rejects a zero, padded, non-numeric, or missing bound and a missing command
+ok - fm_exec_timed refuses non-GNU timeout and selects GNU timeout or gtimeout without Perl
+ok - the attended host is unready without Perl or GNU timeout, exactly where fm_exec_timed refuses
+tests/fm-timeout-lib.test.sh: line 29: 167520 Killed                     ( . "$ROOT/bin/fm-timeout-lib.sh"; PATH=$path fm_exec_timed "$@" )
+ok - fm_exec_timed's timeout fallback honors the grace and then kills the command
+tests/fm-timeout-lib.test.sh: line 29: 172014 Killed                     ( . "$ROOT/bin/fm-timeout-lib.sh"; PATH=$path fm_exec_timed "$@" )
+ok - fm_exec_timed's gtimeout fallback honors the grace and then kills the command
+timeout (GNU coreutils) 9.7
+Packaged by Ubuntu (9.7-3ubuntu2.1)
+Copyright (C) 2025 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Written by Pádraig Brady.
+ok - run preserves status and output and times out its process group through timeout
+ok - exec preserves status and output and times out its process group through timeout
+ok - nm preserves status and output and times out its process group through timeout
+ok - watch preserves status and output and times out its process group through timeout
+timeout (GNU coreutils) 9.7
+Packaged by Ubuntu (9.7-3ubuntu2.1)
+Copyright (C) 2025 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Written by Pádraig Brady.
+ok - run preserves status and output and times out its process group through gtimeout
+ok - exec preserves status and output and times out its process group through gtimeout
+ok - nm preserves status and output and times out its process group through gtimeout
+ok - watch preserves status and output and times out its process group through gtimeout
+ok - fm_run_timed reaps a TERM-ignoring descendant after timeout exits
+ok - fm_run_timed reaps a TERM-ignoring descendant after gtimeout exits
+ok - fm_timed_out accepts 124 and 137 and nothing else
+FM_TEST_END 2026-11-12T15:17:42Z tests/fm-timeout-lib.test.sh exit=0 duration_ms=50535 gate_skip=false
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=0 duration_ms=50640
+FM_TEST_SUMMARY_FAMILY family=pure-contract-unit count=1 duration_ms=50535 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-timeout-lib.test.sh duration_ms=50535
