@@ -1,0 +1,36 @@
+host timeout: timeout (uutils coreutils) 0.10.0; gnutimeout: timeout (GNU coreutils) 9.7
+## A. no perl, only real uutils timeout on PATH
+   -> rc=1 elapsed=0.0s  [mechanism]
+fm_exec_timed: cannot bound bash within 1s: perl is unavailable and $T/uutils-only/timeout is not GNU coreutils
+   -> rc=127 elapsed=0.0s  [fm_exec_timed must refuse 127 and not run the command]
+   command did not run
+## B. no perl, uutils timeout + real GNU gtimeout
+$T/uutils-plus-gnu-gtimeout/gtimeout
+   -> rc=0 elapsed=0.0s  [mechanism names gtimeout]
+   -> rc=124 elapsed=1.0s  [bound hit -> 124 at ~1s]
+$T/drive.sh: line 3: 818195 Killed                     ( PATH=$2 bash -c ". $ROOT/bin/fm-timeout-lib.sh; $3" )
+   -> rc=137 elapsed=2.0s  [TERM-ignoring -> 137 at ~2s]
+   -> rc=3 elapsed=0.0s  [own status 3 passes through]
+## C. no perl, real GNU timeout as timeout
+$T/gnu-timeout/timeout
+   -> rc=0 elapsed=0.0s  [mechanism names timeout]
+   -> rc=124 elapsed=1.0s  [bound hit -> 124]
+## D. normal host PATH (perl + uutils timeout)
+perl
+   -> rc=0 elapsed=0.0s  [mechanism is perl]
+   -> rc=124 elapsed=1.1s  [bound hit -> 124]
+   -> rc=124 elapsed=2.0s  [TERM-ignoring under perl: reported as the bound, 124, after the 1s grace]
+## E. adversarial: no perl and no timeout at all
+fm_exec_timed: cannot bound sleep within 1s: none of perl, timeout, or gtimeout is available
+   -> rc=127 elapsed=0.0s  [no perl, no timeout at all -> 127]
+## F. attended readiness (fm_supervision_host_attended_ready) with real binaries
+   uutils-only: rc=1 unready='neither perl nor a GNU coreutils timeout or gtimeout can bound the engine turn'
+   uutils-plus-gnu-gtimeout: rc=0 unready=''
+## G. fm_run_external_timeout driven with the real uutils /usr/bin/timeout (full PATH)
+   -> rc=3 elapsed=0.0s  [status 3 passes through]
+   -> rc=124 elapsed=1.0s  [bound hit -> 124 at ~1s]
+   background sleep child is gone
+   -> rc=124 elapsed=1.0s  [TERM-ignoring descendant -> 124]
+## H. fm_nm_bounded with real uutils timeout
+   own status -> rc=4
+   bound hit -> rc=124 after 1s
