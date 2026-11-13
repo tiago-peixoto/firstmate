@@ -1,0 +1,34 @@
+state file: <lab>/state/raw-epoch.status
+     1	blocked [at=1793378273] [key=earlier]: An earlier blocker remains open.
+     2	1793378273 blocked [key=example] An implementation decision needs an answer.
+===== fm-fleet-snapshot.sh --json @ base =====
+exit=0
+--- stderr ---
+--- task row (jq) ---
+{
+  "id": "raw-epoch",
+  "open_decisions": [
+    {
+      "key": "earlier",
+      "verb": "blocked",
+      "summary": "An earlier blocker remains open."
+    }
+  ],
+  "current_state": "unknown"
+}
+===== fm-fleet-snapshot.sh --json @ target =====
+exit=0
+--- stderr ---
+<lab>/state/raw-epoch.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked [key=example] An implementation decision needs an answer.
+--- task row (jq) ---
+{
+  "id": "raw-epoch",
+  "open_decisions": [
+    {
+      "key": "earlier",
+      "verb": "blocked",
+      "summary": "An earlier blocker remains open."
+    }
+  ],
+  "current_state": "unknown"
+}

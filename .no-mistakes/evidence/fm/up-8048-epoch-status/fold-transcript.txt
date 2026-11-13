@@ -1,0 +1,111 @@
+===== issue.status @ base =====
+  | blocked [at=1793378273] [key=earlier]: An earlier blocker remains open.$
+  | 1793378273 blocked [key=example] An implementation decision needs an answer.$
+--- open set (stdout), rc=0 ---
+earlier	blocked	An earlier blocker remains open.
+--- reports (stderr) ---
+--- end ---
+===== issue.status @ target =====
+  | blocked [at=1793378273] [key=earlier]: An earlier blocker remains open.$
+  | 1793378273 blocked [key=example] An implementation decision needs an answer.$
+--- open set (stdout), rc=0 ---
+earlier	blocked	An earlier blocker remains open.
+--- reports (stderr) ---
+<tmp>/s/issue.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked [key=example] An implementation decision needs an answer.
+--- end ---
+===== legacy.status @ base =====
+  | needs-decision: [key=legacy-a] Legacy colon-first keyed line.$
+  | blocked [key=legacy-b]: Legacy bracket-first line.$
+  | needs-decision: keyless legacy line$
+  | working: 1793378273 blocked is just prose here$
+  | resolved [key=legacy-a]: answered$
+--- open set (stdout), rc=0 ---
+legacy-b	blocked	Legacy bracket-first line.
+default	needs-decision	keyless legacy line
+--- reports (stderr) ---
+--- end ---
+===== legacy.status @ target =====
+  | needs-decision: [key=legacy-a] Legacy colon-first keyed line.$
+  | blocked [key=legacy-b]: Legacy bracket-first line.$
+  | needs-decision: keyless legacy line$
+  | working: 1793378273 blocked is just prose here$
+  | resolved [key=legacy-a]: answered$
+--- open set (stdout), rc=0 ---
+legacy-b	blocked	Legacy bracket-first line.
+default	needs-decision	keyless legacy line
+--- reports (stderr) ---
+--- end ---
+===== boundary.status @ base =====
+  | blocked [key=keep]: stays open$
+  | 2 failed: lint and unit$
+  | 3 done: steps$
+  | 2026 note: x$
+  | 12345678 blocked [key=eight] eight digits$
+  | 123456789 blocked [key=nine] nine digits$
+  | 1793378273 parked: unknown verb$
+  | 1793378273$
+  | 1793378273x blocked [key=x] not all digits$
+--- open set (stdout), rc=0 ---
+keep	blocked	stays open
+--- reports (stderr) ---
+--- end ---
+===== boundary.status @ target =====
+  | blocked [key=keep]: stays open$
+  | 2 failed: lint and unit$
+  | 3 done: steps$
+  | 2026 note: x$
+  | 12345678 blocked [key=eight] eight digits$
+  | 123456789 blocked [key=nine] nine digits$
+  | 1793378273 parked: unknown verb$
+  | 1793378273$
+  | 1793378273x blocked [key=x] not all digits$
+--- open set (stdout), rc=0 ---
+keep	blocked	stays open
+--- reports (stderr) ---
+<tmp>/s/boundary.status:6: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 123456789 blocked [key=nine] nine digits
+--- end ---
+===== shapes.status @ base =====
+  | blocked [key=keep]: stays open$
+  | 1793378273 blocked: [key=colon] c$
+  | ^I1793378273 needs-decision [key=indent] i$
+  | 1793378273 captain-held [key=other] t$
+  | 1793378273 resolved [key=keep] would-be resolution$
+  | 1793378273 done: finished$
+--- open set (stdout), rc=0 ---
+keep	blocked	stays open
+--- reports (stderr) ---
+--- end ---
+===== shapes.status @ target =====
+  | blocked [key=keep]: stays open$
+  | 1793378273 blocked: [key=colon] c$
+  | ^I1793378273 needs-decision [key=indent] i$
+  | 1793378273 captain-held [key=other] t$
+  | 1793378273 resolved [key=keep] would-be resolution$
+  | 1793378273 done: finished$
+--- open set (stdout), rc=0 ---
+keep	blocked	stays open
+--- reports (stderr) ---
+<tmp>/s/shapes.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked: [key=colon] c
+<tmp>/s/shapes.status:3: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 	1793378273 needs-decision [key=indent] i
+<tmp>/s/shapes.status:4: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 captain-held [key=other] t
+<tmp>/s/shapes.status:5: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 resolved [key=keep] would-be resolution
+<tmp>/s/shapes.status:6: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 done: finished
+--- end ---
+===== nonl.status @ base =====
+  | blocked [key=keep]: stays open$
+  | 1793378273 blocked [key=tail] no trailing newline--- open set (stdout), rc=0 ---
+keep	blocked	stays open
+--- reports (stderr) ---
+--- end ---
+===== nonl.status @ target =====
+  | blocked [key=keep]: stays open$
+  | 1793378273 blocked [key=tail] no trailing newline--- open set (stdout), rc=0 ---
+keep	blocked	stays open
+--- reports (stderr) ---
+<tmp>/s/nonl.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 blocked [key=tail] no trailing newline
+--- end ---
+--- open set (stdout), rc=0 ---
+keep	blocked	open
+--- reports (stderr) ---
+<tmp>/s/ovr.status:2: malformed status line; repair the timestamp to [at=<epoch>] after the verb: 1793378273 answered [key=keep] x
+--- end ---
