@@ -1,0 +1,10 @@
+
+=== BASE 427056c4: reproduce issue 8046 - token alone clears an APPROVED review that carries findings ===
+(forge) maintainer submits APPROVED review 12 with body: "Approved, but the retry loop drops errors and the cache never expires"
+[{"task":"delivery","type":"review","token":"review:12:2026-09-16T08:01:00Z:APPROVED","source":"https://github.com/o/r/pull/8#pullrequestreview-12"}]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+[exit 0]
+OK   exit 0 as expected: base clears the findings with no receipt (the reported defect)
+OK   pending signals = 0: the review is gone and the worker was never told
+
+FAILS=0

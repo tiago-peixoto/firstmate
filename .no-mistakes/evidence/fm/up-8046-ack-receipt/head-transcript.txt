@@ -1,0 +1,175 @@
+
+=== S1: token alone no longer clears an APPROVED review that carries findings ===
+(forge) maintainer submits APPROVED review 12 with body: "Approved, but the retry loop drops errors and the cache never expires"
+[{"task":"delivery","type":"review","token":"review:12:2026-09-16T08:01:00Z:APPROVED","source":"https://github.com/o/r/pull/8#pullrequestreview-12"}]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+OK   exit 1 as expected: token-only ack of a review with findings is refused
+OK   pending signals = 1: the review stays pending
+
+=== S2: handoff needs a steering-inbox record of the owning task that names the review source ===
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit 1]
+OK   exit 1 as expected: handoff with an empty steering inbox is refused
+$ steer delivery: Read https://github.com/o/r/pull/8#pullrequestreview-123 and fix it
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit 1]
+OK   exit 1 as expected: a steer naming review 123 (review 12 is only a prefix of it) is refused
+OK   pending signals = 1: the review stays pending after refused handoffs
+$ steer delivery: Read https://github.com/o/r/pull/8#pullrequestreview-12 and fix the retry loop
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+[exit 0]
+OK   exit 0 as expected: handoff accepted once a steer names the review source
+OK   pending signals = 0: the handed-off review left pending
+receipts in data/delivery/contributions.json: [{"token":"review:12:2026-09-16T08:01:00Z:APPROVED","task":"delivery","kind":"handoff","ref":"002.msg","at":"2026-09-16T08:00:00Z"}]
+OK   receipt is bound to the event token and owning task and names the matching steer 002.msg
+
+=== S3: a steer the worker already handled (moved to handled/) also earns the handoff ===
+(forge) maintainer submits CHANGES_REQUESTED review 12 with body: "The retry loop drops errors"
+$ steer delivery: Read https://github.com/o/r/pull/8#pullrequestreview-12 and fix it
+$ mv state/delivery.inbox/001.msg state/delivery.inbox/handled/001.msg
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED handoff
+[exit 0]
+OK   exit 0 as expected: handled steer accepted as the handoff
+receipts in data/delivery/contributions.json: [{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"}]
+
+=== S4: disposition needs different evidence on the same pull request and a written reason ===
+(forge) maintainer submits CHANGES_REQUESTED review 12 with body: "The retry loop drops errors"
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#pullrequestreview-12 approved\,\ non-blocking
+fm-contributions: the signal itself cannot be the evidence for its own disposition while the owning task record exists
+[exit 1]
+OK   exit 1 as expected: citing the signal itself is refused while the task is live
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/80#issuecomment-40 covered\ elsewhere
+fm-contributions: disposition evidence must be a comment or review on this contribution
+[exit 1]
+OK   exit 1 as expected: evidence on another pull request (pull/80) is refused
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8 covered\ elsewhere
+fm-contributions: disposition evidence must be a comment or review on this contribution
+[exit 1]
+OK   exit 1 as expected: the bare contribution URL with no comment or review fragment is refused
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#issuecomment-40 \ \ \ 
+fm-contributions: disposition needs a non-empty summary
+[exit 1]
+OK   exit 1 as expected: a blank reason is refused
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition
+fm-contributions: disposition needs an evidence URL and a summary
+[exit 1]
+OK   exit 1 as expected: disposition with no evidence and no reason is refused
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED bogus
+fm-contributions: unknown receipt 'bogus'; expected handoff or disposition
+[exit 1]
+OK   exit 1 as expected: an unknown receipt kind is refused
+OK   pending signals = 1: the review stays pending after every refused disposition
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#issuecomment-40 author\ replied\ that\ the\ loop\ is\ bounded\ by\ the\ caller
+[exit 0]
+OK   exit 0 as expected: disposition accepted with different evidence on the same pull request and a reason
+OK   pending signals = 0: the disposed review left pending
+receipts in data/delivery/contributions.json: [{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"disposition","ref":"https://github.com/o/r/pull/8#issuecomment-40","summary":"author replied that the loop is bounded by the caller","at":"2026-09-16T08:00:00Z"}]
+OK   disposition receipt stores token, task, evidence and reason
+
+=== S5: an inline review comment also needs a receipt ===
+(forge) maintainer leaves inline comment discussion_r21
+[{"task":"delivery","type":"review-comment","token":"review-comment:21:2026-09-16T08:01:00Z:","source":"https://github.com/o/r/pull/8#discussion_r21"}]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-comment:21:2026-09-16T08:01:00Z:
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+OK   exit 1 as expected: token-only ack of an inline review comment is refused
+OK   pending signals = 1: the inline comment stays pending
+$ steer delivery: Fix https://github.com/o/r/pull/8#discussion_r21
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-comment:21:2026-09-16T08:01:00Z: handoff
+[exit 0]
+OK   exit 0 as expected: inline comment acknowledged with a handoff
+
+=== S6: signals without findings still acknowledge with the token alone ===
+(forge) maintainer submits APPROVED review 12 with body: ""
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+[exit 0]
+OK   exit 0 as expected: an approval with no text acknowledges with the token alone
+(forge) maintainer posts issue comment 40
+[{"task":"delivery","type":"comment","token":"comment:40:2026-09-16T08:02:00Z:","source":"https://github.com/o/r/pull/8#issuecomment-40"}]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 comment:40:2026-09-16T08:02:00Z:
+[exit 0]
+OK   exit 0 as expected: an issue comment acknowledges with the token alone
+(forge) issue 9 is labelled ready-for-pr
+[{"task":"filed","type":"ready-for-pr","token":"ready-for-pr:88","source":null}]
+$ fm-contributions.sh ack filed https://github.com/o/r/issues/9 ready-for-pr:88
+[exit 0]
+OK   exit 0 as expected: a ready-for-pr transition acknowledges with the token alone
+OK   pending signals = 0: nothing is left pending
+OK   token-only acknowledgements store no receipt
+
+=== S7: a receipt clears only its own token and only for the owning task ===
+(forge) maintainer submits CHANGES_REQUESTED review 12 with body: "The retry loop drops errors"
+(forge) maintainer submits CHANGES_REQUESTED review 13 with body: "The cache never expires"
+[{"task":"delivery","type":"review","token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","source":"https://github.com/o/r/pull/8#pullrequestreview-12"},{"task":"delivery","type":"review","token":"review:13:2026-09-16T08:01:00Z:CHANGES_REQUESTED","source":"https://github.com/o/r/pull/8#pullrequestreview-13"}]
+$ steer delivery: Read https://github.com/o/r/pull/8#pullrequestreview-12
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:13:2026-09-16T08:01:00Z:CHANGES_REQUESTED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-13; steer the owning worker with the findings first, or use disposition
+[exit 1]
+OK   exit 1 as expected: the steer about review 12 does not hand off review 13
+$ fm-contributions.sh ack stranger https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED handoff
+fm-contributions: contribution is not owned by this durable task
+[exit 1]
+OK   exit 1 as expected: a task that does not own the pull request cannot acknowledge
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED handoff
+[exit 0]
+OK   exit 0 as expected: review 12 is handed off
+OK   pending signals = 1: review 13 is still pending
+receipts in data/delivery/contributions.json: [{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"}]
+
+=== S8: a later owner of the same merged pull request does not inherit the receipt (settled-record copy) ===
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:13:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#issuecomment-41 maintainer\ withdrew\ the\ cache\ comment
+[exit 0]
+OK   exit 0 as expected: review 13 disposed
+(forge) PR 8 is merged
+(backlog) task latecomer now links PR 8
+receipts in data/delivery/contributions.json: [{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"},{"token":"review:13:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"disposition","ref":"https://github.com/o/r/pull/8#issuecomment-41","summary":"maintainer withdrew the cache comment","at":"2026-09-16T08:00:00Z"}]
+receipts in data/latecomer/contributions.json: []
+OK   the owning task keeps both receipts
+OK   latecomer got the settled merged observation with no receipts
+
+=== S9: a torn-down task (state/<task>.meta removed) may dispose of a review by citing it, then retire ===
+(forge) maintainer submits CHANGES_REQUESTED review 12 with body: "The retry loop drops errors"
+$ ls state/delivery.inbox -> absent; state/delivery.meta -> present
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#pullrequestreview-12 approved\,\ non-blocking
+fm-contributions: the signal itself cannot be the evidence for its own disposition while the owning task record exists
+[exit 1]
+OK   exit 1 as expected: a live never-steered task (record present, no inbox) cannot self-cite
+$ rm state/delivery.meta   (what fm-teardown.sh does)
+$ fm-contributions.sh retire delivery https://github.com/o/r/pull/8 captain task\ finished
+fm-contributions: acknowledge pending signals before retiring this contribution
+[exit 1]
+OK   exit 1 as expected: retire is refused while the review is pending
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#pullrequestreview-12 \ \ 
+fm-contributions: disposition needs a non-empty summary
+[exit 1]
+OK   exit 1 as expected: a blank reason is still refused for a torn-down task
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED disposition https://github.com/o/r/pull/8#pullrequestreview-12 task\ finished\ and\ torn\ down\;\ follow-up\ filed
+[exit 0]
+OK   exit 0 as expected: the torn-down task disposes of the review by citing it
+receipts in data/delivery/contributions.json: [{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"disposition","ref":"https://github.com/o/r/pull/8#pullrequestreview-12","summary":"task finished and torn down; follow-up filed","at":"2026-09-16T08:00:00Z"}]
+$ fm-contributions.sh retire delivery https://github.com/o/r/pull/8 captain task\ finished
+[exit 0]
+OK   exit 0 as expected: retire succeeds once nothing is pending
+
+=== S10: unmerged closure under config/hold-pr-settle raises a closed event that acknowledges with the token alone ===
+(forge) maintainer submits CHANGES_REQUESTED review 12 with body: "The retry loop drops errors"
+$ fm-captain-hold.sh hold delivery --reason "Unfinished work"
+(forge) PR 8 is closed without merge
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 6cbca417a504d1619d611b8f16cb0f791ebe5ea6567a784980c5915aa3903b21
+[exit 0]
+[{"task":"delivery","type":"review","token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","source":"https://github.com/o/r/pull/8#pullrequestreview-12"},{"task":"delivery","type":"closed","token":"closed","source":"https://github.com/o/r/pull/8"}]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 closed
+[exit 0]
+OK   exit 0 as expected: the closed event acknowledges with the token alone
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+OK   exit 1 as expected: the review with findings still needs a receipt after closure
+OK   pending signals = 1: only the review remains pending
+
+FAILS=0
