@@ -1,0 +1,150 @@
+
+===== S1 keyed option letter, no label (issue #8152 repro) =====
+$ printf q1\\tA\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: q1
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: f222fc7bda230c09c36b6b1ea65c847218b5b3141dfa026a971b4fee50ece71d\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: q1\nAnswer: A"
+
+===== S2 keyed option letter WITH displayed label =====
+$ printf q1\\tA\\tOff\ until\ checks\ pass.\\n | fm-captain-hold.sh answers --source "interview"
+skipped: q1 (already closed)
+answers: closed=0 skipped=1
+[exit 1]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: f222fc7bda230c09c36b6b1ea65c847218b5b3141dfa026a971b4fee50ece71d\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: q1\nAnswer: A"
+$ cap open q1
+[exit 1]
+
+===== S3 direct answer, decision file holding only 'A' =====
+$ cap answer q2 --decision-file /tmp/fm-8152-home.boSFfp/a.txt
+answered: q2
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd\nResolution mode: answered\n\nCaptain decision:\nA"
+
+===== S4 adversarial option shapes without meaning =====
+$ printf adv1\\tb\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: adv1
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: b2ae0274520f6e8591799e0701046c8bdb1ea4f07fab18d051a0a8b9d1ef4848\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv1\nAnswer: b"
+$ printf adv2\\t7\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: adv2
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 57cc82a85b6eaf4ff55f4e0a223888b24b4f85e15e7f81f01adf2323586113bf\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv2\nAnswer: 7"
+$ printf adv3\\t\(c\)\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: adv3
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 93f9d3faf2152db7ed24111abad4cfc1cfec13cee28fb23ab354db529142f677\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv3\nAnswer: (c)"
+$ printf adv4\\tD.\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: adv4
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 4d6c9efec141554cbac4391dd0c93aee90fe5b6e6c547fb95e6a7727cdf4f7b3\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv4\nAnswer: D."
+$ printf adv5\\te\)\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: adv5
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: f680566fb80512f741da842df7fb57ff752487575203a42b15da7fb102582064\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv5\nAnswer: e)"
+$ printf adv6\\tA\ \\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: adv6
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: a4cf351788e070b88e728dccdea80004f35d35597339b227e1e19e8788a6d6d9\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv6\nAnswer: A "
+$ printf adv7\\t\ b\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: adv7
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 3777a03bfcba5eb9a901af76259d85d34792cf427df448115d3943a8d1e0312b\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv7\nAnswer:  b"
+$ printf adv8\\tA\\t\ \\n | fm-captain-hold.sh answers --source "interview"
+closed: adv8
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 652ea8ca9550494fe31577e5ea43e684fbd0b9afeafe508dae421b432e2eb113\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: adv8\nAnswer: A\nAnswer as shown to the captain:  "
+$ cap answer adv9 --decision-file /tmp/fm-8152-home.boSFfp/b.txt
+answered: adv9
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 7df27f9c0587b888839a850ae2f18d5d2402d08c0b0f7947e10e0c90ccb83477\nResolution mode: answered\n\nCaptain decision:\n (B) "
+
+===== S5 free text unchanged (keyed, no label; keyed, blank label; direct file) =====
+$ printf f1\\tKeep\ it\ off\ for\ now\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: f1
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 0a5abbd171253d2e3d9a7e5fc211cfdcc6ad601f23d8ef5df4c0bd5f6b657637\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: f1\nAnswer: Keep it off for now"
+$ printf f2\\tKeep\ it\ off\ for\ now\\t\ \\n | fm-captain-hold.sh answers --source "interview"
+closed: f2
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 20aa92cdb56427099c8c80fcc1146b0388c6ff24987f1fd34c4e82a52c65513f\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: f2\nAnswer: Keep it off for now\nAnswer as shown to the captain:  "
+$ cap answer f3 --decision-file /tmp/fm-8152-home.boSFfp/f.txt
+answered: f3
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: a6a409742a111d26ce30427cd5bb7dba4f68bc9e85ad589868141e6a32a61943\nResolution mode: answered\n\nCaptain decision:\nKeep it off until the checks pass."
+
+===== S6 selected-answer field shapes on direct answer =====
+$ cap answer m1 --decision-file /tmp/fm-8152-home.boSFfp/m1.txt
+answered: m1
+[exit 0]
+$ cap answer m2 --decision-file /tmp/fm-8152-home.boSFfp/m2.txt
+answered: m2
+[exit 0]
+$ cap answer m3 --decision-file /tmp/fm-8152-home.boSFfp/m3.txt
+answered: m3
+[exit 0]
+Selected answer lines: 0
+
+===== S7 interview flow: register, feed keyed answers, verify closure + Bearings =====
+$ printf iv1\\tB\\tOn\ now.\\niv2\\tA\\tOff\ until\ checks\ pass.\\n | fm-captain-hold.sh answers --source "interview"
+closed: iv1
+closed: iv2
+answers: closed=2 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 834601ef1a591d5d9b5ee3724aec40b8c8bdca37fc4e438a099e762928bcb007\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: iv1\nAnswer: B\nAnswer as shown to the captain: On now."
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 835aa5a8bfd3ad3b85219265eed8704d144996e0ea4b57ba160127ac9f48824b\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: iv2\nAnswer: A\nAnswer as shown to the captain: Off until checks pass."
+$ cap open iv1
+[exit 1]
+$ cap open iv2
+[exit 1]
+[bearings exit 0]
+decisions_open ids in Bearings: []
+
+===== full durable record of q1 =====
+error: "Task \"q1\" not found in this backlog"
+code: NOT_FOUND
+help[1]: Run `tasks-axi list` to see existing tasks

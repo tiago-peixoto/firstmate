@@ -70,5 +70,6 @@ ok - skipped on markdown-only tasks-axi: verify a derived pre-collapse key
 ok - captain-hold mutations address the beads backend without a markdown override
 ok - skipped on markdown-only tasks-axi: captain-hold create under due.required without types.custom
 ok - an answered captain call archived by Done retention still satisfies the completion gate
-ok - an answered captain call archived to a user-configured location still satisfies the completion gate
-exit=0
+fm-captain-hold: compatible tasks-axi is required
+not ok - could not register the captain-held task
+exit=1

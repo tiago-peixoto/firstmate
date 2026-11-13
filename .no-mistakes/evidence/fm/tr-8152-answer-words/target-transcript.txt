@@ -1,0 +1,156 @@
+
+===== S1 keyed option letter, no label (issue #8152 repro) =====
+$ printf q1\\tA\\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: q1 (option A requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+
+===== S2 keyed option letter WITH displayed label =====
+$ printf q1\\tA\\tOff\ until\ checks\ pass.\\n | fm-captain-hold.sh answers --source "interview"
+closed: q1
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 973398cc85e0abbdb2d3ecdf1d0ec3049e9030d082826a1fc10623cf5546c931\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: q1\nAnswer: A\nAnswer as shown to the captain: Off until checks pass.\nSelected answer: Off until checks pass."
+$ cap open q1
+[exit 1]
+
+===== S3 direct answer, decision file holding only 'A' =====
+$ cap answer q2 --decision-file /tmp/fm-8152-home.HMixDU/a.txt
+fm-captain-hold: decision file contains only option A; include the displayed option words
+[exit 1]
+  state: queued
+  held: yes
+
+===== S4 adversarial option shapes without meaning =====
+$ printf adv1\\tb\\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv1 (option b requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ printf adv2\\t7\\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv2 (option 7 requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ printf adv3\\t\(c\)\\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv3 (option (c) requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ printf adv4\\tD.\\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv4 (option D. requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ printf adv5\\te\)\\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv5 (option e) requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ printf adv6\\tA\ \\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv6 (option A  requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ printf adv7\\t\ b\\t\\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv7 (option  b requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ printf adv8\\tA\\t\ \\n | fm-captain-hold.sh answers --source "interview"
+skipped: adv8 (option A requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+  state: queued
+  held: yes
+$ cap answer adv9 --decision-file /tmp/fm-8152-home.HMixDU/b.txt
+fm-captain-hold: decision file contains only option  (B) ; include the displayed option words
+[exit 1]
+  state: queued
+  held: yes
+
+===== S5 free text unchanged (keyed, no label; keyed, blank label; direct file) =====
+$ printf f1\\tKeep\ it\ off\ for\ now\\t\\n | fm-captain-hold.sh answers --source "interview"
+closed: f1
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 0a5abbd171253d2e3d9a7e5fc211cfdcc6ad601f23d8ef5df4c0bd5f6b657637\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: f1\nAnswer: Keep it off for now\nSelected answer: Keep it off for now"
+$ printf f2\\tKeep\ it\ off\ for\ now\\t\ \\n | fm-captain-hold.sh answers --source "interview"
+closed: f2
+answers: closed=1 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: e6e6dde5c698d23ea153950537556a3ce97aadef1c26ebf93ab71f1d1a986a91\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: f2\nAnswer: Keep it off for now\nSelected answer: Keep it off for now"
+$ cap answer f3 --decision-file /tmp/fm-8152-home.HMixDU/f.txt
+answered: f3
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: a6a409742a111d26ce30427cd5bb7dba4f68bc9e85ad589868141e6a32a61943\nResolution mode: answered\n\nCaptain decision:\nKeep it off until the checks pass.\nSelected answer: Keep it off until the checks pass."
+
+===== S6 selected-answer field shapes on direct answer =====
+$ cap answer m1 --decision-file /tmp/fm-8152-home.HMixDU/m1.txt
+answered: m1
+[exit 0]
+18:  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 862307d587bd8b75a0858c7edeb47465c82f6c2c5ba574265b616174e7b80552\nResolution mode: answered\n\nCaptain decision:\nFrom chat:\nAnswer: Off until checks pass.\nBecause the gate is flaky.\nSelected answer: Off until checks pass."
+$ cap answer m2 --decision-file /tmp/fm-8152-home.HMixDU/m2.txt
+answered: m2
+[exit 0]
+18:  body: "Resolution recorded by fm-captain-hold.\nDecision digest: d442a87c37c3b463396fa0244c9acb519273ec7e67c55d0375822edfe5b00bc2\nResolution mode: answered\n\nCaptain decision:\nAnswer: Off until checks pass.\nBecause the gate is flaky.\nSelected answer: Off until checks pass."
+$ cap answer m3 --decision-file /tmp/fm-8152-home.HMixDU/m3.txt
+answered: m3
+[exit 0]
+Selected answer lines: 0
+
+===== S7 interview flow: register, feed keyed answers, verify closure + Bearings =====
+$ printf iv1\\tB\\tOn\ now.\\niv2\\tA\\tOff\ until\ checks\ pass.\\n | fm-captain-hold.sh answers --source "interview"
+closed: iv1
+closed: iv2
+answers: closed=2 skipped=0
+[exit 0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 834601ef1a591d5d9b5ee3724aec40b8c8bdca37fc4e438a099e762928bcb007\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: iv1\nAnswer: B\nAnswer as shown to the captain: On now.\nSelected answer: On now."
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 835aa5a8bfd3ad3b85219265eed8704d144996e0ea4b57ba160127ac9f48824b\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: iv2\nAnswer: A\nAnswer as shown to the captain: Off until checks pass.\nSelected answer: Off until checks pass."
+$ cap open iv1
+[exit 1]
+$ cap open iv2
+[exit 1]
+[bearings exit 0]
+decisions_open ids in Bearings: ["q2","adv1","adv2","adv3","adv4","adv5","adv6","adv7","adv8","adv9"]
+
+===== full durable record of q1 =====
+task:
+  id: q1
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-13
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 973398cc85e0abbdb2d3ecdf1d0ec3049e9030d082826a1fc10623cf5546c931\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through interview.\nTask: q1\nAnswer: A\nAnswer as shown to the captain: Off until checks pass.\nSelected answer: Off until checks pass."
