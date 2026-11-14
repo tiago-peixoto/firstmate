@@ -1615,6 +1615,18 @@ The diagnostic names the accepted values; Firstmate never falls back to a permis
 
 `bin/fm-spawn.sh` reads the file on every spawn and relaunch, so a change takes effect at the next launch without a restart.
 Both approval-mode files follow the primary-authoritative [`secondmate-provisioning`](../.agents/skills/secondmate-provisioning/SKILL.md) inherited-local-material contract.
+
+### Per-secondmate permission mode
+
+To set the permission mode of one secondmate home alone, create `config/secondmate-accounts/<id>/claude-permission-mode` in the primary home.
+Use the secondmate's registered identifier for `<id>`, and the same tokens as the home-wide file.
+Every propagation pushes that file into the named secondmate home as its `config/claude-permission-mode`, in place of the primary's own value, for local and remote routes alike.
+That home's workers then launch in the chosen mode, while every other secondmate home keeps inheriting the primary's value.
+The secondmate's own agent is launched by the primary home, so it keeps the primary's mode.
+Removing the file restores the inherited value at the next propagation.
+A present file that is not a regular file fails that propagation and leaves the home's current mode unchanged, never falling back to the primary's value.
+The secondmate home validates the token at its next spawn, exactly as it validates an inherited one.
+For example, `config/secondmate-accounts/oss/claude-permission-mode` containing `auto` trials auto mode in the secondmate named `oss` only.
 T3 Code owns its provider command and always uses `full-access`, so `backend=t3code` accepts the default `bypass` posture and refuses `auto` before mutation; [`t3code-backend.md`](t3code-backend.md#active-limits) owns that backend limit.
 
 The [Claude adapter reference](../.agents/skills/harness-adapters/references/harness/claude.md) records the permission-mode observations and the distinct startup dialogs.
@@ -1805,7 +1817,7 @@ Every spawn, control-plane relaunch, and automatic recovery reads the durable se
 After changing a live mate's pin, use `bin/fm-control.sh <id> relaunch` to apply it.
 The relaunch checks the selected pin before stopping the current agent.
 
-Per-secondmate pins stay in the primary home and are not inherited or copied into the secondmate's home.
+Per-secondmate account pins stay in the primary home and are not inherited or copied into the secondmate's home.
 A matching primary-side per-secondmate pin for a remote route refuses before remote launch, because its account must be configured on that host instead.
 
 ### Per-secondmate omp profile

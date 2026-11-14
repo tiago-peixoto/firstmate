@@ -55,7 +55,7 @@ if [ -n "${FM_FIXTURE_BLOCK:-}" ] && [ "${args[1]}" = generation ]; then
   done
   [ -f "$FM_FIXTURE_BLOCK.release" ] || exit 95
 fi
-exec env FM_HOME="$receiver" FM_INHERITABLE_CONFIG=crew-harness bash "$root/bin/${args[0]}" "${args[@]:1}"
+exec env FM_HOME="$receiver" FM_INHERITABLE_CONFIG="${FM_FIXTURE_ITEMS:-crew-harness}" bash "$root/bin/${args[0]}" "${args[@]:1}"
 SH
 chmod +x "$TMP_ROOT/fake-ssh"
 
@@ -75,7 +75,7 @@ push_fixture() (
   fm_lock_acquire_wait "$lock" || exit 1
   trap 'fm_lock_release "$lock"' EXIT
   generation=$(fm_remote_inherit_generation_next "$PARENT/state" fixture) || exit 1
-  FM_HOME="$PARENT" FM_ROOT_OVERRIDE="$ROOT" FM_INHERITABLE_CONFIG=crew-harness \
+  FM_HOME="$PARENT" FM_ROOT_OVERRIDE="$ROOT" FM_INHERITABLE_CONFIG="${FM_FIXTURE_ITEMS:-crew-harness}" \
     FM_FIXTURE_SENDER_LOCK="$lock" FM_SSH_BIN="$TMP_ROOT/fake-ssh" \
     bash "$ROOT/bin/fm-remote-inherit-push.sh" fixture "$generation"
 )
@@ -170,3 +170,20 @@ printf 'not-a-generation\n' > "$COUNTER"
 if push_fixture > "$TMP_ROOT/counter-malformed.out" 2>&1; then fail 'malformed sender counter was accepted'; fi
 cmp -s "$RECORD" "$TMP_ROOT/record-good" || fail 'malformed sender counter changed the receiver generation'
 pass 'malformed or unreadable generation state fails closed without changing inherited content'
+
+# A primary-side per-secondmate permission mode reaches the remote home in place
+# of the primary's own value, and removing it restores the inherited value.
+rm -f -- "$COUNTER"
+printf 'bypass\n' > "$PARENT/config/claude-permission-mode"
+mkdir -p "$PARENT/config/secondmate-accounts/fixture"
+printf 'auto\n' > "$PARENT/config/secondmate-accounts/fixture/claude-permission-mode"
+FM_FIXTURE_ITEMS=claude-permission-mode push_fixture > "$TMP_ROOT/override.out" 2>&1 \
+  || fail "per-secondmate permission mode push failed: $(cat "$TMP_ROOT/override.out")"
+[ "$(cat "$REMOTE_HOME/config/claude-permission-mode")" = auto ] \
+  || fail 'remote home did not receive the per-secondmate permission mode'
+rm -f "$PARENT/config/secondmate-accounts/fixture/claude-permission-mode"
+FM_FIXTURE_ITEMS=claude-permission-mode push_fixture > "$TMP_ROOT/override-removed.out" 2>&1 \
+  || fail "inherited permission mode push failed: $(cat "$TMP_ROOT/override-removed.out")"
+[ "$(cat "$REMOTE_HOME/config/claude-permission-mode")" = bypass ] \
+  || fail 'remote home did not return to the inherited permission mode'
+pass 'a per-secondmate permission mode replaces the inherited value on a remote route'

@@ -1792,6 +1792,44 @@ test_approval_mode_inheritance_present_and_absent() {
   pass "B12c approval modes follow primary values and primary absence"
 }
 
+# config/secondmate-accounts/<id>/claude-permission-mode in the primary sets
+# that one secondmate home's mode, while every other home keeps inheriting the
+# primary's value on every convergence path.
+test_per_secondmate_claude_permission_mode() {
+  local w head out err status
+  w=$(new_world permmode-per-mate)
+  head=$(git -C "$w/main" rev-parse HEAD)
+  add_sm_worktree "$w" alpha "$head"
+  add_sm_worktree "$w" beta "$head"
+  mkdir -p "$w/alpha/config" "$w/beta/config" "$w/home/config/secondmate-accounts/alpha"
+  err="$w/permmode-per-mate.err"
+  printf 'bypass\n' > "$w/home/config/claude-permission-mode"
+  printf 'auto\n' > "$w/home/config/secondmate-accounts/alpha/claude-permission-mode"
+
+  out=$(run_config_push "$w" 2>"$err"); status=$?
+  expect_code 0 "$status" "per-secondmate permission mode push should succeed"
+  [ "$(cat "$w/alpha/config/claude-permission-mode")" = auto ] || fail "alpha did not receive its own permission mode"
+  [ "$(cat "$w/beta/config/claude-permission-mode")" = bypass ] || fail "beta lost the inherited permission mode"
+
+  run_bootstrap "$w" >/dev/null
+  [ "$(cat "$w/alpha/config/claude-permission-mode")" = auto ] || fail "bootstrap sweep reverted alpha's permission mode"
+  [ "$(cat "$w/beta/config/claude-permission-mode")" = bypass ] || fail "bootstrap sweep changed beta's permission mode"
+
+  # An unusable override errors and leaves the home's mode alone rather than
+  # falling back to the primary's value.
+  rm -f "$w/home/config/secondmate-accounts/alpha/claude-permission-mode"
+  mkdir "$w/home/config/secondmate-accounts/alpha/claude-permission-mode"
+  out=$(run_config_push "$w" 2>"$err"); status=$?
+  expect_code 1 "$status" "an unusable per-secondmate permission mode should fail the push"
+  [ "$(cat "$w/alpha/config/claude-permission-mode")" = auto ] || fail "an unusable override fell back to the primary mode"
+
+  rmdir "$w/home/config/secondmate-accounts/alpha/claude-permission-mode"
+  out=$(run_config_push "$w" 2>"$err"); status=$?
+  expect_code 0 "$status" "push after removing the override should succeed"
+  [ "$(cat "$w/alpha/config/claude-permission-mode")" = bypass ] || fail "removing the override did not restore the inherited mode"
+  pass "B12d a per-secondmate permission mode sets one home while others keep the inherited value"
+}
+
 test_backend_inheritance_present_and_absent() {
   local w head out err status instruction
   w=$(new_world backend-inherit)
@@ -2999,6 +3037,7 @@ test_backend_inheritance_present_and_absent
 test_spawn_secondmate_claude_permission_mode_auto
 test_spawn_secondmate_claude_grants_parent_inbox_dir
 test_approval_mode_inheritance_present_and_absent
+test_per_secondmate_claude_permission_mode
 test_presentation_inheritance_default_on_and_opt_out
 test_bootstrap_sweep_surfaces_config_propagation_failure
 test_bootstrap_rereads_after_partial_propagation

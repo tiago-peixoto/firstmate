@@ -95,6 +95,31 @@ FM_SHARED_CAPTAIN_MODE="444"
 # environment only in tests. Items must not contain whitespace.
 FM_INHERITABLE_CONFIG="${FM_INHERITABLE_CONFIG:-crew-dispatch.json dispatch-never-send crew-harness backlog-backend backend herdr-presentation-spaces herdr-project-groups startup-memory-budget trace-context launch-env-allowlist claude-permission-mode codex-approval-mode lavish-axi-host t3code-instances keep-ai-trailers supervision-host-off firstmate-role}"
 
+# Items the primary may set for one secondmate alone: a file at
+# config/secondmate-accounts/<id>/<item> in the primary home replaces the
+# primary's config/<item> as the source pushed into that secondmate's home.
+# Only the source changes, so a present but unusable override errors like any
+# other unusable source and never falls back to the primary's value.
+FM_SECONDMATE_OVERRIDABLE_CONFIG="claude-permission-mode"
+
+# fm_config_inherit_source <src-config-dir> <item> [<secondmate-id>]
+# Prints the source path to push for <item> into <secondmate-id>'s home.
+fm_config_inherit_source() {
+  local src_config=$1 item=$2 mate=${3:-} candidate override present
+  if [ -n "$mate" ]; then
+    for candidate in $FM_SECONDMATE_OVERRIDABLE_CONFIG; do
+      [ "$candidate" = "$item" ] || continue
+      override="$src_config/secondmate-accounts/$mate/$item"
+      present=$(fm_config_source_present "$override") || return 1
+      if [ "$present" = 1 ]; then
+        printf '%s\n' "$override"
+        return 0
+      fi
+    done
+  fi
+  printf '%s\n' "$src_config/$item"
+}
+
 # firstmate-role additionally carries a proof-of-state receipt: a scoped role
 # grant (or its recorded absence) authorizes a secondmate home only while
 # config/.fm-inherit-firstmate-role.generation there proves the exact bytes the
@@ -224,7 +249,7 @@ destination_allows_inherited_item() {
   git -C "$top" check-ignore -q -- "$rel_path" 2>/dev/null
 }
 
-# propagate_inheritable_config <src-config-dir> <dest-config-dir>
+# propagate_inheritable_config <src-config-dir> <dest-config-dir> [<src-home> [<secondmate-id>]]
 # Copy each declared inheritable item from the primary's config dir (src) into a
 # secondmate home's config dir (dest). SILENT on stdout - callers parse stdout,
 # so this writes nothing there. It emits concise stderr diagnostics only for
@@ -686,14 +711,14 @@ fm_config_inherit_backend_prepare() ( # <source-home> <source-config> <dest-conf
   fm_fleet_backend_bind "${dest_config%/*}/state" "$dest_config" "$selected"
 )
 
-propagate_secondmate_inheritance() {
-  local src_home=$1 dest_home=$2 src_config=${3:-} src_data=${4:-} rc
+propagate_secondmate_inheritance() {  # <src-home> <dest-home> [<src-config> [<src-data> [<secondmate-id>]]]
+  local src_home=$1 dest_home=$2 src_config=${3:-} src_data=${4:-} mate=${5:-} rc
   [ -n "$src_home" ] || return 1
   [ -n "$dest_home" ] || return 1
   [ -n "$src_config" ] || src_config="$src_home/config"
   [ -n "$src_data" ] || src_data="$src_home/data"
   rc=0
-  propagate_inheritable_config "$src_config" "$dest_home/config" "$src_home" || {
+  propagate_inheritable_config "$src_config" "$dest_home/config" "$src_home" "$mate" || {
     [ "$?" -ne 2 ] || return 1
     rc=1
   }
@@ -702,7 +727,7 @@ propagate_secondmate_inheritance() {
 }
 
 propagate_inheritable_config() {
-  local src_config=$1 dest_config=$2 src_home=${3:-${1%/*}} item src dest source_present reason rc
+  local src_config=$1 dest_config=$2 src_home=${3:-${1%/*}} mate=${4:-} item src dest source_present reason rc
   local prior_dest_config=${FM_INHERIT_DEST_CONFIG-} role_stage='' inherited_backend=''
   [ -n "$src_config" ] || return 1
   [ -n "$dest_config" ] || return 1
@@ -728,8 +753,14 @@ propagate_inheritable_config() {
       record_inheritable_config_result "$item" unchanged "fleet runtime bound in state/fleet-backend"
       continue
     fi
-    src="$src_config/$item"
     dest="$dest_config/$item"
+    if ! src=$(fm_config_inherit_source "$src_config" "$item" "$mate"); then
+      reason="cannot inspect the per-secondmate override"
+      warn_inheritable_config_error "$item" "$src_config/secondmate-accounts/$mate/$item" "$reason"
+      record_inheritable_config_result "$item" error "$reason"
+      rc=1
+      continue
+    fi
     if [ "$item" = firstmate-role ]; then
       if ! role_stage=$(mktemp -d "${TMPDIR:-/tmp}/fm-inherit-role.XXXXXX" 2>/dev/null) ||
         ! fm_role_inherit_payload "$src_home" "$src_config" "$role_stage/$item"; then
