@@ -278,7 +278,8 @@ fm_backend_hc_container_ensure() {
 # hc terminal firstmate itself runs in; --no-notify keeps hc from typing notes
 # into any parent.
 fm_backend_hc_create_task() {  # <session> <window-label> <cwd>
-  local session=$1 label=$2 cwd=$3 home scoped dup out address
+  local session=$1 label=$2 cwd=$3 home home_path scoped dup out address
+  home_path=$(CDPATH='' cd -- "$FM_HOME" && pwd -P) || return 1
   home=$(fm_backend_hometag)
   scoped=$(fm_backend_hc_scoped_label "$label")
   dup=$(fm_backend_hc_cli "$session" ls --json --label "firstmate.task=$label" --label "firstmate.home=$home" 2>/dev/null) \
@@ -290,12 +291,81 @@ fm_backend_hc_create_task() {  # <session> <window-label> <cwd>
   out=$(fm_backend_hc_cli "$session" run --bg --json --no-parent --outlive-parent --no-notify \
     --cwd "$cwd" \
     --label "firstmate.task=$label" --label "firstmate.home=$home" \
+    --label "firstmate.home.path=$home_path" \
     --label "herdr.space=${FM_HC_SPACE:-fm-$home}" --label "herdr.tab=$scoped" 2>&1) \
     || { echo "error: hc run failed for $label: $out" >&2; return 1; }
   address=$(printf '%s' "$out" | jq -r '.address // empty' 2>/dev/null)
   fm_backend_hc_address_valid "$address" || { echo "error: hc run did not return a terminal address for $label (got: $out)" >&2; return 1; }
   printf '%s\n' "$address"
 }
+
+# Inherited HC markers can survive in multiplexers after their original pane.
+# Bind the verified harness to the core terminal's process before using labels.
+fm_backend_hc_terminal_owns_harness() { # <terminal-json>
+  local terminal_pid pid pids parent seen=' '
+  terminal_pid=$(printf '%s' "$1" | jq -er '.pid | select(type == "number" and . > 1 and . == floor)') || return 1
+  pids=$(fm_harness_ancestry_pids) || return 1
+  pid=${pids%%$'\n'*}
+  while :; do
+    case "$pid" in ''|*[!0-9]*|0|1) return 1 ;; esac
+    case "$seen" in *" $pid "*) return 1 ;; esac
+    seen="$seen$pid "
+    kill -0 "$pid" 2>/dev/null || return 1
+    [ "$pid" != "$terminal_pid" ] || return 0
+    parent=$(fm_ps_ppid "$pid") || return 1
+    pid=$parent
+  done
+}
+
+# Called after startup acquires the session lock, with the session-lock and
+# wake libraries loaded. Hold the same claim lock as fm-lock.sh so a transfer
+# cannot interleave stale-role removal and publication. Only this core is known;
+# other cores and legacy-only home labels cannot authorize cleanup.
+fm_backend_hc_register_coordinator() ( # <state>
+  local state=$1 home_path bin own candidates address record claim
+  [ -n "${HC_TERMINAL_ID:-}" ] && [ -n "${HC_TERMINAL_SOCKET:-}" ] || return 1
+  fm_backend_hc_address_valid "$HC_TERMINAL_ID" || return 1
+  # shellcheck source=bin/fm-primary-scope-lib.sh
+  . "$FM_BACKEND_LIB_DIR/fm-primary-scope-lib.sh"
+  # shellcheck source=bin/fm-gate-refuse-lib.sh
+  . "$FM_BACKEND_LIB_DIR/fm-gate-refuse-lib.sh"
+  fm_is_gate_agent "$FM_ROOT" && return 1
+  fm_primary_scope_matches "$FM_ROOT" "$state" || return 1
+  home_path=$(CDPATH='' cd -- "$FM_HOME" && pwd -P) || return 1
+  fm_backend_unix_sock_live "$HC_TERMINAL_SOCKET" || return 1
+  fm_backend_hc_version_check >/dev/null 2>&1 || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  bin=$(fm_backend_hc_bin) || return 1
+  export HC_SOCKET="$HC_TERMINAL_SOCKET"
+  unset HC_SESSION HC_SCOPE
+  claim="$state/.lock.acquire"
+  fm_lock_try_acquire "$claim" || return 1
+  trap 'fm_lock_release "$claim"' EXIT
+  trap 'exit 1' HUP INT TERM
+  fm_session_lock_owned_by_self "$state" || return 1
+  own=$("$bin" get --json "$HC_TERMINAL_ID") || return 1
+  printf '%s' "$own" | jq -e --arg id "$HC_TERMINAL_ID" \
+    '.address == $id and .state == "live" and ((.labels["firstmate.task"] // "") == "")' >/dev/null || return 1
+  fm_backend_hc_terminal_owns_harness "$own" || return 1
+  candidates=$("$bin" ls --json \
+    --label "firstmate.home.path=$home_path" --label firstmate.role=coordinator) || return 1
+  candidates=$(printf '%s' "$candidates" | jq -er '.terminals | map(.address) | join("\n")') || return 1
+  while IFS= read -r address; do
+    [ -n "$address" ] && [ "$address" != "$HC_TERMINAL_ID" ] || continue
+    fm_backend_hc_address_valid "$address" || return 1
+    record=$("$bin" get --json "$address") || return 1
+    printf '%s' "$record" | jq -e --arg home "$home_path" --arg id "$address" \
+      '.address == $id and .labels["firstmate.home.path"] == $home and
+       .labels["firstmate.role"] == "coordinator" and ((.labels["firstmate.task"] // "") == "")' >/dev/null || continue
+    fm_session_lock_owned_by_self "$state" || return 1
+    "$bin" label "$address" firstmate.role= >/dev/null || return 1
+  done <<EOF
+$candidates
+EOF
+  fm_session_lock_owned_by_self "$state" || return 1
+  "$bin" label "$HC_TERMINAL_ID" \
+    "firstmate.home.path=$home_path" firstmate.role=coordinator >/dev/null
+)
 
 # fm_backend_hc_capture: the screen plus <lines> of history, the same window
 # tmux's `capture-pane -S -<lines>` returns.

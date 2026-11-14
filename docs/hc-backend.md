@@ -68,7 +68,8 @@ The terminal carries these labels:
 | Label | Value | Purpose |
 | --- | --- | --- |
 | `firstmate.task` | `fm-<id>` | Task identity checked before input or close. |
-| `firstmate.home` | `<hometag>` from `bin/fm-backend-hometag-lib.sh` | Keeps two homes with the same task id apart. |
+| `firstmate.home` | `<hometag>` from `bin/fm-backend-hometag-lib.sh` | Existing task-operation identity, derived from the code root and home marker. |
+| `firstmate.home.path` | Physical absolute `FM_HOME` path | Exact home identity for grouping on this machine. |
 | `herdr.space` | `FM_HC_SPACE`, default `fm-<hometag>` | Groups a home's tasks in one Herdr.app space. |
 | `herdr.tab` | `<hometag>-fm-<id>` | One Herdr.app tab per task. |
 
@@ -86,6 +87,24 @@ hc_terminal=<address>
 Every adapter call sets exactly the recorded `HC_SESSION` and drops any inherited `HC_SOCKET`, which hc would otherwise prefer, so a task keeps reaching its own core even when the caller's environment names another one.
 `FM_HC_SOCKET` is the deliberate socket pin tests and labs use instead of an inherited `HC_SOCKET`.
 An input, capture, or close that carries the task label refuses a terminal whose `firstmate.task` or `firstmate.home` label does not match, and a close without a label still refuses a terminal that lacks this home's labels.
+
+After a successful session-start lock acquisition, a primary running inside a live hc terminal publishes `firstmate.role=coordinator` and `firstmate.home.path` on its own terminal.
+Registration uses only `HC_TERMINAL_SOCKET` and `HC_TERMINAL_ID`, independently of the worker backend selection.
+It refuses task terminals, gate agents, and sessions without verified lock ownership.
+The terminal process must be a live ancestor of the current verified harness, or the harness itself.
+Missing process information, unrelated terminals, and inherited markers without that ancestry proof refuse registration.
+The path resolves symbolic links with `pwd -P`; grouping never falls back to `firstmate.home`, names, folders, or parent relationships.
+These labels do not change task identity, parent relationships, or terminal lifetime.
+
+While holding the existing session claim lock, registration removes only `firstmate.role` from other non-task coordinators with the exact home path on the same core.
+It verifies session ownership before each label mutation and publishes the new coordinator only after cleanup succeeds.
+Other homes, task terminals, legacy-only labels, and other cores remain untouched.
+Registration uses the startup endpoint deadline independently of the overall digest deadline.
+An unavailable endpoint, busy claim lock, failed cleanup, or timeout leaves registration incomplete and prints a warning while the digest continues.
+The timeout stops the registration process group, including CLI descendants; completed label changes are not rolled back.
+Repeated startup, including context re-emission, retries registration.
+Cross-core transfers require separate reconciliation; consumers must refuse ambiguous coordinators rather than infer an owner.
+Existing workers receive the new home label only when a terminal is created.
 
 ## Operations
 

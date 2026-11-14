@@ -881,6 +881,94 @@ EOF
   pass "a lock refusal prints a loud read-only banner, skips every mutating step, and still completes the digest"
 }
 
+test_hc_registration_requires_successful_startup_lock() {
+  local rec root home fakebin out holder_pid
+  rec=$(new_world hc-registration)
+  IFS='|' read -r root home fakebin <<EOF
+$rec
+EOF
+  make_fake_toolchain "$fakebin"
+  make_fake_ps_claude "$fakebin"
+  mkdir -p "$root/bin"
+  touch "$root/AGENTS.md"
+  out=$(HC_TERMINAL_ID=t1 HC_TERMINAL_SOCKET="$home/missing.sock" \
+    run_session_start "$home" "$root" "$fakebin:$BASE_PATH")
+  assert_contains "$out" "hc coordinator registration unavailable" "locked startup attempts registration and reports failure"
+  assert_contains "$out" "NEXT STEP" "optional registration failure does not stop startup"
+  sleep 300 &
+  holder_pid=$!
+  printf '%s\n' "$holder_pid" > "$home/state/.lock"
+  out=$(HC_TERMINAL_ID=t1 HC_TERMINAL_SOCKET="$home/missing.sock" \
+    run_session_start "$home" "$root" "$fakebin:$BASE_PATH")
+  kill "$holder_pid" 2>/dev/null || true
+  wait "$holder_pid" 2>/dev/null || true
+  assert_contains "$out" "READ-ONLY SESSION" "foreign lock refuses startup mutation"
+  assert_not_contains "$out" "hc coordinator registration unavailable" "lock refusal skips registration"
+  pass "hc registration runs only after startup lock success and remains best-effort"
+}
+
+test_hc_registration_timeout_preserves_digest() {
+  local rec root home fakebin out socket_pid socket_dir i
+  rec=$(new_world hc-registration-timeout)
+  IFS='|' read -r root home fakebin <<EOF
+$rec
+EOF
+  make_fake_toolchain "$fakebin"
+  make_fake_ps_claude "$fakebin"
+  mkdir -p "$root/bin"
+  touch "$root/AGENTS.md"
+  ln -s "$(command -v jq)" "$fakebin/jq"
+  socket_dir=$(mktemp -d /tmp/fm-hc-start.XXXXXX)
+  FM_TEST_CLEANUP_DIRS+=("$socket_dir")
+  python3 - "$socket_dir/core.sock" <<'PYTHON' &
+import socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.bind(sys.argv[1])
+s.listen()
+while True:
+    conn, _ = s.accept()
+    conn.close()
+PYTHON
+  socket_pid=$!
+  for i in {1..100}; do
+    [ ! -S "$socket_dir/core.sock" ] || break
+    sleep 0.05
+  done
+  cat > "$fakebin/hc" <<'SH'
+#!/usr/bin/env bash
+case "$1" in
+  --version) echo 'hc 0.1.14' ;;
+  get) printf '{"address":"t1","state":"live","pid":%s,"labels":{}}\n' "${FM_FAKE_TERMINAL_PID:-$FM_FAKE_HARNESS_PID}" ;;
+  ls) echo '{"terminals":[]}' ;;
+  label)
+    touch "$FM_HOME/registration-entered"
+    (trap '' TERM; sleep 6; touch "$FM_HOME/late-mutation") &
+    wait
+    ;;
+esac
+SH
+  chmod +x "$fakebin/hc"
+  out=$(HC_TERMINAL_ID=t1 HC_TERMINAL_SOCKET="$socket_dir/core.sock" FM_HC_BIN="$fakebin/hc" \
+    FM_FAKE_TERMINAL_PID=1 FM_FAKE_HARNESS_PID="$SESSION_START_TEST_HARNESS_PID" \
+    run_session_start "$home" "$root" "$fakebin:$BASE_PATH")
+  assert_contains "$out" "hc coordinator registration unavailable" "startup refuses inherited identity"
+  [ ! -e "$home/registration-entered" ] || fail "startup mutated an unrelated terminal"
+  out=$(HC_TERMINAL_ID=t1 HC_TERMINAL_SOCKET="$socket_dir/core.sock" FM_HC_BIN="$fakebin/hc" \
+    FM_FAKE_HARNESS_PID="$SESSION_START_TEST_HARNESS_PID" \
+    FM_SESSION_START_ENDPOINT_TIMEOUT=1 FM_SESSION_START_TIMEOUT=30 \
+    run_session_start "$home" "$root" "$fakebin:$BASE_PATH")
+  kill "$socket_pid" 2>/dev/null || true
+  wait "$socket_pid" 2>/dev/null || true
+  [ -e "$home/registration-entered" ] || fail "fixture never reached registration mutation"
+  assert_contains "$out" "hc coordinator registration unavailable" "registration deadline must be nonfatal"
+  assert_contains "$out" "NEXT STEP" "digest continues after registration timeout"
+  assert_not_contains "$out" "●  STARTUP TRUNCATED" "registration must not consume the digest deadline"
+  [ ! -e "$home/state/.lock.acquire" ] || fail "registration timeout leaked claim lock"
+  sleep 6
+  [ ! -e "$home/late-mutation" ] || fail "registration descendant mutated after timeout"
+  pass "hc registration timeout releases claim, kills descendants, and preserves digest"
+}
+
 test_lock_write_failure_read_only_path() {
   local rec root home fakebin out status
   rec=$(new_world lock-write-failure)
@@ -3096,6 +3184,8 @@ EOF
 
 test_context_digest_absent_empty_present
 test_lock_refusal_read_only_path
+test_hc_registration_requires_successful_startup_lock
+test_hc_registration_timeout_preserves_digest
 test_lock_write_failure_read_only_path
 test_trace_context_effective_state_is_frozen_after_lock
 test_session_lock_concurrent_single_winner

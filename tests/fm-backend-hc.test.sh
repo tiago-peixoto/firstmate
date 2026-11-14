@@ -4,6 +4,7 @@
 # bin/fm-backend.sh. tests/fm-backend-hc-smoke.test.sh drives a real isolated
 # hc core; this suite pins selection, identity, keys, liveness, and close
 # behavior with a stub so it runs everywhere.
+# shellcheck disable=SC2016 # Test programs expand variables in the child shell.
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -37,12 +38,27 @@ case "$cmd" in
     IFS= read -r _req || true
     printf '{"jsonrpc":"2.0","id":1,"result":{"generation":%s}}\n' "${FAKE_HC_GENERATION:-1}"
     ;;
-  ls) cat "$D/ls.json" 2>/dev/null || printf '{"terminals":[]}\n' ;;
+  ls)
+    [ ! -e "$D/lose-lock" ] || printf 'invalid\n' > "$FM_HOME/state/.lock"
+    cat "$D/ls.json" 2>/dev/null || printf '{"terminals":[]}\n'
+    ;;
   run) cat "$D/run.json" ;;
   get)
     [ -f "$D/$last.exit" ] && exit "$(cat "$D/$last.exit")"
     [ -f "$D/$last.json" ] || { printf '{"error":{"kind":"not_found"}}\n' >&2; exit 3; }
     cat "$D/$last.json"
+    ;;
+  label)
+    [ ! -e "$D/label-fails" ] || exit 1
+    [ -e "$FM_HOME/state/.lock.acquire" ] || exit 9
+    address=$2
+    shift 2
+    for pair in "$@"; do
+      key=${pair%%=*} value=${pair#*=}
+      jq --arg k "$key" --arg v "$value" '.labels[$k] = $v | if $v == "" then del(.labels[$k]) else . end' \
+        "$D/$address.json" > "$D/update.json" || exit 1
+      mv "$D/update.json" "$D/$address.json"
+    done
     ;;
   rm) [ -e "$D/rm-sticks" ] || rm -f "$D/$last.json"; printf '{}\n' ;;
   read) printf 'screen of %s\n' "$last" ;;
@@ -129,7 +145,7 @@ test_create_task_is_independent_labeled_and_refuses_duplicates() {
   tag=$(hometag_of)
   out=$(grep $'\x1frun\x1f' "$D/log")
   for want in HC_SESSION=fmtest --no-parent --outlive-parent --no-notify $'--cwd\x1f/proj' \
-    "firstmate.task=fm-a1" "firstmate.home=$tag" "herdr.space=fm-$tag" "herdr.tab=$tag-fm-a1"; do
+    "firstmate.task=fm-a1" "firstmate.home.path=$(cd "$HOMEDIR" && pwd -P)" "firstmate.home=$tag" "herdr.space=fm-$tag" "herdr.tab=$tag-fm-a1"; do
     assert_contains "$out" "$want" "hc run must carry $want"
   done
   printf '{"terminals":[{"address":"t9"}]}\n' > "$D/ls.json"
@@ -137,6 +153,123 @@ test_create_task_is_independent_labeled_and_refuses_duplicates() {
   expect_refused hc_shell 'fm_backend_hc_create_task fmtest fm-a1 /proj'
   assert_not_contains "$(cat "$D/log")" $'\x1frun\x1f' "a live duplicate must not start a second terminal"
   pass "hc: create_task starts an independent labeled terminal and refuses a duplicate"
+}
+
+test_home_path_is_canonical_and_distinguishes_shared_root() {
+  local first second
+  setup_case canonical
+  mkdir -p "$D/home two"
+  ln -s "$HOMEDIR" "$D/alias"
+  printf '{"address":"t9"}\n' > "$D/run.json"
+  first=$(cd "$HOMEDIR" && pwd -P)
+  second=$(cd "$D/home two" && pwd -P)
+  hc_shell 'FM_HOME="$FAKE_HC_DIR/alias"; fm_backend_hc_create_task fmtest fm-one /proj
+    FM_HOME="$FAKE_HC_DIR/home two"; fm_backend_hc_create_task fmtest fm-two /proj' >/dev/null || fail "canonical home creation failed"
+  assert_contains "$(cat "$D/log")" "firstmate.home.path=$first" "symlink resolves to physical home"
+  assert_contains "$(cat "$D/log")" "firstmate.home.path=$second" "shared code root has distinct home identity"
+  : > "$D/log"
+  expect_refused hc_shell 'FM_HOME="$FAKE_HC_DIR/missing"; fm_backend_hc_create_task fmtest fm-three /proj'
+  assert_equals "$(cat "$D/log")" "" "missing home has no legacy fallback or hc calls"
+  pass "hc: physical home identity distinguishes homes sharing one code root"
+}
+
+registration_shell() {
+  hc_shell '
+    . "'"$FM_TEST_ROOT"'/bin/fm-session-lock-lib.sh"
+    . "'"$FM_TEST_ROOT"'/bin/fm-wake-lib.sh"
+    fm_harness_ancestry_pids() { printf "%s\n" "$$"; }
+    fm_backend_unix_sock_live() { [ "$1" = "$FAKE_HC_DIR/own.sock" ]; }
+    HC_TERMINAL_ID=t1 HC_TERMINAL_SOCKET="$FAKE_HC_DIR/own.sock"
+    jq ".pid=$$" "$FAKE_HC_DIR/t1.json" > "$FAKE_HC_DIR/own.json"
+    mv "$FAKE_HC_DIR/own.json" "$FAKE_HC_DIR/t1.json"
+    HC_SOCKET=wrong FM_HC_SOCKET=wrong HC_SESSION=wrong
+    printf "%s\n" "$$" > "$STATE/.lock"
+    '"$1"
+}
+
+setup_registration() {
+  setup_case "$1"
+  rm -f "$D/lose-lock"
+  git init -q "$HOMEDIR"
+  mkdir -p "$HOMEDIR/bin" "$HOMEDIR/state"
+  touch "$HOMEDIR/AGENTS.md"
+  jq -n '{address:"t1",state:"live",labels:{}}' > "$D/t1.json"
+  local home
+  home=$(cd "$HOMEDIR" && pwd -P)
+  jq -n --arg h "$home" '{address:"t2",state:"live",labels:{"firstmate.role":"coordinator","firstmate.home.path":$h}}' > "$D/t2.json"
+  jq -n '{address:"t3",state:"live",labels:{"firstmate.role":"coordinator","firstmate.home.path":"/other"}}' > "$D/t3.json"
+  jq --arg task fm-worker '.address="t4" | .labels["firstmate.task"]=$task' "$D/t2.json" > "$D/t4.json"
+  jq '.address="t5" | del(.labels["firstmate.home.path"]) | .labels["firstmate.home"]="legacy"' "$D/t2.json" > "$D/t5.json"
+  jq -s '{terminals:.}' "$D/t2.json" "$D/t3.json" "$D/t4.json" "$D/t5.json" > "$D/ls.json"
+}
+
+test_coordinator_registration_transfers_only_exact_home_role() {
+  setup_registration registration
+  ln -s "$HOMEDIR" "$D/alias"
+  registration_shell 'FM_HOME="$FAKE_HC_DIR/alias"; fm_backend_hc_register_coordinator "$STATE" && fm_backend_hc_register_coordinator "$STATE"' || fail "registration failed"
+  assert_equals "$(jq -r '.labels["firstmate.role"]' "$D/t1.json")" coordinator "own terminal registered"
+  assert_equals "$(jq -r '.labels["firstmate.home.path"]' "$D/t1.json")" "$(cd "$HOMEDIR" && pwd -P)" "canonical coordinator home"
+  assert_equals "$(jq -r '.labels["firstmate.role"] // ""' "$D/t2.json")" "" "old live coordinator loses role"
+  assert_equals "$(jq -r '.labels["firstmate.role"]' "$D/t3.json")" coordinator "other home untouched"
+  assert_equals "$(jq -r '.labels["firstmate.role"]' "$D/t4.json")" coordinator "worker untouched"
+  assert_equals "$(jq -r '.labels["firstmate.role"]' "$D/t5.json")" coordinator "legacy-only coordinator untouched"
+  assert_not_contains "$(cat "$D/log")" 'HC_SOCKET=wrong' "own socket wins"
+  assert_not_contains "$(grep -v -- --version "$D/log")" 'HC_SESSION=wrong' "ambient session removed"
+  [ ! -e "$HOMEDIR/state/.lock.acquire" ] || fail "claim lock leaked"
+  pass "hc: proven owner replaces stale same-home role under claim lock, idempotently"
+}
+
+test_coordinator_registration_requires_terminal_ancestry() {
+  local filter
+  for filter in '.pid=1' '.pid=null' 'del(.pid)'; do
+    setup_registration unrelated-terminal
+    CASE_PID_FILTER="$filter" expect_refused registration_shell '
+      jq "$CASE_PID_FILTER" "$FAKE_HC_DIR/t1.json" > "$FAKE_HC_DIR/own.json"
+      mv "$FAKE_HC_DIR/own.json" "$FAKE_HC_DIR/t1.json"
+      fm_backend_hc_register_coordinator "$STATE"'
+    assert_not_contains "$(cat "$D/log")" $'\x1flabel\x1f' "unverified identity must not clear or publish labels"
+  done
+  setup_registration sibling-terminal
+  expect_refused registration_shell '
+    sleep 60 &
+    sibling=$!
+    jq ".pid=$sibling" "$FAKE_HC_DIR/t1.json" > "$FAKE_HC_DIR/own.json"
+    mv "$FAKE_HC_DIR/own.json" "$FAKE_HC_DIR/t1.json"
+    rc=0
+    fm_backend_hc_register_coordinator "$STATE" || rc=$?
+    kill "$sibling"
+    wait "$sibling" 2>/dev/null || true
+    exit "$rc"'
+  assert_not_contains "$(cat "$D/log")" $'\x1flabel\x1f' "live sibling must not authorize labels"
+  setup_registration ancestor-terminal
+  registration_shell '
+    jq ".pid=$PPID" "$FAKE_HC_DIR/t1.json" > "$FAKE_HC_DIR/own.json"
+    mv "$FAKE_HC_DIR/own.json" "$FAKE_HC_DIR/t1.json"
+    fm_backend_hc_register_coordinator "$STATE"' || fail "real parent ancestry refused"
+  pass "hc: terminal ancestry accepts a real parent and refuses unrelated or missing process identity"
+}
+
+test_coordinator_registration_refusals_do_not_mutate_labels() {
+  local script
+  for script in \
+    'printf "invalid\n" > "$STATE/.lock"' \
+    'HC_TERMINAL_SOCKET=missing' \
+    'HC_TERMINAL_ID=' \
+    'NO_MISTAKES_GATE=review; unset FM_GATE_REFUSE_BYPASS' \
+    'rm "$FM_ROOT/AGENTS.md"' \
+    'HC_TERMINAL_ID=t4' \
+    'touch "$FAKE_HC_DIR/lose-lock"' \
+    'fm_lock_try_acquire "$STATE/.lock.acquire"'; do
+    setup_registration refused-registration
+    : > "$D/log"
+    expect_refused registration_shell "$script; fm_backend_hc_register_coordinator \"\$STATE\""
+    assert_not_contains "$(cat "$D/log")" $'\x1flabel\x1f' "refused registration cannot clear or publish roles"
+  done
+  setup_registration failed-cleanup
+  touch "$D/label-fails"
+  expect_refused registration_shell 'fm_backend_hc_register_coordinator "$STATE"'
+  assert_equals "$(jq -r '.labels["firstmate.role"] // ""' "$D/t1.json")" "" "cleanup failure prevents new coordinator publication"
+  pass "hc: unproven owner, worker, missing endpoint, gate, and failed cleanup refuse registration"
 }
 
 test_control_interrupt_delivers_the_harness_keys() {
@@ -364,6 +497,10 @@ fm_test_run \
   test_hc_is_spawn_capable_and_needs_app_signals \
   test_required_tool_check_uses_the_adapter_resolver \
   test_create_task_is_independent_labeled_and_refuses_duplicates \
+  test_home_path_is_canonical_and_distinguishes_shared_root \
+  test_coordinator_registration_transfers_only_exact_home_role \
+  test_coordinator_registration_requires_terminal_ancestry \
+  test_coordinator_registration_refusals_do_not_mutate_labels \
   test_control_interrupt_delivers_the_harness_keys \
   test_foreign_or_unlabeled_terminal_gets_no_input_and_no_close \
   test_invalid_session_never_reaches_hc \

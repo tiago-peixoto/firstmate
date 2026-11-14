@@ -726,6 +726,18 @@ FM_HOME="$FM_HOME" FM_CONFIG_OVERRIDE="$CONFIG" "$SCRIPT_DIR/fm-role.sh" report 
   || printf 'fm-role: unknown (bin/fm-role.sh report failed)\n'
 
 if [ "$READ_ONLY" -eq 0 ]; then
+  if [ -n "${HC_TERMINAL_ID:-}" ] && [ -n "${HC_TERMINAL_SOCKET:-}" ]; then
+    # shellcheck disable=SC2016 # The bounded child loads its own libraries.
+    if ! fm_run_timed "$ENDPOINT_TIMEOUT" bash -c '
+      FM_ROOT_OVERRIDE=$2 FM_HOME=$3
+      . "$1/fm-backend.sh"
+      . "$1/fm-session-lock-lib.sh"
+      . "$1/fm-wake-lib.sh"
+      fm_backend_source hc && fm_backend_hc_register_coordinator "$4"
+    ' _ "$SCRIPT_DIR" "$FM_ROOT" "$FM_HOME" "$STATE" 2>/dev/null; then
+      printf 'warning: hc coordinator registration unavailable; terminal grouping may remain ambiguous\n'
+    fi
+  fi
   if [ "$REEMIT" -eq 0 ]; then
     rm -f "$COMPLETION_FILE" 2>/dev/null || true
   fi
