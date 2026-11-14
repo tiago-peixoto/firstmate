@@ -17,6 +17,12 @@
 # captain retired is never re-enrolled, so retirement ends the monitor's
 # ownership even while the copy stays on that branch. A secondmate row's
 # copy is never looked up, because its PR belongs to the secondmate's own home.
+# When that PR belongs to a direct-PR ship whose copy is still on that branch
+# and which records no pr=, or records it without a valid merge poll, the pass
+# then records it through fm-pr-check.sh, so the merge poll arms even when the
+# worker's ready report never named the PR in the form fm-pr-check.sh scan
+# reads. That registration's refusals, such as a draft, print nothing and are
+# retried on the next pass.
 # No PR outside that set is ever read, so another home's PR is dropped without
 # a forge read or a wake.
 #
@@ -470,6 +476,35 @@ poll() {
       | if $full then .notifications.swept_at = $now else . end
     else . end' "$TMP/health.json" > "$TMP/next.json"
   cmp -s "$TMP/next.json" "$HEALTH" || save_health "$TMP/next.json"
+  register_branch_prs "$deadline"
+}
+
+# A direct-PR worker opens its PR ready for review as its last step, so the
+# open PR on its branch is its ready PR even when no done line names it in the
+# exact form bin/fm-pr-check.sh scan reads. Other modes open a PR before the
+# work is ready, and registration announces readiness to a parent home.
+register_branch_prs() { # deadline
+  local deadline=$1 id url branch meta wt recorded left
+  while IFS=$'\t' read -r id url branch; do
+    meta="$STATE/$id.meta"
+    [ -f "$meta" ] && [ ! -L "$meta" ] || continue
+    case "$(meta_value "$meta" kind)" in ship|'') ;; *) continue ;; esac
+    [ "$(meta_value "$meta" mode)" = direct-PR ] || continue
+    wt=$(meta_value "$meta" worktree)
+    [ -n "$wt" ] && [ "$(git -C "$wt" symbolic-ref --quiet --short HEAD 2>/dev/null)" = "$branch" ] || continue
+    recorded=$(meta_value "$meta" pr)
+    [ -z "$recorded" ] \
+      || { [ "$recorded" = "$url" ] && ! fm_pr_poll_artifacts_valid "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh"; } \
+      || continue
+    left=$((deadline - $(date +%s)))
+    [ "$left" -gt 0 ] || return 0
+    # A refusal, such as a draft or a latest commit not yet pushed, is retried
+    # on the next pass; the worker's own report covers a deliberate draft.
+    fm_run_timed "$left" env FM_PR_CHECK_SCAN=1 bash "$SCRIPT_DIR/fm-pr-check.sh" "$id" "$url" >/dev/null 2>&1 || true
+  done < <(jq -r --slurpfile owned "$TMP/owned.json" '
+    .branches | to_entries[] | .key as $id | .value as $b
+    | select(any($owned[0][]; .url == $b.url and (.final | not) and ((.tasks | index($id)) != null)))
+    | [$id, $b.url, $b.branch] | @tsv' "$TMP/health.json")
 }
 
 arm() {

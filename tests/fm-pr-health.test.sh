@@ -76,6 +76,7 @@ case "$1 $2" in
   'pr view')
     case "$*" in
       *headRefOid,reviewDecision*) model "${3##*/}" | jq '{headRefOid:.head,reviewDecision:""}' ;;
+      *isDraft*) model "${3##*/}" | jq '{isDraft:.draft}' ;;
       *) printf 'https://github.com/o/r/pull/%s\n' "$3" ;;
     esac ;;
   'api repos/o/r') printf '{"permissions":{"push":false}}\n' ;;
@@ -387,6 +388,40 @@ test_open_pr_replacing_a_closed_one_on_the_same_branch_is_discovered() {
     'the open PR on the unchanged branch must replace the closed one'
   expect_silent "$home" 'the replacement PR must dedupe like any other'
   pass 'an open PR that replaces a closed one on the same task branch is discovered'
+}
+
+pushed_copy() { # home name branch -> a task copy whose latest commit is pushed to its branch
+  local wt="$1/$2"
+  git init -q -b "$3" "$wt"
+  git -C "$wt" -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m work
+  git -C "$wt" remote add origin git@github.com:o/r.git
+  git -C "$wt" update-ref "refs/remotes/origin/$3" HEAD
+  printf '%s\n' "$wt"
+}
+
+test_direct_pr_branch_pr_is_recorded_once_ready() {
+  local home direct other
+  home=$(new_home direct-pr-record)
+  direct=$(pushed_copy "$home" direct-copy feature-12)
+  other=$(pushed_copy "$home" other-copy feature-13)
+  task "$home" direct "worktree=$direct" mode=direct-PR
+  task "$home" pipeline "worktree=$other" mode=no-mistakes
+  printf '12\n' > "$home/forge/branch-feature-12"
+  printf '13\n' > "$home/forge/branch-feature-13"
+  pr "$home" 12 "$HEAD_A" "$BASE_1" true true
+  pr "$home" 13 "$HEAD_B" "$BASE_1" true false
+  arm "$home"
+  expect_silent "$home" 'discovering task PRs must not wake'
+  ! grep -q '^pr=' "$home/state/direct.meta" || fail 'a draft PR was recorded as the direct-PR task PR'
+  ! grep -q '^pr=' "$home/state/pipeline.meta" || fail 'a no-mistakes PR was recorded before its ready report'
+  set_pr "$home" 12 '.draft = false'
+  expect_silent "$home" 'recording a ready PR must not wake'
+  grep -qx 'pr=https://github.com/o/r/pull/12' "$home/state/direct.meta" \
+    || fail "the ready direct-PR task PR was not recorded: $(cat "$home/state/direct.meta")"
+  [ -f "$home/state/direct.check.sh" ] && [ -f "$home/state/direct.pr-poll" ] \
+    || fail 'recording the direct-PR task PR did not arm its merge poll'
+  ! grep -q '^pr=' "$home/state/pipeline.meta" || fail 'a no-mistakes PR was recorded before its ready report'
+  pass 'the open PR on a direct-PR task branch is recorded with its merge poll once it is ready'
 }
 
 test_many_recorded_contributions_do_not_starve_a_new_branch_pr() {
@@ -978,7 +1013,7 @@ for test_name in test_maintainer_author_and_approval_states_are_distinct \
   test_watcher_surfaces_one_wake test_failure_once_per_latest_commit_after_cleanup \
   test_all_owned_pr_reads_start_in_one_wave test_checks_on_later_pages \
   test_unsupported_provider_has_no_github_reads test_final_contributions_are_not_enrolled_again \
-  test_many_recorded_contributions_do_not_starve_a_new_branch_pr; do
+  test_many_recorded_contributions_do_not_starve_a_new_branch_pr test_direct_pr_branch_pr_is_recorded_once_ready; do
   ( "$test_name" ) || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures PR health regressions"
