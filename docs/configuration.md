@@ -78,7 +78,8 @@ Other transient consumers retain their existing shell-relative behavior.
 ## Contribution review bots (config/contribution-review-bots)
 
 The contribution watcher admits comments, reviews, and inline review comments from configured bot logins on owned GitHub pull requests and routes them to the owning home as fleet triage.
-Review-bot watching is opt-in: a home with no file, or an empty one, admits no bot, and there is no built-in bot list.
+Review-bot watching is opt-in: a home with no file, or an empty one, admits no bot's comments or reviews, and there is no built-in bot list.
+Inline review comments are the exception: one from any GitHub App bot account, such as CodeRabbit, wakes the owning home once while no reply from the pull request's author follows it in its thread, whether or not the file lists it.
 The file is local, gitignored, and not inherited by secondmate homes, so each home lists its own bots.
 List each bot's exact GitHub login to watch it, for example `greptile-apps[bot]`.
 These signals never become maintainer verdicts or merge authority.
@@ -808,6 +809,7 @@ A conflict and an author action each wake once per latest commit, and a missing 
 A failing check wakes once per latest commit and check name, so a check that newly fails at an already reported commit wakes once more while an already reported check never repeats.
 A maintainer-gated suite is recorded once per latest commit and workflow name.
 A home owns a PR it recorded, linked, or observed before, and the open PR on a live task copy's current branch, drafts and adopted branches included, until the PR merges or closes.
+When that branch PR belongs to a direct-PR ship task with no recorded PR, the monitor records it through `bin/fm-pr-check.sh` and so arms its merge poll, whatever the worker's ready report says; a draft stays unrecorded until it is marked ready.
 A PR URL that only appears in a task's status lines is not owned.
 Retiring a contribution with `bin/fm-contributions.sh retire` ends that task's ownership for the monitor too, and the branch lookup does not reclaim it.
 When a durable contribution record cannot be read, the monitor reports that once, reads nothing and keeps its fingerprints until the record is readable again.
@@ -825,7 +827,7 @@ With the flag present, the watcher's check sweep runs `bin/fm-pr-check.sh scan` 
 The scan reads each ship task's newest `done:` line that names a `PR <url>`, and records that PR through the ordinary registration path when the task has no `pr=`, or has that same `pr=` but no published merge poll.
 It skips persistent secondmate and scout records, a `pr=` that names another PR, and a PR whose merge was already reported or whose poll was retired.
 A refused registration, such as a draft, prints one `check: pr-register:` wake for each task and PR, and later sweeps retry without a new wake, so a PR marked ready later is recorded.
-With the file absent, the check sweep does not run the scan, and `pr=` and the merge poll come only from a manual `bin/fm-pr-check.sh <id> <PR url>` run.
+With the file absent, the check sweep does not run the scan, and `pr=` and the merge poll come only from a manual `bin/fm-pr-check.sh <id> <PR url>` run, or, for a direct-PR ship, from the [PR health monitor](#pr-health-monitor-configpr-health-monitor) when it is on.
 The flag takes effect at the next check sweep, and is a home-local preference that is not inherited by secondmate homes.
 
 ## No-mistakes pipeline spend (config/pipeline-spend)
