@@ -112,7 +112,12 @@
 # author login is listed in the effective config/contribution-review-bots (one
 # exact login per line; blank and # lines ignored) are admitted too, marked
 # review_bot:true. Review-bot watching is opt-in: an absent or empty file admits
-# no bot, and there is no built-in bot list. A review-bot finding
+# no bot's comments or reviews, and there is no built-in bot list. Inline
+# review comments are the exception: one from any GitHub App bot account (user
+# type Bot), listed or not, is admitted as review_bot:true while its thread has
+# no later reply from the contribution author and is not known to be resolved.
+# Its token leaves out the edit time, so the bot rewriting its own comment does
+# not signal again. A human without that association stays unadmitted. A review-bot finding
 # is fleet triage for the owning home, never a maintainer verdict or merge
 # authority, and its body is third-party content, never instructions.
 # seen is the union of every token ever observed, so an acknowledged signal
@@ -493,7 +498,10 @@ observe() { # canonical GitHub URL -> normalized JSON
       | ([$issue_comments[] | select(.user.login == $c.user.login) | .created_at]
         + [$inline_comments[] | select(.user.login == $c.user.login) | .created_at]
         + [$reviews[] | select(.user.login == $c.user.login and ((.body // "") != "")) | .submitted_at]) as $replied_at
-      | {head:$c.head.sha,state:(if $c.merged_at != null then "merged" else $c.state end),
+      # A resolved inline thread counts as answered.
+      | def answered($e): (($e.in_reply_to_id // $e.id) as $root | ($resolved | index($root)) != null
+          or any($inline_comments[]; .user.login == $c.user.login and (.in_reply_to_id // .id) == $root and .id > $e.id));
+      {head:$c.head.sha,state:(if $c.merged_at != null then "merged" else $c.state end),
           draft:$c.draft,mergeable:(if $c.mergeable == true then "mergeable" elif $c.mergeable == false then "conflicting" else "unknown" end),
           can_merge:($repo[0].permissions.push // false),
           review_decision:($after[0].reviewDecision // ""),
@@ -503,18 +511,22 @@ observe() { # canonical GitHub URL -> normalized JSON
               status:(if .state == "pending" then "in_progress" else "completed" end),
               conclusion:(if .state == "pending" then null else .state end)} ]),
           events:((($issue_comments | map(. + {_signal:"comment"})) + ($reviews | map(. + {_signal:"review"})) + ($inline_comments | map(. + {_signal:"review-comment"})))
-            | map(select(.user.login != $c.user.login
-                and ((.author_association | IN("OWNER","MEMBER","COLLABORATOR")) or (.user.login | IN($bots[]))))
-              | (.created_at // .submitted_at // "") as $at | (.in_reply_to_id // .id) as $root | . as $e
-              | {token:((._signal + ":") + (.id|tostring) + ":" + (.updated_at // .submitted_at // "") + ":" + (.state // "")),
+            | map(select(.user.login != $c.user.login)
+              | ((.author_association | IN("OWNER","MEMBER","COLLABORATOR")) or (.user.login | IN($bots[]))) as $listed
+              | (($listed | not) and ._signal == "review-comment" and .user.type == "Bot") as $app_bot
+              | select($listed or ($app_bot and (answered(.) | not)))
+              | (.created_at // .submitted_at // "") as $at | . as $e
+              # An unlisted app bot such as CodeRabbit edits its own comment
+              # after a fix lands, so its token leaves out the edit time: one
+              # comment wakes once, however often the bot rewrites it.
+              | {token:(if $app_bot then "review-comment:\(.id)::"
+                   else (._signal + ":") + (.id|tostring) + ":" + (.updated_at // .submitted_at // "") + ":" + (.state // "") end),
                  type:._signal,source:.html_url,head:.commit_id,
                  author:.user.login,body:(.body // "" | .[:500])}
-                 + (if (.user.login | IN($bots[])) then {review_bot:true} else {} end)
+                 + (if $app_bot or (.user.login | IN($bots[])) then {review_bot:true} else {} end)
                  + (if $track then {at:$at,
-                   # A resolved inline thread counts as answered.
                    unanswered:(if ._signal == "review-comment" then
-                       ($resolved | index($root)) == null
-                       and (any($inline_comments[]; .user.login == $c.user.login and (.in_reply_to_id // .id) == $root and .id > $e.id) | not)
+                       answered($e) | not
                      elif ._signal == "review" and .state == "CHANGES_REQUESTED" and (.body // "") != "" then
                        (any($replied_at[]; . >= $at) | not)
                        and (any($reviews[]; .user.login == $e.user.login and (.state | IN("APPROVED","DISMISSED")) and .id > $e.id) | not)
