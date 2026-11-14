@@ -496,6 +496,11 @@ register_branch_prs() { # deadline
     [ -z "$recorded" ] \
       || { [ "$recorded" = "$url" ] && ! fm_pr_poll_artifacts_valid "$STATE" "$id" "$SCRIPT_DIR/fm-pr-poll.sh"; } \
       || continue
+    # After a merge the watcher retires the poll but keeps pr=, while the
+    # contribution record may not be final yet; re-arming would watch a merged PR.
+    fm_pr_url_parse "$url" || continue
+    ! fm_pr_poll_merge_already_notified "$STATE" "$id" "$FM_PR_PROVIDER" "$FM_PR_HOST" "$FM_PR_PATH" "$FM_PR_NUMBER" || continue
+    ! { fm_pr_poll_retirement_parse "$STATE/$id.pr-poll-retirement" && [ "$FM_PR_RETIRE_URL" = "$url" ]; } || continue
     left=$((deadline - $(date +%s)))
     [ "$left" -gt 0 ] || return 0
     # A refusal, such as a draft or a latest commit not yet pushed, is retried

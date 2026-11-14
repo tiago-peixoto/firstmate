@@ -424,6 +424,23 @@ test_direct_pr_branch_pr_is_recorded_once_ready() {
   pass 'the open PR on a direct-PR task branch is recorded with its merge poll once it is ready'
 }
 
+test_merged_direct_pr_branch_pr_is_not_armed_again() {
+  local home direct
+  home=$(new_home direct-pr-merged)
+  direct=$(pushed_copy "$home" direct-copy feature-12)
+  # The merge poll already reported PR 12 merged and was retired; pr= stays.
+  task "$home" direct "worktree=$direct" mode=direct-PR pr=https://github.com/o/r/pull/12
+  printf '%s\n' fm-pr-poll-merge-notified-v1 github github.com o/r 12 > "$home/state/direct.pr-poll-merge-notified"
+  chmod 600 "$home/state/direct.pr-poll-merge-notified"
+  printf '12\n' > "$home/forge/branch-feature-12"
+  pr "$home" 12 "$HEAD_A" "$BASE_1" true false
+  arm "$home"
+  pass_once "$home" >/dev/null
+  [ ! -e "$home/state/direct.pr-poll" ] && [ ! -e "$home/state/direct.check.sh" ] \
+    || fail 'a merge poll was armed again on a PR whose merge was already reported'
+  pass 'a direct-PR task PR whose merge was already reported is not armed again'
+}
+
 test_many_recorded_contributions_do_not_starve_a_new_branch_pr() {
   local home wt i real_jq rc=0
   home=$(new_home many-recorded)
@@ -1013,7 +1030,7 @@ for test_name in test_maintainer_author_and_approval_states_are_distinct \
   test_watcher_surfaces_one_wake test_failure_once_per_latest_commit_after_cleanup \
   test_all_owned_pr_reads_start_in_one_wave test_checks_on_later_pages \
   test_unsupported_provider_has_no_github_reads test_final_contributions_are_not_enrolled_again \
-  test_many_recorded_contributions_do_not_starve_a_new_branch_pr test_direct_pr_branch_pr_is_recorded_once_ready; do
+  test_many_recorded_contributions_do_not_starve_a_new_branch_pr test_direct_pr_branch_pr_is_recorded_once_ready test_merged_direct_pr_branch_pr_is_not_armed_again; do
   ( "$test_name" ) || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures PR health regressions"
