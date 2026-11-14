@@ -1705,6 +1705,8 @@ test_spawn_secondmate_claude_permission_mode_auto() {
   mkdir -p "$w/home/config"
   printf 'claude opus\n' > "$w/home/config/secondmate-harness"
   printf 'auto\n' > "$w/home/config/claude-permission-mode"
+  mkdir -p "$w/home/config/secondmate-accounts/sm"
+  printf 'bypass\n' > "$w/home/config/secondmate-accounts/sm/claude-permission-mode"
   make_seeded_home "$sm" sm
 
   out=$(spawn_secondmate_capture "$w" sm "$sm" "$launchlog" 2>&1); status=$?
@@ -1716,7 +1718,9 @@ test_spawn_secondmate_claude_permission_mode_auto() {
   assert_contains "$launch" "claude --permission-mode auto $(sm_claude_add_dir "$w" sm)--settings '$(sm_claude_settings "$w" sm)' --model 'opus'" \
     "permmode: secondmate launch did not swap the permission flag while keeping --model"
   assert_not_contains "$launch" "--dangerously-skip-permissions" "permmode: secondmate launch must not request bypass mode"
-  pass "C2b spawn: config/claude-permission-mode=auto reaches a Claude secondmate launch"
+  [ "$(cat "$sm/config/claude-permission-mode")" = bypass ] \
+    || fail "permmode: spawn did not push the per-secondmate permission mode into the home"
+  pass "C2b spawn: config/claude-permission-mode=auto reaches a Claude secondmate launch, and a per-secondmate mode reaches only its home"
 }
 
 # A second mate's steering inbox lives in the PARENT home's
