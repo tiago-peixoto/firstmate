@@ -1,0 +1,4 @@
+ok - the open PR on a direct-PR task branch is recorded with its merge poll once it is ready
+ok - a direct-PR task PR whose merge was already reported is not armed again
+ok - an open PR that replaces a closed one on the same task branch is discovered
+ok - final contributions are not enrolled on a poll

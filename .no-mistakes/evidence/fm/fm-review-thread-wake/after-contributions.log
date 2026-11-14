@@ -1,0 +1,6 @@
+ok - an unlisted app-bot inline comment wakes once, and neither its rewrite nor the reply wakes again
+ok - review-bot watching is off until a home lists a bot
+ok - a listed collaborator bot and its re-raise remain review-bot fleet signals
+ok - new maintainer inline wakes once and stays pending until acknowledged
+ok - a resolved thread with no reply counts as answered
+bash tests/zz-sel-contrib.test.sh  5.44s user 7.53s system 92% cpu 13.999 total

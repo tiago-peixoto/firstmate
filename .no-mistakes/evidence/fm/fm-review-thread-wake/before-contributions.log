@@ -1,0 +1,6 @@
+not ok - only the unanswered app-bot comment must be pending: []
+ok - review-bot watching is off until a home lists a bot
+ok - a listed collaborator bot and its re-raise remain review-bot fleet signals
+ok - new maintainer inline wakes once and stays pending until acknowledged
+ok - a resolved thread with no reply counts as answered
+not ok - 1 contribution regressions

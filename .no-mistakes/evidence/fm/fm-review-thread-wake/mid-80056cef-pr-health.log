@@ -1,0 +1,5 @@
+ok - the open PR on a direct-PR task branch is recorded with its merge poll once it is ready
+not ok - a merge poll was armed again on a PR whose merge was already reported
+ok - an open PR that replaces a closed one on the same task branch is discovered
+ok - final contributions are not enrolled on a poll
+not ok - 1 PR health regressions
