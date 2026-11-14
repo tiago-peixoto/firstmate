@@ -95,27 +95,22 @@ FM_SHARED_CAPTAIN_MODE="444"
 # environment only in tests. Items must not contain whitespace.
 FM_INHERITABLE_CONFIG="${FM_INHERITABLE_CONFIG:-crew-dispatch.json dispatch-never-send crew-harness backlog-backend backend herdr-presentation-spaces herdr-project-groups startup-memory-budget trace-context launch-env-allowlist claude-permission-mode codex-approval-mode lavish-axi-host t3code-instances keep-ai-trailers supervision-host-off firstmate-role}"
 
-# Items the primary may set for one secondmate alone: a file at
-# config/secondmate-accounts/<id>/<item> in the primary home replaces the
-# primary's config/<item> as the source pushed into that secondmate's home.
-# Only the source changes, so a present but unusable override errors like any
-# other unusable source and never falls back to the primary's value.
-FM_SECONDMATE_OVERRIDABLE_CONFIG="claude-permission-mode"
-
 # fm_config_inherit_source <src-config-dir> <item> [<secondmate-id>]
 # Prints the source path to push for <item> into <secondmate-id>'s home.
+# claude-permission-mode alone may be set for one secondmate: a file at
+# config/secondmate-accounts/<id>/claude-permission-mode in the primary home
+# replaces the primary's value as the source pushed into that secondmate's home.
+# Only the source changes, so a present but unusable override errors like any
+# other unusable source and never falls back to the primary's value.
 fm_config_inherit_source() {
-  local src_config=$1 item=$2 mate=${3:-} candidate override present
-  if [ -n "$mate" ]; then
-    for candidate in $FM_SECONDMATE_OVERRIDABLE_CONFIG; do
-      [ "$candidate" = "$item" ] || continue
-      override="$src_config/secondmate-accounts/$mate/$item"
-      present=$(fm_config_source_present "$override") || return 1
-      if [ "$present" = 1 ]; then
-        printf '%s\n' "$override"
-        return 0
-      fi
-    done
+  local src_config=$1 item=$2 mate=${3:-} override present
+  if [ -n "$mate" ] && [ "$item" = claude-permission-mode ]; then
+    override="$src_config/secondmate-accounts/$mate/$item"
+    present=$(fm_config_source_present "$override") || return 1
+    if [ "$present" = 1 ]; then
+      printf '%s\n' "$override"
+      return 0
+    fi
   fi
   printf '%s\n' "$src_config/$item"
 }
