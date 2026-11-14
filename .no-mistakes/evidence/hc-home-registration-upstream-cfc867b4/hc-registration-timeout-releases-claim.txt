@@ -1,0 +1,17 @@
+# Timeout: real Claude 2.1.325 primary in hc terminal t7, FM_HOME=/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-lab.DP95vm, FM_SESSION_START_ENDPOINT_TIMEOUT=3, FM_HC_BIN=wrapper sleeping 30s before 'hc ls' (stale-role query, reached after claim lock taken)
+# Claude pid 65828 env:
+HC_TERMINAL_ID=t7
+FM_SESSION_START_ENDPOINT_TIMEOUT=3
+DISABLE_UPDATES=1
+DISABLE_AUTOUPDATER=1
+# t6 = pre-seeded stale coordinator for LAB3 (must stay untouched), t7 = primary (must stay unlabeled):
+{"address":"t6","labels":{"firstmate.home.path":"/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-lab.DP95vm","firstmate.role":"coordinator"}}
+{"address":"t7","labels":{}}
+# wrapper pids that reached ls:
+69229 terminated
+no 'sleep 30' descendant left
+# LAB3 startup complete: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-lab.DP95vm/state/.session-start-complete; claim lock .lock.acquire present? no
+# primary pane:
+❯ Without running any tools, quote verbatim every line in your SessionStart hook context that starts with "warning: hc". If none, say NONE.
+⏺ Captain, one line in my session-start context starts with "warning: hc":
+  warning: hc coordinator registration unavailable; terminal grouping may remain ambiguous

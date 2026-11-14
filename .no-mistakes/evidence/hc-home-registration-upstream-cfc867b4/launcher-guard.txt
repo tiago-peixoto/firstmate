@@ -1,0 +1,12 @@
+# launcher before lab Sat Nov 14 18:16:23 -03 2026
+lrwxr-xr-x@ 1 tiago  staff  49 Nov 14 18:12 ~/.local/bin/claude -> ~/.local/share/claude/versions/2.1.325
+target=~/.local/share/claude/versions/2.1.325
+launcher_inode=681077994 target_inode=677152837
+ASSERT_OK_target_is_installed
+# launcher before teardown Sat Nov 14 18:20:12 -03 2026
+target=~/.local/share/claude/versions/2.1.325 launcher_inode=681077994
+ASSERT_OK_unchanged_before_teardown
+# launcher after teardown Sat Nov 14 18:20:15 -03 2026
+target=~/.local/share/claude/versions/2.1.325 launcher_inode=681077994 target_exists=yes
+ASSERT_OK_unchanged_after_teardown
+claude --version: 2.1.325 (Claude Code) exit=0
