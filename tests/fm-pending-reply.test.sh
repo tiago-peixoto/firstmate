@@ -139,6 +139,42 @@ latest_record_body() {  # <home> <task>
 
 # --- tests ------------------------------------------------------------------
 
+test_resolve_pass_does_not_fork_per_history_line() {
+  local home state size i corr level small large
+  local ids=()
+  home=$(setup_parent scan-growth)
+  state="$home/state"
+  for ((i=0; i<8; i++)); do
+    corr=$(fm_pending_reply_create "$home" "$state" hibit 'Await a report')
+    fm_pending_reply_mark_delivered "$state" "$corr"
+    ids+=("$corr")
+  done
+  for size in 1 1000; do
+    awk -v n="$size" 'BEGIN { for (i=0; i<n; i++) printf "working: unrelated history %0444d\n", i }' > "$state/hibit.status"
+    : > "$home/children-$size"
+    (
+      level=$BASH_SUBSHELL
+      set -T
+      trap 'if [ "$BASH_SUBSHELL" -gt "$level" ]; then printf x >> "$home/children-$size"; fi' DEBUG
+      for corr in "${ids[@]}"; do
+        if fm_pending_reply_try_resolve "$state" "$corr"; then
+          fail 'unrelated history must not answer a request'
+        fi
+      done
+    )
+    for corr in "${ids[@]}"; do
+      [ "$(phase_of "$state" "$corr")" = awaiting_report ] || fail 'a missing reply must remain pending'
+    done
+  done
+  small=$(wc -c < "$home/children-1")
+  large=$(wc -c < "$home/children-1000")
+  [ "$large" -le "$((small + 100))" ] \
+    || fail "resolve pass launches subprocess work for unrelated history ($small -> $large)"
+  printf 'done [corr=%s]: report arrived' "${ids[0]}" >> "$state/hibit.status"
+  fm_pending_reply_try_resolve "$state" "${ids[0]}" || fail 'a late reply without a final newline must resolve'
+  pass 'resolve passes keep pending requests without subprocess work growing with unrelated history'
+}
+
 test_normal_correlated_reply_resolves_once() {
   local home state corr status rec
   home=$(setup_parent resolve-once)
@@ -2444,6 +2480,7 @@ test_hand_written_reply_and_forged_note_read_unknown() {
 
 # --- run --------------------------------------------------------------------
 
+test_resolve_pass_does_not_fork_per_history_line
 test_normal_correlated_reply_resolves_once
 test_completed_turn_no_report_triggers_one_recovery
 test_recovery_waits_while_the_mate_has_an_open_decision
