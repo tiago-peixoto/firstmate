@@ -1,0 +1,6 @@
+status_file lines=7143 bytes=3370684
+tick_seconds=337.237
+   1 first-replied resolved
+  49 other awaiting_report
+   1 second-nearmiss awaiting_report
+exit=0
