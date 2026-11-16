@@ -1,0 +1,8 @@
+ok - hc secondmate: metadata, child placement, parent ownership, runtime persistence and launch
+ok - hc secondmate: child runtime conflict refuses before terminal creation
+ok - hc secondmate: persisted child runtime conflict refuses before terminal creation
+ok - hc secondmate: recovery in an unbound home keeps the recorded runtime and records no fleet choice
+ok - hc secondmate: legacy child recovery under a bound primary records no child fleet choice
+ok - hc secondmate: unbound children keep their configured runtime and managed children keep hc
+ok - hc secondmate: configured and detected primary selections win over a conflicting secondmate flag
+exit=0

@@ -1,0 +1,4 @@
+ok - bootstrap refuses config runtime errors before dependency checks or setup
+ok - bootstrap refuses environment runtime errors before dependency checks or setup
+ok - bootstrap refuses malformed runtime errors before dependency checks or setup
+exit=0

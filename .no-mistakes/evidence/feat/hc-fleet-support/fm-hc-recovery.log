@@ -1,0 +1,9 @@
+1..6
+ok - hc recovery capabilities
+ok - hc absence proof preserves identity and refuses uncertainty
+ok - hc recovery closes old endpoint and pins replacement session
+ok - hc recovery refuses foreign, retained, and revived endpoints
+ok - remote hc accepted only when recorded route matches
+ok - hc public ship/scout relaunch: missing/finished recovery and unsafe refusals and pre/post-publication failures
+FM_TEST_COMPLETE
+exit=0

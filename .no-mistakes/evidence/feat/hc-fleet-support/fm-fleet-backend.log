@@ -1,0 +1,10 @@
+ok - configuration retains first nonempty line semantics
+ok - read-only interfaces preserve state and expose the recorded resume runtime
+ok - herdr and hc bind independently and idempotently
+ok - child config, environment, and explicit runtime conflicts refuse
+ok - local and remote records constrain both initial and existing bindings
+ok - legacy remote records mean herdr, explicit hc records support hc
+ok - unbound unrelated backends retain legacy semantics without overriding managed child config
+ok - malformed and unreadable records refuse without a fallback
+ok - concurrent conflicting binds publish exactly one runtime
+exit=0

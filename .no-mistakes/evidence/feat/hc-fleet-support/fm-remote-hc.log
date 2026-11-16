@@ -1,0 +1,11 @@
+ok - direct Rex selection refuses conflicting child configuration
+ok - pre-inheritance validation binds the child without contacting a runtime
+ok - hc route, state and capture use the recorded dedicated session
+ok - hc send persists the existing steering inbox
+ok - unreadable and foreign-session endpoints refuse unsafe recovery
+ok - real relaunch refuses a missing secondmate terminal without rebinding
+ok - launch and relaunch pin hc routing and return current endpoint identity
+ok - legacy launch and relaunch preserve an unbound home despite inherited tmux configuration
+ok - legacy Rex launch and relaunch ignore inherited Herdr selection while explicit validation refuses
+ok - doctor supports hc tools and does not autostart a missing core in check mode
+exit=0
