@@ -8486,11 +8486,14 @@ if [ "$HARNESS" = hermes ] && [ "$RAW_LAUNCH" -eq 0 ]; then
   done
   if [ "$HERMES_READY" != 1 ]; then
     echo "error: Hermes did not reach its TUI or process its brief in $T; inspect profile setup, provider errors, and first-run consent (only an already-selected No thanks is answered)" >&2
-    rovo_endpoint_cleanup
+    # rovo_endpoint_cleanup defers to the abort trap while a lease is armed,
+    # which would close only after the record is gone and never report it.
+    spawn_close_abort_endpoint
     if [ "$SPAWN_ENDPOINT_CLOSED" != 1 ]; then
-      # Hermes may still finish starting there, so the record stays for
-      # supervision and teardown instead of being rolled back.
+      # Hermes may still finish starting there, so the record and its leased
+      # worktree stay for supervision and teardown instead of being rolled back.
       SPAWN_FRESH_COMMIT_PENDING=0
+      SPAWN_LEASE_RETURN_ON_ABORT=
       echo "warning: could not close endpoint $T after the failed Hermes launch of $ID; its task record is kept so the worker stays reachable - inspect it, then tear it down" >&2
     fi
     exit 1
