@@ -667,14 +667,19 @@ SH
 
   # live_sock <path>: park a real listening unix socket for the probes.
   live_sock() {
-    python3 -c 'import socket,sys,time; s=socket.socket(socket.AF_UNIX); s.bind(sys.argv[1]); s.listen(5); time.sleep(300)' "$1" >/dev/null 2>&1 &
-    echo $!
+    local pid tries=0
+    # Publish the path only once it listens, so a probe never meets a half-ready socket.
+    python3 -c 'import os,socket,sys,time; t=os.path.join(os.path.dirname(sys.argv[1]), ".ls%d" % os.getpid()); s=socket.socket(socket.AF_UNIX); s.bind(t); s.listen(5); os.rename(t, sys.argv[1]); time.sleep(300)' "$1" >/dev/null 2>&1 &
+    pid=$!
+    while [ ! -S "$1" ] && [ "$tries" -lt 200 ]; do sleep 0.05; tries=$((tries + 1)); done
+    [ -S "$1" ] || { printf 'test socket %s never started listening\n' "$1" >&2; return 1; }
+    echo "$pid"
   }
 
   # --- app-terminal: the terminal's own core record carries herdr.space ----
   run="$sockdir/run"; mkdir -p "$run/herdr-core"
   sock="$run/herdr-core/default.sock"
-  lpid=$(live_sock "$sock"); sleep 0.2
+  lpid=$(live_sock "$sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" XDG_RUNTIME_DIR="$run" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"fm-app","herdr.tab":"x"}}' \
     HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect \
@@ -686,7 +691,7 @@ SH
   # session named by HC_SESSION, or the FM_HC_SOCKET pin) never selects: the
   # spawn would land on, or start, a different core.
   other="$run/herdr-core/other.sock"
-  opid=$(live_sock "$other"); sleep 0.2
+  opid=$(live_sock "$other")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" XDG_RUNTIME_DIR="$run" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"fm-app"}}' HC_SESSION=elsewhere \
     HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect) \
@@ -711,7 +716,7 @@ SH
   [ ! -e "$sock" ] || [ -S "$sock" ] || fail "the app-terminal probe created state at the dead socket path"
   rm -f "$sock"
 
-  lpid=$(live_sock "$sock"); sleep 0.2
+  lpid=$(live_sock "$sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" XDG_RUNTIME_DIR="$run" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"","herdr.tab":"x"}}' \
     HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect) \
@@ -741,7 +746,7 @@ SH
 
   # --- earlier surface markers still win over the app signals --------------
   rm -f "$sock"
-  lpid=$(live_sock "$sock"); sleep 0.2
+  lpid=$(live_sock "$sock")
   out=$(unset HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"fm-app"}}' \
     TMUX='fake,1,0' HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect)
@@ -759,9 +764,9 @@ SH
   # claim a marker-less process must stay undetected - and record no
   # signal - however the app home and spawn core look.
   apphome="$sockdir/apphome"; mkdir -p "$apphome"
-  lpid=$(live_sock "$apphome/herdr-app.sock"); sleep 0.2
+  lpid=$(live_sock "$apphome/herdr-app.sock")
   rm -f "$sock"
-  opid=$(live_sock "$sock"); sleep 0.2
+  opid=$(live_sock "$sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET; PATH="$fb:$PATH" \
     XDG_RUNTIME_DIR="$run" HERDR_APP_HOME="$apphome" fm_backend_detect && exit 9; \
     [ -z "${FM_BACKEND_DETECT_SIGNAL:-}" ]) \
@@ -786,7 +791,7 @@ SH
     || fail "detection created core state for a session that was not running"
   mkdir -p "$sockdir/state/herdr-core/default"
   kill "$opid" 2>/dev/null; wait "$opid" 2>/dev/null
-  opid=$(live_sock "$sockdir/state/herdr-core/default/default.sock"); sleep 0.2
+  opid=$(live_sock "$sockdir/state/herdr-core/default/default.sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET XDG_RUNTIME_DIR; PATH="$fb:$PATH" \
     XDG_STATE_HOME="$sockdir/state" HERDR_APP_HOME="$apphome" fm_backend_detect) \
     && fail "a live window over a running state-dir core must not select hc, got '$out'"
@@ -802,7 +807,7 @@ SH
 
   # An unusable hc toolchain beside a live window is equally silent: there
   # is no candidate, so there is nothing to name.
-  lpid=$(live_sock "$apphome/herdr-app.sock"); sleep 0.2
+  lpid=$(live_sock "$apphome/herdr-app.sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET; PATH="/usr/bin:/bin" \
     HERDR_APP_HOME="$apphome" FM_HC_BIN=/nonexistent/hc fm_backend_detect && exit 9; \
     [ -z "${FM_BACKEND_DETECT_SIGNAL:-}" ]) \
@@ -843,14 +848,19 @@ esac
 SH
   chmod +x "$fb/herdr-core"
   live_sock() {
-    python3 -c 'import socket,sys,time; s=socket.socket(socket.AF_UNIX); s.bind(sys.argv[1]); s.listen(5); time.sleep(300)' "$1" >/dev/null 2>&1 &
-    echo $!
+    local pid tries=0
+    # Publish the path only once it listens, so a probe never meets a half-ready socket.
+    python3 -c 'import os,socket,sys,time; t=os.path.join(os.path.dirname(sys.argv[1]), ".ls%d" % os.getpid()); s=socket.socket(socket.AF_UNIX); s.bind(t); s.listen(5); os.rename(t, sys.argv[1]); time.sleep(300)' "$1" >/dev/null 2>&1 &
+    pid=$!
+    while [ ! -S "$1" ] && [ "$tries" -lt 200 ]; do sleep 0.05; tries=$((tries + 1)); done
+    [ -S "$1" ] || { printf 'test socket %s never started listening\n' "$1" >&2; return 1; }
+    echo "$pid"
   }
 
   apphome="$sockdir/apphome"; mkdir -p "$apphome"
   run="$sockdir/run"; mkdir -p "$run/herdr-core"
-  lpid=$(live_sock "$apphome/herdr-app.sock"); sleep 0.2
-  cpid=$(live_sock "$run/herdr-core/default.sock"); sleep 0.2
+  lpid=$(live_sock "$apphome/herdr-app.sock")
+  cpid=$(live_sock "$run/herdr-core/default.sock")
   : > "$errfile"
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET; PATH="$fb:$PATH" \
     XDG_RUNTIME_DIR="$run" HERDR_APP_HOME="$apphome" FM_BACKEND='' FM_BACKEND_CONFIG_DIR="$cfg" fm_backend_name 2>"$errfile")
