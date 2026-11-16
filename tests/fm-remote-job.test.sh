@@ -1213,7 +1213,11 @@ for QUIET_TOOL in sleep chmod mktemp mv rm date stat uname dirname basename wc t
   QUIET_REAL=$(PATH=/usr/bin:/bin command -v "$QUIET_TOOL") || continue
   cat > "$QUIET_SHIM/$QUIET_TOOL" <<SH
 #!/bin/sh
-printf '%s\n' $QUIET_TOOL >> "\$FM_TEST_EXEC_LOG"
+if [ '$QUIET_TOOL' = sleep ]; then
+  printf 'sleep %s\n' "\$*" >> "\$FM_TEST_EXEC_LOG"
+else
+  printf '%s\n' $QUIET_TOOL >> "\$FM_TEST_EXEC_LOG"
+fi
 exec $QUIET_REAL "\$@"
 SH
   chmod +x "$QUIET_SHIM/$QUIET_TOOL"
@@ -1230,14 +1234,12 @@ quiet_wait_ready() { # <state> <label>
   done
   assert_present "$1/worker.ready" "the $2 worker did not become ready"
 }
-# Startup counts as activity, so wait out its short fast-poll window (slowed by
-# the shims themselves) before measuring the idle steady state.
-quiet_settle() { # <max-sleeps-per-window>
+# A slow initial sweep can produce no sleeps, so silence does not prove idle.
+quiet_settle() {
   local deadline=$((SECONDS + 30))
-  while [ "$SECONDS" -lt "$deadline" ]; do
-    : > "$QUIET_EXEC_LOG"
-    sleep 1.5
-    [ "$(grep -cx sleep "$QUIET_EXEC_LOG" || true)" -gt "$1" ] || break
+  until grep -qx 'sleep 1' "$QUIET_EXEC_LOG"; do
+    [ "$SECONDS" -lt "$deadline" ] || fail 'the worker did not enter its idle wait'
+    sleep 0.05
   done
   : > "$QUIET_EXEC_LOG"
 }
@@ -1245,7 +1247,7 @@ quiet_measure() { # <label> <max-sleeps>
   local execs sleeps
   sleep 4
   execs=$(wc -l < "$QUIET_EXEC_LOG" | tr -d ' ')
-  sleeps=$(grep -cx sleep "$QUIET_EXEC_LOG" || true)
+  sleeps=$(grep -c '^sleep ' "$QUIET_EXEC_LOG" || true)
   [ "$sleeps" -le "$2" ] \
     || fail "$1 kept polling with sleep ($sleeps sleeps in 4s)"
   # Allow the independent heartbeat's bounded ownership checks as well as
@@ -1294,7 +1296,7 @@ quiet_stop() { # <pid>
   wait "$1" 2>/dev/null || true
 }
 quiet_wait_ready "$QUIET_STATE" idle-rate
-quiet_settle 3
+quiet_settle
 quiet_measure "an idle worker" 6
 pass "an idle worker sleeps out a second between passes instead of busy-polling"
 
@@ -1470,7 +1472,7 @@ for SCAN_TOOL in wc tr tail; do
   [ "$SCAN_HITS" -eq 0 ] \
     || fail "the lane scan ran $SCAN_TOOL $SCAN_HITS times in a 4-second window"
 done
-[ "$(grep -cx sleep "$SCAN_EXEC_LOG" || true)" -gt 0 ] \
+[ "$(grep -c '^sleep ' "$SCAN_EXEC_LOG" || true)" -gt 0 ] \
   || fail "the lane stopped sampling during the window"
 [ "$(grep -cx 'child-stat' "$SCAN_CHILD_LOG" || true)" -gt 0 ] \
   || fail "the long poll stopped statting during the window"
