@@ -918,7 +918,11 @@ worker_run_job() { # <account-home> <job-dir>
   for command in stdin stdout stderr; do
     [ -f "$job/$command" ] && [ ! -L "$job/$command" ] || { worker_publish_result "$job" 126; return; }
   done
-  runtime_dir=$(fm_remote_job_runtime_dir "$account_home") || { worker_publish_result "$job" 126; return; }
+  runtime_dir=$(fm_remote_job_runtime_dir "$account_home" 2>>"$job/stderr") || {
+    printf 'error: unsafe remote runtime directory\n' >> "$job/stderr"
+    worker_publish_result "$job" 126
+    return
+  }
   stdout_pipe="$job/.stdout.pipe"
   stderr_pipe="$job/.stderr.pipe"
   [ ! -e "$stdout_pipe" ] && [ ! -L "$stdout_pipe" ] && [ ! -e "$stderr_pipe" ] && [ ! -L "$stderr_pipe" ] || {
