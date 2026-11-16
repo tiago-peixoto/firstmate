@@ -69,6 +69,8 @@ env XDG_RUNTIME_DIR="$RUNTIME" HOME="$ACCOUNT" \
 [ "$(cat "$FM_REMOTE_JOB_JOBS/$FM_REMOTE_JOB_ID/exit")" = 126 ] || fail 'unsafe runtime directory did not refuse the queued job'
 assert_contains "$(cat "$FM_REMOTE_JOB_JOBS/$FM_REMOTE_JOB_ID/stderr")" 'unsafe remote runtime directory' \
   'queued job refusal hid its reason from the caller'
+assert_contains "$(cat "$FM_REMOTE_JOB_JOBS/$FM_REMOTE_JOB_ID/stderr")" 'mode 0700' \
+  'queued job refusal hid the specific permission requirement'
 assert_not_contains "$(cat "$FM_REMOTE_JOB_JOBS/$FM_REMOTE_JOB_ID/stdout")" 'runtime=' 'refused job still ran'
 chmod 700 "$RUNTIME"
 ln -s "$RUNTIME" "$TMP/runtime-link"
