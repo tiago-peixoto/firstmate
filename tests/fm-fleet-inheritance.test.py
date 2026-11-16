@@ -153,7 +153,11 @@ command=$1; shift
 case "$command" in
  fm-remote-doctor.sh) exit 0 ;;
  fm-remote-home-provision.sh) cat >/dev/null; exit 0 ;;
- fm-remote-secondmate-control.sh) [ -z "${FIXTURE_VALIDATE_RC:-}" ] || exit "$FIXTURE_VALIDATE_RC" ;;
+ fm-remote-secondmate-control.sh)
+  [ -z "${FIXTURE_VALIDATE_RC:-}" ] || exit "$FIXTURE_VALIDATE_RC"
+  if [ -n "${FIXTURE_OLD_REMOTE:-}" ] && [ "$1" = validate-inheritance ]; then
+   printf 'error: unknown command: %s\n' "$1" >&2; exit 1
+  fi ;;
 esac
 export FM_HOME="$FIXTURE_CHILD"
 exec bash "$(dirname "$0")/$command" "$@"
@@ -171,11 +175,45 @@ exec bash "$(dirname "$0")/$command" "$@"
 
     def test_remote_unknown_validation_outcome_is_preserved(self):
         self.transport()
-        self.write(self.parent, 'state/fleet-backend', 'hc\n')
         self.env['FIXTURE_VALIDATE_RC'] = '255'
+        for pin in ('hc', ''):
+            with self.subTest(pin=pin):
+                (self.parent / 'state/fleet-backend').unlink(missing_ok=True)
+                if pin:
+                    self.write(self.parent, 'state/fleet-backend', pin + '\n')
+                (self.base / 'transport.log').write_text('')
+                result = self.run_bash(f'bash "{self.code}/bin/fm-remote-inherit-push.sh" fixture 1')
+                self.assertEqual(result.returncode, 255, result.stdout + result.stderr)
+                self.assertNotIn('fm-remote-inherit.sh', (self.base / 'transport.log').read_text())
+
+    def test_remote_unbound_parent_cannot_change_bound_child(self):
+        self.transport()
+        for parent_backend in ('', 'rex'):
+            with self.subTest(parent=parent_backend):
+                (self.parent / 'config/backend').unlink(missing_ok=True)
+                if parent_backend:
+                    self.write(self.parent, 'config/backend', parent_backend + '\n')
+                self.write(self.child, 'config/backend', 'herdr\n')
+                self.write(self.child, 'state/fleet-backend', 'herdr\n')
+                (self.base / 'transport.log').write_text('')
+                result = self.run_bash(f'bash "{self.code}/bin/fm-remote-inherit-push.sh" fixture 1')
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn('child bound to herdr', result.stderr)
+                self.assertEqual((self.child / 'config/backend').read_text(), 'herdr\n')
+                self.assertEqual((self.child / 'state/fleet-backend').read_text(), 'herdr\n')
+                self.assertEqual((self.child / 'config/crew-harness').read_text(), 'claude\n')
+                self.assertFalse((self.parent / 'state/fleet-backend').exists())
+                self.assertNotIn('fm-remote-inherit.sh', (self.base / 'transport.log').read_text())
+
+    def test_remote_older_receiver_keeps_legacy_inheritance(self):
+        self.transport()
+        self.env['FIXTURE_OLD_REMOTE'] = '1'
+        self.write(self.parent, 'config/backend', 'rex\n')
+        self.write(self.child, 'config/backend', 'tmux\n')
         result = self.run_bash(f'bash "{self.code}/bin/fm-remote-inherit-push.sh" fixture 1')
-        self.assertEqual(result.returncode, 255, result.stdout + result.stderr)
-        self.assertNotIn('fm-remote-inherit.sh', (self.base / 'transport.log').read_text())
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual((self.child / 'config/backend').read_text(), 'rex\n')
+        self.assertEqual((self.child / 'config/crew-harness').read_text(), 'codex\n')
 
     def test_remote_unmanaged_parent_keeps_legacy_inheritance(self):
         self.transport()
@@ -194,8 +232,6 @@ exec bash "$(dirname "$0")/$command" "$@"
                     self.assertFalse((self.child / 'config/backend').exists())
                 self.assertFalse((self.parent / 'state/fleet-backend').exists())
                 self.assertFalse((self.child / 'state/fleet-backend').exists())
-                # A remote checkout older than fleet binding knows no validation command.
-                self.assertNotIn('fm-remote-secondmate-control.sh', (self.base / 'transport.log').read_text())
 
     def test_remote_transfers_pin_without_config_file(self):
         self.transport()

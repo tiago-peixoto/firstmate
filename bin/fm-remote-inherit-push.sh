@@ -117,9 +117,19 @@ done <<EOF
 $ITEMS
 EOF
 
-# Unbound fleets keep the legacy protocol, so older remote checkouts still converge.
+# A receiver older than fleet binding rejects the read-only check as an unknown
+# command; it cannot hold a binding, so the legacy transfer stays safe there.
 if [ -n "$INHERITED_BACKEND" ]; then
   "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-backend "$ID" "$INHERITED_BACKEND" >/dev/null || exit $?
+else
+  validate_rc=0
+  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-inheritance "$ID" \
+    > /dev/null 2> "$TMP/validate.err" || validate_rc=$?
+  if [ "$validate_rc" != 0 ] && ! { [ "$validate_rc" = 1 ] &&
+    grep -Fxq -- 'error: unknown command: validate-inheritance' "$TMP/validate.err"; }; then
+    cat "$TMP/validate.err" >&2
+    exit "$validate_rc"
+  fi
 fi
 
 # Query only after local validation, before any payload can change the receiver.

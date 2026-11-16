@@ -4,6 +4,7 @@
 # Usage:
 #   fm-remote-secondmate-control.sh launch <id> <harness> <model|-> <effort|-> {herdr|rex|hc} [traceparent]
 #   fm-remote-secondmate-control.sh validate-backend <id> <backend>
+#   fm-remote-secondmate-control.sh validate-inheritance <id>
 #   fm-remote-secondmate-control.sh relaunch <id> <harness> <model|default|-> <effort|default|->
 #   fm-remote-secondmate-control.sh state <id>
 #   fm-remote-secondmate-control.sh route <id>
@@ -71,7 +72,7 @@ REMOTE_HC_SESSION=fm-remote
 export FM_BACKEND_REX_NO_AUTOSTART=1
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 validate_id() { case "$1" in ''|*[!A-Za-z0-9._-]*) die "invalid secondmate id: $1" ;; esac; }
 
 # Sourcing fm-wake-lib.sh through the libraries below creates "$FM_HOME/state",
@@ -258,6 +259,14 @@ cmd_route() {
     die "remote secondmate has no endpoint metadata"
   fi
   print_route "$id"
+}
+
+cmd_validate_inheritance() { # <id>
+  local pin
+  validate_id "$1"
+  validate_home "$1"
+  pin=$(fm_fleet_backend_read "$TARGET_HOME/state") || exit 1
+  [ -z "$pin" ] || die "select the primary fleet runtime before inheriting into a child bound to $pin"
 }
 
 cmd_validate_backend() { # <id> <selected-backend>
@@ -598,6 +607,7 @@ cmd_retire() {
 
 case "${1:-}" in
   validate-backend) shift; [ "$#" -eq 2 ] || usage; cmd_validate_backend "$@" ;;
+  validate-inheritance) shift; [ "$#" -eq 1 ] || usage; cmd_validate_inheritance "$@" ;;
   launch) shift; [ "$#" -ge 5 ] && [ "$#" -le 6 ] || usage; cmd_launch "$@" ;;
   relaunch) shift; [ "$#" -eq 4 ] || usage; cmd_relaunch "$@" ;;
   state) shift; [ "$#" -eq 1 ] || usage; validate_id "$1"; validate_home "$1"; state_value "$1" ;;

@@ -1467,7 +1467,7 @@ spawn_remote_secondmate() {
     herdr | hc)
       [ -n "$backend" ] || backend=$fleet
       if [ "$backend" != "$fleet" ] ||
-        ! fm_fleet_backend_bind "$STATE" "$CONFIG" "$backend" >/dev/null; then
+        ! fm_fleet_backend_validate "$STATE" "$CONFIG" "$backend" >/dev/null; then
         fm_lock_release "$registry_lock" || true
         fm_lock_release "$SPAWN_TASK_LOCK" || true
         echo "error: remote secondmate $id must use fleet runtime $fleet; refusing creation" >&2
@@ -1497,6 +1497,12 @@ spawn_remote_secondmate() {
         echo "error: remote secondmate $id runtime validation failed before inheritance or terminal creation" >&2
         [ -z "$out" ] || printf '%s\n' "$out" >&2
         return "$rc"
+      fi
+      if ! fm_fleet_backend_bind "$STATE" "$CONFIG" "$backend" >/dev/null; then
+        fm_lock_release "$registry_lock" || true
+        fm_lock_release "$SPAWN_TASK_LOCK" || true
+        echo "error: remote secondmate $id must use fleet runtime $fleet; refusing creation" >&2
+        return 1
       fi
       ;;
   esac
@@ -2555,7 +2561,7 @@ if [ "$RELAUNCH" -eq 0 ]; then
   spawn_require_relocated_queued_work
 fi
 FLEET_PIN=$(fm_fleet_backend_read "$STATE") || exit 1
-if [ "$RELAUNCH" -eq 0 ] && { [ -n "$FLEET_PIN" ] || [ "$BACKEND_SET" -eq 0 ]; }; then
+if [ "$RELAUNCH" -eq 0 ] && { [ -n "$FLEET_PIN" ] || [ "$BACKEND_SET" -eq 0 ] || [ "$KIND" = secondmate ]; }; then
   # Called directly so the detection that chose the backend also leaves
   # FM_BACKEND_DETECT_SIGNAL for the meta's backend_detect= line below.
   fm_backend_resolve || exit 1
@@ -2564,12 +2570,16 @@ if [ -n "$FLEET_PIN" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEE
   echo "error: fleet uses $FLEET_PIN; refusing task runtime $BACKEND_ARG" >&2
   exit 1
 fi
-# Unbound homes select a fleet runtime only by creating a secondmate on it;
-# worker --backend flags stay per-task overrides.
+# Unbound homes select the primary's runtime only by creating a new secondmate;
+# worker --backend flags stay per-task overrides and recovery keeps its record.
 FLEET_BACKEND=$FLEET_PIN
-if [ -z "$FLEET_PIN" ] && [ "$KIND" = secondmate ]; then
-  if [ "$BACKEND_SET" -eq 1 ]; then FLEET_BACKEND=$BACKEND_ARG; else FLEET_BACKEND=${FM_BACKEND_RESOLVED:-}; fi
-  case "$FLEET_BACKEND" in herdr | hc) ;; *) FLEET_BACKEND= ;; esac
+if [ -z "$FLEET_PIN" ] && [ "$KIND" = secondmate ] && [ "$RELAUNCH" -eq 0 ] &&
+  [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
+  case "$FM_BACKEND_RESOLVED" in herdr | hc) FLEET_BACKEND=$FM_BACKEND_RESOLVED ;; esac
+  if [ -n "$FLEET_BACKEND" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_BACKEND" ]; then
+    echo "error: primary selects $FLEET_BACKEND; refusing secondmate runtime $BACKEND_ARG" >&2
+    exit 1
+  fi
 fi
 if [ "$KIND" = secondmate ]; then
   if spawn_remote_secondmate "$ID"; then
@@ -2594,7 +2604,7 @@ if [ "$RELAUNCH" -eq 0 ]; then
     BACKEND=$FM_BACKEND_RESOLVED
   fi
   if [ "$KIND" = secondmate ] && [ -n "$FLEET_BACKEND" ]; then
-    fm_fleet_backend_bind "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
+    fm_fleet_backend_validate "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
   fi
   fm_backend_validate_spawn "$BACKEND" || exit 1
   fm_backend_source "$BACKEND" || exit 1
@@ -4342,6 +4352,8 @@ if [ "$KIND" = secondmate ]; then
   }
   PROJ_ABS=$(validate_firstmate_home_for_spawn "$ID" "$FIRSTMATE_HOME")
   if [ "$RELAUNCH" -eq 0 ] && [ -n "$FLEET_BACKEND" ]; then
+    fm_fleet_backend_validate "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
+    fm_fleet_backend_bind "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
     fm_fleet_backend_bind "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
   fi
   if [ -e "$DATA/secondmates.md" ] || [ -L "$DATA/secondmates.md" ]; then

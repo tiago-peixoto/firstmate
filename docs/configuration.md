@@ -578,12 +578,14 @@ For an unbound home, new spawns choose the backend in this order:
 
 A fleet selected for `herdr` or `hc` uses that runtime for its primary, every secondmate, and every worker.
 This applies across local and remote machines.
-The primary selects the fleet runtime when it creates its first secondmate, using the selection order above, so auto-detected classic Herdr and auto-detected `hc` select the same way.
-That secondmate creation records the choice in the private `state/fleet-backend` file of the primary and of the child home.
+The primary selects the fleet runtime when it creates its first secondmate, using steps 2 to 5 of the selection order above, so auto-detected classic Herdr and auto-detected `hc` select the same way.
+When the primary selects `herdr` or `hc`, a secondmate `--backend` flag naming another runtime refuses creation.
+That secondmate creation records the choice in the private `state/fleet-backend` file of the primary and of the child home, after validating both homes and before any inherited configuration changes.
 Worker spawns never record a choice, so a home without secondmates stays unbound and keeps the selection order above.
 In a bound home, resolution uses the recorded choice before ambient runtime detection.
 Configuration inheritance from a bound primary preserves the same choice in each child home.
-Inheritance from an unbound primary keeps the existing behavior and contacts no new remote command, so older remote checkouts keep working.
+Inheritance from an unbound primary keeps the existing behavior, except that it refuses a child home that has its own binding.
+A remote child running code older than fleet binding cannot hold a binding, so inheritance into it continues unchanged.
 
 In a bound home, an explicit task flag, `FM_BACKEND`, or `config/backend` that conflicts with the fleet choice refuses creation before a terminal opens.
 Binding refuses when the child's `config/backend` or binding conflicts, or when an existing task record in either home uses another runtime.

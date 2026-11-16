@@ -12,6 +12,9 @@ TMP_ROOT=$(fm_test_tmproot fm-remote-inherit-generation)
 PARENT="$TMP_ROOT/parent"
 REMOTE_HOME="$TMP_ROOT/receiver"
 mkdir -p "$PARENT/config" "$PARENT/data" "$PARENT/state" "$REMOTE_HOME/config" "$REMOTE_HOME/data"
+mkdir -p "$REMOTE_HOME/bin"
+printf 'fixture\n' > "$REMOTE_HOME/.fm-secondmate-home"
+printf '# Fixture\n' > "$REMOTE_HOME/AGENTS.md"
 cat > "$PARENT/data/secondmates.md" <<EOF
 - fixture - Synthetic inheritance (host: fixture-host; root: $ROOT; home: $REMOTE_HOME; scope: fixtures; projects: none; added 2026-11-05)
 EOF
@@ -29,7 +32,10 @@ root=$(decode "$2")
 receiver=$(decode "$3")
 args=()
 while IFS= read -r -d '' arg; do args+=("$arg"); done < <(decode "$4")
-[ "${args[0]}" = fm-remote-inherit.sh ] || exit 93
+case "${args[0]}:${args[1]}" in
+  fm-remote-inherit.sh:*|fm-remote-secondmate-control.sh:validate-inheritance) ;;
+  *) exit 93 ;;
+esac
 [ -d "$FM_FIXTURE_SENDER_LOCK" ] || { echo 'sender transaction is unlocked' >&2; exit 94; }
 if [ -n "${FM_FIXTURE_PROBE_MODE:-}" ] && [ "${args[1]}" = generation ]; then
   case "$FM_FIXTURE_PROBE_MODE" in

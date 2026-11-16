@@ -116,6 +116,7 @@ assert_line 'tmux' "$CHILD/config/backend" 'conflicting child configuration over
 assert_absent "$PRIMARY/state/design.meta" 'conflict published task metadata'
 assert_absent "$FM_FAKE_HC_DIR/terminal.json" 'conflict created terminal'
 assert_absent "$CHILD/state/fleet-backend" 'conflict pinned child runtime'
+assert_absent "$PRIMARY/state/fleet-backend" 'refused creation pinned the primary runtime'
 pass 'hc secondmate: child runtime conflict refuses before terminal creation'
 
 setup_world pinned-conflict
@@ -128,3 +129,35 @@ assert_line 'herdr' "$CHILD/state/fleet-backend" 'persisted child runtime overwr
 assert_absent "$PRIMARY/state/design.meta" 'persisted conflict published task metadata'
 assert_absent "$FM_FAKE_HC_DIR/terminal.json" 'persisted conflict created terminal'
 pass 'hc secondmate: persisted child runtime conflict refuses before terminal creation'
+
+setup_world recovery
+spawn > "$TMP_ROOT/recovery-first.out" 2>&1 || { cat "$TMP_ROOT/recovery-first.out"; fail 'hc secondmate spawn before recovery failed'; }
+rm -f "$PRIMARY/state/fleet-backend" "$CHILD/state/fleet-backend" "$FM_FAKE_HC_DIR/terminal.json"
+printf 'window=firstmate:fm-w1\nkind=ship\n' > "$PRIMARY/state/w1.meta"
+cp "$PRIMARY/state/design.meta" "$TMP_ROOT/recovery-before.meta"
+FM_HOME="$PRIMARY" "$ROOT/bin/fm-spawn.sh" design "$CHILD" codex --secondmate --backend hc \
+  > "$TMP_ROOT/recovery.out" 2>&1 || { cat "$TMP_ROOT/recovery.out"; fail 'legacy recovery on the recorded runtime was refused'; }
+assert_absent "$PRIMARY/state/fleet-backend" 'recovery selected the primary fleet runtime'
+assert_absent "$CHILD/state/fleet-backend" 'recovery selected the child fleet runtime'
+assert_line 'backend=hc' "$PRIMARY/state/design.meta" 'recovery changed the recorded runtime'
+pass 'hc secondmate: recovery in an unbound home keeps the recorded runtime and records no fleet choice'
+
+for selection in config detected; do
+  setup_world "primary-selection-$selection"
+  selection_env=()
+  if [ "$selection" = config ]; then
+    printf 'herdr\n' > "$PRIMARY/config/backend"
+  else
+    selection_env=(HERDR_ENV=1)
+  fi
+  if env "${selection_env[@]}" FM_HOME="$PRIMARY" "$ROOT/bin/fm-spawn.sh" design "$CHILD" codex --secondmate --backend hc \
+    > "$TMP_ROOT/primary-selection.out" 2>&1; then
+    fail "a secondmate flag redefined the $selection primary runtime"
+  fi
+  assert_grep 'refusing' "$TMP_ROOT/primary-selection.out" "missing $selection primary selection diagnosis"
+  assert_absent "$PRIMARY/state/fleet-backend" "child flag pinned the $selection primary"
+  assert_absent "$CHILD/state/fleet-backend" "child flag pinned the $selection child"
+  assert_absent "$PRIMARY/state/design.meta" "$selection primary selection conflict published task metadata"
+  assert_absent "$FM_FAKE_HC_DIR/terminal.json" "$selection primary selection conflict created terminal"
+done
+pass 'hc secondmate: configured and detected primary selections win over a conflicting secondmate flag'
