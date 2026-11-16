@@ -5,7 +5,15 @@ set -eu
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 TMP=$(TMPDIR=/tmp fm_test_tmproot hc-doctor)
 HOLDER_PIDS=()
-trap 'for pid in "${HOLDER_PIDS[@]}"; do kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; done; fm_test_cleanup' EXIT
+stop_holders() {
+  local pid
+  for pid in "${HOLDER_PIDS[@]}"; do
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  done
+  fm_test_cleanup
+}
+trap stop_holders EXIT
 CASE_N=0
 TOOLS="$TMP/tools"
 mkdir -p "$TOOLS"
