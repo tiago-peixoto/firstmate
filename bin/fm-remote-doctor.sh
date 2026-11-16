@@ -926,6 +926,10 @@ check_herdr_server() {
 
 check_entrypoint_link() {
   local want
+  if [ "${FM_REMOTE_DOCTOR_BOOTSTRAP:-}" = 1 ]; then
+    record entrypoint-link "ok: the fixed remote entrypoint invoked this doctor"
+    return 0
+  fi
   if [ -z "${FM_ROOT_OVERRIDE:-}" ]; then
     record entrypoint-link "skip: this run did not come through the fixed remote entrypoint"
     return 0
