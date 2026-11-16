@@ -75,6 +75,9 @@ FM_ROOT="${FM_ROOT_OVERRIDE:-${FM_ROOT:-$FM_BACKEND_DEFAULT_ROOT}}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 FM_BACKEND_CONFIG_DIR="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 
+# shellcheck source=bin/fm-fleet-backend-lib.sh
+. "$FM_BACKEND_LIB_DIR/fm-fleet-backend-lib.sh"
+
 # Verified backend adapters. Extend only after a backend gets its own
 # bin/backends/<name>.sh and empirical verification, mirroring AGENTS.md
 # section 4's harness-verification discipline. herdr is verified (P2;
@@ -442,12 +445,13 @@ fm_backend_explicit_name() {
 }
 
 # fm_backend_resolve: resolve the ACTIVE backend for a NEW spawn into
-# FM_BACKEND_RESOLVED, absent an explicit per-task override. Precedence:
-# FM_BACKEND env, then config/backend (a single word on its first non-empty
-# line, mirroring config/crew-harness), then runtime auto-detection
-# (fm_backend_detect), then default tmux. A per-task `--backend` flag is
-# parsed by the caller (fm-spawn.sh) and takes precedence over this
-# resolution entirely; it is not read here. Auto-detect fires only when
+# FM_BACKEND_RESOLVED. A fleet pin is authoritative under the contract in
+# fm-fleet-backend-lib.sh; conflicts return nonzero with no resolved backend.
+# Without a pin, precedence is FM_BACKEND env, then config/backend (its first
+# non-empty line, mirroring config/crew-harness), then runtime auto-detection
+# (fm_backend_detect), then default tmux. The caller validates any per-task
+# `--backend` flag against the fleet choice; this resolver does not read flags.
+# Auto-detect fires only when
 # nothing was explicitly configured, so an explicit setting always wins and
 # leaves FM_BACKEND_DETECTED/FM_BACKEND_DETECT_SIGNAL empty. Called directly
 # (not in a command substitution), the one detection that chose the backend
@@ -463,9 +467,17 @@ fm_backend_explicit_name() {
 # Paseo and tern are never auto-detected, so they only ever come out of this
 # function from FM_BACKEND or config/backend.
 fm_backend_resolve() {
-  local marker toolchain
+  local marker toolchain fleet state
+  FM_BACKEND_RESOLVED=""
   FM_BACKEND_DETECTED=""
   FM_BACKEND_DETECT_SIGNAL=""
+  state=${FM_STATE_OVERRIDE:-$FM_HOME/state}
+  fleet=$(fm_fleet_backend_read "$state") || return 1
+  if [ -n "$fleet" ]; then
+    fm_fleet_backend_validate "$state" "$FM_BACKEND_CONFIG_DIR" "$fleet" >/dev/null || return 1
+    FM_BACKEND_RESOLVED=$fleet
+    return 0
+  fi
   FM_BACKEND_RESOLVED=$(fm_backend_explicit_name) && return 0
   if fm_backend_detect >/dev/null; then
     FM_BACKEND_RESOLVED=$FM_BACKEND_DETECTED
@@ -499,7 +511,7 @@ fm_backend_resolve() {
 
 # fm_backend_name: fm_backend_resolve for callers that only need the name.
 fm_backend_name() {
-  fm_backend_resolve
+  fm_backend_resolve || return 1
   printf '%s' "$FM_BACKEND_RESOLVED"
 }
 

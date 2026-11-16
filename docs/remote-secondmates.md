@@ -309,7 +309,8 @@ The guard's header owns the decision table, and [`bin/fm-remote-herdr-owner-lib.
 `--fix` also takes these actions:
 
 - It starts the same workers directly on Linux.
-- It recreates the `~/.local/bin/fm-remote-entrypoint.sh` symlink when it is absent.
+- In a direct doctor run with `FM_ROOT_OVERRIDE` set, it recreates the `~/.local/bin/fm-remote-entrypoint.sh` symlink when it is absent.
+  A run through the fixed entrypoint counts as proof of a working entrypoint and leaves that shared link untouched.
 - It creates only Firstmate-owned required-tool wrappers that it can prove resolve to a version-manager target.
   It stops after one harness satisfies the at-least-one requirement, which is the harness line of the [required remote tools](#required-remote-tools).
 
@@ -330,7 +331,8 @@ These steps are never automated and are always reported rather than silently att
 - Each worker runtime's own `/login`, and any keychain password prompt that login needs.
 
 Firstmate never writes an auto-login password, never changes FileVault, and never stores an account password.
-A file at `~/.local/bin/fm-remote-entrypoint.sh` that is not Firstmate's own symlink is reported for the operator to inspect and is never overwritten.
+In a direct doctor run with `FM_ROOT_OVERRIDE` set, a file at `~/.local/bin/fm-remote-entrypoint.sh` that is not Firstmate's own symlink is reported for the operator to inspect.
+Firstmate never overwrites that file.
 
 ### Required remote tools
 
@@ -441,22 +443,30 @@ bin/fm-spawn.sh <id> --secondmate
 The primary then takes these steps:
 
 1. It resolves the verified secondmate harness and optional model and effort.
-2. It runs the same readiness gate the seed runs, gated on the selected backend.
-3. It transfers the inherited-material allowlist.
-4. It asks the remote host to launch on that backend.
+2. In a fleet bound to `herdr` or `hc`, it validates the remote home's runtime choice before transferring inherited configuration.
+3. It runs the same readiness gate the seed runs, gated on the selected backend.
+4. It transfers the inherited-material allowlist.
+5. It asks the remote host to launch on that backend.
 
-A new route defaults to Herdr; pass `--backend rex` to select Rex.
+A fleet bound to `herdr` or `hc` requires every remote secondmate to use that same runtime.
+An unbound primary whose selection resolves to `herdr` or `hc` binds that runtime when it creates a remote secondmate.
+A conflicting request refuses creation before configuration inheritance or terminal launch.
+For an unbound fleet using another runtime, a new remote route retains the legacy Herdr default and accepts explicit Rex selection.
 Without an explicit backend, a later launch or liveness recovery preserves the parent's recorded `remote_backend`; legacy records without that field use Herdr.
 An existing endpoint on a different backend is refused rather than migrated.
 Placement is per backend:
 
 - Herdr: all remote secondmates on one host share `fm-remote` and retain separate `2ndmate-<id>` workspaces inside it.
+- hc: all remote secondmates on one host share the `fm-remote` core session.
+  Each secondmate terminal uses its child home's Herdr app space, which its workers also use.
+  Connecting the Herdr app to the remote machine remains an operator setup step.
 - Rex: each remote secondmate home gets its own `2ndmate-<id>-<hash>` session on the host's persistent personal rex server, the same placement rule a local secondmate home uses.
 
 ### Refused and unsupported launches
 
-- An explicit request for any backend other than herdr or rex is refused rather than honored, and the remote host refuses one too.
-- An existing remote endpoint recorded outside its backend's contract - a Herdr session other than `fm-remote`, or a Rex route whose recorded server is not a local `unix://` endpoint - is classified as unverified and left untouched.
+- An explicit request for any backend other than herdr, hc, or rex is refused, and the remote host refuses one too.
+- An existing remote endpoint recorded outside its backend's contract is classified as unverified and left untouched.
+  This includes a Herdr or hc session other than `fm-remote`, or a Rex route whose recorded server is not a local `unix://` endpoint.
   Launch, liveness recovery, control, and retirement refuse it until an operator explicitly migrates it, instead of attempting a live cutover.
 - A launch after a host has drifted out of readiness fails with the doctor's own gap text instead of leaving a half-created endpoint.
 - Raw launch commands are not accepted for remote secondmates.

@@ -2362,7 +2362,9 @@ test_launch_environment_inheritance_preserves_on_source_errors() {
     rec=$(make_spawn_case "$id" codex "$id")
     read_case_record "$rec"
     dest="$CASE_DIR/inherited-home"
-    mkdir -p "$dest/config"
+    mkdir -p "$dest/config" "$dest/bin"
+    printf 'inherited-env\n' > "$dest/.fm-secondmate-home"
+    printf '# Fixture\n' > "$dest/AGENTS.md"
     printf 'FM_TEST_ALLOWED\n' > "$HOME_DIR/config/launch-env-allowlist"
     printf -- '- inherited-env - Test route (host: inherit-host; root: %s; home: %s; scope: test; projects: ; added 2026-09-05)\n' \
       "$ROOT" "$dest" > "$HOME_DIR/data/secondmates.md"
@@ -2377,7 +2379,10 @@ remote_root=$(printf '%s' "$4" | base64 --decode)
 remote_home=$(printf '%s' "$5" | base64 --decode)
 args=()
 while IFS= read -r -d '' arg; do args+=("$arg"); done < <(printf '%s' "$6" | base64 --decode)
-[ "${args[0]}" = fm-remote-inherit.sh ] || exit 92
+case "${args[0]}:${args[1]}" in
+  fm-remote-inherit.sh:*|fm-remote-secondmate-control.sh:validate-inheritance) ;;
+  *) exit 92 ;;
+esac
 FM_HOME="$remote_home" FM_STATE_OVERRIDE="$remote_home/state" \
   exec "$remote_root/bin/${args[0]}" "${args[@]:1}"
 SH

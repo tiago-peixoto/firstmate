@@ -5,7 +5,7 @@
 # a private HOME, a fake launchctl backed by state files, a fake herdr CLI, a
 # fake lsof that names a real holder process as the fm-remote socket owner, and
 # a fake uname that selects the platform under test. The holders are real
-# non-platform processes (jq blocked on a fifo) whose environment carries the
+# processes (Python blocked on a fifo) whose environment carries the
 # birth markers bin/fm-remote-herdr-owner-lib.sh reads, so the Aqua-versus-SSH
 # verdict is exercised for real. Nothing here touches the runner's own launch
 # agents, login session, or herdr server.
@@ -28,6 +28,7 @@ CASE_N=0
 DOCTOR_WORKER_PID=
 HOLDER_PIDS=()
 trap 'if [ -n "$DOCTOR_WORKER_PID" ]; then kill "$DOCTOR_WORKER_PID" 2>/dev/null || true; fi; if [ "${#HOLDER_PIDS[@]}" -gt 0 ]; then kill "${HOLDER_PIDS[@]}" 2>/dev/null || true; fi; fm_test_cleanup || true' EXIT
+ROOT=$(cd "$ROOT" && pwd -P)
 GUARD="$ROOT/bin/fm-remote-herdr-guard.sh"
 
 # A fixture must be able to present a host with NO herdr, so the doctor never
@@ -39,14 +40,14 @@ ln -sf "$(command -v git)" "$TOOLS/git"
 ln -sf "$(command -v jq)" "$TOOLS/jq"
 BASE_PATH="$TOOLS:/usr/bin:/bin:/usr/sbin:/sbin"
 
-# Real socket-owner holders for the Darwin birth check: jq blocked on a fifo
-# this test keeps open, with exactly the marker environment each birth needs.
-JQ=$(command -v jq)
+# macOS hides environment markers on its platform jq binary. Use the Python
+# interpreter for holders so the birth check can read their marker environment.
+HOLDER_PYTHON=$(command -v python3)
 HOLDER_FD=5
 hold() { # <marker-env...> -> HOLDER_PID
   local fifo="$TMP_ROOT/holder-$HOLDER_FD.fifo"
   mkfifo "$fifo"
-  env -i "$@" "$JQ" . "$fifo" &
+  env -i "$@" "$HOLDER_PYTHON" -c 'import sys; open(sys.argv[1]).read()' "$fifo" &
   HOLDER_PID=$!
   HOLDER_PIDS+=("$HOLDER_PID")
   eval "exec ${HOLDER_FD}>\"\$fifo\""
@@ -1087,3 +1088,66 @@ assert_contains "$DOCTOR_OUT" 'check remote-job-worker=ok:' \
 assert_not_contains "$DOCTOR_OUT" 'check herdr-server=' "the herdr server was checked for rex on linux"
 [ ! -s "$CASE_LAUNCHCTL_LOG" ] || fail "the linux rex path invoked launchctl"
 pass "a Linux host verifies rex without any Aqua-specific requirement"
+
+# Exercise the real bootstrap, including env -i, while mapping only Bash's
+# account-home cd to a disposable account. No doctor predicate is replaced.
+new_case Linux no-herdr
+BOOT_ROOT="$CASE_DIR/code"
+mkdir -p "$BOOT_ROOT/bin/backends" "$CASE_HOME/.local/bin"
+printf 'fixture\n' > "$BOOT_ROOT/AGENTS.md"
+for script in fm-remote-entrypoint.sh fm-remote-doctor.sh fm-backend.sh; do
+  cp "$ROOT/bin/$script" "$BOOT_ROOT/bin/"
+done
+cp "$ROOT/bin/"*-lib.sh "$BOOT_ROOT/bin/"
+cp "$ROOT/bin/backends/hc.sh" "$BOOT_ROOT/bin/backends/"
+# Missing worker code and an incompatible core must remain readiness failures,
+# including under --fix, without starting any account services.
+printf '#!/usr/bin/env bash\nexit 1\n' > "$BOOT_ROOT/bin/herdr-core"
+chmod +x "$BOOT_ROOT/bin/herdr-core"
+git -C "$BOOT_ROOT" init -q
+git -C "$BOOT_ROOT" add AGENTS.md bin
+cat > "$CASE_DIR/account-env" <<'SH'
+cd() {
+  if [ "$#" -eq 1 ] && [ "$1" = "$TEST_REAL_ACCOUNT_HOME" ]; then
+    builtin cd "$TEST_ACCOUNT_HOME"
+  else
+    builtin cd "$@"
+  fi
+}
+SH
+bootstrap_doctor() {
+  local argv root home
+  argv=$(printf '%s\0' fm-remote-doctor.sh --backend hc "$@" | base64 | tr -d '\n')
+  root=$(printf '%s' "$BOOT_ROOT" | base64 | tr -d '\n')
+  home=$(printf '%s' "$CASE_PROJECT_HOME" | base64 | tr -d '\n')
+  set +e
+  DOCTOR_OUT=$(TEST_REAL_ACCOUNT_HOME="$(unset HOME; printf '%s' ~)" \
+    TEST_ACCOUNT_HOME="$CASE_HOME" BASH_ENV="$CASE_DIR/account-env" \
+    FM_REMOTE_JOB_PLATFORM_OVERRIDE=Linux FM_REMOTE_JOB_STATE_ROOT="$CASE_DIR/jobs" \
+    bash "$BOOT_ROOT/bin/fm-remote-entrypoint.sh" 1 "$root" "$home" "$argv" 2>&1)
+  DOCTOR_RC=$?
+  set -e
+}
+for link_state in conflict absent; do
+  link="$CASE_HOME/.local/bin/fm-remote-entrypoint.sh"
+  if [ "$link_state" = conflict ]; then
+    ln -s "$CASE_DIR/operator-entrypoint" "$link"
+  else
+    rm -f "$link"
+  fi
+  for mode in check fix; do
+    if [ "$mode" = fix ]; then bootstrap_doctor --fix; else bootstrap_doctor; fi
+    assert_contains "$DOCTOR_OUT" 'entrypoint=yes' "bootstrap did not reach the real doctor"
+    expect_code 1 "$DOCTOR_RC" "bootstrap hid the missing worker/core readiness failures"
+    assert_contains "$DOCTOR_OUT" 'check entrypoint-link=ok:' "real bootstrap rejected the $link_state account link ($mode)"
+    assert_contains "$DOCTOR_OUT" 'check remote-job-worker=human:' "bootstrap skipped the missing worker check"
+    assert_contains "$DOCTOR_OUT" 'check hc-server=human:' "bootstrap skipped the incompatible core check"
+    assert_not_contains "$DOCTOR_OUT" 'fix entrypoint-link=' "bootstrap tried to repair the account link"
+    if [ "$link_state" = conflict ]; then
+      [ "$(readlink "$link")" = "$CASE_DIR/operator-entrypoint" ] || fail "bootstrap replaced the operator link"
+    else
+      [ ! -e "$link" ] && [ ! -L "$link" ] || fail "bootstrap created an account link"
+    fi
+  done
+done
+pass "real doctor bootstrap preserves conflicting and absent account links, including --fix, without hiding readiness failures"

@@ -66,6 +66,7 @@ if [ "${1:-}" = "status" ]; then
     free) echo "lock: free" ;;
     unreadable) echo "lock: unreadable" ;;
     held) echo "lock: held by live harness pid $FM_LOCK_INSPECT_PID" ;;
+    unknown) echo "lock: unknown (owner is not a verified live harness)" ;;
     *) echo "lock: stale (pid $FM_LOCK_INSPECT_PID dead or not a harness)" ;;
   esac
   exit 0

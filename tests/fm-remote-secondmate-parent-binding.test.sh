@@ -62,7 +62,7 @@ cleanup() {
     worker_pid=$(cat "$TMP_ROOT/remote-jobs/worker.pid")
     kill "$worker_pid" 2>/dev/null || true
   fi
-  rm -rf -- "$TMP_ROOT"
+  fm_test_remove_tree "$TMP_ROOT"
 }
 trap cleanup EXIT
 
@@ -142,7 +142,7 @@ git -C "$PARENT/projects/alpha" push -q -u origin main
 git --git-dir="$TMP_ROOT/alpha.git" symbolic-ref HEAD refs/heads/main
 printf -- '- alpha [direct-PR] - alpha project (added 2026-08-04)\n' > "$PARENT/data/projects.md"
 printf 'codex\n' > "$PARENT/config/secondmate-harness"
-printf 'tmux\n' > "$PARENT/config/backend"
+printf 'herdr\n' > "$PARENT/config/backend"
 
 # The primary home is the X-mode / relay home: the captain's real activation.
 printf 'FMX_PAIRING_TOKEN=repro-token\n' > "$PARENT/.env"
@@ -240,7 +240,9 @@ mkdir -p "$REMOTE_HOME/state"
 printf '%s\n' manual > "$REMOTE_HOME/config/backlog-backend"
 write_child_meta() {
   fm_write_meta "$REMOTE_HOME/state/work-child.meta" \
-    "window=firstmate:fm-work-child" "endpoint_task_id=work-child" \
+    'backend=herdr' 'window=fm-remote:w99:p99' 'herdr_session=fm-remote' \
+    'herdr_workspace_id=w99' 'herdr_tab_id=w99:t99' 'herdr_pane_id=w99:p99' \
+    'endpoint_task_id=work-child' \
     "worktree=$CHILD_WT" "project=$CHILD_WT" "harness=codex" "kind=ship" \
     "mode=local-only" "yolo=off"
 }
@@ -253,7 +255,7 @@ done
 run_child_teardown() { # <extra env assignments...>
   local out rc=0
   write_child_meta
-  out=$(env "$@" PATH="$TMP_ROOT/childfake:$PATH" \
+  out=$(env "$@" PATH="$TMP_ROOT/childfake:$REMOTE_ROOT/bin:$PATH" \
     FM_HOME="$REMOTE_HOME" FM_STATE_OVERRIDE="$REMOTE_HOME/state" \
     FM_DATA_OVERRIDE="$REMOTE_HOME/data" FM_CONFIG_OVERRIDE="$REMOTE_HOME/config" \
     "$REMOTE_ROOT/bin/fm-teardown.sh" work-child 2>&1) || rc=$?
