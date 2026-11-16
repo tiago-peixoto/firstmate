@@ -778,6 +778,7 @@ HEAVY_ADMIT_ARGS="--task $ID --load $HEAVY_LOAD$HEAVY_SLOT_ARGS"
 IFS= read -r -d '' CAPACITY_SECTION <<EOF || true
 # Machine capacity
 This machine's heavy-run slots are shared by every Firstmate home on it.
+A remote sandbox command (such as \`boat exec\` or a Boat push) needs no local slot: run it directly, never through the slot helper.
 A full test suite is a heavy run, and so is a no-mistakes pipeline run, whose Test step runs a suite inside the no-mistakes daemon.
 Each heavy run holds one slot for as long as it works, and a task holds at most one slot.
 This home claims only these slots, tried in this order: $HEAVY_SLOT_LIST.
