@@ -1,0 +1,5 @@
+not ok - bootstrap discarded the private runtime directory (missing: 'runtime=/private/tmp/remote-runtime.Jq5e08/runtime')
+--- output ---
+runtime=absent
+socket=absent
+exit=1

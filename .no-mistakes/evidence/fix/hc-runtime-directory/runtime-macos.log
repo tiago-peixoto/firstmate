@@ -1,0 +1,5 @@
+ok - doctor bootstrap retains the validated runtime directory only
+ok - queued commands share the bootstrap runtime directory
+ok - unsafe runtime directories refuse and scratch HOME stays isolated
+note: run --account-runtime-lab in a disposable Linux container for absent-variable account discovery and ownership checks
+exit=0

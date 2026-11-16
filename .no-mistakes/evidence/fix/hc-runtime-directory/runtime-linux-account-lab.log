@@ -1,0 +1,7 @@
+ok - doctor bootstrap retains the validated runtime directory only
+ok - queued commands share the bootstrap runtime directory
+ok - unsafe runtime directories refuse and scratch HOME stays isolated
+ok - discovered runtime directory must belong to the executing account
+ok - absent XDG_RUNTIME_DIR: real doctor finds account listener without starting hc
+ok - absent account runtime directory: real doctor finds state listener without starting hc
+exit=0
