@@ -189,6 +189,73 @@ build_old_bin() {  # <name> -> echoes root dir (root/bin/<script> is the entry p
 
 # --- fm-backend.sh unit tests ------------------------------------------------
 
+# shellcheck disable=SC2030 # Each resolution case isolates its home in a subshell.
+test_backend_without_python() (
+  local dir out
+  dir="$TMP_ROOT/no-python"
+  export FM_HOME="$dir/home" FM_STATE_OVERRIDE="$dir/state" FM_BACKEND_CONFIG_DIR="$dir/config" FM_BACKEND=tmux
+  mkdir -p "$FM_BACKEND_CONFIG_DIR" "$FM_STATE_OVERRIDE"
+  # shellcheck disable=SC2329
+  python3() { echo 'Python unavailable' >&2; return 127; }
+  out=$(fm_backend_name) || fail 'unbound tmux requires Python'
+  assert_equals tmux "$out" 'explicit unrelated backend resolves without Python'
+  out=$(fm_fleet_backend_bind "$FM_STATE_OVERRIDE" "$FM_BACKEND_CONFIG_DIR" tmux) || fail 'unbound tmux binding requires Python'
+  assert_equals tmux "$out" 'unrelated binding remains a no-op'
+  FM_STATE_OVERRIDE="$dir/missing/nested/state"
+  out=$(fm_backend_name) || fail 'absent home requires Python'
+  assert_equals tmux "$out" 'absent home retains unrelated selection'
+  FM_STATE_OVERRIDE="$dir/state"
+  printf 'hc\n' > "$FM_STATE_OVERRIDE/fleet-backend"
+  if fm_backend_name > "$dir/out" 2> "$dir/err"; then fail 'present pin ignored without Python'; fi
+  [ ! -s "$dir/out" ] || fail 'pin error printed a fallback'
+  pass 'unbound unrelated runtimes need no Python while existing pins fail closed'
+)
+
+# shellcheck disable=SC2031 # This case assigns its own home independently of the preceding case.
+test_backend_fleet_resolution() (
+  local dir backend out
+  dir="$TMP_ROOT/fleet-resolution"
+  export FM_HOME="$dir/home" FM_STATE_OVERRIDE="$dir/override"
+  export FM_BACKEND_CONFIG_DIR="$dir/config" FM_BACKEND=''
+  mkdir -p "$FM_HOME/state" "$FM_STATE_OVERRIDE" "$FM_BACKEND_CONFIG_DIR"
+  printf 'herdr\n' > "$FM_HOME/state/fleet-backend"
+  # shellcheck disable=SC2329 # The resolver invokes this test replacement indirectly.
+  fm_backend_detect() { fail 'pinned fleet must not probe ambient runtime'; }
+  for backend in herdr hc; do
+    printf '%s\n' "$backend" > "$FM_STATE_OVERRIDE/fleet-backend"
+    out=$(fm_backend_name) || fail 'fleet pin resolution failed'
+    assert_equals "$backend" "$out" 'state override pin determines backend'
+    FM_BACKEND_RESOLVED=stale
+    fm_backend_resolve || fail 'direct fleet resolution failed'
+    assert_equals "$backend" "$FM_BACKEND_RESOLVED" 'direct resolver exposes pinned selection'
+    assert_equals '' "$FM_BACKEND_DETECT_SIGNAL" 'pin has no detection signal'
+    printf '%s\n' "$backend" > "$FM_BACKEND_CONFIG_DIR/backend"
+    out=$(FM_BACKEND=$backend fm_backend_name) || fail 'matching choices refused'
+    assert_equals "$backend" "$out" 'matching choices retain pin'
+    if FM_BACKEND=tmux fm_backend_name > "$dir/out" 2> "$dir/err"; then
+      fail 'explicit environment conflict accepted'
+    fi
+    [ ! -s "$dir/out" ] || fail 'failed name resolution printed a backend'
+    assert_contains "$(cat "$dir/err")" 'fleet backend' 'conflict explains fleet authority'
+    printf 'tmux\n' > "$FM_BACKEND_CONFIG_DIR/backend"
+    FM_BACKEND_RESOLVED=stale
+    if FM_BACKEND=$backend fm_backend_resolve 2> "$dir/err"; then
+      fail 'matching environment concealed conflicting configuration'
+    fi
+    assert_equals '' "$FM_BACKEND_RESOLVED" 'failure clears stale resolved choice'
+    rm "$FM_BACKEND_CONFIG_DIR/backend"
+  done
+  unset FM_STATE_OVERRIDE
+  assert_equals herdr "$(fm_backend_name)" 'home state is used without override'
+  printf 'bad pin\n' > "$FM_HOME/state/fleet-backend"
+  if fm_backend_name > "$dir/out" 2> "$dir/err"; then fail 'malformed pin accepted'; fi
+  [ ! -s "$dir/out" ] || fail 'malformed pin fell back to a backend'
+  rm "$FM_HOME/state/fleet-backend"
+  ln -s "$dir/missing" "$FM_HOME/state/fleet-backend"
+  if fm_backend_name > "$dir/out" 2> "$dir/err"; then fail 'dangling pin accepted'; fi
+  pass 'fleet resolution honors home and override pins, refuses conflicts, and never falls back on errors'
+)
+
 test_backend_name_precedence() {
   local dir cfg
   dir="$TMP_ROOT/name-precedence"; cfg="$dir/config"
@@ -600,14 +667,19 @@ SH
 
   # live_sock <path>: park a real listening unix socket for the probes.
   live_sock() {
-    python3 -c 'import socket,sys,time; s=socket.socket(socket.AF_UNIX); s.bind(sys.argv[1]); s.listen(5); time.sleep(300)' "$1" >/dev/null 2>&1 &
-    echo $!
+    local pid tries=0
+    # Publish the path only once it listens, so a probe never meets a half-ready socket.
+    python3 -c 'import os,socket,sys,time; t=os.path.join(os.path.dirname(sys.argv[1]), ".ls%d" % os.getpid()); s=socket.socket(socket.AF_UNIX); s.bind(t); s.listen(5); os.rename(t, sys.argv[1]); time.sleep(300)' "$1" >/dev/null 2>&1 &
+    pid=$!
+    while [ ! -S "$1" ] && [ "$tries" -lt 200 ]; do sleep 0.05; tries=$((tries + 1)); done
+    [ -S "$1" ] || { printf 'test socket %s never started listening\n' "$1" >&2; return 1; }
+    echo "$pid"
   }
 
   # --- app-terminal: the terminal's own core record carries herdr.space ----
   run="$sockdir/run"; mkdir -p "$run/herdr-core"
   sock="$run/herdr-core/default.sock"
-  lpid=$(live_sock "$sock"); sleep 0.2
+  lpid=$(live_sock "$sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" XDG_RUNTIME_DIR="$run" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"fm-app","herdr.tab":"x"}}' \
     HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect \
@@ -619,7 +691,7 @@ SH
   # session named by HC_SESSION, or the FM_HC_SOCKET pin) never selects: the
   # spawn would land on, or start, a different core.
   other="$run/herdr-core/other.sock"
-  opid=$(live_sock "$other"); sleep 0.2
+  opid=$(live_sock "$other")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" XDG_RUNTIME_DIR="$run" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"fm-app"}}' HC_SESSION=elsewhere \
     HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect) \
@@ -644,7 +716,7 @@ SH
   [ ! -e "$sock" ] || [ -S "$sock" ] || fail "the app-terminal probe created state at the dead socket path"
   rm -f "$sock"
 
-  lpid=$(live_sock "$sock"); sleep 0.2
+  lpid=$(live_sock "$sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" XDG_RUNTIME_DIR="$run" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"","herdr.tab":"x"}}' \
     HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect) \
@@ -674,7 +746,7 @@ SH
 
   # --- earlier surface markers still win over the app signals --------------
   rm -f "$sock"
-  lpid=$(live_sock "$sock"); sleep 0.2
+  lpid=$(live_sock "$sock")
   out=$(unset HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"fm-app"}}' \
     TMUX='fake,1,0' HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect)
@@ -692,9 +764,9 @@ SH
   # claim a marker-less process must stay undetected - and record no
   # signal - however the app home and spawn core look.
   apphome="$sockdir/apphome"; mkdir -p "$apphome"
-  lpid=$(live_sock "$apphome/herdr-app.sock"); sleep 0.2
+  lpid=$(live_sock "$apphome/herdr-app.sock")
   rm -f "$sock"
-  opid=$(live_sock "$sock"); sleep 0.2
+  opid=$(live_sock "$sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET; PATH="$fb:$PATH" \
     XDG_RUNTIME_DIR="$run" HERDR_APP_HOME="$apphome" fm_backend_detect && exit 9; \
     [ -z "${FM_BACKEND_DETECT_SIGNAL:-}" ]) \
@@ -719,7 +791,7 @@ SH
     || fail "detection created core state for a session that was not running"
   mkdir -p "$sockdir/state/herdr-core/default"
   kill "$opid" 2>/dev/null; wait "$opid" 2>/dev/null
-  opid=$(live_sock "$sockdir/state/herdr-core/default/default.sock"); sleep 0.2
+  opid=$(live_sock "$sockdir/state/herdr-core/default/default.sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET XDG_RUNTIME_DIR; PATH="$fb:$PATH" \
     XDG_STATE_HOME="$sockdir/state" HERDR_APP_HOME="$apphome" fm_backend_detect) \
     && fail "a live window over a running state-dir core must not select hc, got '$out'"
@@ -735,7 +807,7 @@ SH
 
   # An unusable hc toolchain beside a live window is equally silent: there
   # is no candidate, so there is nothing to name.
-  lpid=$(live_sock "$apphome/herdr-app.sock"); sleep 0.2
+  lpid=$(live_sock "$apphome/herdr-app.sock")
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET; PATH="/usr/bin:/bin" \
     HERDR_APP_HOME="$apphome" FM_HC_BIN=/nonexistent/hc fm_backend_detect && exit 9; \
     [ -z "${FM_BACKEND_DETECT_SIGNAL:-}" ]) \
@@ -776,14 +848,19 @@ esac
 SH
   chmod +x "$fb/herdr-core"
   live_sock() {
-    python3 -c 'import socket,sys,time; s=socket.socket(socket.AF_UNIX); s.bind(sys.argv[1]); s.listen(5); time.sleep(300)' "$1" >/dev/null 2>&1 &
-    echo $!
+    local pid tries=0
+    # Publish the path only once it listens, so a probe never meets a half-ready socket.
+    python3 -c 'import os,socket,sys,time; t=os.path.join(os.path.dirname(sys.argv[1]), ".ls%d" % os.getpid()); s=socket.socket(socket.AF_UNIX); s.bind(t); s.listen(5); os.rename(t, sys.argv[1]); time.sleep(300)' "$1" >/dev/null 2>&1 &
+    pid=$!
+    while [ ! -S "$1" ] && [ "$tries" -lt 200 ]; do sleep 0.05; tries=$((tries + 1)); done
+    [ -S "$1" ] || { printf 'test socket %s never started listening\n' "$1" >&2; return 1; }
+    echo "$pid"
   }
 
   apphome="$sockdir/apphome"; mkdir -p "$apphome"
   run="$sockdir/run"; mkdir -p "$run/herdr-core"
-  lpid=$(live_sock "$apphome/herdr-app.sock"); sleep 0.2
-  cpid=$(live_sock "$run/herdr-core/default.sock"); sleep 0.2
+  lpid=$(live_sock "$apphome/herdr-app.sock")
+  cpid=$(live_sock "$run/herdr-core/default.sock")
   : > "$errfile"
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID HC_TERMINAL_ID HC_TERMINAL_SOCKET; PATH="$fb:$PATH" \
     XDG_RUNTIME_DIR="$run" HERDR_APP_HOME="$apphome" FM_BACKEND='' FM_BACKEND_CONFIG_DIR="$cfg" fm_backend_name 2>"$errfile")
@@ -1711,6 +1788,42 @@ test_spawn_explicit_backend_flag_beats_autodetect_herdr_env() {
   pass "fm-spawn.sh: explicit --backend tmux wins over an ambient HERDR_ENV=1 auto-detect marker"
 }
 
+test_spawn_worker_backend_flag_in_unbound_herdr_home() {
+  local proj wt data id state config out fb
+  proj="$TMP_ROOT/unbound-herdr-project"; wt="$TMP_ROOT/unbound-herdr-wt"; data="$TMP_ROOT/unbound-herdr-data"
+  id="unboundherdrz6"
+  fm_git_worktree "$proj" "$wt" "fm/$id"
+  fb=$(make_spawn_fakebin "$TMP_ROOT/unbound-herdr-fake" "$wt")
+  mkdir -p "$data/$id"; write_spawn_brief "$data/$id/brief.md" "$id"
+  state="$TMP_ROOT/unbound-herdr-state"; config="$TMP_ROOT/unbound-herdr-config"
+  mkdir -p "$state" "$config"
+  printf 'herdr\n' > "$config/backend"
+  printf 'backend=herdr\nwindow=fm-legacy:p1\n' > "$state/legacy.meta"
+
+  # docs/configuration.md "Backend selection order": in an unbound home the
+  # task flag comes before config/backend, and a worker spawn selects no fleet.
+  out=$(PATH="$fb:$PATH" FM_ROOT_OVERRIDE="$ROOT" HOME="$SPAWN_HOME" CLAUDE_CONFIG_DIR='' \
+    FM_STATE_OVERRIDE="$state" FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$config" \
+    FM_PROJECTS_OVERRIDE="$TMP_ROOT/unused-projects" FM_SPAWN_NO_GUARD=1 TMUX="fake,1,0" \
+    FM_TMUX_LOG="$TMP_ROOT/unbound-herdr.log" \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend tmux 2>&1)
+  expect_code 0 $? "an unbound home must accept a worker --backend tmux over config/backend=herdr"$'\n'"$out"
+  assert_absent "$state/fleet-backend" "a worker spawn must not select the fleet runtime"
+  rm -rf "/tmp/fm-$id"
+
+  printf 'herdr\n' > "$state/fleet-backend"
+  rm -f "$state/$id.meta"
+  out=$(PATH="$fb:$PATH" FM_ROOT_OVERRIDE="$ROOT" HOME="$SPAWN_HOME" CLAUDE_CONFIG_DIR='' \
+    FM_STATE_OVERRIDE="$state" FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$config" \
+    FM_PROJECTS_OVERRIDE="$TMP_ROOT/unused-projects" FM_SPAWN_NO_GUARD=1 TMUX="fake,1,0" \
+    FM_TMUX_LOG="$TMP_ROOT/unbound-herdr.log" \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend tmux 2>&1) \
+    && fail "a bound herdr fleet accepted a worker on tmux"
+  assert_contains "$out" 'fleet uses herdr; refusing task runtime tmux' 'bound fleet refusal names the fleet runtime'
+  assert_absent "$state/$id.meta" "a refused worker must publish no record"
+  pass "fm-spawn.sh: worker --backend wins in an unbound home and is refused only by a bound fleet"
+}
+
 test_spawn_autodetect_nesting_resolves_tmux_silently() {
   local proj wt data id state config out fb
   proj="$TMP_ROOT/nest-project"; wt="$TMP_ROOT/nest-wt"; data="$TMP_ROOT/nest-data"
@@ -1759,6 +1872,8 @@ fi
 
 backend_base_ref >/dev/null
 
+test_backend_without_python || exit 1
+test_backend_fleet_resolution || exit 1
 test_backend_name_precedence
 test_backend_detect_t3_explicit_only
 test_backend_detect_precedence
@@ -1796,4 +1911,5 @@ test_spawn_refuses_codex_app_backend_flag
 test_spawn_refuses_unknown_fm_backend_env
 test_spawn_default_backend_writes_no_meta_field
 test_spawn_explicit_backend_flag_beats_autodetect_herdr_env
+test_spawn_worker_backend_flag_in_unbound_herdr_home
 test_spawn_autodetect_nesting_resolves_tmux_silently

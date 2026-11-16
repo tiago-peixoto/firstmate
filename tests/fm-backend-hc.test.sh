@@ -139,6 +139,60 @@ test_create_task_is_independent_labeled_and_refuses_duplicates() {
   pass "hc: create_task starts an independent labeled terminal and refuses a duplicate"
 }
 
+test_create_task_presentation_home_preserves_parent_ownership() {
+  local out tag child_tag other_tag
+  setup_case presentation
+  mkdir -p "$D/child one" "$D/child two"
+  printf 'same-id\n' > "$D/child one/.fm-secondmate-home"
+  printf 'same-id\n' > "$D/child two/.fm-secondmate-home"
+  printf '{"address":"t9"}\n' > "$D/run.json"
+  tag=$(hometag_of)
+  # shellcheck disable=SC2016 # the inner shell expands it
+  child_tag=$(hc_shell 'FM_HOME="$FAKE_HC_DIR/child one" FM_ROOT="$FAKE_HC_DIR/child one" fm_backend_hometag')
+  # shellcheck disable=SC2016 # the inner shell expands it
+  other_tag=$(hc_shell 'FM_HOME="$FAKE_HC_DIR/child two" FM_ROOT="$FAKE_HC_DIR/child two" fm_backend_hometag')
+  # shellcheck disable=SC2016 # the inner shell expands it
+  out=$(hc_shell '
+    FM_HC_SPACE=parent-custom
+    fm_backend_hc_create_task fmtest fm-child /proj "$FAKE_HC_DIR/child one"
+    printf "home=%s root=%s space=%s tag=%s" "$FM_HOME" "$FM_ROOT" "$FM_HC_SPACE" "$(fm_backend_hometag)"
+  ')
+  assert_contains "$out" "home=$HOMEDIR root=$HOMEDIR space=parent-custom tag=$tag" "child placement must not mutate the parent environment"
+  out=$(grep $'\x1frun\x1f' "$D/log")
+  for want in "firstmate.task=fm-child" "firstmate.home=$tag" "herdr.tab=$tag-fm-child" "herdr.space=fm-$child_tag"; do
+    assert_contains "$out" "$want" "child launch must carry $want"
+  done
+  assert_not_contains "$out" 'herdr.space=parent-custom' "child placement must ignore the parent space override"
+  out=$(grep $'\x1fls\x1f' "$D/log")
+  assert_contains "$out" "firstmate.home=$tag" "duplicate checks must retain parent ownership"
+  : > "$D/log"
+  # shellcheck disable=SC2016 # the inner shell expands it
+  hc_shell 'fm_backend_hc_create_task fmtest fm-other /proj "$FAKE_HC_DIR/child two"' >/dev/null
+  assert_not_contains "$other_tag" "$child_tag" "distinct child paths must have distinct tags even with matching marker IDs"
+  assert_contains "$(cat "$D/log")" "herdr.space=fm-$other_tag" "another child must use its own space"
+  : > "$D/log"
+  # shellcheck disable=SC2016 # the inner shell expands it
+  hc_shell 'FM_HOME="$FAKE_HC_DIR/child one"; FM_ROOT="$FM_HOME"; unset FM_HC_SPACE; fm_backend_hc_create_task fmtest fm-worker /proj' >/dev/null
+  assert_contains "$(cat "$D/log")" "herdr.space=fm-$child_tag" "child workers must share the secondmate presentation space"
+  printf '{"terminals":[{"address":"t9"}]}\n' > "$D/ls.json"
+  : > "$D/log"
+  # shellcheck disable=SC2016 # the inner shell expands it
+  expect_refused hc_shell 'fm_backend_hc_create_task fmtest fm-child /proj "$FAKE_HC_DIR/child one"'
+  assert_not_contains "$(cat "$D/log")" $'\x1frun\x1f' "presentation override must not bypass duplicate refusal"
+  pass "hc: child presentation keeps parent ownership and isolates child spaces"
+}
+
+test_create_task_default_preserves_space_override() {
+  setup_case default-space
+  printf '{"address":"t9"}\n' > "$D/run.json"
+  hc_shell 'FM_HC_SPACE=custom fm_backend_hc_create_task fmtest fm-a1 /proj' >/dev/null
+  assert_contains "$(cat "$D/log")" "herdr.space=custom" "default calls must retain FM_HC_SPACE"
+  : > "$D/log"
+  hc_shell 'FM_HC_SPACE=custom fm_backend_hc_create_task fmtest fm-a1 /proj ""' >/dev/null
+  assert_contains "$(cat "$D/log")" "herdr.space=custom" "an empty presentation home must retain default placement"
+  pass "hc: default placement preserves the configured space"
+}
+
 test_control_interrupt_delivers_the_harness_keys() {
   local tag out rc=0 id=hcint1
   setup_case interrupt
@@ -364,6 +418,8 @@ fm_test_run \
   test_hc_is_spawn_capable_and_needs_app_signals \
   test_required_tool_check_uses_the_adapter_resolver \
   test_create_task_is_independent_labeled_and_refuses_duplicates \
+  test_create_task_presentation_home_preserves_parent_ownership \
+  test_create_task_default_preserves_space_override \
   test_control_interrupt_delivers_the_harness_keys \
   test_foreign_or_unlabeled_terminal_gets_no_input_and_no_close \
   test_invalid_session_never_reaches_hc \
