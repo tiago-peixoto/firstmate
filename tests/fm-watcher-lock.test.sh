@@ -1034,6 +1034,16 @@ test_lock_respects_live_holder_matching_its_start_time() {
   pass "live holder matching its recorded start time keeps its lock"
 }
 
+wait_for_command_arg() {  # <pid> <arg>
+  local i=0
+  while [ "$i" -lt 100 ]; do
+    case "$(ps -p "$1" -o command= 2>/dev/null)" in *"$2"*) return 0 ;; esac
+    sleep 0.05
+    i=$((i + 1))
+  done
+  return 1
+}
+
 test_lock_reclaims_holder_whose_identity_no_longer_recomputes() {
   # A watch lock that records a pid-identity but no start time (a watcher's
   # claim made before start times were recorded) is held only while that
@@ -1048,8 +1058,11 @@ test_lock_reclaims_holder_whose_identity_no_longer_recomputes() {
   # if an assertion below fails before the kill at the end. A python holder
   # carries that name as its own argument instead of through `exec -a`, which a
   # multicall sleep rejects by dispatching on argv[0] and exiting at once.
-  python3 -c 'import sys, time; time.sleep(300)' "$dir/holder" >/dev/null 2>&1 &
+  # The identity below must be read after the holder's final exec, so skip
+  # wrappers such as a pyenv shim that exec again and wait for the holder name.
+  "$(python3 -c 'import sys; print(sys.executable)')" -c 'import sys, time; time.sleep(300)' "$dir/holder" >/dev/null 2>&1 &
   live=$!
+  wait_for_command_arg "$live" "$dir/holder" || fail "the fixture holder never exec'd Python"
   identity=$(FM_STATE_OVERRIDE="$state" bash -c '. "$1"; fm_pid_identity "$2"' _ "$LIB" "$live") \
     || fail "could not identify the fixture holder"
   for case_name in mismatched matching unrecorded; do
@@ -1102,8 +1115,11 @@ test_lock_keeps_live_daemon_holder_with_stale_identity() {
   # if an assertion below fails before the kill at the end. A python holder
   # carries that name as its own argument instead of through `exec -a`, which a
   # multicall sleep rejects by dispatching on argv[0] and exiting at once.
-  python3 -c 'import sys, time; time.sleep(300)' "$dir/holder" >/dev/null 2>&1 &
+  # The identity below must be read after the holder's final exec, so skip
+  # wrappers such as a pyenv shim that exec again and wait for the holder name.
+  "$(python3 -c 'import sys; print(sys.executable)')" -c 'import sys, time; time.sleep(300)' "$dir/holder" >/dev/null 2>&1 &
   live=$!
+  wait_for_command_arg "$live" "$dir/holder" || fail "the fixture holder never exec'd Python"
   identity=$(FM_STATE_OVERRIDE="$state" bash -c '. "$1"; fm_pid_identity "$2"' _ "$LIB" "$live") \
     || fail "could not identify the fixture daemon"
   legacy=$(COLUMNS=10000 LC_ALL=C TZ=America/Los_Angeles ps -p "$live" -o lstart= -o command= 2>/dev/null | sed 's/^[[:space:]]*//')
