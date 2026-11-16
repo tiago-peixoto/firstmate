@@ -28,6 +28,7 @@ CASE_N=0
 DOCTOR_WORKER_PID=
 HOLDER_PIDS=()
 trap 'if [ -n "$DOCTOR_WORKER_PID" ]; then kill "$DOCTOR_WORKER_PID" 2>/dev/null || true; fi; if [ "${#HOLDER_PIDS[@]}" -gt 0 ]; then kill "${HOLDER_PIDS[@]}" 2>/dev/null || true; fi; fm_test_cleanup || true' EXIT
+ROOT=$(cd "$ROOT" && pwd -P)
 GUARD="$ROOT/bin/fm-remote-herdr-guard.sh"
 
 # A fixture must be able to present a host with NO herdr, so the doctor never
