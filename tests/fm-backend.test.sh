@@ -189,6 +189,73 @@ build_old_bin() {  # <name> -> echoes root dir (root/bin/<script> is the entry p
 
 # --- fm-backend.sh unit tests ------------------------------------------------
 
+# shellcheck disable=SC2030 # Each resolution case isolates its home in a subshell.
+test_backend_without_python() (
+  local dir out
+  dir="$TMP_ROOT/no-python"
+  export FM_HOME="$dir/home" FM_STATE_OVERRIDE="$dir/state" FM_BACKEND_CONFIG_DIR="$dir/config" FM_BACKEND=tmux
+  mkdir -p "$FM_BACKEND_CONFIG_DIR" "$FM_STATE_OVERRIDE"
+  # shellcheck disable=SC2329
+  python3() { echo 'Python unavailable' >&2; return 127; }
+  out=$(fm_backend_name) || fail 'unbound tmux requires Python'
+  assert_equals tmux "$out" 'explicit unrelated backend resolves without Python'
+  out=$(fm_fleet_backend_bind "$FM_STATE_OVERRIDE" "$FM_BACKEND_CONFIG_DIR" tmux) || fail 'unbound tmux binding requires Python'
+  assert_equals tmux "$out" 'unrelated binding remains a no-op'
+  FM_STATE_OVERRIDE="$dir/missing/nested/state"
+  out=$(fm_backend_name) || fail 'absent home requires Python'
+  assert_equals tmux "$out" 'absent home retains unrelated selection'
+  FM_STATE_OVERRIDE="$dir/state"
+  printf 'hc\n' > "$FM_STATE_OVERRIDE/fleet-backend"
+  if fm_backend_name > "$dir/out" 2> "$dir/err"; then fail 'present pin ignored without Python'; fi
+  [ ! -s "$dir/out" ] || fail 'pin error printed a fallback'
+  pass 'unbound unrelated runtimes need no Python while existing pins fail closed'
+)
+
+# shellcheck disable=SC2031 # This case assigns its own home independently of the preceding case.
+test_backend_fleet_resolution() (
+  local dir backend out
+  dir="$TMP_ROOT/fleet-resolution"
+  export FM_HOME="$dir/home" FM_STATE_OVERRIDE="$dir/override"
+  export FM_BACKEND_CONFIG_DIR="$dir/config" FM_BACKEND=''
+  mkdir -p "$FM_HOME/state" "$FM_STATE_OVERRIDE" "$FM_BACKEND_CONFIG_DIR"
+  printf 'herdr\n' > "$FM_HOME/state/fleet-backend"
+  # shellcheck disable=SC2329 # The resolver invokes this test replacement indirectly.
+  fm_backend_detect() { fail 'pinned fleet must not probe ambient runtime'; }
+  for backend in herdr hc; do
+    printf '%s\n' "$backend" > "$FM_STATE_OVERRIDE/fleet-backend"
+    out=$(fm_backend_name) || fail 'fleet pin resolution failed'
+    assert_equals "$backend" "$out" 'state override pin determines backend'
+    FM_BACKEND_RESOLVED=stale
+    fm_backend_resolve || fail 'direct fleet resolution failed'
+    assert_equals "$backend" "$FM_BACKEND_RESOLVED" 'direct resolver exposes pinned selection'
+    assert_equals '' "$FM_BACKEND_DETECT_SIGNAL" 'pin has no detection signal'
+    printf '%s\n' "$backend" > "$FM_BACKEND_CONFIG_DIR/backend"
+    out=$(FM_BACKEND=$backend fm_backend_name) || fail 'matching choices refused'
+    assert_equals "$backend" "$out" 'matching choices retain pin'
+    if FM_BACKEND=tmux fm_backend_name > "$dir/out" 2> "$dir/err"; then
+      fail 'explicit environment conflict accepted'
+    fi
+    [ ! -s "$dir/out" ] || fail 'failed name resolution printed a backend'
+    assert_contains "$(cat "$dir/err")" 'fleet backend' 'conflict explains fleet authority'
+    printf 'tmux\n' > "$FM_BACKEND_CONFIG_DIR/backend"
+    FM_BACKEND_RESOLVED=stale
+    if FM_BACKEND=$backend fm_backend_resolve 2> "$dir/err"; then
+      fail 'matching environment concealed conflicting configuration'
+    fi
+    assert_equals '' "$FM_BACKEND_RESOLVED" 'failure clears stale resolved choice'
+    rm "$FM_BACKEND_CONFIG_DIR/backend"
+  done
+  unset FM_STATE_OVERRIDE
+  assert_equals herdr "$(fm_backend_name)" 'home state is used without override'
+  printf 'bad pin\n' > "$FM_HOME/state/fleet-backend"
+  if fm_backend_name > "$dir/out" 2> "$dir/err"; then fail 'malformed pin accepted'; fi
+  [ ! -s "$dir/out" ] || fail 'malformed pin fell back to a backend'
+  rm "$FM_HOME/state/fleet-backend"
+  ln -s "$dir/missing" "$FM_HOME/state/fleet-backend"
+  if fm_backend_name > "$dir/out" 2> "$dir/err"; then fail 'dangling pin accepted'; fi
+  pass 'fleet resolution honors home and override pins, refuses conflicts, and never falls back on errors'
+)
+
 test_backend_name_precedence() {
   local dir cfg
   dir="$TMP_ROOT/name-precedence"; cfg="$dir/config"
@@ -1759,6 +1826,8 @@ fi
 
 backend_base_ref >/dev/null
 
+test_backend_without_python || exit 1
+test_backend_fleet_resolution || exit 1
 test_backend_name_precedence
 test_backend_detect_t3_explicit_only
 test_backend_detect_precedence

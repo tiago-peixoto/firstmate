@@ -355,6 +355,7 @@ new_world() {
   mkdir -p "$w/home/state" "$w/home/config"
   touch "$w/home/state/.last-watcher-beat"
   printf 'codex\n' > "$w/home/config/crew-harness"
+  printf 'tmux\n' > "$w/home/config/backend"
   printf '%s\n' "$w"
 }
 
@@ -367,6 +368,7 @@ add_sm_home() {
   local home="$w/$id"
   mkdir -p "$home/bin" "$home/data" "$home/state" "$home/config" "$home/projects"
   printf '%s\n' "$id" > "$home/.fm-secondmate-home"
+  printf 'tmux\n' > "$home/config/backend"
   printf '# Firstmate\n' > "$home/AGENTS.md"
   printf 'charter\n' > "$home/data/charter.md"
   printf '%s\n' 'projects/' 'state/' 'data/' 'config/' '.no-mistakes/' > "$home/.gitignore"
@@ -413,8 +415,7 @@ test_sweep_respawns_on_the_recorded_backend() {
   fb=$(make_toolchain "$w"); tmuxfb=$(make_liveness_tmux "$w")
   log="$w/calls.log"; : > "$log"
 
-  # The home now selects hc for new spawns; the dead mate is recorded on tmux.
-  out=$(run_bootstrap "$tmuxfb:$fb" "$w/home" zsh "$log" FM_BACKEND=hc)
+  out=$(run_bootstrap "$tmuxfb:$fb" "$w/home" zsh "$log" FM_BACKEND=tmux)
 
   assert_not_contains "$out" "SECONDMATE_LIVENESS: secondmate sm1:" \
     "the respawn should succeed on the recorded backend: $out"
@@ -422,7 +423,26 @@ test_sweep_respawns_on_the_recorded_backend() {
     "the respawn must land on the backend the mate is recorded on, not the configured default"
   assert_no_grep 'backend=hc' "$w/home/state/sm1.meta" \
     "the respawned record must stay on its recorded backend"
-  pass "sweep: a dead secondmate respawns on its recorded backend, not a changed default"
+  pass "sweep: a dead secondmate respawns on its explicitly selected recorded backend"
+}
+
+test_sweep_refuses_conflicting_runtime() {
+  local w fb tmuxfb log out
+  w=$(new_world sweep-runtime-conflict)
+  add_sm_home "$w" sm1 firstmate:fm-sm1
+  fb=$(make_toolchain "$w"); tmuxfb=$(make_liveness_tmux "$w")
+  log="$w/calls.log"; : > "$log"
+  cp "$w/home/state/sm1.meta" "$w/before.meta"
+
+  out=$(run_bootstrap "$tmuxfb:$fb" "$w/home" zsh "$log" FM_BACKEND=hc)
+
+  assert_contains "$out" "refusing" "a conflicting runtime must be refused"
+  assert_contains "$out" "SECONDMATE_LIVENESS: secondmate sm1: respawn failed" \
+    "a runtime conflict must not report successful recovery"
+  assert_not_contains "$(cat "$log")" "new-window" "a runtime conflict must not create a replacement"
+  cmp -s "$w/before.meta" "$w/home/state/sm1.meta" \
+    || fail "a runtime conflict must preserve the recorded route"
+  pass "sweep: a conflicting runtime is refused without migrating the recorded route"
 }
 
 test_sweep_recovers_the_durable_secondmate_account() {
@@ -729,6 +749,7 @@ test_sweep_skipped_under_detect_only() {
   add_sm_home "$w" sm1 firstmate:fm-sm1
   mkdir -p "$w/home/config"
   printf 'codex\n' > "$w/home/config/crew-harness"
+  printf 'tmux\n' > "$w/home/config/backend"
   fb=$(make_toolchain "$w"); tmuxfb=$(make_liveness_tmux "$w")
   log="$w/calls.log"; : > "$log"
 
@@ -775,6 +796,7 @@ make_remote_probe_world() {
   w="$TMP_ROOT/$name"
   fakebin=$(fm_fakebin "$w")
   mkdir -p "$w/home/state" "$w/home/data" "$w/home/config"
+  printf 'herdr\n' > "$w/home/config/backend"
   cat > "$w/home/state/rsm1.meta" <<EOF
 window=remote:rsm1
 kind=secondmate
@@ -802,7 +824,8 @@ SH
 probe_remote() {
   local w=$1 mode=$2; shift 2
   # shellcheck disable=SC2016 # positional params expand in the child shell.
-  env STATE="$w/home/state" FM_HOME="$w/home" FM_DATA_OVERRIDE="$w/home/data" \
+  env FM_BACKEND="$(cat "$w/home/config/backend")" \
+    STATE="$w/home/state" FM_HOME="$w/home" FM_DATA_OVERRIDE="$w/home/data" \
     FM_SSH_BIN="$w/fakebin/ssh" FM_FAKE_SSH_LOG="$w/ssh.log" "$@" \
     bash -c '
       . "$0/bin/fm-secondmate-liveness-lib.sh"
@@ -867,6 +890,7 @@ make_remote_probe_world_rex() {
   w="$TMP_ROOT/$name"
   fakebin=$(fm_fakebin "$w")
   mkdir -p "$w/home/state" "$w/home/data" "$w/home/config"
+  printf 'rex\n' > "$w/home/config/backend"
   cat > "$w/home/state/rsm1.meta" <<EOF
 window=remote:rsm1
 kind=secondmate
@@ -976,6 +1000,7 @@ test_remote_full_probe_rex_readiness_verdicts() {
 test_remote_full_probe_legacy_record_defaults_herdr() {
   local w out
   w=$(make_remote_probe_world_rex probe-legacy)
+  printf 'herdr\n' > "$w/home/config/backend"
 
   # A record written before rex existed carries no remote_backend; it is a
   # herdr route, so the gate asks the doctor about herdr and a herdr route
@@ -996,6 +1021,7 @@ test_herdr_agent_state_preserves_husk_classifier
 test_agent_state_dispatcher_and_compatibility
 test_sweep_respawns_confirmed_dead_secondmate
 test_sweep_respawns_on_the_recorded_backend
+test_sweep_refuses_conflicting_runtime
 test_sweep_recovers_the_durable_secondmate_account
 test_sweep_serializes_distinct_secondmate_relaunches
 test_sweep_keeps_tmux_best_effort_kill_when_close_fails

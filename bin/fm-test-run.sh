@@ -394,6 +394,8 @@ family_for_basename() {
     fm-watch-wedge-cap-live.test.sh|fm-read-repetition-live.test.sh)
       printf '%s\n' live-harness-optin
       ;;
+    fm-fleet-backend.test.sh|fm-fleet-inheritance.test.sh|fm-bootstrap-fleet-backend.test.sh|\
+    fm-remote-home-seed-backend.test.sh|\
     fm-backend-herdr.test.sh|fm-backend-tmux-smoke.test.sh|fm-backend.test.sh|\
     fm-backend-t3code.test.sh|fm-t3-mcp.test.sh|fm-tmux-agent-liveness.test.sh|\
     fm-control.test.sh|fm-control-relaunch.test.sh|\
@@ -442,7 +444,9 @@ family_for_basename() {
     fm-backend-tern.test.sh|fm-backend-tern-smoke.test.sh)
       printf '%s\n' tern
       ;;
-    fm-backend-hc.test.sh|fm-backend-hc-smoke.test.sh|fm-backend-hc-appdetect-smoke.test.sh)
+    fm-backend-hc.test.sh|fm-backend-hc-smoke.test.sh|fm-backend-hc-appdetect-smoke.test.sh|\
+    fm-hc-recovery.test.sh|fm-remote-hc-doctor.test.sh|fm-remote-hc.test.sh|fm-remote-hc-smoke.test.sh|\
+    fm-secondmate-hc.test.sh|fm-secondmate-hc-smoke.test.sh)
       printf '%s\n' hc
       ;;
     fm-branch-supervision.test.sh|fm-busy-adapter-wiring.test.sh|\
@@ -1587,9 +1591,14 @@ families_for_changed_path() {
       families_for_test_reference "$(basename "$path")" t3-fake-lib.sh \
         || printf '%s\n' "__unmapped__:$path"
       ;;
+    bin/fm-fleet-backend-lib.sh)
+      printf '%s\n' backend-dispatch
+      printf '%s\n' hc
+      ;;
     bin/fm-backend.sh|bin/fm-backend-hometag-lib.sh)
       printf '%s\n' backend-dispatch
       printf '%s\n' real-herdr-gated
+      printf '%s\n' hc
       ;;
     bin/fm-agent-process-lib.sh)
       # The shared harness-process classifier feeds both the tmux and Herdr
@@ -1631,12 +1640,16 @@ families_for_changed_path() {
     bin/fm-secondmate*)
       printf '%s\n' secondmate
       printf '%s\n' "__script__:fm-backend-t3code.test.sh"
+      printf '%s\n' hc
       ;;
     bin/fm-remote*|bin/fm-on.sh|bin/fm-home-seed.sh|\
     bin/fm-backlog-handoff.sh|bin/fm-backlog-receive.sh|bin/fm-procevent-remote-reply.sh|\
     bin/fm-config-inherit-lib.sh|bin/fm-config-push.sh|bin/fm-shared*|\
     bin/fm-stow-cascade.sh)
       printf '%s\n' secondmate
+      printf '%s\n' hc
+      printf '%s\n' '__script__:fm-fleet-inheritance.test.sh'
+      printf '%s\n' '__script__:fm-remote-home-seed-backend.test.sh'
       ;;
     bin/fm-session-start.sh|bin/fm-fleet-sync.sh|\
     bin/fm-sessionstart-nudge.sh|bin/fm-startup-network.sh|bin/fm-tangle*|bin/fm-update.sh|\
@@ -1646,6 +1659,7 @@ families_for_changed_path() {
     bin/fm-bootstrap.sh)
       printf '%s\n' session-bootstrap
       printf '%s\n' "__script__:fm-brief.test.sh"
+      printf '%s\n' '__script__:fm-bootstrap-fleet-backend.test.sh'
       ;;
     bin/fm-quota-axi-lib.sh)
       printf '%s\n' session-bootstrap
@@ -1781,6 +1795,7 @@ families_for_changed_path() {
       printf '%s\n' backend-dispatch
       printf '%s\n' session-bootstrap
       printf '%s\n' "__script__:fm-quota-choose.test.sh"
+      printf '%s\n' hc
       ;;
     bin/fm-composer-lib.sh)
       # The shared shape catalogue is vendor-rendered signal; a change to it
@@ -1794,6 +1809,7 @@ families_for_changed_path() {
     bin/fm-peek.sh|bin/fm-composer*)
       printf '%s\n' backend-dispatch
       printf '%s\n' pure-contract-unit
+      printf '%s\n' hc
       ;;
     bin/fm-kimi-trust-lib.sh)
       # Kimi's folder-prompt predicates are vendor-rendered signal: the Kimi

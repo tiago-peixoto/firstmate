@@ -241,7 +241,9 @@ network_mutation_authorized() {
   local expected=${FM_BOOTSTRAP_NETWORK_LOCK_PID:-} current
   [ -n "$expected" ] || return 0
   fm_session_pid_valid "$expected" || return 1
+  # shellcheck disable=SC2031 # Fleet binding confines its STATE override to a subshell.
   [ -f "$STATE/.lock" ] && [ ! -L "$STATE/.lock" ] || return 1
+  # shellcheck disable=SC2031
   current=$(cat "$STATE/.lock" 2>/dev/null) || return 1
   [ "$current" = "$expected" ]
 }
@@ -913,7 +915,7 @@ missing_tool_diagnostic() {
 # never told tmux is missing, and only orca drops treehouse. A backend value with
 # no verified dependency set is reported before the universal checks continue.
 COMMON_TOOLS="node git gh no-mistakes gh-axi chrome-devtools-axi tasks-axi quota-axi"
-BACKEND=$(fm_backend_name)
+BACKEND=$(fm_backend_name) || exit 1
 BACKEND_VALID=1
 if ! BACKEND_TOOLS=$(fm_backend_required_tools "$BACKEND"); then
   BACKEND_VALID=0

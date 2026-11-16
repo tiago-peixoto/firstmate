@@ -565,7 +565,7 @@ Treehouse remains the worktree provider for tmux, herdr, zellij, cmux, paseo, re
 
 ### Backend selection order
 
-New spawns choose the backend in this order:
+For an unbound home, new spawns choose the backend in this order:
 
 1. An explicit `--backend` flag authorized for that exact task by a present captain instruction or the task's own accepted brief.
    A later task cannot inherit that authority by analogy.
@@ -573,6 +573,22 @@ New spawns choose the backend in this order:
 3. The first non-empty line of local, gitignored `config/backend`.
 4. Runtime auto-detection from `$TMUX`, `HERDR_ENV=1`, `TERM_PROGRAM=rex` with `REX_BLOCK`, cmux runtime signals, or the Herdr app signal.
 5. Default `tmux`.
+
+### One runtime per Herdr fleet
+
+A fleet selected for `herdr` or `hc` uses that runtime for its primary, every secondmate, and every worker.
+This applies across local and remote machines.
+The first managed spawn records the choice in the private `state/fleet-backend` file.
+Subsequent resolution uses that recorded choice before ambient runtime detection.
+Secondmate provisioning and configuration inheritance preserve the same choice in each child home.
+
+An explicit task flag, `FM_BACKEND`, child `config/backend`, or existing task record that conflicts with the fleet choice refuses creation before a terminal opens.
+Firstmate does not silently replace conflicting configuration or fall back to another runtime when the selected runtime is unavailable.
+Recovery retains the recorded runtime and validates the endpoint before reuse.
+Mixed `herdr`/`hc` fleets and runtime migration are unsupported.
+Other unbound runtimes retain their existing selection behavior.
+
+### Runtime detection
 
 If more than one runtime marker is present, detection resolves innermost-first: `$TMUX` is checked before `HERDR_ENV=1`, which is checked before Rex's `TERM_PROGRAM=rex` with `REX_BLOCK`, which is checked before cmux's primary `CMUX_WORKSPACE_ID` marker and its documented fallback signals - tmux, herdr, or Rex started from inside a cmux terminal is the innermost, currently-executing layer, while cmux itself (a terminal application, not a nestable multiplexer) is checked after those nested runtimes.
 The Herdr app signal is checked after cmux; contradictory marker sets keep the earlier surface's verdict instead of switching.
@@ -587,7 +603,10 @@ Paseo and tern stay explicit-only because their runtime markers leak into every 
 ### Accepted backends and secondmate limits
 
 Any value other than `tmux`, `herdr`, `zellij`, `orca`, `cmux`, `paseo`, `rex`, `t3code`, `tern`, or `hc` is rejected until another adapter is implemented and verified.
-`fm-spawn.sh` accepts `tmux`, `herdr`, `zellij`, `orca`, `cmux`, `paseo`, `rex`, `t3code`, `tern`, and `hc` for ship and scout tasks; `backend=orca`, `backend=cmux`, `backend=paseo`, `backend=tern`, and `backend=hc` all still refuse `--secondmate` until secondmate launch semantics are designed for each, while `backend=t3code` supports secondmates and runs only the `claude` and `codex` harnesses.
+`fm-spawn.sh` accepts `tmux`, `herdr`, `zellij`, `orca`, `cmux`, `paseo`, `rex`, `t3code`, `tern`, and `hc` for ship and scout tasks.
+`backend=orca`, `backend=cmux`, `backend=paseo`, and `backend=tern` still refuse `--secondmate`.
+`backend=hc` supports secondmates under the fleet binding above.
+`backend=t3code` supports secondmates and runs only the `claude` and `codex` harnesses.
 
 `codex-app` is not an accepted runtime backend yet; [`docs/codex-app-backend.md`](codex-app-backend.md) owns the Codex App boundary.
 

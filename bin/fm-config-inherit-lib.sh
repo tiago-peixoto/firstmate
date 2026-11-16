@@ -657,6 +657,49 @@ propagate_shared_captain_preferences() {
   return "$rc"
 }
 
+# Keep resolver globals and wake-helper initialization out of sourcing callers.
+fm_config_inherit_backend() ( # <home> <config> <state>
+  local home=$1 config=$2 state=$3 selected
+  # shellcheck source=bin/fm-backend.sh
+  . "${BASH_SOURCE[0]%/*}/fm-backend.sh" || return 1
+  # shellcheck source=bin/fm-fleet-backend-lib.sh
+  . "${BASH_SOURCE[0]%/*}/fm-fleet-backend-lib.sh" || return 1
+  export FM_BACKEND_CONFIG_DIR=$config
+  selected=$(fm_fleet_backend_read "$state") || return 1
+  if [ -z "$selected" ]; then
+    selected=$(fm_backend_explicit_name) || selected=
+  fi
+  case "$selected" in
+    hc|herdr) fm_fleet_backend_validate "$state" "$config" "$selected" ;;
+    *) printf '%s' "$selected" ;;
+  esac
+)
+
+fm_config_inherit_backend_prepare() ( # <source-home> <source-config> <dest-config>
+  local home=$1 config=$2 dest_config=$3 state selected child_pin
+  state="$home/state"
+  if [ "$home" = "${FM_HOME:-}" ]; then state=${FM_STATE_OVERRIDE:-$state}; fi
+  selected=$(fm_config_inherit_backend "$home" "$config" "$state") || return 1
+  # shellcheck source=bin/fm-fleet-backend-lib.sh
+  . "${BASH_SOURCE[0]%/*}/fm-fleet-backend-lib.sh" || return 1
+  child_pin=$(fm_fleet_backend_read "${dest_config%/*}/state") || return 1
+  if [ -z "$selected" ] && [ -n "$child_pin" ]; then
+    printf 'error: select the primary fleet runtime before inheriting into a child bound to %s\n' "$child_pin" >&2
+    return 1
+  fi
+  case "$selected" in
+    hc|herdr)
+      fm_fleet_backend_validate "$state" "$config" "$selected" >/dev/null || return 1
+      fm_fleet_backend_validate "${dest_config%/*}/state" "$dest_config" "$selected" >/dev/null || return 1
+      fm_fleet_backend_bind "$state" "$config" "$selected" >/dev/null || return 1
+      fm_fleet_backend_bind "${dest_config%/*}/state" "$dest_config" "$selected" || return 1
+      ;;
+    *)
+      fm_fleet_backend_validate "${dest_config%/*}/state" "$dest_config" "${selected:-tmux}" >/dev/null || return 1
+      ;;
+  esac
+)
+
 propagate_secondmate_inheritance() {
   local src_home=$1 dest_home=$2 src_config=${3:-} src_data=${4:-} rc
   [ -n "$src_home" ] || return 1
@@ -664,16 +707,17 @@ propagate_secondmate_inheritance() {
   [ -n "$src_config" ] || src_config="$src_home/config"
   [ -n "$src_data" ] || src_data="$src_home/data"
   rc=0
-  propagate_inheritable_config "$src_config" "$dest_home/config" "$src_home" || rc=1
+  propagate_inheritable_config "$src_config" "$dest_home/config" "$src_home" || return 1
   propagate_shared_captain_preferences "$src_data" "$dest_home/data" || rc=1
   return "$rc"
 }
 
 propagate_inheritable_config() {
   local src_config=$1 dest_config=$2 src_home=${3:-${1%/*}} item src dest source_present reason rc
-  local prior_dest_config=${FM_INHERIT_DEST_CONFIG-} role_stage=
+  local prior_dest_config=${FM_INHERIT_DEST_CONFIG-} role_stage='' inherited_backend=''
   [ -n "$src_config" ] || return 1
   [ -n "$dest_config" ] || return 1
+  inherited_backend=$(fm_config_inherit_backend_prepare "$src_home" "$src_config" "$dest_config") || return 1
   rc=0
   # Dest dir the per-item outcome recorder uses for firstmate-role receipt
   # bookkeeping; restored on return so nested callers keep their own.
@@ -689,6 +733,10 @@ propagate_inheritable_config() {
     esac
     if [ "${FM_CONFIG_INHERIT_LIVE:-0}" = 1 ] && fm_config_inherit_item_session_scoped "$item"; then
       record_inheritable_config_result "$item" unchanged "session-scoped"
+      continue
+    fi
+    if [ "$item" = backend ] && [ -n "$inherited_backend" ]; then
+      record_inheritable_config_result "$item" unchanged "fleet runtime bound in state/fleet-backend"
       continue
     fi
     src="$src_config/$item"

@@ -462,7 +462,7 @@ new_git_world() {
 }
 
 test_spawn_convergence_point_copies_shared_file() {
-  local rec w root home sm fakebin data_override
+  local rec w root home sm fakebin data_override spawn_rc=0
   rec=$(new_git_world spawn-point)
   IFS='|' read -r w root home sm <<EOF
 $rec
@@ -472,16 +472,16 @@ EOF
   write_shared "$data_override/captain-shared.md" "shared from override"
   fakebin=$(make_fake_spawn_toolchain "$w")
 
-  # HERDR_ENV=1 is what a run from inside a Herdr pane inherits.
-  PATH="$fakebin:$BASE_PATH" TMUX='' HERDR_ENV=1 \
+  # The explicit fixture selection must win over an inherited Herdr pane marker.
+  PATH="$fakebin:$BASE_PATH" FM_BACKEND=tmux TMUX='' HERDR_ENV=1 \
     FM_ROOT_OVERRIDE="$root" FM_HOME="$home" \
     FM_STATE_OVERRIDE="$home/state" FM_DATA_OVERRIDE="$data_override" \
     FM_PROJECTS_OVERRIDE="$home/projects" FM_CONFIG_OVERRIDE="$home/config" \
     FM_SPAWN_NO_GUARD=1 \
-    "$ROOT/bin/fm-spawn.sh" sm "$sm" codex --backend tmux --secondmate >/dev/null 2>&1 || true
+    "$ROOT/bin/fm-spawn.sh" sm "$sm" codex --backend tmux --secondmate >"$w/spawn.log" 2>&1 || spawn_rc=$?
 
   cmp -s "$data_override/captain-shared.md" "$sm/data/captain-shared.md" \
-    || fail "spawn convergence point did not copy shared captain preferences from FM_DATA_OVERRIDE"
+    || fail "spawn convergence point did not copy shared captain preferences from FM_DATA_OVERRIDE (exit $spawn_rc): $(cat "$w/spawn.log")"
   assert_shared_readonly "$sm/data/captain-shared.md"
   assert_absent "$w/herdr-calls" "spawn convergence point called herdr: $(cat "$w/herdr-calls" 2>/dev/null)"
   pass "spawn convergence point propagates data/captain-shared.md from FM_DATA_OVERRIDE"

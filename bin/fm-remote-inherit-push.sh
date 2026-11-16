@@ -18,6 +18,7 @@
 # uses floor zero and leaves write-time generation checks intact; counter
 # recovery requires a receiver that supports the query. Other query failures
 # and malformed replies fail closed.
+# shellcheck disable=SC2031 # Fleet binding isolates STATE and FM_HOME changes in subshells.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -57,6 +58,9 @@ EMPTY="$TMP/empty"
 : > "$EMPTY"
 EMPTY_HASH=$(sha256_file "$EMPTY") || die "cannot hash empty inheritance payload"
 
+PARENT_BACKEND=$(fm_config_inherit_backend "$FM_HOME" "$CONFIG" "$STATE") || exit 1
+INHERITED_BACKEND=$PARENT_BACKEND
+case "$INHERITED_BACKEND" in hc|herdr) ;; *) INHERITED_BACKEND= ;; esac
 ITEMS=$(fm_config_inherit_items)
 # Phase 1 is local: every item is classified, validated, and snapshotted in
 # allowlist order before anything is sent, so a refusal here leaves the remote
@@ -77,6 +81,13 @@ while IFS= read -r rel; do
     esac
   fi
   case "$rel" in
+    config/backend)
+      source="$CONFIG/backend"
+      if [ -n "$INHERITED_BACKEND" ]; then
+        source="$TMP/backend.resolved"
+        printf '%s\n' "$INHERITED_BACKEND" > "$source"
+      fi
+      ;;
     config/firstmate-role)
       source="$TMP/firstmate-role.resolved"
       fm_role_inherit_payload "$FM_HOME" "$CONFIG" "$source" || die "cannot resolve the primary role"
@@ -107,6 +118,17 @@ while IFS= read -r rel; do
 done <<EOF
 $ITEMS
 EOF
+
+if [ -n "$INHERITED_BACKEND" ]; then
+  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-backend "$ID" "$INHERITED_BACKEND" >/dev/null || exit 1
+  (
+    # shellcheck source=bin/fm-fleet-backend-lib.sh
+    . "$SCRIPT_DIR/fm-fleet-backend-lib.sh"
+    fm_fleet_backend_bind "$STATE" "$CONFIG" "$INHERITED_BACKEND" >/dev/null
+  ) || exit 1
+else
+  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-inheritance "$ID" "${PARENT_BACKEND:--}" >/dev/null || exit 1
+fi
 
 # Query only after local validation, before any payload can change the receiver.
 query_rc=0
