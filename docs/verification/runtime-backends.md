@@ -3806,8 +3806,64 @@ Real Herdr.app exercise on 2026-11-02: the official herdr-app 0.1.11 bundle (sha
 
 `bin/fm-supervisor-target-lib.sh` now resolves `$HC_TERMINAL_ID`+`$HC_TERMINAL_SOCKET` to `<session>:<address>`/`hc`; `bin/fm-supervise-daemon.sh` still supports only `tmux herdr rex t3code` and refuses the resolved backend loudly.
 
+### Local fleet evidence on hc 0.1.21
+
+The real harness guard passed with hc 0.1.21, a scratch `HOME`, private core state, and an isolated executable search path.
+`tests/fm-backend-hc-liveness-live-e2e.test.sh` launched installed harness binaries without prompts and classified both as `alive`.
+
+| Harness | Version | Core foreground name | Classification |
+| --- | --- | --- | --- |
+| Claude Code | 2.1.325 | `2.1.325` | `alive` |
+| Codex | 0.167.2 | `codex` | `alive` |
+
+Guarded teardown passed and left no lab session directories or sockets.
+Other harnesses were excluded from this run's executable search path, so its skips do not establish whether they were installed.
+This verifies the process classifier used by secondmate recovery, not authenticated model work or full Firstmate startup.
+
+`tests/fm-secondmate-hc-smoke.test.sh` separately passed against hc 0.1.21 with real shell workloads in a private core.
+The secondmate inherited its child home, hc selection, and core session.
+It dispatched a worker without a runtime override, and that worker executed in the inherited session.
+Both terminals occupied the child space while retaining separate parent and child ownership labels.
+Ownership-checked parent input, parent capture, and child capture passed.
+Guarded teardown stopped the lab core, removed its processes, and verified unchanged real-fleet metadata.
+The shell smoke emitted checkout and watcher warnings, so it does not establish working primary supervision.
+
+### Bounded primary startup
+
+Claude Code 2.1.325 completed an authenticated model turn inside a guarded hc 0.1.21 lab.
+The model executed only `bash ./startup-probe.sh`, which ran `bin/fm-session-start.sh` and inspected the resulting lock.
+The lab used a scratch code copy, a marked disposable `FM_HOME`, private core state, and a pinned core socket.
+Normal `HOME` with `CLAUDE_CONFIG_DIR` unset preserved the existing login without login commands or credential edits.
+Safe mode disabled hooks and customizations, and session persistence was disabled.
+Session startup returned zero, bootstrap reported success, and the digest identified the primary harness as Claude.
+Lock status reported a live Claude owner, and independent process inspection confirmed the same installed Claude process.
+Guarded teardown passed.
+This verifies bounded primary session startup and lock ownership, not ongoing supervision or automatic hook loading.
+The scratch copy lacked Git history and private fleet records, so its network diagnostics do not establish dependency readiness.
+
+### Native app projection and reopening
+
+Herdr App 0.1.15 with hc 0.1.21 projected the shell secondmate and worker into one child space with two tabs.
+App inventories before and after a scoped quit and reopen retained the same space, tab, terminal, and pane identities.
+The secondmate remained `t1`, and the worker remained `t2`.
+Both app status responses had empty error arrays and retained the same selected space, tab, and focused pane.
+Both responses also reported the welcome overlay.
+This proves native projection and identity retention across reopening, not unobscured visual verification or real harness status presentation.
+
+### Remote routing with simulated transport
+
+`tests/fm-remote-hc-smoke.test.sh` passed against hc 0.1.21 with real terminals behind simulated SSH transport.
+The host-local controller launched a shell secondmate that dispatched its worker into the same child space with separate ownership labels.
+Routed input, capture, and durable instruction delivery passed.
+A simulated transport failure and reconnection preserved terminal creation times and foreground process identities.
+Guarded cleanup verified unchanged user state.
+This excludes real SSH authentication, the remote entrypoint and job worker, physical `fm-remote` selection, and model-driven instruction handling or relaunch.
+
 ### Not verified
 
-- A spawn with a real harness rather than the stand-in.
+- A complete `fm-spawn.sh` launch with a real harness rather than the stand-in or shell workloads.
+- Ongoing primary supervision and automatic hook loading in hc.
+- Live remote transport, remote lifecycle, and remote app projection.
+- Full unobscured native visual verification.
 - `send --wait`'s `started`/`working` proof against a real status-reporting harness; the lab run covered a non-reporting shell, whose verdict falls to the composer screen.
 - Native `status.state` reported by a real harness launched through `bin/fm-spawn.sh`.

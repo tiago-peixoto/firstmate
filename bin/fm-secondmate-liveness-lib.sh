@@ -60,6 +60,8 @@ FM_SM_LIVE_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # shellcheck source=bin/fm-backend.sh
 . "$FM_SM_LIVE_LIB_DIR/fm-backend.sh"
+# shellcheck source=bin/fm-control-lib.sh
+. "$FM_SM_LIVE_LIB_DIR/fm-control-lib.sh"
 # shellcheck source=bin/fm-remote-readiness-lib.sh
 . "$FM_SM_LIVE_LIB_DIR/fm-remote-readiness-lib.sh"
 # shellcheck source=bin/fm-timeout-lib.sh
@@ -202,7 +204,7 @@ fm_secondmate_liveness_probe() {  # <meta> <id> <full|poll>
           fi
           remote_backend=$(printf '%s\n' "$route_out" | sed -n 's/^backend=//p' | tail -1)
           case "$remote_backend" in
-            herdr | rex) ;;
+            herdr | rex | hc) ;;
             *)
               FM_SM_LIVE_REASON="alive remote endpoint is recorded on backend '${remote_backend:-missing}'; migrate or retire it explicitly"
               return 0
@@ -235,7 +237,11 @@ fm_secondmate_liveness_probe() {  # <meta> <id> <full|poll>
   backend=$(fm_backend_of_meta "$meta")
   target=$(fm_backend_target_of_meta "$meta")
   [ -n "$target" ] || target="$window"
-  agent_state=$(fm_backend_agent_state "$backend" "$target" 2>/dev/null) || agent_state=unreadable
+  if [ "$backend" = hc ]; then
+    agent_state=$(fm_control_hc_recovery_state "$meta" "$id" "$target")
+  else
+    agent_state=$(fm_backend_agent_state "$backend" "$target" 2>/dev/null) || agent_state=unreadable
+  fi
   case "$harness" in
     claude|codex|opencode|pi|pi-signed|grok|kimi|omp) ;;
     *)
@@ -260,7 +266,7 @@ fm_secondmate_liveness_probe() {  # <meta> <id> <full|poll>
         # A T3 thread reads missing once archived, which T3 may still be
         # finishing; its idempotent kill re-proves the close before a
         # replacement thread is launched.
-        [ "$backend" != t3code ] || FM_SM_LIVE_KILL=1
+        case "$backend" in t3code|hc) FM_SM_LIVE_KILL=1 ;; esac
         FM_SM_LIVE_CAUSE="recorded endpoint confidently missing"
       fi
       FM_SM_LIVE_WHERE="backend=$backend"
@@ -286,9 +292,9 @@ fm_secondmate_liveness_probe() {  # <meta> <id> <full|poll>
 # Acts on a `relaunchable` probe verdict for <id>: takes the per-home relaunch
 # lock, records the attempt, kills a confirmed-dead local endpoint if required
 # (FM_SM_LIVE_KILL), runs the guarded spawn, then records its outcome.
-# On t3code a close that cannot be proven stops there: the thread and its
+# On t3code and hc a close that cannot be proven stops there: the endpoint and
 # metadata stay as recorded, the verdict becomes skipped, and nothing is
-# spawned, because a second thread beside a live one is the duplicate
+# spawned, because a second endpoint beside a live one is the duplicate
 # supervisor recovery must never create. Other backends keep their existing
 # best-effort kill. FM_SM_LIVE_RESUME instead sends the endpoint's backend
 # resume turn and spawns nothing.
@@ -333,7 +339,24 @@ fm_secondmate_liveness_relaunch() {  # <meta> <id> [timeout-secs]
       window=$(fm_meta_get "$meta" window)
       target=$window
     fi
-    if [ "$backend" != t3code ]; then
+    if [ "$backend" = hc ]; then
+      local recovery_state
+      recovery_state=$(fm_control_hc_recovery_state "$meta" "$id" "$target")
+      case "$recovery_state" in
+        dead|missing)
+          fm_backend_kill hc "$target" '' "fm-$id" 2>/dev/null || rc=1
+          ;;
+        *) rc=1 ;;
+      esac
+      if [ "$rc" -ne 0 ]; then
+        fm_secondmate_liveness_ledger_add "$id" failed || true
+        FM_SM_LIVE_STATUS=skipped
+        FM_SM_LIVE_REASON="could not prove the owned hc endpoint $target stopped and closed; record preserved"
+        FM_SM_LIVE_RC=1
+        fm_lock_release "$relaunch_lock" || true
+        return 1
+      fi
+    elif [ "$backend" != t3code ]; then
       if [ -n "$target" ]; then
         if [ "$backend" = rex ]; then
           local home
@@ -372,6 +395,11 @@ fm_secondmate_liveness_relaunch() {  # <meta> <id> [timeout-secs]
   # A remote mate's backend is its host's, so it is never pinned from here.
   local -a respawn_args=("$id" --secondmate)
   [ -n "$(fm_meta_get "$meta" remote_host)" ] || respawn_args+=(--backend "$(fm_backend_of_meta "$meta")")
+  local HC_SESSION=${HC_SESSION:-}
+  if [ -z "$(fm_meta_get "$meta" remote_host)" ] && [ "$(fm_backend_of_meta "$meta")" = hc ]; then
+    HC_SESSION=$(fm_meta_get "$meta" hc_session)
+    export HC_SESSION
+  fi
   if [ -n "$timeout" ]; then
     FM_SM_LIVE_OUT=$(FM_SPAWN_NO_GUARD=1 fm_run_timed "$timeout" "$FM_ROOT/bin/fm-spawn.sh" "${respawn_args[@]}" 2>&1) || rc=$?
   else

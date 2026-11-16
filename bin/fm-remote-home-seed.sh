@@ -23,6 +23,7 @@
 #
 # Known provisioning failure rolls the registry back. SSH status 255 preserves
 # the route and any newly scaffolded brief because completion is unknown and a same-route rerun converges.
+# shellcheck disable=SC2031 # SEED_BACKEND sources fm-backend.sh, which sets FM_HOME, in a subshell.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -104,6 +105,20 @@ if [ "$NO_PROJECTS" -eq 1 ]; then
 else
   [ "${#PROJECT_NAMES[@]}" -gt 0 ] || die "at least one project or --no-projects is required"
 fi
+
+# Resolve before publishing the route or asking the remote doctor to repair it.
+SEED_BACKEND=$(
+  # shellcheck source=bin/fm-backend.sh
+  . "$SCRIPT_DIR/fm-backend.sh"
+  # shellcheck source=bin/fm-fleet-backend-lib.sh
+  . "$SCRIPT_DIR/fm-fleet-backend-lib.sh"
+  selected=$(fm_fleet_backend_read "$STATE") || exit 1
+  [ -n "$selected" ] || selected=$(fm_backend_name) || exit 1
+  case "$selected" in
+    hc|herdr) fm_fleet_backend_validate "$STATE" "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}" "$selected" ;;
+    *) printf 'any' ;;
+  esac
+) || die "fleet runtime selection failed"
 
 mkdir -p "$STATE" || die "cannot create parent state directory"
 REGISTRY_LOCK=$(secondmate_registry_lock_path "$STATE")
@@ -240,7 +255,7 @@ restore_registry_and_brief() {
 # created on that host. The doctor runs through the same fixed entrypoint as
 # every later call, so it sees the exact PATH the remote home will run under.
 set +e
-fm_remote_readiness_ensure "$SCRIPT_DIR" "$ID"
+fm_remote_readiness_ensure "$SCRIPT_DIR" "$ID" "$SEED_BACKEND"
 PREFLIGHT_RC=$?
 set -e
 if [ "$PREFLIGHT_RC" -ne 0 ]; then

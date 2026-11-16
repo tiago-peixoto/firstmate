@@ -57,6 +57,7 @@ EMPTY="$TMP/empty"
 : > "$EMPTY"
 EMPTY_HASH=$(sha256_file "$EMPTY") || die "cannot hash empty inheritance payload"
 
+INHERITED_BACKEND=$(fm_config_inherit_backend "$CONFIG" "$STATE") || exit 1
 ITEMS=$(fm_config_inherit_items)
 # Phase 1 is local: every item is classified, validated, and snapshotted in
 # allowlist order before anything is sent, so a refusal here leaves the remote
@@ -77,6 +78,13 @@ while IFS= read -r rel; do
     esac
   fi
   case "$rel" in
+    config/backend)
+      source="$CONFIG/backend"
+      if [ -n "$INHERITED_BACKEND" ]; then
+        source="$TMP/backend.resolved"
+        printf '%s\n' "$INHERITED_BACKEND" > "$source"
+      fi
+      ;;
     config/firstmate-role)
       source="$TMP/firstmate-role.resolved"
       fm_role_inherit_payload "$FM_HOME" "$CONFIG" "$source" || die "cannot resolve the primary role"
@@ -107,6 +115,21 @@ while IFS= read -r rel; do
 done <<EOF
 $ITEMS
 EOF
+
+# A receiver older than fleet binding rejects the read-only check as an unknown
+# command; it cannot hold a binding, so the legacy transfer stays safe there.
+if [ -n "$INHERITED_BACKEND" ]; then
+  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-backend "$ID" "$INHERITED_BACKEND" >/dev/null || exit $?
+else
+  validate_rc=0
+  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-inheritance "$ID" \
+    > /dev/null 2> "$TMP/validate.err" || validate_rc=$?
+  if [ "$validate_rc" != 0 ] && ! { [ "$validate_rc" = 1 ] &&
+    grep -Fxq -- 'error: unknown command: validate-inheritance' "$TMP/validate.err"; }; then
+    cat "$TMP/validate.err" >&2
+    exit "$validate_rc"
+  fi
+fi
 
 # Query only after local validation, before any payload can change the receiver.
 query_rc=0
