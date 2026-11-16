@@ -52,6 +52,30 @@ lib_eval() {  # <fakebin> <expression>
   " "$LIB"
 }
 
+test_status_reports_unknown_without_changing_lock() {
+  local dir out status
+  dir="$TMP_ROOT/status-unknown"
+  mkdir -p "$dir/state"
+  printf '%s\n' "$$" > "$dir/state/.lock"
+  printf 'retained-session\n' > "$dir/state/.lock-session"
+  cp "$dir/state/.lock" "$dir/lock.before"
+  cp "$dir/state/.lock-session" "$dir/session.before"
+
+  if out=$(FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" bash "$ROOT/bin/fm-lock.sh" status 2>&1); then
+    status=0
+  else
+    status=$?
+  fi
+  expect_code 0 "$status" "status must still exit zero for an unknown owner: $out"
+  [ "$out" = "lock: unknown (owner is not a verified live harness)" ] \
+    || fail "status mislabeled a live non-harness owner: $out"
+  cmp -s "$dir/lock.before" "$dir/state/.lock" \
+    || fail "status changed the lock contents"
+  cmp -s "$dir/session.before" "$dir/state/.lock-session" \
+    || fail "status changed the session sidecar contents"
+  pass "session-lock: unknown status exits zero and preserves the lock and session sidecar"
+}
+
 test_version_named_session_is_identified_on_both_platforms() {
   local dir fakebin shape got
   dir="$TMP_ROOT/version-named"
@@ -1642,6 +1666,7 @@ test_reanchor_keeps_autoarm_midturn_healthy() {
   pass "session-lock: a re-anchor during a rewake turn keeps the mid-turn auto-arm proof healthy"
 }
 
+test_status_reports_unknown_without_changing_lock
 test_version_named_session_is_identified_on_both_platforms
 test_harness_at_namespace_pid1_is_examined
 test_ordinary_paths_are_never_harness_processes
