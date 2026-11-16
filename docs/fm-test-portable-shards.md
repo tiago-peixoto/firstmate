@@ -70,6 +70,11 @@ Refresh `portable_parallel_weight_hints` with the slowest completed `duration_ms
 
 The remote-secondmate lifecycle hint is 1005249 ms, its completed, passing `FM_TEST_END` sample from Ubuntu run [41289019354](https://github.com/kunchenguid/firstmate/actions/runs/41289019354). Rex lifecycle coverage outgrew the previous 345655 ms hint; serial shard 9 then reached the 30-minute job cap while running later tests. Eleven serial shards accommodate the refreshed weight within the unchanged modeled budget and timeout policy. This is a completed-script measurement from a partial run, not a successful whole-shard timing or a guarantee of future headroom.
 
+The fork carries a twelfth serial shard.
+Its own serial suites - 958 ms for `tests/fm-declared-pause-standing.test.sh`, 16732 ms for `tests/fm-heavy-slot.test.sh`, 12858 ms for `tests/fm-spawn-worktree-lease.test.sh`, and 41394 ms for `tests/fm-watch-beacon-grace.test.sh` - carry their passing Ubuntu `FM_TEST_END` samples from fork CI run [43878596400](https://github.com/tiago-peixoto/firstmate/actions/runs/43878596400).
+With those and the hc fleet suites, eleven shards packed the largest shard above the 1200000 ms budget, so the fork adds a shard rather than raising the budget or the job timeout.
+Drop this carry when upstream repacks the serial lane from measured timings (PR [8431](https://github.com/kunchenguid/firstmate/pull/8431)).
+
 ## Portable serial remainder
 
 `portable-serial` includes every `tests/*.test.sh` that is neither proven-isolated nor `real-herdr-gated`.
@@ -144,7 +149,7 @@ No fast mode, path skips, or paid runner provisioning is part of this layout.
 
 The longer-term performance objective remains a complete green run under fifteen minutes including start delay, but the three watch-triage members still sum to about 26 minutes of CI test time.
 The immediate packing target is the runner's modeled script budget, not a claim that more shards alone can make an indivisible script faster.
-The layout uses sixteen long-lived Linux jobs (eleven serial, two parallel, Herdr, two lint), plus short checks and macOS; insufficient shared account capacity can erase the packing gain.
+The layout uses seventeen long-lived Linux jobs (twelve serial, two parallel, Herdr, two lint), plus short checks and macOS; insufficient shared account capacity can erase the packing gain.
 Compare complete before/after runs, preserve cancelled and partial-run evidence, and measure a representative normal-run sample before claiming a P95 improvement.
 The workflow retains per-PR supersession and keeps only the newest of close main pushes' runs, without changing the compliance workflow's event semantics.
 
