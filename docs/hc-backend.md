@@ -87,7 +87,7 @@ Away-mode supervisor discovery and hc refusal are owned by [Away-mode supervisor
 
 ## Secondmates
 
-Local secondmates inherit `hc` and the parent's `HC_SESSION`.
+In a fleet bound to `hc`, local secondmates inherit `hc` and the parent's `HC_SESSION`.
 Their workers inherit that selection without needing a task-level override.
 The secondmate terminal appears in the child home's space alongside its workers.
 Its ownership labels remain with the parent, so the parent can safely send, read, and close it.
