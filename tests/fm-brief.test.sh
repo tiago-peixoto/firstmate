@@ -1773,6 +1773,9 @@ test_capacity_rule_reaches_every_crewmate_brief() {
     section=$(capacity_section "$brief")
     [ -n "$section" ] || fail "$kind brief carries no machine-capacity rule"
     # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
+    assert_contains "$section" 'A remote sandbox command (such as `boat exec` or a Boat push) needs no local slot: run it directly, never through the slot helper.' \
+      "$kind: remote commands must not use local capacity"
+    # shellcheck disable=SC2016 # Literal backticks in the expected brief text.
     assert_contains "$section" 'tried in this order: `/tmp/fm-heavy-suite.lock`, then `/tmp/fm-heavy-suite.lock-2`.' \
       "$kind: default slots are not both spelled in full, in order"
     assert_contains "$section" "at or below $cpus." "$kind: default load bar is not this machine's processor count"
