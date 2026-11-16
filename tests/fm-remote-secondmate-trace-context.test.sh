@@ -169,11 +169,27 @@ FM_SECONDMATE_CHARTER='Own iOS delivery on the build Mac.' \
   remote_env "$ROOT/bin/fm-remote-home-seed.sh" ios remote-mac "$REMOTE_ROOT" "$REMOTE_HOME" --no-projects >/dev/null \
   || fail "remote seed did not provision the traced route"
 
+# A refused remote preflight cannot bind the primary or launch a terminal.
+printf 'herdr\n' > "$PARENT/config/backend"
+printf 'hc\n' > "$REMOTE_HOME/config/backend"
+: > "$HERDR_LOG"
+if remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate > "$TMP_ROOT/refused.out" 2>&1; then
+  fail "managed primary accepted conflicting remote home"
+fi
+assert_grep 'runtime validation failed before inheritance or terminal creation' "$TMP_ROOT/refused.out" "remote preflight did not own the refusal: $(cat "$TMP_ROOT/refused.out")"
+assert_absent "$PARENT/state/fleet-backend" "remote refusal bound the primary"
+assert_absent "$REMOTE_HOME/state/fleet-backend" "remote refusal bound the child"
+assert_absent "$PARENT/state/ios.meta" "remote refusal published a task"
+[ ! -s "$HERDR_LOG" ] || fail "remote refusal contacted the terminal runtime"
+printf 'tmux\n' > "$PARENT/config/backend"
+printf 'tmux\n' > "$REMOTE_HOME/config/backend"
+pass "remote preflight refusal leaves both homes unbound and launches nothing"
+
 # --- disabled: the remote route must stay byte-identically untraced ----------
 freeze_parent_session
 : > "$HERDR_LOG"
-remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate >/dev/null 2>&1 \
-  || fail "default-off remote secondmate spawn failed"
+remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate > "$TMP_ROOT/spawn.out" 2>&1 \
+  || fail "default-off remote secondmate spawn failed: $(cat "$TMP_ROOT/spawn.out")"
 assert_present "$PARENT/state/ios.meta" "default-off remote spawn published no parent metadata"
 ! grep -q '^traceparent=' "$PARENT/state/ios.meta" \
   || fail "default-off remote spawn must not record a traceparent= line"
@@ -187,13 +203,20 @@ assert_absent "$REMOTE_HOME/config/trace-context" "default-off remote spawn inhe
 grep -q 'export GOTMPDIR=' "$HERDR_LOG" || fail "the remote spawn should still run (GOTMPDIR is always exported)"
 pass "disabled: a remote-routed second mate records and receives no carrier and stays enabled-off end to end"
 
+assert_absent "$PARENT/state/fleet-backend" "legacy creation bound the primary"
+assert_absent "$REMOTE_HOME/state/fleet-backend" "legacy creation bound the child"
+remote_env "$ROOT/bin/fm-config-push.sh" > "$TMP_ROOT/config-push.out" 2>&1 \
+  || fail "legacy remote config push failed: $(cat "$TMP_ROOT/config-push.out")"
+assert_absent "$REMOTE_HOME/state/fleet-backend" "legacy config push bound the child"
+pass "unbound tmux primary creates the default remote Herdr endpoint and pushes configuration without binding"
+
 # --- enabled: one carrier is recorded by the parent and received remotely ----
 : > "$PARENT/config/trace-context"
 freeze_parent_session
 reset_remote_herdr_fixture "$HERDR_STATE"   # the previous endpoint is gone; this is an ordinary relaunch
 : > "$HERDR_LOG"
-remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate >/dev/null 2>&1 \
-  || fail "enabled remote secondmate spawn failed"
+remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate > "$TMP_ROOT/spawn.out" 2>&1 \
+  || fail "enabled remote secondmate spawn failed: $(cat "$TMP_ROOT/spawn.out")"
 
 PARENT_TP=$(meta_traceparent "$PARENT/state/ios.meta")
 REMOTE_TP=$(meta_traceparent "$REMOTE_HOME/state/parent-route/ios.meta")
@@ -224,14 +247,15 @@ pass "enabled: a remote-routed second mate receives one carrier in its pane, ide
 # --- relaunch stability on the remote path ----------------------------------
 reset_remote_herdr_fixture "$HERDR_STATE"
 : > "$HERDR_LOG"
-remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate >/dev/null 2>&1 \
-  || fail "enabled remote secondmate relaunch failed"
+remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate > "$TMP_ROOT/spawn.out" 2>&1 \
+  || fail "enabled remote secondmate relaunch failed: $(cat "$TMP_ROOT/spawn.out")"
 RELAUNCH_TP=$(meta_traceparent "$PARENT/state/ios.meta")
 RELAUNCH_INJECTED=$(remote_injected_traceparent)
 [ "$RELAUNCH_TP" = "$PARENT_TP" ] \
   || fail "a remote relaunch must keep the task's recorded carrier (first='$PARENT_TP' relaunch='$RELAUNCH_TP')"
 [ "$RELAUNCH_INJECTED" = "$PARENT_TP" ] \
   || fail "a remote relaunch must re-export the original carrier (first='$PARENT_TP' injected='$RELAUNCH_INJECTED')"
+assert_absent "$REMOTE_HOME/state/fleet-backend" "legacy recovery bound the child"
 pass "relaunch: a remote-routed second mate keeps one stable identity across restarts"
 
 # --- per-task boundary: ambient carriers are never adopted or shared ---------

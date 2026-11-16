@@ -269,6 +269,13 @@ cmd_validate_inheritance() { # <id>
   [ -z "$pin" ] || die "select the primary fleet runtime before inheriting into a child bound to $pin"
 }
 
+validate_existing_backend() { # <selected-backend>
+  local pin
+  pin=$(fm_fleet_backend_read "$TARGET_HOME/state") || return 1
+  [ -z "$pin" ] || [ "$pin" = "$1" ] \
+    || die "remote fleet uses $pin; refusing endpoint runtime $1"
+}
+
 cmd_validate_backend() { # <id> <selected-backend>
   case "$2" in herdr|rex|hc) ;; *) die "unsupported remote fleet backend: $2" ;; esac
   validate_id "$1"
@@ -306,7 +313,7 @@ cmd_launch() {
   # detached daemon no SSH session owns. bin/fm-remote-doctor.sh is the
   # readiness owner for whichever backend the parent selected.
   case "$selected_backend" in herdr|rex|hc) ;; *) die "a remote secondmate runs only on the herdr, rex or hc backend, not '$selected_backend'" ;; esac
-  cmd_validate_backend "$id" "$selected_backend"
+  validate_existing_backend "$selected_backend"
   if [ "$selected_backend" = hc ]; then
     unset FM_HC_SOCKET HC_SOCKET HC_TERMINAL_SOCKET HC_TERMINAL_ID HC_SCOPE
     export HC_SESSION="$REMOTE_HC_SESSION" FM_HOME="$FM_ROOT"
@@ -397,7 +404,7 @@ cmd_relaunch() {
     "$SCRIPT_DIR/fm-harness.sh" validate-native-effort "$harness" "$model" "$effort" || return 1
   fi
   remote_endpoint_require "$id"
-  cmd_validate_backend "$id" "$REMOTE_ENDPOINT_BACKEND"
+  validate_existing_backend "$REMOTE_ENDPOINT_BACKEND"
   [ "$model" != - ] || model=default
   [ "$effort" != - ] || effort=default
   control_args=("$id" relaunch --harness "$harness" --model "$model" --effort "$effort")

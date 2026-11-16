@@ -50,10 +50,7 @@ for configured in hc herdr; do
     fail "direct Rex validation accepted config/backend=$configured"
   fi
   assert_grep 'refusing runtime change' "$TMP/rex-conflict" 'direct conflict must name the selection'
-  if run_control launch mate codex - - rex > "$TMP/rex-conflict" 2>&1; then
-    fail "direct Rex launch accepted config/backend=$configured"
-  fi
-  assert_grep 'refusing runtime change' "$TMP/rex-conflict" 'launch must refuse before runtime contact'
+
 done
 printf 'hc\n' > "$CHILD/config/backend"
 if FM_BACKEND=rex run_control validate-backend mate rex > "$TMP/rex-conflict" 2>&1; then
@@ -151,10 +148,10 @@ set -eu
 SH
 chmod +x "$CODE/bin/fm-spawn.sh" "$CODE/bin/fm-control.sh"
 write_meta
-printf 'rex\n' > "$CHILD/config/backend"
+printf 'herdr\n' > "$CHILD/state/fleet-backend"
 if run_control launch mate codex - - hc > "$TMP/conflict" 2>&1; then fail 'conflicting home runtime must refuse'; fi
-assert_grep 'refusing runtime change' "$TMP/conflict" 'conflict must name selected fleet runtime'
-rm "$CHILD/config/backend"
+assert_grep 'refusing endpoint runtime' "$TMP/conflict" 'conflict must name selected fleet runtime'
+printf 'hc\n' > "$CHILD/state/fleet-backend"
 rm "$CHILD/state/parent-route/mate.meta"
 assert_contains "$(run_control launch mate codex - - hc)" 'hc_terminal=t8' 'launch must return published endpoint'
 write_meta
@@ -164,6 +161,50 @@ assert_contains "$(run_control launch mate codex - - hc)" 'hc_terminal=t8' 'miss
 if HC_TEST_BIN=/nonexistent run_control launch mate codex - - hc > "$TMP/no-hc" 2>&1; then fail 'missing hc must refuse launch'; fi
 assert_grep 'selected remote backend hc is unavailable' "$TMP/no-hc" 'missing selected hc must not fall back'
 pass 'launch and relaunch pin hc routing and return current endpoint identity'
+
+rm "$CHILD/state/fleet-backend"
+printf 'tmux\n' > "$CHILD/config/backend"
+write_meta
+printf 'alive\n' > "$HC_TEST_STATE"
+run_control launch mate codex - - hc >/dev/null
+assert_absent "$CHILD/state/fleet-backend" 'legacy launch must not bind the child'
+run_control relaunch mate codex - - >/dev/null
+assert_absent "$CHILD/state/fleet-backend" 'legacy relaunch must not bind the child'
+pass 'legacy launch and relaunch preserve an unbound home despite inherited tmux configuration'
+
+# Exercise Rex routing with an inherited managed config, without a fleet pin.
+printf 'herdr\n' > "$CHILD/config/backend"
+rm "$CHILD/state/parent-route/mate.meta"
+cat > "$CODE/bin/fm-spawn.sh" <<'SH'
+#!/usr/bin/env bash
+cat > "$FM_STATE_OVERRIDE/mate.meta" <<META
+backend=rex
+endpoint_task_id=mate
+worktree=$FM_HOME
+project=$FM_ROOT_OVERRIDE
+window=00000001-0000-7000-8000-000000000002:00000002-0000-7000-8000-000000000003
+rex_session_id=session:00000001-0000-7000-8000-000000000002
+rex_window_id=window:00000003-0000-7000-8000-000000000004
+rex_block_id=block:00000002-0000-7000-8000-000000000003
+rex_server=unix:///fixture/rex.sock
+harness=codex
+kind=secondmate
+META
+SH
+cat > "$CODE/bin/fm-control.sh" <<'SH'
+#!/usr/bin/env bash
+[ -f "$FM_STATE_OVERRIDE/mate.meta" ] || exit 1
+printf 'relaunch reached\n'
+SH
+assert_contains "$(run_control launch mate codex - - rex)" 'backend=rex' 'legacy Rex launch must retain its selected endpoint'
+assert_absent "$CHILD/state/fleet-backend" 'legacy Rex launch bound the child'
+assert_contains "$(run_control relaunch mate codex - -)" 'relaunch reached' 'legacy Rex relaunch must reach its lifecycle owner'
+assert_absent "$CHILD/state/fleet-backend" 'legacy Rex relaunch bound the child'
+if run_control validate-backend mate rex > "$TMP/rex-conflict" 2>&1; then
+  fail 'explicit validation accepted Rex against managed configuration'
+fi
+assert_grep 'refusing runtime change' "$TMP/rex-conflict" 'explicit validation must still reject managed conflict'
+pass 'legacy Rex launch and relaunch ignore inherited Herdr selection while explicit validation refuses'
 
 OUT=$(env HOME="$TMP/account" FM_HOME="$CHILD" FM_HC_BIN="$TMP/hc" FM_REMOTE_JOB_ACTIVE=1 \
   "$ROOT/bin/fm-remote-doctor.sh" --backend hc --worker-tool-probe 2>&1) || true
