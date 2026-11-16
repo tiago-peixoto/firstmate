@@ -540,7 +540,12 @@ test_no_account_list_keeps_today_and_refuses_account() {
   assert_refused_before_launch "$id-flag" "$out" "--account '$CASE/work' needs config/claude-accounts, which this home does not declare"
   printf '%s\n' "$CASE/work" > "$HOME_DIR/config/claude-account"
   : > "$CASE/claude-checks"
+  # acct-list-off still owns $WT, so this second live worker needs its own copy.
+  git -C "$PROJ" worktree add --quiet -b "$id-pin-wt" "$CASE/wt-pin" HEAD
+  printf '%s\n' "$CASE/wt-pin" > "$CASE/lease-queue"
+  FM_FAKE_TREEHOUSE_QUEUE="$CASE/lease-queue"
   out=$(spawn_ship "$id-pin"); rc=$?
+  unset FM_FAKE_TREEHOUSE_QUEUE
   expect_code 0 "$rc" "the single pin must keep working without a list: $out"
   assert_contains "$out" "account=$CASE/work" "the single pin must still report its account"
   pass "without config/claude-accounts the launch, the single pin, and the record are unchanged, and --account refuses"
