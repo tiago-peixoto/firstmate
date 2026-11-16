@@ -58,8 +58,10 @@
 #
 # --fix is idempotent and closes only automatable gaps: it writes and reloads
 # Firstmate-owned Aqua agents, starts Linux workers, starts a persistent rex
-# server or dedicated hc core when absent, recreates the entrypoint symlink,
-# and may add an owned ~/.local/bin wrapper for a discoverable required tool.
+# server or dedicated hc core when absent, and may add an owned ~/.local/bin
+# wrapper for a discoverable required tool. A run through the fixed entrypoint
+# counts as proof of a working entrypoint and leaves the shared link untouched;
+# only a direct run with FM_ROOT_OVERRIDE set inspects and recreates that link.
 # It never installs packages, creates a login session, changes FileVault,
 # stores passwords, or replaces a non-Firstmate wrapper.
 # hc checks reuse the adapter version floor and protocol handshake. Check mode
