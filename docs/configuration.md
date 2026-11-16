@@ -578,14 +578,20 @@ For an unbound home, new spawns choose the backend in this order:
 
 A fleet selected for `herdr` or `hc` uses that runtime for its primary, every secondmate, and every worker.
 This applies across local and remote machines.
-The first managed spawn records the choice in the private `state/fleet-backend` file.
-Subsequent resolution uses that recorded choice before ambient runtime detection.
-Secondmate provisioning and configuration inheritance preserve the same choice in each child home.
+The primary selects the fleet runtime when it creates its first secondmate, using the selection order above, so auto-detected classic Herdr and auto-detected `hc` select the same way.
+That secondmate creation records the choice in the private `state/fleet-backend` file of the primary and of the child home.
+Worker spawns never record a choice, so a home without secondmates stays unbound and keeps the selection order above.
+In a bound home, resolution uses the recorded choice before ambient runtime detection.
+Configuration inheritance from a bound primary preserves the same choice in each child home.
+Inheritance from an unbound primary keeps the existing behavior and contacts no new remote command, so older remote checkouts keep working.
 
-An explicit task flag, `FM_BACKEND`, child `config/backend`, or existing task record that conflicts with the fleet choice refuses creation before a terminal opens.
+In a bound home, an explicit task flag, `FM_BACKEND`, or `config/backend` that conflicts with the fleet choice refuses creation before a terminal opens.
+Binding refuses when the child's `config/backend` or binding conflicts, or when an existing task record in either home uses another runtime.
+A task record without `backend=` uses tmux, and a remote secondmate record without `remote_backend=` uses classic Herdr.
 Firstmate does not silently replace conflicting configuration or fall back to another runtime when the selected runtime is unavailable.
-Recovery retains the recorded runtime and validates the endpoint before reuse.
+Recovery retains the recorded runtime and session, validates the endpoint before reuse, and never records a fleet choice.
 Mixed `herdr`/`hc` fleets and runtime migration are unsupported.
+To choose another runtime for a primary home, first retire every secondmate and finish every task, then delete `state/fleet-backend`.
 Other unbound runtimes retain their existing selection behavior.
 
 ### Runtime detection

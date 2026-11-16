@@ -4,7 +4,6 @@
 # Usage:
 #   fm-remote-secondmate-control.sh launch <id> <harness> <model|-> <effort|-> {herdr|rex|hc} [traceparent]
 #   fm-remote-secondmate-control.sh validate-backend <id> <backend>
-#   fm-remote-secondmate-control.sh validate-inheritance <id> <parent-backend|->
 #   fm-remote-secondmate-control.sh relaunch <id> <harness> <model|default|-> <effort|default|->
 #   fm-remote-secondmate-control.sh state <id>
 #   fm-remote-secondmate-control.sh route <id>
@@ -72,7 +71,7 @@ REMOTE_HC_SESSION=fm-remote
 export FM_BACKEND_REX_NO_AUTOSTART=1
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 validate_id() { case "$1" in ''|*[!A-Za-z0-9._-]*) die "invalid secondmate id: $1" ;; esac; }
 
 # Sourcing fm-wake-lib.sh through the libraries below creates "$FM_HOME/state",
@@ -259,15 +258,6 @@ cmd_route() {
     die "remote secondmate has no endpoint metadata"
   fi
   print_route "$id"
-}
-
-cmd_validate_inheritance() { # <id> <parent-backend|->
-  local parent_backend=$2
-  validate_id "$1"
-  validate_home "$1"
-  # This validation-only sentinel rejects managed child choices without selecting or binding a runtime.
-  [ "$parent_backend" != - ] || parent_backend=unselected
-  fm_fleet_backend_validate "$TARGET_HOME/state" "$TARGET_HOME/config" "$parent_backend" >/dev/null
 }
 
 cmd_validate_backend() { # <id> <selected-backend>
@@ -607,7 +597,6 @@ cmd_retire() {
 }
 
 case "${1:-}" in
-  validate-inheritance) shift; [ "$#" -eq 2 ] || usage; cmd_validate_inheritance "$@" ;;
   validate-backend) shift; [ "$#" -eq 2 ] || usage; cmd_validate_backend "$@" ;;
   launch) shift; [ "$#" -ge 5 ] && [ "$#" -le 6 ] || usage; cmd_launch "$@" ;;
   relaunch) shift; [ "$#" -eq 4 ] || usage; cmd_relaunch "$@" ;;

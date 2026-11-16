@@ -441,12 +441,13 @@ bin/fm-spawn.sh <id> --secondmate
 The primary then takes these steps:
 
 1. It resolves the verified secondmate harness and optional model and effort.
-2. It validates the remote home's runtime choice before transferring inherited configuration.
+2. In a fleet bound to `herdr` or `hc`, it validates the remote home's runtime choice before transferring inherited configuration.
 3. It runs the same readiness gate the seed runs, gated on the selected backend.
 4. It transfers the inherited-material allowlist.
 5. It asks the remote host to launch on that backend.
 
 A fleet bound to `herdr` or `hc` requires every remote secondmate to use that same runtime.
+An unbound primary whose selection resolves to `herdr` or `hc` binds that runtime when it creates a remote secondmate.
 A conflicting request refuses creation before configuration inheritance or terminal launch.
 For an unbound fleet using another runtime, a new remote route retains the legacy Herdr default and accepts explicit Rex selection.
 Without an explicit backend, a later launch or liveness recovery preserves the parent's recorded `remote_backend`; legacy records without that field use Herdr.

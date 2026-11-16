@@ -58,9 +58,7 @@ EMPTY="$TMP/empty"
 : > "$EMPTY"
 EMPTY_HASH=$(sha256_file "$EMPTY") || die "cannot hash empty inheritance payload"
 
-PARENT_BACKEND=$(fm_config_inherit_backend "$FM_HOME" "$CONFIG" "$STATE") || exit 1
-INHERITED_BACKEND=$PARENT_BACKEND
-case "$INHERITED_BACKEND" in hc|herdr) ;; *) INHERITED_BACKEND= ;; esac
+INHERITED_BACKEND=$(fm_config_inherit_backend "$CONFIG" "$STATE") || exit 1
 ITEMS=$(fm_config_inherit_items)
 # Phase 1 is local: every item is classified, validated, and snapshotted in
 # allowlist order before anything is sent, so a refusal here leaves the remote
@@ -119,15 +117,9 @@ done <<EOF
 $ITEMS
 EOF
 
+# Unbound fleets keep the legacy protocol, so older remote checkouts still converge.
 if [ -n "$INHERITED_BACKEND" ]; then
-  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-backend "$ID" "$INHERITED_BACKEND" >/dev/null || exit 1
-  (
-    # shellcheck source=bin/fm-fleet-backend-lib.sh
-    . "$SCRIPT_DIR/fm-fleet-backend-lib.sh"
-    fm_fleet_backend_bind "$STATE" "$CONFIG" "$INHERITED_BACKEND" >/dev/null
-  ) || exit 1
-else
-  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-inheritance "$ID" "${PARENT_BACKEND:--}" >/dev/null || exit 1
+  "$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh validate-backend "$ID" "$INHERITED_BACKEND" >/dev/null || exit $?
 fi
 
 # Query only after local validation, before any payload can change the receiver.

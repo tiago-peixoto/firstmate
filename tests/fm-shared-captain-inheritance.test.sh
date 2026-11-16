@@ -472,8 +472,8 @@ EOF
   write_shared "$data_override/captain-shared.md" "shared from override"
   fakebin=$(make_fake_spawn_toolchain "$w")
 
-  # The explicit fixture selection must win over an inherited Herdr pane marker.
-  PATH="$fakebin:$BASE_PATH" FM_BACKEND=tmux TMUX='' HERDR_ENV=1 \
+  # HERDR_ENV=1 is what a run from inside a Herdr pane inherits.
+  PATH="$fakebin:$BASE_PATH" TMUX='' HERDR_ENV=1 \
     FM_ROOT_OVERRIDE="$root" FM_HOME="$home" \
     FM_STATE_OVERRIDE="$home/state" FM_DATA_OVERRIDE="$data_override" \
     FM_PROJECTS_OVERRIDE="$home/projects" FM_CONFIG_OVERRIDE="$home/config" \

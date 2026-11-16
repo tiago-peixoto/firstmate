@@ -1778,6 +1778,42 @@ test_spawn_explicit_backend_flag_beats_autodetect_herdr_env() {
   pass "fm-spawn.sh: explicit --backend tmux wins over an ambient HERDR_ENV=1 auto-detect marker"
 }
 
+test_spawn_worker_backend_flag_in_unbound_herdr_home() {
+  local proj wt data id state config out fb
+  proj="$TMP_ROOT/unbound-herdr-project"; wt="$TMP_ROOT/unbound-herdr-wt"; data="$TMP_ROOT/unbound-herdr-data"
+  id="unboundherdrz6"
+  fm_git_worktree "$proj" "$wt" "fm/$id"
+  fb=$(make_spawn_fakebin "$TMP_ROOT/unbound-herdr-fake" "$wt")
+  mkdir -p "$data/$id"; write_spawn_brief "$data/$id/brief.md" "$id"
+  state="$TMP_ROOT/unbound-herdr-state"; config="$TMP_ROOT/unbound-herdr-config"
+  mkdir -p "$state" "$config"
+  printf 'herdr\n' > "$config/backend"
+  printf 'backend=herdr\nwindow=fm-legacy:p1\n' > "$state/legacy.meta"
+
+  # docs/configuration.md "Backend selection order": in an unbound home the
+  # task flag comes before config/backend, and a worker spawn selects no fleet.
+  out=$(PATH="$fb:$PATH" FM_ROOT_OVERRIDE="$ROOT" HOME="$SPAWN_HOME" CLAUDE_CONFIG_DIR='' \
+    FM_STATE_OVERRIDE="$state" FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$config" \
+    FM_PROJECTS_OVERRIDE="$TMP_ROOT/unused-projects" FM_SPAWN_NO_GUARD=1 TMUX="fake,1,0" \
+    FM_TMUX_LOG="$TMP_ROOT/unbound-herdr.log" \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend tmux 2>&1)
+  expect_code 0 $? "an unbound home must accept a worker --backend tmux over config/backend=herdr"$'\n'"$out"
+  assert_absent "$state/fleet-backend" "a worker spawn must not select the fleet runtime"
+  rm -rf "/tmp/fm-$id"
+
+  printf 'herdr\n' > "$state/fleet-backend"
+  rm -f "$state/$id.meta"
+  out=$(PATH="$fb:$PATH" FM_ROOT_OVERRIDE="$ROOT" HOME="$SPAWN_HOME" CLAUDE_CONFIG_DIR='' \
+    FM_STATE_OVERRIDE="$state" FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$config" \
+    FM_PROJECTS_OVERRIDE="$TMP_ROOT/unused-projects" FM_SPAWN_NO_GUARD=1 TMUX="fake,1,0" \
+    FM_TMUX_LOG="$TMP_ROOT/unbound-herdr.log" \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend tmux 2>&1) \
+    && fail "a bound herdr fleet accepted a worker on tmux"
+  assert_contains "$out" 'fleet uses herdr; refusing task runtime tmux' 'bound fleet refusal names the fleet runtime'
+  assert_absent "$state/$id.meta" "a refused worker must publish no record"
+  pass "fm-spawn.sh: worker --backend wins in an unbound home and is refused only by a bound fleet"
+}
+
 test_spawn_autodetect_nesting_resolves_tmux_silently() {
   local proj wt data id state config out fb
   proj="$TMP_ROOT/nest-project"; wt="$TMP_ROOT/nest-wt"; data="$TMP_ROOT/nest-data"
@@ -1865,4 +1901,5 @@ test_spawn_refuses_codex_app_backend_flag
 test_spawn_refuses_unknown_fm_backend_env
 test_spawn_default_backend_writes_no_meta_field
 test_spawn_explicit_backend_flag_beats_autodetect_herdr_env
+test_spawn_worker_backend_flag_in_unbound_herdr_home
 test_spawn_autodetect_nesting_resolves_tmux_silently

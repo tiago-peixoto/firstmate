@@ -91,22 +91,38 @@ class FleetInheritance(unittest.TestCase):
         self.assertFalse((self.parent / 'state/fleet-backend').exists())
         self.assertEqual((self.child / 'config/crew-harness').read_text(), 'claude\n')
 
-    def test_unselected_parent_preserves_managed_child_config(self):
-        self.write(self.child, 'config/backend', 'hc\n')
+    def test_item_failure_still_propagates_shared_preferences(self):
+        shared = ('<!-- main-authoritative; read-only in secondmate homes and must not be edited there; '
+                  'edit it in the main firstmate home; marked status -->\nshared preferences\n')
+        self.write(self.parent, 'data/captain-shared.md', shared)
+        (self.parent / 'config/crew-harness').unlink()
+        (self.parent / 'config/crew-harness').mkdir()
         result = self.local()
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual((self.child / 'config/backend').read_text(), 'hc\n')
+        self.assertEqual((self.child / 'data/captain-shared.md').read_text(), shared)
         self.assertEqual((self.child / 'config/crew-harness').read_text(), 'claude\n')
 
-    def test_environment_selection_binds_without_mutating_caller_globals(self):
-        self.env['FM_BACKEND'] = 'hc'
-        result = self.run_bash(f'. "{self.code}/bin/fm-config-inherit-lib.sh"; '
-                              'FM_ROOT=sentinel; FM_BACKEND_CONFIG_DIR=sentinel; '
-                              f'propagate_secondmate_inheritance "{self.parent}" "{self.child}" || exit; '
-                              '[ "$FM_ROOT" = sentinel ] && [ "$FM_BACKEND_CONFIG_DIR" = sentinel ]')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.child / 'state/fleet-backend').read_text(), 'hc\n')
-        self.assertEqual((self.parent / 'state/fleet-backend').read_text(), 'hc\n')
+    def test_unbound_selection_keeps_legacy_inheritance(self):
+        # Inheritance alone never selects the fleet runtime; secondmate creation does.
+        for name, value in (('FM_BACKEND', 'hc'), ('config', 'herdr')):
+            with self.subTest(source=name):
+                if name == 'FM_BACKEND':
+                    self.env['FM_BACKEND'] = value
+                else:
+                    self.env.pop('FM_BACKEND', None)
+                    self.write(self.parent, 'config/backend', value + '\n')
+                self.write(self.child, 'config/backend', 'tmux\n')
+                result = self.run_bash(f'. "{self.code}/bin/fm-config-inherit-lib.sh"; '
+                                      'FM_ROOT=sentinel; FM_BACKEND_CONFIG_DIR=sentinel; '
+                                      f'propagate_secondmate_inheritance "{self.parent}" "{self.child}" || exit; '
+                                      '[ "$FM_ROOT" = sentinel ] && [ "$FM_BACKEND_CONFIG_DIR" = sentinel ]')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                if name == 'FM_BACKEND':
+                    self.assertFalse((self.child / 'config/backend').exists())
+                else:
+                    self.assertEqual((self.child / 'config/backend').read_text(), value + '\n')
+                self.assertFalse((self.parent / 'state/fleet-backend').exists())
+                self.assertFalse((self.child / 'state/fleet-backend').exists())
 
     def test_seed_explicit_herdr_and_unknown_legacy(self):
         self.transport()
@@ -137,6 +153,7 @@ command=$1; shift
 case "$command" in
  fm-remote-doctor.sh) exit 0 ;;
  fm-remote-home-provision.sh) cat >/dev/null; exit 0 ;;
+ fm-remote-secondmate-control.sh) [ -z "${FIXTURE_VALIDATE_RC:-}" ] || exit "$FIXTURE_VALIDATE_RC" ;;
 esac
 export FM_HOME="$FIXTURE_CHILD"
 exec bash "$(dirname "$0")/$command" "$@"
@@ -152,44 +169,12 @@ exec bash "$(dirname "$0")/$command" "$@"
         self.assertIn('refusing runtime change', result.stderr)
         self.assertNotIn('fm-remote-inherit.sh put', (self.base / 'transport.log').read_text())
 
-    def test_remote_unmanaged_parent_cannot_change_managed_child(self):
+    def test_remote_unknown_validation_outcome_is_preserved(self):
         self.transport()
-        for parent_backend in ('', 'rex'):
-            for child_choice in ('config', 'pin', 'both'):
-                with self.subTest(parent=parent_backend, child=child_choice):
-                    parent_config = self.parent / 'config/backend'
-                    parent_config.unlink(missing_ok=True)
-                    if parent_backend:
-                        self.write(self.parent, 'config/backend', parent_backend + '\n')
-                    for name in ('config/backend', 'state/fleet-backend'):
-                        (self.child / name).unlink(missing_ok=True)
-                    if child_choice in ('config', 'both'):
-                        self.write(self.child, 'config/backend', 'hc\n')
-                    if child_choice in ('pin', 'both'):
-                        self.write(self.child, 'state/fleet-backend', 'hc\n')
-                    before = {name: (self.child / name).read_bytes()
-                              for name in ('config/backend', 'state/fleet-backend', 'config/crew-harness')
-                              if (self.child / name).exists()}
-                    (self.base / 'transport.log').write_text('')
-                    result = self.run_bash(f'bash "{self.code}/bin/fm-remote-inherit-push.sh" fixture 1')
-                    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-                    self.assertIn('fleet backend', result.stderr)
-                    for name, contents in before.items():
-                        self.assertEqual((self.child / name).read_bytes(), contents)
-                    self.assertFalse((self.parent / 'state/fleet-backend').exists())
-                    self.assertNotIn('fm-remote-inherit.sh', (self.base / 'transport.log').read_text())
-
-    def test_remote_live_unselected_parent_preserves_herdr_child(self):
-        self.transport()
-        self.env['FM_CONFIG_INHERIT_LIVE'] = '1'
-        self.write(self.child, 'config/backend', 'herdr\n')
-        self.write(self.child, 'state/fleet-backend', 'herdr\n')
+        self.write(self.parent, 'state/fleet-backend', 'hc\n')
+        self.env['FIXTURE_VALIDATE_RC'] = '255'
         result = self.run_bash(f'bash "{self.code}/bin/fm-remote-inherit-push.sh" fixture 1')
-        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual((self.child / 'config/backend').read_text(), 'herdr\n')
-        self.assertEqual((self.child / 'state/fleet-backend').read_text(), 'herdr\n')
-        self.assertEqual((self.child / 'config/crew-harness').read_text(), 'claude\n')
-        self.assertFalse((self.parent / 'state/fleet-backend').exists())
+        self.assertEqual(result.returncode, 255, result.stdout + result.stderr)
         self.assertNotIn('fm-remote-inherit.sh', (self.base / 'transport.log').read_text())
 
     def test_remote_unmanaged_parent_keeps_legacy_inheritance(self):
@@ -209,6 +194,8 @@ exec bash "$(dirname "$0")/$command" "$@"
                     self.assertFalse((self.child / 'config/backend').exists())
                 self.assertFalse((self.parent / 'state/fleet-backend').exists())
                 self.assertFalse((self.child / 'state/fleet-backend').exists())
+                # A remote checkout older than fleet binding knows no validation command.
+                self.assertNotIn('fm-remote-secondmate-control.sh', (self.base / 'transport.log').read_text())
 
     def test_remote_transfers_pin_without_config_file(self):
         self.transport()
@@ -218,14 +205,13 @@ exec bash "$(dirname "$0")/$command" "$@"
         self.assertTrue((self.child / 'config/backend').exists(), 'selected backend was removed')
         self.assertEqual((self.child / 'config/backend').read_text(), 'hc\n')
 
-    def test_remote_environment_selection_is_persisted(self):
+    def test_remote_environment_selection_does_not_bind(self):
         self.transport()
         self.env['FM_BACKEND'] = 'hc'
         result = self.run_bash(f'bash "{self.code}/bin/fm-remote-inherit-push.sh" fixture 1')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertTrue((self.parent / 'state/fleet-backend').exists(), 'parent selection was not persisted')
-        self.assertEqual((self.parent / 'state/fleet-backend').read_text(), 'hc\n')
-        self.assertEqual((self.child / 'config/backend').read_text(), 'hc\n')
+        self.assertFalse((self.parent / 'state/fleet-backend').exists())
+        self.assertFalse((self.child / 'state/fleet-backend').exists())
 
     def test_seed_conflict_does_not_contact_remote(self):
         self.transport()

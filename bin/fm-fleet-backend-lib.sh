@@ -12,8 +12,9 @@
 #
 # Call read before detection; validate explicit choices against that result.
 # Resume passes the recorded runtime, never a newly detected choice.
-# Before any local or remote session creation, bind the primary's selection;
-# pass it explicitly to each child and bind against that child's state/config.
+# Only secondmate creation binds the primary's selection; worker spawns and
+# recovery never do. Pass it explicitly to each child and bind against that
+# child's state/config.
 # Callers retain the existing task-set lock through binding and meta publication.
 # The fleet lock serializes pins; it does not replace task lifecycle locks.
 

@@ -1349,7 +1349,7 @@ spawn_remote_secondmate() {
   local id=$1 remote host root home harness positional model effort backend out rc meta tmp
   local remote_backend remote_target remote_harness remote_herdr_session registry_lock remote_lock remote_generation
   local remote_rex_session_id remote_rex_server remote_rex_ok
-  local remote_hc_session remote_hc_terminal
+  local remote_hc_session remote_hc_terminal fleet
   local remote_traceparent remote_recorded_traceparent sm_primary_head sync_out sync_rc account_config
   local -a launch_args
   id=${POS[0]:-}
@@ -1460,14 +1460,17 @@ spawn_remote_secondmate() {
     backend=$(fm_meta_get "$meta" remote_backend)
     [ -n "$backend" ] || backend=herdr
   fi
-  case "$FLEET_BACKEND" in
+  # Recovery keeps the recorded runtime; creation and explicit changes honor the fleet.
+  fleet=$FLEET_BACKEND
+  [ -n "${BACKEND_ARG:-}" ] || [ ! -f "$meta" ] || fleet=
+  case "$fleet" in
     herdr | hc)
-      [ -n "$backend" ] || backend=$FLEET_BACKEND
-      if [ "$backend" != "$FLEET_BACKEND" ] ||
+      [ -n "$backend" ] || backend=$fleet
+      if [ "$backend" != "$fleet" ] ||
         ! fm_fleet_backend_bind "$STATE" "$CONFIG" "$backend" >/dev/null; then
         fm_lock_release "$registry_lock" || true
         fm_lock_release "$SPAWN_TASK_LOCK" || true
-        echo "error: remote secondmate $id must use fleet runtime $FLEET_BACKEND; refusing creation" >&2
+        echo "error: remote secondmate $id must use fleet runtime $fleet; refusing creation" >&2
         return 1
       fi
       ;;
@@ -1482,7 +1485,7 @@ spawn_remote_secondmate() {
     return 1
     ;;
   esac
-  case "$FLEET_BACKEND" in
+  case "$fleet" in
     herdr | hc)
       if out=$("$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-secondmate-control.sh validate-backend \
         "$id" "$backend" </dev/null 2>&1); then
@@ -2551,22 +2554,22 @@ if [ "$RELAUNCH" -eq 0 ]; then
   spawn_refuse_if_away_spend_cap
   spawn_require_relocated_queued_work
 fi
-fm_backend_resolve || exit 1
-FLEET_BACKEND=$FM_BACKEND_RESOLVED
-if [ "$BACKEND_SET" -eq 1 ]; then
-  case "$FLEET_BACKEND" in
-    herdr | hc)
-      if [ "$BACKEND_ARG" != "$FLEET_BACKEND" ]; then
-        echo "error: fleet uses $FLEET_BACKEND; refusing task runtime $BACKEND_ARG" >&2
-        exit 1
-      fi
-      ;;
-    *)
-      case "$BACKEND_ARG" in
-        herdr | hc) FLEET_BACKEND=$BACKEND_ARG ;;
-      esac
-      ;;
-  esac
+FLEET_PIN=$(fm_fleet_backend_read "$STATE") || exit 1
+if [ "$RELAUNCH" -eq 0 ] && { [ -n "$FLEET_PIN" ] || [ "$BACKEND_SET" -eq 0 ]; }; then
+  # Called directly so the detection that chose the backend also leaves
+  # FM_BACKEND_DETECT_SIGNAL for the meta's backend_detect= line below.
+  fm_backend_resolve || exit 1
+fi
+if [ -n "$FLEET_PIN" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_PIN" ]; then
+  echo "error: fleet uses $FLEET_PIN; refusing task runtime $BACKEND_ARG" >&2
+  exit 1
+fi
+# Unbound homes select a fleet runtime only by creating a secondmate on it;
+# worker --backend flags stay per-task overrides.
+FLEET_BACKEND=$FLEET_PIN
+if [ -z "$FLEET_PIN" ] && [ "$KIND" = secondmate ]; then
+  if [ "$BACKEND_SET" -eq 1 ]; then FLEET_BACKEND=$BACKEND_ARG; else FLEET_BACKEND=${FM_BACKEND_RESOLVED:-}; fi
+  case "$FLEET_BACKEND" in herdr | hc) ;; *) FLEET_BACKEND= ;; esac
 fi
 if [ "$KIND" = secondmate ]; then
   if spawn_remote_secondmate "$ID"; then
@@ -2588,9 +2591,11 @@ if [ "$RELAUNCH" -eq 0 ]; then
     BACKEND=$BACKEND_ARG
     FM_BACKEND_DETECT_SIGNAL=""
   else
-    BACKEND=$FLEET_BACKEND
+    BACKEND=$FM_BACKEND_RESOLVED
   fi
-  fm_fleet_backend_bind "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
+  if [ "$KIND" = secondmate ] && [ -n "$FLEET_BACKEND" ]; then
+    fm_fleet_backend_bind "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
+  fi
   fm_backend_validate_spawn "$BACKEND" || exit 1
   fm_backend_source "$BACKEND" || exit 1
   if [ "$BACKEND" = orca ] && [ "$KIND" = secondmate ]; then
@@ -2681,7 +2686,6 @@ if [ "$RELAUNCH" -eq 1 ]; then
   }
   fm_backend_validate_task_endpoint "$RELAUNCH_META" "$ID" || exit 1
   BACKEND=$FM_BACKEND_VALIDATED_BACKEND
-  fm_fleet_backend_bind "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
   RELAUNCH_TARGET=$FM_BACKEND_VALIDATED_TARGET
   fm_backend_validate_spawn "$BACKEND" || exit 1
   fm_backend_source "$BACKEND" || exit 1
@@ -4337,7 +4341,9 @@ if [ "$KIND" = secondmate ]; then
     exit 1
   }
   PROJ_ABS=$(validate_firstmate_home_for_spawn "$ID" "$FIRSTMATE_HOME")
-  fm_fleet_backend_bind "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
+  if [ "$RELAUNCH" -eq 0 ] && [ -n "$FLEET_BACKEND" ]; then
+    fm_fleet_backend_bind "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
+  fi
   if [ -e "$DATA/secondmates.md" ] || [ -L "$DATA/secondmates.md" ]; then
     if ! secondmate_registry_validate_bindings "$DATA/secondmates.md" resolve_path "$ID" "$FIRSTMATE_HOME"; then
       echo "error: $SECONDMATE_REGISTRY_ERROR" >&2
