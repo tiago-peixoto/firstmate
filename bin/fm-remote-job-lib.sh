@@ -72,7 +72,8 @@
 # The worker accepts only a tracked, non-symlink executable named fm-*.sh below
 # its configured FM_ROOT/bin. Every child receives env -i with the composed
 # PATH, HOME, FM_HOME, FM_ROOT_OVERRIDE, and FM_REMOTE_JOB_ACTIVE=1, plus USER
-# and LOGNAME when they are nonempty in the worker's environment. The PATH
+# and LOGNAME when they are nonempty in the worker's environment, and the
+# validated XDG_RUNTIME_DIR when available. The PATH
 # is intentionally filesystem-discovered rather than login-shell-derived:
 # ~/.local/bin; nvm, asdf, and mise shims/install bins; Nix; Homebrew; and the
 # system tail. No shell startup files are evaluated. Each discovered set is
@@ -130,6 +131,32 @@ fm_remote_job_die() {
 
 fm_remote_job_safe_id() {
   case "$1" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac
+}
+
+# A clean SSH/job environment must agree with hc's account service, whose
+# socket can live in /run/user/<uid> rather than below XDG_STATE_HOME.
+fm_remote_job_runtime_dir() { # <account-home>; empty means state-directory fallback
+  local account_home=$1 directory=${XDG_RUNTIME_DIR:-} uid login_home metadata
+  uid=$(id -u) || return 1
+  if [ -z "$directory" ]; then
+    [ "$(fm_remote_job_platform)" = linux ] || return 0
+    login_home=$(unset HOME; CDPATH='' cd ~ 2>/dev/null && pwd -P) || return 1
+    # Scratch account homes must never discover the real account's sockets.
+    [ "$account_home" = "$login_home" ] || return 0
+    directory="/run/user/$uid"
+    [ -e "$directory" ] || [ -L "$directory" ] || return 0
+  fi
+  directory=$(fm_remote_job_canonical_existing_dir "$directory") || {
+    fm_remote_job_die 'XDG runtime directory must be an existing absolute directory without symlinks'
+    return 1
+  }
+  metadata=$(stat -c '%u:%a' "$directory" 2>/dev/null) ||
+    metadata=$(stat -f '%u:%Lp' "$directory" 2>/dev/null) || return 1
+  [ "$metadata" = "$uid:700" ] || {
+    fm_remote_job_die 'XDG runtime directory must belong to this account and have mode 0700'
+    return 1
+  }
+  printf '%s\n' "$directory"
 }
 
 fm_remote_job_command_preemptible() { # <staged argv command>
