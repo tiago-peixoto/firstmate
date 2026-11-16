@@ -77,9 +77,10 @@
 # the owned Aqua agents,
 # starts the Linux workers where no Aqua agent applies, starts a persistent rex
 # server or dedicated hc core when that backend needs one and none answers,
-# recreates the entrypoint
-# symlink, and may add an owned ~/.local/bin wrapper for a required tool it can
-# discover under nvm, asdf, or mise. It does not install packages, create a
+# and may add an owned ~/.local/bin wrapper for a required tool it can
+# discover under nvm, asdf, or mise. A run through the fixed entrypoint
+# counts as proof of a working entrypoint and leaves the shared link untouched;
+# only a direct run with FM_ROOT_OVERRIDE set inspects and recreates that link. It does not install packages, create a
 # login session, write an auto-login password,
 # changes FileVault, stores an account password, or replaces a non-Firstmate
 # wrapper; those remain reported gaps.
@@ -1078,6 +1079,10 @@ shared_entrypoint_valid() { # <link-target>
 
 check_entrypoint_link() {
   local want
+  if [ "${FM_REMOTE_DOCTOR_BOOTSTRAP:-}" = 1 ]; then
+    record entrypoint-link "ok: the fixed remote entrypoint invoked this doctor"
+    return 0
+  fi
   if [ -z "${FM_ROOT_OVERRIDE:-}" ]; then
     record entrypoint-link "skip: this run did not come through the fixed remote entrypoint"
     return 0
