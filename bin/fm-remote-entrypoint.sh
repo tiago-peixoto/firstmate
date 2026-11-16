@@ -154,6 +154,7 @@ else
 fi
 if [ "$COMMAND" = fm-remote-doctor.sh ]; then
   fm_remote_job_build_child_path "$ROOT" >/dev/null
+  RUNTIME_DIR=$(fm_remote_job_runtime_dir "$ACCOUNT_HOME") || die "unsafe remote runtime directory"
   DOCTOR_ENV=(
     /usr/bin/env -i
     "PATH=$FM_REMOTE_JOB_CHILD_PATH"
@@ -162,6 +163,9 @@ if [ "$COMMAND" = fm-remote-doctor.sh ]; then
     "FM_ROOT_OVERRIDE=$ROOT"
     FM_REMOTE_DOCTOR_BOOTSTRAP=1
   )
+  if [ -n "$RUNTIME_DIR" ]; then
+    DOCTOR_ENV+=("XDG_RUNTIME_DIR=$RUNTIME_DIR")
+  fi
   if [ -n "${FM_REMOTE_JOB_PLATFORM_OVERRIDE:-}" ]; then
     DOCTOR_ENV+=("FM_REMOTE_JOB_PLATFORM_OVERRIDE=$FM_REMOTE_JOB_PLATFORM_OVERRIDE")
   fi
