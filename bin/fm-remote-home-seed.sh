@@ -23,7 +23,7 @@
 #
 # Known provisioning failure rolls the registry back. SSH status 255 preserves
 # the route and any newly scaffolded brief because completion is unknown and a same-route rerun converges.
-# shellcheck disable=SC2031 # Fleet binding isolates STATE and FM_HOME changes in subshells.
+# shellcheck disable=SC2031 # SEED_BACKEND sources fm-backend.sh, which sets FM_HOME, in a subshell.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -241,9 +241,7 @@ network_mutation_authorized() {
   local expected=${FM_BOOTSTRAP_NETWORK_LOCK_PID:-} current
   [ -n "$expected" ] || return 0
   fm_session_pid_valid "$expected" || return 1
-  # shellcheck disable=SC2031 # Fleet binding confines its STATE override to a subshell.
   [ -f "$STATE/.lock" ] && [ ! -L "$STATE/.lock" ] || return 1
-  # shellcheck disable=SC2031
   current=$(cat "$STATE/.lock" 2>/dev/null) || return 1
   [ "$current" = "$expected" ]
 }

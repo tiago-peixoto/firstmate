@@ -471,7 +471,6 @@ fm_backend_resolve() {
   FM_BACKEND_RESOLVED=""
   FM_BACKEND_DETECTED=""
   FM_BACKEND_DETECT_SIGNAL=""
-  # shellcheck disable=SC2031 # Bind's subshell override must not escape into this caller.
   state=${FM_STATE_OVERRIDE:-$FM_HOME/state}
   fleet=$(fm_fleet_backend_read "$state") || return 1
   if [ -n "$fleet" ]; then

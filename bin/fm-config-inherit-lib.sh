@@ -659,6 +659,7 @@ propagate_shared_captain_preferences() {
 }
 
 # Keep wake-helper initialization out of sourcing callers.
+# shellcheck disable=SC2031 # These locals share names with fm_fleet_backend_bind's subshell locals.
 fm_config_inherit_backend() ( # <config> <state>
   local config=$1 state=$2 selected
   # shellcheck source=bin/fm-fleet-backend-lib.sh

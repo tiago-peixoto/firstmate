@@ -882,23 +882,24 @@ EOF
 remote_env "$ROOT/bin/fm-home-seed.sh" validate >/dev/null || fail "mixed local and remote registry validation failed"
 pass "mixed local and remote routes validate without migration"
 
-# Reproduce the old inherited tmux/explicit herdr conflict at the receiving
-# host before any endpoint exists. Refusal must leave the declared runtime intact.
+# Creating a secondmate in this Herdr fleet must refuse a receiving home that
+# selects tmux before inheritance can rewrite it or any endpoint exists.
 printf 'tmux\n' > "$REMOTE_HOME/config/backend"
 cp "$HERDR_STATE" "$TMP_ROOT/herdr-before-runtime-conflict.json"
-if remote_env "$ROOT/bin/fm-on.sh" ios fm-remote-secondmate-control.sh launch ios codex - - herdr \
-  > "$TMP_ROOT/spawn-runtime-conflict.out" 2>&1; then
-  fail "remote launch accepted inherited tmux with explicit herdr"
+if remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate > "$TMP_ROOT/spawn-runtime-conflict.out" 2>&1; then
+  fail "remote secondmate creation accepted inherited tmux in a Herdr fleet"
 fi
 assert_grep 'selects tmux, requested herdr; refusing runtime change' "$TMP_ROOT/spawn-runtime-conflict.out" \
-  "remote launch did not identify the inherited runtime conflict"
+  "remote creation did not identify the receiving runtime conflict"
 [ "$(cat "$REMOTE_HOME/config/backend")" = tmux ] || fail "refusal rewrote the remote runtime"
+assert_absent "$REMOTE_HOME/state/fleet-backend" "refusal bound the remote home"
+assert_absent "$PARENT/state/fleet-backend" "refusal bound the parent home"
 assert_absent "$REMOTE_HOME/state/parent-route/ios.meta" "refusal published a remote endpoint"
 assert_absent "$PARENT/state/ios.meta" "refusal published a parent endpoint"
 cmp -s "$HERDR_STATE" "$TMP_ROOT/herdr-before-runtime-conflict.json" \
   || fail "refused runtime conflict created a Herdr endpoint"
 printf 'herdr\n' > "$REMOTE_HOME/config/backend"
-pass "inherited tmux refuses an explicit herdr launch without migrating or creating an endpoint"
+pass "remote creation refuses a receiving tmux runtime without binding, migrating, or creating an endpoint"
 
 # Launch on the remote home's own configured backend. Parent metadata records
 # host placement separately from that backend and arms the reply source.
@@ -1335,6 +1336,8 @@ cp "$PARENT/state/ios.meta" "$WATCH_STATE/ios.meta"
 # lives beside the task record, so the dedicated watch state needs the real
 # one; otherwise the pushed payload reads as superseded on the remote home.
 cp "$PARENT/state/.remote-inherit-ios.generation" "$WATCH_STATE/" 2>/dev/null || true
+# Recovery inherits into the bound child, so the watch state keeps the fleet pin.
+cp "$PARENT/state/fleet-backend" "$WATCH_STATE/fleet-backend"
 touch "$WATCH_STATE/home-summary.json"
 
 # A graceful agent exit leaves the pane with no registered agent - the exact

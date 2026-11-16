@@ -163,12 +163,10 @@ fm_fleet_backend_bind() ( # <state> <config> <backend>
     herdr|hc) ;;
     *) printf '%s\n' "$backend"; return 0 ;;
   esac
-  # Sourcing wake helpers creates STATE; isolate that side effect to this bind.
-  local STATE=$state FM_STATE_OVERRIDE=$state
-  export STATE FM_STATE_OVERRIDE
   if ! command -v fm_lock_acquire_wait_max >/dev/null 2>&1; then
+    # Sourcing wake helpers creates STATE; point it at this bind's state.
     # shellcheck source=/dev/null
-    . "${BASH_SOURCE[0]%/*}/fm-wake-lib.sh" || return 1
+    FM_STATE_OVERRIDE=$state . "${BASH_SOURCE[0]%/*}/fm-wake-lib.sh" || return 1
   fi
   mkdir -p "$state" || return 1
   lock="$state/.fleet-backend.lock"

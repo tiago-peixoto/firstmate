@@ -18,7 +18,6 @@
 # uses floor zero and leaves write-time generation checks intact; counter
 # recovery requires a receiver that supports the query. Other query failures
 # and malformed replies fail closed.
-# shellcheck disable=SC2031 # Fleet binding isolates STATE and FM_HOME changes in subshells.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

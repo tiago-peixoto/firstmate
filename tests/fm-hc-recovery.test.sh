@@ -129,6 +129,7 @@ SH
   chmod +x "$T/remote-bin/fm-on.sh"
   # shellcheck disable=SC2034 # The sourced liveness helper reads this route.
   local FM_SM_LIVE_LIB_DIR="$T/remote-bin"
+  # shellcheck disable=SC2329 # The sourced liveness probe invokes this replacement.
   fm_remote_readiness_ensure() { return 0; }
   printf 'backend=hc\n' > "$T/route"
   fm_secondmate_liveness_probe "$META" scout full
