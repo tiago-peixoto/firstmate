@@ -1460,9 +1460,7 @@ spawn_remote_secondmate() {
     backend=$(fm_meta_get "$meta" remote_backend)
     [ -n "$backend" ] || backend=herdr
   fi
-  # Recovery keeps the recorded runtime; creation and explicit changes honor the fleet.
   fleet=$FLEET_BACKEND
-  [ -n "${BACKEND_ARG:-}" ] || [ ! -f "$meta" ] || fleet=
   case "$fleet" in
     herdr | hc)
       [ -n "$backend" ] || backend=$fleet
@@ -2566,16 +2564,26 @@ if [ "$RELAUNCH" -eq 0 ] && { [ -n "$FLEET_PIN" ] || [ "$BACKEND_SET" -eq 0 ] ||
   # FM_BACKEND_DETECT_SIGNAL for the meta's backend_detect= line below.
   fm_backend_resolve || exit 1
 fi
-if [ -n "$FLEET_PIN" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_PIN" ]; then
+SECONDMATE_CREATION=0
+if [ "$KIND" = secondmate ] && [ "$RELAUNCH" -eq 0 ] &&
+  [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
+  SECONDMATE_CREATION=1
+fi
+# A local secondmate respawn on its recorded runtime is recovery, which keeps
+# legacy records working under a later fleet binding.
+if [ -n "$FLEET_PIN" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_PIN" ] &&
+  ! { [ "$KIND" = secondmate ] && [ "$SECONDMATE_CREATION" -eq 0 ] && [ -f "$STATE/$ID.meta" ] &&
+    [ -z "$(fm_meta_get "$STATE/$ID.meta" remote_host)" ] &&
+    [ "$BACKEND_ARG" = "$(fm_backend_of_meta "$STATE/$ID.meta")" ]; }; then
   echo "error: fleet uses $FLEET_PIN; refusing task runtime $BACKEND_ARG" >&2
   exit 1
 fi
-# Unbound homes select the primary's runtime only by creating a new secondmate;
-# worker --backend flags stay per-task overrides and recovery keeps its record.
-FLEET_BACKEND=$FLEET_PIN
-if [ -z "$FLEET_PIN" ] && [ "$KIND" = secondmate ] && [ "$RELAUNCH" -eq 0 ] &&
-  [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
-  case "$FM_BACKEND_RESOLVED" in herdr | hc) FLEET_BACKEND=$FM_BACKEND_RESOLVED ;; esac
+# Only creating a new secondmate selects or enforces the fleet runtime; worker
+# --backend flags stay per-task overrides and recovery keeps its record.
+FLEET_BACKEND=
+if [ "$SECONDMATE_CREATION" -eq 1 ]; then
+  FLEET_BACKEND=$FLEET_PIN
+  [ -n "$FLEET_BACKEND" ] || case "$FM_BACKEND_RESOLVED" in herdr | hc) FLEET_BACKEND=$FM_BACKEND_RESOLVED ;; esac
   if [ -n "$FLEET_BACKEND" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_BACKEND" ]; then
     echo "error: primary selects $FLEET_BACKEND; refusing secondmate runtime $BACKEND_ARG" >&2
     exit 1
@@ -2603,7 +2611,7 @@ if [ "$RELAUNCH" -eq 0 ]; then
   else
     BACKEND=$FM_BACKEND_RESOLVED
   fi
-  if [ "$KIND" = secondmate ] && [ -n "$FLEET_BACKEND" ]; then
+  if [ -n "$FLEET_BACKEND" ]; then
     fm_fleet_backend_validate "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
   fi
   fm_backend_validate_spawn "$BACKEND" || exit 1
@@ -4351,7 +4359,7 @@ if [ "$KIND" = secondmate ]; then
     exit 1
   }
   PROJ_ABS=$(validate_firstmate_home_for_spawn "$ID" "$FIRSTMATE_HOME")
-  if [ "$RELAUNCH" -eq 0 ] && [ -n "$FLEET_BACKEND" ]; then
+  if [ -n "$FLEET_BACKEND" ]; then
     fm_fleet_backend_validate "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
     fm_fleet_backend_bind "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
     fm_fleet_backend_bind "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
@@ -7988,9 +7996,7 @@ if [ "$KIND" = secondmate ]; then
   # Reuse the single frozen decision from the carrier resolution above so the
   # injected carrier and this on/off snapshot are guaranteed to agree.
   LAUNCH="FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME=$sq_primary_home FM_HOME=$sq_home FM_TRACE_CONTEXT=$SPAWN_TRACE_EFFECTIVE FM_SUPERVISION_MODEL=$supervision_model $LAUNCH"
-  case "$BACKEND" in
-    herdr | hc) LAUNCH="FM_BACKEND=$BACKEND $LAUNCH" ;;
-  esac
+  [ -z "$FLEET_BACKEND" ] || LAUNCH="FM_BACKEND=$FLEET_BACKEND $LAUNCH"
   if [ "$BACKEND" = hc ]; then
     LAUNCH="HC_SESSION=$(shell_quote "$HC_SES") $LAUNCH"
   fi

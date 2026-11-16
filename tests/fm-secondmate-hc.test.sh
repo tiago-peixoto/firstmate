@@ -80,6 +80,15 @@ assert_line() {
   grep -Fx -- "$1" "$2" >/dev/null || fail "$3"
 }
 
+# The runtime the child's own workers select under the delivered launch line.
+child_backend() {
+  local launched
+  launched=$(grep -o 'FM_BACKEND=[a-z]*' "$FM_FAKE_HC_DIR/launch.sh" || true)
+  # shellcheck disable=SC2016 # Expanded by the child shell.
+  env -u FM_BACKEND -u HC_SESSION -u HERDR_ENV ${launched:+"$launched"} FM_HOME="$CHILD" \
+    bash -c '. "$1/bin/fm-backend.sh" && fm_backend_name' _ "$ROOT"
+}
+
 setup_world success
 spawn > "$TMP_ROOT/spawn.out" 2>&1 || { cat "$TMP_ROOT/spawn.out"; fail 'hc secondmate spawn failed'; }
 meta="$PRIMARY/state/design.meta"
@@ -141,6 +150,31 @@ assert_absent "$PRIMARY/state/fleet-backend" 'recovery selected the primary flee
 assert_absent "$CHILD/state/fleet-backend" 'recovery selected the child fleet runtime'
 assert_line 'backend=hc' "$PRIMARY/state/design.meta" 'recovery changed the recorded runtime'
 pass 'hc secondmate: recovery in an unbound home keeps the recorded runtime and records no fleet choice'
+
+setup_world bound-recovery
+spawn > "$TMP_ROOT/bound-recovery-first.out" 2>&1 || { cat "$TMP_ROOT/bound-recovery-first.out"; fail 'hc secondmate spawn before bound recovery failed'; }
+assert_line 'hc' "$PRIMARY/state/fleet-backend" 'creation did not bind the primary'
+rm -f "$CHILD/state/fleet-backend" "$FM_FAKE_HC_DIR/terminal.json" "$FM_FAKE_HC_DIR/launch.sh"
+printf 'window=firstmate:fm-w1\nkind=ship\n' > "$CHILD/state/w1.meta"
+FM_HOME="$PRIMARY" "$ROOT/bin/fm-spawn.sh" design "$CHILD" codex --secondmate --backend hc \
+  > "$TMP_ROOT/bound-recovery.out" 2>&1 || { cat "$TMP_ROOT/bound-recovery.out"; fail 'legacy child recovery under a bound primary was refused'; }
+assert_absent "$CHILD/state/fleet-backend" 'recovery under a bound primary pinned the legacy child'
+assert_line 'backend=hc' "$PRIMARY/state/design.meta" 'bound recovery changed the recorded runtime'
+[ "$(child_backend)" = tmux ] || fail 'recovery launch overrode the legacy child runtime'
+pass 'hc secondmate: legacy child recovery under a bound primary records no child fleet choice'
+
+setup_world unbound-classic
+printf 'tmux\n' > "$PRIMARY/config/backend"
+FM_HOME="$PRIMARY" "$ROOT/bin/fm-spawn.sh" design "$CHILD" codex --secondmate --backend hc \
+  > "$TMP_ROOT/unbound-classic.out" 2>&1 || { cat "$TMP_ROOT/unbound-classic.out"; fail 'unbound hc secondmate spawn failed'; }
+assert_absent "$PRIMARY/state/fleet-backend" 'unbound spawn pinned the primary'
+assert_absent "$CHILD/state/fleet-backend" 'unbound spawn pinned the child'
+printf 'tmux\n' > "$CHILD/config/backend"
+[ "$(child_backend)" = tmux ] || fail 'unbound child lost its configured runtime'
+setup_world managed-child
+spawn > "$TMP_ROOT/managed-child.out" 2>&1 || { cat "$TMP_ROOT/managed-child.out"; fail 'managed hc secondmate spawn failed'; }
+[ "$(child_backend)" = hc ] || fail 'managed child did not keep the fleet runtime'
+pass 'hc secondmate: unbound children keep their configured runtime and managed children keep hc'
 
 for selection in config detected; do
   setup_world "primary-selection-$selection"
