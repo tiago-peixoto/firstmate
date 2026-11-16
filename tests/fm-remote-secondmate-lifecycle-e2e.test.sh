@@ -143,8 +143,17 @@ printf 'primary harness defaults\n' > "$PARENT/config/crew-harness"
 
 cat > "$FAKEBIN/fake-ssh" <<'SH'
 #!/usr/bin/env bash
-count=$(cat "$FM_FAKE_SSH_COUNT" 2>/dev/null || echo 0)
-printf '%s\n' "$((count + 1))" > "$FM_FAKE_SSH_COUNT"
+# A live remote-reply source re-reads the reply log in the background after
+# every wait window and every preemption, so counting its reads lets each
+# "no remote call" check race it. Only that source runs fm-remote-delta-read.sh.
+# Its argv (name, then NUL) base64-encodes to exactly this prefix.
+case " $* " in
+  *" Zm0tcmVtb3RlLWRlbHRhLXJlYWQuc2gA"*) ;;
+  *)
+    count=$(cat "$FM_FAKE_SSH_COUNT" 2>/dev/null || echo 0)
+    printf '%s\n' "$((count + 1))" > "$FM_FAKE_SSH_COUNT"
+    ;;
+esac
 while [ "$#" -gt 0 ]; do
   case "$1" in -o) shift 2 ;; --) shift; break ;; *) exit 90 ;; esac
 done
