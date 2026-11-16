@@ -13,9 +13,9 @@
 # here rather than improvised per harness in agent prose.
 #
 # This file owns three capability tables plus their pure artifact-path tables,
-# and ONE named exception to that purity - fm_control_endpoint_absence_verdict,
-# the single owner of the per-backend endpoint-absence proof, which does run
-# backend reads. Everything else has no side effects, runs no backend command,
+# and the recovery proof helpers, which perform backend reads.
+# fm_control_endpoint_absence_verdict owns the per-backend absence proof.
+# Everything else has no side effects, runs no backend command,
 # and reads no state, so sourcing this file is still free and the tables can be
 # read by a test as a pure contract:
 #
@@ -363,7 +363,7 @@ fm_control_backend_supports_key() {  # <backend> <key>
 # unprovable transition as success.
 fm_control_backend_state_verified() {  # <backend>
   case "${1-}" in
-    tmux|herdr|rex|t3code) return 0 ;;
+    tmux|herdr|rex|hc|t3code) return 0 ;;
   esac
   return 1
 }
@@ -391,7 +391,7 @@ fm_control_backend_exit_supported() {  # <backend>
 # fm_control_backend_state_verified first.
 fm_control_backend_relaunch_supported() {  # <backend>
   case "${1-}" in
-    tmux|herdr|rex) return 0 ;;
+    tmux|herdr|rex|hc) return 0 ;;
   esac
   return 1
 }
@@ -408,6 +408,24 @@ fm_control_absence_recheck_applies() {  # <backend> <raw-state>
     missing) return 0 ;;
     unreadable) [ "${1-}" = rex ] ;;
     *) return 1 ;;
+  esac
+}
+
+# Recovery must bind both the recorded route and the terminal's current labels
+# before a process classifier can authorize replacement.
+fm_control_hc_recovery_state() {  # <meta> <id> <target>
+  local meta=$1 id=$2 target=$3
+  if ! fm_backend_validate_task_endpoint "$meta" "$id" 2>/dev/null \
+    || [ "$FM_BACKEND_VALIDATED_BACKEND" != hc ] \
+    || [ "$FM_BACKEND_VALIDATED_TARGET" != "$target" ] \
+    || ! fm_backend_source hc; then
+    printf 'unreadable'
+    return 0
+  fi
+  case "$(fm_backend_hc_endpoint_state "$target" "fm-$id")" in
+    absent|finished) printf 'missing' ;;
+    ready) fm_backend_hc_agent_state "$target" ;;
+    *) printf 'unreadable' ;;
   esac
 }
 
@@ -480,6 +498,14 @@ fm_control_endpoint_absence_verdict() {  # <backend> <target> [meta]
         alive) printf 'alive\t' ;;
         missing) printf 'gone\t' ;;
         *) printf 'unproven\tthe recorded herdr session'"'"'s server could not be started, or its pane could not be classified once it was running' ;;
+      esac
+      ;;
+    hc)
+      case "$(fm_control_hc_recovery_state "$meta" "$(fm_meta_get "$meta" endpoint_task_id)" "$target")" in
+        dead) printf 'dead\t' ;;
+        alive) printf 'alive\t' ;;
+        missing) printf 'gone\t' ;;
+        *) printf 'unproven\tthe recorded hc terminal could not be verified as owned and stopped' ;;
       esac
       ;;
     rex)
