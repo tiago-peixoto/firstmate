@@ -239,5 +239,6 @@ fi
 assert_contains "$out" 'Hermes did not reach its TUI' 'unclosed stalled launch diagnostic'
 assert_contains "$(cat "$case_dir/kill-unclosed" 2>/dev/null)" 'kill-window record=present' 'unclosed stalled worker close not attempted'
 assert_contains "$out" 'task record is kept' 'unclosed stalled launch warning'
+assert_not_contains "$out" 'returned copy' 'unclosed stalled worker had its leased worktree returned'
 assert_grep 'hermes_profile=example' "$home/state/hermes-unclosed.meta" 'unclosed stalled worker lost its task record'
 pass 'stalled Hermes launch whose pane cannot be closed keeps its task record'
