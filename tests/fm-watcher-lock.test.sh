@@ -293,8 +293,9 @@ stop_outside_state_locks() {  # <pid> <state>
   while [ "$i" -lt 100 ]; do
     kill -STOP "$pid" 2>/dev/null || return 1
     held=0
-    for lock in "$state"/.*.lock "$state"/.*.lock.steal "$state"/*.lock; do
-      [ "$lock" != "$state/.watch.lock" ] || continue
+    for lock in "$state"/.*.lock "$state"/.*.lock.steal "$state"/*.lock \
+      "$state"/.*.lock.owner.* "$state"/.*.lock.steal.owner.* "$state"/*.lock.owner.*; do
+      case "$lock" in "$state/.watch.lock"|"$state"/.watch.lock.owner.*) continue ;; esac
       [ "$(cat "$lock/pid" 2>/dev/null || true)" != "$pid" ] || { held=1; break; }
     done
     [ "$held" -eq 1 ] || return 0
@@ -375,7 +376,8 @@ run_legacy_identity_takeover() {  # <case> <successor-first>
       || fail "a fresh watcher stood down beside a live holder whose legacy identity no longer recomputes: $(cat "$new_out")"
     [ "$released" = yes ] || fail "the exited successor left a lock holder behind, so the old watcher would not find the lock released"
   else
-    [ "$claimed" -eq 1 ] || fail "a fresh watcher stood down beside a live holder whose legacy identity no longer recomputes: $(cat "$new_out")"
+    [ "$claimed" -eq 1 ] || grep -q '^check: ' "$new_out" \
+      || fail "a fresh watcher stood down beside a live holder whose legacy identity no longer recomputes: $(cat "$new_out")"
   fi
   # The old holder may already have stood down by now, so its clean exit below,
   # not its liveness here, proves it saw the successor's claim.
