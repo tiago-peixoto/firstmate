@@ -2569,12 +2569,7 @@ if [ "$KIND" = secondmate ] && [ "$RELAUNCH" -eq 0 ] &&
   [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
   SECONDMATE_CREATION=1
 fi
-# A local secondmate respawn on its recorded runtime is recovery, which keeps
-# legacy records working under a later fleet binding.
-if [ -n "$FLEET_PIN" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_PIN" ] &&
-  ! { [ "$KIND" = secondmate ] && [ "$SECONDMATE_CREATION" -eq 0 ] && [ -f "$STATE/$ID.meta" ] &&
-    [ -z "$(fm_meta_get "$STATE/$ID.meta" remote_host)" ] &&
-    [ "$BACKEND_ARG" = "$(fm_backend_of_meta "$STATE/$ID.meta")" ]; }; then
+if [ -n "$FLEET_PIN" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_PIN" ]; then
   echo "error: fleet uses $FLEET_PIN; refusing task runtime $BACKEND_ARG" >&2
   exit 1
 fi
