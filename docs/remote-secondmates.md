@@ -309,7 +309,8 @@ The guard's header owns the decision table, and [`bin/fm-remote-herdr-owner-lib.
 `--fix` also takes these actions:
 
 - It starts the same workers directly on Linux.
-- It recreates the `~/.local/bin/fm-remote-entrypoint.sh` symlink when it is absent.
+- In a direct doctor run with `FM_ROOT_OVERRIDE` set, it recreates the `~/.local/bin/fm-remote-entrypoint.sh` symlink when it is absent.
+  A run through the fixed entrypoint counts as proof of a working entrypoint and leaves that shared link untouched.
 - It creates only Firstmate-owned required-tool wrappers that it can prove resolve to a version-manager target.
   It stops after one harness satisfies the at-least-one requirement, which is the harness line of the [required remote tools](#required-remote-tools).
 
@@ -330,7 +331,8 @@ These steps are never automated and are always reported rather than silently att
 - Each worker runtime's own `/login`, and any keychain password prompt that login needs.
 
 Firstmate never writes an auto-login password, never changes FileVault, and never stores an account password.
-A file at `~/.local/bin/fm-remote-entrypoint.sh` that is not Firstmate's own symlink is reported for the operator to inspect and is never overwritten.
+In a direct doctor run with `FM_ROOT_OVERRIDE` set, a file at `~/.local/bin/fm-remote-entrypoint.sh` that is not Firstmate's own symlink is reported for the operator to inspect.
+Firstmate never overwrites that file.
 
 ### Required remote tools
 

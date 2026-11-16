@@ -31,7 +31,8 @@
 set -eu
 
 PROTOCOL=1
-DOCTOR_SHA256=2dd5499d3246e42e3a64d5bbb60e416b8f5c4ccf86883901e7fdae434f0daa1b
+# Generated: rerun bin/fm-remote-doctor-digest.py after editing bin/fm-remote-doctor.sh.
+DOCTOR_SHA256=deff99ede58499f99789a7260624720a9b2f7eebbaf3e9737666e20e5c52d6d7
 REAL_SOURCE=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "${BASH_SOURCE[0]}" 2>/dev/null) ||
   REAL_SOURCE=$(realpath "${BASH_SOURCE[0]}" 2>/dev/null) ||
   REAL_SOURCE=${BASH_SOURCE[0]}
