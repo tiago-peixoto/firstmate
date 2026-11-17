@@ -1,0 +1,7 @@
+1..3
+ok - host: a parked host whose arm reported waits for the close without starting processes (Bash 3.2)
+ok - host: an arm that disappears without a close ends the wait within a probe
+ok - host: an attended decision close stays main's exactly as the plain arm delivers it
+FM_TEST_COMPLETE
+fm-test-tap-verify: fm-supervision-host.test.sh: 3 planned, 3 ok, complete, exit 0
+exit=0

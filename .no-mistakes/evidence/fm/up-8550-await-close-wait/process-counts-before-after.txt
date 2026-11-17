@@ -1,0 +1,29 @@
+# Processes started by a parked fm-supervision-host.sh while its arm is alive (strace -f, 60 s window, arm subtree excluded)
+# before = base 427056c4, after = target 1536f75f; Linux, Bash 5.3.9 and a locally built Bash 3.2.57
+before-bash5.3: host pid 2171164, window 60.0s, processes started by the parked host: 714 -> 42834 per hour
+      437  (subshell, no exec)
+       99  sleep 0.5
+       49  awk -F \\t
+       45  cat /proc/2174059/stat
+       26  sed s/ *$//
+       21  tr \\t\\n   
+       19  od -An -v
+       18  tr -d [:space:
+after-bash5.3: host pid 2171124, window 60.0s, processes started by the parked host: 0 -> 0 per hour
+before-bash3.2: host pid 2171406, window 60.0s, processes started by the parked host: 727 -> 43614 per hour
+      433  (subshell, no exec)
+      101  sleep 0.5
+       51  cat /proc/2174586/stat
+       50  awk -F \\t
+       29  sed s/ *$//
+       26  tr \\t\\n   
+       23  tr -d [:space:
+       14  od -An -v
+after-bash3.2: host pid 2171374, window 60.0s, processes started by the parked host: 118 -> 7079 per hour
+      101  sleep 0.5
+       17  (subshell, no exec)
+
+# Host exit codes (before5.3, after5.3, before3.2, after3.2):
+0 0 0 0 
+host output identical before/after on Bash 5.3 (pids, epochs, temp paths normalised)
+host output identical before/after on Bash 3.2 (pids, epochs, temp paths normalised)
