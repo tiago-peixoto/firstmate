@@ -1,0 +1,33 @@
+$ fm-brief.sh bad-1 some-proj --mode direct-PR --closes 12
+error: fm-brief.sh --closes: a linked issue ships only mode=no-mistakes with a pull request, not mode=direct-PR forge=none
+rc=1 brief-left=no
+$ fm-brief.sh bad-2 some-proj --mode local-only --closes 12
+error: fm-brief.sh --closes: a linked issue ships only mode=no-mistakes with a pull request, not mode=local-only forge=none
+rc=1 brief-left=no
+$ fm-brief.sh bad-3 some-proj --mode no-mistakes --forge gerrit --closes 12
+error: fm-brief.sh --closes: a linked issue ships only mode=no-mistakes with a pull request, not mode=no-mistakes forge=gerrit
+rc=1 brief-left=no
+$ fm-brief.sh bad-4 some-proj --scout --closes 12
+error: --forge, --shape, --pr, and --closes apply only to ship briefs; a scout delivers a report and a secondmate charter is not a delivery contract
+rc=1 brief-left=no
+$ fm-brief.sh bad-5 some-proj --mode no-mistakes --closes #12
+error: fm-brief.sh --closes: linked issue '#12' is not an issue number
+rc=1 brief-left=no
+$ fm-brief.sh bad-6 some-proj --mode no-mistakes --closes 012
+error: fm-brief.sh --closes: linked issue '012' is not an issue number
+rc=1 brief-left=no
+$ fm-brief.sh bad-7 some-proj --mode no-mistakes --closes 0
+error: fm-brief.sh --closes: linked issue '0' is not an issue number
+rc=1 brief-left=no
+$ fm-brief.sh bad-8 some-proj --mode no-mistakes --closes -5
+error: fm-brief.sh --closes: linked issue '-5' is not an issue number
+rc=1 brief-left=no
+$ fm-brief.sh bad-9 some-proj --mode no-mistakes --closes owner/repo#12
+error: fm-brief.sh --closes: linked issue 'owner/repo#12' is not an issue number
+rc=1 brief-left=no
+$ fm-brief.sh bad-10 some-proj --mode no-mistakes --closes=
+error: --closes requires an issue number
+rc=1 brief-left=no
+$ fm-brief.sh bad-11 some-proj --mode no-mistakes --closes
+error: --closes requires a value
+rc=1 brief-left=no

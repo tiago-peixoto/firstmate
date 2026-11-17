@@ -1,0 +1,58 @@
+### diff base-unset vs new-unset (nm)
+27c27
+< 2. Keep project edits inside this worktree; keep proof and scratch output outside it, under `/tmp/tmp.7U5igzcJUJ/hb/data/nm-unset/` or a temporary directory.
+---
+> 2. Keep project edits inside this worktree; keep proof and scratch output outside it, under `/tmp/tmp.7U5igzcJUJ/h/data/nm-unset/` or a temporary directory.
+32c32
+<    `echo "{state} [at=<epoch>]: {one short line}" >> '/tmp/tmp.7U5igzcJUJ/hb/state/nm-unset.status' && { [ ! -e '/tmp/tmp.7U5igzcJUJ/hb/config/fleet-ledger' ] || '/tmp/tmp.7U5igzcJUJ/bin/fm-fleet-ledger.sh' appended '/tmp/tmp.7U5igzcJUJ/hb/config' '/tmp/tmp.7U5igzcJUJ/hb/state/nm-unset.status' >/dev/null 2>&1 || true; }`
+---
+>    `echo "{state} [at=<epoch>]: {one short line}" >> '/tmp/tmp.7U5igzcJUJ/h/state/nm-unset.status' && { [ ! -e '/tmp/tmp.7U5igzcJUJ/h/config/fleet-ledger' ] || '{run-worktree}/bin/fm-fleet-ledger.sh' appended '/tmp/tmp.7U5igzcJUJ/h/config' '/tmp/tmp.7U5igzcJUJ/h/state/nm-unset.status' >/dev/null 2>&1 || true; }`
+56,57c56,57
+<    For a no-mistakes ask-user gate specifically, escalate all ask-user findings as one event plus one snapshot file, using that same shape even when the gate holds only a single ask-user finding: write only the ask-user findings, verbatim and unparaphrased (id, severity, file, line, description, authority), to `/tmp/tmp.7U5igzcJUJ/hb/data/nm-unset/nm-<run>-findings.txt`, then report the gate with
+<    `needs-decision [at=<epoch>] [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/tmp/tmp.7U5igzcJUJ/hb/data/nm-unset/nm-<run>-findings.txt`
+---
+>    For a no-mistakes ask-user gate specifically, escalate all ask-user findings as one event plus one snapshot file, using that same shape even when the gate holds only a single ask-user finding: write only the ask-user findings, verbatim and unparaphrased (id, severity, file, line, description, authority), to `/tmp/tmp.7U5igzcJUJ/h/data/nm-unset/nm-<run>-findings.txt`, then report the gate with
+>    `needs-decision [at=<epoch>] [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/tmp/tmp.7U5igzcJUJ/h/data/nm-unset/nm-<run>-findings.txt`
+88,89c88,89
+< Firstmate steers you through durable message files in '/tmp/tmp.7U5igzcJUJ/hb/state/nm-unset.inbox'.
+< When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/tmp.7U5igzcJUJ/hb/state/nm-unset.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V`, read the complete contents of each record (including its final line even when it is not newline-terminated) and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/tmp.7U5igzcJUJ/hb/state/nm-unset.inbox'/NNN.msg '/tmp/tmp.7U5igzcJUJ/hb/state/nm-unset.inbox'/handled/`.
+---
+> Firstmate steers you through durable message files in '/tmp/tmp.7U5igzcJUJ/h/state/nm-unset.inbox'.
+> When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/tmp.7U5igzcJUJ/h/state/nm-unset.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V`, read the complete contents of each record (including its final line even when it is not newline-terminated) and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/tmp.7U5igzcJUJ/h/state/nm-unset.inbox'/NNN.msg '/tmp/tmp.7U5igzcJUJ/h/state/nm-unset.inbox'/handled/`.
+95c95
+< A correction edits only the wrong text: do not run `/tmp/tmp.7U5igzcJUJ/bin/fm-ensure-agents-md.sh`, create either file, or add sections, headings, or pointers alongside it.
+---
+> A correction edits only the wrong text: do not run `{run-worktree}/bin/fm-ensure-agents-md.sh`, create either file, or add sections, headings, or pointers alongside it.
+### diff new-unset vs new-set (nm)
+103a104
+> This task's PR closes issue #8504: pass `--closes 8504` on every `no-mistakes axi run` that starts a run, so the PR body keeps its closing reference.
+### diff base-unset vs new-unset (man)
+27c27
+< 2. Keep project edits inside this worktree; keep proof and scratch output outside it, under `/tmp/tmp.7U5igzcJUJ/hb/data/man-unset/` or a temporary directory.
+---
+> 2. Keep project edits inside this worktree; keep proof and scratch output outside it, under `/tmp/tmp.7U5igzcJUJ/h/data/man-unset/` or a temporary directory.
+32c32
+<    `echo "{state} [at=<epoch>]: {one short line}" >> '/tmp/tmp.7U5igzcJUJ/hb/state/man-unset.status' && { [ ! -e '/tmp/tmp.7U5igzcJUJ/hb/config/fleet-ledger' ] || '/tmp/tmp.7U5igzcJUJ/bin/fm-fleet-ledger.sh' appended '/tmp/tmp.7U5igzcJUJ/hb/config' '/tmp/tmp.7U5igzcJUJ/hb/state/man-unset.status' >/dev/null 2>&1 || true; }`
+---
+>    `echo "{state} [at=<epoch>]: {one short line}" >> '/tmp/tmp.7U5igzcJUJ/h/state/man-unset.status' && { [ ! -e '/tmp/tmp.7U5igzcJUJ/h/config/fleet-ledger' ] || '{run-worktree}/bin/fm-fleet-ledger.sh' appended '/tmp/tmp.7U5igzcJUJ/h/config' '/tmp/tmp.7U5igzcJUJ/h/state/man-unset.status' >/dev/null 2>&1 || true; }`
+56,57c56,57
+<    For a no-mistakes ask-user gate specifically, escalate all ask-user findings as one event plus one snapshot file, using that same shape even when the gate holds only a single ask-user finding: write only the ask-user findings, verbatim and unparaphrased (id, severity, file, line, description, authority), to `/tmp/tmp.7U5igzcJUJ/hb/data/man-unset/nm-<run>-findings.txt`, then report the gate with
+<    `needs-decision [at=<epoch>] [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/tmp/tmp.7U5igzcJUJ/hb/data/man-unset/nm-<run>-findings.txt`
+---
+>    For a no-mistakes ask-user gate specifically, escalate all ask-user findings as one event plus one snapshot file, using that same shape even when the gate holds only a single ask-user finding: write only the ask-user findings, verbatim and unparaphrased (id, severity, file, line, description, authority), to `/tmp/tmp.7U5igzcJUJ/h/data/man-unset/nm-<run>-findings.txt`, then report the gate with
+>    `needs-decision [at=<epoch>] [key=nm-<run>-<step>]: ask-user findings=<id1>,<id2>,... file=/tmp/tmp.7U5igzcJUJ/h/data/man-unset/nm-<run>-findings.txt`
+88,89c88,89
+< Firstmate steers you through durable message files in '/tmp/tmp.7U5igzcJUJ/hb/state/man-unset.inbox'.
+< When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/tmp.7U5igzcJUJ/hb/state/man-unset.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V`, read the complete contents of each record (including its final line even when it is not newline-terminated) and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/tmp.7U5igzcJUJ/hb/state/man-unset.inbox'/NNN.msg '/tmp/tmp.7U5igzcJUJ/hb/state/man-unset.inbox'/handled/`.
+---
+> Firstmate steers you through durable message files in '/tmp/tmp.7U5igzcJUJ/h/state/man-unset.inbox'.
+> When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list them with `find '/tmp/tmp.7U5igzcJUJ/h/state/man-unset.inbox' -maxdepth 1 -name '*.msg' 2>/dev/null | sort -V`, read the complete contents of each record (including its final line even when it is not newline-terminated) and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/tmp.7U5igzcJUJ/h/state/man-unset.inbox'/NNN.msg '/tmp/tmp.7U5igzcJUJ/h/state/man-unset.inbox'/handled/`.
+95c95
+< A correction edits only the wrong text: do not run `/tmp/tmp.7U5igzcJUJ/bin/fm-ensure-agents-md.sh`, create either file, or add sections, headings, or pointers alongside it.
+---
+> A correction edits only the wrong text: do not run `{run-worktree}/bin/fm-ensure-agents-md.sh`, create either file, or add sections, headings, or pointers alongside it.
+### diff new-unset vs new-set (man)
+105a106
+> This task's PR closes issue #8504: put a plain `Closes #8504` line in the PR body you write.
+### --closes=8504 form vs --closes 8504
+IDENTICAL

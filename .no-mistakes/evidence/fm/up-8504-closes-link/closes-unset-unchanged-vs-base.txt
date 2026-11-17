@@ -1,0 +1,4 @@
+### base 427056c4 vs this change, no --closes (nm), paths normalized
+BYTE-IDENTICAL
+### base 427056c4 vs this change, no --closes (man), paths normalized
+BYTE-IDENTICAL
