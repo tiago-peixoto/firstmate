@@ -1,0 +1,150 @@
+
+===== SCENARIO: gate on: interrupted turn (no ack) - result must repeat =====
+--- first: fm-wake-drain.sh
+exit=0
+stdout| 1794957317	1	signal	result.status	signal: result.status
+stdout| wake annotation: latest wake-EVENT observed at drain, not current state: result.status: done: UNIQUE_COMPLETED_RESULT
+stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+stdout| result done: UNIQUE_COMPLETED_RESULT
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1978333.1794957317.qCedVg
+--- second: fm-wake-drain.sh
+exit=0
+stdout| 1794957317	1	signal	result.status	signal: result.status
+stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+stdout| result done: UNIQUE_COMPLETED_RESULT
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1978333.1794957317.qCedVg
+--- third: fm-wake-drain.sh
+exit=0
+stdout| 1794957317	1	signal	result.status	signal: result.status
+stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+stdout| result done: UNIQUE_COMPLETED_RESULT
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1978333.1794957317.qCedVg
+--- run printed ack from third: fm-wake-drain.sh --ack-through 1 --recovery-generation 1978333.1794957317.qCedVg
+exit=0
+--- after-ack: fm-wake-drain.sh
+exit=0
+--- after-ack-again: fm-wake-drain.sh
+exit=0
+
+===== SCENARIO: gate on: first stdout to /dev/null, no ack - result must still appear =====
+--- first: fm-wake-drain.sh
+exit=0
+(stdout sent to /dev/null)
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1991358.1794957328.XgPicX
+--- second: fm-wake-drain.sh
+exit=0
+stdout| 1794957328	1	signal	result.status	signal: result.status
+stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+stdout| result done: UNIQUE_COMPLETED_RESULT
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1991358.1794957328.XgPicX
+
+===== SCENARIO: DEFAULT home (no config/result-replay): one-shot presentation unchanged =====
+--- first: fm-wake-drain.sh
+exit=0
+stdout| 1794957332	1	signal	result.status	signal: result.status
+stdout| wake annotation: latest wake-EVENT observed at drain, not current state: result.status: done: UNIQUE_COMPLETED_RESULT
+stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+stdout| result done: UNIQUE_COMPLETED_RESULT
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1996340.1794957332.9aj4jF
+--- second: fm-wake-drain.sh
+exit=0
+stdout| 1794957332	1	signal	result.status	signal: result.status
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 1996340.1794957332.9aj4jF
+receipt file:
+result^Istrong:44:115415589:2026-11-18 00:15:32.690022101 +0100^I30^I30$
+--- run printed ack from second: fm-wake-drain.sh --ack-through 1 --recovery-generation 1996340.1794957332.9aj4jF
+exit=0
+--- after-ack: fm-wake-drain.sh
+exit=0
+
+===== SCENARIO: gate on: empty queue completion gets an ack command, repeats, then silent =====
+--- first: fm-wake-drain.sh
+exit=0
+stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+stdout| quiet done: finished without a queued signal
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2004977.1794957340.IXnUCl
+--- second: fm-wake-drain.sh
+exit=0
+stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+stdout| quiet done: finished without a queued signal
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2004977.1794957340.IXnUCl
+--- run printed ack from second: fm-wake-drain.sh --ack-through 0 --recovery-generation 2004977.1794957340.IXnUCl
+exit=0
+--- after-ack: fm-wake-drain.sh
+exit=0
+
+===== SCENARIO: gate on, adversarial: earlier partial ack must not retire row 2's result =====
+--- first: fm-wake-drain.sh
+exit=0
+stdout| 1794957345	1	signal	early.status	signal: early.status
+stdout| wake annotation: latest wake-EVENT observed at drain, not current state: early.status: working: row one
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2015056.1794957345.cJYV08
+--- second: fm-wake-drain.sh
+exit=0
+stdout| 1794957345	1	signal	early.status	signal: early.status
+stdout| 1794957348	2	signal	late.status	signal: late.status
+stdout| wake annotation: latest wake-EVENT observed at drain, not current state: late.status: done: row two result
+stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+stdout| late done: row two result
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 2015056.1794957345.cJYV08
+--- run printed ack from first: fm-wake-drain.sh --ack-through 1 --recovery-generation 2015056.1794957345.cJYV08
+exit=0
+--- third: fm-wake-drain.sh
+exit=0
+stdout| 1794957348	2	signal	late.status	signal: late.status
+stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+stdout| late done: row two result
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 2015056.1794957345.cJYV08
+--- run printed ack from third: fm-wake-drain.sh --ack-through 2 --recovery-generation 2015056.1794957345.cJYV08
+exit=0
+--- fourth: fm-wake-drain.sh
+exit=0
+
+===== SCENARIO: gate on: bounded replay - 6 results in one task =====
+--- first: fm-wake-drain.sh
+exit=0
+stdout| 1794957355	1	signal	many.status	signal: many.status
+stdout| wake annotation: unread wake-EVENT since last drain, not current state: many.status: done: result 1
+stdout| wake annotation: unread wake-EVENT since last drain, not current state: many.status: done: result 2
+stdout| wake annotation: unread wake-EVENT since last drain, not current state: many.status: done: result 3
+stdout| wake annotation: unread wake-EVENT since last drain, not current state: many.status: done: result 4
+stdout| wake annotation: unread wake-EVENT since last drain, not current state: many.status: done: result 5
+stdout| wake annotation: latest wake-EVENT observed at drain, not current state: many.status: done: result 6
+stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+stdout| many done: result 6
+stdout| UNHANDLED RESULTS: 2 older result(s) for many exceed the replay bound and will not repeat; read its status log.
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2032473.1794957355.SRyk1f
+--- second: fm-wake-drain.sh
+exit=0
+stdout| 1794957355	1	signal	many.status	signal: many.status
+stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+stdout| many done: result 3
+stdout| many done: result 4
+stdout| many done: result 5
+stdout| many done: result 6
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2032473.1794957355.SRyk1f
+
+===== SCENARIO: gate on: ordinary note stays one-shot =====
+--- first: fm-wake-drain.sh
+exit=0
+stdout| UNREAD STATUS (new since last drain, not re-printed after this presentation):
+stdout| notes note: captain said use REST
+--- second: fm-wake-drain.sh
+exit=0
+
+===== SCENARIO: gate on, adversarial: filtered consumer acks a stale generation / wrong generation =====
+--- first: fm-wake-drain.sh
+exit=0
+stdout| 1794957364	1	signal	g.status	signal: g.status
+stdout| wake annotation: latest wake-EVENT observed at drain, not current state: g.status: done: guarded result
+stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+stdout| g done: guarded result
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 2046110.1794957364.RAVaDO
+--- ack with a wrong generation
+ack| wake drain: acknowledged wakes through 1 (1 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_ACK_REQUIRED command
+exit=0
+--- second: fm-wake-drain.sh
+exit=0
+stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+stdout| g done: guarded result
+stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2046110.1794957364.RAVaDO
