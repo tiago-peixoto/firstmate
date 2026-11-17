@@ -1,0 +1,39 @@
+before warm-up tick rc=0
+before 20 ticks rc=0
+before: fork/vfork/clone/clone3/execve calls over 20 ticks = 19920 (per tick about 996, per hour at 240 ticks about 239040)
+before: execve by program:
+   1440 tail
+   1440 grep
+   1440 cut
+    640 readlink
+    640 cat
+    400 rm
+    241 uname
+    160 rmdir
+    160 mv
+    160 mktemp
+    160 mkdir
+    160 ln
+     80 stat
+     60 awk
+after warm-up tick rc=0
+after 20 ticks rc=0
+after: fork/vfork/clone/clone3/execve calls over 20 ticks = 11280 (per tick about 564, per hour at 240 ticks about 135360)
+after: execve by program:
+    640 readlink
+    640 cat
+    400 rm
+    241 uname
+    160 rmdir
+    160 mv
+    160 mktemp
+    160 mkdir
+    160 ln
+     80 stat
+     60 awk
+     40 cksum
+      4 dirname
+      1 bash
+--- state written by both versions (scan signatures hold inode and mtime, so they are masked):
+IDENTICAL: 161 lines across 9 files
+phases after:       2 phase=awaiting_report       3 phase=resolved 

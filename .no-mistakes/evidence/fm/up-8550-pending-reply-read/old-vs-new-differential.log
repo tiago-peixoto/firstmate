@@ -1,0 +1,6 @@
+bash 5.3.9(1)-release LC_ALL=C reads=48 differences=0
+bash 5.3.9(1)-release LC_ALL=C.utf8 reads=48 differences=0
+bash 5.3.9(1)-release LC_ALL=en_US.utf8 reads=48 differences=0
+bash 3.2.57(2)-release LC_ALL=C reads=48 differences=0
+bash 3.2.57(2)-release LC_ALL=C.utf8 reads=48 differences=0
+bash 3.2.57(2)-release LC_ALL=en_US.utf8 reads=48 differences=0

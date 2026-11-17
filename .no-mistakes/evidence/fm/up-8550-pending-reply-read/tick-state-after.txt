@@ -1,0 +1,161 @@
+== ./mate/.fm-secondmate-home
+hibit
+== ./mate/.fm-secondmate-parent
+schema=fm-secondmate-parent.v1
+route=local
+parent_home=/tmp/fm-tick.kNbGY0/home
+== ./state/hibit.meta
+window=sess:fm-hibit
+endpoint_task_id=hibit
+worktree=/tmp/fm-tick.kNbGY0/home/mate
+project=/tmp/fm-tick.kNbGY0/home/mate
+harness=echo
+kind=secondmate
+mode=secondmate
+yolo=off
+home=/tmp/fm-tick.kNbGY0/home/mate
+projects=alpha
+== ./state/hibit.status
+done [corr=c134a884ff946558]: finished 3
+done [corr=4e2d7912cd224517]: finished 4
+done [corr=f2d5b60d61051098]: finished 5
+== ./state/pending-replies/1b8a69c44443cb30
+schema=fm-pending-reply.v1
+corr_id=1b8a69c44443cb30
+task_id=hibit
+parent_home=/tmp/fm-tick.kNbGY0/home
+parent_status=/tmp/fm-tick.kNbGY0/home/state/hibit.status
+request_summary=request number 2 with a=b and café
+created_epoch=5500
+phase=awaiting_report
+request_turn_completed_epoch=
+recovery_attempted_epoch=
+recovery_sender_pid=
+recovery_sender_identity=
+recovery_sent_epoch=
+recovery_delivery_outcome=
+recovery_turn_seen_busy=0
+recovery_turn_completed_epoch=
+escalated_epoch=
+resolved_epoch=
+resolved_via=
+wrong_home_hits=0
+wrong_home_first_sighting=
+wrong_home_sightings=
+grace_secs=120
+delivered_epoch=5500
+parent_status_scan_signature=<masked>
+wrong_home_scan_signature=<masked>
+turn_seen_busy=1
+== ./state/pending-replies/4e2d7912cd224517
+schema=fm-pending-reply.v1
+corr_id=4e2d7912cd224517
+task_id=hibit
+parent_home=/tmp/fm-tick.kNbGY0/home
+parent_status=/tmp/fm-tick.kNbGY0/home/state/hibit.status
+parent_status_scan_signature=<masked>
+request_summary=request number 4 with a=b and café
+created_epoch=5500
+turn_seen_busy=0
+request_turn_completed_epoch=
+recovery_attempted_epoch=
+recovery_sender_pid=
+recovery_sender_identity=
+recovery_sent_epoch=
+recovery_delivery_outcome=
+recovery_turn_seen_busy=0
+recovery_turn_completed_epoch=
+escalated_epoch=
+wrong_home_hits=0
+wrong_home_first_sighting=
+wrong_home_sightings=
+wrong_home_scan_signature=<masked>
+grace_secs=120
+delivered_epoch=5500
+phase=resolved
+resolved_epoch=5500
+resolved_via=status
+== ./state/pending-replies/735976c669a21f6f
+schema=fm-pending-reply.v1
+corr_id=735976c669a21f6f
+task_id=hibit
+parent_home=/tmp/fm-tick.kNbGY0/home
+parent_status=/tmp/fm-tick.kNbGY0/home/state/hibit.status
+request_summary=request number 1 with a=b and café
+created_epoch=5500
+phase=awaiting_report
+request_turn_completed_epoch=
+recovery_attempted_epoch=
+recovery_sender_pid=
+recovery_sender_identity=
+recovery_sent_epoch=
+recovery_delivery_outcome=
+recovery_turn_seen_busy=0
+recovery_turn_completed_epoch=
+escalated_epoch=
+resolved_epoch=
+resolved_via=
+wrong_home_hits=0
+wrong_home_first_sighting=
+wrong_home_sightings=
+grace_secs=120
+delivered_epoch=5500
+parent_status_scan_signature=<masked>
+wrong_home_scan_signature=<masked>
+turn_seen_busy=1
+== ./state/pending-replies/c134a884ff946558
+schema=fm-pending-reply.v1
+corr_id=c134a884ff946558
+task_id=hibit
+parent_home=/tmp/fm-tick.kNbGY0/home
+parent_status=/tmp/fm-tick.kNbGY0/home/state/hibit.status
+parent_status_scan_signature=<masked>
+request_summary=request number 3 with a=b and café
+created_epoch=5500
+turn_seen_busy=0
+request_turn_completed_epoch=
+recovery_attempted_epoch=
+recovery_sender_pid=
+recovery_sender_identity=
+recovery_sent_epoch=
+recovery_delivery_outcome=
+recovery_turn_seen_busy=0
+recovery_turn_completed_epoch=
+escalated_epoch=
+wrong_home_hits=0
+wrong_home_first_sighting=
+wrong_home_sightings=
+wrong_home_scan_signature=<masked>
+grace_secs=120
+delivered_epoch=5500
+phase=resolved
+resolved_epoch=5500
+resolved_via=status
+== ./state/pending-replies/f2d5b60d61051098
+schema=fm-pending-reply.v1
+corr_id=f2d5b60d61051098
+task_id=hibit
+parent_home=/tmp/fm-tick.kNbGY0/home
+parent_status=/tmp/fm-tick.kNbGY0/home/state/hibit.status
+parent_status_scan_signature=<masked>
+request_summary=request number 5 with a=b and café
+created_epoch=5500
+turn_seen_busy=0
+request_turn_completed_epoch=
+recovery_attempted_epoch=
+recovery_sender_pid=
+recovery_sender_identity=
+recovery_sent_epoch=
+recovery_delivery_outcome=
+recovery_turn_seen_busy=0
+recovery_turn_completed_epoch=
+escalated_epoch=
+wrong_home_hits=0
+wrong_home_first_sighting=
+wrong_home_sightings=
+wrong_home_scan_signature=<masked>
+grace_secs=120
+delivered_epoch=5500
+phase=resolved
+resolved_epoch=5500
+resolved_via=status
