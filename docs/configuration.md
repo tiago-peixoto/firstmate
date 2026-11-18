@@ -840,7 +840,8 @@ A conflict and an author action each wake once per latest commit, and a missing 
 A failing check wakes once per latest commit and check name, so a check that newly fails at an already reported commit wakes once more while an already reported check never repeats.
 A maintainer-gated suite is recorded once per latest commit and workflow name.
 A home owns a PR it recorded, linked, or observed before, and the open PR on a live task copy's current branch, drafts and adopted branches included, until the PR merges or closes.
-When that branch PR belongs to a direct-PR ship task with no recorded PR, the monitor records it through `bin/fm-pr-check.sh` and so arms its merge poll, whatever the worker's ready report says; a draft stays unrecorded until it is marked ready.
+When that branch PR belongs to a direct-PR ship task with no recorded PR, or with that PR recorded but no valid merge poll, the monitor records it through `bin/fm-pr-check.sh` and so arms its merge poll, whatever the worker's ready report says.
+A draft stays unrecorded until it is marked ready, and a PR whose merge was already reported or whose poll was retired is never recorded again.
 A PR URL that only appears in a task's status lines is not owned.
 Retiring a contribution with `bin/fm-contributions.sh retire` ends that task's ownership for the monitor too, and the branch lookup does not reclaim it.
 When a durable contribution record cannot be read, the monitor reports that once, reads nothing and keeps its fingerprints until the record is readable again.
