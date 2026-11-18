@@ -1,0 +1,2 @@
+none (LC_ALL=C cmd then 5 x $(/bin/echo)): parents losing all 5 = 0/400, total 139 statuses = 0
+langc (LC_ALL=C cmd then 5 x $(/bin/echo)): parents losing all 5 = 0/400, total 139 statuses = 0
