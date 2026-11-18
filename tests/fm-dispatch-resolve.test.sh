@@ -188,7 +188,11 @@ if [ "${1:-}" = auth ]; then
   exit 0
 fi
 [ "${1:-}" = --json ] || exit 2
-cat "${QUOTA_AXI_FIXTURE:?}"
+# Like the real tool, only --full names each account's accountLocator.
+case " $* " in
+  *" --full "*) cat "${QUOTA_AXI_FIXTURE:?}" ;;
+  *) jq 'del(.providers[]?.accountLocator)' "${QUOTA_AXI_FIXTURE:?}" ;;
+esac
 SH
 chmod +x "$FAKEBIN/quota-axi"
 
@@ -1777,7 +1781,7 @@ assert_contains "$out" 'candidate: pi:openai-codex-work/gpt-5.6-terra  provider=
 assert_contains "$out" 'candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=0%  spendPriority=-  runway=exhausted_now  -> not eligible: runway exhausted_now at all_models' "the sibling lane reads its own exhausted row"
 assert_contains "$out" 'candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty' "native Codex never infers an account from a Pi lane"
 assert_contains "$out" "  profile: --harness 'pi' --model 'openai-codex-work/gpt-5.6-terra'" "the lane with headroom is chosen"
-assert_equals $'--json\nauth --json' "$(cat "$LOG/quota-axi.calls")" "schema 6 reads quota once and the Pi sign-in sources once"
+assert_equals $'--json --full\nauth --json' "$(cat "$LOG/quota-axi.calls")" "schema 6 reads quota once and the Pi sign-in sources once"
 
 # The server groups the Pi sign-in with native Codex, unlike the Mac.
 SOURCE_AUTH="$TMP_ROOT/source-auth.json"
@@ -1889,12 +1893,61 @@ assert_contains "$out" '  reason: quota-axi --json returned an invalid snapshot'
 cp "$BASE_RULES" "$RULES"
 pass "schema 6: each candidate binds to its account row; schema 5 is unchanged"
 
+# --- schema 6: a Claude candidate binds to its launch directory's account -------
+# With QUOTA_AXI_CLAUDE_PROFILES set, quota-axi reports one claude row per Claude
+# config directory, each keyed by an opaque profile digest and located only by
+# --full's accountLocator. A claude candidate binds to the row for the directory
+# its launch uses, so it is ranked against a low-runway Codex candidate.
+CLAUDE_WORK_DIR="$TMP_ROOT/claude-work"
+CLAUDE_OTHER_DIR="$TMP_ROOT/claude-other"
+CLAUDE_LANES="$TMP_ROOT/claude-lanes.json"
+mkdir -p "$CLAUDE_WORK_DIR" "$CLAUDE_OTHER_DIR"
+jq -n --arg personal "$HOME_DIR/.claude" --arg work "$CLAUDE_WORK_DIR" '{
+  generatedAt: "2030-01-01T00:00:00Z", schemaVersion: 6, providers: [
+    {provider: "claude", accountKey: "profile:aaaa1111", accountLocator: {kind: "config-dir", path: $personal},
+     quotaSemantics: {status: "known", effectiveAvailability: [
+       {scope: "all_models", status: "known", effectivePercentRemaining: 68, runway: {status: "through_reset"}, selection: {spendPriority: 12.4659}}]}},
+    {provider: "claude", accountKey: "profile:bbbb2222", accountLocator: {kind: "config-dir", path: $work},
+     quotaSemantics: {status: "known", effectiveAvailability: [
+       {scope: "all_models", status: "known", effectivePercentRemaining: 25, runway: {status: "projected_exhaustion"}, selection: {spendPriority: -0.6673}}]}},
+    {provider: "codex", accountKey: "codex-home",
+     quotaSemantics: {status: "known", effectiveAvailability: [
+       {scope: "all_models", status: "known", effectivePercentRemaining: 5, runway: {status: "projected_exhaustion"}, selection: {spendPriority: -3.2}}]}}]}' > "$CLAUDE_LANES"
+jq -n '{rules: [{when: "Claude or Codex work.", use: [{harness: "claude", model: "opus"}, {harness: "codex", model: "gpt-5.6-sol"}]}]}' > "$RULES"
+cat > "$RESPONSE" <<'JSON'
+{ "model": "jev-1.13.0",
+  "answers": { "rule": { "type": "choice", "choice": "rule_1", "confidence": 0.9,
+    "probabilities": { "rule_1": 0.97, "default": 0.03 } } },
+  "usage": { "input_tokens": 812, "output_tokens": 60 } }
+JSON
+run_claude_lanes() {  # <pin file content, or empty for no pin> [CLAUDE_CONFIG_DIR]
+  rm -f "$HOME_DIR/config/claude-account"
+  [ -z "$1" ] || printf '%s\n' "$1" > "$HOME_DIR/config/claude-account"
+  reset_log
+  # An empty CLAUDE_CONFIG_DIR is the unset default to fm-spawn.sh as well.
+  CLAUDE_CONFIG_DIR=${2:-} HOME=$HOME_DIR TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$CLAUDE_LANES" run code out err "$BRIEF"
+}
+run_claude_lanes ''
+expect_code 0 "$code" "two Claude accounts exit 0"
+assert_contains "$out" 'candidate: claude:opus  provider=claude  scope=all_models  remaining=68%  spendPriority=12.4659  runway=through_reset  -> eligible' "an unpinned home binds claude to the ~/.claude account row"
+assert_contains "$out" "  profile: --harness 'claude' --model 'opus'" "the ranked Claude account beats a low-runway Codex account"
+run_claude_lanes "$CLAUDE_WORK_DIR"
+assert_contains "$out" 'candidate: claude:opus  provider=claude  scope=all_models  remaining=25%  spendPriority=-0.6673  runway=projected_exhaustion  -> eligible' "a pinned home binds claude to its pinned account row"
+run_claude_lanes '' "$CLAUDE_WORK_DIR/"
+assert_contains "$out" 'remaining=25%  spendPriority=-0.6673' "an unpinned launch binds the CLAUDE_CONFIG_DIR it forwards, trailing slash included"
+run_claude_lanes "$CLAUDE_OTHER_DIR"
+assert_contains "$out" "candidate: claude:opus  provider=claude  -> eligible, unranked: provider claude has no quota row for config directory $CLAUDE_OTHER_DIR: disclosed uncertainty" "a directory with no account row stays unranked"
+assert_contains "$out" "  profile: --harness 'codex' --model 'gpt-5.6-sol'" "an unbound Claude candidate is never ranked"
+rm -f "$HOME_DIR/config/claude-account"
+cp "$BASE_RULES" "$RULES"
+pass "schema 6: a Claude candidate binds to the account of the config directory its launch uses"
+
 # --- quota-axi is read exactly once --------------------------------------------
 reset_log
 write_response "$RESPONSE" rule_4 0.9
 TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
 expect_code 0 "$code" "quota-axi path exits 0"
-assert_equals '--json' "$(cat "$LOG/quota-axi.calls")" "quota-axi --json is called exactly once"
+assert_equals '--json --full' "$(cat "$LOG/quota-axi.calls")" "quota-axi --json --full is called exactly once"
 assert_contains "$out" "  profile: --harness 'cursor' --model 'cursor-grok-4.6-medium'" "quota-axi snapshot drives the argmax"
 reset_log
 TYPESAFE_API_KEY=$KEY FAKE_QUOTA_FAIL=1 run code out err "$BRIEF"
