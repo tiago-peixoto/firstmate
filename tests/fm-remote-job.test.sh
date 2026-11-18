@@ -66,6 +66,7 @@ printf ' <%s>' "$@"
 printf '\n'
 if [ -n "${TOP_SECRET:-}" ]; then printf 'secret=leaked\n'; else printf 'secret=absent\n'; fi
 printf 'user=%s\nlogname=%s\n' "${USER-<unset>}" "${LOGNAME-<unset>}"
+printf 'lang=%s\nlc_all=%s\n' "${LANG-<unset>}" "${LC_ALL-<unset>}"
 while IFS= read -r line || [ -n "$line" ]; do printf 'stdin=%s\n' "$line"; done
 exit "${FM_PROBE_EXIT:-0}"
 SH
@@ -366,6 +367,12 @@ assert_contains "$OUT" 'stdin=second line' "the worker lost staged stdin"
 assert_contains "$OUT" 'secret=absent' "ambient environment crossed into the worker child"
 assert_contains "$OUT" 'user=fm-test-user' "the worker did not pass USER to the child"
 assert_contains "$OUT" 'logname=fm-test-login' "the worker did not pass LOGNAME to the child"
+# No locale at all makes a gettext-linked bash ask CoreFoundation for one, and
+# on macOS a child forked after that lookup can die in the command
+# substitution that ran its command. LANG, not LC_ALL, so a child can still
+# override one category.
+assert_contains "$OUT" 'lang=C' "the worker did not give the child a locale"
+assert_contains "$OUT" 'lc_all=<unset>' "the worker forced every locale category on the child"
 case "$OUT" in *"$REMOTE_ROOT/bin:$ACCOUNT_HOME/.local/bin:"*) : ;; *) fail "worker PATH omitted its fixed root and account head" ;; esac
 fm_remote_job_reap "$ACCOUNT_HOME" "$JOB_ID" || fail "the completed job could not be reaped"
 assert_absent "$JOB_DIR" "reap retained a completed job record"

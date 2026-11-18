@@ -71,9 +71,10 @@
 #
 # The worker accepts only a tracked, non-symlink executable named fm-*.sh below
 # its configured FM_ROOT/bin. Every child receives env -i with the composed
-# PATH, HOME, FM_HOME, FM_ROOT_OVERRIDE, and FM_REMOTE_JOB_ACTIVE=1, plus USER
-# and LOGNAME when they are nonempty in the worker's environment, and the
-# validated XDG_RUNTIME_DIR when available. The PATH
+# PATH, HOME, FM_HOME, FM_ROOT_OVERRIDE, FM_REMOTE_JOB_ACTIVE=1, and LANG=C,
+# plus USER and LOGNAME when they are nonempty in the worker's environment, and
+# the validated XDG_RUNTIME_DIR when available. LANG=C states the locale an
+# empty environment already implies, so a child never has to discover one. The PATH
 # is intentionally filesystem-discovered rather than login-shell-derived:
 # ~/.local/bin; nvm, asdf, and mise shims/install bins; Nix; Homebrew; and the
 # system tail. No shell startup files are evaluated. Each discovered set is
