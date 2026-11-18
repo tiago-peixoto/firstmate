@@ -1,0 +1,20 @@
+## control: direct-PR ship on its branch, open ready PR 12, no pr= recorded
+  monitor output: ''
+  pr= line: pr=https://github.com/o/r/pull/12
+  merge poll armed: yes
+## E: poll retired after a reported merge (retirement record for PR 12), pr= kept
+  monitor output: ''
+  pr= line: pr=https://github.com/o/r/pull/12
+  merge poll armed: no
+## F: direct-PR copy has moved off the PR branch (now on other-work)
+  monitor output: ''
+  pr= line: none
+  merge poll armed: no
+## G: scout-kind task (not a ship) in direct-PR mode on the branch
+  monitor output: ''
+  pr= line: none
+  merge poll armed: no
+## E control: same pr= recorded, no poll, no retirement record
+  monitor output: ''
+  pr= line: pr=https://github.com/o/r/pull/12
+  merge poll armed: yes

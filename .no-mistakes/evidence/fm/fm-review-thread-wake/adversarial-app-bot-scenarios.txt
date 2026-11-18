@@ -1,0 +1,37 @@
+## A: human inline comment, user type User, association NONE
+pending: []
+wake rows: 
+## B: bot comment already answered by the author before first observation; then the bot replies again in that thread
+pending: []
+wake rows: 
+-- bot follows up in the same thread after the author reply
+pending: [{"source":"https://github.com/o/r/pull/8#discussion_r73","author":"coderabbitai[bot]","review_bot":true}]
+wake rows: 1
+## C: unlisted bot posts a review body (not inline) and an issue comment
+pending: []
+wake rows: 
+## D: unanswered bot thread that the forge reports resolved (reply re-raise configured so threads are read)
+pending: []
+wake rows: 
+## A: human inline comment, user type User, association NONE
+pending: []
+wake rows: 
+## B: bot comment already answered by the author before first observation; then the bot replies again in that thread
+pending: []
+wake rows: 
+-- bot follows up in the same thread after the author reply
+pending: [{"source":"https://github.com/o/r/pull/8#discussion_r73","author":"coderabbitai[bot]","review_bot":true}]
+wake rows: 1
+## C: unlisted bot posts a review body (not inline) and an issue comment
+pending: []
+wake rows: 
+## D: unanswered bot thread that the forge reports resolved (reply re-raise configured so threads are read)
+pending: []
+wake rows: 
+## D control: bot thread 91 reported isResolved=false
+contribution-wake: check: contributions delivery 1c8513f207fd7ea0b7a2a89b890bff9be1b76dfbaa237072efcbbdc46efe7cda
+pending: [{"source":"https://github.com/o/r/pull/8#discussion_r91","author":"coderabbitai[bot]","review_bot":true}]
+wake rows: 1
+## D control: bot thread 91 reported isResolved=true
+pending: []
+wake rows: 
