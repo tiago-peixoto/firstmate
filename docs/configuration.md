@@ -1615,6 +1615,9 @@ The diagnostic names the accepted values; Firstmate never falls back to a permis
 
 `bin/fm-spawn.sh` reads the file on every spawn and relaunch, so a change takes effect at the next launch without a restart.
 Both approval-mode files follow the primary-authoritative [`secondmate-provisioning`](../.agents/skills/secondmate-provisioning/SKILL.md) inherited-local-material contract.
+T3 Code owns its provider command and always uses `full-access`, so `backend=t3code` accepts the default `bypass` posture and refuses `auto` before mutation; [`t3code-backend.md`](t3code-backend.md#active-limits) owns that backend limit.
+
+The [Claude adapter reference](../.agents/skills/harness-adapters/references/harness/claude.md) records the permission-mode observations and the distinct startup dialogs.
 
 ### Per-secondmate permission mode
 
@@ -1627,9 +1630,6 @@ Removing the file restores the inherited value at the next propagation.
 A present file that is not a regular file fails that propagation and leaves the home's current mode unchanged, never falling back to the primary's value.
 The secondmate home validates the token at its next spawn, exactly as it validates an inherited one.
 For example, `config/secondmate-accounts/oss/claude-permission-mode` containing `auto` trials auto mode in the secondmate named `oss` only.
-T3 Code owns its provider command and always uses `full-access`, so `backend=t3code` accepts the default `bypass` posture and refuses `auto` before mutation; [`t3code-backend.md`](t3code-backend.md#active-limits) owns that backend limit.
-
-The [Claude adapter reference](../.agents/skills/harness-adapters/references/harness/claude.md) records the permission-mode observations and the distinct startup dialogs.
 
 ## Codex permission mode (config/codex-permission-mode)
 
