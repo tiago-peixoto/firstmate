@@ -1,0 +1,5 @@
+silent other.1.result -> exit 1
+silent remote-reply-ios.abc.result -> exit 1
+silent remote-reply-ios.2.result -> exit 1
+silent missing.result -> exit 1
+9:  fm-procevent-remote-reply.sh silent <result-file>
