@@ -7,10 +7,10 @@
 # account queue, refuses symlinks and malformed records, and executes only a
 # tracked non-symlink fm-*.sh under this worker's configured FM_ROOT/bin.
 #
-# Each child runs under env -i with the shared filesystem-composed PATH, HOME,
-# FM_HOME, FM_ROOT_OVERRIDE, and FM_REMOTE_JOB_ACTIVE=1. Commands receive their
-# captured stdin and have a 360-second default timeout. Their stdout and stderr
-# are independently constrained to the job library's 1048576-byte bound. A
+# The shared library header owns the child environment contract. Commands
+# receive their captured stdin and have a 360-second default timeout. Their
+# stdout and stderr are independently constrained to the job library's
+# 1048576-byte bound. A
 # record is marked done only after its bounded outputs and numeric exit status
 # have been committed. The library header owns the exact record fields and
 # lifecycle.
@@ -869,7 +869,7 @@ worker_capture_output() { # <fifo> <destination>
 
 worker_run_job() { # <account-home> <job-dir>
   local account_home=$1 job=$2 root home command command_path git_bin rc deadline remaining
-  local stdout_pipe stderr_pipe stdout_reader stderr_reader preemptible=0
+  local stdout_pipe stderr_pipe stdout_reader stderr_reader runtime_dir preemptible=0
   local -a argv child_env
   root=$(worker_read_text "$job" root 8192) || { worker_publish_result "$job" 126; return; }
   home=$(worker_read_text "$job" home 8192) || { worker_publish_result "$job" 126; return; }
@@ -918,6 +918,11 @@ worker_run_job() { # <account-home> <job-dir>
   for command in stdin stdout stderr; do
     [ -f "$job/$command" ] && [ ! -L "$job/$command" ] || { worker_publish_result "$job" 126; return; }
   done
+  runtime_dir=$(fm_remote_job_runtime_dir "$account_home" 2>>"$job/stderr") || {
+    printf 'error: unsafe remote runtime directory\n' >> "$job/stderr"
+    worker_publish_result "$job" 126
+    return
+  }
   stdout_pipe="$job/.stdout.pipe"
   stderr_pipe="$job/.stderr.pipe"
   [ ! -e "$stdout_pipe" ] && [ ! -L "$stdout_pipe" ] && [ ! -e "$stderr_pipe" ] && [ ! -L "$stderr_pipe" ] || {
@@ -942,9 +947,15 @@ worker_run_job() { # <account-home> <job-dir>
     "FM_ROOT_OVERRIDE=$root"
     FM_REMOTE_JOB_ACTIVE=1
   )
+  if [ -n "$runtime_dir" ]; then
+    child_env+=("XDG_RUNTIME_DIR=$runtime_dir")
+  fi
   if [ -n "${FM_REMOTE_JOB_PLATFORM_OVERRIDE:-}" ]; then
     child_env+=("FM_REMOTE_JOB_PLATFORM_OVERRIDE=$FM_REMOTE_JOB_PLATFORM_OVERRIDE")
   fi
+  # macOS credential lookups (claude auth status) key on the login identity.
+  [ -z "${USER:-}" ] || child_env+=("USER=$USER")
+  [ -z "${LOGNAME:-}" ] || child_env+=("LOGNAME=$LOGNAME")
   remaining=$((deadline - $(date +%s)))
   [ "$remaining" -gt 0 ] || {
     worker_cleanup_output_capture "$job" "$stdout_reader" "$stderr_reader"

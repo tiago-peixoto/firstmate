@@ -34,7 +34,7 @@ PARENT_ROUTE_INBOX="$REMOTE_HOME/state/parent-route/ios.inbox"
 CLAIMS="$TMP_ROOT/claims"
 mkdir -p "$PARENT/data" "$PARENT/state" "$PARENT/config" "$PARENT/projects" "$REMOTE_ROOT" "$CLAIMS"
 cleanup() {
-  local worker_pid=''
+  local result=$? worker_pid=''
   touch "$TMP_ROOT/provision.release" "$TMP_ROOT/seed.release" "$TMP_ROOT/handoff.release" \
     "$TMP_ROOT/inherit.release" "$TMP_ROOT/launch.release" "$TMP_ROOT/race-clone.release" 2>/dev/null || true
   # A watcher leg cut short by a failed assertion is still polling the root.
@@ -51,7 +51,11 @@ cleanup() {
     . "$ROOT/bin/fm-remote-job-lib.sh"
     fm_remote_job_stop_worker_tree "$worker_pid" || true
   fi
-  fm_test_remove_tree "$TMP_ROOT"
+  if [ "$result" -eq 0 ]; then
+    fm_test_remove_tree "$TMP_ROOT"
+  else
+    printf 'Retained failed lifecycle fixture: %s\n' "$TMP_ROOT" >&2
+  fi
 }
 trap cleanup EXIT
 
@@ -107,6 +111,7 @@ SH
 chmod +x "$REMOTE_ROOT/bin/tmux"
 install_remote_herdr_fixture "$REMOTE_ROOT" "$HERDR_STATE" "$HERDR_LOG" \
   "$TMP_ROOT/herdr-send-fail" "$TMP_ROOT/herdr.sock"
+: > "$HERDR_LOG"
 git -C "$REMOTE_ROOT" init -q -b main
 git -C "$REMOTE_ROOT" config user.email test@example.com
 git -C "$REMOTE_ROOT" config user.name Test
@@ -133,13 +138,22 @@ cat > "$PARENT/data/projects.md" <<EOF
 - alpha [direct-PR] - alpha project (added 2026-08-02)
 EOF
 printf 'codex\n' > "$PARENT/config/secondmate-harness"
-printf 'tmux\n' > "$PARENT/config/backend"
+printf 'herdr\n' > "$PARENT/config/backend"
 printf 'primary harness defaults\n' > "$PARENT/config/crew-harness"
 
 cat > "$FAKEBIN/fake-ssh" <<'SH'
 #!/usr/bin/env bash
-count=$(cat "$FM_FAKE_SSH_COUNT" 2>/dev/null || echo 0)
-printf '%s\n' "$((count + 1))" > "$FM_FAKE_SSH_COUNT"
+# A live remote-reply source re-reads the reply log in the background after
+# every wait window and every preemption, so counting its reads lets each
+# "no remote call" check race it. Only that source runs fm-remote-delta-read.sh.
+# Its argv (name, then NUL) base64-encodes to exactly this prefix.
+case " $* " in
+  *" Zm0tcmVtb3RlLWRlbHRhLXJlYWQuc2gA"*) ;;
+  *)
+    count=$(cat "$FM_FAKE_SSH_COUNT" 2>/dev/null || echo 0)
+    printf '%s\n' "$((count + 1))" > "$FM_FAKE_SSH_COUNT"
+    ;;
+esac
 while [ "$#" -gt 0 ]; do
   case "$1" in -o) shift 2 ;; --) shift; break ;; *) exit 90 ;; esac
 done
@@ -222,17 +236,15 @@ if [ "${FM_FAKE_SSH_MODE:-normal}" = doctor-fixable ] \
   printf 'unreadable\n'
   exit 0
 fi
-case "${FM_FAKE_SSH_MODE:-normal}:$command_name:$command_rel" in
-  launch-nonherdr-route:fm-remote-secondmate-control.sh:*)
-    [ "$_command_action" = launch ] || exit 93
+case "${FM_FAKE_SSH_MODE:-normal}:$command_name:$_command_action" in
+  launch-nonherdr-route:fm-remote-secondmate-control.sh:launch)
     printf 'schema=fm-remote-secondmate-control.v1\n'
     printf 'backend=tmux\n'
     printf 'target=firstmate:fm-ios\n'
     printf 'harness=codex\n'
     exit 0
     ;;
-  launch-default-session-route:fm-remote-secondmate-control.sh:*)
-    [ "$_command_action" = launch ] || exit 93
+  launch-default-session-route:fm-remote-secondmate-control.sh:launch)
     printf 'schema=fm-remote-secondmate-control.v1\n'
     printf 'backend=herdr\n'
     printf 'target=default:w1:p2\n'
@@ -240,8 +252,7 @@ case "${FM_FAKE_SSH_MODE:-normal}:$command_name:$command_rel" in
     printf 'harness=codex\n'
     exit 0
     ;;
-  launch-rex-bad-server-route:fm-remote-secondmate-control.sh:*)
-    [ "$_command_action" = launch ] || exit 93
+  launch-rex-bad-server-route:fm-remote-secondmate-control.sh:launch)
     printf 'schema=fm-remote-secondmate-control.v1\n'
     printf 'backend=rex\n'
     printf 'target=00000001-0000-7000-8000-000000000002:00000002-0000-7000-8000-000000000003\n'
@@ -250,8 +261,7 @@ case "${FM_FAKE_SSH_MODE:-normal}:$command_name:$command_rel" in
     printf 'harness=codex\n'
     exit 0
     ;;
-  launch-rex-mismatched-route:fm-remote-secondmate-control.sh:*)
-    [ "$_command_action" = launch ] || exit 93
+  launch-rex-mismatched-route:fm-remote-secondmate-control.sh:launch)
     printf 'schema=fm-remote-secondmate-control.v1\n'
     printf 'backend=rex\n'
     printf 'target=99999999-0000-7000-8000-000000000009:00000002-0000-7000-8000-000000000003\n'
@@ -265,8 +275,7 @@ case "${FM_FAKE_SSH_MODE:-normal}:$command_name:$command_rel" in
     while [ ! -f "$FM_FAKE_SEED_RELEASE" ]; do sleep 0.02; done
     exit 1
     ;;
-  launch-block:fm-remote-secondmate-control.sh:*)
-    [ "$_command_action" = launch ] || exit 93
+  launch-block:fm-remote-secondmate-control.sh:launch)
     touch "$FM_FAKE_LAUNCH_ENTERED"
     while [ ! -f "$FM_FAKE_LAUNCH_RELEASE" ]; do sleep 0.02; done
     ;;
@@ -882,6 +891,25 @@ EOF
 remote_env "$ROOT/bin/fm-home-seed.sh" validate >/dev/null || fail "mixed local and remote registry validation failed"
 pass "mixed local and remote routes validate without migration"
 
+# Creating a secondmate in this Herdr fleet must refuse a receiving home that
+# selects tmux before inheritance can rewrite it or any endpoint exists.
+printf 'tmux\n' > "$REMOTE_HOME/config/backend"
+cp "$HERDR_STATE" "$TMP_ROOT/herdr-before-runtime-conflict.json"
+if remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate > "$TMP_ROOT/spawn-runtime-conflict.out" 2>&1; then
+  fail "remote secondmate creation accepted inherited tmux in a Herdr fleet"
+fi
+assert_grep 'selects tmux, requested herdr; refusing runtime change' "$TMP_ROOT/spawn-runtime-conflict.out" \
+  "remote creation did not identify the receiving runtime conflict"
+[ "$(cat "$REMOTE_HOME/config/backend")" = tmux ] || fail "refusal rewrote the remote runtime"
+assert_absent "$REMOTE_HOME/state/fleet-backend" "refusal bound the remote home"
+assert_absent "$PARENT/state/fleet-backend" "refusal bound the parent home"
+assert_absent "$REMOTE_HOME/state/parent-route/ios.meta" "refusal published a remote endpoint"
+assert_absent "$PARENT/state/ios.meta" "refusal published a parent endpoint"
+cmp -s "$HERDR_STATE" "$TMP_ROOT/herdr-before-runtime-conflict.json" \
+  || fail "refused runtime conflict created a Herdr endpoint"
+printf 'herdr\n' > "$REMOTE_HOME/config/backend"
+pass "remote creation refuses a receiving tmux runtime without binding, migrating, or creating an endpoint"
+
 # Launch on the remote home's own configured backend. Parent metadata records
 # host placement separately from that backend and arms the reply source.
 printf 'pi\n' > "$PARENT/config/crew-harness"
@@ -996,7 +1024,7 @@ remote_env "$ROOT/bin/fm-on.sh" ios fm-remote-secondmate-control.sh launch ios c
 legacy_alive_rc=$?
 set -e
 [ "$legacy_alive_rc" -ne 0 ] || fail "remote control reused an alive legacy tmux endpoint"
-assert_grep "endpoint is recorded on backend 'tmux', expected 'herdr'" "$TMP_ROOT/legacy-alive-refusal.out" \
+assert_grep "endpoint is recorded on backend 'tmux'" "$TMP_ROOT/legacy-alive-refusal.out" \
   "remote refusal did not name the endpoint's recorded backend"
 cmp -s "$TMP_ROOT/remote-ios-legacy-before-refusal.meta" "$remote_route_meta" \
   || fail "remote refusal changed the legacy endpoint metadata"
@@ -1173,8 +1201,8 @@ if [ ! -f "$NUDGE_MARKER" ]; then
 fi
 assert_grep 'remote=1' "$NUDGE_MARKER" "remote config reread marker lost its placement"
 chmod 755 "$PARENT_ROUTE_INBOX"
-remote_env "$ROOT/bin/fm-config-push.sh" > "$TMP_ROOT/config-push-retry.out" \
-  || fail "unchanged remote config push did not retry its pending reread"
+remote_env "$ROOT/bin/fm-config-push.sh" > "$TMP_ROOT/config-push-retry.out" 2>&1 \
+  || fail "unchanged remote config push did not retry its pending reread: $(cat "$TMP_ROOT/config-push-retry.out")"
 assert_absent "$NUDGE_MARKER" "successful remote config reread left its retry marker"
 assert_grep 'config-reread: sent' "$TMP_ROOT/config-push-retry.out" "remote config reread retry was not reported"
 CONFIG_CORR=$(newest_remote_inbox_corr)
@@ -1317,6 +1345,8 @@ cp "$PARENT/state/ios.meta" "$WATCH_STATE/ios.meta"
 # lives beside the task record, so the dedicated watch state needs the real
 # one; otherwise the pushed payload reads as superseded on the remote home.
 cp "$PARENT/state/.remote-inherit-ios.generation" "$WATCH_STATE/" 2>/dev/null || true
+# Recovery inherits into the bound child, so the watch state keeps the fleet pin.
+cp "$PARENT/state/fleet-backend" "$WATCH_STATE/fleet-backend"
 touch "$WATCH_STATE/home-summary.json"
 
 # A graceful agent exit leaves the pane with no registered agent - the exact
@@ -1428,7 +1458,7 @@ pass "watch liveness: an unreachable remote secondmate is probed, preserved, and
 # the live endpoint through the accepted client.
 make_herdr_client_pair "$TMP_ROOT/client-pair" 0.7.1 14 0.7.5 16
 export FM_HERDR_PAIR_DIR="$TMP_ROOT/client-pair"
-SHADOWED_STATE=$(FM_HOME="$REMOTE_HOME" FM_ROOT_OVERRIDE="$REMOTE_ROOT" \
+SHADOWED_STATE=$(FM_HOME="$REMOTE_HOME" FM_ROOT_OVERRIDE="$REMOTE_ROOT" FM_REMOTE_JOB_PLATFORM_OVERRIDE=Linux \
   PATH="$TMP_ROOT/client-pair/stale:$REMOTE_ROOT/bin:$TMP_ROOT/client-pair/tools:/usr/bin:/bin" \
   "$REMOTE_ROOT/bin/fm-remote-secondmate-control.sh" state ios 2>"$TMP_ROOT/shadowed-state.err")
 [ "$SHADOWED_STATE" = alive ] \
@@ -1471,59 +1501,44 @@ mv -f "$TMP_ROOT/remote-ios-before-liveness-legacy.meta" "$remote_route_meta"
 rm -f "$TMUX_STATE"
 pass "startup reports alive legacy backends without changing their routes"
 
-# A remote may instead run a rex second mate on that host's persistent personal
-# rex server: the parent asks for the backend explicitly, and the remote home's
-# own control script launches, states, and reports the rex route.
-remote_route_meta="$REMOTE_HOME/state/parent-route/ios.meta"
-cp "$remote_route_meta" "$TMP_ROOT/remote-ios-before-rex.meta"
-cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-before-rex.meta"
-
 # A remote still on the herdr-only doctor exits 2 on --backend: a herdr request
 # retries bare, a rex request does not, because that remote cannot run rex.
 FM_FAKE_SSH_MODE=doctor-old remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend herdr >/dev/null \
   || fail "a herdr spawn did not survive the old remote doctor's --backend refusal"
 assert_grep 'remote_backend=herdr' "$PARENT/state/ios.meta" \
   "the old-doctor herdr spawn did not record its backend"
-cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-before-old-rex.meta"
-if FM_FAKE_SSH_MODE=doctor-old remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend rex \
-  >"$TMP_ROOT/spawn-rex-old-doctor.out" 2>&1; then
-  fail "a rex spawn was accepted by a remote too old to select its backend"
-fi
-assert_grep 'not ready' "$TMP_ROOT/spawn-rex-old-doctor.out" \
-  "the old-doctor rex refusal did not come from readiness"
-cmp -s "$TMP_ROOT/parent-ios-before-old-rex.meta" "$PARENT/state/ios.meta" \
-  || fail "the refused rex spawn rewrote the recorded route"
-
-# An explicit backend outside {herdr, rex} is refused before any remote call.
+# A bound Herdr fleet cannot switch one secondmate to another runtime.
 ssh_before=$(cat "$SSH_COUNT")
-if remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend tmux >"$TMP_ROOT/spawn-tmux-backend.out" 2>&1; then
-  fail "an unknown remote backend was accepted"
-fi
-assert_grep 'runs only on the herdr or rex backend' "$TMP_ROOT/spawn-tmux-backend.out" \
-  "an unknown remote backend did not fail with the backend refusal"
-[ "$(cat "$SSH_COUNT")" = "$ssh_before" ] || fail "an unknown remote backend still made a remote call"
+cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-before-runtime-conflict.meta"
+for conflicting_backend in tmux rex hc; do
+  if remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend "$conflicting_backend" \
+    > "$TMP_ROOT/spawn-fleet-conflict.out" 2>&1; then
+    fail "a Herdr fleet accepted a $conflicting_backend secondmate"
+  fi
+  assert_grep "fleet uses herdr; refusing task runtime $conflicting_backend" "$TMP_ROOT/spawn-fleet-conflict.out" \
+    "the parent did not identify the fleet runtime conflict"
+  cmp -s "$TMP_ROOT/parent-ios-before-runtime-conflict.meta" "$PARENT/state/ios.meta" \
+    || fail "a refused runtime change rewrote the parent route"
+done
+[ "$(cat "$SSH_COUNT")" = "$ssh_before" ] || fail "a refused fleet runtime change made a remote call"
+pass "a Herdr fleet refuses conflicting secondmate runtimes before remote access"
 
-# A rex route reply that breaks the contract at the parent boundary is refused
-# and leaves the recorded route untouched: a non-local server, or a target
-# whose session half is not the reported session.
-cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-pre-launch.meta"
-if FM_FAKE_SSH_MODE=launch-rex-bad-server-route remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend rex \
-  >"$TMP_ROOT/spawn-rex-bad-server.out" 2>&1; then
-  fail "a rex route naming a non-local server was accepted"
-fi
-assert_grep 'malformed Rex route metadata' "$TMP_ROOT/spawn-rex-bad-server.out" \
-  "a non-local rex server route did not fail with the rex metadata refusal"
-cmp -s "$TMP_ROOT/parent-ios-pre-launch.meta" "$PARENT/state/ios.meta" \
-  || fail "a refused rex server route rewrote the recorded route"
-if FM_FAKE_SSH_MODE=launch-rex-mismatched-route remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend rex \
-  >"$TMP_ROOT/spawn-rex-mismatched.out" 2>&1; then
-  fail "a rex route whose target did not match its session was accepted"
-fi
-assert_grep 'malformed Rex route metadata' "$TMP_ROOT/spawn-rex-mismatched.out" \
-  "a session-mismatched rex route did not fail with the rex metadata refusal"
-cmp -s "$TMP_ROOT/parent-ios-pre-launch.meta" "$PARENT/state/ios.meta" \
-  || fail "a refused rex session route rewrote the recorded route"
-pass "remote secondmate backend selection is strict on both sides of the boundary"
+# Rex is a separate fleet, not a runtime migration of the live Herdr home.
+rex_lifecycle() {
+local project_registry="$PARENT/data/projects.md"
+local PARENT="$TMP_ROOT/rex-parent" REMOTE_HOME="$TMP_ROOT/rex-home"
+local PARENT_ROUTE_INBOX="$REMOTE_HOME/state/parent-route/ios.inbox" remote_route_meta
+mkdir -p "$PARENT/config" "$PARENT/data" "$PARENT/state" "$PARENT/projects"
+cp "$project_registry" "$PARENT/data/projects.md"
+printf 'rex\n' > "$PARENT/config/backend"
+printf 'codex\n' > "$PARENT/config/secondmate-harness"
+printf 'pi\n' > "$PARENT/config/crew-harness"
+FM_SECONDMATE_CHARTER='Own isolated Rex lifecycle validation.' \
+  FM_SECONDMATE_SCOPE='Rex lifecycle' \
+  remote_env "$ROOT/bin/fm-remote-home-seed.sh" ios remote-mac "$REMOTE_ROOT" "$REMOTE_HOME" \
+  "alpha=file://$TMP_ROOT/alpha.git" > "$TMP_ROOT/seed-rex.out" 2>&1 \
+  || fail "could not seed the separate Rex fleet: $(cat "$TMP_ROOT/seed-rex.out")"
+remote_route_meta="$REMOTE_HOME/state/parent-route/ios.meta"
 
 # The remote host itself launches on rex: with no recorded endpoint (a
 # never-launched route) the remote control script runs the host-local spawn on
@@ -1552,6 +1567,55 @@ assert_contains "$route" 'backend=rex' "the remote route did not report rex"
 assert_contains "$route" 'rex_session_id=session:' "the remote route did not report its rex session"
 assert_contains "$route" 'rex_server=unix://' "the remote route did not report its rex server"
 pass "the remote control plane launches, states, and reports a rex route"
+
+cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-before-old-rex.meta"
+cp "$PARENT/data/secondmates.md" "$TMP_ROOT/rex-registry-before-launch.md"
+if FM_FAKE_SSH_MODE=doctor-old remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend rex \
+  >"$TMP_ROOT/spawn-rex-old-doctor.out" 2>&1; then
+  fail "a rex spawn was accepted by a remote too old to select its backend"
+fi
+assert_grep 'not ready' "$TMP_ROOT/spawn-rex-old-doctor.out" \
+  "the old-doctor rex refusal did not come from readiness"
+cmp -s "$TMP_ROOT/parent-ios-before-old-rex.meta" "$PARENT/state/ios.meta" \
+  || fail "the refused rex spawn rewrote the recorded route"
+cmp -s "$TMP_ROOT/rex-registry-before-launch.md" "$PARENT/data/secondmates.md" \
+  || fail "the refused rex spawn rewrote the registry"
+
+# An unsupported remote backend still fails before transport in an unbound fleet.
+ssh_before=$(cat "$SSH_COUNT")
+if remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend tmux >"$TMP_ROOT/spawn-tmux-backend.out" 2>&1; then
+  fail "an unsupported remote backend was accepted"
+fi
+assert_grep "not 'tmux'" "$TMP_ROOT/spawn-tmux-backend.out" \
+  "an unsupported remote backend did not fail with the backend refusal"
+[ "$(cat "$SSH_COUNT")" = "$ssh_before" ] || fail "an unsupported remote backend still made a remote call"
+
+# A rex route reply that breaks the contract at the parent boundary is refused
+# and leaves the recorded route untouched: a non-local server, or a target
+# whose session half is not the reported session.
+cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-pre-launch.meta"
+cp "$PARENT/data/secondmates.md" "$TMP_ROOT/parent-ios-pre-launch.registry"
+if FM_FAKE_SSH_MODE=launch-rex-bad-server-route remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend rex \
+  >"$TMP_ROOT/spawn-rex-bad-server.out" 2>&1; then
+  fail "a rex route naming a non-local server was accepted"
+fi
+assert_grep 'malformed Rex route metadata' "$TMP_ROOT/spawn-rex-bad-server.out" \
+  "a non-local rex server route did not fail with the rex metadata refusal"
+cmp -s "$TMP_ROOT/parent-ios-pre-launch.meta" "$PARENT/state/ios.meta" \
+  || fail "a refused rex route rewrote metadata"
+cmp -s "$TMP_ROOT/parent-ios-pre-launch.registry" "$PARENT/data/secondmates.md" \
+  || fail "a refused rex server route rewrote the recorded route"
+if FM_FAKE_SSH_MODE=launch-rex-mismatched-route remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend rex \
+  >"$TMP_ROOT/spawn-rex-mismatched.out" 2>&1; then
+  fail "a rex route whose target did not match its session was accepted"
+fi
+assert_grep 'malformed Rex route metadata' "$TMP_ROOT/spawn-rex-mismatched.out" \
+  "a session-mismatched rex route did not fail with the rex metadata refusal"
+cmp -s "$TMP_ROOT/parent-ios-pre-launch.meta" "$PARENT/state/ios.meta" \
+  || fail "a refused rex route rewrote metadata"
+cmp -s "$TMP_ROOT/parent-ios-pre-launch.registry" "$PARENT/data/secondmates.md" \
+  || fail "a refused rex session route rewrote the recorded route"
+pass "remote secondmate backend selection is strict on both sides of the boundary"
 
 # A rex route pinned to a server that is not this host's local unix socket is
 # refused by every verb and classified unverified by the state probe.
@@ -1666,9 +1730,10 @@ done
   || fail "the rex agent did not survive refused retirement"
 pass "rex retirement refuses server drift and unreadable or unreachable identity without closing or deleting"
 
-mv -f "$TMP_ROOT/remote-ios-before-rex.meta" "$remote_route_meta"
-mv -f "$TMP_ROOT/parent-ios-before-rex.meta" "$PARENT/state/ios.meta"
-pass "a remote secondmate may run on rex with strict route validation both ways"
+remote_env "$ROOT/bin/fm-procevent.sh" sweep-home >/dev/null 2>&1 || true
+}
+(rex_lifecycle) || fail "the separate Rex fleet lifecycle failed"
+pass "a separate remote fleet runs on rex with strict route validation both ways"
 
 # Host loss never creates a local replacement. Remove both the published ledger
 # and its parent-side cache so the structured-home read degrades explicitly;

@@ -31,7 +31,8 @@
 set -eu
 
 PROTOCOL=1
-DOCTOR_SHA256=763dcf669b8107a2756c04e8203b92ec828abe7df83e72486ddd09d126dc97db
+# Generated: rerun bin/fm-remote-doctor-digest.py after editing bin/fm-remote-doctor.sh.
+DOCTOR_SHA256=a611cba0ad62a39904fd4e50e23fde934e3d39261438336f039af35691571d71
 REAL_SOURCE=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "${BASH_SOURCE[0]}" 2>/dev/null) ||
   REAL_SOURCE=$(realpath "${BASH_SOURCE[0]}" 2>/dev/null) ||
   REAL_SOURCE=${BASH_SOURCE[0]}
@@ -153,6 +154,7 @@ else
 fi
 if [ "$COMMAND" = fm-remote-doctor.sh ]; then
   fm_remote_job_build_child_path "$ROOT" >/dev/null
+  RUNTIME_DIR=$(fm_remote_job_runtime_dir "$ACCOUNT_HOME") || die "unsafe remote runtime directory"
   DOCTOR_ENV=(
     /usr/bin/env -i
     "PATH=$FM_REMOTE_JOB_CHILD_PATH"
@@ -161,6 +163,9 @@ if [ "$COMMAND" = fm-remote-doctor.sh ]; then
     "FM_ROOT_OVERRIDE=$ROOT"
     FM_REMOTE_DOCTOR_BOOTSTRAP=1
   )
+  if [ -n "$RUNTIME_DIR" ]; then
+    DOCTOR_ENV+=("XDG_RUNTIME_DIR=$RUNTIME_DIR")
+  fi
   if [ -n "${FM_REMOTE_JOB_PLATFORM_OVERRIDE:-}" ]; then
     DOCTOR_ENV+=("FM_REMOTE_JOB_PLATFORM_OVERRIDE=$FM_REMOTE_JOB_PLATFORM_OVERRIDE")
   fi

@@ -40,7 +40,8 @@
 # that slot now. So a slot goes to the longest waiter rather than the fastest
 # poller. A ticket not refreshed for the stale bound is ignored, so a waiter
 # that died cannot hold up the queue; a working holder is never preempted.
-#   run      waits until the 1-minute load is at or below --load and a listed
+#   run      executes a command whose first word is boat directly, without a
+#            local slot or load check. Otherwise, waits until the 1-minute load is at or below --load and a listed
 #            slot can be claimed, trying the slots in the order given, runs the
 #            command with that slot held, releases it when the command ends, and
 #            exits with the command's status. The owner pid is this wrapper's
@@ -156,6 +157,10 @@ case "$MODE" in
 esac
 if [ "$MODE" = run ]; then
   [ "$#" -ge 1 ] || die_usage "run needs a command after --"
+  if [ "$1" = boat ]; then
+    echo "fm-heavy-slot: remote run needs no local slot" >&2
+    exec "$@"
+  fi
 elif [ "$#" -gt 0 ]; then
   die_usage "$MODE takes no command"
 fi

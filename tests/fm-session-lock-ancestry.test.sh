@@ -52,6 +52,30 @@ lib_eval() {  # <fakebin> <expression>
   " "$LIB"
 }
 
+test_status_reports_unknown_without_changing_lock() {
+  local dir out status
+  dir="$TMP_ROOT/status-unknown"
+  mkdir -p "$dir/state"
+  printf '%s\n' "$$" > "$dir/state/.lock"
+  printf 'retained-session\n' > "$dir/state/.lock-session"
+  cp "$dir/state/.lock" "$dir/lock.before"
+  cp "$dir/state/.lock-session" "$dir/session.before"
+
+  if out=$(FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" bash "$ROOT/bin/fm-lock.sh" status 2>&1); then
+    status=0
+  else
+    status=$?
+  fi
+  expect_code 0 "$status" "status must still exit zero for an unknown owner: $out"
+  [ "$out" = "lock: unknown (owner is not a verified live harness)" ] \
+    || fail "status mislabeled a live non-harness owner: $out"
+  cmp -s "$dir/lock.before" "$dir/state/.lock" \
+    || fail "status changed the lock contents"
+  cmp -s "$dir/session.before" "$dir/state/.lock-session" \
+    || fail "status changed the session sidecar contents"
+  pass "session-lock: unknown status exits zero and preserves the lock and session sidecar"
+}
+
 test_version_named_session_is_identified_on_both_platforms() {
   local dir fakebin shape got
   dir="$TMP_ROOT/version-named"
@@ -138,6 +162,20 @@ SH
   lib_eval "$fakebin" "fm_session_lock_owned_by_self '$dir/state'" \
     || fail "the session holding the lock at namespace pid 1 did not recognize itself as the owner"
   pass "session-lock: a harness that is pid 1 of its own namespace is examined, not skipped"
+}
+
+test_bun_run_omp_is_identified_on_both_platforms() {
+  local comm fakebin
+  fakebin=$(fm_fakebin "$TMP_ROOT/bun-omp")
+  # macOS reports the executable path in comm, procps on Linux the exec name.
+  for comm in bun /Users/u/.bun/bin/bun /opt/homebrew/bin/bun; do
+    lib_eval "$fakebin" "fm_harness_process_matches '$comm' 'bun /Users/u/.bun/bin/omp'" \
+      || fail "$comm running the omp launcher must be identified"
+    if lib_eval "$fakebin" "fm_harness_process_matches '$comm' 'bun /Users/u/.bun/bin/ompd'"; then
+      fail "$comm running ompd was identified as a harness"
+    fi
+  done
+  pass "session-lock: a bun-run omp script is identified under both platforms' comm reporting"
 }
 
 test_ordinary_paths_are_never_harness_processes() {
@@ -865,6 +903,7 @@ install_autoarm_scripts() {
   cp "$ROOT/bin/fm-wake-lib.sh" "$dir/bin/fm-wake-lib.sh"
   cp "$ROOT/bin/fm-path-lib.sh" "$dir/bin/fm-path-lib.sh"
   cp "$ROOT/bin/fm-session-lock-lib.sh" "$dir/bin/fm-session-lock-lib.sh"
+  cp "$ROOT/bin/fm-omp-process-lib.sh" "$dir/bin/fm-omp-process-lib.sh"
   cp "$ROOT/bin/fm-cursor-lib.sh" "$dir/bin/fm-cursor-lib.sh"
   # Launch probe sibling of fm-cursor-lib.sh; keep it next to the copy so a
   # fixture that ever verifies an executable does not source a missing file.
@@ -1642,8 +1681,10 @@ test_reanchor_keeps_autoarm_midturn_healthy() {
   pass "session-lock: a re-anchor during a rewake turn keeps the mid-turn auto-arm proof healthy"
 }
 
+test_status_reports_unknown_without_changing_lock
 test_version_named_session_is_identified_on_both_platforms
 test_harness_at_namespace_pid1_is_examined
+test_bun_run_omp_is_identified_on_both_platforms
 test_ordinary_paths_are_never_harness_processes
 test_harness_beyond_a_gap_never_owns_the_lock
 test_competing_version_named_session_is_seen_as_live

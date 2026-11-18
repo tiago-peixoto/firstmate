@@ -65,6 +65,7 @@ printf 'args:'
 printf ' <%s>' "$@"
 printf '\n'
 if [ -n "${TOP_SECRET:-}" ]; then printf 'secret=leaked\n'; else printf 'secret=absent\n'; fi
+printf 'user=%s\nlogname=%s\n' "${USER-<unset>}" "${LOGNAME-<unset>}"
 while IFS= read -r line || [ -n "$line" ]; do printf 'stdin=%s\n' "$line"; done
 exit "${FM_PROBE_EXIT:-0}"
 SH
@@ -128,6 +129,7 @@ SH
   [ -z "$legacy" ] || export FM_REMOTE_JOB_POLL_SECONDS="$legacy"
   # shellcheck disable=SC2030 # The active override is local to this cadence fixture.
   [ -z "$active" ] || export FM_REMOTE_JOB_ACTIVE_POLL_SECONDS="$active"
+  # shellcheck disable=SC2030 # Each cadence fixture owns its subshell environment.
   export FM_REMOTE_JOB_STATE_ROOT="$poll_dir/state" FM_ROOT_OVERRIDE="$REMOTE_ROOT"
   # shellcheck disable=SC2030 # Each cadence fixture owns its subshell's bounds.
   export FM_REMOTE_JOB_QUEUE_TIMEOUT=60 FM_REMOTE_JOB_TIMEOUT=30
@@ -318,7 +320,7 @@ rm -rf -- "$ACCOUNT_HOME/.local/share/mise"
 pass "operator PATH orders discovered tool installs deterministically"
 
 HOME="$ACCOUNT_HOME" PATH="$RUNTIME_BIN:/usr/bin:/bin:/usr/sbin:/sbin" FM_FAKE_PERL_LOG="$FAKE_PERL_LOG" \
-  FM_ROOT_OVERRIDE="$REMOTE_ROOT" FM_REMOTE_JOB_STATE_ROOT="$STATE_ROOT" \
+  USER=fm-test-user LOGNAME=fm-test-login FM_ROOT_OVERRIDE="$REMOTE_ROOT" FM_REMOTE_JOB_STATE_ROOT="$STATE_ROOT" \
   FM_REMOTE_JOB_PLATFORM_OVERRIDE=Linux FM_REMOTE_JOB_TIMEOUT=5 \
   "$REMOTE_ROOT/bin/fm-remote-job-worker.sh" > "$TMP_ROOT/worker.out" 2> "$TMP_ROOT/worker.err" &
 for _ in $(seq 1 100); do
@@ -362,11 +364,36 @@ assert_contains "$OUT" 'args: <two words> <$(not executed)>' "the worker changed
 assert_contains "$OUT" 'stdin=first line' "the worker lost staged stdin"
 assert_contains "$OUT" 'stdin=second line' "the worker lost staged stdin"
 assert_contains "$OUT" 'secret=absent' "ambient environment crossed into the worker child"
+assert_contains "$OUT" 'user=fm-test-user' "the worker did not pass USER to the child"
+assert_contains "$OUT" 'logname=fm-test-login' "the worker did not pass LOGNAME to the child"
 case "$OUT" in *"$REMOTE_ROOT/bin:$ACCOUNT_HOME/.local/bin:"*) : ;; *) fail "worker PATH omitted its fixed root and account head" ;; esac
 fm_remote_job_reap "$ACCOUNT_HOME" "$JOB_ID" || fail "the completed job could not be reaped"
 assert_absent "$JOB_DIR" "reap retained a completed job record"
 assert_absent "$FAKE_PERL_LOG" "the worker invoked an unavailable Perl runtime"
 pass "the worker preserves bounded argv and stdin in an empty environment"
+
+# A worker without USER or LOGNAME must not invent them: the child gets neither
+# variable, rather than empty strings a macOS credential lookup would misread.
+# The fixture runs as its own bash process, so the job library's variables never
+# enter this shell and the surrounding top-level assertions stay unaffected.
+IDENTITY_DIR="$TMP_ROOT/identity-unset"
+mkdir -p "$IDENTITY_DIR"
+cat > "$IDENTITY_DIR/run.sh" <<'SH'
+set -u
+. "$ROOT/bin/fm-remote-job-lib.sh"
+fm_remote_job_stage "$ACCOUNT_HOME" "$REMOTE_ROOT" "$REMOTE_HOME" fm-probe-job.sh </dev/null >/dev/null \
+  || { echo "$FM_REMOTE_JOB_ERROR" >&2; exit 1; }
+HOME="$ACCOUNT_HOME" "$BASH" "$REMOTE_ROOT/bin/fm-remote-job-worker.sh" --lane "$FM_REMOTE_JOB_ID" || exit 1
+fm_remote_job_wait "$ACCOUNT_HOME" "$FM_REMOTE_JOB_ID" || { echo "$FM_REMOTE_JOB_ERROR" >&2; exit 1; }
+cat "$FM_REMOTE_JOB_STDOUT"
+SH
+IDENTITY_OUT=$(env -u USER -u LOGNAME ROOT="$ROOT" ACCOUNT_HOME="$ACCOUNT_HOME" REMOTE_ROOT="$REMOTE_ROOT" \
+  REMOTE_HOME="$REMOTE_HOME" FM_REMOTE_JOB_STATE_ROOT="$IDENTITY_DIR/state" FM_ROOT_OVERRIDE="$REMOTE_ROOT" \
+  FM_REMOTE_JOB_QUEUE_TIMEOUT=60 FM_REMOTE_JOB_TIMEOUT=30 "$BASH" "$IDENTITY_DIR/run.sh") \
+  || fail "the identity-unset job did not complete"
+assert_contains "$IDENTITY_OUT" 'user=<unset>' "the worker invented USER for the child"
+assert_contains "$IDENTITY_OUT" 'logname=<unset>' "the worker invented LOGNAME for the child"
+pass "the worker passes USER and LOGNAME through only when set"
 
 ACTIVE_SIDE_EFFECT="$TMP_ROOT/active-side-effect"
 FM_REMOTE_JOB_TIMEOUT=10
@@ -1186,7 +1213,11 @@ for QUIET_TOOL in sleep chmod mktemp mv rm date stat uname dirname basename wc t
   QUIET_REAL=$(PATH=/usr/bin:/bin command -v "$QUIET_TOOL") || continue
   cat > "$QUIET_SHIM/$QUIET_TOOL" <<SH
 #!/bin/sh
-printf '%s\n' $QUIET_TOOL >> "\$FM_TEST_EXEC_LOG"
+if [ '$QUIET_TOOL' = sleep ]; then
+  printf 'sleep %s\n' "\$*" >> "\$FM_TEST_EXEC_LOG"
+else
+  printf '%s\n' $QUIET_TOOL >> "\$FM_TEST_EXEC_LOG"
+fi
 exec $QUIET_REAL "\$@"
 SH
   chmod +x "$QUIET_SHIM/$QUIET_TOOL"
@@ -1203,14 +1234,12 @@ quiet_wait_ready() { # <state> <label>
   done
   assert_present "$1/worker.ready" "the $2 worker did not become ready"
 }
-# Startup counts as activity, so wait out its short fast-poll window (slowed by
-# the shims themselves) before measuring the idle steady state.
-quiet_settle() { # <max-sleeps-per-window>
+# A slow initial sweep can produce no sleeps, so silence does not prove idle.
+quiet_settle() {
   local deadline=$((SECONDS + 30))
-  while [ "$SECONDS" -lt "$deadline" ]; do
-    : > "$QUIET_EXEC_LOG"
-    sleep 1.5
-    [ "$(grep -cx sleep "$QUIET_EXEC_LOG" || true)" -gt "$1" ] || break
+  until grep -qx 'sleep 1' "$QUIET_EXEC_LOG"; do
+    [ "$SECONDS" -lt "$deadline" ] || fail 'the worker did not enter its idle wait'
+    sleep 0.05
   done
   : > "$QUIET_EXEC_LOG"
 }
@@ -1218,7 +1247,7 @@ quiet_measure() { # <label> <max-sleeps>
   local execs sleeps
   sleep 4
   execs=$(wc -l < "$QUIET_EXEC_LOG" | tr -d ' ')
-  sleeps=$(grep -cx sleep "$QUIET_EXEC_LOG" || true)
+  sleeps=$(grep -c '^sleep ' "$QUIET_EXEC_LOG" || true)
   [ "$sleeps" -le "$2" ] \
     || fail "$1 kept polling with sleep ($sleeps sleeps in 4s)"
   # Allow the independent heartbeat's bounded ownership checks as well as
@@ -1267,7 +1296,7 @@ quiet_stop() { # <pid>
   wait "$1" 2>/dev/null || true
 }
 quiet_wait_ready "$QUIET_STATE" idle-rate
-quiet_settle 3
+quiet_settle
 quiet_measure "an idle worker" 6
 pass "an idle worker sleeps out a second between passes instead of busy-polling"
 
@@ -1443,7 +1472,7 @@ for SCAN_TOOL in wc tr tail; do
   [ "$SCAN_HITS" -eq 0 ] \
     || fail "the lane scan ran $SCAN_TOOL $SCAN_HITS times in a 4-second window"
 done
-[ "$(grep -cx sleep "$SCAN_EXEC_LOG" || true)" -gt 0 ] \
+[ "$(grep -c '^sleep ' "$SCAN_EXEC_LOG" || true)" -gt 0 ] \
   || fail "the lane stopped sampling during the window"
 [ "$(grep -cx 'child-stat' "$SCAN_CHILD_LOG" || true)" -gt 0 ] \
   || fail "the long poll stopped statting during the window"

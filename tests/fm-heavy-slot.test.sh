@@ -39,6 +39,25 @@ new_case() {
   S2="$CASE/fm-heavy-suite.lock-2"
 }
 
+test_boat_runs_without_local_capacity() {
+  local out rc
+  new_case remote
+  mkdir "$CASE/bin" "$S1"
+  printf 'task=other pid=-\n' > "$S1/owner"
+  printf 'unreadable load\n' > "$LOADAVG"
+  printf '#!/bin/sh\nprintf "<%%s>\\n" "$@"\nexit 7\n' > "$CASE/bin/boat"
+  chmod +x "$CASE/bin/boat"
+  out=$(PATH="$CASE/bin:$PATH" "$HELPER" run --task remote --load 14 --slot "$S1" --slot "$S2" -- boat exec sandbox -- 'two words' 2> "$CASE/err"); rc=$?
+  expect_code 7 "$rc" "boat must run even when local load cannot be read"
+  assert_equals $'<exec>\n<sandbox>\n<-->\n<two words>' "$out" "boat arguments changed"
+  assert_contains "$(cat "$CASE/err")" 'remote run needs no local slot' "boat bypass was not explained"
+  assert_equals 'task=other pid=-' "$(cat "$S1/owner")" "boat changed another task's claim"
+  assert_absent "$S2" "boat claimed a local slot"
+  assert_absent "$CASE/fm-heavy-slot-queue" "boat joined the local queue"
+  printf '1.00 1.00 1.00 1/100 1\n' > "$LOADAVG"
+  pass "fm-heavy-slot: boat bypasses local capacity and preserves arguments and exit status"
+}
+
 test_run_claims_a_directory_and_releases_it() {
   local out rc owner pid first
   new_case run-basic
@@ -509,6 +528,7 @@ test_clear_refuses_a_protected_macos_process() {
   pass "fm-heavy-slot: macOS refuses an old slot with a protected process even with --owner-ended"
 }
 
+test_boat_runs_without_local_capacity
 test_clear_refuses_a_protected_macos_process
 test_run_claims_a_directory_and_releases_it
 test_run_skips_slots_it_cannot_claim_and_never_touches_them

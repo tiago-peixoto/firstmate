@@ -53,12 +53,16 @@
 #   rule's declared `min_confidence` on that rule's probability, falling to the
 #   most probable other option that clears its own floor), the rule's declared
 #   `approval` and `floor`, each profile's declared `provider`, `quota_scope`, and `floor`, the
-#   quota rows from ONE quota-axi --json snapshot (schema 5 or 6; each
+#   quota rows from ONE quota-axi --json --full snapshot (schema 5 or 6; each
 #   candidate binds to one row through quota_row in
 #   bin/fm-quota-axi-lib.sh, with quota-axi auth --json resolving Pi Codex
 #   sign-ins to accounts when available, so openai-codex-work/...
-#   reads its own account's row and an expanded provider with no row for the
-#   candidate is unmeasured, never blocked), then the optional preferred_provider
+#   reads its own account's row, a claude candidate reading the row whose
+#   accountLocator names the config directory fm-spawn.sh would launch it
+#   under (the config/claude-account pin, else CLAUDE_CONFIG_DIR, else
+#   ~/.claude; none while config/claude-accounts is declared), and an expanded
+#   provider with no row for the candidate is unmeasured, never blocked), then
+#   the optional preferred_provider
 #   family restriction before spendPriority ranks the remaining candidates.
 #   An eligible but wholly unrankable preferred family escalates rather than
 #   authorizing another family.
@@ -100,6 +104,12 @@
 #     candidate: <harness>:<model> provider=.. scope=.. remaining=..% spendPriority=.. runway=.. -> eligible | eligible, unranked: <reason> | not eligible: <reason>
 #        (with the shared-quota opt-out: <harness>:<model> provider=.. -> eligible (quota ranking off: home declares a single shared quota))
 #     profile: --harness <h> [--model <m>] [--effort <e>]     (status clear only)
+#   Task record: for <data>/<id>/brief.md, where <data> is FM_DATA_OVERRIDE,
+#   else $FM_HOME/data, every run first removes
+#   <data>/<id>/dispatch-resolution.json, then every outcome except exit 2 writes
+#   {"task", "status" (clear, ambiguous, escalate, error, or off), "profile"}
+#   there; profile holds harness, model, and effort on clear and is null
+#   otherwise. fm-spawn.sh reads it as the task's dispatch decision.
 #   clear     -> pass the profile line to fm-spawn.sh unless you state a reason to override
 #   ambiguous -> confidence below the floor; decide as today from the probabilities
 #   escalate  -> the rule requires captain approval, no candidate is rankable, or a genuine tie
@@ -142,6 +152,8 @@ CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 
 # shellcheck source=bin/fm-quota-axi-lib.sh
 . "$SCRIPT_DIR/fm-quota-axi-lib.sh"
+# shellcheck source=bin/fm-worker-account-lib.sh
+. "$SCRIPT_DIR/fm-worker-account-lib.sh"
 # shellcheck source=bin/fm-control-lib.sh
 . "$SCRIPT_DIR/fm-control-lib.sh"
 # shellcheck source=bin/fm-env-lib.sh
@@ -165,12 +177,29 @@ OA_TIMEOUT=10
 DEFAULT_WHEN="No listed rule applies to this task."
 
 die() { printf 'error: %s\n' "$1" >&2; exit 2; }
+record_task() {
+  [ -n "$TASK_RECORD" ] || return 0
+  if ! { jq -cn --arg task "$TASK_ID" --arg status "$1" --argjson profile "${2:-null}" \
+      '{task: $task, status: $status, profile: $profile}' > "$TASK_RECORD.tmp.$$" \
+      && mv -f -- "$TASK_RECORD.tmp.$$" "$TASK_RECORD"; } 2>/dev/null; then
+    rm -f -- "$TASK_RECORD.tmp.$$"
+    echo "dispatch-resolve: could not write $TASK_RECORD" >&2
+    return 1
+  fi
+}
+resolver_off() {
+  echo "dispatch-resolve: off ($1)" >&2
+  record_task off || true
+  exit 0
+}
 no_rules() {
+  record_task escalate || true
   printf 'dispatch-resolve:\n  status: escalate\n  reason: no rules to match\n'
   exit 0
 }
 emit_error() {
   local reason=$1
+  record_task error || true
   echo "dispatch-resolve: error ($reason)" >&2
   printf 'dispatch-resolve:\n  status: error\n  reason: %s\n' "$reason"
   exit 0
@@ -198,6 +227,19 @@ while [ $# -gt 0 ]; do
     *) [ -z "$BRIEF" ] || die "one brief file only"; BRIEF=$1; shift ;;
   esac
 done
+TASK_ID='' TASK_RECORD=''
+# Matched against the same data directory fm-brief.sh and fm-spawn.sh use, so a
+# FM_DATA_OVERRIDE home records where fm-spawn.sh reads.
+task_dir=$(CDPATH='' cd -- "$(dirname -- "$BRIEF")" 2>/dev/null && pwd -P) || task_dir=''
+data_dir=$(CDPATH='' cd -- "${FM_DATA_OVERRIDE:-$FM_HOME/data}" 2>/dev/null && pwd -P) || data_dir=''
+if [ "$(basename -- "$BRIEF")" = brief.md ] && [ -n "$task_dir" ] && [ -n "$data_dir" ] \
+  && [ "$(dirname -- "$task_dir")" = "$data_dir" ]; then
+  TASK_ID=$(basename -- "$task_dir")
+  TASK_RECORD="$task_dir/dispatch-resolution.json"
+  if [ -e "$TASK_RECORD" ] || [ -L "$TASK_RECORD" ]; then
+    rm -f -- "$TASK_RECORD" || die "could not clear the previous dispatch resolution: $TASK_RECORD"
+  fi
+fi
 
 # ---- opt-in gate ---------------------------------------------------------------
 # declared_key <provider> <private variable>: set the variable from the source
@@ -236,8 +278,7 @@ select_key() {
   [ -n "${!var}" ] || printf -v "$var" '%s' "$(fmx_env_get "$name" "$FM_HOME/.env")"
   [ -n "${!var}" ] || declared_key "$provider" "$var"
   if [ -z "${!var}" ]; then
-    echo "dispatch-resolve: off ($name absent from the environment and $FM_HOME/.env)" >&2
-    exit 0
+    resolver_off "$name absent from the environment and $FM_HOME/.env"
   fi
 }
 
@@ -311,8 +352,7 @@ case "$DISPATCH_PROVIDER" in
     [ -n "$DISPATCH_MODEL" ] || die "FM_DISPATCH_MODEL required when FM_DISPATCH_PROVIDER=openai"
     [ -n "$OPENAI_API_KEY_PRIVATE" ] || OPENAI_API_KEY_PRIVATE=$(fmx_env_get OPENAI_API_KEY "$FM_HOME/.env")
     if [ -z "$OPENAI_API_KEY_PRIVATE" ]; then
-      echo "dispatch-resolve: off (OPENAI_API_KEY absent from the environment and $FM_HOME/.env)" >&2
-      exit 0
+      resolver_off "OPENAI_API_KEY absent from the environment and $FM_HOME/.env"
     fi
     ;;
   *) die "unknown FM_DISPATCH_PROVIDER: $DISPATCH_PROVIDER (expected typesafe, openrouter, systemone, or openai)" ;;
@@ -441,8 +481,7 @@ SEND_TEXT=$(mktemp) || { rm -f "$RESP_FILE" "$QUOTA" "$TASK_TEXT"; die "mktemp f
 trap 'rm -f "$RULES" "$RESP_FILE" "$QUOTA" "$TASK_TEXT" "$SEND_TEXT"' EXIT
 
 never_send_off() {
-  echo "dispatch-resolve: off ($1; nothing sent)" >&2
-  exit 0
+  resolver_off "$1; nothing sent"
 }
 
 # Checks the endpoint and every string the final request body carries,
@@ -595,7 +634,7 @@ jq -e --slurpfile rules "$RULES" '
        (.usage.output_tokens | type) == "number"))' \
   "$RESP_FILE" >/dev/null 2>&1 || emit_error "response is not a rule Choice answer"
 
-# ---- quota evidence: one quota-axi --json snapshot, skipped entirely under the
+# ---- quota evidence: one quota-axi --json --full snapshot, skipped entirely under the
 # ---- shared-quota opt-out (a stub keeps the slurpfile contract intact) ---------
 SQ=false
 SHARED_QUOTA=$(jq -r '.shared_quota // false' "$RULES" 2>/dev/null) || SHARED_QUOTA=false
@@ -604,8 +643,21 @@ if [ "$SHARED_QUOTA" = true ]; then
   SQ=true
 else
   command -v quota-axi >/dev/null 2>&1 || emit_error "quota-axi not installed"
-  quota-axi --json > "$QUOTA" 2>/dev/null || emit_error "quota-axi --json failed"
+  quota-axi --json --full > "$QUOTA" 2>/dev/null || emit_error "quota-axi --json failed"
   fm_quota_json_valid < "$QUOTA" || emit_error "quota-axi --json returned an invalid snapshot"
+fi
+
+# The Claude config directory a claude launch from this home uses, as
+# fm-spawn.sh selects it; empty when unknown, which leaves claude unbound.
+CLAUDE_DIR=
+if CLAUDE_LIST=$(fm_worker_account_list claude "$CONFIG" 2>/dev/null) && [ -z "$CLAUDE_LIST" ] &&
+  CLAUDE_PIN=$(fm_worker_account_resolve claude "$CONFIG" config/claude-account 2>/dev/null); then
+  if [ -z "$CLAUDE_PIN" ]; then
+    CLAUDE_DIR=${CLAUDE_CONFIG_DIR:-${HOME:+$HOME/.claude}}
+  else
+    CLAUDE_DIR=$(printf '%s\n' "$CLAUDE_PIN" | cut -f2)
+    [ -n "$CLAUDE_DIR" ] || CLAUDE_DIR=${HOME:+$HOME/.claude}
+  fi
 fi
 
 AUTH='[]'
@@ -618,7 +670,7 @@ if jq -e '.schemaVersion == 6' "$QUOTA" >/dev/null &&
 fi
 
 # ---- resolution: declared gates + quota evidence + argmax, all in jq ------------
-RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg none_criterion "$DEFAULT_WHEN" --argjson pmap "$PMAP" --argjson sq "$SQ" \
+RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --arg claude_dir "$CLAUDE_DIR" --argjson lat "$LAT_MS" --arg none_criterion "$DEFAULT_WHEN" --argjson pmap "$PMAP" --argjson sq "$SQ" \
   --argjson auth "$AUTH" --slurpfile resp "$RESP_FILE" --slurpfile rules "$RULES" --slurpfile quota "$QUOTA" "$FM_QUOTA_ROW_JQ"'
   ($resp[0]) as $r | ($rules[0]) as $cfg | ($quota[0]) as $q | ($r.answers.rule) as $a |
   def profiles($v): if ($v | type) == "array" then $v elif ($v | type) == "object" then [$v] else [] end;
@@ -628,7 +680,8 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
   def provider_of($c): ($c.provider // $pmap[$c.harness] // null);
   def lane_of($c):
     quota_lane($c.harness; $c.model) as $lane |
-    if ($c.harness == "pi" or $c.harness == "pi-signed") and
+    if $c.harness == "claude" then quota_claude_lane($q; $claude_dir)
+    elif ($c.harness == "pi" or $c.harness == "pi-signed") and
        provider_of($c) == "codex" and $lane != "codex-home" and $lane != "" then
       ([$auth[] | select(.sources | index("pi:" + $lane)) | .accountKey] | unique) as $accounts |
       if ($accounts | length) == 1 and
@@ -663,7 +716,7 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
     elif prov($p; $lane) == null then
       {profile: $c, provider: $p, eligible: true, unranked: true,
        reason: (if any($q.providers[]; .provider == $p)
-                then "provider \($p) has no quota row for account \(if $lane == "" then "default" else $lane end)"
+                then "provider \($p) has no quota row for \(if $c.harness == "claude" and $claude_dir != "" then "config directory \($claude_dir)" elif $lane == "" then "account default" else "account \($lane)" end)"
                 else "provider \($p) not in the quota snapshot" end)}
     else
       (applicable($p; $lane; ($c.model // ""); ($c.quota_scope // null))) as $rows |
@@ -808,5 +861,9 @@ TEXT=$(jq -r '
   (if .chosen then "  profile: --harness \(.chosen.profile.harness | shell_arg)"
       + (if .chosen.profile.model then " --model \(.chosen.profile.model | shell_arg)" else "" end)
       + (if .chosen.profile.effort then " --effort \(.chosen.profile.effort | shell_arg)" else "" end) else empty end)' <<<"$RESULT") || emit_error "output rendering failed"
+STATUS=$(jq -r '.status' <<<"$RESULT") || emit_error "status rendering failed"
+PROFILE=$(jq -c 'if .chosen then .chosen.profile | {harness, model: (.model // null), effort: (.effort // null)} else null end' <<<"$RESULT") \
+  || emit_error "profile rendering failed"
+record_task "$STATUS" "$PROFILE" || emit_error "could not record the dispatch resolution"
 printf '%s\n' "$TEXT"
 exit 0

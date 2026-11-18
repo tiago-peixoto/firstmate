@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # Append one validated, timestamped status event.
-# Usage: fm-status-write.sh <status-file> <verb> [--key <slug>] [--corr <16-hex>] -- <body>
+# Usage: fm-status-write.sh <status-file> <verb> [--key <slug>] [--corr <16-hex>] [--until <YYYY-MM-DD>] -- <body>
 set -eu
 
-usage() { echo "Usage: fm-status-write.sh <status-file> <verb> [--key <slug>] [--corr <16-hex>] -- <body>" >&2; exit 2; }
+usage() { echo "Usage: fm-status-write.sh <status-file> <verb> [--key <slug>] [--corr <16-hex>] [--until <YYYY-MM-DD>] -- <body>" >&2; exit 2; }
 [ "$#" -ge 4 ] || usage
 status_file=$1 verb=$2
 shift 2
-key='' corr=''
+key='' corr='' until=''
 while [ "${1:-}" != -- ]; do
   case "${1:-}" in
     --key) [ "$#" -ge 3 ] || usage; key=$2; shift 2 ;;
     --corr) [ "$#" -ge 3 ] || usage; corr=$2; shift 2 ;;
+    --until) [ "$#" -ge 3 ] || usage; until=$2; shift 2 ;;
     *) usage ;;
   esac
 done
@@ -29,20 +30,23 @@ fi
 if [ -n "$corr" ]; then
   case "$corr" in [a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9][a-fA-F0-9]) ;; *) echo 'error: corr must be 16 hex characters' >&2; exit 2 ;; esac
 fi
+if [ -n "$until" ]; then
+  case "$until" in [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;; *) echo 'error: until must be YYYY-MM-DD' >&2; exit 2 ;; esac
+fi
 case "$status_file" in '') usage ;; esac
 if [ -e "$status_file" ] || [ -L "$status_file" ]; then
   [ -f "$status_file" ] && [ ! -L "$status_file" ] || { echo 'error: status path must be a regular non-symlink file' >&2; exit 1; }
 else
   mkdir -p "$(dirname "$status_file")"
 fi
-python3 - "$status_file" "$verb" "$key" "$corr" "$body" <<'PY'
+python3 - "$status_file" "$verb" "$key" "$corr" "$until" "$body" <<'PY'
 import fcntl
 import os
 import re
 import sys
 import time
 
-path, verb, key, corr, body = sys.argv[1:]
+path, verb, key, corr, until, body = sys.argv[1:]
 body = re.sub(r"[\s\x00-\x1f\x7f]+", " ", body).strip()
 if not body:
     raise SystemExit("error: status body must not be empty")
@@ -51,6 +55,8 @@ if key:
     head += f" [key={key}]"
 if corr:
     head += f" [corr={corr.lower()}]"
+if until:
+    head += f" [until={until}]"
 line = f"{head} [at={int(time.time())}]: {body}\n".encode()
 flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
 if hasattr(os, "O_NOFOLLOW"):

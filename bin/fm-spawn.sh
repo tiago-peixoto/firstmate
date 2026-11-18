@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Spawn a direct report: a crewmate in a treehouse or Orca worktree, or a
 # secondmate in its isolated firstmate home.
-# Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
-#        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
+# Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--dispatch-override <reason>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
+#        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--dispatch-override <reason>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] --secondmate
 #   --mode and --yolo are this task's delivery contract, REQUIRED for every ship
 #   spawn and refused on --scout and --secondmate spawns. Firstmate resolves both
@@ -145,7 +145,7 @@
 #   top-level shell into it, because a restart restores that shell's cwd.
 #   codex-app is not a known backend yet; docs/codex-app-backend.md owns that
 #   blocked backend contract. Default tmux spawns do not write backend= to meta;
-#   absent backend= means tmux. Orca, cmux, paseo, tern, and hc do not support
+#   absent backend= means tmux. Orca, cmux, paseo, and tern do not support
 #   --secondmate spawns.
 #   A rex crewmate or scout opens one tab in the Rex session the launching
 #   firstmate runs in when it runs directly inside Rex, otherwise in its home's
@@ -244,9 +244,17 @@
 #   every place held prints one `deferred:` line and exits 75 before any brief
 #   render, endpoint, worktree, record, or backlog move exists, so the task stays
 #   exactly as queued as it was; an unreadable declaration refuses with exit 1.
+#   Lane capacity: only when this home's config/lane-capacity declares
+#   admit-spawns (bin/fm-capacity.sh --spawn-gate-enabled answers; that script
+#   owns the declaration and the verdict), a fresh ship or
+#   scout spawn runs `fm-capacity.sh --spawn-gate` while holding the machine-wide
+#   lane-admission lock in the local root home's state/ (waiting up to 120 s for
+#   it) and keeps holding it through metadata publication; a verdict that does
+#   not admit prints `deferred:` and exits 75 with the task exactly as queued,
+#   and an unreadable declaration refuses with exit 1.
 #   A batch reports such a pair as `batch: DEFERRED` and exits 75 when nothing
 #   else failed. A relaunch and a --secondmate spawn are never counted against
-#   capacity.
+#   either capacity.
 #   With no harness arg, a crewmate/scout spawn resolves the CREW harness only when
 #   config/crew-dispatch.json is absent. When that file exists, crewmate/scout
 #   spawns require an explicit harness so firstmate cannot silently skip dispatch
@@ -510,7 +518,8 @@
 # Worker tool exclusions:
 #   docs/configuration.md "Worker tool exclusions" owns config/crew-exclude-tools
 #   and its operator contract. Resolve it with bin/fm-exclude-tools-lib.sh
-#   before provisioning; __PIEXCLUDE__ below owns the Pi launch substitution.
+#   before provisioning; __PIEXCLUDE__ and __CLAUDEEXCLUDE__ below own the Pi and
+#   Claude launch substitutions.
 # Worker account pin (config/claude-account, config/pi-account):
 #   Opt-in. docs/configuration.md's "Worker account pin" section owns unpinned
 #   account selection. A present file pins every supported launch of
@@ -559,6 +568,12 @@
 #     __PIEXCLUDE__ optional ` --exclude-tools '<comma-joined names>'` from
 #                  config/crew-exclude-tools on Pi/pi-signed ship and scout
 #                  launches (supplies its own leading space, empty otherwise)
+#     __CLAUDEEXCLUDE__ optional `--disallowedTools '<comma-joined names>' ` from
+#                  config/crew-exclude-tools on Claude ship and scout launches
+#                  (supplies its own trailing space, empty otherwise). Claude
+#                  Code drops a disallowed tool's schema from every request, and
+#                  a later flag always follows so the variadic option cannot
+#                  swallow the launch prompt.
 #     __PIRESUME__ optional relaunch-only `--session <reference>` that keeps a
 #                  Pi replacement on the session the endpoint's runtime already
 #                  reports (relaunch_resume_args below owns it; it supplies its
@@ -964,6 +979,8 @@ fm_backlog_directory_present "$STATE" "state directory" || {
 . "$SCRIPT_DIR/fm-secondmate-nudge-lib.sh"
 # shellcheck source=bin/fm-backend.sh
 . "$SCRIPT_DIR/fm-backend.sh"
+# shellcheck source=bin/fm-fleet-backend-lib.sh
+. "$SCRIPT_DIR/fm-fleet-backend-lib.sh"
 # shellcheck source=bin/fm-kimi-trust-lib.sh
 . "$SCRIPT_DIR/fm-kimi-trust-lib.sh"
 # shellcheck source=bin/fm-control-lib.sh
@@ -986,6 +1003,8 @@ fm_backlog_directory_present "$STATE" "state directory" || {
 . "$SCRIPT_DIR/fm-trace-context-lib.sh"
 # shellcheck source=bin/fm-remote-readiness-lib.sh
 . "$SCRIPT_DIR/fm-remote-readiness-lib.sh"
+# shellcheck source=bin/fm-remote-herdr-identity-lib.sh
+. "$SCRIPT_DIR/fm-remote-herdr-identity-lib.sh"
 # shellcheck source=bin/fm-timeout-lib.sh
 . "$SCRIPT_DIR/fm-timeout-lib.sh"
 # shellcheck source=bin/fm-project-capacity-lib.sh
@@ -1005,6 +1024,7 @@ KIND_SET=0
 HARNESS_ARG=
 MODEL=
 EFFORT=
+DISPATCH_OVERRIDE=
 BACKEND_ARG=
 MODE=
 YOLO=
@@ -1053,6 +1073,7 @@ for a in "$@"; do
       EFFORT=$a
       EFFORT_SET=1
       ;;
+    dispatch-override) DISPATCH_OVERRIDE=$a ;;
     hermes-profile)
       HERMES_PROFILE=$a
       HERMES_PROFILE_SET=1
@@ -1123,6 +1144,8 @@ for a in "$@"; do
     EFFORT=${a#--effort=}
     EFFORT_SET=1
     ;;
+  --dispatch-override) want_value=dispatch-override ;;
+  --dispatch-override=*) DISPATCH_OVERRIDE=${a#--dispatch-override=} ;;
   --hermes-profile) want_value=hermes-profile ;;
   --hermes-profile=*) HERMES_PROFILE=${a#--hermes-profile=}; HERMES_PROFILE_SET=1 ;;
   --backend) want_value=backend ;;
@@ -1347,6 +1370,7 @@ spawn_remote_secondmate() {
   local id=$1 remote host root home harness positional model effort backend out rc meta tmp
   local remote_backend remote_target remote_harness remote_herdr_session registry_lock remote_lock remote_generation
   local remote_rex_session_id remote_rex_server remote_rex_ok
+  local remote_hc_session remote_hc_terminal fleet
   local remote_traceparent remote_recorded_traceparent sm_primary_head sync_out sync_rc account_config
   local -a launch_args
   id=${POS[0]:-}
@@ -1451,27 +1475,55 @@ spawn_remote_secondmate() {
       return 1
     fi
   fi
-  # A remote second mate runs only on a backend whose session-provider server
-  # outlives every SSH connection that supervises it: herdr (its server belongs
-  # to the host's GUI login session) is the default; rex runs on the host's
-  # persistent personal rex server. Without an explicit selection a relaunch
-  # keeps the backend its record names, and a record written before rex
-  # existed names none, so it is herdr. bin/fm-remote-doctor.sh gates that host
-  # on the selected backend, and the remote home's config/backend never
-  # overrides the selection.
+  # Old remote records without a backend belong to classic Herdr.
   backend=${BACKEND_ARG:-}
   if [ -z "$backend" ] && [ -f "$meta" ]; then
     backend=$(fm_meta_get "$meta" remote_backend)
+    [ -n "$backend" ] || backend=herdr
   fi
+  fleet=$FLEET_BACKEND
+  case "$fleet" in
+    herdr | hc)
+      [ -n "$backend" ] || backend=$fleet
+      if [ "$backend" != "$fleet" ] ||
+        ! fm_fleet_backend_validate "$STATE" "$CONFIG" "$backend" >/dev/null; then
+        fm_lock_release "$registry_lock" || true
+        fm_lock_release "$SPAWN_TASK_LOCK" || true
+        echo "error: remote secondmate $id must use fleet runtime $fleet; refusing creation" >&2
+        return 1
+      fi
+      ;;
+  esac
   case "${backend:--}" in
   -) backend=herdr ;;
-  herdr | rex) ;;
+  herdr | hc | rex) ;;
   *)
     fm_lock_release "$registry_lock" || true
     fm_lock_release "$SPAWN_TASK_LOCK" || true
-    echo "error: a remote secondmate runs only on the herdr or rex backend, not '$backend'" >&2
+    echo "error: a remote secondmate runs only on the herdr, hc or rex backend, not '$backend'" >&2
     return 1
     ;;
+  esac
+  case "$fleet" in
+    herdr | hc)
+      if out=$("$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-secondmate-control.sh validate-backend \
+        "$id" "$backend" </dev/null 2>&1); then
+        :
+      else
+        rc=$?
+        fm_lock_release "$registry_lock" || true
+        fm_lock_release "$SPAWN_TASK_LOCK" || true
+        echo "error: remote secondmate $id runtime validation failed before inheritance or terminal creation" >&2
+        [ -z "$out" ] || printf '%s\n' "$out" >&2
+        return "$rc"
+      fi
+      if ! fm_fleet_backend_bind "$STATE" "$CONFIG" "$backend" >/dev/null; then
+        fm_lock_release "$registry_lock" || true
+        fm_lock_release "$SPAWN_TASK_LOCK" || true
+        echo "error: remote secondmate $id must use fleet runtime $fleet; refusing creation" >&2
+        return 1
+      fi
+      ;;
   esac
   # Gate the host before anything is published or transferred, so a host that
   # cannot hold a durable endpoint refuses here rather than half-way
@@ -1587,14 +1639,29 @@ spawn_remote_secondmate() {
   remote_herdr_session=
   remote_rex_session_id=
   remote_rex_server=
+  remote_hc_session=
+  remote_hc_terminal=
   case "$remote_backend" in
-    herdr)
-      remote_herdr_session=$(printf '%s\n' "$out" | sed -n 's/^herdr_session=//p' | tail -1)
-      if [ "$remote_herdr_session" != fm-remote ] || [ "${remote_target%%:*}" != "$remote_herdr_session" ]; then
+    hc)
+      remote_hc_session=$(printf '%s\n' "$out" | sed -n 's/^hc_session=//p' | tail -1)
+      remote_hc_terminal=$(printf '%s\n' "$out" | sed -n 's/^hc_terminal=//p' | tail -1)
+      if ! fm_backend_source hc || [ "$remote_hc_session" != fm-remote ] ||
+        ! fm_backend_hc_address_valid "$remote_hc_terminal" ||
+        [ "$remote_target" != "$remote_hc_session:$remote_hc_terminal" ]; then
         fm_lock_release "$remote_lock" || true
         fm_lock_release "$registry_lock" || true
         fm_lock_release "$SPAWN_TASK_LOCK" || true
-        echo "error: remote launch returned Herdr session '${remote_herdr_session:-missing}', expected 'fm-remote'; preserving the remote route for reconciliation" >&2
+        echo "error: remote launch returned malformed hc route metadata; preserving the remote route for reconciliation" >&2
+        return 1
+      fi
+      ;;
+    herdr)
+      remote_herdr_session=$(printf '%s\n' "$out" | sed -n 's/^herdr_session=//p' | tail -1)
+      if ! fm_remote_herdr_session_name_valid "$remote_herdr_session" || [ "${remote_target%%:*}" != "$remote_herdr_session" ]; then
+        fm_lock_release "$remote_lock" || true
+        fm_lock_release "$registry_lock" || true
+        fm_lock_release "$SPAWN_TASK_LOCK" || true
+        echo "error: remote launch returned Herdr session '${remote_herdr_session:-missing}', expected 'fm-remote' or a code-root-derived 'fm-remote-<id>'; preserving the remote route for reconciliation" >&2
         return 1
       fi
       ;;
@@ -1646,6 +1713,10 @@ spawn_remote_secondmate() {
     echo "remote_root=$root"
     echo "remote_backend=$remote_backend"
     case "$remote_backend" in
+      hc)
+        echo "remote_hc_session=$remote_hc_session"
+        echo "remote_hc_terminal=$remote_hc_terminal"
+        ;;
       herdr) echo "remote_herdr_session=$remote_herdr_session" ;;
       rex)
         echo "remote_rex_session_id=$remote_rex_session_id"
@@ -1696,6 +1767,7 @@ T3CODE_LAUNCH_UNCONFIRMED=0
 T3CODE_PROJECT_ID=
 T3CODE_MODEL_SELECTION=
 HERDR_LEASED=0
+HC_REBIND_ABORT_TARGET=
 HERDR_PROJECTION_ABORT_CLEANUP=0
 HERDR_PROJECTION_ABORT_SESSION=
 HERDR_PROJECTION_ABORT_TASK_PANE=
@@ -1716,6 +1788,8 @@ SPAWN_TASK_SET_LOCK=
 SPAWN_TASK_SET_LOCK_HELD=0
 SPAWN_TREEHOUSE_PROJECT_LOCK=
 SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
+SPAWN_LANE_ADMISSION_LOCK=
+SPAWN_LANE_ADMISSION_LOCK_HELD=0
 SPAWN_SLOT_CLAIMED=0
 SPAWN_FRESH_ENDPOINT_OPENED=0
 SPAWN_FRESH_WIRING_PENDING=0
@@ -1784,6 +1858,12 @@ spawn_abort_cleanup() {
     [ ! -e "$SPAWN_META_TMP" ] &&
     [ ! -L "$SPAWN_META_TMP" ]; then
     RELAUNCH_REPLACEMENT_PENDING=0
+    HC_REBIND_ABORT_TARGET=
+  fi
+  if [ -n "$HC_REBIND_ABORT_TARGET" ]; then
+    fm_backend_hc_kill "$HC_REBIND_ABORT_TARGET" '' "fm-$ID" \
+      || echo "warning: could not close unpublished hc replacement $HC_REBIND_ABORT_TARGET for $ID; reconcile it before retrying" >&2
+    HC_REBIND_ABORT_TARGET=
   fi
   if [ "$RELAUNCH_REPLACEMENT_PENDING" = 1 ]; then
     RELAUNCH_REPLACEMENT_PENDING=0
@@ -2028,6 +2108,10 @@ spawn_abort_cleanup() {
   if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ]; then
     SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
     fm_lock_release "$SPAWN_TREEHOUSE_PROJECT_LOCK" || true
+  fi
+  if [ "$SPAWN_LANE_ADMISSION_LOCK_HELD" = 1 ]; then
+    SPAWN_LANE_ADMISSION_LOCK_HELD=0
+    fm_lock_release "$SPAWN_LANE_ADMISSION_LOCK" || true
   fi
   if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
     SPAWN_TASK_SET_LOCK_HELD=0
@@ -2307,6 +2391,7 @@ if [ "${#POS[@]}" -gt 0 ] && [ "${POS[0]}" != "$idpart" ] && case "$idpart" in *
   [ -z "$HARNESS_ARG" ] || shared_args+=(--harness "$HARNESS_ARG")
   [ -z "$MODEL" ] || shared_args+=(--model "$MODEL")
   [ -z "$EFFORT" ] || shared_args+=(--effort "$EFFORT")
+  [ -z "$DISPATCH_OVERRIDE" ] || shared_args+=(--dispatch-override "$DISPATCH_OVERRIDE")
   [ "$HERMES_PROFILE_SET" -eq 0 ] || shared_args+=(--hermes-profile "$HERMES_PROFILE")
   [ -z "$BACKEND_ARG" ] || shared_args+=(--backend "$BACKEND_ARG")
   # One delivery contract applies to every pair in a batch, exactly like the shared
@@ -2337,7 +2422,7 @@ if [ "${#POS[@]}" -gt 0 ] && [ "${POS[0]}" != "$idpart" ] && case "$idpart" in *
     pair_rc=0
     FM_SPAWN_NO_GUARD=1 "$FM_ROOT/bin/fm-spawn.sh" "${pair_args[@]}" || pair_rc=$?
     if [ "$pair_rc" -eq "$FM_PROJECT_CAPACITY_DEFER_EXIT" ]; then
-      echo "batch: DEFERRED ${pair%%=*} (${pair#*=}) - its project is at capacity, so it stays queued" >&2
+      echo "batch: DEFERRED ${pair%%=*} (${pair#*=}) - its project or this machine's lanes are at capacity, so it stays queued" >&2
       [ "$rc" -ne 0 ] || rc=$FM_PROJECT_CAPACITY_DEFER_EXIT
     elif [ "$pair_rc" -ne 0 ]; then
       echo "batch: FAILED to spawn ${pair%%=*} (${pair#*=})" >&2
@@ -2501,6 +2586,32 @@ if [ "$RELAUNCH" -eq 0 ]; then
   spawn_refuse_if_away_spend_cap
   spawn_require_relocated_queued_work
 fi
+FLEET_PIN=$(fm_fleet_backend_read "$STATE") || exit 1
+if [ "$RELAUNCH" -eq 0 ] && { [ -n "$FLEET_PIN" ] || [ "$BACKEND_SET" -eq 0 ] || [ "$KIND" = secondmate ]; }; then
+  # Called directly so the detection that chose the backend also leaves
+  # FM_BACKEND_DETECT_SIGNAL for the meta's backend_detect= line below.
+  fm_backend_resolve || exit 1
+fi
+SECONDMATE_CREATION=0
+if [ "$KIND" = secondmate ] && [ "$RELAUNCH" -eq 0 ] &&
+  [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
+  SECONDMATE_CREATION=1
+fi
+if [ -n "$FLEET_PIN" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_PIN" ]; then
+  echo "error: fleet uses $FLEET_PIN; refusing task runtime $BACKEND_ARG" >&2
+  exit 1
+fi
+# Only creating a new secondmate selects or enforces the fleet runtime; worker
+# --backend flags stay per-task overrides and recovery keeps its record.
+FLEET_BACKEND=
+if [ "$SECONDMATE_CREATION" -eq 1 ]; then
+  FLEET_BACKEND=$FLEET_PIN
+  [ -n "$FLEET_BACKEND" ] || case "$FM_BACKEND_RESOLVED" in herdr | hc) FLEET_BACKEND=$FM_BACKEND_RESOLVED ;; esac
+  if [ -n "$FLEET_BACKEND" ] && [ "$BACKEND_SET" -eq 1 ] && [ "$BACKEND_ARG" != "$FLEET_BACKEND" ]; then
+    echo "error: primary selects $FLEET_BACKEND; refusing secondmate runtime $BACKEND_ARG" >&2
+    exit 1
+  fi
+fi
 if [ "$KIND" = secondmate ]; then
   if spawn_remote_secondmate "$ID"; then
     exit 0
@@ -2521,10 +2632,10 @@ if [ "$RELAUNCH" -eq 0 ]; then
     BACKEND=$BACKEND_ARG
     FM_BACKEND_DETECT_SIGNAL=""
   else
-    # Called directly so the one detection that chose BACKEND also leaves
-    # FM_BACKEND_DETECT_SIGNAL for the meta's backend_detect= line below.
-    fm_backend_resolve
     BACKEND=$FM_BACKEND_RESOLVED
+  fi
+  if [ -n "$FLEET_BACKEND" ]; then
+    fm_fleet_backend_validate "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
   fi
   fm_backend_validate_spawn "$BACKEND" || exit 1
   fm_backend_source "$BACKEND" || exit 1
@@ -2542,10 +2653,6 @@ if [ "$RELAUNCH" -eq 0 ]; then
   fi
   if [ "$BACKEND" = tern ] && [ "$KIND" = secondmate ]; then
     echo "error: backend=tern does not support --secondmate spawns yet" >&2
-    exit 1
-  fi
-  if [ "$BACKEND" = hc ] && [ "$KIND" = secondmate ]; then
-    echo "error: backend=hc does not support --secondmate spawns yet" >&2
     exit 1
   fi
   fm_backend_runtime_check "$BACKEND" || exit 1
@@ -2640,8 +2747,8 @@ if [ "$RELAUNCH" -eq 1 ]; then
   # Two states are agent-free, and both license a relaunch:
   #   dead    - the endpoint exists and confidently holds no agent. The
   #             endpoint is ADOPTED, so the task keeps its exact address.
-  #   missing - the endpoint itself is gone. There is no endpoint AND therefore
-  #             no agent, so a relaunch cannot adopt it: it CREATES a fresh
+  #   missing - the endpoint is gone or is an owned, finished hc terminal.
+  #             It cannot hold an agent, so a relaunch CREATES a fresh
   #             endpoint in the recorded worktree and the published record
   #             rebinds to it.
   # `missing` is NOT one state, and that is what the duplicate-agent argument
@@ -2649,7 +2756,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
   # endpoint was DESTROYED" with "the endpoint is UNREACHABLE from here right
   # now", and an unreachable endpoint can still hold the live agent this
   # relaunch would duplicate. So absence is PROVEN before it may rebind, never
-  # inferred from a failed read - and only HERDR and REX can prove it:
+  # inferred from a failed read - HERDR, REX and HC can prove it:
   #   herdr - the recorded session's server is started, and the recorded pane is
   #           RE-READ through that session's own socket. `dead` means the pane
   #           survived the restart and is adopted after all; `alive` means the
@@ -2661,6 +2768,9 @@ if [ "$RELAUNCH" -eq 1 ]; then
   #           `unreadable` is rechecked too, because a stopped Rex server
   #           reads as unreachable to a read that never starts it
   #           (fm_control_absence_recheck_applies owns that rule).
+  #   hc    - the recorded session answers not-found, or its terminal carries
+  #           this task's ownership labels and is finished. A finished terminal
+  #           must be removed before replacement; unreadable cores refuse.
   #   tmux  - REFUSES, always. A task record carries no socket identity for its
   #           endpoint, and a server-wide inventory describes only the server
   #           this process addresses, so no read available here can tell "gone"
@@ -2672,7 +2782,11 @@ if [ "$RELAUNCH" -eq 1 ]; then
   # owns that vocabulary). The proof itself lives in one place for the whole
   # control plane - fm_control_endpoint_absence_verdict - so `exit` and
   # `relaunch` cannot reach two different answers about one endpoint.
-  RELAUNCH_STATE=$(fm_backend_agent_state "$BACKEND" "$RELAUNCH_TARGET")
+  if [ "$BACKEND" = hc ]; then
+    RELAUNCH_STATE=$(fm_control_hc_recovery_state "$RELAUNCH_META" "$ID" "$RELAUNCH_TARGET")
+  else
+    RELAUNCH_STATE=$(fm_backend_agent_state "$BACKEND" "$RELAUNCH_TARGET")
+  fi
   if fm_control_absence_recheck_applies "$BACKEND" "$RELAUNCH_STATE"; then
     RELAUNCH_ABSENCE=$(fm_control_endpoint_absence_verdict "$BACKEND" "$RELAUNCH_TARGET" "$RELAUNCH_META")
     case "${RELAUNCH_ABSENCE%%$'\t'*}" in
@@ -2722,36 +2836,6 @@ if [ "$RELAUNCH" -eq 1 ]; then
     echo "error: task $ID's recorded worktree '${RELAUNCH_WT:-none}' is missing; refusing to relaunch without the local copy its work lives in" >&2
     exit 1
   }
-  if [ "$KIND" != secondmate ]; then
-    # A worker must come back in its own disposable worktree, never in a
-    # primary home or a repository's primary checkout: refuse
-    # rather than fall back to wherever the restored pane happens to sit.
-    relaunch_wt_real=$(cd "$RELAUNCH_WT" 2>/dev/null && pwd -P) || relaunch_wt_real=$RELAUNCH_WT
-    relaunch_primary=
-    for relaunch_cand in "$FM_HOME" "$FM_ROOT"; do
-      relaunch_cand_real=$(cd "$relaunch_cand" 2>/dev/null && pwd -P) || continue
-      [ "$relaunch_wt_real" = "$relaunch_cand_real" ] && relaunch_primary=$relaunch_cand
-    done
-    if [ -z "$relaunch_primary" ]; then
-      # Probe the directory's own layout: an inherited GIT_DIR naming a linked
-      # worktree with GIT_WORK_TREE naming the primary checkout would otherwise
-      # make the two answers differ and pass the primary checkout.
-      relaunch_gdc=$(
-        unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_INDEX_FILE \
-          GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_CEILING_DIRECTORIES GIT_NAMESPACE \
-          GIT_DISCOVERY_ACROSS_FILESYSTEM GIT_CONFIG GIT_CONFIG_GLOBAL \
-          GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM GIT_CONFIG_COUNT
-        git -C "$RELAUNCH_WT" rev-parse --path-format=absolute --git-dir --git-common-dir 2>/dev/null
-      ) || relaunch_gdc=
-      relaunch_gd=${relaunch_gdc%%$'\n'*}
-      relaunch_gc=${relaunch_gdc#*$'\n'}
-      [ -z "$relaunch_gd" ] || [ "$relaunch_gd" != "$relaunch_gc" ] || relaunch_primary="its repository's primary checkout"
-    fi
-    [ -z "$relaunch_primary" ] || {
-      echo "error: task $ID's recorded worktree '$RELAUNCH_WT' is the primary home or checkout ($relaunch_primary), not an isolated task worktree; refusing to relaunch a worker there" >&2
-      exit 1
-    }
-  fi
   if [ "$KIND" = secondmate ]; then
     FIRSTMATE_HOME=$(fm_meta_get "$RELAUNCH_META" home)
     [ -n "$FIRSTMATE_HOME" ] || FIRSTMATE_HOME=$RELAUNCH_WT
@@ -2759,6 +2843,48 @@ if [ "$RELAUNCH" -eq 1 ]; then
     PROJ=$(fm_meta_get "$RELAUNCH_META" project)
     [ -n "$PROJ" ] || {
       echo "error: task $ID has no recorded project; refusing to relaunch" >&2
+      exit 1
+    }
+    # A worker must come back in its own disposable worktree, never in a
+    # primary home or the recorded project repository's primary checkout:
+    # refuse rather than fall back to wherever the restored pane happens to
+    # sit. The checkout test is fresh spawn's own boundary
+    # (spawn_worktree_isolated): the copy's git dir may not be the recorded
+    # project's common git dir. A standalone clone clears it because its own
+    # git dir is distinct from the recorded project's common git dir.
+    relaunch_wt_real=$(cd "$RELAUNCH_WT" 2>/dev/null && pwd -P) || relaunch_wt_real=$RELAUNCH_WT
+    relaunch_primary=
+    for relaunch_cand in "$FM_HOME" "$FM_ROOT"; do
+      relaunch_cand_real=$(cd "$relaunch_cand" 2>/dev/null && pwd -P) || continue
+      [ "$relaunch_wt_real" = "$relaunch_cand_real" ] && relaunch_primary=$relaunch_cand
+    done
+    if [ -z "$relaunch_primary" ]; then
+      # Probe both directories' own layouts in one scrubbed subshell: an
+      # inherited GIT_DIR naming a linked worktree with GIT_WORK_TREE naming
+      # the primary checkout would otherwise make the two answers differ and
+      # pass the primary checkout.
+      relaunch_gdc=$(
+        unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_INDEX_FILE \
+          GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_CEILING_DIRECTORIES GIT_NAMESPACE \
+          GIT_DISCOVERY_ACROSS_FILESYSTEM GIT_CONFIG GIT_CONFIG_GLOBAL \
+          GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM GIT_CONFIG_COUNT
+        relaunch_probe_gd=$(git -C "$RELAUNCH_WT" rev-parse --absolute-git-dir 2>/dev/null) &&
+          relaunch_probe_pc=$(git -C "$PROJ" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) &&
+          relaunch_probe_gd=$(cd "$relaunch_probe_gd" 2>/dev/null && pwd -P) &&
+          relaunch_probe_pc=$(cd "$relaunch_probe_pc" 2>/dev/null && pwd -P) &&
+          printf '%s\n%s\n' "$relaunch_probe_gd" "$relaunch_probe_pc"
+      ) || relaunch_gdc=
+      relaunch_wt_gd=${relaunch_gdc%%$'\n'*}
+      case "$relaunch_gdc" in
+        *$'\n'*) relaunch_proj_common=${relaunch_gdc#*$'\n'} ;;
+        *) relaunch_proj_common= ;;
+      esac
+      [ -z "$relaunch_wt_gd" ] || [ -z "$relaunch_proj_common" ] ||
+        [ "$relaunch_wt_gd" != "$relaunch_proj_common" ] ||
+        relaunch_primary="the recorded project repository's primary checkout"
+    fi
+    [ -z "$relaunch_primary" ] || {
+      echo "error: task $ID's recorded worktree '$RELAUNCH_WT' is the primary home or checkout ($relaunch_primary), not an isolated task worktree; refusing to relaunch a worker there" >&2
       exit 1
     }
   fi
@@ -2779,6 +2905,10 @@ if [ "$RELAUNCH" -eq 1 ]; then
     FM_REX_TASK_WINDOW_ID=$(fm_meta_get "$RELAUNCH_META" rex_window_id)
     FM_REX_TASK_BLOCK_ID=$(fm_meta_get "$RELAUNCH_META" rex_block_id)
     FM_REX_TASK_SERVER=$(fm_meta_get "$RELAUNCH_META" rex_server)
+  fi
+  if [ "$BACKEND" = hc ]; then
+    HC_SES=$(fm_meta_get "$RELAUNCH_META" hc_session)
+    HC_TERMINAL=$(fm_meta_get "$RELAUNCH_META" hc_terminal)
   fi
   # With no explicit harness, a relaunch reuses the harness already recorded
   # for this task. It must NOT fall through to the fresh-spawn config
@@ -3049,6 +3179,7 @@ launch_template() {
   claude)
     printf '%s' 'CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude __CLAUDEPERMFLAG__ __CLAUDEADDDIRS__--settings __CLAUDESETTINGS__ '
     if [ "$kind" != secondmate ]; then
+      printf '%s' '__CLAUDEEXCLUDE__'
       printf '%s' "--append-system-prompt '$(spawn_claude_task_channel_statement)' "
     fi
     # Claude Code strips invisible characters, U+2063 included, from the
@@ -3379,6 +3510,31 @@ case "$ARG3" in
   }
   ;;
 esac
+
+case "$DISPATCH_OVERRIDE" in *[![:print:]]*) echo 'error: --dispatch-override must be a printable reason' >&2; exit 1 ;; esac
+DISPATCH_RECORD="$DATA/$ID/dispatch-resolution.json"
+if [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ -f "$CONFIG/crew-dispatch.json" ]; then
+  if [ ! -e "$DISPATCH_RECORD" ]; then
+    echo "error: config/crew-dispatch.json is active and task $ID has no recorded dispatch resolution; run bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name> first" >&2
+    exit 1
+  fi
+  dispatch_fields=$(jq -r --arg id "$ID" '
+    select(.task == $id and (.status | IN("clear", "ambiguous", "escalate", "error", "off"))
+      and (if .status == "clear" then (.profile.harness | type) == "string" and .profile.harness != "" else true end))
+    | .status, (.profile.harness // ""), (.profile.model // ""), (.profile.effort // "")' "$DISPATCH_RECORD" 2>/dev/null) || dispatch_fields=
+  { read -r dispatch_status; read -r selected_harness; read -r selected_model; read -r selected_effort; } <<<"$dispatch_fields" || true
+  if [ -z "$dispatch_status" ]; then
+    echo "error: malformed dispatch resolution $DISPATCH_RECORD for task $ID; rerun bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name>" >&2
+    exit 1
+  fi
+  if [ "$dispatch_status" = clear ] && [ -z "$DISPATCH_OVERRIDE" ] \
+    && { [ "$RAW_LAUNCH" -eq 1 ] || [ "$HARNESS" != "$selected_harness" ] \
+      || { [ -n "$selected_model" ] && [ "${MODEL:-}" != "$selected_model" ]; } \
+      || { [ -n "$selected_effort" ] && [ "${EFFORT:-}" != "$selected_effort" ]; }; }; then
+    echo "error: launch flags do not match the clear dispatch selection --harness $selected_harness${selected_model:+ --model $selected_model}${selected_effort:+ --effort $selected_effort} recorded in $DISPATCH_RECORD; pass those flags with no raw launch command, or record this task's override with --dispatch-override <reason>" >&2
+    exit 1
+  fi
+fi
 
 # muse, gemini, devin, commandcode, polytoken, cortex, and kiro are verified as CREWMATE/SCOUT adapters only. A secondmate is
 # a firstmate instance, so it needs a primary supervision protocol.
@@ -4264,6 +4420,11 @@ if [ "$KIND" = secondmate ]; then
     exit 1
   }
   PROJ_ABS=$(validate_firstmate_home_for_spawn "$ID" "$FIRSTMATE_HOME")
+  if [ -n "$FLEET_BACKEND" ]; then
+    fm_fleet_backend_validate "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
+    fm_fleet_backend_bind "$STATE" "$CONFIG" "$BACKEND" >/dev/null || exit 1
+    fm_fleet_backend_bind "$PROJ_ABS/state" "$PROJ_ABS/config" "$BACKEND" >/dev/null || exit 1
+  fi
   if [ -e "$DATA/secondmates.md" ] || [ -L "$DATA/secondmates.md" ]; then
     if ! secondmate_registry_validate_bindings "$DATA/secondmates.md" resolve_path "$ID" "$FIRSTMATE_HOME"; then
       echo "error: $SECONDMATE_REGISTRY_ERROR" >&2
@@ -4380,6 +4541,40 @@ if [ -n "$SPAWN_PROJECT_CAPACITY" ]; then
     echo "deferred: project $(basename "$PROJ_ABS") admits $SPAWN_PROJECT_CAPACITY worker(s) at once on this machine ($FM_PROJECT_CAPACITY_FILE) and $FM_PROJECT_CAPACITY_OCCUPANTS already hold a place ($FM_PROJECT_CAPACITY_OCCUPANT_IDS); task $ID was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up" >&2
     exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
   fi
+fi
+# Lane capacity admission (opt-in; bin/fm-capacity.sh owns the verdict and
+# --spawn-gate exits 0 unless config/lane-capacity declares admit-spawns). A
+# fresh ship or scout asks it under one machine-wide lane-admission lock in the
+# local root home, held until the task record is published, so two spawns on
+# this machine can never take the same open lane. A deferral leaves the task
+# exactly as queued as it was, like a project-capacity deferral.
+if [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] && [ -e "$CONFIG/lane-capacity" ] &&
+  FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_CONFIG_OVERRIDE=$CONFIG \
+    "$SCRIPT_DIR/fm-capacity.sh" --spawn-gate-enabled </dev/null 2>/dev/null; then
+  SPAWN_LANE_ROOT=$(fm_firstmate_root_home "$FM_HOME") || {
+    echo "error: could not resolve the root Firstmate home that holds the lane admission lock for $FM_HOME" >&2
+    exit 1
+  }
+  SPAWN_LANE_ADMISSION_LOCK="$SPAWN_LANE_ROOT/state/.lane-admission.lock"
+  if ! fm_lock_acquire_wait_max "$SPAWN_LANE_ADMISSION_LOCK" 120; then
+    echo "deferred: another spawn on this machine held the lane admission lock for 120 s; task $ID was not launched and its backlog item stays queued - dispatch it again" >&2
+    exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
+  fi
+  SPAWN_LANE_ADMISSION_LOCK_HELD=1
+  SPAWN_LANE_RC=0
+  FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_CONFIG_OVERRIDE=$CONFIG \
+    "$SCRIPT_DIR/fm-capacity.sh" --spawn-gate </dev/null || SPAWN_LANE_RC=$?
+  case "$SPAWN_LANE_RC" in
+    0) ;;
+    75)
+      echo "deferred: task $ID was not launched and its backlog item stays queued - dispatch it again once this machine's lane capacity admits another lane" >&2
+      exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
+      ;;
+    *)
+      echo "error: spawn refused: this home's lane capacity cannot be read (bin/fm-capacity.sh --spawn-gate exited $SPAWN_LANE_RC); fix config/lane-capacity so the captain's limits are known (docs/configuration.md \"Lane capacity\")" >&2
+      exit 1
+      ;;
+  esac
 fi
 [ -f "$BRIEF" ] || {
   echo "error: task $ID has no brief at inaccessible data path $BRIEF" >&2
@@ -4669,9 +4864,10 @@ real_path_or_raw() { # <path>
 
 # True when <path> is an isolated worktree of the spawning project: a real
 # directory that is its own worktree root, is not the spawning project itself,
-# and does not share the project repository's common git dir. SPAWN_WT_TOP is
-# left holding the worktree root the check read, and SPAWN_WT_REASON a short
-# phrase naming why a rejected path failed, both for the refusal messages.
+# and has a git dir distinct from the project repository's common git dir.
+# SPAWN_WT_TOP is left holding the worktree root the check read, and
+# SPAWN_WT_REASON a short phrase naming why a rejected path failed, both for
+# the refusal messages.
 #
 # The seating poll reads this same predicate, so it can never treat a rejected
 # path as the leased copy. A pane's cwd read is a snapshot of whatever process
@@ -5049,6 +5245,24 @@ if [ "$RELAUNCH" -eq 1 ]; then
     T=$RELAUNCH_TARGET
     WT_TARGET=$T
     SES=${T%%:*}
+  elif [ "$BACKEND" = hc ]; then
+    HC_SES=$(HC_SESSION="$HC_SES" fm_backend_hc_container_ensure) || exit 1
+    # A terminal may have changed since the initial recovery proof.
+    case "$(fm_backend_hc_endpoint_state "$RELAUNCH_TARGET" "$W")" in
+      absent) ;;
+      finished)
+        fm_backend_hc_kill "$RELAUNCH_TARGET" '' "$W" || exit 1
+        ;;
+      *)
+        echo "error: hc terminal $RELAUNCH_TARGET is no longer proven absent or owned and finished; refusing replacement" >&2
+        exit 1
+        ;;
+    esac
+    HC_TERMINAL=$(fm_backend_hc_create_task "$HC_SES" "$W" "$WT") || exit 1
+    T="$HC_SES:$HC_TERMINAL"
+    HC_REBIND_ABORT_TARGET=$T
+    SES=$HC_SES
+    WT_TARGET=$T
   elif [ "$BACKEND" = rex ]; then
     # The recorded endpoint is authoritatively gone, so there is nothing to
     # adopt: create ONE fresh endpoint for the same task, opened directly in the
@@ -5100,8 +5314,8 @@ EOF
     #
     # Herdr reaches here only on a PROVEN-gone pane: its every read is scoped to
     # the session the record names (fm_control_endpoint_absence_verdict owns
-    # that argument). tmux and every secondmate were already refused, and rex
-    # took the branch above, so there is no dispatch left to make.
+    # that argument). tmux and every secondmate were already refused, and hc
+    # and rex took their branches above, so there is no dispatch left to make.
     #
     # Placement follows the fresh-spawn rules: in a home whose workers get
     # presentation spaces, the replacement gets a new space of its own under
@@ -5389,7 +5603,9 @@ EOF
     ;;
   hc)
     HC_SES=$(fm_backend_hc_container_ensure) || exit 1
-    HC_TERMINAL=$(fm_backend_hc_create_task "$HC_SES" "$W" "$PROJ_ABS") || exit 1
+    HC_PRESENTATION_HOME=
+    [ "$KIND" != secondmate ] || HC_PRESENTATION_HOME=$PROJ_ABS
+    HC_TERMINAL=$(fm_backend_hc_create_task "$HC_SES" "$W" "$PROJ_ABS" "$HC_PRESENTATION_HOME") || exit 1
     T="$HC_SES:$HC_TERMINAL"
     ;;
   orca)
@@ -6203,8 +6419,9 @@ EOF
 }
 
 # Rewrite <meta> into <out> without the <owned keys>, placing <line>... ahead
-# of the first pr= line so no key fm_pr_metadata_identity_parse refuses lands
-# after the PR region.
+# of the first pr= line so the PR region stays the record's tail that
+# fm_pr_metadata_identity_parse requires. Preserved PR metadata must remain
+# the record tail or the armed merge poll stops validating relaunched lanes.
 spawn_meta_rewrite_before_pr() {  # <meta> <out> <owned keys> <line>...
   local meta=$1 out=$2 keys=$3
   shift 3
@@ -6897,7 +7114,11 @@ EOF
 // reports activity and ignores other sessions until the latched session settles,
 // so a child's terminal event can never clear the worker's busy state. The
 // turn-ended touch stays the watcher's wake NOTIFICATION, never current-state
-// truth.
+// truth. Every event applies strictly in emission order through one queue
+// shared by the server hook and the setup subscription: the record serializes
+// only on its lock, so a turn's terminal busy - emitted a millisecond before
+// its idle, delivered without awaiting this hook - would otherwise be free to
+// win the last write and leave an idle worker recorded busy.
 import { execFile } from "node:child_process";
 const notifyTurnEnd = $busy_notify_turnend;
 const busyEvent = (state, event) =>
@@ -6931,7 +7152,8 @@ const setupEventSubscription = (ctx, handler) => {
 };
 const makeHandler = () => {
   let activeSession = null;
-  return async (event) => {
+  let queue = Promise.resolve();
+  const apply = async (event) => {
     const type = eventType(event);
     const id = sessionID(event);
     if (type === "session.execution.started") {
@@ -6969,9 +7191,13 @@ const makeHandler = () => {
       if (notifyTurnEnd) await touchTurnEnded();
     }
   };
+  return (event) => {
+    queue = queue.then(() => apply(event), () => apply(event));
+    return queue;
+  };
 };
+const handleEvent = makeHandler();
 export const FmBusyState = async () => {
-  const handleEvent = makeHandler();
   return {
     event: async ({ event }) => handleEvent(event),
   };
@@ -6981,7 +7207,7 @@ export default {
   id: "fm.busy-state",
   server: FmBusyState,
   setup(ctx) {
-    setupEventSubscription(ctx, makeHandler());
+    setupEventSubscription(ctx, handleEvent);
   },
 };
 EOF
@@ -6995,7 +7221,11 @@ EOF
 // only start while the main session is already busy) and ignores other
 // sessions' status until the latched session settles, so a child's idle can
 // never clear the worker's busy state. The session.idle touch stays the
-// watcher's wake NOTIFICATION, never current-state truth.
+// watcher's wake NOTIFICATION, never current-state truth. Every event applies
+// strictly in emission order through one queue: the record serializes only on
+// its lock, so a turn's terminal busy - emitted a millisecond before its idle,
+// delivered without awaiting this hook - would otherwise be free to win the
+// last write and leave an idle worker recorded busy.
 import { execFile } from "node:child_process";
 const notifyTurnEnd = $busy_notify_turnend;
 const busyEvent = (state, event) =>
@@ -7007,33 +7237,38 @@ const busyEvent = (state, event) =>
   });
 export const FmBusyState = async () => {
   let activeSession = null;
-  return {
-    event: async ({ event }) => {
-      if (event.type === "session.status") {
-        const sessionID = event.properties.sessionID;
-        const statusType = event.properties.status && event.properties.status.type;
-        if (statusType === "busy" || statusType === "retry") {
-          if (activeSession === null) activeSession = sessionID;
-          if (sessionID === activeSession) await busyEvent("busy", "session-" + statusType);
-          return;
-        }
-        if (statusType === "idle" && sessionID === activeSession) {
-          activeSession = null;
-          await busyEvent("idle", "session-status-idle");
-        }
+  let queue = Promise.resolve();
+  const apply = async (event) => {
+    if (event.type === "session.status") {
+      const sessionID = event.properties.sessionID;
+      const statusType = event.properties.status && event.properties.status.type;
+      if (statusType === "busy" || statusType === "retry") {
+        if (activeSession === null) activeSession = sessionID;
+        if (sessionID === activeSession) await busyEvent("busy", "session-" + statusType);
         return;
       }
-      if (event.type === "session.idle") {
-        if (event.properties.sessionID === activeSession) {
-          activeSession = null;
-          await busyEvent("idle", "session-idle");
-        }
-        if (notifyTurnEnd) {
-          await new Promise((resolve) => {
-            execFile("touch", ["$TURNEND"], () => resolve());
-          });
-        }
+      if (statusType === "idle" && sessionID === activeSession) {
+        activeSession = null;
+        await busyEvent("idle", "session-status-idle");
       }
+      return;
+    }
+    if (event.type === "session.idle") {
+      if (event.properties.sessionID === activeSession) {
+        activeSession = null;
+        await busyEvent("idle", "session-idle");
+      }
+      if (notifyTurnEnd) {
+        await new Promise((resolve) => {
+          execFile("touch", ["$TURNEND"], () => resolve());
+        });
+      }
+    }
+  };
+  return {
+    event: ({ event }) => {
+      queue = queue.then(() => apply(event), () => apply(event));
+      return queue;
     },
   };
 };
@@ -7507,6 +7742,7 @@ preserve_relaunch_meta() {
   [ -z "$EXTERNAL_BACKUP_REMOTE" ] || echo "backup_prefix=$EXTERNAL_BACKUP_PREFIX"
   echo "model=${MODEL:-default}"
   echo "effort=${EFFORT:-default}"
+  [ -z "$DISPATCH_OVERRIDE" ] || printf 'dispatch_override=%s\n' "$DISPATCH_OVERRIDE"
   # The detected OpenCode major, recorded so fm-control sends the exit key this
   # agent's TUI understands. Written only when a version was resolved, so a
   # non-opencode or undetectable task record stays byte-identical.
@@ -7581,8 +7817,9 @@ preserve_relaunch_meta() {
   if [ "$SPAWN_CONTROL_PARENT" = 1 ] && [ -n "${FM_CONTROL_RELAUNCH_TX:-}" ]; then
     echo "control_relaunch_tx=$FM_CONTROL_RELAUNCH_TX"
   fi
-  # Preserved lines go last so nothing fm_pr_metadata_identity_parse
-  # (bin/fm-pr-lib.sh) refuses is written after an armed pr= identity region.
+  # Preserved lines go last so an armed pr= identity block stays last, as
+  # fm_pr_metadata_identity_parse (bin/fm-pr-lib.sh) requires; otherwise the
+  # armed merge poll stops validating relaunched lanes.
   if [ "$RELAUNCH" -eq 1 ]; then
     preserve_relaunch_meta
   fi
@@ -7654,6 +7891,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
   fi
   RELAUNCH_REPLACEMENT_PENDING=0
   SPAWN_META_PUBLISH_STARTED=0
+  HC_REBIND_ABORT_TARGET=
   SPAWN_META_TMP=
 fi
 # A dispatch or relaunch keeps the per-task meta lock through launch delivery.
@@ -7665,6 +7903,10 @@ fi
 if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ]; then
   SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
   fm_lock_release "$SPAWN_TREEHOUSE_PROJECT_LOCK"
+fi
+if [ "$SPAWN_LANE_ADMISSION_LOCK_HELD" = 1 ]; then
+  SPAWN_LANE_ADMISSION_LOCK_HELD=0
+  fm_lock_release "$SPAWN_LANE_ADMISSION_LOCK" || true
 fi
 if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
   # The record is published, so this task is now part of the set a teardown
@@ -7700,6 +7942,9 @@ if [ "$RELAUNCH" -eq 1 ]; then
 fi
 LAUNCH=${LAUNCH//__PIRESUME__/$RESUME_ARGS}
 LAUNCH=${LAUNCH//__CLAUDEPERMFLAG__/$CLAUDE_PERM_FLAG}
+CLAUDE_EXCLUDE=
+[ -z "$EXCLUDE_TOOLS" ] || [ "$HARNESS" != claude ] || CLAUDE_EXCLUDE="--disallowedTools $(shell_quote "$EXCLUDE_TOOLS") "
+LAUNCH=${LAUNCH//__CLAUDEEXCLUDE__/$CLAUDE_EXCLUDE}
 case "$LAUNCH" in
 *__CLAUDESETTINGS__*)
   if [ "$KIND" = secondmate ]; then
@@ -7853,6 +8098,9 @@ if [ -n "$WORKER_ACCOUNT" ]; then
 elif [ "$HARNESS" = claude ] && [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
   LAUNCH="CLAUDE_CONFIG_DIR=$(shell_quote "$CLAUDE_CONFIG_DIR") $LAUNCH"
 fi
+# Like CLAUDE_CONFIG_DIR above, FM_HOME cannot be left to pane inheritance:
+# every worker gets its home explicitly, or its bin/*.sh scripts fall back to
+# their own code root as the home.
 if [ "$KIND" = secondmate ]; then
   sq_home=$(shell_quote "$PROJ_ABS")
   sq_primary_home=$(shell_quote "$FM_HOME")
@@ -7875,6 +8123,13 @@ if [ "$KIND" = secondmate ]; then
   # Reuse the single frozen decision from the carrier resolution above so the
   # injected carrier and this on/off snapshot are guaranteed to agree.
   LAUNCH="FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME=$sq_primary_home FM_HOME=$sq_home FM_TRACE_CONTEXT=$SPAWN_TRACE_EFFECTIVE FM_SUPERVISION_MODEL=$supervision_model $LAUNCH"
+  [ -z "$FLEET_BACKEND" ] || LAUNCH="FM_BACKEND=$FLEET_BACKEND $LAUNCH"
+  if [ "$BACKEND" = hc ]; then
+    LAUNCH="HC_SESSION=$(shell_quote "$HC_SES") $LAUNCH"
+  fi
+else
+  # A ship or scout works for the active home itself.
+  LAUNCH="export FM_HOME=$(shell_quote "$FM_HOME"); $LAUNCH"
 fi
 # Implement the launch-delivery contract in this script's header. The full
 # home-identity hash isolates equal task ids across homes, and the spawn token in
@@ -8030,7 +8285,7 @@ if [ "$BACKEND" = t3code ]; then
     T3CODE_ENV+=("LAVISH_AXI_HOST=$LAVISH_AXI_HOST")
   fi
   if [ "$KIND" = ship ] || [ "$KIND" = scout ]; then
-    T3CODE_ENV+=("FM_TASK_ID=$ID")
+    T3CODE_ENV+=("FM_TASK_ID=$ID" "FM_HOME=$FM_HOME")
   fi
   if [ -n "$SPAWN_TRACEPARENT" ] && spawn_record_traceparent; then
     T3CODE_ENV+=("TRACEPARENT=$SPAWN_TRACEPARENT")
@@ -8264,11 +8519,14 @@ if [ "$HARNESS" = hermes ] && [ "$RAW_LAUNCH" -eq 0 ]; then
   done
   if [ "$HERMES_READY" != 1 ]; then
     echo "error: Hermes did not reach its TUI or process its brief in $T; inspect profile setup, provider errors, and first-run consent (only an already-selected No thanks is answered)" >&2
-    rovo_endpoint_cleanup
+    # rovo_endpoint_cleanup defers to the abort trap while a lease is armed,
+    # which would close only after the record is gone and never report it.
+    spawn_close_abort_endpoint
     if [ "$SPAWN_ENDPOINT_CLOSED" != 1 ]; then
-      # Hermes may still finish starting there, so the record stays for
-      # supervision and teardown instead of being rolled back.
+      # Hermes may still finish starting there, so the record and its leased
+      # worktree stay for supervision and teardown instead of being rolled back.
       SPAWN_FRESH_COMMIT_PENDING=0
+      SPAWN_LEASE_RETURN_ON_ABORT=
       echo "warning: could not close endpoint $T after the failed Hermes launch of $ID; its task record is kept so the worker stays reachable - inspect it, then tear it down" >&2
     fi
     exit 1

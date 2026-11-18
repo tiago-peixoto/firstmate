@@ -693,11 +693,10 @@ HERDR_SECTION=$(printf '%s\n' \
 '   It re-checks refuse-default immediately before stop and again immediately before delete, and fails closed on ambiguity.' \
 '4. If an experiment requires a deliberate mid-run session stop, use only `"$HERDR_LAB_HELPER" stop "$HERDR_LAB_SESSION"`; it performs the same immediate refuse-default check.' \
 '5. Forbidden commands: direct `herdr server stop`, every other server-global operation such as `herdr server live-handoff` or reload/update operations, direct `herdr session stop`, direct `herdr session delete`, and any Herdr call scoped only by ambient or inline `HERDR_SESSION`.' \
-'6. The helper records the live default session before provisioning and verifies the identical fleet state after teardown.' \
-'   A missing, stopped, or changed default session is a hard tripwire failure, never a cleanup warning to ignore.' \
+'6. See the `bin/fm-herdr-lab.sh` header for the fleet-state tripwire and `FM_HERDR_LAB_FLEET_SESSION` rule.' \
+'   A missing, stopped, or changed fleet session is a hard tripwire failure, never a cleanup warning to ignore.' \
 '' \
-'Never bypass the helper, even for a read-only lifecycle probe or cleanup after failure.' \
-'The captain fleet uses the running `default` session.')
+'Never bypass the helper, even for a read-only lifecycle probe or cleanup after failure.')
 else
 IFS= read -r -d '' HERDR_SECTION <<'EOF' || true
 # Herdr lifecycle declaration - NOT ENABLED
@@ -778,6 +777,7 @@ HEAVY_ADMIT_ARGS="--task $ID --load $HEAVY_LOAD$HEAVY_SLOT_ARGS"
 IFS= read -r -d '' CAPACITY_SECTION <<EOF || true
 # Machine capacity
 This machine's heavy-run slots are shared by every Firstmate home on it.
+A remote sandbox command (such as \`boat exec\` or a Boat push) needs no local slot: run it directly, never through the slot helper.
 A full test suite is a heavy run, and so is a no-mistakes pipeline run, whose Test step runs a suite inside the no-mistakes daemon.
 Each heavy run holds one slot for as long as it works, and a task holds at most one slot.
 This home claims only these slots, tried in this order: $HEAVY_SLOT_LIST.

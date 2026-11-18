@@ -20,6 +20,12 @@ last=$(tail -n 1 "$f")
 case "$last" in *'[key=example]'*'first line second line'*) ;; *) fail "multiline body was not flattened into one event: $last" ;; esac
 pass "status writer stamps keyed multiline events"
 
+"$WRITER" "$f" needs-decision --key captain-hold-t-1 --until 2026-12-01 -- 'captain hold t: wait' || fail "writer rejected a dated hold"
+last=$(tail -n 1 "$f")
+case "$last" in 'needs-decision [key=captain-hold-t-1] [until=2026-12-01] [at='*']: captain hold t: wait') ;; *) fail "dated hold lost its until field: $last" ;; esac
+"$WRITER" "$f" note --until 2026-1-1 -- 'bad date' >/dev/null 2>&1 && fail "writer accepted a malformed until date"
+pass "status writer carries a validated until date"
+
 "$WRITER" "$f" definitely-not-a-verb -- 'invalid' >/dev/null 2>&1 && fail "writer accepted an invalid verb"
 pass "status writer rejects invalid verbs"
 

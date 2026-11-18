@@ -33,6 +33,7 @@ done
 for args in 'node /tmp/server.js /opt/hermes-agent/ui-tui/dist/entry.js' 'python3 -c tui_gateway.entry' 'node -e hermes' 'hermes-helper'; do
   ! fm_hermes_process_matches "$args" || fail "false identity: $args"
 done
+! fm_hermes_process_matches '' || fail 'empty args matched under set -u'
 # Use a real interpreter process so kernel-name loss and argv loss are
 # independent regressions, not expectations encoded into a fake harness.
 mkdir -p "$TMP_ROOT/process/tui_gateway"
@@ -216,10 +217,12 @@ if out=$(fm_test_run_spawn "$home" "$wt" "$fakebin" sm "$proj" --secondmate --ha
 assert_contains "$out" 'crewmate/scout adapter only' 'secondmate diagnostic'
 pass 'scout spawn carries native profile, interactive brief, hook overlay and metadata'
 
+# hermes-worker still owns $wt, so each later live worker gets its own copy.
+git -C "$proj" worktree add --quiet -b hermes-stalled "$case_dir/wt-stalled"
 fm_test_spawn_brief "$home" hermes-stalled
 if out=$(FM_FAKE_HERMES_STALL_META="$home/state/hermes-stalled.meta" FM_FAKE_HERMES_KILL_LOG="$case_dir/kill" \
   FM_HERMES_READY_POLLS=2 FM_HERMES_POLL_INTERVAL=0 \
-  fm_test_run_spawn "$home" "$wt" "$fakebin" hermes-stalled "$proj" --scout --harness hermes --hermes-profile example 2>&1); then
+  fm_test_run_spawn "$home" "$case_dir/wt-stalled" "$fakebin" hermes-stalled "$proj" --scout --harness hermes --hermes-profile example 2>&1); then
   fail 'stalled Hermes launch accepted'
 fi
 assert_contains "$out" 'Hermes did not reach its TUI' 'stalled launch diagnostic'
@@ -227,14 +230,16 @@ assert_contains "$(cat "$case_dir/kill" 2>/dev/null)" 'kill-window record=presen
 [ ! -e "$home/state/hermes-stalled.meta" ] || fail 'stalled fresh spawn kept its task record'
 pass 'stalled Hermes launch stops its pane before the task record is removed'
 
+git -C "$proj" worktree add --quiet -b hermes-unclosed "$case_dir/wt-unclosed"
 fm_test_spawn_brief "$home" hermes-unclosed
 if out=$(FM_FAKE_HERMES_STALL_META="$home/state/hermes-unclosed.meta" FM_FAKE_HERMES_KILL_LOG="$case_dir/kill-unclosed" \
   FM_FAKE_HERMES_KILL_FAIL=1 FM_HERMES_READY_POLLS=2 FM_HERMES_POLL_INTERVAL=0 \
-  fm_test_run_spawn "$home" "$wt" "$fakebin" hermes-unclosed "$proj" --scout --harness hermes --hermes-profile example 2>&1); then
+  fm_test_run_spawn "$home" "$case_dir/wt-unclosed" "$fakebin" hermes-unclosed "$proj" --scout --harness hermes --hermes-profile example 2>&1); then
   fail 'unclosed stalled Hermes launch accepted'
 fi
 assert_contains "$out" 'Hermes did not reach its TUI' 'unclosed stalled launch diagnostic'
 assert_contains "$(cat "$case_dir/kill-unclosed" 2>/dev/null)" 'kill-window record=present' 'unclosed stalled worker close not attempted'
 assert_contains "$out" 'task record is kept' 'unclosed stalled launch warning'
+assert_not_contains "$out" 'returned copy' 'unclosed stalled worker had its leased worktree returned'
 assert_grep 'hermes_profile=example' "$home/state/hermes-unclosed.meta" 'unclosed stalled worker lost its task record'
 pass 'stalled Hermes launch whose pane cannot be closed keeps its task record'

@@ -188,7 +188,11 @@ if [ "${1:-}" = auth ]; then
   exit 0
 fi
 [ "${1:-}" = --json ] || exit 2
-cat "${QUOTA_AXI_FIXTURE:?}"
+# Like the real tool, only --full names each account's accountLocator.
+case " $* " in
+  *" --full "*) cat "${QUOTA_AXI_FIXTURE:?}" ;;
+  *) jq 'del(.providers[]?.accountLocator)' "${QUOTA_AXI_FIXTURE:?}" ;;
+esac
 SH
 chmod +x "$FAKEBIN/quota-axi"
 
@@ -431,6 +435,7 @@ assert_contains "$out" 'dispatch-resolve:' "TOON block header"
 assert_contains "$out" '  status: clear' "clear status"
 assert_contains "$out" '  rule: rule_4 (A simple bug fix with a stated root cause.)   confidence: 0.9' "rule and confidence line"
 assert_contains "$out" "  profile: --harness 'cursor' --model 'cursor-grok-4.6-medium'" "argmax picks the highest spendPriority"
+assert_absent "$TMP_ROOT/dispatch-resolution.json" "a brief outside data/<id>/ writes no task record"
 assert_contains "$out" 'candidate: claude:sonnet  provider=claude  scope=all_models  remaining=79%  spendPriority=-0.4627  runway=projected_exhaustion  -> eligible' "every candidate is accounted for"
 assert_contains "$out" 'candidate: kimi:kimi-code/k3  provider=kimi  -> eligible, unranked: provider kimi unmeasured (unknown): disclosed uncertainty' "unmeasured provider stays listed as eligible and unranked"
 assert_contains "$out" '  note: 1 eligible candidate(s) unranked (kimi)' "clear results flag eligible unranked candidates once"
@@ -1373,6 +1378,53 @@ assert_contains "$out" 'candidate: kimi:kimi-code/k3  provider=kimi  -> eligible
 assert_not_contains "$out" '  profile:' "ambiguous emits no profile line"
 pass "ambiguous: confidence below the fixed floor hands the decision back"
 
+# --- task record: data/<id>/dispatch-resolution.json for fm-spawn ---------------
+TASK_BRIEF="$HOME_DIR/data/pager-fix/brief.md"
+TASK_RECORD="$HOME_DIR/data/pager-fix/dispatch-resolution.json"
+mkdir -p "$(dirname "$TASK_BRIEF")"
+cp "$BRIEF" "$TASK_BRIEF"
+reset_log
+write_response "$RESPONSE" rule_4 0.9
+TYPESAFE_API_KEY=$KEY run code out err "$TASK_BRIEF" --project pager
+assert_contains "$out" "  profile: --harness 'cursor' --model 'cursor-grok-4.6-medium'" "the task brief resolves clear"
+assert_equals '{"task":"pager-fix","status":"clear","profile":{"harness":"cursor","model":"cursor-grok-4.6-medium","effort":null}}' \
+  "$(jq -c '{task, status, profile: (.profile | {harness, model, effort})}' "$TASK_RECORD")" \
+  "a clear run records the task, status, and the printed profile with an unset effort as null"
+reset_log
+write_response "$RESPONSE" rule_4 0.41
+TYPESAFE_API_KEY=$KEY run code out err "$TASK_BRIEF" --project pager
+assert_equals 'ambiguous null' "$(jq -r '"\(.status) \(.profile)"' "$TASK_RECORD")" \
+  "a later non-clear run replaces the clear selection, so the manual intake is not bound to it"
+reset_log
+run code out err "$TASK_BRIEF" --project pager
+assert_contains "$err" 'dispatch-resolve: off (' "the keyless run is off"
+assert_equals 'off null' "$(jq -r '"\(.status) \(.profile)"' "$TASK_RECORD")" "an off run records off so fm-spawn accepts the manual intake"
+mv "$RULES" "$RULES.keep"
+printf '{"broken":\n' > "$RULES"
+TYPESAFE_API_KEY=$KEY run code out err "$TASK_BRIEF" --project pager
+expect_code 2 "$code" "malformed rules exit 2"
+assert_absent "$TASK_RECORD" "a configuration error leaves no task record to act on"
+mv "$RULES.keep" "$RULES"
+pass "task record: every exit-0 outcome records its decision for data/<id>/brief.md, and exit 2 records none"
+
+# A home with FM_DATA_OVERRIDE keeps briefs outside $FM_HOME/data; fm-spawn.sh
+# reads the record there, so the resolver must write it there too.
+OVERRIDE_DATA="$TMP_ROOT/custom-records"
+mkdir -p "$OVERRIDE_DATA/pager-fix" "$TMP_ROOT/data/pager-fix"
+cp "$BRIEF" "$OVERRIDE_DATA/pager-fix/brief.md"
+cp "$BRIEF" "$TMP_ROOT/data/pager-fix/brief.md"
+reset_log
+write_response "$RESPONSE" rule_4 0.9
+FM_DATA_OVERRIDE=$OVERRIDE_DATA TYPESAFE_API_KEY=$KEY run code out err "$OVERRIDE_DATA/pager-fix/brief.md" --project pager
+assert_equals 'pager-fix clear cursor' \
+  "$(jq -r '"\(.task) \(.status) \(.profile.harness)"' "$OVERRIDE_DATA/pager-fix/dispatch-resolution.json")" \
+  "a brief under FM_DATA_OVERRIDE records its decision beside it"
+reset_log
+write_response "$RESPONSE" rule_4 0.9
+TYPESAFE_API_KEY=$KEY run code out err "$TMP_ROOT/data/pager-fix/brief.md" --project pager
+assert_absent "$TMP_ROOT/data/pager-fix/dispatch-resolution.json" "a data/<id>/ directory outside the configured data root writes no task record"
+pass "task record: the configured data root, including FM_DATA_OVERRIDE, decides where the record goes"
+
 # --- per-rule confidence floor ------------------------------------------------
 write_floor_response() {  # <path> <choice> <confidence> <rule_1> <rule_2> <rule_3> <rule_4> <default>
   cat > "$1" <<JSON
@@ -1425,10 +1477,11 @@ assert_not_contains "$out" '  fallback:' "a picked rule that clears its own floo
 assert_contains "$out" "  profile: --harness 'cursor' --model 'cursor-grok-4.6-medium'" "the picked rule resolves at probability 0.35 over floor 0.3"
 
 reset_log
-write_floor_response "$RESPONSE" rule_2 0.95 0.05 0.55 0.05 0.30 0.05
+# 0.3 prints the same on jq 1.6 through 1.8; a trailing zero in 0.30 does not.
+write_floor_response "$RESPONSE" rule_2 0.95 0.05 0.55 0.05 0.3 0.05
 TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
 assert_contains "$out" '  status: clear' "a high answer confidence does not lift a picked rule over its own floor"
-assert_contains "$out" '  fallback: rule_4 (A simple bug fix with a stated root cause.) probability 0.30 clears its floor 0.3; rule_2 probability 0.55 is below its floor 0.9' "the runner-up clears the same floor it would need as the pick"
+assert_contains "$out" '  fallback: rule_4 (A simple bug fix with a stated root cause.) probability 0.3 clears its floor 0.3; rule_2 probability 0.55 is below its floor 0.9' "the runner-up clears the same floor it would need as the pick"
 
 reset_log
 write_floor_response "$RESPONSE" rule_2 0.55 0.05 0.55 0.05 0.25 0.10
@@ -1728,7 +1781,7 @@ assert_contains "$out" 'candidate: pi:openai-codex-work/gpt-5.6-terra  provider=
 assert_contains "$out" 'candidate: pi:openai-codex/gpt-5.6-sol  provider=codex  scope=all_models  remaining=0%  spendPriority=-  runway=exhausted_now  -> not eligible: runway exhausted_now at all_models' "the sibling lane reads its own exhausted row"
 assert_contains "$out" 'candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty' "native Codex never infers an account from a Pi lane"
 assert_contains "$out" "  profile: --harness 'pi' --model 'openai-codex-work/gpt-5.6-terra'" "the lane with headroom is chosen"
-assert_equals $'--json\nauth --json' "$(cat "$LOG/quota-axi.calls")" "schema 6 reads quota once and the Pi sign-in sources once"
+assert_equals $'--json --full\nauth --json' "$(cat "$LOG/quota-axi.calls")" "schema 6 reads quota once and the Pi sign-in sources once"
 
 # The server groups the Pi sign-in with native Codex, unlike the Mac.
 SOURCE_AUTH="$TMP_ROOT/source-auth.json"
@@ -1840,12 +1893,61 @@ assert_contains "$out" '  reason: quota-axi --json returned an invalid snapshot'
 cp "$BASE_RULES" "$RULES"
 pass "schema 6: each candidate binds to its account row; schema 5 is unchanged"
 
+# --- schema 6: a Claude candidate binds to its launch directory's account -------
+# With QUOTA_AXI_CLAUDE_PROFILES set, quota-axi reports one claude row per Claude
+# config directory, each keyed by an opaque profile digest and located only by
+# --full's accountLocator. A claude candidate binds to the row for the directory
+# its launch uses, so it is ranked against a low-runway Codex candidate.
+CLAUDE_WORK_DIR="$TMP_ROOT/claude-work"
+CLAUDE_OTHER_DIR="$TMP_ROOT/claude-other"
+CLAUDE_LANES="$TMP_ROOT/claude-lanes.json"
+mkdir -p "$CLAUDE_WORK_DIR" "$CLAUDE_OTHER_DIR"
+jq -n --arg personal "$HOME_DIR/.claude" --arg work "$CLAUDE_WORK_DIR" '{
+  generatedAt: "2030-01-01T00:00:00Z", schemaVersion: 6, providers: [
+    {provider: "claude", accountKey: "profile:aaaa1111", accountLocator: {kind: "config-dir", path: $personal},
+     quotaSemantics: {status: "known", effectiveAvailability: [
+       {scope: "all_models", status: "known", effectivePercentRemaining: 68, runway: {status: "through_reset"}, selection: {spendPriority: 12.4659}}]}},
+    {provider: "claude", accountKey: "profile:bbbb2222", accountLocator: {kind: "config-dir", path: $work},
+     quotaSemantics: {status: "known", effectiveAvailability: [
+       {scope: "all_models", status: "known", effectivePercentRemaining: 25, runway: {status: "projected_exhaustion"}, selection: {spendPriority: -0.6673}}]}},
+    {provider: "codex", accountKey: "codex-home",
+     quotaSemantics: {status: "known", effectiveAvailability: [
+       {scope: "all_models", status: "known", effectivePercentRemaining: 5, runway: {status: "projected_exhaustion"}, selection: {spendPriority: -3.2}}]}}]}' > "$CLAUDE_LANES"
+jq -n '{rules: [{when: "Claude or Codex work.", use: [{harness: "claude", model: "opus"}, {harness: "codex", model: "gpt-5.6-sol"}]}]}' > "$RULES"
+cat > "$RESPONSE" <<'JSON'
+{ "model": "jev-1.13.0",
+  "answers": { "rule": { "type": "choice", "choice": "rule_1", "confidence": 0.9,
+    "probabilities": { "rule_1": 0.97, "default": 0.03 } } },
+  "usage": { "input_tokens": 812, "output_tokens": 60 } }
+JSON
+run_claude_lanes() {  # <pin file content, or empty for no pin> [CLAUDE_CONFIG_DIR]
+  rm -f "$HOME_DIR/config/claude-account"
+  [ -z "$1" ] || printf '%s\n' "$1" > "$HOME_DIR/config/claude-account"
+  reset_log
+  # An empty CLAUDE_CONFIG_DIR is the unset default to fm-spawn.sh as well.
+  CLAUDE_CONFIG_DIR=${2:-} HOME=$HOME_DIR TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$CLAUDE_LANES" run code out err "$BRIEF"
+}
+run_claude_lanes ''
+expect_code 0 "$code" "two Claude accounts exit 0"
+assert_contains "$out" 'candidate: claude:opus  provider=claude  scope=all_models  remaining=68%  spendPriority=12.4659  runway=through_reset  -> eligible' "an unpinned home binds claude to the ~/.claude account row"
+assert_contains "$out" "  profile: --harness 'claude' --model 'opus'" "the ranked Claude account beats a low-runway Codex account"
+run_claude_lanes "$CLAUDE_WORK_DIR"
+assert_contains "$out" 'candidate: claude:opus  provider=claude  scope=all_models  remaining=25%  spendPriority=-0.6673  runway=projected_exhaustion  -> eligible' "a pinned home binds claude to its pinned account row"
+run_claude_lanes '' "$CLAUDE_WORK_DIR/"
+assert_contains "$out" 'remaining=25%  spendPriority=-0.6673' "an unpinned launch binds the CLAUDE_CONFIG_DIR it forwards, trailing slash included"
+run_claude_lanes "$CLAUDE_OTHER_DIR"
+assert_contains "$out" "candidate: claude:opus  provider=claude  -> eligible, unranked: provider claude has no quota row for config directory $CLAUDE_OTHER_DIR: disclosed uncertainty" "a directory with no account row stays unranked"
+assert_contains "$out" "  profile: --harness 'codex' --model 'gpt-5.6-sol'" "an unbound Claude candidate is never ranked"
+rm -f "$HOME_DIR/config/claude-account"
+cp "$BASE_RULES" "$RULES"
+pass "schema 6: a Claude candidate binds to the account of the config directory its launch uses"
+
 # --- quota-axi is read exactly once --------------------------------------------
 reset_log
 write_response "$RESPONSE" rule_4 0.9
 TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
 expect_code 0 "$code" "quota-axi path exits 0"
-assert_equals '--json' "$(cat "$LOG/quota-axi.calls")" "quota-axi --json is called exactly once"
+assert_equals '--json --full' "$(cat "$LOG/quota-axi.calls")" "quota-axi --json --full is called exactly once"
 assert_contains "$out" "  profile: --harness 'cursor' --model 'cursor-grok-4.6-medium'" "quota-axi snapshot drives the argmax"
 reset_log
 TYPESAFE_API_KEY=$KEY FAKE_QUOTA_FAIL=1 run code out err "$BRIEF"
