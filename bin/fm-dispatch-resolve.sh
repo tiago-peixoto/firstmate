@@ -53,12 +53,16 @@
 #   rule's declared `min_confidence` on that rule's probability, falling to the
 #   most probable other option that clears its own floor), the rule's declared
 #   `approval` and `floor`, each profile's declared `provider`, `quota_scope`, and `floor`, the
-#   quota rows from ONE quota-axi --json snapshot (schema 5 or 6; each
+#   quota rows from ONE quota-axi --json --full snapshot (schema 5 or 6; each
 #   candidate binds to one row through quota_row in
 #   bin/fm-quota-axi-lib.sh, with quota-axi auth --json resolving Pi Codex
 #   sign-ins to accounts when available, so openai-codex-work/...
-#   reads its own account's row and an expanded provider with no row for the
-#   candidate is unmeasured, never blocked), then the optional preferred_provider
+#   reads its own account's row, a claude candidate reading the row whose
+#   accountLocator names the config directory fm-spawn.sh would launch it
+#   under (the config/claude-account pin, else CLAUDE_CONFIG_DIR, else
+#   ~/.claude; none while config/claude-accounts is declared), and an expanded
+#   provider with no row for the candidate is unmeasured, never blocked), then
+#   the optional preferred_provider
 #   family restriction before spendPriority ranks the remaining candidates.
 #   An eligible but wholly unrankable preferred family escalates rather than
 #   authorizing another family.
@@ -148,6 +152,8 @@ CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 
 # shellcheck source=bin/fm-quota-axi-lib.sh
 . "$SCRIPT_DIR/fm-quota-axi-lib.sh"
+# shellcheck source=bin/fm-worker-account-lib.sh
+. "$SCRIPT_DIR/fm-worker-account-lib.sh"
 # shellcheck source=bin/fm-control-lib.sh
 . "$SCRIPT_DIR/fm-control-lib.sh"
 # shellcheck source=bin/fm-env-lib.sh
@@ -628,7 +634,7 @@ jq -e --slurpfile rules "$RULES" '
        (.usage.output_tokens | type) == "number"))' \
   "$RESP_FILE" >/dev/null 2>&1 || emit_error "response is not a rule Choice answer"
 
-# ---- quota evidence: one quota-axi --json snapshot, skipped entirely under the
+# ---- quota evidence: one quota-axi --json --full snapshot, skipped entirely under the
 # ---- shared-quota opt-out (a stub keeps the slurpfile contract intact) ---------
 SQ=false
 SHARED_QUOTA=$(jq -r '.shared_quota // false' "$RULES" 2>/dev/null) || SHARED_QUOTA=false
@@ -637,8 +643,21 @@ if [ "$SHARED_QUOTA" = true ]; then
   SQ=true
 else
   command -v quota-axi >/dev/null 2>&1 || emit_error "quota-axi not installed"
-  quota-axi --json > "$QUOTA" 2>/dev/null || emit_error "quota-axi --json failed"
+  quota-axi --json --full > "$QUOTA" 2>/dev/null || emit_error "quota-axi --json failed"
   fm_quota_json_valid < "$QUOTA" || emit_error "quota-axi --json returned an invalid snapshot"
+fi
+
+# The Claude config directory a claude launch from this home uses, as
+# fm-spawn.sh selects it; empty when unknown, which leaves claude unbound.
+CLAUDE_DIR=
+if CLAUDE_LIST=$(fm_worker_account_list claude "$CONFIG" 2>/dev/null) && [ -z "$CLAUDE_LIST" ] &&
+  CLAUDE_PIN=$(fm_worker_account_resolve claude "$CONFIG" config/claude-account 2>/dev/null); then
+  if [ -z "$CLAUDE_PIN" ]; then
+    CLAUDE_DIR=${CLAUDE_CONFIG_DIR:-${HOME:+$HOME/.claude}}
+  else
+    CLAUDE_DIR=$(printf '%s\n' "$CLAUDE_PIN" | cut -f2)
+    [ -n "$CLAUDE_DIR" ] || CLAUDE_DIR=${HOME:+$HOME/.claude}
+  fi
 fi
 
 AUTH='[]'
@@ -651,7 +670,7 @@ if jq -e '.schemaVersion == 6' "$QUOTA" >/dev/null &&
 fi
 
 # ---- resolution: declared gates + quota evidence + argmax, all in jq ------------
-RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg none_criterion "$DEFAULT_WHEN" --argjson pmap "$PMAP" --argjson sq "$SQ" \
+RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --arg claude_dir "$CLAUDE_DIR" --argjson lat "$LAT_MS" --arg none_criterion "$DEFAULT_WHEN" --argjson pmap "$PMAP" --argjson sq "$SQ" \
   --argjson auth "$AUTH" --slurpfile resp "$RESP_FILE" --slurpfile rules "$RULES" --slurpfile quota "$QUOTA" "$FM_QUOTA_ROW_JQ"'
   ($resp[0]) as $r | ($rules[0]) as $cfg | ($quota[0]) as $q | ($r.answers.rule) as $a |
   def profiles($v): if ($v | type) == "array" then $v elif ($v | type) == "object" then [$v] else [] end;
@@ -661,7 +680,8 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
   def provider_of($c): ($c.provider // $pmap[$c.harness] // null);
   def lane_of($c):
     quota_lane($c.harness; $c.model) as $lane |
-    if ($c.harness == "pi" or $c.harness == "pi-signed") and
+    if $c.harness == "claude" then quota_claude_lane($q; $claude_dir)
+    elif ($c.harness == "pi" or $c.harness == "pi-signed") and
        provider_of($c) == "codex" and $lane != "codex-home" and $lane != "" then
       ([$auth[] | select(.sources | index("pi:" + $lane)) | .accountKey] | unique) as $accounts |
       if ($accounts | length) == 1 and
@@ -696,7 +716,7 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
     elif prov($p; $lane) == null then
       {profile: $c, provider: $p, eligible: true, unranked: true,
        reason: (if any($q.providers[]; .provider == $p)
-                then "provider \($p) has no quota row for account \(if $lane == "" then "default" else $lane end)"
+                then "provider \($p) has no quota row for \(if $c.harness == "claude" and $claude_dir != "" then "config directory \($claude_dir)" elif $lane == "" then "account default" else "account \($lane)" end)"
                 else "provider \($p) not in the quota snapshot" end)}
     else
       (applicable($p; $lane; ($c.model // ""); ($c.quota_scope // null))) as $rows |

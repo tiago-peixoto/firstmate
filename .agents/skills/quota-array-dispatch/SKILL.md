@@ -95,6 +95,9 @@ Use that account only when the source identifies one distinct account and its qu
 Otherwise, fall back to the Pi auth provider id as `accountKey`, then `default`, else unmeasured.
 Native Codex, including Pi's `codex-native/` adapter, keeps matching `codex-home`, then `default`.
 Other Pi providers keep matching their auth provider id, then `default`.
+When a snapshot carries more than one `claude` row, a Claude candidate matches the row whose `accountLocator.path` in `quota-axi --full --json` is the config directory its spawn launches under.
+That directory is the home's `config/claude-account` pin (`~/.claude` for `ordinary`), else the forwarded `CLAUDE_CONFIG_DIR`, else `~/.claude`.
+Never infer it from an account key or a `--tui` label, and with no matching row the candidate is unmeasured.
 Never pick an account row by position or sum rows across accounts.
 A stale, auth-required, or unmeasurable scope appears in `attention[]` instead of a fabricated number.
 

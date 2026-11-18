@@ -26,6 +26,10 @@ FM_QUOTA_PROVIDER_ID_RE='^[a-z0-9]+(-[a-z0-9]+)*\z'
 # Prepend them to a consumer's program:
 #   quota_lane($harness; $model)   the candidate's account key, or "" when none
 #                                  is identified by the contract.
+#   quota_claude_lane($snapshot; $dir)
+#                                  the accountKey of the one claude row whose
+#                                  --full accountLocator names config directory
+#                                  $dir, or "" when not exactly one does.
 #   quota_row($snapshot; $provider; $lane)
 #                                  the one provider row the candidate binds to,
 #                                  or null; schema 5 ignores $lane.
@@ -36,6 +40,14 @@ FM_QUOTA_ROW_JQ='
     elif ($harness == "pi" or $harness == "pi-signed") and (($model // "") | contains("/"))
     then ($model | split("/") | first | if . == "codex-native" then "codex-home" else . end)
     else "" end;
+  # quota-axi keys each claude lane by an opaque profile digest, so only its
+  # own locator maps a directory to a key; trailing slashes name the same one.
+  def quota_claude_lane($snapshot; $dir):
+    ($dir | sub("/+$"; "")) as $want |
+    [$snapshot.providers[]? | select(.provider == "claude" and
+      (.accountKey | type) == "string" and .accountLocator.kind == "config-dir" and
+      ((.accountLocator.path // "") | sub("/+$"; "")) == $want) | .accountKey] |
+    if $want != "" and length == 1 then first else "" end;
   def quota_row($snapshot; $provider; $lane):
     ([$snapshot.providers[]? | select(.provider == $provider)]) as $rows |
     if $snapshot.schemaVersion == 6 then
