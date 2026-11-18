@@ -7,6 +7,7 @@
 #   fm-procevent-remote-reply.sh autohandle <source-id> <sequence> <result-file>
 #   fm-procevent-remote-reply.sh classify <result-file>
 #   fm-procevent-remote-reply.sh terminal <result-file>
+#   fm-procevent-remote-reply.sh silent <result-file>
 #   fm-procevent-remote-reply.sh self-announcing
 #   fm-procevent-remote-reply.sh source-id <secondmate-id>
 #   fm-procevent-remote-reply.sh relisten
@@ -40,6 +41,17 @@
 # completely quiet. Only a capture autohandle could NOT
 # fully apply is published as a `check` wake for the manual handler, and
 # running `handle` on that wake is idempotent.
+#
+# `silent` answers the runner's routine-no-op question for one capture. It exits
+# 0 only for a delta capture whose exact bytes another sequence of the same
+# source already ingested: that sequence's receipt holds this file's SHA-256.
+# Identical bytes mean identical offsets and prefix digests, so the lines are
+# already mirrored and the cursor has moved past them. Such an orphan, left by a
+# handler that stopped before its receipt, otherwise returns on every reconcile
+# forever, because `handle` refuses it once the cursor moves on. The capture's
+# own receipt never counts: an ingested capture that still owes its
+# acknowledgement and re-arm stays announced so `handle` can finish it.
+# Retirement removes every receipt, so the match never crosses a retirement.
 #
 # This channel is a status-stream MIRROR, not a correlated-reply channel. A local
 # secondmate appends its whole status stream straight into the parent's
@@ -97,7 +109,7 @@ DOCUMENT_LOCAL_FAILURE=2
 . "$SCRIPT_DIR/fm-pending-reply-lib.sh"
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,66p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,/^set -u$/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 2; }
 
 # Lifecycle-lock EXIT traps must compose temporary-path cleanup with lock
 # release; installing only one would silently drop the other obligation.
@@ -758,6 +770,25 @@ cmd_autohandle() {
   return "$rc"
 }
 
+cmd_silent() {
+  local result=${1:-} base sid seq id hash own
+  [ -f "$result" ] && [ ! -L "$result" ] || return 1
+  base=${result##*/}
+  base=${base%.result}
+  sid=${base%.*}
+  seq=${base##*.}
+  case "$sid" in remote-reply-?*) id=${sid#remote-reply-} ;; *) return 1 ;; esac
+  validate_id "$id"
+  case "$seq" in ''|*[!0-9]*) return 1 ;; esac
+  [ "$(classify_result "$result")" = delta ] || return 1
+  hash=$(sha256_file "$result") || return 1
+  own=$(ingest_receipt_path "$id" "$seq")
+  # A long-lived mate keeps one receipt per capture, too many for one glob.
+  find "$CURSOR_DIR" -maxdepth 1 -type f -name "$id.*.ingested" \
+    -exec grep -lxF -- "result_sha256=$hash" {} + 2>/dev/null \
+    | grep -qvxF -- "$own"
+}
+
 cmd_handle() {
   local id=${1:-} lock
   validate_id "$id"
@@ -873,6 +904,7 @@ case "${1:-}" in
   ingest) shift; [ "$#" -eq 2 ] || usage; cmd_ingest "$@" ;;
   classify) shift; [ "$#" -eq 1 ] || usage; classify_result "$1" ;;
   terminal) shift; [ "$#" -eq 1 ] || usage; [ -s "$1" ] ;;
+  silent) shift; [ "$#" -eq 1 ] || usage; cmd_silent "$1" ;;
   self-announcing) shift; [ "$#" -eq 0 ] || usage; exit 0 ;;
   source-id) shift; [ "$#" -eq 1 ] || usage; source_id "$1" ;;
   relisten) shift; [ "$#" -eq 0 ] || usage; exit 0 ;;
