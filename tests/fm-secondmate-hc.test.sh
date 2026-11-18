@@ -115,6 +115,29 @@ assert_grep "FM_HOME='$CHILD'" "$FM_FAKE_HC_DIR/launch.sh" 'child launch lost ho
 assert_grep "$CHILD/data/charter.md" "$FM_FAKE_HC_DIR/launch.sh" 'child launch lost charter'
 pass 'hc secondmate: metadata, child placement, parent ownership, runtime persistence and launch'
 
+# config/hc-own-space in the parent home, with a readable own terminal and no
+# FM_HC_SPACE: the secondmate still lands in its child home's space.
+setup_world own-space
+: > "$PRIMARY/config/hc-own-space"
+printf '{"address":"t0","labels":{"herdr.space":"own-space","herdr.tab":"own"}}\n' > "$FM_FAKE_HC_DIR/terminal.json"
+# AF_UNIX paths cap near 104 bytes, so the socket lives under a short /tmp dir.
+SOCKDIR=$(mktemp -d /tmp/fm-sm.XXXXXX)
+python3 -c 'import socket,sys,time; s=socket.socket(socket.AF_UNIX); s.bind(sys.argv[1]); s.listen(5); time.sleep(300)' \
+  "$SOCKDIR/core.sock" >/dev/null 2>&1 &
+SOCK_PID=$!
+for ((attempt=0; attempt<100; attempt++)); do [ -S "$SOCKDIR/core.sock" ] && break; sleep 0.05; done
+own_rc=0
+FM_HOME="$PRIMARY" FM_BACKEND=hc FM_HC_SOCKET="$SOCKDIR/core.sock" \
+  HC_TERMINAL_ID=t0 HC_TERMINAL_SOCKET="$SOCKDIR/core.sock" \
+  "$ROOT/bin/fm-spawn.sh" design "$CHILD" codex --secondmate > "$TMP_ROOT/own-space.out" 2>&1 || own_rc=$?
+kill "$SOCK_PID" 2>/dev/null || true
+rm -rf "$SOCKDIR"
+[ "$own_rc" -eq 0 ] || { cat "$TMP_ROOT/own-space.out"; fail 'hc secondmate spawn with config/hc-own-space failed'; }
+child_tag=$(FM_HOME="$CHILD" FM_ROOT="$CHILD" fm_backend_hometag)
+jq -e --arg child "$child_tag" '.labels["herdr.space"] == ("fm-" + $child)' \
+  "$FM_FAKE_HC_DIR/terminal.json" >/dev/null || fail 'config/hc-own-space moved the secondmate out of its child space'
+pass 'hc secondmate: config/hc-own-space leaves secondmate placement in the child space'
+
 setup_world conflict
 printf 'tmux\n' > "$CHILD/config/backend"
 if spawn > "$TMP_ROOT/conflict.out" 2>&1; then

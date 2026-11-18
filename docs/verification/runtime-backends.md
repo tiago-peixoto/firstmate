@@ -3859,11 +3859,19 @@ A simulated transport failure and reconnection preserved terminal creation times
 Guarded cleanup verified unchanged user state.
 This excludes real SSH authentication, the remote entrypoint and job worker, physical `fm-remote` selection, and model-driven instruction handling or relaunch.
 
+### Own-space placement
+
+`tests/fm-backend-hc-appdetect-smoke.test.sh` passed on 2026-11-18 against hc 0.1.21 inside an `fm-hclab-*` lab session.
+With `config/hc-own-space` present and explicit `config/backend=hc`, a real `bin/fm-spawn.sh` spawn whose environment named a lab terminal labeled `herdr.space=fm-app` created a worker terminal whose core record carried `herdr.space=fm-app`, and meta recorded no `backend_detect=` line.
+The same spawn with `FM_HC_SPACE=pinned-space` carried `herdr.space=pinned-space`, and a spawn with no `HC_TERMINAL_*` markers carried `herdr.space=fm-<hometag>`.
+This verifies the label value in the core record only; no app window was attached.
+
 ### Not verified
 
 - A complete `fm-spawn.sh` launch with a real harness rather than the stand-in or shell workloads.
 - Ongoing primary supervision and automatic hook loading in hc.
 - Live remote transport, remote lifecycle, and remote app projection.
+- A `config/hc-own-space` worker joining, as a tab, a space the app itself created, observed in a real window.
 - Full unobscured native visual verification.
 - `send --wait`'s `started`/`working` proof against a real status-reporting harness; the lab run covered a non-reporting shell, whose verdict falls to the composer screen.
 - Native `status.state` reported by a real harness launched through `bin/fm-spawn.sh`.

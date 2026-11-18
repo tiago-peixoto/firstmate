@@ -331,21 +331,25 @@ fm_backend_detect_hc_core_sock() {
 # HC_TERMINAL_SOCKET live (a bare `hc get` against a missing socket starts a
 # core) and the toolchain usable, which also sourced the adapter, so
 # fm_backend_hc_bin is available here. A get failure or empty label is a miss.
+# The label read is left in FM_BACKEND_DETECT_HC_SPACE, never printed: stdout
+# here would join fm_backend_detect's printed backend name.
 fm_backend_detect_herdr_app_terminal() {
-  local bin space
+  local bin
+  FM_BACKEND_DETECT_HC_SPACE=""
   bin=$(fm_backend_hc_bin) || return 1
   # `env -u HC_SESSION` lets the pinned socket alone name the endpoint; an
   # inherited session could point at another core.
-  space=$(env -u HC_SESSION HC_SOCKET="$HC_TERMINAL_SOCKET" "$bin" get "$HC_TERMINAL_ID" --json 2>/dev/null \
+  FM_BACKEND_DETECT_HC_SPACE=$(env -u HC_SESSION HC_SOCKET="$HC_TERMINAL_SOCKET" "$bin" get "$HC_TERMINAL_ID" --json 2>/dev/null \
     | jq -r '.labels["herdr.space"] // ""' 2>/dev/null) || return 1
-  [ -n "$space" ]
+  [ -n "$FM_BACKEND_DETECT_HC_SPACE" ]
 }
 
 # fm_backend_detect_herdr_app: the single Herdr app signal documented on
 # fm_backend_detect. On a detection sets FM_BACKEND_DETECT_SIGNAL to
-# app-terminal and returns 0. A live app-terminal candidate with no usable
-# hc toolchain sets app-terminal-unusable and returns 1; with no such
-# candidate it leaves the globals alone and returns 1.
+# app-terminal, leaves that terminal's herdr.space label in
+# FM_BACKEND_DETECT_HC_SPACE, and returns 0. A live app-terminal candidate
+# with no usable hc toolchain sets app-terminal-unusable and returns 1; with
+# no such candidate it leaves the signal alone and returns 1.
 fm_backend_detect_herdr_app() {
   local core
   if [ -n "${HC_TERMINAL_ID:-}" ] && [ -n "${HC_TERMINAL_SOCKET:-}" ] \

@@ -142,7 +142,7 @@ SH
 test_public_worker_relaunch() { (
   # shellcheck source=tests/fixtures.sh
   . "$ROOT/tests/fixtures.sh"
-  local dir="$T/public" mode id meta out tag kind task_tmp
+  local dir="$T/public" mode id meta out tag kind task_tmp sockdir sockpid space attempt
   local -a task_tmps=()
   trap 'for task_tmp in "${task_tmps[@]}"; do fm_test_remove_tree "$task_tmp"; done' EXIT
   mkdir -p "$dir/bin" "$dir/user"
@@ -175,7 +175,7 @@ elif cmd == 'server':
 elif cmd == 'connect':
     print('{"result":{"generation":1}}')
 elif cmd == 'get':
-    path = old if args[-1] == 't9' else new
+    path = d / 'own.json' if 'own' in args else old if args[-1] == 't9' else new
     if not path.exists(): sys.exit(3)
     print(path.read_text())
 elif cmd == 'kill':
@@ -209,6 +209,12 @@ else:
     sys.exit('unexpected hc mutation: ' + repr(args))
 HC
   chmod +x "$FM_HC_BIN"
+  # The finished case also opts into config/hc-own-space from a readable own
+  # terminal. AF_UNIX paths cap near 104 bytes, hence the short /tmp dir.
+  sockdir=$(mktemp -d /tmp/fm-hcr.XXXXXX)
+  python3 -c 'import socket,sys,time; s=socket.socket(socket.AF_UNIX); s.bind(sys.argv[1]); s.listen(5); time.sleep(300)' \
+    "$sockdir/core.sock" >/dev/null 2>&1 &
+  sockpid=$!
   for mode in absent finished scout-absent scout-finished retained revived foreign send-fail late-fail; do
     id="hc-rebind-$mode-$$"
     task_tmps+=("/tmp/fm-$id")
@@ -251,6 +257,14 @@ META
       foreign) sed 's/firstmate.home/foreign.home/' "$FAKE_HC_DIR/old.json" > "$FAKE_HC_DIR/x"; mv "$FAKE_HC_DIR/x" "$FAKE_HC_DIR/old.json" ;;
     esac
     out="$dir/$mode/output"
+    unset FM_HC_SOCKET HC_TERMINAL_ID HC_TERMINAL_SOCKET
+    if [ "$mode" = finished ]; then
+      mkdir -p "$FM_HOME/config"
+      : > "$FM_HOME/config/hc-own-space"
+      printf '{"labels":{"herdr.space":"own-space"}}\n' > "$FAKE_HC_DIR/own.json"
+      for ((attempt=0; attempt<100; attempt++)); do [ -S "$sockdir/core.sock" ] && break; sleep 0.05; done
+      export FM_HC_SOCKET="$sockdir/core.sock" HC_TERMINAL_ID=own HC_TERMINAL_SOCKET="$sockdir/core.sock"
+    fi
     if "$ROOT/bin/fm-spawn.sh" "$id" --relaunch > "$out" 2>&1; then
       case "$mode" in retained|revived|foreign|send-fail|late-fail) fail "$mode recovery accepted" ;; esac
     else
@@ -267,6 +281,10 @@ META
       jq -e --arg home "$tag" --arg task "fm-$id" --arg cwd "$dir/$mode/worktree" \
         '.labels["firstmate.home"]==$home and .labels["firstmate.task"]==$task and .cwd==$cwd' \
         "$FAKE_HC_DIR/new.json" >/dev/null || fail 'replacement ownership or cwd changed'
+      space="fm-$tag"
+      [ "$mode" != finished ] || space=own-space
+      jq -e --arg space "$space" '.labels["herdr.space"]==$space' "$FAKE_HC_DIR/new.json" >/dev/null \
+        || fail "$mode replacement must open in space $space"
     else
       cmp "$meta" "$FAKE_HC_DIR/before.meta" || fail 'refusal changed metadata'
       assert_absent "$FAKE_HC_DIR/new.json" 'unsafe replacement created'
@@ -274,7 +292,7 @@ META
     python3 - "$FAKE_HC_DIR/calls" "$mode" <<'CHECK'
 import json, sys
 calls = [json.loads(line) for line in open(sys.argv[1])]
-assert all(session == 'recorded' for session, args in calls if args[0] != '--version'), calls
+assert all(session == 'recorded' for session, args in calls if args[0] != '--version' and 'own' not in args), calls
 runs = [args for _, args in calls if args[0] == 'run']
 assert len(runs) == (0 if sys.argv[2] in ('retained', 'revived', 'foreign') else 1), calls
 for args in runs:
@@ -283,7 +301,9 @@ if sys.argv[2] in ('revived', 'foreign'):
     assert not any(args[0] in ('kill', 'rm') for _, args in calls), calls
 CHECK
   done
-  pass 'hc public ship/scout relaunch: missing/finished recovery and unsafe refusals and pre/post-publication failures'
+  kill "$sockpid" 2>/dev/null || true
+  rm -rf "$sockdir"
+  pass 'hc public ship/scout relaunch: missing/finished recovery, config/hc-own-space placement, and unsafe refusals and pre/post-publication failures'
 ) || exit 1; }
 
 fm_test_run test_capabilities test_absence test_local_recovery test_refusals test_remote_route test_public_worker_relaunch

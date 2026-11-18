@@ -34,6 +34,9 @@
 #   bin/fm-herdr-lab.sh or a listed Herdr session/server lifecycle command must
 #   carry the Herdr isolation contract emitted by bin/fm-brief.sh --herdr-lab;
 #   the refusal names the first such match.
+#   When config/hc-own-space exists, a ship or scout on the hc backend opens in
+#   the Herdr.app space of this process's own terminal; docs/hc-backend.md
+#   "Task placement" owns the contract.
 #   Every ship or scout spawn renders `launch-brief.md`; for a no-mistakes ship
 #   it also carries the current `--intent` contract and the extracted captain
 #   intent. A legacy mixed Task is accepted there only under bin/fm-dod-lib.sh's
@@ -2467,6 +2470,21 @@ fi
 if [ "$RELAUNCH" -ne 1 ]; then
   fm_lease_forbid_branch "new-task spawn (fm-spawn)" --away-relocated
 fi
+
+# spawn_hc_own_space: under config/hc-own-space, default FM_HC_SPACE to the
+# herdr.space label of this process's own terminal on <session>'s core, so the
+# task opens as a tab beside it. A set FM_HC_SPACE and every secondmate keep
+# their placement, and any miss leaves the default (docs/hc-backend.md "Task
+# placement"). The command substitution keeps the probe's
+# FM_BACKEND_DETECT_SIGNAL out of the meta's backend_detect= line.
+spawn_hc_own_space() {  # <session>
+  local own
+  if [ -e "$CONFIG/hc-own-space" ] && [ "$KIND" != secondmate ] && [ -z "${FM_HC_SPACE:-}" ]; then
+    own=$(HC_SESSION=$1; fm_backend_detect_herdr_app >/dev/null 2>&1 && printf '%s' "$FM_BACKEND_DETECT_HC_SPACE") || own=
+    [ -z "$own" ] || FM_HC_SPACE=$own
+  fi
+}
+
 spawn_refuse_if_away_spend_cap() {
   local cap live
   [ "$RELAUNCH" -ne 1 ] || return 0
@@ -5258,6 +5276,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
         exit 1
         ;;
     esac
+    spawn_hc_own_space "$HC_SES"
     HC_TERMINAL=$(fm_backend_hc_create_task "$HC_SES" "$W" "$WT") || exit 1
     T="$HC_SES:$HC_TERMINAL"
     HC_REBIND_ABORT_TARGET=$T
@@ -5605,6 +5624,7 @@ EOF
     HC_SES=$(fm_backend_hc_container_ensure) || exit 1
     HC_PRESENTATION_HOME=
     [ "$KIND" != secondmate ] || HC_PRESENTATION_HOME=$PROJ_ABS
+    spawn_hc_own_space "$HC_SES"
     HC_TERMINAL=$(fm_backend_hc_create_task "$HC_SES" "$W" "$PROJ_ABS" "$HC_PRESENTATION_HOME") || exit 1
     T="$HC_SES:$HC_TERMINAL"
     ;;

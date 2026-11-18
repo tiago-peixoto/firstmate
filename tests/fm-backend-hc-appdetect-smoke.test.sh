@@ -21,6 +21,9 @@
 #      detection.
 #   D. no core: the same live window beside an HC_SESSION with no running
 #      core resolves the default backend silently and starts no core.
+#   E. own space: config/hc-own-space (docs/hc-backend.md "Task placement")
+#      gives a worker the launcher terminal's herdr.space, yields to
+#      FM_HC_SPACE, and falls back to the default with no terminal to read.
 #
 # Everything lands in a bin/fm-hc-lab.sh session (unique fm-hclab-*
 # HC_SESSION, scratch XDG roots, a pinned FM_HC_SOCKET, and a fleet-state
@@ -138,13 +141,13 @@ teardown_one() {  # <id>
   WT=
 }
 
-assert_task_labels() {  # <id> <terminal-addr>
-  local labels
+assert_task_labels() {  # <id> <terminal-addr> [herdr.space, default fm-<hometag>]
+  local labels space=${3:-fm-$HOMETAG}
   labels=$("$ROOT/bin/fm-hc-lab.sh" run "$HC_TEST_SES" get "$2" --json \
     | jq -r '.labels["herdr.space"], .labels["herdr.tab"], .labels["firstmate.task"], .labels["firstmate.home"]' 2>/dev/null) \
     || fail "hc get on the spawned task terminal failed for $1"
-  [ "$(printf '%s\n' "$labels" | sed -n 1p)" = "fm-$HOMETAG" ] \
-    || fail "$1's herdr.space must be fm-$HOMETAG, got: $labels"
+  [ "$(printf '%s\n' "$labels" | sed -n 1p)" = "$space" ] \
+    || fail "$1's herdr.space must be $space, got: $labels"
   [ "$(printf '%s\n' "$labels" | sed -n 2p)" = "$HOMETAG-fm-$1" ] \
     || fail "$1's herdr.tab must be $HOMETAG-fm-$1, got: $labels"
   [ "$(printf '%s\n' "$labels" | sed -n 3p)" = "fm-$1" ] \
@@ -238,7 +241,39 @@ if grep -q 'NOTICE: auto-detected' "$TMP_ROOT/c.err"; then
   fail "an explicit selection must not print the auto-detect notice"$'\n'"$(cat "$TMP_ROOT/c.err")"
 fi
 teardown_one "$ID"
-rm -f "$CONFIG/backend"
 pass "explicit: config/backend=hc wins over the app signals and records no detection provenance"
+
+# --- Case E: config/hc-own-space places workers in the own terminal's space -
+# Explicit config/backend=hc stays in place, so the label is read at spawn
+# time even though backend detection never ran.
+: > "$CONFIG/hc-own-space"
+
+ID=appdeto1
+OUT=$(HC_TERMINAL_ID=$APP_TERM2 HC_TERMINAL_SOCKET=$HC_TEST_SOCK \
+  spawn_one "$ID" "sh -c 'echo appdetect-own-space-ok'" 2>"$TMP_ROOT/e1.err") \
+  || fail "fm-spawn.sh with config/hc-own-space failed"$'\n'"$OUT"$'\n'"$(cat "$TMP_ROOT/e1.err")"
+META=$STATE/$ID.meta
+if grep -q '^backend_detect=' "$META"; then
+  fail "reading the own space must not record backend_detect"$'\n'"$(cat "$META")"
+fi
+assert_task_labels "$ID" "$(grep '^hc_terminal=' "$META" | cut -d= -f2-)" fm-app
+teardown_one "$ID"
+pass "own-space: config/hc-own-space gives the worker its launcher terminal's herdr.space and records no detection provenance"
+
+ID=appdeto2
+OUT=$(HC_TERMINAL_ID=$APP_TERM2 HC_TERMINAL_SOCKET=$HC_TEST_SOCK FM_HC_SPACE=pinned-space \
+  spawn_one "$ID" "sh -c 'echo appdetect-own-space-pinned-ok'" 2>"$TMP_ROOT/e2.err") \
+  || fail "fm-spawn.sh with config/hc-own-space and FM_HC_SPACE failed"$'\n'"$OUT"$'\n'"$(cat "$TMP_ROOT/e2.err")"
+assert_task_labels "$ID" "$(grep '^hc_terminal=' "$STATE/$ID.meta" | cut -d= -f2-)" pinned-space
+teardown_one "$ID"
+pass "own-space: an explicit FM_HC_SPACE wins over config/hc-own-space"
+
+ID=appdeto3
+OUT=$(spawn_one "$ID" "sh -c 'echo appdetect-own-space-fallback-ok'" 2>"$TMP_ROOT/e3.err") \
+  || fail "config/hc-own-space outside an hc terminal must not fail the spawn"$'\n'"$OUT"$'\n'"$(cat "$TMP_ROOT/e3.err")"
+assert_task_labels "$ID" "$(grep '^hc_terminal=' "$STATE/$ID.meta" | cut -d= -f2-)"
+teardown_one "$ID"
+rm -f "$CONFIG/hc-own-space" "$CONFIG/backend"
+pass "own-space: with no own terminal to read, config/hc-own-space falls back to the home's default space"
 
 echo FM_TEST_COMPLETE

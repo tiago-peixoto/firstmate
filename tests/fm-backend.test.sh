@@ -683,8 +683,8 @@ SH
   out=$(unset TMUX HERDR_ENV CMUX_WORKSPACE_ID PASEO_AGENT_ID; PATH="$fb:$PATH" XDG_RUNTIME_DIR="$run" \
     FM_FAKE_HC_GET='{"labels":{"herdr.space":"fm-app","herdr.tab":"x"}}' \
     HC_TERMINAL_ID=t2 HC_TERMINAL_SOCKET="$sock" fm_backend_detect \
-    && [ "$FM_BACKEND_DETECT_SIGNAL" = app-terminal ]) \
-    || fail "fm_backend_detect should detect an app-projected terminal with signal app-terminal"
+    && [ "$FM_BACKEND_DETECT_SIGNAL" = app-terminal ] && [ "$FM_BACKEND_DETECT_HC_SPACE" = fm-app ]) \
+    || fail "fm_backend_detect should detect an app-projected terminal with signal app-terminal and expose its herdr.space"
   [ "$out" = hc ] || fail "an app-projected terminal must detect hc, got '$out'"
 
   # A labeled terminal on a core other than the one a spawn reaches (here the

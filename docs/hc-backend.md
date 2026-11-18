@@ -85,13 +85,28 @@ Auto-detected hc spawns carry the same `herdr.space`/`herdr.tab` labels an expli
 The app is local GUI presentation only; detection reads the terminal's core-side label without requiring a live app window, so a surviving labeled terminal can still select hc after the GUI closes.
 Away-mode supervisor discovery and hc refusal are owned by [Away-mode supervisor backend](configuration.md#away-mode-supervisor-backend-fm_supervisor_backend--fm_supervisor_target).
 
+## Task placement
+
+By default a home's tasks open in their own Herdr.app space, `fm-<hometag>`, or in the space a non-empty `FM_HC_SPACE` names.
+The optional local, gitignored `config/hc-own-space` presence flag opts this home into opening ship and scout terminals as tabs in the space of the terminal Firstmate itself runs in.
+Create it with `touch "$FM_HOME/config/hc-own-space"`; remove it to restore the default.
+With the flag present, `bin/fm-spawn.sh` reads the `herdr.space` label of its own terminal through the same gated, read-only check as the [`app-terminal` signal](#runtime-auto-detection) and writes that value as the new terminal's `herdr.space` label.
+The read runs for every spawn that creates a terminal, including a relaunch that replaces one, whether hc was selected explicitly or auto-detected, and it writes no `backend_detect=` line.
+A non-empty `FM_HC_SPACE` keeps its meaning and wins over the flag.
+Every miss the `app-terminal` signal lists, including a spawn from outside an hc terminal and a terminal on a core other than the one the task lands on, keeps the default `fm-<hometag>` space and never fails the spawn.
+The flag changes only the `herdr.space` label; `herdr.tab` and the `firstmate.*` ownership labels are unchanged.
+Secondmate terminals never take the flag and keep the placement under [Secondmates](#secondmates).
+The flag is home-local and is not inherited by secondmate homes.
+A secondmate home that creates the flag applies the same rule to its own workers; a local secondmate's terminal already carries its home's default space, so those workers stay there.
+Joining a space the app already shows relies on the label contract under [Limits](#limits); [`verification/runtime-backends.md`](verification/runtime-backends.md#hc) records what was measured.
+
 ## Secondmates
 
 In a fleet bound to `hc`, local secondmates inherit `hc` and the parent's `HC_SESSION`.
 Their workers inherit that selection without needing a task-level override.
 The secondmate terminal appears in the child home's space alongside its workers.
 Its ownership labels remain with the parent, so the parent can safely send, read, and close it.
-The parent's `FM_HC_SPACE` does not override a secondmate's placement.
+Neither the parent's `FM_HC_SPACE` nor its [`config/hc-own-space`](#task-placement) overrides a secondmate's placement.
 
 Remote secondmates use the remote host's `fm-remote` core session.
 Their workers inherit that remote session.
@@ -119,7 +134,7 @@ The terminal carries these labels:
 | --- | --- | --- |
 | `firstmate.task` | `fm-<id>` | Task identity checked before input or close. |
 | `firstmate.home` | `<hometag>` from `bin/fm-backend-hometag-lib.sh` | Keeps two homes with the same task id apart. |
-| `herdr.space` | `FM_HC_SPACE`, default `fm-<hometag>` | Groups a home's tasks in one Herdr.app space. |
+| `herdr.space` | `FM_HC_SPACE`, default `fm-<hometag>`; see [Task placement](#task-placement) | Groups a home's tasks in one Herdr.app space. |
 | `herdr.tab` | `<hometag>-fm-<id>` | One Herdr.app tab per task. |
 
 ```text
@@ -177,7 +192,7 @@ An input, capture, or close that carries the task label refuses a terminal whose
 `tests/fm-hc-recovery.test.sh` covers ownership and recorded-session recovery with a fake core.
 `tests/fm-backend-hc-liveness-live-e2e.test.sh` is the default-on live guard: it launches every installed harness bare in a private core and requires `alive`.
 `tests/fm-backend-hc-smoke.test.sh` drives the real binary in an isolated lab; [`bin/fm-hc-lab.sh`](../bin/fm-hc-lab.sh) owns the isolation and metadata-tripwire contract, and [`tests/hc-test-safety.sh`](../tests/hc-test-safety.sh) owns guarded test teardown.
-`tests/fm-backend-hc-appdetect-smoke.test.sh` runs a real `bin/fm-spawn.sh` spawn in the same kind of lab for the app-terminal and explicit cases, and checks that a live app window never selects hc for a marker-less process and starts nothing for a session with no running core.
+`tests/fm-backend-hc-appdetect-smoke.test.sh` runs a real `bin/fm-spawn.sh` spawn in the same kind of lab for the app-terminal and explicit cases, covers `config/hc-own-space` placement, and checks that a live app window never selects hc for a marker-less process and starts nothing for a session with no running core.
 The smokes skip when no resolved Core binary or `jq` is available; provisioning and teardown failures fail the test.
 For CI coverage, see [`configuration.md`](configuration.md#runtime-backend-configbackend--fm_backend); the workflow requires `jq` and rejects the `hc not found` skip.
 [`bin/fm-hc-ci-cleanup.sh`](../bin/fm-hc-ci-cleanup.sh) owns job-end cleanup mechanics.

@@ -730,6 +730,12 @@ The caller-facing endpoint is `<session-id>:<block-id>`; tab titles are `fm-<hom
 Test cleanup must use the guarded path in [`docs/tern-backend.md`](tern-backend.md#current-operation-and-safety) and only sessions named `fm-test-*`.
 `config/backend` is inherited into secondmate homes under the primary-authoritative contract owned by [`secondmate-provisioning`](../.agents/skills/secondmate-provisioning/SKILL.md).
 
+## hc task placement (config/hc-own-space)
+
+The optional local, gitignored `config/hc-own-space` presence flag opts this home's hc ship and scout terminals into the Herdr.app space of the terminal Firstmate itself runs in.
+It is off by default, has no effect on other backends, and is not inherited by secondmate homes.
+[`hc-backend.md`](hc-backend.md#task-placement) owns the contract, precedence, and fallbacks.
+
 ## Away-mode supervisor backend (FM_SUPERVISOR_BACKEND / FM_SUPERVISOR_TARGET)
 
 The `/afk` sub-supervisor injects escalation digests into firstmate's own endpoint independently of where new task endpoints are spawned.
