@@ -1,0 +1,22 @@
+$ fm-procevent.sh list   (board armed by the scout, before any bind)
+SOURCE                       ADAPTER      OWNER      PENDING
+lavish-19080cc2d06c25a3      lavish       task:sample-scout/listening 0
+$ fm-captain-hold.sh binding lavish-19080cc2d06c25a3
+exit=1 (unbound)
+queued scout-call-1=yes: true
+queued other-origin-call=yes: true
+queued scout-call-late-recheck=reconcile: true
+send control: clicked: Send to Agent
+screenshot: ~/.no-mistakes/evidence/01M7PBXW79CKQZV56EPF2YBDT7/01-round1-board-sent.png
+
+$ ls state/procevent-inbox   (round one captured before any bind)
+lavish-19080cc2d06c25a3.1.adapter
+lavish-19080cc2d06c25a3.1.answers-pending
+lavish-19080cc2d06c25a3.1.owner-task
+lavish-19080cc2d06c25a3.1.result
+
+$ tasks-axi show scout-call-1 --full   (before bind: still held, no answer recorded)
+  id: scout-call-1
+  state: queued
+  held: yes
+  hold_kind: captain

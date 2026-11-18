@@ -1,0 +1,6 @@
+# Base commit 427056c4: bind after the capture, on a copy of the same lab state
+$ fm-captain-hold.sh bind lavish-19080cc2d06c25a3   (base commit code)
+bound: lavish-19080cc2d06c25a3 -> (any)
+exit=0
+$ grep scout-call-1 data/backlog.md   (base commit: call still open after bind)
+5:- [ ] scout-call-1 - Round one call (repo: sample) (kind: captain) (since 2026-11-18) (hold: fm-hold-v1:Y2FwdGFpbiByb3VuZCBvbmUgcGVuZGluZw==) (hold-kind: captain)

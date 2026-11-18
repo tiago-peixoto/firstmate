@@ -1,0 +1,2 @@
+ok - a scout board's answers replay once on bind and reach only the scout's own held calls
+exit=0 seconds=35

@@ -1,0 +1,72 @@
+# Scout pane: re-arm for round two with the reply (acknowledges round one)
+registered: lavish-19080cc2d06c25a3 (lavish, task=sample-scout)
+armed: lavish-19080cc2d06c25a3
+artifact: /tmp/fm-lab.nhdL5R/board/board.html
+owner-task: sample-scout
+firstmate@firstmate-hz:~/.no-mistakes/worktrees/5284051b2355/01M7PBXW79CKQZV56EPF2YBDT7$
+
+$ fm-procevent.sh list
+SOURCE                       ADAPTER      OWNER      PENDING
+lavish-19080cc2d06c25a3      lavish       task:sample-scout/listening 0
+
+# Captain answers round two on the live board (bound source)
+queued scout-call-2=no: true
+queued scout-call-1=no: true
+queued other-origin-call=reconcile: true
+queued scout-call-recheck=reconcile: true
+send control: clicked: Send to Agent
+screenshot: ~/.no-mistakes/evidence/01M7PBXW79CKQZV56EPF2YBDT7/03-round2-board-sent.png
+
+$ ls state/procevent-inbox
+lavish-19080cc2d06c25a3.1.adapter
+lavish-19080cc2d06c25a3.1.handled
+lavish-19080cc2d06c25a3.1.owner-task
+lavish-19080cc2d06c25a3.1.result
+lavish-19080cc2d06c25a3.2.adapter
+lavish-19080cc2d06c25a3.2.owner-task
+lavish-19080cc2d06c25a3.2.result
+
+$ tasks-axi show scout-call-2 --full   (fresh round-two id: recorded at capture time)
+  id: scout-call-2
+  state: done
+  held: no
+Captain answered this call through the captured result lavish-19080cc2d06c25a3 sequence 2.\nTask: scout-call-2\nAnswer: no
+
+$ tasks-axi show scout-call-1 --full   (round-one id reused in round two: stays with its round-one answer)
+  id: scout-call-1
+  state: done
+  held: no
+Captain answered this call through the captured result lavish-19080cc2d06c25a3 sequence 1.\nTask: scout-call-1\nAnswer: yes
+
+$ tasks-axi show other-origin-call --full   (held for other-work)
+  id: other-origin-call
+  state: queued
+  held: yes
+
+$ fm-captain-hold.sh reconcile list
+scout-call-late-recheck	requested=2026-11-18T04:24:34Z	source=the captured result lavish-19080cc2d06c25a3 sequence 1
+scout-call-recheck	requested=2026-11-18T04:25:41Z	source=the captured result lavish-19080cc2d06c25a3 sequence 2
+reconcile-requests: 2
+
+$ fm-procevent-lavish.sh answers <round-two result> | fm-captain-hold.sh answers --for sample-scout   (same intake call the runner made; shows the per-key report)
+closed: scout-call-2
+skipped: scout-call-1 (already closed)
+answers: closed=1 skipped=1
+exit=1
+
+$ fm-procevent-lavish.sh reconciles <round-two result> | fm-captain-hold.sh reconcile-requests --for sample-scout
+refused: other-origin-call (held for other-work, not for sample-scout)
+reconcile: scout-call-recheck
+reconcile-requests: created=1 skipped=1
+exit=1
+
+$ fm-captain-hold.sh bind lavish-19080cc2d06c25a3   (bind after a round the runner already fed: nothing replayed)
+bound: lavish-19080cc2d06c25a3 -> (any)
+exit=0
+
+# Scout pane after the round
+registered: lavish-19080cc2d06c25a3 (lavish, task=sample-scout)
+armed: lavish-19080cc2d06c25a3
+artifact: /tmp/fm-lab.nhdL5R/board/board.html
+owner-task: sample-scout
+firstmate@firstmate-hz:~/.no-mistakes/worktrees/5284051b2355/01M7PBXW79CKQZV56EPF2YBDT7$

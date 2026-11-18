@@ -1,0 +1,37 @@
+$ fm-captain-hold.sh bind lavish-19080cc2d06c25a3   (firstmate binds late, after the captain answered)
+bound: lavish-19080cc2d06c25a3 -> (any)
+reconcile: scout-call-late-recheck
+reconcile-requests: created=1 skipped=0
+closed: scout-call-1
+refused: other-origin-call (held for other-work, not for sample-scout)
+answers: closed=1 skipped=1
+exit=0
+
+$ tasks-axi show scout-call-1 --full
+  id: scout-call-1
+  state: done
+  held: no
+  hold_kind: captain
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 6c7e2ac484c7b0b5d478043afb25c89500d6fd7f1cebb168fb595dcf4d1d951b\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through the captured result lavish-19080cc2d06c25a3 sequence 1.\nTask: scout-call-1\nAnswer: yes\nAnswer as shown to the captain: scout-call-1: yes\n\nCaptain hold origin: sample-scout\n\nOrigin: sample-scout"
+
+$ tasks-axi show other-origin-call --full   (held for other-work: must stay held)
+  id: other-origin-call
+  state: queued
+  held: yes
+  hold_kind: captain
+
+$ fm-captain-hold.sh reconcile list
+scout-call-late-recheck	requested=2026-11-18T04:24:34Z	source=the captured result lavish-19080cc2d06c25a3 sequence 1
+reconcile-requests: 1
+
+$ ls state/procevent-inbox   (pending marker gone)
+lavish-19080cc2d06c25a3.1.adapter
+lavish-19080cc2d06c25a3.1.owner-task
+lavish-19080cc2d06c25a3.1.result
+
+$ fm-captain-hold.sh bind lavish-19080cc2d06c25a3   (repeat bind: nothing replayed)
+bound: lavish-19080cc2d06c25a3 -> (any)
+exit=0
+
+$ count of recorded answers on scout-call-1
+1

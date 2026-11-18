@@ -1,0 +1,13 @@
+# Environment for the disposable lab that the live drive uses.
+export LAB=/tmp/fm-lab.nhdL5R
+export ROOT={run-worktree}
+export FM_HOME=$LAB
+export FM_PROCEVENT_CLAIM_ROOT=$LAB/claims
+export LAVISH_AXI_STATE_DIR=$LAB/lavish
+export LAVISH_AXI_PORT=47391
+export LAVISH_AXI_HOST=127.0.0.1
+export LAVISH_AXI_NO_OPEN=1
+export LAVISH_AXI_TELEMETRY=0
+unset NO_MISTAKES_GATE_X FM_ROOT_OVERRIDE FM_STATE_OVERRIDE FM_DATA_OVERRIDE FM_CONFIG_OVERRIDE FM_PROJECTS_OVERRIDE
+export TMUX_TMPDIR=$LAB/tmux; unset TMUX TMUX_PANE
+export LAVISH_AXI_DISCONNECT_GRACE_MS=3600000
