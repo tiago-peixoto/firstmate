@@ -1,0 +1,33 @@
+=== AFTER: unpinned home -> ~/.claude personal account (pin: none, CLAUDE_CONFIG_DIR unset) ===
+  status: clear
+  candidate: claude:opus  provider=claude  scope=all_models  remaining=31%  spendPriority=14.157  runway=through_reset  -> eligible
+  candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+  profile: --harness 'claude' --model 'opus'
+exit=
+=== AFTER: Artemis-style home pinned to ~/.claude-account-work (pin: ~/.claude-account-work, CLAUDE_CONFIG_DIR unset) ===
+  status: clear
+  candidate: claude:opus  provider=claude  scope=all_models  remaining=75%  spendPriority=-0.6307  runway=projected_exhaustion  -> eligible
+  candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+  profile: --harness 'claude' --model 'opus'
+exit=
+=== AFTER: pin to 'ordinary' -> ~/.claude (pin: ordinary, CLAUDE_CONFIG_DIR unset) ===
+  status: clear
+  candidate: claude:opus  provider=claude  scope=all_models  remaining=31%  spendPriority=14.1598  runway=through_reset  -> eligible
+  candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+  profile: --harness 'claude' --model 'opus'
+exit=
+=== AFTER (adversarial): pin to a dir with no quota row (pin: <lab>/other, CLAUDE_CONFIG_DIR unset) ===
+  status: escalate
+  candidate: claude:opus  provider=claude  -> eligible, unranked: provider claude has no quota row for config directory <lab>/other: disclosed uncertainty
+  candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+exit=
+=== BEFORE (base ce729c27): unpinned home (pin: none, CLAUDE_CONFIG_DIR unset) ===
+  status: escalate
+  candidate: claude:opus  provider=claude  -> eligible, unranked: provider claude has no quota row for account default: disclosed uncertainty
+  candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+exit=
+=== BEFORE (base ce729c27): pinned to work (pin: ~/.claude-account-work, CLAUDE_CONFIG_DIR unset) ===
+  status: escalate
+  candidate: claude:opus  provider=claude  -> eligible, unranked: provider claude has no quota row for account default: disclosed uncertainty
+  candidate: codex:gpt-5.6-sol  provider=codex  -> eligible, unranked: provider codex has no quota row for account codex-home: disclosed uncertainty
+exit=
