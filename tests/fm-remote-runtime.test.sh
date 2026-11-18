@@ -33,18 +33,19 @@ cp "$ROOT/bin/fm-remote-entrypoint.sh" "$ROOT/bin/fm-remote-job-lib.sh" \
 printf 'fixture\n' > "$REMOTE_ROOT/AGENTS.md"
 cat > "$REMOTE_ROOT/bin/fm-remote-doctor.sh" <<'PROBE'
 #!/usr/bin/env bash
-printf 'runtime=%s\nsocket=%s\n' "${XDG_RUNTIME_DIR:-absent}" "${HC_SOCKET:-absent}"
+printf 'runtime=%s\nsocket=%s\nlang=%s\n' "${XDG_RUNTIME_DIR:-absent}" "${HC_SOCKET:-absent}" "${LANG:-absent}"
 PROBE
 cp "$REMOTE_ROOT/bin/fm-remote-doctor.sh" "$REMOTE_ROOT/bin/fm-probe.sh"
 chmod +x "$REMOTE_ROOT/bin/"*.sh
 git -C "$REMOTE_ROOT" init -q -b main
 git -C "$REMOTE_ROOT" add .
 b64() { printf '%s' "$1" | base64 | tr -d '\n'; }
-out=$(env "${RUNTIME_ENV[@]}" HC_SOCKET=/foreign \
+out=$(env "${RUNTIME_ENV[@]}" HC_SOCKET=/foreign LANG=en_US.UTF-8 \
   bash "$REMOTE_ROOT/bin/fm-remote-entrypoint.sh" 1 "$(b64 "$REMOTE_ROOT")" \
   "$(b64 "$INSTANCE")" "$(printf 'fm-remote-doctor.sh\0' | base64 | tr -d '\n')")
 assert_contains "$out" "runtime=$RUNTIME" 'bootstrap discarded the private runtime directory'
 assert_contains "$out" 'socket=absent' 'bootstrap forwarded an ambient hc socket'
+[ "${out##*$'\n'}" = lang=C ] || fail "bootstrap did not give the doctor the C locale: $out"
 pass 'doctor bootstrap retains the validated runtime directory only'
 
 # shellcheck source=bin/fm-remote-job-lib.sh

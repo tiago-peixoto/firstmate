@@ -946,6 +946,11 @@ worker_run_job() { # <account-home> <job-dir>
     "FM_HOME=$home"
     "FM_ROOT_OVERRIDE=$root"
     FM_REMOTE_JOB_ACTIVE=1
+    # With no locale variable a gettext-linked bash (Homebrew's) asks
+    # CoreFoundation for one, and on macOS a child forked after that lookup
+    # can segfault leaving a command substitution: the command ran, yet the
+    # substitution reports 139.
+    LANG=C
   )
   if [ -n "$runtime_dir" ]; then
     child_env+=("XDG_RUNTIME_DIR=$runtime_dir")
