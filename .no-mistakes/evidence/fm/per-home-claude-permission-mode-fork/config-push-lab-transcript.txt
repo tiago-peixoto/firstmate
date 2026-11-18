@@ -1,0 +1,141 @@
+## S1: primary config/claude-permission-mode=bypass; primary config/secondmate-accounts/oss/claude-permission-mode=auto
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+config-push: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-lab.ovt8es -> live secondmate homes
+secondmate oss (/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-lab-fx.Uemz2e/oss):
+  crew-dispatch.json: unchanged
+  dispatch-never-send: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  herdr-project-groups: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: pushed
+  codex-approval-mode: unchanged
+  lavish-axi-host: unchanged
+  t3code-instances: unchanged
+  keep-ai-trailers: unchanged
+  supervision-host-off: unchanged
+  firstmate-role: unchanged
+  data/captain-shared.md: unchanged
+CONFIG_REREAD: secondmate oss: send failed: error: refusing fleet lifecycle from inside a no-mistakes gate worktree (~/.no-mistakes/repos/bbb16e1f0808.git)
+secondmate work (/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-lab-fx.Uemz2e/work):
+  crew-dispatch.json: unchanged
+  dispatch-never-send: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  herdr-project-groups: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: pushed
+  codex-approval-mode: unchanged
+  lavish-axi-host: unchanged
+  t3code-instances: unchanged
+  keep-ai-trailers: unchanged
+  supervision-host-off: unchanged
+  firstmate-role: unchanged
+  data/captain-shared.md: unchanged
+CONFIG_REREAD: secondmate work: send failed: error: refusing fleet lifecycle from inside a no-mistakes gate worktree (~/.no-mistakes/repos/bbb16e1f0808.git)
+exit=1
+oss home config/claude-permission-mode = auto
+work home config/claude-permission-mode = bypass
+
+## S3: override path replaced by a directory (unusable)
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+config-push: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-lab.ovt8es -> live secondmate homes
+secondmate oss (/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-lab-fx.Uemz2e/oss):
+fm-config-inherit: error: primary source is not a regular file claude-permission-mode at /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-lab.ovt8es/config/secondmate-accounts/oss/claude-permission-mode
+  crew-dispatch.json: unchanged
+  dispatch-never-send: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  herdr-project-groups: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: error - primary source is not a regular file
+  codex-approval-mode: unchanged
+  lavish-axi-host: unchanged
+  t3code-instances: unchanged
+  keep-ai-trailers: unchanged
+  supervision-host-off: unchanged
+  firstmate-role: unchanged
+  data/captain-shared.md: unchanged
+CONFIG_REREAD: secondmate oss: send failed: error: refusing fleet lifecycle from inside a no-mistakes gate worktree (~/.no-mistakes/repos/bbb16e1f0808.git)
+secondmate work (/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-lab-fx.Uemz2e/work):
+  crew-dispatch.json: unchanged
+  dispatch-never-send: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  herdr-project-groups: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  codex-approval-mode: unchanged
+  lavish-axi-host: unchanged
+  t3code-instances: unchanged
+  keep-ai-trailers: unchanged
+  supervision-host-off: unchanged
+  firstmate-role: unchanged
+  data/captain-shared.md: unchanged
+CONFIG_REREAD: secondmate work: send failed: error: refusing fleet lifecycle from inside a no-mistakes gate worktree (~/.no-mistakes/repos/bbb16e1f0808.git)
+exit=1
+oss home config/claude-permission-mode = auto
+work home config/claude-permission-mode = bypass
+
+## S4: override removed
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+config-push: /var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T//fm-lab.ovt8es -> live secondmate homes
+secondmate oss (/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-lab-fx.Uemz2e/oss):
+  crew-dispatch.json: unchanged
+  dispatch-never-send: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  herdr-project-groups: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: pushed
+  codex-approval-mode: unchanged
+  lavish-axi-host: unchanged
+  t3code-instances: unchanged
+  keep-ai-trailers: unchanged
+  supervision-host-off: unchanged
+  firstmate-role: unchanged
+  data/captain-shared.md: unchanged
+CONFIG_REREAD: secondmate oss: send failed: error: refusing fleet lifecycle from inside a no-mistakes gate worktree (~/.no-mistakes/repos/bbb16e1f0808.git)
+secondmate work (/private/var/folders/r8/cylyt7xd7t50y9x5wc05my380000gn/T/fm-lab-fx.Uemz2e/work):
+  crew-dispatch.json: unchanged
+  dispatch-never-send: unchanged
+  crew-harness: unchanged
+  backlog-backend: unchanged
+  backend: unchanged
+  herdr-presentation-spaces: unchanged
+  herdr-project-groups: unchanged
+  startup-memory-budget: unchanged
+  trace-context: unchanged - session-scoped
+  launch-env-allowlist: unchanged
+  claude-permission-mode: unchanged
+  codex-approval-mode: unchanged
+  lavish-axi-host: unchanged
+  t3code-instances: unchanged
+  keep-ai-trailers: unchanged
+  supervision-host-off: unchanged
+  firstmate-role: unchanged
+  data/captain-shared.md: unchanged
+CONFIG_REREAD: secondmate work: send failed: error: refusing fleet lifecycle from inside a no-mistakes gate worktree (~/.no-mistakes/repos/bbb16e1f0808.git)
+exit=1
+oss home config/claude-permission-mode = bypass
+work home config/claude-permission-mode = bypass

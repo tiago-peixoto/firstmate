@@ -1,0 +1,9 @@
+ok - older receiver generation usage refusal preserves inheritance at floor zero
+ok - missing sender counter recovers above the receiver under the sender transaction lock
+ok - lower, restored and same-generation conflicting sender counters recover
+ok - delayed older and conflicting same-generation payloads remain refused
+ok - racing pushes commit increasing generations through the shared sender transaction
+ok - malformed or unreadable generation state fails closed without changing inherited content
+ok - a per-secondmate permission mode replaces the inherited value on a remote route
+bash tests/fm-remote-inherit-generation.test.sh  3.33s user 4.19s system 69% cpu 10.758 total
+rc=0
