@@ -162,6 +162,7 @@ if [ "$COMMAND" = fm-remote-doctor.sh ]; then
     "FM_HOME=$HOME_PATH"
     "FM_ROOT_OVERRIDE=$ROOT"
     FM_REMOTE_DOCTOR_BOOTSTRAP=1
+    LANG=C
   )
   if [ -n "$RUNTIME_DIR" ]; then
     DOCTOR_ENV+=("XDG_RUNTIME_DIR=$RUNTIME_DIR")
