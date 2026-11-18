@@ -1,0 +1,1 @@
+ok - normal secondmate teardown sweeps its own state despite a foreign state override
