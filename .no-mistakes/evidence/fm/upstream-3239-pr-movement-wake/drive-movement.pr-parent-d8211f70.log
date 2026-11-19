@@ -1,0 +1,66 @@
+
+== 1. register PR with fm-pr-check.sh, poll an unchanged PR twice
+armed: state/delivery.check.sh
+  wakes queued: 0
+  pending: []
+  RESULT: ok
+
+== 2. head replaced A -> B, poll; then re-poll unchanged
+  wakes queued: 1
+  pending: [{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","author":null}]
+  RESULT: ok
+  wakes queued: 1
+  pending: [{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","author":null}]
+  RESULT: ok
+  bearings row: {"actor":null,"reason":null}
+
+== 3. ack; convert to draft (no wake expected), then leave draft
+  wakes queued: 1
+  pending: []
+  RESULT: ok
+  wakes queued: 2
+  pending: [{"type":"ready-for-review","body":"pull request left draft","author":null}]
+  RESULT: ok
+
+== 4. ack; request a reviewer and a team in one poll (one durable wake per signal); re-poll
+  wakes queued: 4
+  pending: [{"type":"review-requested","body":"review requested from reviewer","author":null},{"type":"review-requested","body":"review requested from team:core","author":null}]
+  RESULT: ok
+  wakes queued: 4
+  pending: [{"type":"review-requested","body":"review requested from reviewer","author":null},{"type":"review-requested","body":"review requested from team:core","author":null}]
+  RESULT: ok
+
+== 5. ack; maintainer issue comment arrives
+  wakes queued: 5
+  pending: [{"type":"comment","body":"Please clarify the contract","author":"maintainer"}]
+  RESULT: ok
+
+== 6. ack; maintainer CHANGES_REQUESTED review arrives
+  wakes queued: 6
+  pending: [{"type":"review","body":"Needs work","author":"maintainer"}]
+  RESULT: ok
+
+== 7. adversarial: ack; reviewer un-requested -> no wake; same reviewer re-requested one hour later -> wakes again
+  wakes queued: 6
+  pending: []
+  RESULT: ok
+  wakes queued: 7
+  pending: [{"type":"review-requested","body":"review requested from reviewer","author":null}]
+  RESULT: ok
+  wakes queued: 7
+  pending: [{"type":"review-requested","body":"review requested from reviewer","author":null}]
+  RESULT: ok
+
+== 8. adversarial: PR merged with a different head in the same observation -> no head movement signal
+  wakes queued: 7
+  pending: []
+  RESULT: ok (no movement signal; wakes 7 -> 7)
+  stored: {"state":"merged","head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+
+== 9. adversarial: fresh home, reviewer already requested at first observation -> baseline, no wake
+  wakes queued: 0
+  pending: []
+  RESULT: ok
+  stored review_requests: ["reviewer"]
+
+ALL STEPS AS EXPECTED
