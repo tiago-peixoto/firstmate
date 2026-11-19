@@ -1,0 +1,108 @@
+== S1 opt-in guard: no config/pr-follow
+$ fm-pr-follow.sh add https://github.com/example/project/pull/11 --requested tell me when 11 changes
+fm-pr-follow: config/pr-follow is absent; following is off
+[exit 1]
+== S2 guard: config on, no live model-free surface
+$ fm-pr-follow.sh add https://github.com/example/project/pull/11 --requested tell me when 11 changes
+fm-pr-follow: no active model-free outcome surface; enrollment requires Pi or Claude with the Calm mod
+[exit 1]
+(data dir listing above: no follow record)
+== S3 enroll taskless PR with a live Claude+Calm surface
+surface: {"surface":"claude-calm","owner":"3904750","session":"5ab51df5-3461-44fa-a9d8-e76bb4ed382c","epoch":1795062998}
+$ fm-pr-follow.sh add https://github.com/example/project/pull/11 --requested tell me when 11 changes
+Following https://github.com/example/project/pull/11
+[exit 0]
+$ fm-pr-follow.sh list
+https://github.com/example/project/pull/11	tell me when 11 changes
+[exit 0]
+{
+  "schema": "fm-pr-follows.v1",
+  "surface_missing": false,
+  "cursor": "",
+  "follows": [
+    {
+      "url": "https://github.com/example/project/pull/11",
+      "requested": "tell me when 11 changes",
+      "generation": "1795062998-.pr-follow.EQTVAR",
+      "revision": 0,
+      "observation": {
+        "state": "OPEN",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "review": "APPROVED",
+        "checks": []
+      }
+    }
+  ]
+}
+(no task meta created)
+== S4 review requested changes -> one line; repeat poll adds none
+$ fm-pr-follow.sh poll
+[exit 0]
+$ fm-pr-follow.sh poll
+[exit 0]
+screen lines for https://github.com/example/project/pull/11: 1
+== S5 failed forge read preserves the previous observation
+$ fm-pr-follow.sh poll
+[exit 0]
+observation unchanged: {"state":"OPEN","head":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","review":"CHANGES_REQUESTED","checks":[]}
+== S6 the check the watcher runs is silent when nothing changed (no model wake)
+armed check exit=0 output=[]
+(wake queue empty)
+== S7 restart: primary gone, follow survives; pause reported once; new session shows the merge
+$ fm-pr-follow.sh poll
+PR following paused: no active model-free outcome surface; use Pi or Claude with the Calm mod.
+[exit 0]
+$ fm-pr-follow.sh poll
+[exit 0]
+{"surface_missing":true,"urls":["https://github.com/example/project/pull/11"],"state":"OPEN"}
+surface: {"surface":"claude-calm","owner":"3926294","session":"419a864b-6c87-490e-9477-ab1d9c4afa0b","epoch":1795063034}
+$ fm-pr-follow.sh poll
+[exit 0]
+$ fm-pr-follow.sh poll
+[exit 0]
+screen lines for https://github.com/example/project/pull/11 in new session: 1
+(wake queue empty)
+== S8 task-owned PR: non-merge change also queues an action wake; merge does not
+$ fm-pr-follow.sh add https://github.com/example/project/pull/12 --requested follow my task PR 12
+Following https://github.com/example/project/pull/12
+[exit 0]
+$ fm-pr-follow.sh poll
+[exit 0]
+1795063038	1	check	pr-follow:ship-task	check: followed PR needs action for ship-task: Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/12
+$ fm-pr-follow.sh poll
+[exit 0]
+wake queue lines before merge=1 after merge=1
+== S9 stop following
+$ fm-pr-follow.sh remove https://github.com/example/project/pull/11
+Stopped following https://github.com/example/project/pull/11
+[exit 0]
+$ fm-pr-follow.sh list
+https://github.com/example/project/pull/12	follow my task PR 12
+[exit 0]
+== final Claude screen
+ ▐▛███▛█   Claude Code v2.1.328
+▝▜██████▀  Fable 5.2 · Claude Ultra
+ ▝▝   ▝▝   /tmp/fm-follow-drive.RbsXl6/home/project
+⚠ Your login expires in 3 days · run /login to renew
+▎ Debug mode enabled · logging to /tmp/fm-follow-drive.RbsXl6/home/debug-419a864b-6c87-490e-9477-ab1d9c4afa0b.log
+● fm: ⚓ MERGED: https://github.com/example/project/pull/11
+● fm: ⚓ Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/12
+● fm: ⚓ Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/11
+● fm: ⚓ MERGED: https://github.com/example/project/pull/12
+● fm: ⚓ MERGED: https://github.com/example/project/pull/11
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents                                                                                                                               ◐ medium · /effort
+== outcome store
+{"seq":1,"epoch":1795062999,"task":"fleet","wake":"pr-follow:1795062998-.pr-follow.EQTVAR:1:1:{\"state\":\"OPEN\",\"head\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"review\":\"CHANGES_REQUESTED\",\"checks\":[]}","verdict":"notice","summary":"Review CHANGES_REQUESTED: https://github.com/example/project/pull/11","silent":false,"statusEndpoint":0,"statusIdent":"-"}
+{"seq":2,"epoch":1795063034,"task":"fleet","wake":"pr-follow:1795062998-.pr-follow.EQTVAR:2:1:{\"state\":\"MERGED\",\"head\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"review\":\"APPROVED\",\"checks\":[]}","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/11","silent":false,"statusEndpoint":0,"statusIdent":"-"}
+{"seq":3,"epoch":1795063038,"task":"fleet","wake":"pr-follow:1795063037-.pr-follow.XmVvrK:1:1:{\"state\":\"OPEN\",\"head\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"review\":\"APPROVED\",\"checks\":[{\"name\":\"test\",\"status\":\"FAILURE\"}]}","verdict":"notice","summary":"Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/12","silent":false,"statusEndpoint":0,"statusIdent":"-"}
+{"seq":4,"epoch":1795063038,"task":"fleet","wake":"pr-follow:1795062998-.pr-follow.EQTVAR:3:1:{\"state\":\"OPEN\",\"head\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"review\":\"APPROVED\",\"checks\":[{\"name\":\"test\",\"status\":\"FAILURE\"}]}","verdict":"notice","summary":"Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/11","silent":false,"statusEndpoint":0,"statusIdent":"-"}
+{"seq":5,"epoch":1795063040,"task":"fleet","wake":"pr-follow:1795063037-.pr-follow.XmVvrK:2:1:{\"state\":\"MERGED\",\"head\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"review\":\"APPROVED\",\"checks\":[{\"name\":\"test\",\"status\":\"FAILURE\"}]}","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/12","silent":false,"statusEndpoint":0,"statusIdent":"-"}
+{"seq":6,"epoch":1795063040,"task":"fleet","wake":"pr-follow:1795062998-.pr-follow.EQTVAR:4:1:{\"state\":\"MERGED\",\"head\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"review\":\"APPROVED\",\"checks\":[{\"name\":\"test\",\"status\":\"FAILURE\"}]}","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/11","silent":false,"statusEndpoint":0,"statusIdent":"-"}
+== model-turn evidence
+debug-419a864b-6c87-490e-9477-ab1d9c4afa0b.log: model-request log lines=0
+debug-5ab51df5-3461-44fa-a9d8-e76bb4ed382c.log: model-request log lines=0
+transcript 419a864b-6c87-490e-9477-ab1d9c4afa0b.jsonl: assistant entries=0
+transcript 5ab51df5-3461-44fa-a9d8-e76bb4ed382c.jsonl: assistant entries=0

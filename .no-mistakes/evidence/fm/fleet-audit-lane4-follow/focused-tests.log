@@ -1,0 +1,86 @@
+FM_TEST_BEGIN 2026-11-19T04:55:45Z tests/fm-calm-claude-mod.test.sh family=pure-contract-unit expected_gate_skip=none
+ok - the Calm mod is one hooks module, linked into the project's auto-load path, with no command, skill, agent, or classic hook path that bypasses its exact opt-in
+ok - the Pi working ship renders byte-for-byte the shared sprite core's frame painted in standard ANSI, at every width, cadence step, freeze, clamp, and reset
+ok - the Raster packing lays the shared frame out row-major in Claude Code's dark or light theme palette, using light as the both-readable fallback, with plain padding, default backgrounds, BMP glyphs, clipping, and a standard base64 encoding
+ok - the Calm policy resolves the shared preference exactly as Pi does, reads on, max, and off as Pi does, and shares Pi's 240-character-or-newline preservation behavior while classifying working notes by stop reason, tool use, and restored transcript shape
+ok - the supervision notes read the store owner's tail copy and markers as Pi does: sailboat and anchor lines, silent rows skipped, bounded replay of unread and unprocessed rows not already shown in the session, and latch notes
+ok - the mod's operational-input classifier agrees with bin/fm-operational-input.sh on all 77 corpus cases: every current kind the owner encodes, every legacy shape, and every near miss
+ok - the mod's doorbell port agrees with bin/fm-operational-input.sh doorbell-kind on all 28 cases: every record the owner writes and every unbacked or malformed near miss
+FM_TEST_END 2026-11-19T04:55:49Z tests/fm-calm-claude-mod.test.sh exit=0 duration_ms=4482 gate_skip=false
+FM_TEST_BEGIN 2026-11-19T04:55:49Z tests/fm-pr-follow.test.sh family=pr-forge expected_gate_skip=none
+ok - taskless merge reaches the outcome store once without a processing request
+Stopped following https://github.com/example/project/pull/1
+ok - closed without merging is an outcome
+Stopped following https://github.com/example/project/pull/1
+ok - checks and review transitions preserve forge words and suppress unchanged reads
+ok - only a newly failing check name or a changed review value adds a line
+ok - bad reads preserve evidence and disabled or unsupported homes do not enroll
+Stopped following https://github.com/example/project/pull/1
+ok - task-owned failure still wakes supervision for action
+Stopped following https://github.com/example/project/pull/1
+ok - GitLab follows use the shared observer and outcome store
+Stopped following https://gitlab.example/group/project/-/merge_requests/2
+ok - interruption after append cannot make a later observation reuse a different event key
+ok - a pass out of time stops quietly after one follow and the next pass resumes
+ok - enrollment requires explicit request, canonical URL, and a safe durable record
+FM_TEST_END 2026-11-19T04:56:02Z tests/fm-pr-follow.test.sh exit=0 duration_ms=12161 gate_skip=false
+FM_TEST_BEGIN 2026-11-19T04:56:02Z tests/fm-branch-supervision.test.sh family=standalone expected_gate_skip=none
+ok - branch prompt is byte-stable across homes, cwd, timezone, and time, above the cache floor
+ok - fm-branch-prompt.sh: the home prompt include lands last, verbatim, and refuses an unusable path
+ok - emitted branch prompt routes completed scouts through existing policies and leased cleanup, preserving unfinished work
+ok - outcome store is append-only and refuses sequence reuse after a torn tail
+ok - outcome append refreshes a bounded, verbatim display tail of the newest rows without moving the cursor
+ok - the display tail keeps only whole newest rows within its 1 MiB budget, never shortening one
+ok - outcome seed-tail writes an absent display tail from a valid store's newest rows without moving a marker, and leaves an existing one to append
+ok - seed-tail validates and publishes only a bounded newest window, not old malformed history
+ok - routine task and fleet no-change outcomes stay stored and silent captain outcomes are refused
+ok - startup replay cannot advance the cursor across an unrendered captain outcome
+ok - malformed and ahead-of-store cursor state fail closed before any outcome can be skipped
+ok - cursor advancement refuses to legitimize an ahead processed marker
+ok - middle sequence conflicts fail closed for every store read and append
+ok - outcome lookup returns exact sequence rows and distinguishes missing receipts
+ok - outcome stores require terminated single-line JSON records
+ok - the processed marker is sequence-bound, never ahead of the read cursor, never backwards, and never adopts delivered history
+ok - outcome store: present shows each routine row once and each captain row until it is acknowledged
+ok - outcome store: present and unprocessed name each captain row's recorded age without writing it
+ok - lease exclusivity, same-actor refresh, release, staleness, and sweep hold
+ok - fm-control and fm-teardown refuse the other actor's live lease and pass through otherwise
+ok - PR merge, local landing, and new-task spawn refuse the branch actor and spare main
+ok - a home without a live branch lease takes no lock and clears leftover leases in any calling context
+ok - an unmarked main honors a live branch lease across processes and ignores a previous session's
+ok - a lease file makes an unmarked guard exclude a concurrent claim for the complete mutation
+ok - a host home's unmarked main excludes the host's first claim for its whole mutation, and other homes take no lock
+ok - lease liveness requires an exact valid session-lock pid
+ok - a claim pinned before a re-anchor records the live lock holder; a dead pin stays stale
+ok - concurrent stale-lease claims serialize so exactly one actor succeeds
+ok - guard stale cleanup cannot race with or delete a newer lease claim
+ok - lease guard excludes a concurrent actor for the complete mutation
+ok - a claim naming the other actor fails loudly instead of silently impersonating it
+ok - release commands authorize the caller and bulk release drops only that actor's leases
+ok - the branch cannot force a teardown or bypass fm-control for a relaunch
+ok - the away-posture record relocates the PR merge and a spawn under the spend cap to the branch, never local landing, and only while confirmed, valid, and away
+ok - relocated branch spawn admits only already-queued dispatchable work, including on a manual-backend home
+ok - the away spend cap is rechecked under the task-set lock so concurrent spawns cannot both publish
+ok - a quiet-mode record never caps a present captain's spawn, while the away record's cap still binds
+FM_TEST_END 2026-11-19T04:56:51Z tests/fm-branch-supervision.test.sh exit=0 duration_ms=49424 gate_skip=false
+FM_TEST_BEGIN 2026-11-19T04:56:51Z tests/fm-pr-follow-live-e2e.test.sh family=live-harness-optin expected_gate_skip=live-capability
+ ⚓ MERGED: https://github.com/example/project/pull/1
+ ⚓ CLOSED: https://github.com/example/project/pull/2
+ ⚓ Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/3
+ok - pi 1.5.2: three taskless forge changes produced three visible lines, no primary turn or wake
+skip: pi-signed is not installed for the live PR-follow proof
+● fm: ⚓ MERGED: https://github.com/example/project/pull/1
+● fm: ⚓ CLOSED: https://github.com/example/project/pull/2
+● fm: ⚓ Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/3
+ok - claude 2.1.328 (Claude Code): three taskless forge changes produced three visible lines, no primary turn or wake
+FM_TEST_END 2026-11-19T04:57:13Z tests/fm-pr-follow-live-e2e.test.sh exit=0 duration_ms=21483 gate_skip=false
+FM_TEST_SUMMARY total=4 failed=0 skipped_gate=0 duration_ms=88043
+FM_TEST_SUMMARY_FAMILY family=live-harness-optin count=1 duration_ms=21483 failed=0
+FM_TEST_SUMMARY_FAMILY family=pr-forge count=1 duration_ms=12161 failed=0
+FM_TEST_SUMMARY_FAMILY family=pure-contract-unit count=1 duration_ms=4482 failed=0
+FM_TEST_SUMMARY_FAMILY family=standalone count=1 duration_ms=49424 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-branch-supervision.test.sh duration_ms=49424
+FM_TEST_SLOWEST rank=2 script=tests/fm-pr-follow-live-e2e.test.sh duration_ms=21483
+FM_TEST_SLOWEST rank=3 script=tests/fm-pr-follow.test.sh duration_ms=12161
+FM_TEST_SLOWEST rank=4 script=tests/fm-calm-claude-mod.test.sh duration_ms=4482
+exit=0
