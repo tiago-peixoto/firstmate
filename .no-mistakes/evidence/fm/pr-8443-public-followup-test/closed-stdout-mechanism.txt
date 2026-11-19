@@ -1,0 +1,19 @@
+$ env --version
+env (uutils coreutils) 0.10.0
+
+$ (env bash -c 'ls -l /proc/$$/fd/1 >&2; echo x; echo "write rc=$?" >&2') >&-   # how the shebang runs the poll
+lrwx------ 1 firstmate firstmate 64 Nov 19 03:45 /proc/1456922/fd/1 -> /dev/null
+write rc=0
+
+$ (bash -c 'ls -l /proc/$$/fd/1 >&2; echo x; echo "write rc=$?" >&2') >&-   # how the corrected test runs the poll
+ls: cannot access '/proc/1456953/fd/1': No such file or directory
+bash: line 1: echo: write error: Bad file descriptor
+write rc=1
+
+$ gnuenv --version
+env (GNU coreutils) 9.7
+
+$ (gnuenv bash -c 'ls -l /proc/$$/fd/1 >&2; echo x; echo "write rc=$?" >&2') >&-   # GNU env leaves stdout closed
+ls: cannot access '/proc/1490030/fd/1': No such file or directory
+bash: line 1: echo: write error: Bad file descriptor
+write rc=1

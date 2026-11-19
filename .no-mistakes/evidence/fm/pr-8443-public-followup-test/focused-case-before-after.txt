@@ -1,0 +1,6 @@
+=== focused case, before the change
+not ok - a wake whose line could not be written must stay queued
+exit=1
+=== focused case, after the change
+ok - a rejection wake survives a poll that could not write its line
+exit=0
