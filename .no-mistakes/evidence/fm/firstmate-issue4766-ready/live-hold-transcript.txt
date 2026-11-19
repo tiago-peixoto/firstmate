@@ -1,0 +1,79 @@
+=== S1 hold then release on a worker lane
+lane
+hold rc=0
+--- /tmp/fm-hold-live.LiA7r2/s1/state/lane.status
+done: PR ready https://github.com/o/r/pull/8
+captain-held [key=captain-hold-lane-1] [at=T]: Merge now or wait?
+PASS s1 held lane reads as captain-held
+PASS s1 repeated hold adds no second declaration
+released: lane
+answer rc=0
+--- /tmp/fm-hold-live.LiA7r2/s1/state/lane.status
+done: PR ready https://github.com/o/r/pull/8
+captain-held [key=captain-hold-lane-1] [at=T]: Merge now or wait?
+resolved [key=captain-hold-lane-1] [at=T]: captain call released by fm-captain-hold
+PASS s1 retraction written
+PASS s1 hold-aware reader returns worker line
+PASS s1 hold no longer open
+PASS s1 retried answer appends no second retraction
+=== S2 lane-less decision-only hold mints no status log
+hold rc=0
+PASS s2 no status log for lane-less hold
+=== S3 worker re-asks while hold settles (adversarial)
+answer rc=0
+--- /tmp/fm-hold-live.LiA7r2/s3/state/lane.status
+working: started
+captain-held [key=captain-hold-lane-1] [at=T]: Which route?
+needs-decision [key=route]: A or B?
+resolved [key=captain-hold-lane-1] [at=T]: captain call released by fm-captain-hold
+PASS s3 worker question still open after hold settlement
+PASS s3 latest event is the worker question
+PASS s3 no retraction under the worker key
+=== S4 forge settlement (fm-contributions.sh poll, local gh emulator)
+poll(merged) rc=0
+--- /tmp/fm-hold-live.LiA7r2/s4-merged/state/question-close.status
+done: PR ready
+captain-held [key=captain-hold-question-close-1] [at=T]: Decide this PR
+resolved [key=captain-hold-question-close-1] [at=T]: captain call PR merged: https://github.com/o/r/pull/8 (close) by fm-captain-hold
+PASS s4 merged/close retraction names the PR event
+PASS s4 merged/close hold-aware reader returns done
+    (plain classifier reader, for contrast: resolved [key=captain-hold-question-close-1]: captain call PR merged: https://github.com/o/r/pull/8 (close) by fm-captain-hold)
+PASS s4 merged/close hold closed
+--- /tmp/fm-hold-live.LiA7r2/s4-merged/state/question-release.status
+done: PR ready
+captain-held [key=captain-hold-question-release-1] [at=T]: Decide this PR
+resolved [key=captain-hold-question-release-1] [at=T]: captain call PR merged: https://github.com/o/r/pull/8 (release) by fm-captain-hold
+PASS s4 merged/release retraction names the PR event
+PASS s4 merged/release hold-aware reader returns done
+    (plain classifier reader, for contrast: resolved [key=captain-hold-question-release-1]: captain call PR merged: https://github.com/o/r/pull/8 (release) by fm-captain-hold)
+PASS s4 merged/release hold closed
+PASS s4 merged repeat poll appends nothing
+poll(closed) rc=0
+--- /tmp/fm-hold-live.LiA7r2/s4-closed/state/question-close.status
+done: PR ready
+captain-held [key=captain-hold-question-close-1] [at=T]: Decide this PR
+resolved [key=captain-hold-question-close-1] [at=T]: captain call PR closed: https://github.com/o/r/pull/8 (close) by fm-captain-hold
+PASS s4 closed/close retraction names the PR event
+PASS s4 closed/close hold-aware reader returns done
+    (plain classifier reader, for contrast: resolved [key=captain-hold-question-close-1]: captain call PR closed: https://github.com/o/r/pull/8 (close) by fm-captain-hold)
+PASS s4 closed/close hold closed
+--- /tmp/fm-hold-live.LiA7r2/s4-closed/state/question-release.status
+done: PR ready
+captain-held [key=captain-hold-question-release-1] [at=T]: Decide this PR
+resolved [key=captain-hold-question-release-1] [at=T]: captain call PR closed: https://github.com/o/r/pull/8 (release) by fm-captain-hold
+PASS s4 closed/release retraction names the PR event
+PASS s4 closed/release hold-aware reader returns done
+    (plain classifier reader, for contrast: resolved [key=captain-hold-question-release-1]: captain call PR closed: https://github.com/o/r/pull/8 (release) by fm-captain-hold)
+PASS s4 closed/release hold closed
+PASS s4 closed repeat poll appends nothing
+=== S5 forge settlement opt-in absent (adversarial)
+fm-captain-hold: config/hold-pr-settle is required
+pr-policy without opt-in rc=1
+poll rc=0
+settle-pr rc=0
+--- /tmp/fm-hold-live.LiA7r2/s5/state/q.status
+done: PR ready
+captain-held [key=captain-hold-q-1] [at=T]: Decide this PR
+PASS s5 no retraction without config/hold-pr-settle
+PASS s5 hold stays open
+FAILS=0
