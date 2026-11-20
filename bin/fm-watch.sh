@@ -170,7 +170,9 @@
 #                          RECORD_HYGIENE findings (fm-record-hygiene-lib.sh);
 #                          an unchanged set does not wake again
 #   check: rejected unauthenticated state checks: <paths>
-#                          unsafe state checks were refused without execution
+#                          unsafe state checks were refused without execution;
+#                          each path names its repair command where one exists,
+#                          and an unchanged refused file does not wake again
 #   check: rejected unauthenticated PR poll retirement receipts: <paths>
 #                          invalid pending retirements were preserved without
 #                          running a check or removing poll artifacts
@@ -3379,6 +3381,58 @@ procevent_surface_queued() {
   wake "$reason"
 }
 
+# A refused check wakes once per path and content: without this marker an
+# unchanged refused file queued an identical wake on every sweep.
+refused_check_marker() {  # <check path>
+  local name
+  name=$(basename "$1")
+  printf '%s/.check-refused.%s\n' "$STATE" "${name%.check.sh}"
+}
+
+# Hash only a plain file: reading a FIFO or a device would hang the sweep.
+refused_check_fingerprint() {  # <check path>
+  if [ -f "$1" ] && [ ! -L "$1" ]; then
+    fm_custom_check_sha256 "$1" || printf 'unhashable\n'
+  else
+    printf 'not-a-regular-file\n'
+  fi
+}
+
+# Adds a refused path to rejected_checks unless this content was already
+# reported, naming the repair that would let the watcher run it.
+refuse_check() {  # <check path>
+  local c=$1 id fingerprint
+  fingerprint=$(refused_check_fingerprint "$c")
+  [ "$(cat "$(refused_check_marker "$c")" 2>/dev/null)" != "$fingerprint" ] || return 0
+  id=$(basename "$c" .check.sh)
+  rejected_checks="$rejected_checks $c"
+  if [ "$id" = x-watch ]; then
+    rejected_checks="$rejected_checks (rewritten by bin/fm-bootstrap.sh)"
+  elif fm_pr_task_id_valid "$id" && [ ! -e "$STATE/$id.pr-poll-registration" ]; then
+    rejected_checks="$rejected_checks (register with bin/fm-check-register.sh $id)"
+  fi
+  rejected_check_paths="$rejected_check_paths$c"$'\n'
+}
+
+refused_check_markers_record() {
+  local c
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    refused_check_fingerprint "$c" > "$(refused_check_marker "$c")" || return 1
+  done <<EOF
+$rejected_check_paths
+EOF
+}
+
+refused_check_markers_prune() {
+  local m
+  for m in "$STATE"/.check-refused.*; do
+    [ -e "$m" ] || continue
+    [ -e "$STATE/${m##*/.check-refused.}.check.sh" ] || [ -L "$STATE/${m##*/.check-refused.}.check.sh" ] \
+      || rm -f -- "$m"
+  done
+}
+
 run_check_process() {
   local c=$1
   shift
@@ -4294,6 +4348,7 @@ while :; do
   # CHECK_INTERVAL, so most cycles skip this block and fall straight through.
   if [ "$(age_of "$STATE/.last-check")" -ge "$CHECK_INTERVAL" ]; then
     rejected_checks=
+    rejected_check_paths=
     contribution_check_output=
     # Record each PR a task reported but nobody recorded, so its merge poll
     # below runs in this same sweep (bin/fm-pr-check.sh owns the scan).
@@ -4317,7 +4372,7 @@ while :; do
           FM_HOME="$FM_HOME" run_check_capture "$FM_ROOT/bin/fm-x-poll.sh" || exit 1
           out=$FM_CHECK_RESULT
         else
-          rejected_checks="$rejected_checks $c"
+          refuse_check "$c"
           continue
         fi
       else
@@ -4348,10 +4403,11 @@ while :; do
           fm_custom_check_snapshot_cleanup
         else
           fm_custom_check_snapshot_cleanup
-          rejected_checks="$rejected_checks $c"
+          refuse_check "$c"
           continue
         fi
       fi
+      rm -f -- "$(refused_check_marker "$c")"
       if [ -n "$out" ]; then
         if [ "$(basename "$c")" = contributions.check.sh ]; then
           contribution_check_output=
@@ -4502,9 +4558,11 @@ EOF
       fi
       pr_poll_control_release || exit 1
     done
+    refused_check_markers_prune
     if [ -n "$rejected_checks" ]; then
       reason="check: rejected unauthenticated state checks:$rejected_checks"
       fm_wake_append check unauthenticated-state-checks "$reason" || exit 1
+      refused_check_markers_record || exit 1
       touch "$STATE/.last-check"
       wake "$reason"
     fi
