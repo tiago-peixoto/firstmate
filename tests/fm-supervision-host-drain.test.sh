@@ -238,6 +238,28 @@ test_branch_outcomes_put_captain_first_and_collapse_routine_overflow() {
 }
 
 
+# One task's captain outcomes that name different PRs each keep a line, so the
+# acknowledgement never covers a ready PR that was not presented.
+test_branch_outcomes_keep_each_pr_of_one_task() {
+  local home drained s
+  home="$TMP_ROOT/drain-per-pr"
+  mkdir -p "$home/state" "$home/config"
+  : > "$home/config/supervision-host"
+  for s in 'PR https://github.com/o/r/pull/33 ready, all checks passed' \
+           'PR https://github.com/o/r/pull/34 ready, all checks passed' \
+           'PR https://github.com/o/r/pull/34 still ready' \
+           'issue 3 finding: open question whether to file it upstream'; do
+    FM_HOME="$home" "$ROOT/bin/fm-branch-outcome.sh" append --task task-a --verdict captain --summary "$s" >/dev/null \
+      || fail "fixture: could not record outcome: $s"
+  done
+  drained=$(FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" 2>&1' "$ROOT/bin/fm-wake-drain.sh")
+  assert_contains "$drained" "[seq 1, recorded 0m ago] task-a: PR https://github.com/o/r/pull/33 ready" "the first PR must keep its own line"
+  assert_contains "$drained" "[seq 3, newest of 2 for this PR, recorded 0m ago] task-a: PR https://github.com/o/r/pull/34 still ready" "repeats about one PR must collapse to its newest"
+  assert_contains "$drained" "[seq 4, recorded 0m ago] task-a: issue 3 finding" "an outcome naming no PR must keep its own line"
+  assert_contains "$drained" "mark-processed --through 4;" "one acknowledgement must still cover every presented outcome"
+  pass "branch outcomes: one task's distinct PRs each keep a line"
+}
+
 # Repeated captain outcomes for one task collapse to its newest, one line per
 # task; when the byte cap holds rows back, the section shows only the oldest
 # contiguous run its acknowledgement covers - a shown task's newer row that
@@ -591,6 +613,7 @@ fm_test_run \
   test_dispatch_entry_scopes_rows_and_renders_the_away_tail \
   test_branch_outcomes_only_on_a_host_home_off_pi \
   test_branch_outcomes_put_captain_first_and_collapse_routine_overflow \
+  test_branch_outcomes_keep_each_pr_of_one_task \
   test_branch_outcomes_collapse_repeated_captain_outcomes_per_task \
   test_branch_outcomes_present_a_long_away_window_once \
   test_branch_outcomes_budgets_count_bytes \
