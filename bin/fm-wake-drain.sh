@@ -596,9 +596,12 @@ EOF
 # nothing is new or unprocessed.
 #   - Captain outcomes come first and never wait behind routine ones. Every
 #     unprocessed captain row is presented on every drain until main
-#     acknowledges it, collapsed to one line per task: the task's newest
-#     presented summary, naming how many unprocessed captain outcomes it
-#     carries, with tasks in order of their oldest unprocessed row. The byte
+#     acknowledges it, collapsed to one line per task and PR: the newest
+#     presented summary for that pair, naming how many unprocessed captain
+#     outcomes it carries, in order of each pair's oldest unprocessed row.
+#     The PR is the first pull or merge request URL a summary names, so one
+#     task's distinct ready PRs each keep a line instead of being acknowledged
+#     unseen behind its newest outcome; rows naming no PR fold by task alone. The byte
 #     cap presents only the oldest contiguous run of captain rows and counts
 #     the newer ones it holds back, so the printed bin/fm-branch-outcome.sh
 #     mark-processed target, the newest presented row, acknowledges exactly
@@ -627,10 +630,10 @@ EOF
 # (bin/fm-afk-return.sh) keeps its catch-up gated instead of clearing over
 # outcomes a later drain would present again.
 print_branch_outcomes_section() {
-  local config rows through captain routine line seq task task_line target i
+  local config rows through captain routine line seq key key_line target i
   local text='' used=0 shown=0 held=0 bytes item_bytes=600 captain_bytes=4000 routine_bytes=2000
   local routine_lines='' routine_count=0 routine_shown=0
-  local -a captain_tasks=() captain_lines=() captain_line_bytes=()
+  local -a captain_keys=() captain_lines=() captain_line_bytes=()
   [ "$ACTOR" = main ] || return 0
   config=${FM_CONFIG_OVERRIDE:-$FM_HOME/config}
   fm_supervision_host_outcomes_drained "$config" || return 0
@@ -649,8 +652,10 @@ print_branch_outcomes_section() {
     || ! captain=$(printf '%s\n' "$rows" | jq -rs '
       map(select(.verdict == "captain")) | sort_by(.seq)
       | reduce .[] as $r ({count: {}, lines: []};
-          .count[$r.task] += 1
-          | .lines += ["\($r.seq)\t\($r.task)\t[seq \($r.seq)\(if .count[$r.task] > 1 then ", newest of \(.count[$r.task]) for this task" else "" end), recorded \($r.recordedAgo) ago] \($r.task): \($r.summary | gsub("[\t\n\r]"; " "))"])
+          (first($r.summary | match("https?://[^ \t\n\r]+/(pull|-/merge_requests)/[0-9]+").string) // "") as $pr
+          | "\($r.task) \($pr)" as $key
+          | .count[$key] += 1
+          | .lines += ["\($r.seq)\t\($key)\t[seq \($r.seq)\(if .count[$key] > 1 then ", newest of \(.count[$key]) for this \(if $pr == "" then "task" else "PR" end)" else "" end), recorded \($r.recordedAgo) ago] \($r.task): \($r.summary | gsub("[\t\n\r]"; " "))"])
       | .lines[]' 2>/dev/null) \
     || ! routine=$(printf '%s\n' "$rows" | jq -rs 'map(select(.unread and .verdict == "routine" and .silent != true)) | sort_by(.seq) | reverse | .[]
       | "[seq \(.seq)] \(.task): \(.summary | gsub("[\t\n\r]"; " "))"' 2>/dev/null) \
@@ -660,22 +665,22 @@ print_branch_outcomes_section() {
   fi
 
   target=0
-  while IFS=$(printf '\t') read -r seq task task_line; do
+  while IFS=$(printf '\t') read -r seq key key_line; do
     case "$seq" in ''|*[!0-9]*) continue ;; esac
     if [ "$held" -gt 0 ]; then
       held=$((held + 1))
       continue
     fi
-    cap_outcome_line "$task_line" $((item_bytes - 1))
+    cap_outcome_line "$key_line" $((item_bytes - 1))
     i=0
-    while [ "$i" -lt "$shown" ] && [ "${captain_tasks[$i]}" != "$task" ]; do i=$((i + 1)); done
+    while [ "$i" -lt "$shown" ] && [ "${captain_keys[$i]}" != "$key" ]; do i=$((i + 1)); done
     bytes=$(( used + OUTCOME_LINE_BYTES + 1 ))
     [ "$i" -eq "$shown" ] || bytes=$(( bytes - captain_line_bytes[i] - 1 ))
     if [ "$bytes" -gt "$captain_bytes" ]; then
       held=1
       continue
     fi
-    captain_tasks[i]=$task
+    captain_keys[i]=$key
     captain_lines[i]=$OUTCOME_LINE
     captain_line_bytes[i]=$OUTCOME_LINE_BYTES
     [ "$i" -lt "$shown" ] || shown=$((shown + 1))
@@ -685,7 +690,7 @@ print_branch_outcomes_section() {
 $captain
 ROWS
   if [ "$shown" -gt 0 ]; then
-    text="BRANCH OUTCOMES (captain outcomes the supervision session recorded for you, one line per task, oldest first; each says what was true when it was recorded, so check the task's current state first, including its still-open decisions listed above under OPEN DECISIONS, and sort them into still open and already settled, such as a decision since answered, a PR since merged, or a task since finished - process the still-open ones as firstmate: tell the captain, land or merge what is ready, answer or escalate a decision, or act on a blocker; your reply to the captain covers only those, as if the settled ones had never been listed, and a settled one needs only the acknowledgement):
+    text="BRANCH OUTCOMES (captain outcomes the supervision session recorded for you, one line per task and PR it names, oldest first; each says what was true when it was recorded, so check the task's current state first, including its still-open decisions listed above under OPEN DECISIONS, and sort them into still open and already settled, such as a decision since answered, a PR since merged, or a task since finished - process the still-open ones as firstmate: tell the captain, land or merge what is ready, answer or escalate a decision, or act on a blocker; your reply to the captain covers only those, as if the settled ones had never been listed, and a settled one needs only the acknowledgement):
 "
     for line in "${captain_lines[@]}"; do
       text="$text$line
