@@ -214,6 +214,7 @@ The drain's header owns the section's bounds; these rules keep it bounded and in
 
 - Captain outcomes come first and never wait behind routine ones.
 - Repeated captain outcomes for one task collapse to that task's newest, naming how many it carries, and one acknowledgement covers them.
+- Outcomes of one task that name different pull or merge request URLs each keep their own line, so no ready PR is acknowledged unseen.
 - The byte cap shows only the oldest contiguous run of captain outcomes, so the printed acknowledgement covers exactly the rows shown, and it counts the newer ones it holds back, which follow once the run is acknowledged.
 - Routine outcomes never open a main turn: the next drain lists the newest visible one once, for awareness and with nothing to acknowledge, and collapses older visible routine notes into a count; silent routine outcomes never appear.
 
