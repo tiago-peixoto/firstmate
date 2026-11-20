@@ -2904,6 +2904,42 @@ test_bootstrap_leaves_unauthenticated_checks() {
   pass "bootstrap does not rewrite unauthenticated checks or emit retired migration diagnostics"
 }
 
+test_refused_custom_check_wakes_once_per_content() {
+  local dir state check out rc
+  dir=$(make_case refused-check-dedupe)
+  state="$dir/home/state"
+  check="$state/nightly.check.sh"
+  printf '#!/usr/bin/env bash\nprintf "nightly-due\\n"\n' > "$check"
+  chmod 0700 "$check"
+
+  out=$(FM_TEST_WATCH_BOUND=10 run_watcher_bounded "$dir/home" "$dir/fakebin" 2>/dev/null)
+  [ "$out" = "check: rejected unauthenticated state checks: $check (register with bin/fm-check-register.sh nightly)" ] \
+    || fail "first refusal did not name the register command: $out"
+  ack_watcher_cycle "$state" >/dev/null || fail "could not acknowledge the first refusal"
+
+  rc=0
+  out=$(FM_TEST_WATCH_BOUND=2 run_watcher_bounded "$dir/home" "$dir/fakebin" 2>/dev/null) || rc=$?
+  [ "$rc" -eq 124 ] && [ -z "$out" ] || fail "an unchanged refused check woke again (rc=$rc): $out"
+  # The bound stopped that watcher, so settle its downtime the way a supervisor would.
+  ack_watcher_cycle "$state" >/dev/null || true
+
+  printf '# edited\n' >> "$check"
+  out=$(FM_TEST_WATCH_BOUND=10 run_watcher_bounded "$dir/home" "$dir/fakebin" 2>/dev/null)
+  assert_contains "$out" "rejected unauthenticated state checks: $check" "an edited refused check did not wake again"
+  ack_watcher_cycle "$state" >/dev/null || fail "could not acknowledge the second refusal"
+
+  out=$(FM_HOME="$dir/home" "$ROOT/bin/fm-check-register.sh" nightly --run-once) \
+    || fail "register --run-once failed: $out"
+  [ "$out" = $'registered: state/nightly.check.sh\nnightly-due\nexit: 0' ] \
+    || fail "register --run-once did not report the check's output and exit code: $out"
+  ! ls "$state"/.fm-custom-check.* >/dev/null 2>&1 || fail "register --run-once left its snapshot behind"
+
+  out=$(FM_TEST_WATCH_BOUND=10 run_watcher_bounded "$dir/home" "$dir/fakebin" 2>/dev/null)
+  [ "$out" = "check: $check: nightly-due" ] || fail "registered check did not run: $out"
+  [ ! -e "$state/.check-refused.nightly" ] || fail "an accepted check kept its refusal marker"
+  pass "a refused custom check wakes once per content and names its register command"
+}
+
 test_custom_snapshot_cleanup_on_signal() {
   local dir state child_pid_file pid child_pid i rc
   dir=$(make_case custom-snapshot-signal)
@@ -5744,6 +5780,7 @@ test_device_rerecord_serializes_direct_rearm
 test_device_rerecord_serializes_rerecord
 test_postrename_poll_validation_revokes_and_retries
 test_bootstrap_leaves_unauthenticated_checks
+test_refused_custom_check_wakes_once_per_content
 test_custom_snapshot_cleanup_on_signal
 test_returned_custom_check_descendants_are_drained
 test_timed_out_custom_check_surfaces_with_partial_output

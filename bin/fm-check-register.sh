@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Bind an intentional custom watcher check to its current bytes.
-# Usage: fm-check-register.sh <id>
+# Usage: fm-check-register.sh <id> [--run-once]
+# --run-once then runs the bound bytes once, the way the watcher would (same
+# snapshot, bash, FM_CHECK_TIMEOUT bound), prints the check's output and
+# `exit: <code>`, and exits with that code, so a broken check shows up now.
 # Retire with fm-check-unregister.sh <id>; do not hand-compose an rm.
 set -u
 
@@ -14,7 +17,9 @@ STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 # shellcheck source=bin/fm-check-lib.sh
 . "$SCRIPT_DIR/fm-check-lib.sh"
 
-if [ "$#" -ne 1 ] || ! fm_pr_task_id_valid "$1"; then
+RUN_ONCE=0
+[ "$#" -ne 2 ] || [ "$2" != --run-once ] || RUN_ONCE=1
+if [ "$#" -ne $((1 + RUN_ONCE)) ] || ! fm_pr_task_id_valid "$1"; then
   echo "error: invalid custom check registration" >&2
   exit 2
 fi
@@ -40,3 +45,19 @@ mv -f -- "$TMP" "$TRUST" || exit 1
 TMP=
 fm_custom_check_registered "$STATE" "$ID" || { rm -f -- "$TRUST"; exit 1; }
 printf 'registered: state/%s.check.sh\n' "$ID"
+[ "$RUN_ONCE" -eq 1 ] || exit 0
+
+trap 'fm_custom_check_snapshot_cleanup' EXIT HUP INT TERM
+fm_custom_check_snapshot_prepare "$STATE" "$ID" || { echo "error: custom check snapshot is unavailable" >&2; exit 1; }
+LIMIT=${FM_CHECK_TIMEOUT:-30}
+RC=0
+if command -v timeout >/dev/null 2>&1; then
+  timeout "$LIMIT" bash "$FM_CUSTOM_CHECK_SNAPSHOT" || RC=$?
+elif command -v gtimeout >/dev/null 2>&1; then
+  gtimeout "$LIMIT" bash "$FM_CUSTOM_CHECK_SNAPSHOT" || RC=$?
+else
+  # The alarm survives exec, so it bounds the check itself.
+  perl -e 'alarm shift; exec @ARGV' "$LIMIT" bash "$FM_CUSTOM_CHECK_SNAPSHOT" || RC=$?
+fi
+printf 'exit: %s\n' "$RC"
+exit "$RC"
