@@ -109,9 +109,10 @@
 # brief's `## Captain's intent` subsection plus later captain words, never
 # `## Firstmate spec` and never the worker's own tradeoffs.
 # Author the subsection body and later relays as the actual words, without
-# adding speaker labels or direct address: the heading supplies provenance and
-# is not part of --intent. A legacy mixed Task instead marks each captain line
-# with `[captain] `; the selector returns its words, not that metadata prefix.
+# adding speaker labels, direct address, or narration of the operator's
+# decisions: the heading supplies provenance and is not part of --intent.
+# A legacy mixed Task instead marks each captain line with `[captain] `; the
+# selector returns its words, not that metadata prefix.
 # That selector skips fenced blocks and indented examples like the heading
 # reader, so a quoted `Captain:` sample is never authorized intent.
 # Previously stored speaker labels remain readable for compatibility only.
@@ -121,9 +122,9 @@
 # refers to is written into it as substance, never left as a pointer.
 # bin/fm-brief.sh scaffolds those two `# Task` subsections; bin/fm-spawn.sh and
 # bin/fm-promote.sh refuse leftover `{TASK}` / `{FIRSTMATE_SPEC}` placeholders
-# and a `## Captain's intent` line opening with a Captain label or address
-# through the helpers below. Other mentions of `--intent` point here rather than
-# restating the rule.
+# and a `## Captain's intent` line that frames the words with a Captain label,
+# address, or decision narration through the helpers below. Other mentions of
+# `--intent` point here rather than restating the rule.
 # Every heredoc here stays outside a command substitution: `VAR=$(cat <<EOF ...)`
 # breaks parsing of the whole file on Bash 3.2 (tests/fm-brief.test.sh).
 # fm_brief_worker_role owns the ship/scout role scope. bin/fm-spawn.sh is its one
@@ -339,40 +340,48 @@ fm_brief_task_placeholders_present() {  # <file>
   return 1
 }
 
-# Print the words of every provenance-marked line in a legacy `# Task` body.
-# The marker is read the way bin/fm-brief-heading-lib.sh reads a heading: a
-# line inside a ``` or ~~~ fenced block, or indented four spaces or a tab as an
-# indented example, is never a marked line, so a fenced `Captain:` sample cannot
-# pass the provenance gate as the ship contract's intent (issue 3608).
+# Awk function shared by the intent readers below. It reads a line the way
+# bin/fm-brief-heading-lib.sh reads a heading: a ``` or ~~~ fence line, a line
+# inside a fenced block, or a line indented four spaces or a tab is an example,
+# so a quoted sample is never read as intent framing (issue 3608). It leaves
+# fm_scan holding the line without up to three leading spaces.
+# shellcheck disable=SC2016  # awk source, not shell
+FM_BRIEF_EXAMPLE_AWK='
+function fm_brief_example(line,   spaces, marker, marker_len) {
+  fm_scan = line
+  spaces = 0
+  while (spaces < 3 && substr(fm_scan, 1, 1) == " ") {
+    fm_scan = substr(fm_scan, 2)
+    spaces++
+  }
+  marker = substr(fm_scan, 1, 1)
+  marker_len = 0
+  if (marker == "`" || marker == "~") {
+    while (substr(fm_scan, marker_len + 1, 1) == marker) marker_len++
+  }
+  if (marker_len >= 3) {
+    if (!fm_fenced) {
+      fm_fenced = 1
+      fm_fence_marker = marker
+      fm_fence_len = marker_len
+    } else if (marker == fm_fence_marker && marker_len >= fm_fence_len && substr(fm_scan, marker_len + 1) ~ /^[[:space:]]*$/) {
+      fm_fenced = 0
+    }
+    return 1
+  }
+  return fm_fenced || substr(fm_scan, 1, 1) ~ /^[ \t]$/
+}
+'
+
+# Print the words of every provenance-marked line in a legacy `# Task` body,
+# skipping examples, so a fenced `Captain:` sample cannot pass the provenance
+# gate as the ship contract's intent.
 fm_brief_marked_captain_words() {  # <task-body>
-  printf '%s\n' "$1" | awk '
-    {
-      scan = $0
-      spaces = 0
-      while (spaces < 3 && substr(scan, 1, 1) == " ") {
-        scan = substr(scan, 2)
-        spaces++
-      }
-      marker = substr(scan, 1, 1)
-      marker_len = 0
-      if (marker == "`" || marker == "~") {
-        while (substr(scan, marker_len + 1, 1) == marker) marker_len++
-      }
-      if (marker_len >= 3) {
-        if (!fenced) {
-          fenced = 1
-          fence_marker = marker
-          fence_len = marker_len
-        } else if (marker == fence_marker && marker_len >= fence_len && substr(scan, marker_len + 1) ~ /^[[:space:]]*$/) {
-          fenced = 0
-        }
-        next
-      }
-      if (fenced || substr(scan, 1, 1) ~ /^[ \t]$/) next
-      if (match(scan, /^(\[captain\]|Captain('\''s (words|ask|intent))?:)[[:space:]]*/)) {
-        words = substr(scan, RLENGTH + 1)
-        if (words ~ /[^[:space:]]/) print words
-      }
+  printf '%s\n' "$1" | awk "$FM_BRIEF_EXAMPLE_AWK"'
+    fm_brief_example($0) { next }
+    match(fm_scan, /^(\[captain\]|Captain('\''s (words|ask|intent))?:)[[:space:]]*/) {
+      words = substr(fm_scan, RLENGTH + 1)
+      if (words ~ /[^[:space:]]/) print words
     }
   '
 }
@@ -411,11 +420,22 @@ fm_brief_task_content_valid() {  # <file>
   [ -n "$(printf '%s' "$task" | tr -d '[:space:]')" ]
 }
 
-# Print the first `## Captain's intent` body line that opens with an operator
-# address spelling; fail when there is none. The body is never rewritten.
+# Print the first `## Captain's intent` body line, outside examples, that frames
+# the words instead of carrying them; fail when there is none. Framing is a
+# line-opening operator label or address (`Captain:`, `Captain,`, or
+# `Captain's <word> (<note>):`) or narration of the operator's decision anywhere
+# in a line. The bare word stays legal because it is a firstmate product term.
+# The body is never rewritten.
 fm_brief_intent_address_line() {  # <file>
-  fm_brief_task_heading_body "$1" "## Captain's intent" | awk '
-    /^[[:space:]]*(Captain('\''s (words|ask|intent))?:|Captain,)/ { print; found = 1; exit }
+  fm_brief_task_heading_body "$1" "## Captain's intent" | awk "$FM_BRIEF_EXAMPLE_AWK"'
+    fm_brief_example($0) { next }
+    {
+      l = tolower($0)
+      if (l ~ /^[[:space:]]*(captain('\''s [a-z]+( \([^)]*\))?)?:|captain,)/ ||
+          l ~ /(^|[^a-z])(in (his|her|their) words|the captain decided|the captain'\''s (answer|decision)|without (his|her|their) word)/) {
+        print; found = 1; exit
+      }
+    }
     END { exit !found }
   '
 }

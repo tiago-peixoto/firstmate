@@ -291,7 +291,7 @@ if ! fm_brief_task_content_valid "$SCOUT_BRIEF"; then
   exit 1
 fi
 if ADDRESS_LINE=$(fm_brief_intent_address_line "$SCOUT_BRIEF"); then
-  echo "error: $SCOUT_BRIEF ## Captain's intent has an operator-address line: $ADDRESS_LINE; write the captain's actual words without a Captain label or address before promotion, since the heading already records provenance" >&2
+  echo "error: $SCOUT_BRIEF ## Captain's intent has an operator-address line: $ADDRESS_LINE; write the captain's actual words without a Captain label or address, and without narrating the captain's decisions, before promotion, since the heading already records provenance" >&2
   exit 1
 fi
 if fm_brief_task_heading_present "$SCOUT_BRIEF" "## Captain's intent"; then

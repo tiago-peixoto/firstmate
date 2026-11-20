@@ -1195,8 +1195,18 @@ EOF
   authorized=$(awk '$0 == "## Captain intent authorized for --intent" { emit=1; next } emit { print }' "$home/data/intent-literal/launch-brief.md")
   [ "$authorized" = "$words" ] || fail "literal words in the request were scrubbed"
 
-  # A body line that opens with operator address is refused, never rewritten.
-  for marker in 'Captain:' "Captain's words:" "Captain's ask:" "Captain's intent:" 'Captain,'; do
+  # The bare word is a product term, and quoted samples are examples, not framing.
+  words=$(printf '%s\n' 'Make the captain inbox reader skip empty notes.' '```' "Captain's answer: a fenced sample." '```' "    The captain decided an indented sample.")
+  write_brief "$home" intent-term no-mistakes
+  printf '# Task\n## Captain'"'"'s intent\n%s\n\n## Firstmate spec\nDo not paraphrase.\n\n# Definition of done\nDelivery contract: mode=no-mistakes\n' "$words" > "$home/data/intent-term/brief.md"
+  out=$(run_spawn "$home" "$fakebin" intent-term "$proj" claude --mode no-mistakes --yolo off)
+  assert_not_contains "$out" "operator-address line" "product term or quoted sample was refused as framing"
+  assert_present "$home/data/intent-term/launch-brief.md" "product term intent was not serialized"
+
+  # A body line that opens with operator address, or narrates the operator's
+  # decision anywhere, is refused, never rewritten.
+  for marker in 'Captain:' "Captain's words:" "Captain's ask:" "Captain's intent:" 'Captain,' \
+    "Captain's answer (2026-11-20):" 'The captain decided option A; no merge without his word, and' 'In her words,'; do
     n=$((n + 1))
     id="intent-addressed-$n"
     write_brief "$home" "$id" no-mistakes
