@@ -1,0 +1,5 @@
+ok - real Pi dependencies resolve siblings and prefer nested packages, with a clear missing-package failure
+ok - fm_branch_outcomes and fm_branch_processed call headers match stock on Pi before and from 0.99
+missing Pi dependency @earendil-works/pi-ai: checked /tmp/fm-8605.OHunfX/missing/node_modules/@earendil-works/pi-coding-agent/node_modules and /tmp/fm-8605.OHunfX/missing/node_modules/@earendil-works/pi-coding-agent/../..
+not ok - could not link the installed Pi rendering dependency @earendil-works/pi-ai
+exit=1
