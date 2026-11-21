@@ -1,0 +1,9 @@
+ ⚓ MERGED: https://github.com/example/project/pull/1
+ ⚓ CLOSED: https://github.com/example/project/pull/2
+ ⚓ Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/3
+ok - pi 1.5.2: three taskless forge changes produced three visible lines, no primary turn or wake
+skip: pi-signed is not installed for the live PR-follow proof
+● fm: ⚓ MERGED: https://github.com/example/project/pull/1
+● fm: ⚓ CLOSED: https://github.com/example/project/pull/2
+● fm: ⚓ Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/3
+ok - claude 2.1.330 (Claude Code): three taskless forge changes produced three visible lines, no primary turn or wake

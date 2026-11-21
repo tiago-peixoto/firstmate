@@ -1,0 +1,6 @@
+$ git diff --stat 427056c4 HEAD -- .agents/skills/agent-skill-trigger-index .agents/skills/pr-follow
+(empty above = identical to base)
+$ ls .agents/skills | grep -c follow
+0
+$ grep -rli "pr-follow" .agents/skills
+.agents/skills/operational-home-layout/SKILL.md
