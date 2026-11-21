@@ -1,0 +1,108 @@
+=== github, open PR, branch pushed, NO opt-in file ===
+exit=0  task record=removed  isolated copy=kept  backlog=done
+    forge client calls:
+    (no gh call)
+teardown output (last 4 lines):
+    <home>/project: already current
+    teardown task-x1 complete (window firstmate:fm-task-x1, worktree <home>/wt)
+    Backlog: task-x1 is closed in <home>/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+SAME AS BASE 427056c4: exit, records, forge calls and output are identical
+=== github, open PR, branch pushed, config/park-on-review ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    api graphql -f query=query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){state merged}}} -F owner=example -F repo=repo -F number=7 --jq .data.repository.pullRequest | "state=" + (.state // ""), "merged=" + (.merged | tostring)
+    pr view 7 --repo example/repo
+teardown output (last 4 lines):
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+=== github, open PR, branch pushed, config/auto-land ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    api graphql -f query=query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){state merged}}} -F owner=example -F repo=repo -F number=7 --jq .data.repository.pullRequest | "state=" + (.state // ""), "merged=" + (.merged | tostring)
+    pr view 7 --repo example/repo
+teardown output (last 4 lines):
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+=== forgejo, open PR, branch pushed, NO opt-in file ===
+exit=0  task record=removed  isolated copy=kept  backlog=done
+    forge client calls:
+    (no tea call)
+teardown output (last 4 lines):
+    <home>/project: already current
+    teardown task-x1 complete (window firstmate:fm-task-x1, worktree <home>/wt)
+    Backlog: task-x1 is closed in <home>/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+SAME AS BASE 427056c4: exit, records, forge calls and output are identical
+=== forgejo, open PR, branch pushed, config/park-on-review ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    login list --output json
+    api --login fj --repo team/repo /repos/{owner}/{repo}/pulls/7
+teardown output (last 4 lines):
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://git.example.org/team/repo/pulls/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+=== forgejo, open PR, branch pushed, config/auto-land ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    login list --output json
+    api --login fj --repo team/repo /repos/{owner}/{repo}/pulls/7
+teardown output (last 4 lines):
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://git.example.org/team/repo/pulls/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+=== gitlab, open PR, branch pushed, NO opt-in file ===
+exit=0  task record=removed  isolated copy=kept  backlog=done
+    forge client calls:
+    (no glab call)
+teardown output (last 4 lines):
+    <home>/project: already current
+    teardown task-x1 complete (window firstmate:fm-task-x1, worktree <home>/wt)
+    Backlog: task-x1 is closed in <home>/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+SAME AS BASE 427056c4: exit, records, forge calls and output are identical
+=== gitlab, open PR, branch pushed, config/park-on-review ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    mr view 7 -R https://gitlab.example.com/team/sub/repo -F json
+teardown output (last 4 lines):
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+=== gitlab, open PR, branch pushed, config/auto-land ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    mr view 7 -R https://gitlab.example.com/team/sub/repo -F json
+teardown output (last 4 lines):
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+=== github, open PR, work on no remote, NO opt-in file (main's unlanded-work refusal) ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    pr view https://github.com/example/repo/pull/7 --json state,headRefOid,url -q .state + "\t" + .headRefOid + "\t" + .url
+teardown output (last 4 lines):
+    REFUSED: worktree <home>/wt has work not on any remote and not landed.
+    unpushed commits:
+    <sha> work
+    Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+SAME AS BASE 427056c4: exit, records, forge calls and output are identical
+=== github, forge read fails, branch pushed, NO opt-in file ===
+exit=0  task record=removed  isolated copy=kept  backlog=done
+    forge client calls:
+    (no gh call)
+teardown output (last 4 lines):
+    <home>/project: already current
+    teardown task-x1 complete (window firstmate:fm-task-x1, worktree <home>/wt)
+    Backlog: task-x1 is closed in <home>/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+SAME AS BASE 427056c4: exit, records, forge calls and output are identical
+=== github, forge read fails, branch pushed, config/park-on-review ===
+exit=1  task record=kept  isolated copy=kept  backlog=in_flight
+    forge client calls:
+    api graphql -f query=query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){state merged}}} -F owner=example -F repo=repo -F number=7 --jq .data.repository.pullRequest | "state=" + (.state // ""), "merged=" + (.merged | tostring)
+    pr view 7 --repo example/repo
+teardown output (last 4 lines):
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+=== same home, then --force ===
+exit=0  task record=removed
+=== repository tests for the configured merged / forced / closed / dirty / unlanded paths ===
+ok - the open PR gate reads and retains tasks on all three forges only with either existing opt-in
+ok - teardown preserves the task record and copy until its pull request is confirmed merged
+ok - forced teardown discards a ship whose pull request is still open
+ok - a closed pull request takes the existing landed-work and dirty-tree checks without --force
+driver expectation failures: 0
