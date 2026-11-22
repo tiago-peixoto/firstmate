@@ -1,0 +1,399 @@
+
+=== S-default-unconfigured: target vs upstream main 427056c4, same sequence, no config/contribution-ack-receipts ===
+PASS  unconfigured: output, exit codes and saved record identical to upstream main
+--- target transcript (unconfigured)
+    contribution-wake: check: contributions delivery 7a7fef92df3818704dc6d72f6b1475beb3458ab3b93d6a8893b02c25cd5007b1
+    contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+    contribution-wake: check: contributions delivery 3ba0b67a1ee2dc2c377e37a4b31e4ed4e560e74b74c1cd740759bf1e77b28f10
+    poll rc=0
+    [
+      {
+        "token": "comment:50:2026-09-16T08:01:00Z:",
+        "type": "comment",
+        "source": "https://github.com/o/r/pull/8#issuecomment-50",
+        "head": null,
+        "author": "maintainer",
+        "body": "Thanks, looking",
+        "task": "delivery",
+        "url": "https://github.com/o/r/pull/8"
+      },
+      {
+        "token": "review-comment:31:2026-09-16T08:00:00Z:",
+        "type": "review-comment",
+        "source": "https://github.com/o/r/pull/8#discussion_r31",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "author": "maintainer",
+        "body": "Why is this retried?",
+        "task": "delivery",
+        "url": "https://github.com/o/r/pull/8"
+      },
+      {
+        "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+        "type": "review",
+        "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "author": "maintainer",
+        "body": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ",
+        "task": "delivery",
+        "url": "https://github.com/o/r/pull/8"
+      }
+    ]
+    pending rc=0
+    fm-contributions: ack needs one exact event token
+    ack-handoff rc=1
+    fm-contributions: ack needs one exact event token
+    ack-disposition rc=1
+    ack-review rc=0
+    ack-inline rc=0
+    ack-comment rc=0
+    []
+    pending rc=0
+    --- saved record
+    {
+      "records": [
+        {
+          "checked_at": "2026-09-16T08:02:00Z",
+          "error": null,
+          "kind": "pr",
+          "notified": [
+            "comment:50:2026-09-16T08:01:00Z:",
+            "review-comment:31:2026-09-16T08:00:00Z:",
+            "review:12:2026-09-16T08:01:00Z:APPROVED"
+          ],
+          "observation": {
+            "absent_checks": [],
+            "can_merge": false,
+            "checks": [
+              {
+                "conclusion": "success",
+                "id": 1,
+                "name": "test",
+                "started_at": "2026-09-16T08:00:00Z",
+                "status": "completed"
+              }
+            ],
+            "draft": false,
+            "events": [
+              {
+                "author": "maintainer",
+                "body": "Thanks, looking",
+                "head": null,
+                "source": "https://github.com/o/r/pull/8#issuecomment-50",
+                "token": "comment:50:2026-09-16T08:01:00Z:",
+                "type": "comment"
+              },
+              {
+                "author": "maintainer",
+                "body": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ",
+                "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+                "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+                "type": "review"
+              },
+              {
+                "author": "maintainer",
+                "body": "Why is this retried?",
+                "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "source": "https://github.com/o/r/pull/8#discussion_r31",
+                "token": "review-comment:31:2026-09-16T08:00:00Z:",
+                "type": "review-comment"
+              }
+            ],
+            "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mergeable": "mergeable",
+            "review_decision": "APPROVED",
+            "reviews": [
+              {
+                "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "id": 12,
+                "state": "APPROVED",
+                "submitted_at": "2026-09-16T08:01:00Z",
+                "user": {
+                  "login": "maintainer"
+                }
+              }
+            ],
+            "state": "open"
+          },
+          "pending": [],
+          "seen": [
+            "comment:50:2026-09-16T08:01:00Z:",
+            "review-comment:31:2026-09-16T08:00:00Z:",
+            "review:12:2026-09-16T08:01:00Z:APPROVED"
+          ],
+          "url": "https://github.com/o/r/pull/8",
+          "verdict": null
+        }
+      ],
+      "schema": "fm-contributions.v1",
+      "task": "delivery"
+    }
+PASS  unconfigured: token-only acks accepted, receipt args refused, no receipts saved
+
+=== S-default-existing: target vs upstream main 427056c4, same sequence, no config/contribution-ack-receipts ===
+PASS  existing: output, exit codes and saved record identical to upstream main
+--- target transcript (existing)
+    contribution-wake: check: contributions delivery 7a7fef92df3818704dc6d72f6b1475beb3458ab3b93d6a8893b02c25cd5007b1
+    contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+    contribution-wake: check: contributions delivery 3ba0b67a1ee2dc2c377e37a4b31e4ed4e560e74b74c1cd740759bf1e77b28f10
+    poll rc=0
+    [
+      {
+        "token": "comment:50:2026-09-16T08:01:00Z:",
+        "type": "comment",
+        "source": "https://github.com/o/r/pull/8#issuecomment-50",
+        "head": null,
+        "author": "maintainer",
+        "body": "Thanks, looking",
+        "review_bot": true,
+        "at": "",
+        "unanswered": false,
+        "task": "delivery",
+        "url": "https://github.com/o/r/pull/8"
+      },
+      {
+        "token": "review-comment:31:2026-09-16T08:00:00Z:",
+        "type": "review-comment",
+        "source": "https://github.com/o/r/pull/8#discussion_r31",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "author": "maintainer",
+        "body": "Why is this retried?",
+        "review_bot": true,
+        "at": "2026-09-16T08:00:00Z",
+        "unanswered": true,
+        "task": "delivery",
+        "url": "https://github.com/o/r/pull/8"
+      },
+      {
+        "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+        "type": "review",
+        "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "author": "maintainer",
+        "body": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ",
+        "review_bot": true,
+        "at": "2026-09-16T08:01:00Z",
+        "unanswered": false,
+        "task": "delivery",
+        "url": "https://github.com/o/r/pull/8"
+      }
+    ]
+    pending rc=0
+    fm-contributions: ack needs one exact event token
+    ack-handoff rc=1
+    fm-contributions: ack needs one exact event token
+    ack-disposition rc=1
+    ack-review rc=0
+    ack-inline rc=0
+    ack-comment rc=0
+    []
+    pending rc=0
+    contribution-wake: check: contributions delivery 763ab536c9746f984df20607cc115591a0c8f0c12aac6703871bb22c0ba15bff unanswered https://github.com/o/r/pull/8#discussion_r31 24h
+    reraise-poll rc=0
+    [
+      {
+        "token": "unanswered:review-comment:31:2026-09-17T08:05:00Z",
+        "type": "unanswered",
+        "thread": "review-comment:31",
+        "source": "https://github.com/o/r/pull/8#discussion_r31",
+        "head": null,
+        "author": "maintainer",
+        "age": "24h",
+        "body": "no reply from the contribution author for 24h",
+        "review_bot": true,
+        "task": "delivery",
+        "url": "https://github.com/o/r/pull/8"
+      }
+    ]
+    pending rc=0
+    ack-unanswered rc=0
+    --- saved record
+    {
+      "records": [
+        {
+          "checked_at": "2026-09-17T08:05:00Z",
+          "error": null,
+          "kind": "pr",
+          "notified": [
+            "comment:50:2026-09-16T08:01:00Z:",
+            "review-comment:31:2026-09-16T08:00:00Z:",
+            "review:12:2026-09-16T08:01:00Z:APPROVED",
+            "unanswered:review-comment:31:2026-09-17T08:05:00Z"
+          ],
+          "observation": {
+            "absent_checks": [],
+            "can_merge": false,
+            "checks": [
+              {
+                "conclusion": "success",
+                "id": 1,
+                "name": "test",
+                "started_at": "2026-09-16T08:00:00Z",
+                "status": "completed"
+              }
+            ],
+            "draft": false,
+            "events": [
+              {
+                "at": "",
+                "author": "maintainer",
+                "body": "Thanks, looking",
+                "head": null,
+                "review_bot": true,
+                "source": "https://github.com/o/r/pull/8#issuecomment-50",
+                "token": "comment:50:2026-09-16T08:01:00Z:",
+                "type": "comment",
+                "unanswered": false
+              },
+              {
+                "at": "2026-09-16T08:01:00Z",
+                "author": "maintainer",
+                "body": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ",
+                "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "review_bot": true,
+                "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+                "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+                "type": "review",
+                "unanswered": false
+              },
+              {
+                "at": "2026-09-16T08:00:00Z",
+                "author": "maintainer",
+                "body": "Why is this retried?",
+                "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "review_bot": true,
+                "source": "https://github.com/o/r/pull/8#discussion_r31",
+                "token": "review-comment:31:2026-09-16T08:00:00Z:",
+                "type": "review-comment",
+                "unanswered": true
+              }
+            ],
+            "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mergeable": "mergeable",
+            "review_decision": "APPROVED",
+            "reviews": [
+              {
+                "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "id": 12,
+                "state": "APPROVED",
+                "submitted_at": "2026-09-16T08:01:00Z",
+                "user": {
+                  "login": "maintainer"
+                }
+              }
+            ],
+            "state": "open"
+          },
+          "pending": [],
+          "seen": [
+            "comment:50:2026-09-16T08:01:00Z:",
+            "review-comment:31:2026-09-16T08:00:00Z:",
+            "review:12:2026-09-16T08:01:00Z:APPROVED"
+          ],
+          "threads": [
+            {
+              "at": "2026-09-16T08:00:00Z",
+              "author": "maintainer",
+              "key": "review-comment:31",
+              "raised": "2026-09-17T08:05:00Z",
+              "review_bot": true,
+              "source": "https://github.com/o/r/pull/8#discussion_r31",
+              "type": "review-comment"
+            }
+          ],
+          "url": "https://github.com/o/r/pull/8",
+          "verdict": null
+        }
+      ],
+      "schema": "fm-contributions.v1",
+      "task": "delivery"
+    }
+PASS  existing: token-only acks accepted, receipt args refused, no receipts saved
+
+=== S-optin: flag present (empty file) - findings need a receipt ===
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+    fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+    [exit 1]
+PASS  token-only ack of approved review with findings refused
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z:
+    fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+    [exit 1]
+PASS  token-only ack of inline comment refused
+PASS  refusals left all 3 signals pending
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 comment:50:2026-09-16T08:01:00Z:
+    [exit 0]
+PASS  plain comment (no findings) acks with token alone
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+    fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+    [exit 1]
+PASS  handoff with no steer in the owner inbox refused
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+    fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+    [exit 1]
+PASS  steer to a different task is not a handoff
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+    [exit 0]
+PASS  handoff accepted after steer naming the review
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z: disposition https://github.com/o/r/pull/99#issuecomment-40 fixed
+    fm-contributions: disposition evidence must be a comment or review on this contribution
+    [exit 1]
+PASS  disposition citing another PR refused
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z: disposition https://github.com/o/r/pull/8#discussion_r31 self cite
+    fm-contributions: the signal itself cannot be the evidence for its own disposition while the owning task record exists
+    [exit 1]
+PASS  disposition citing the signal itself refused (live task)
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z: disposition https://github.com/o/r/pull/8#issuecomment-40    
+    fm-contributions: disposition needs a non-empty summary
+    [exit 1]
+PASS  blank disposition summary refused
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/optin ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z: disposition https://github.com/o/r/pull/8#issuecomment-40 author replied: bounded by caller
+    [exit 0]
+PASS  disposition with evidence on this PR accepted
+$ jq .records[0].receipts,.records[0].pending
+    [{"token":"review:12:2026-09-16T08:01:00Z:APPROVED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"},{"token":"review-comment:31:2026-09-16T08:00:00Z:","task":"delivery","kind":"disposition","ref":"https://github.com/o/r/pull/8#issuecomment-40","summary":"author replied: bounded by caller","at":"2026-09-16T08:00:00Z"}]
+    []
+PASS  two receipts saved, bound to token and task; nothing pending
+
+=== S-toggle: flag contents ignored; flag outside the effective config ignored; removing it restores token-only and keeps receipts ===
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/toggle ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED
+    fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+    [exit 1]
+PASS  flag file containing "off/false/0" still enforces (presence flag)
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/toggle ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z: handoff
+    fm-contributions: ack needs one exact event token
+    [exit 1]
+PASS  flag removed: receipt arguments refused with the upstream usage error
+$ FM_CONFIG_OVERRIDE=elsewhere ack <inline token>
+    fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+PASS  flag in the effective (overridden) config dir enforces
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/toggle ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z:
+    [exit 0]
+PASS  flag removed from effective config: token-only ack of inline comment accepted silently
+PASS  saved receipt survived flag removal; no new receipt written
+
+=== S-late-owner: receipt saved, flag removed, PR merges, second task links PR, flag returns ===
+$ C {run-worktree} /tmp/ackdrive.MP0NhL/run/late pending
+    []
+    [exit 0]
+PASS  home still readable after the flag returns
+$ latecomer receipts / delivery receipts
+    "absent"
+    [{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"}]
+PASS  late owner got the merged observation without the receipt
+PASS  owning task kept its receipt
+
+=== S-hold: fm-captain-hold.sh settle-pr validates receipts only with the flag ===
+$ H /tmp/ackdrive.MP0NhL/run/hold {run-worktree}/bin/fm-captain-hold.sh settle-pr delivery https://github.com/o/r/pull/8
+    fm-captain-hold: invalid forge evidence for delivery
+    [exit 1]
+PASS  flag on: malformed receipt refuses settlement, hold stays open
+$ H /tmp/ackdrive.MP0NhL/run/hold {run-worktree}/bin/fm-captain-hold.sh settle-pr delivery https://github.com/o/r/pull/8
+    pr-settled: delivery https://github.com/o/r/pull/8 merged close
+    [exit 0]
+PASS  flag off: same record settles the hold as on upstream main
+$ H /tmp/ackdrive.MP0NhL/run/hold-base /tmp/ackdrive.MP0NhL/base/bin/fm-captain-hold.sh settle-pr delivery https://github.com/o/r/pull/8
+    pr-settled: delivery https://github.com/o/r/pull/8 merged close
+    [exit 0]
+PASS  upstream main settles the same record too (baseline agrees)
+
+RESULT: 0 failure(s)
