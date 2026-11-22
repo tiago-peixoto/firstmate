@@ -1,0 +1,4 @@
+# teardown under test: {run-worktree}/bin/fm-teardown.sh (19ccea45 worktree; impl=01M80G2PHG5E9BPXR7Z6V88GHX)
+exit=1 task-record=kept worktree=kept backlog=in_flight
+  | REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+  | Use --force only after explicit discard approval.

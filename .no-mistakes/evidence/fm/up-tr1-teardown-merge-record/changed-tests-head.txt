@@ -1,0 +1,6 @@
+# teardown under test: {run-worktree}/bin/fm-teardown.sh (19ccea45 worktree; impl=01M80G2PHG5E9BPXR7Z6V88GHX)
+ok - only retain-open-pr enables the open-PR gate on all three forges, independently of existing review flags
+ok - teardown preserves the task record and copy until its pull request is confirmed merged
+ok - forced teardown discards a ship whose pull request is still open
+ok - a closed pull request takes the existing landed-work and dirty-tree checks without --force
+ok - teardown proves a squash- or train-merged GitLab MR landed from the MR head only with an opt-in flag, and refuses an open one

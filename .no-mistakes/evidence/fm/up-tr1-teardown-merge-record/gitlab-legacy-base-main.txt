@@ -1,0 +1,2 @@
+# teardown under test: /tmp/fm-base-main.tRINxu/bin/fm-teardown.sh (19ccea45 worktree; impl=fm-base-main.tRINxu)
+ok - teardown proves a squash- or train-merged GitLab MR landed from the MR head only with an opt-in flag, and refuses an open one

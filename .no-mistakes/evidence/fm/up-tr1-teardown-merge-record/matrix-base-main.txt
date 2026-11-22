@@ -1,0 +1,46 @@
+# teardown under test: /tmp/fm-base-main.tRINxu/bin/fm-teardown.sh (19ccea45 worktree; impl=fm-base-main.tRINxu)
+== forge=github legacy-flag=none retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-github-none-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-github-none-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-github-none-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=github legacy-flag=park-on-review retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-github-park-on-review-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-github-park-on-review-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-github-park-on-review-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=github legacy-flag=auto-land retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-github-auto-land-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-github-auto-land-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-github-auto-land-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=forgejo legacy-flag=none retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-forgejo-none-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-forgejo-none-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-forgejo-none-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=forgejo legacy-flag=park-on-review retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-forgejo-park-on-review-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-forgejo-park-on-review-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-forgejo-park-on-review-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=forgejo legacy-flag=auto-land retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-forgejo-auto-land-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-forgejo-auto-land-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-forgejo-auto-land-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=gitlab legacy-flag=none retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-gitlab-none-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-gitlab-none-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-gitlab-none-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=gitlab legacy-flag=park-on-review retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-gitlab-park-on-review-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-gitlab-park-on-review-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-gitlab-park-on-review-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+== forge=gitlab legacy-flag=auto-land retain-open-pr=no
+exit=0 forge-read=no task-record=removed worktree=kept backlog=done
+  | <TMP>/m-gitlab-auto-land-no/project: already current
+  | teardown task-x1 complete (window firstmate:fm-task-x1, worktree <TMP>/m-gitlab-auto-land-no/wt)
+  | Backlog: task-x1 is closed in <TMP>/m-gitlab-auto-land-no/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
