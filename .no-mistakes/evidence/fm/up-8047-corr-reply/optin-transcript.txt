@@ -1,0 +1,171 @@
+=== A. both homes opted in
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-crew-state.sh repack
+state: working · source: pane · harness busy (claude-hook)
+[exit 0]
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-crew-state.sh scoutdone
+state: done · source: status-log · report written
+[exit 0]
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-crew-state.sh shipready
+state: done · source: status-log · ready for merge
+[exit 0]
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-crew-state.sh nopr
+state: blocked · source: status-log · named head <CORR><CORR>9b8f1b22 is unreachable outside the worker copy
+[exit 0]
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh
+Usage:
+  fm-secondmate-report.sh [--task <child>] <verb> <corr_id> <note...>
+  fm-secondmate-report.sh [--task <child>] --doc <verb> <corr_id> <doc-path> <note...>
+[exit 2]
+--- A1 unfinished (working) child, verb done
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task repack done <CORR> narrow fix done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: narrow fix done (via-helper child=repack child-state=working)
+parent record   : phase=resolved resolved_via=helper reply_child_id=repack reply_child_state=working reply_overall=unfinished 
+--- A2 finished scout
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task scoutdone done <CORR> report written
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: report written (via-helper child=scoutdone child-state=done)
+parent record   : phase=resolved resolved_via=helper reply_child_id=scoutdone reply_child_state=done reply_overall=finished 
+--- A3 finished ship through the document form
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task shipready --doc done <CORR> data/x/report.md see report
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: see report (data/x/report.md via-helper child=shipready child-state=done)
+parent record   : phase=resolved resolved_via=document reply_child_id=shipready reply_child_state=done reply_overall=finished 
+--- A4 ship with an undelivered commit
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task nopr done <CORR> narrow fix done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: narrow fix done (via-helper child=nopr child-state=blocked)
+parent record   : phase=resolved resolved_via=helper reply_child_id=nopr reply_child_state=blocked reply_overall=unfinished 
+--- A5 no --task
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh done <CORR> narrow fix done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: narrow fix done (via-helper)
+parent record   : phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown 
+--- A6 unknown child id
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task no-such-child done <CORR> narrow fix done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: narrow fix done (via-helper child=no-such-child child-state=unknown)
+parent record   : phase=resolved resolved_via=helper reply_child_id=no-such-child reply_child_state=unknown reply_overall=unknown 
+--- A7 path-shaped child id pointing at the finished scout
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task ./scoutdone done <CORR> narrow fix done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: narrow fix done (via-helper)
+parent record   : phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown 
+--- A8 --task after the verb (wrong order)
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh done --task scoutdone <CORR> x
+error: corr_id must be 16 hex characters (got '--task')
+[exit 1]
+--- A9 --task with no value
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task
+Usage:
+  fm-secondmate-report.sh [--task <child>] <verb> <corr_id> <note...>
+  fm-secondmate-report.sh [--task <child>] --doc <verb> <corr_id> <doc-path> <note...>
+[exit 2]
+--- A10 note that quotes a finished marker, sent with no --task
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh done <CORR> all good (via-helper child=scoutdone child-state=done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: all good (via-helper child=scoutdone child-state=done (via-helper)
+parent record   : phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown 
+--- A11 note that quotes a finished marker, sent for the working child
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task repack done <CORR> all good (via-helper child=scoutdone child-state=done)
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: all good (via-helper child=scoutdone child-state=done) (via-helper child=repack child-state=working)
+parent record   : phase=resolved resolved_via=helper reply_child_id=repack reply_child_state=working reply_overall=unfinished 
+--- A12 hand-written line (no helper) that quotes a finished marker
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: all finished (child=x child-state=done)
+parent record   : phase=resolved resolved_via=status reply_child_id=- reply_child_state=unknown reply_overall=unknown 
+--- A13 hand-written no-child marker with a done verdict
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: all finished (via-helper child=- child-state=done)
+parent record   : phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown 
+--- A14 routine resolutions appended nothing: parent channel holds only the mate's own lines
+done [corr=<CORR>]: narrow fix done (via-helper child=repack child-state=working)
+done [corr=<CORR>]: report written (via-helper child=scoutdone child-state=done)
+done [corr=<CORR>]: see report (data/x/report.md via-helper child=shipready child-state=done)
+done [corr=<CORR>]: narrow fix done (via-helper child=nopr child-state=blocked)
+done [corr=<CORR>]: narrow fix done (via-helper)
+done [corr=<CORR>]: narrow fix done (via-helper child=no-such-child child-state=unknown)
+done [corr=<CORR>]: narrow fix done (via-helper)
+done [corr=<CORR>]: all good (via-helper child=scoutdone child-state=done (via-helper)
+done [corr=<CORR>]: all good (via-helper child=scoutdone child-state=done) (via-helper child=repack child-state=working)
+done [corr=<CORR>]: all finished (child=x child-state=done)
+done [corr=<CORR>]: all finished (via-helper child=- child-state=done)
+--- A15 missed twice -> escalation; late helper reply for the working child closes it with the result
+[recovery exit 0]
+[escalate exit 0]
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task repack done <CORR> narrow fix done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: narrow fix done (via-helper child=repack child-state=working)
+parent record   : phase=resolved resolved_via=helper reply_child_id=repack reply_child_state=working reply_overall=unfinished 
+blocked [key=pending-reply-<CORR>]: pending-reply-missed: task=kid pending-reply-id=<CORR> request=how far is the repacking
+done [corr=<CORR>]: narrow fix done (via-helper child=repack child-state=working)
+resolved [key=pending-reply-<CORR>]: pending-reply-resolved: task=kid pending-reply-id=<CORR> via=helper child=repack child-state=working overall=unfinished
+--- A16 opt-out again: remove the flag from both homes; earlier results stay, new replies record nothing
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh --task repack done <CORR> x
+error: corr_id must be 16 hex characters (got 'repack')
+[exit 1]
+$ env FM_HOME=<T>/both-mate <ROOT>/bin/fm-secondmate-report.sh done <CORR> answered
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: answered (via-helper)
+parent record   : phase=resolved resolved_via=helper 
+parent record   : (no reply_child_* / reply_overall fields)
+earlier record  : reply_child_id=repack reply_child_state=working reply_overall=unfinished 
+
+=== B. only the secondmate opted in (parent has no flag)
+$ env FM_HOME=<T>/mateonly-mate <ROOT>/bin/fm-secondmate-report.sh --task repack done <CORR> narrow fix done
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: narrow fix done (via-helper child=repack child-state=working)
+parent record   : phase=resolved resolved_via=helper 
+parent record   : (no reply_child_* / reply_overall fields)
+
+=== C. only the parent opted in (secondmate has no flag)
+$ env FM_HOME=<T>/parentonly-mate <ROOT>/bin/fm-secondmate-report.sh --task scoutdone done <CORR> report written
+error: corr_id must be 16 hex characters (got 'scoutdone')
+[exit 1]
+$ env FM_HOME=<T>/parentonly-mate <ROOT>/bin/fm-secondmate-report.sh done <CORR> report written
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: report written (via-helper)
+parent record   : phase=resolved resolved_via=helper reply_child_id=- reply_child_state=unknown reply_overall=unknown 
+
+=== D. FM_CONFIG_OVERRIDE selects the effective config directory
+--- D1 flag only in the override dir -> enabled
+$ env FM_HOME=<T>/override-mate <ROOT>/bin/fm-secondmate-report.sh --task scoutdone done <CORR> report written
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: report written (via-helper child=scoutdone child-state=done)
+parent record   : phase=resolved resolved_via=helper reply_child_id=scoutdone reply_child_state=done reply_overall=finished 
+--- D2 flag only in home/config, override dir empty -> disabled
+$ env FM_HOME=<T>/override-mate <ROOT>/bin/fm-secondmate-report.sh --task scoutdone done <CORR> report written
+error: corr_id must be 16 hex characters (got 'scoutdone')
+[exit 1]
+$ env FM_HOME=<T>/override-mate <ROOT>/bin/fm-secondmate-report.sh done <CORR> report written
+[exit 0]
+[resolve exit 0]
+mate reply line : done [corr=<CORR>]: report written (via-helper)
+parent record   : phase=resolved resolved_via=helper 
+parent record   : (no reply_child_* / reply_overall fields)
+
+=== E. charter generated by the parent
+$ env FM_HOME=<T>/charter-parent FM_SECONDMATE_CHARTER=Handle routed domain work. <ROOT>/bin/fm-brief.sh kid --secondmate --no-projects
+scaffolded: <T>/charter-parent/data/kid/brief.md (secondmate charter)
+[exit 0]
+$ env FM_HOME=<T>/charter-parent FM_SECONDMATE_CHARTER=Handle routed domain work. <ROOT>/bin/fm-brief.sh kid --secondmate --no-projects
+scaffolded: <T>/charter-parent/data/kid/brief.md (secondmate charter)
+[exit 0]
+--- diff of the two generated charters (flag absent -> flag present)
+33a34
+> When this home also has `config/reply-child-state` and the request concerns one of your child tasks, run `bin/fm-secondmate-report.sh --task <child> <verb> <corr_id> <note>` with `--task <child>` before the verb, never after the note: it appends the child's current `bin/fm-crew-state.sh` verdict, and the main firstmate reads the overall result from that verdict, never from your verb, so a reply without it reads unknown.

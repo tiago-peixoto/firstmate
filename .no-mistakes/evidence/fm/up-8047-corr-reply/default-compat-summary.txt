@@ -1,0 +1,5 @@
+IDENTICAL base(427056c4) vs target(8bc8077a): setting=none lines=186 sha256=b0bcf67c5901f09a
+IDENTICAL base(427056c4) vs target(8bc8077a): setting=wait-no-turns lines=187 sha256=0d0391f8ab4fb521
+IDENTICAL base(427056c4) vs target(8bc8077a): setting=fleet-ledger lines=186 sha256=64e124d306eb6c78
+IDENTICAL base(427056c4) vs target(8bc8077a): setting=ready-after-green lines=186 sha256=105a7cf5f751f21e
+IDENTICAL base(427056c4) vs target(8bc8077a): setting=all lines=187 sha256=52e568ce6593a3d4
