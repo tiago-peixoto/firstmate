@@ -1,0 +1,297 @@
+
+===== unconfigured: target commit vs base commit, config: (none) =====
+--- target commit transcript ---
+
+$ answer s-direct --decision-file <A>
+answered: s-direct
+[exit 0]
+
+$ answer s-release --decision-file <A> --release
+released: s-release
+[exit 0]
+
+$ answer s-multi --decision-file <multi-line>
+answered: s-multi
+[exit 0]
+
+$ answers --source fixture < rows (bare A, labelled A, blank-label A, free text)
+closed: s-bare
+closed: s-labelled
+closed: s-blank
+closed: s-free
+answers: closed=4 skipped=0
+[exit 0]
+CHECK ok: unconfigured: command output identical to base commit
+CHECK ok: unconfigured: task records (data/) byte-identical to base commit
+CHECK ok: unconfigured: no 'Selected answer:' line in any record
+CHECK ok: unconfigured: all six closing answers recorded (bare options accepted)
+--- target commit record for s-direct ---
+task:
+  id: s-direct
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-22
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd\nResolution mode: answered\n\nCaptain decision:\nA"
+
+===== existing-settings: target commit vs base commit, config: hold-pr-settle park-on-review auto-land =====
+--- target commit transcript ---
+
+$ answer s-direct --decision-file <A>
+answered: s-direct
+[exit 0]
+
+$ answer s-release --decision-file <A> --release
+released: s-release
+[exit 0]
+
+$ answer s-multi --decision-file <multi-line>
+answered: s-multi
+[exit 0]
+
+$ answers --source fixture < rows (bare A, labelled A, blank-label A, free text)
+closed: s-bare
+closed: s-labelled
+closed: s-blank
+closed: s-free
+answers: closed=4 skipped=0
+[exit 0]
+CHECK ok: existing-settings: command output identical to base commit
+CHECK ok: existing-settings: task records (data/) byte-identical to base commit
+CHECK ok: existing-settings: no 'Selected answer:' line in any record
+CHECK ok: existing-settings: all six closing answers recorded (bare options accepted)
+--- target commit record for s-direct ---
+task:
+  id: s-direct
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-22
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd\nResolution mode: answered\n\nCaptain decision:\nA"
+
+===== opt-in: config/hold-answer-words present (target commit) =====
+
+$ answer o-1 --decision-file <'A'>
+fm-captain-hold: decision file contains only option A; include the displayed option words
+[exit 1]
+CHECK ok: direct 'A' refused with the reason
+$ answers < "o-1<TAB>A<TAB>"
+skipped: o-1 (option A requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed 'A' without label skipped, non-zero exit
+CHECK ok: o-1 still held, nothing recorded
+
+$ answer o-2 --decision-file <'b'>
+fm-captain-hold: decision file contains only option b; include the displayed option words
+[exit 1]
+CHECK ok: direct 'b' refused with the reason
+$ answers < "o-2<TAB>b<TAB>"
+skipped: o-2 (option b requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed 'b' without label skipped, non-zero exit
+CHECK ok: o-2 still held, nothing recorded
+
+$ answer o-3 --decision-file <'7'>
+fm-captain-hold: decision file contains only option 7; include the displayed option words
+[exit 1]
+CHECK ok: direct '7' refused with the reason
+$ answers < "o-3<TAB>7<TAB>"
+skipped: o-3 (option 7 requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed '7' without label skipped, non-zero exit
+CHECK ok: o-3 still held, nothing recorded
+
+$ answer o-4 --decision-file <'(c)'>
+fm-captain-hold: decision file contains only option (c); include the displayed option words
+[exit 1]
+CHECK ok: direct '(c)' refused with the reason
+$ answers < "o-4<TAB>(c)<TAB>"
+skipped: o-4 (option (c) requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed '(c)' without label skipped, non-zero exit
+CHECK ok: o-4 still held, nothing recorded
+
+$ answer o-5 --decision-file <'D.'>
+fm-captain-hold: decision file contains only option D.; include the displayed option words
+[exit 1]
+CHECK ok: direct 'D.' refused with the reason
+$ answers < "o-5<TAB>D.<TAB>"
+skipped: o-5 (option D. requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed 'D.' without label skipped, non-zero exit
+CHECK ok: o-5 still held, nothing recorded
+
+$ answer o-6 --decision-file <'e)'>
+fm-captain-hold: decision file contains only option e); include the displayed option words
+[exit 1]
+CHECK ok: direct 'e)' refused with the reason
+$ answers < "o-6<TAB>e)<TAB>"
+skipped: o-6 (option e) requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed 'e)' without label skipped, non-zero exit
+CHECK ok: o-6 still held, nothing recorded
+
+$ answer o-7 --decision-file <' A '>
+fm-captain-hold: decision file contains only option  A ; include the displayed option words
+[exit 1]
+CHECK ok: direct ' A ' refused with the reason
+$ answers < "o-7<TAB> A <TAB>"
+skipped: o-7 (option  A  requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed ' A ' without label skipped, non-zero exit
+CHECK ok: o-7 still held, nothing recorded
+
+$ answer o-8 --decision-file <'A)  '>
+fm-captain-hold: decision file contains only option A)  ; include the displayed option words
+[exit 1]
+CHECK ok: direct 'A)  ' refused with the reason
+$ answers < "o-8<TAB>A)  <TAB>"
+skipped: o-8 (option A)   requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: keyed 'A)  ' without label skipped, non-zero exit
+CHECK ok: o-8 still held, nothing recorded
+$ answers < "o-1<TAB>A<TAB><blank label>"
+skipped: o-1 (option A requires its displayed meaning)
+answers: closed=0 skipped=1
+[exit 1]
+CHECK ok: blank label does not count as displayed words
+$ answers < labelled A, free text, free text with blank label
+closed: o-1
+closed: o-2
+closed: o-3
+answers: closed=3 skipped=0
+[exit 0]
+CHECK ok: labelled and free-text rows accepted
+--- record o-1 ---
+task:
+  id: o-1
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-22
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 46f8249b63e4afe070452015d502754b838844b96fc7afbdf86847047f4b415c\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through fixture.\nTask: o-1\nAnswer: A\nAnswer as shown to the captain: Off until checks pass.\nSelected answer: Off until checks pass."
+CHECK ok: labelled A closes and records the displayed words as Selected answer
+CHECK ok: free text recorded as Selected answer
+--- record o-3 ---
+task:
+  id: o-3
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-22
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: a510efe75e52200f61fa8563bfb46694499ca79841b2f90f49d874e79ecae497\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through fixture.\nTask: o-3\nAnswer: Keep it off for now\nSelected answer: Keep it off for now"
+CHECK ok: blank label omitted from the record
+
+$ answer o-4 --decision-file <'Off until checks pass.'> --release
+released: o-4
+[exit 0]
+--- record o-4 ---
+task:
+  id: o-4
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-22
+  closed: "-"
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 6226f8c4a3903f8634933c1acb2c735b4ff0b1e2d34f70509fc38f0507518254\nResolution mode: released\n\nCaptain decision:\nOff until checks pass.\nSelected answer: Off until checks pass."
+CHECK ok: release with words lifts the hold and records Selected answer
+--- record o-5 ---
+task:
+  id: o-5
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-22
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 862307d587bd8b75a0858c7edeb47465c82f6c2c5ba574265b616174e7b80552\nResolution mode: answered\n\nCaptain decision:\nFrom chat:\nAnswer: Off until checks pass.\nBecause the gate is flaky.\nSelected answer: Off until checks pass."
+CHECK ok: multi-line decision yields exactly one single-line Selected answer
+CHECK ok: multi-line decision without an Answer marker closes with no Selected answer line
+
+===== toggle: removing the flag restores the default on the next command =====
+
+$ answer o-7 --decision-file <A> (flag removed)
+answered: o-7
+[exit 0]
+CHECK ok: bare A accepted again, no Selected answer line
+CHECK ok: earlier opt-in record left untouched
+
+===== adversarial: a directory or a differently named file is not the flag =====
+
+$ answer g-1 --decision-file <A> (lookalike names only)
+answered: g-1
+[exit 0]
+CHECK ok: lookalike config names do not enable the behavior
+
+FAILED CHECKS: 0
