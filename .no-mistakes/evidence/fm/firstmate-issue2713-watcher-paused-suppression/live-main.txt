@@ -1,0 +1,29 @@
+=== upstream main 427056c4 (watcher: /tmp/fm-pc-drive/main/bin/fm-watch.sh) ===
+- home 'default-dead': window=lab:fm-dead kind=ship config=[none] status='paused: waiting for an external result'
+  [default-dead] run 1 -> rc=0 wake: signal: /tmp/fm-lab.Sacy5y/default-dead/state/t1.status 
+  [default-dead] run 2 -> QUIET (15 polls, no wake)
+  [default-dead] run 3 -> QUIET (15 polls, no wake)
+- home 'default-notdead': window=lab:fm-live kind=ship config=[none] status='paused: waiting for an external result'
+  [default-notdead] run 1 -> rc=0 wake: signal: /tmp/fm-lab.Sacy5y/default-notdead/state/t1.status 
+  [default-notdead] run 2 -> rc=0 wake: stale: lab:fm-live 
+  [default-notdead] run 3 -> QUIET (15 polls, no wake)
+- home 'existing-dead': window=lab:fm-dead kind=ship config=[pause-ceiling wedge-defer-worker-wait wedge-defer-parked-gate wedge-defer-validating turnend-churn-absorb watch.env] status='paused: waiting for an external result'
+  [existing-dead] run 1 -> rc=0 wake: signal: /tmp/fm-lab.Sacy5y/existing-dead/state/t1.status 
+  [existing-dead] run 2 -> QUIET (15 polls, no wake)
+  [existing-dead] run 3 -> QUIET (15 polls, no wake)
+- home 'existing-notdead': window=lab:fm-live kind=ship config=[pause-ceiling wedge-defer-worker-wait wedge-defer-parked-gate wedge-defer-validating turnend-churn-absorb watch.env] status='paused: waiting for an external result'
+  [existing-notdead] run 1 -> rc=0 wake: signal: /tmp/fm-lab.Sacy5y/existing-notdead/state/t1.status 
+  [existing-notdead] run 2 -> rc=0 wake: stale: lab:fm-live 
+  [existing-notdead] run 3 -> QUIET (15 polls, no wake)
+- home 'optin-dead': window=lab:fm-dead kind=ship config=[pause-cadence] status='paused: waiting for an external result'
+  [optin-dead] run 1 -> rc=0 wake: signal: /tmp/fm-lab.Sacy5y/optin-dead/state/t1.status 
+  [optin-dead] run 2 -> QUIET (15 polls, no wake)
+  [optin-dead] run 3 -> QUIET (15 polls, no wake)
+  [optin-dead] run 4 after pane changed -> QUIET (15 polls, no wake)
+- home 'optin-dead': config/pause-cadence removed
+  [optin-dead] run 5 flag removed -> QUIET (15 polls, no wake)
+- home 'optin-notdead': window=lab:fm-live kind=ship config=[pause-cadence] status='paused: waiting for an external result'
+  [optin-notdead] run 1 -> rc=0 wake: signal: /tmp/fm-lab.Sacy5y/optin-notdead/state/t1.status 
+  [optin-notdead] run 2 -> rc=0 wake: stale: lab:fm-live 
+
+NOTE: the main drive was stopped by its 900s limit after optin-notdead run 2 (machine under load). Every default and existing-settings row completed.

@@ -1,0 +1,10 @@
+19c19
+<   [optin-dead] run 2 -> QUIET (15 polls, no wake)
+---
+>   [optin-dead] run 2 -> rc=0 wake: stale: lab:fm-dead 
+26a27,31
+>   [optin-notdead] run 3 -> QUIET (15 polls, no wake)
+> - home 'optin-secondmate': window=lab:fm-dead kind=secondmate config=[pause-cadence] status='paused: waiting for an external result'
+>   [optin-secondmate] run 1 -> rc=0 wake: signal: LAB/optin-secondmate/state/t1.status 
+>   [optin-secondmate] run 2 -> QUIET (15 polls, no wake)
+>   [optin-secondmate] run 3 -> QUIET (15 polls, no wake)
