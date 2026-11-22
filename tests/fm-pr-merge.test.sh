@@ -4959,6 +4959,27 @@ run_required_case() {
   set -e
 }
 
+test_large_required_check_producers() {
+  local case_dir head
+  head=a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
+  case_dir=$(make_case large-required-producers)
+  add_gh_mocks "$case_dir" "$head"
+  write_github_required "$case_dir" classic:ci
+  jq '.protection.required_status_checks.checks[0].app_id = 15368' \
+    "$case_dir/github-branch.json" > "$case_dir/updated.json"
+  mv "$case_dir/updated.json" "$case_dir/github-branch.json"
+  jq -nc --arg head "$head" '{check_runs: [range(0;41) |
+    {name:"ci", app:{id:15368}, head_sha:$head, output:{summary:("x" * 4000)}}]}' \
+    > "$case_dir/github-runs.json"
+  [ "$(jq -c '.check_runs' "$case_dir/github-runs.json" | wc -c)" -gt 131072 ] \
+    || fail "large-required-producers: producers must exceed the single-argument limit"
+
+  run_required_case "$case_dir" 112
+  expect_code 0 "$RC" "large-required-producers: $(cat "$case_dir/stderr")"
+  assert_logged_gh_merge "$case_dir" 112 example/repo --squash
+  pass "fm-pr-merge accepts green required checks with producers above the argument limit"
+}
+
 test_required_producer_identity() {
   local case_dir head kind variant expected app
   head=a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1
@@ -5488,6 +5509,7 @@ test_allow_no_pipeline_is_attended_only_and_gitlab_only() {
   pass "fm-pr-merge --allow-no-pipeline is attended-only, takes no value, and applies only to GitLab"
 }
 
+test_large_required_check_producers
 test_gitlab_head_override_args_refuse_before_recording
 test_secondmate_merge_reports_upward_once
 test_secondmate_merge_reports_on_the_local_route
