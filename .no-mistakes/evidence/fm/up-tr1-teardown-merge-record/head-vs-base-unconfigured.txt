@@ -1,0 +1,16 @@
+Rows with config/retain-open-pr ABSENT, head 369b684e vs base 427056c4 (exit code, forge read, record, copy, backlog):
+IDENTICAL: 12 of 12 rows
+
+Base rows (for reference):
+retain=no forge=github flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=github flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=github flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=github record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done

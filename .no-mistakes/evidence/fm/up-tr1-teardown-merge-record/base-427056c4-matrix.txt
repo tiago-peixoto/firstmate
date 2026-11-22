@@ -1,0 +1,40 @@
+ok - teardown leaves opencode's busy plugin in the returned pool worktree as on main
+== matrix: open PR, forge x existing review flag x retain-open-pr ==
+retain=no forge=github flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=github flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=github flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=github flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=github flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=github flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=forgejo flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=forgejo flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=forgejo flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=gitlab flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=gitlab flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=gitlab flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+== unreadable forge record ==
+retain=no forge=github record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=github record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=forgejo record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=gitlab record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+== lifecycle with retain-open-pr: open -> merged ==
+forge=github PR open | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+forge=github PR merged | exit=1 | forge_read=no | record=removed | copy=kept | backlog=done
+forge=forgejo PR open | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+forge=forgejo PR merged | exit=1 | forge_read=no | record=removed | copy=kept | backlog=done
+forge=gitlab PR open | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+forge=gitlab PR merged | exit=1 | forge_read=no | record=removed | copy=kept | backlog=done
+== --force with retain-open-pr and an open PR ==
+unforced | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+--force | exit=1 | forge_read=no | record=removed | copy=kept | backlog=done
+== flag toggled on an existing home: absent -> present takes effect on next invocation ==
+flag present | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+flag removed | exit=1 | forge_read=no | record=removed | copy=kept | backlog=done

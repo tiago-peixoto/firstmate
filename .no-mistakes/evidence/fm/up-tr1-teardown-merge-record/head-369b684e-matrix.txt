@@ -1,0 +1,74 @@
+ok - teardown leaves opencode's busy plugin in the returned pool worktree as on main
+== matrix: open PR, forge x existing review flag x retain-open-pr ==
+retain=no forge=github flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=github flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=github flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=none | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=park-on-review | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab flag=auto-land | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=github flag=none | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=github flag=park-on-review | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=github flag=auto-land | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=forgejo flag=none | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://git.example.org/team/repo/pulls/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=forgejo flag=park-on-review | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://git.example.org/team/repo/pulls/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=forgejo flag=auto-land | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://git.example.org/team/repo/pulls/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=gitlab flag=none | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=gitlab flag=park-on-review | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=gitlab flag=auto-land | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+== unreadable forge record ==
+retain=no forge=github record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=forgejo record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=no forge=gitlab record=unreadable | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+retain=yes forge=github record=unreadable | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=forgejo record=unreadable | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://git.example.org/team/repo/pulls/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+retain=yes forge=gitlab record=unreadable | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+== lifecycle with retain-open-pr: open -> merged ==
+forge=github PR open | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+forge=github PR merged | exit=0 | forge_read=yes | record=removed | copy=kept | backlog=done
+forge=forgejo PR open | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://git.example.org/team/repo/pulls/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+forge=forgejo PR merged | exit=0 | forge_read=yes | record=removed | copy=kept | backlog=done
+forge=gitlab PR open | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://gitlab.example.com/team/sub/repo/-/merge_requests/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+forge=gitlab PR merged | exit=0 | forge_read=yes | record=removed | copy=kept | backlog=done
+== --force with retain-open-pr and an open PR ==
+unforced | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+--force | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done
+== flag toggled on an existing home: absent -> present takes effect on next invocation ==
+flag present | exit=1 | forge_read=yes | record=kept | copy=kept | backlog=in_flight
+    REFUSED: ship task task-x1 still has an open or unreadable PR at https://github.com/example/repo/pull/7. Stop the worker with bin/fm-control.sh task-x1 exit and keep its task record until the PR merges.
+    Use --force only after explicit discard approval.
+flag removed | exit=0 | forge_read=no | record=removed | copy=kept | backlog=done

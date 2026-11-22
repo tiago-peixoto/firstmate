@@ -1,0 +1,6 @@
+ok - teardown leaves opencode's busy plugin in the returned pool worktree as on main
+ok - only retain-open-pr enables the open-PR gate on all three forges, independently of existing review flags
+ok - teardown preserves the task record and copy until its pull request is confirmed merged
+ok - forced teardown discards a ship whose pull request is still open
+ok - a closed pull request takes the existing landed-work and dirty-tree checks without --force
+ok - teardown proves a squash- or train-merged GitLab MR landed from the MR head only with an opt-in flag, and refuses an open one
