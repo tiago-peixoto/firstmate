@@ -1205,8 +1205,10 @@ github_read_required_contexts() {
 
 github_required_checks_missing() {
   local json=$1 required=$2 producers=$3
-  printf '%s' "$json" | jq -r --argjson required "$required" --argjson producers "$producers" '
-    if (.statusCheckRollup | type) != "array" then error("no check rollup") else . end
+  # Check-run payloads can exceed the OS limit for a single argument.
+  printf '%s' "$json" | jq -r --argjson required "$required" --rawfile producers <(printf '%s' "$producers") '
+    ($producers | fromjson) as $producers
+    | if (.statusCheckRollup | type) != "array" then error("no check rollup") else . end
     | .statusCheckRollup as $reported
     | $required
     | map(. as $requirement
