@@ -70,8 +70,22 @@ command_fields=$(perl -MMIME::Base64=decode_base64 -e '
 IFS=$'\t' read -r cmd action id harness model effort <<EOF
 $command_fields
 EOF
+# Inherited-material pushes land in a real receiver home, so a test can read
+# what the relaunched mate would start on.
+if [ "$cmd" = fm-remote-inherit.sh ]; then
+  printf '%s\n' "$action" >> "$FM_FAKE_RECEIVER/.inherit-calls"
+  args=()
+  while IFS= read -r -d '' arg; do args+=("$arg"); done \
+    < <(perl -MMIME::Base64=decode_base64 -e 'print decode_base64($ARGV[0])' "$argv_b64")
+  exec env FM_HOME="$FM_FAKE_RECEIVER" FM_INHERITABLE_CONFIG=crew-harness \
+    bash "$FM_FAKE_ROOT/bin/fm-remote-inherit.sh" "${args[@]:1}"
+fi
 [ "$cmd" = fm-remote-secondmate-control.sh ] || exit 93
+[ "$action" != validate-inheritance ] || exit 0
 [ "$action" = relaunch ] || exit 94
+[ "${FM_FAKE_RELAUNCH_MODE:-}" != require-push ] \
+  || grep -qx put "$FM_FAKE_RECEIVER/.inherit-calls" 2>/dev/null \
+  || { echo 'error: relaunched before inherited material arrived' >&2; exit 1; }
 case "$FM_FAKE_RELAUNCH_MODE" in
   refuse)
     printf 'error: unverified remote secondmate harness: %s\n' "$harness" >&2
@@ -95,8 +109,13 @@ printf 'effort=%s\n' "$effort"
 SH
 chmod +x "$FAKEBIN/fake-ssh"
 
+RECEIVER="$TMP/receiver"
+mkdir -p "$RECEIVER/config" "$RECEIVER/data"
+
 run_relaunch() {  # <args...>
   env FM_HOME="$HOME_DIR" FM_SSH_BIN="$FAKEBIN/fake-ssh" \
+    FM_INHERITABLE_CONFIG=crew-harness \
+    FM_FAKE_RECEIVER="$RECEIVER" FM_FAKE_ROOT="$ROOT" \
     FM_FAKE_RELAUNCH_MODE="${FM_FAKE_RELAUNCH_MODE:-}" \
     "$ROOT/bin/fm-remote-secondmate-relaunch.sh" "$@" 2>&1
 }
@@ -149,6 +168,25 @@ assert_contains "$OUT" "unverified remote secondmate harness" \
 cmp -s "$TMP/ios-before-refusal.meta" "$HOME_DIR/state/ios.meta" \
   || fail "a refused relaunch must not touch the parent's record"
 pass "a refused remote relaunch leaves the parent's record untouched"
+
+# --- a relaunch starts the mate on the parent's current inherited material --
+# The host-side relaunch skips inheritance because the parent owns that leg, so
+# the wrapper must push before it asks the host to relaunch.
+reset_meta
+cat > "$HOME_DIR/data/captain-shared.md" <<'EOF'
+# Shared captain preferences
+main-authoritative, read-only in secondmate homes, must not be edited there.
+Change it in the main firstmate home; report through marked status.
+changed line after the last push
+EOF
+rm -f -- "$RECEIVER/.inherit-calls"
+FM_FAKE_RELAUNCH_MODE=require-push
+OUT=$(run_relaunch ios claude claude-opus-5-5 medium); RC=$?
+unset FM_FAKE_RELAUNCH_MODE
+expect_code 0 "$RC" "a remote relaunch should push inherited material and then relaunch"$'\n'"$OUT"
+cmp -s "$HOME_DIR/data/captain-shared.md" "$RECEIVER/data/captain-shared.md" \
+  || fail "the relaunched remote home does not hold the parent's current captain-shared.md"
+pass "a remote relaunch pushes the parent's current inherited material first"
 
 # --- a local (non-remote) secondmate is refused, not silently mishandled ----
 fm_write_meta "$HOME_DIR/state/local1.meta" \
