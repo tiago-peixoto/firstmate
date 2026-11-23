@@ -1356,6 +1356,45 @@ EOF
   pass "a secondmate home publishes each hold occurrence and its answer on the parent channel"
 }
 
+# A call the mate already raised as `needs-decision [key=<slug>]` is held with
+# --key <slug>, so the hold and its answer reopen and close that one parent
+# decision instead of leaving the mate's line open after the answer
+# (upstream issue 8686). The key belongs to its hold occurrence only.
+test_secondmate_hold_key_closes_the_mates_own_decision() {
+  local parent mate channel decision open
+  parent=$(make_home hold-key-parent)
+  mate="$TMP_ROOT/hold-key-mate-home"
+  mkdir -p "$mate/data" "$mate/state" "$mate/config" "$mate/projects"
+  fm_test_tasks_toml "$mate/.tasks.toml"
+  printf 'hold-key-mate\n' > "$mate/.fm-secondmate-home"
+  printf 'schema=fm-secondmate-parent.v1\nroute=local\nparent_home=%s\n' "$parent" \
+    > "$mate/.fm-secondmate-parent"
+  printf '## In flight\n\n## Queued\n\n## Done\n' > "$mate/data/backlog.md"
+  fm_fake_exit0 "$(fm_fakebin "$mate")" tmux treehouse no-mistakes gh gh-axi
+  channel="$parent/state/hold-key-mate.status"
+  decision="$mate/decision.txt"
+
+  printf 'needs-decision [key=api-shape] [at=%s]: REST or gRPC?\n' "$(date +%s)" > "$channel"
+  run_captain "$mate" hold api-call --title "Choose the API shape" --reason "REST or gRPC?" \
+    --repo sample --key api-shape >/dev/null || fail "keyed mate hold failed"
+  run_captain "$mate" hold api-call --reason "REST or gRPC?" >/dev/null \
+    || fail "repeated keyed mate hold failed"
+  assert_no_grep 'captain-hold-api-call' "$channel" "a keyed hold published a second decision key"
+  printf 'REST\n' > "$decision"
+  run_captain "$mate" answer api-call --decision-file "$decision" --release >/dev/null \
+    || fail "keyed mate answer failed"
+  assert_grep 'resolved [key=api-shape]: captain hold api-call: released' \
+    <(sed -E 's/ \[at=[0-9]+\]//' "$channel") "the answer did not close the mate's own decision key"
+  open=$(bash -c '. "$1"; status_open_decisions "$2"' _ "$ROOT/bin/fm-classify-lib.sh" "$channel")
+  assert_equals '' "$open" "the answered call still shows an open parent decision"
+
+  run_captain "$mate" hold api-call --reason "a new question" >/dev/null \
+    || fail "unkeyed re-hold failed"
+  assert_grep 'needs-decision [key=captain-hold-api-call-2]: captain hold api-call: a new question' \
+    <(sed -E 's/ \[at=[0-9]+\]//' "$channel") "a re-held occurrence reused the previous occurrence's key"
+  pass "a keyed hold and its answer reopen and close the mate's own parent decision"
+}
+
 test_secondmate_reconcile_publishes_before_request_retirement() {
   local parent mate channel evidence out show rc request
   parent=$(make_home reconcile-parent-channel)
@@ -2620,6 +2659,7 @@ test_completion_replaces_a_pair_recorded_after_pr
 test_terminal_single_owner_status_decision_does_not_block_empty_inventory
 test_secondmate_hold_stays_in_authoritative_home
 test_secondmate_home_publishes_holds_and_answers
+test_secondmate_hold_key_closes_the_mates_own_decision
 test_secondmate_reconcile_publishes_before_request_retirement
 test_bound_channel_answers_close_at_answer_time
 test_reconcile_never_closes_through_the_keyed_answer_intake
