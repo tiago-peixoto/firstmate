@@ -36,6 +36,10 @@
 # durable reason, before an ordinary captain request may proceed.
 # `needs-decision:` is deliberately not part of this blocker gate. The gate
 # keeps every open blocker until that blocker's own resolution is proven.
+# Before the brief renders, each captain-verdict outcome in the window is held
+# for the captain as its own backlog task (bin/fm-captain-hold.sh), so the call
+# stays listed after main marks its outcome row processed; a hold that cannot
+# be filed keeps catch-up gated.
 # Captain-verdict outcomes are listed under "waiting on you", but cannot exempt
 # a blocker: per-blocker decision-key provenance is deferred, with no owner,
 # because the gate fails safe by keeping every open blocker. Away-window
@@ -173,6 +177,32 @@ store_rows_load() {  # <since-epoch>
   STORE_ROWS=$(printf '%s\n' "$raw" | jq -r --argjson since "$since" \
     'select(.epoch >= $since) | [.seq, .task, .verdict, (.statusEndpoint // 0), (.summary // ""), (.silent // false)] | @tsv' 2>/dev/null) \
     || { STORE_ROWS=; return 1; }
+}
+
+# A captain outcome row is the away session's only record of a call it left for
+# the captain, and it drops out of every list once main marks it processed. So
+# each one in the window becomes a task held for the captain, which stays listed
+# until it is answered, deferred, or reconciled. The id comes from the row's seq,
+# so a repeated begin or check never files it twice, and a row that already
+# exists - even one the captain has closed - is left alone.
+HOLD_FAILED=
+hold_captain_outcomes() {
+  local seq task verdict endpoint summary silent id repo
+  HOLD_FAILED=
+  while IFS="$(printf '\t')" read -r seq task verdict endpoint summary silent; do
+    [ "$verdict" = captain ] && [ "$silent" != true ] || continue
+    id="away-outcome-$seq"
+    fm_backlog_row_probe "$DATA" "$id" && continue
+    [ "$FM_BACKLOG_ROW_RESULT" = not_found ] || { HOLD_FAILED=$id; return 1; }
+    repo=$(sed -n 's/^project=//p' "$STATE/$task.meta" 2>/dev/null | tail -1)
+    repo=${repo%/}
+    repo=${repo##*/}
+    "$SCRIPT_DIR/fm-captain-hold.sh" hold "$id" --title "Away-time captain outcome $seq for $task" \
+      --reason "$summary" ${repo:+--repo "$repo"} >/dev/null \
+      || { HOLD_FAILED=$id; return 1; }
+  done <<EOF
+$STORE_ROWS
+EOF
 }
 
 STATUS_SCAN_ERROR=
@@ -839,6 +869,12 @@ EOF
 
   if store_rows_load "$since"; then
     remove_evidence lifecycle 'outcome store unreadable, catch-up stays gated' "$evidence" || lifecycle_ok=0
+    remove_evidence_prefix lifecycle 'captain outcome not held:' "$evidence" || lifecycle_ok=0
+    # Without a window start the rows span the store's whole history, not this absence.
+    if [ -n "$since" ] && ! hold_captain_outcomes; then
+      append_evidence lifecycle "captain outcome not held: $HOLD_FAILED; catch-up stays gated" "$evidence"
+      lifecycle_ok=0
+    fi
   else
     append_evidence lifecycle 'outcome store unreadable, catch-up stays gated' "$evidence"
     lifecycle_ok=0
