@@ -21,7 +21,8 @@
 #
 # Usage:
 #   fm-captain-hold.sh hold <task-id> --reason <reason> \
-#     [--title <title>] [--repo <repo>] [--origin <origin-id>] [--until YYYY-MM-DD]
+#     [--title <title>] [--repo <repo>] [--origin <origin-id>] [--until YYYY-MM-DD] \
+#     [--key <decision-key>]
 #   fm-captain-hold.sh answer <task-id> --decision-file <path> [--release]
 #   fm-captain-hold.sh pr-policy <task-id> <PR-url> <merged|closed|terminal> <close|release>
 #   fm-captain-hold.sh settle-pr <task-id> <PR-url>
@@ -249,6 +250,15 @@
 # open-decision reminders read to keep the relayed key quiet until that date
 # (bin/fm-watch.sh open_decision_reminder_tick). A main home has no channel and
 # publishes nothing.
+# `hold --key <slug>` publishes this occurrence under <slug> instead, for a
+# call that already has a keyed `needs-decision [key=<slug>]` line: the hold
+# and its answer then reopen and close that one parent decision rather than
+# opening a second one the answer never closes. The key is recorded on a
+# `Captain hold key: <slug> (occurrence <n>)` body line, so every later
+# publication of that occurrence reads it from the task; a re-hold without
+# --key keeps an active occurrence's key, and a new occurrence falls back to
+# the derived key. Nothing records which key a held task stands for unless
+# --key says so, so the script never guesses one.
 # The hold or answer is already durable in the backlog, so a channel that
 # cannot be written is reported as `actionable:` on stderr rather than undoing
 # the record; bin/fm-inactive-reconcile.sh's diagnostics name a broken binding.
@@ -285,13 +295,26 @@ CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 
 PARENT_HOLD_PUBLISHED=0
 publish_parent_hold() {  # <task-id> <occurrence> <verb> <note> [until-date]
-  local id=$1 occurrence=$2 verb=$3 note=$4 until=${5:-} head rc=0
+  local id=$1 occurrence=$2 verb=$3 note=$4 until=${5:-} head key shown rc=0
   PARENT_HOLD_PUBLISHED=0
-  head="$verb [key=captain-hold-$id-$occurrence]"
+  fm_parent_channel_home_id "$FM_HOME" >/dev/null 2>&1 || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    PARENT_HOLD_PUBLISHED=1
+    return 0
+  fi
+  rc=0
+  # A read in a command substitution, so the caller's TASK_SHOW_OUTPUT survives.
+  shown=$(fm_backlog_row_show "$(fm_backlog_data_absolute "$DATA")" "$id" --full 2>/dev/null) || {
+    printf 'actionable: task %s is held for the captain in this home but its decision key could not be read for the parent channel\n' "$id" >&2
+    return 0
+  }
+  key=$(body_hold_key "$(decode_shown_value "$(show_field "$shown" body)")" "$occurrence")
+  [ -n "$key" ] || key="captain-hold-$id-$occurrence"
+  head="$verb [key=$key]"
   [ -z "$until" ] || head="$head [until=$until]"
   fm_parent_channel_report "$FM_HOME" "$STATE" \
     "$head: captain hold $id: $(fm_parent_channel_clean_note "$note")" \
-    "captain-hold-$id-$occurrence" || rc=$?
+    "$key" || rc=$?
   case "$rc" in
     0|1) PARENT_HOLD_PUBLISHED=1 ;;
     *) printf 'actionable: task %s is held for the captain in this home but that did not reach the parent channel (rc=%s)\n' "$id" "$rc" >&2 ;;
@@ -878,6 +901,10 @@ body_hold_origin() {  # <decoded-task-body>
   printf '%s\n' "$1" | sed -n 's/^Captain hold origin: \(.*\)$/\1/p' | head -1
 }
 
+body_hold_key() {  # <decoded-task-body> <occurrence>
+  printf '%s\n' "$1" | sed -n "s/^Captain hold key: \\([A-Za-z0-9._-]*\\) (occurrence $2)\$/\\1/p" | head -1
+}
+
 task_identity() {
   local id=$1
   if task_show "$id"; then
@@ -889,28 +916,30 @@ task_identity() {
   printf '%s' "$id"
 }
 
-write_hold_origin() {  # <task-id> <shown-body> <origin>
-  local id=$1 body=$2 origin=$3 stamp rest new_body tmp
+# Replaces every `Captain hold <name>:` line with one carrying <value>, placed
+# directly under the leading hold-set stamp.
+write_hold_annotation() {  # <task-id> <shown-body> <name> <value>
+  local id=$1 body=$2 name=$3 value=$4 stamp rest new_body tmp
   body=$(decode_shown_value "$body") \
     || fail "could not decode the existing body for $id"
   stamp=$(printf '%s\n' "$body" | sed -n 1p)
   [ -n "$(body_hold_set_timestamp "$body")" ] \
-    || fail "task $id lost its hold-set stamp before its origin was recorded"
-  rest=$(printf '%s\n' "$body" | sed 1d | awk '!/^Captain hold origin: /' \
+    || fail "task $id lost its hold-set stamp before its $name was recorded"
+  rest=$(printf '%s\n' "$body" | sed 1d | awk -v p="Captain hold $name: " 'index($0, p) != 1' \
     | awk 'NF || started { started = 1; print }')
-  new_body=$(printf '%s\nCaptain hold origin: %s' "$stamp" "$origin")
+  new_body=$(printf '%s\nCaptain hold %s: %s' "$stamp" "$name" "$value")
   if [ -n "$rest" ]; then
     new_body=$(printf '%s\n\n%s' "$new_body" "$rest")
   fi
-  tmp=$(umask 077; mktemp "${TMPDIR:-/tmp}/fm-captain-hold-origin.XXXXXX") \
-    || fail "cannot stage the hold origin"
+  tmp=$(umask 077; mktemp "${TMPDIR:-/tmp}/fm-captain-hold-$name.XXXXXX") \
+    || fail "cannot stage the hold $name"
   if ! printf '%s\n' "$new_body" > "$tmp"; then
     rm -f -- "$tmp"
-    fail "cannot stage the hold origin for $id"
+    fail "cannot stage the hold $name for $id"
   fi
   if ! tasks_axi update "$id" --body-file "$tmp" >/dev/null; then
     rm -f -- "$tmp"
-    printf 'fm-captain-hold: could not record the hold origin on %s\n' "$id" >&2
+    printf 'fm-captain-hold: could not record the hold %s on %s\n' "$name" "$id" >&2
     return 1
   fi
   rm -f -- "$tmp"
@@ -1117,7 +1146,7 @@ verify_entry_durable() {  # <origin-or-empty> <entry>; prints "<id> <how> <origi
 }
 
 command_hold() {
-  local id=${1:-} title='' reason='' repo='' origin='' until='' show state existing_title body='' hold_kind hold_set occurrence
+  local id=${1:-} title='' reason='' repo='' origin='' until='' key='' show state existing_title body='' hold_kind hold_set occurrence
   local existing_hold_kind='' existing_held='' preserve_hold_set=0 stored_reason original_body='' hold_status=0
   [ "$#" -ge 1 ] || { usage >&2; exit 2; }
   shift
@@ -1128,6 +1157,7 @@ command_hold() {
       --repo) shift; repo=${1:-} ;;
       --origin) shift; origin=${1:-} ;;
       --until) shift; until=${1:-} ;;
+      --key) shift; key=${1:-}; validate_slug key "$key" ;;
       *) usage >&2; exit 2 ;;
     esac
     shift
@@ -1224,9 +1254,13 @@ command_hold() {
   [ -n "$(body_hold_set_timestamp "$(show_field_value "$show" body)")" ] \
     || fail "task $id lost its hold-set stamp while being held"
   occurrence=$(( $(resolution_record_count "$(show_field "$show" body)") + 1 ))
+  if [ -n "$key" ]; then
+    write_hold_annotation "$id" "$(show_field "$show" body)" key "$key (occurrence $occurrence)" || exit $?
+    task_show_or_fail "$id" "task $id disappeared while recording its decision key"
+  fi
   publish_parent_hold "$id" "$occurrence" needs-decision "$reason" "$until"
   if [ -n "$origin" ]; then
-    write_hold_origin "$id" "$(show_field "$show" body)" "$origin" || exit $?
+    write_hold_annotation "$id" "$(show_field "$show" body)" origin "$origin" || exit $?
   fi
   printf '%s\n' "$id"
 }
