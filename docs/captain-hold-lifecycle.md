@@ -54,7 +54,7 @@ It works in this order:
 2. It records the task's UTC hold-set timestamp as the leading line of the task body.
 3. It invokes the underlying tasks-axi hold operation.
 4. It verifies the captain-hold annotations and timestamp.
-5. In a secondmate home, it publishes the verified hold to the parent channel.
+5. In a secondmate home, it publishes the verified hold to the parent channel, under the `--key` decision key when one is given.
 6. When `--origin` is supplied, it records the origin on the task, replacing any previous association only after the backend hold succeeds.
 
 Publishing the stamp first ensures a snapshot cannot observe a newly captain-held task without the timestamp that defines its age.
@@ -68,6 +68,9 @@ Repeat and edge cases:
 - `--origin` resolves the backend origin identity before writing the hold-set stamp.
   The association lives on its own `Captain hold origin:` body line; [completion inventory checks](#recording-a-reviewed-inventory-complete) own how it is verified.
   The ordering above prevents an interrupted or refused backend hold from publishing the new association, even when an old captain hold is still active or date-expired.
+- `--key <slug>` holds a call the secondmate already raised as `needs-decision [key=<slug>]`.
+  The hold and its answer then reopen and close that one parent decision, so the answer leaves no second record open.
+  Nothing links a held task to an existing status key unless `--key` names it, so no other path infers the link.
 - If the backend hold fails, `hold` attempts to restore the previous body.
   If restoration also fails, the new stamp can remain, but the previous origin is unchanged.
   If the subsequent origin write fails, the command returns nonzero, but the successful captain hold and its stamp remain with the previous association (or with no recorded origin for a new task).
@@ -455,6 +458,7 @@ The away-posture restriction on queued merges and its residual limits are owned 
 ## Record divergence
 
 A captain call can have two records, and closing one does not close the other.
+In a secondmate home, `hold --key` keeps the parent channel down to one record by publishing the hold under the call's existing decision key.
 The status-log fold is the open-decision set `bin/fm-classify-lib.sh` reads from a task's status log, where a keyed `needs-decision` or `blocked` line opens a decision.
 A `resolved [key=...]` line closes the status-log fold.
 The structured captain-held task settles only through the [lifecycle policy's answer or evidence paths](../.agents/skills/captain-hold-lifecycle/SKILL.md#policy).
