@@ -46,12 +46,16 @@ Hold-for-return is the default and the only reach profile this release records: 
      On the t3code backend there is no terminal to create, so `start` refuses and only the native path above works; a Codex captain hosted by T3 Code has no away daemon (docs/t3code-backend.md "Active limits").
    Both daemon paths require the record `enter` wrote and share `bin/fm-afk-start.sh` as the daemon entry.
    The daemon is **presence-gated**: it injects escalations only while `state/.afk` exists, and stays quiet otherwise.
-3. **Announce, then read back after entry.**
+3. **Deliver what already finished, in the entry reply.**
+   Once the record exists main is parked and the away session holds every captain outcome for the return brief, so this reply is the captain's last chance before leaving to read a result that finished before `/afk`.
+   Re-read running work with `bin/fm-fleet-view.sh`, which is read-only and so takes no wake from the away session, and name each finished result: a ready PR with its full URL and the merge word it awaits, a finished investigation's findings from its report, and a failed or blocked task with its consequence.
+   Leave the wake queue to the away session; a result relayed here may appear again in the return brief.
+4. **Announce, then read back after entry.**
    Relay the announcement in spirit: hold-for-return only, no phone channel, your instructions are recorded and the away session will carry them out where it can, anything it is unsure of, or that needs you, waits for your return, and destructive, irreversible, and security-sensitive actions are never pre-authorizable whatever the words say.
    Then give your own plain-sentence restatement of the words in `AGENTS.md` section 9 language - what you read them as asking for, sentence by sentence, never a numbered field list - beside the expected return, the spend cap, and the one-sentence reach announcement.
    Say plainly which sentence, if any, you could not act on while away (a red merge, a discard, anything on the never-set, local-only landing); it waits for their return.
    This read-back is informational: the record already stands, so never ask for a go or wait for a reply; a captain who wants a different reading sends `/afk` again with new words.
-4. **Do not separately arm `fm-watch.sh` where the daemon runs.** The daemon manages the watcher as its child; the singleton lock no-ops a stray arm harmlessly.
+5. **Do not separately arm `fm-watch.sh` where the daemon runs.** The daemon manages the watcher as its child; the singleton lock no-ops a stray arm harmlessly.
    On Pi nothing changes about arming: the supervision session's own cycle continues.
 
 ## While away
