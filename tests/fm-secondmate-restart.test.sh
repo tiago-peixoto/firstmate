@@ -472,6 +472,10 @@ printf '%s\n' "${rargs[*]}" >> "$FM_FAKE_SSH_LOG"
 case "${FM_FAKE_SSH_MODE:-ok}" in
   unreachable) exit 255 ;;
 esac
+if [ "${rargs[0]}:${rargs[1]:-}" = fm-remote-inherit.sh:generation ]; then
+  printf '0\n'
+  exit 0
+fi
 case "${rargs[1]:-}" in
   send-stdin)
     # Model the live remote mate: act on the instruction and report back on the
@@ -533,6 +537,10 @@ test_remote_mate_restarts_over_the_transport_hop() {
   [ "$(grep -n '^fm-remote-secondmate-control.sh send-stdin' "$dir/ssh.log" | head -1 | cut -d: -f1)" \
      -lt "$(grep -n '^fm-remote-secondmate-control.sh relaunch' "$dir/ssh.log" | head -1 | cut -d: -f1)" ] \
     || fail "the remote mate was restarted before it was asked to persist"$'\n'"$(cat "$dir/ssh.log")"
+  # The parent's current inherited material reached the home before the restart.
+  [ "$(grep -n '^fm-remote-inherit.sh absent data/captain-shared.md' "$dir/ssh.log" | head -1 | cut -d: -f1)" \
+     -lt "$(grep -n '^fm-remote-secondmate-control.sh relaunch' "$dir/ssh.log" | head -1 | cut -d: -f1)" ] \
+    || fail "the remote mate was restarted before inherited material was pushed"$'\n'"$(cat "$dir/ssh.log")"
   pass "T6 a remote mate restarts through the host-local control plane over the fm-on hop"
 }
 
