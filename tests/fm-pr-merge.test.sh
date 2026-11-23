@@ -3226,6 +3226,31 @@ test_secondmate_merge_reports_on_the_local_route() {
   pass "a locally routed secondmate home reports the landed PR into its parent's own channel"
 }
 
+test_secondmate_merge_closes_decisions_about_the_pr() {
+  local case_dir parent parent_status url open
+  url=https://github.com/example/repo/pull/64
+  parent="$TMP_ROOT/secondmate-merge-closes/parent"
+  case_dir=$(make_home_case secondmate-merge-closes local "$parent")
+  mkdir -p "$parent/state"
+  printf 'kind=secondmate\n' >"$parent/state/mate-x.meta"
+  parent_status="$parent/state/mate-x.status"
+  {
+    printf 'needs-decision [key=pr64-ready]: PR %s is ready to merge\n' "$url"
+    printf 'needs-decision [key=pr640-ready]: PR %s0 is ready to merge\n' "$url"
+    printf 'blocked [key=other]: waiting on a credential\n'
+  } >"$parent_status"
+  add_gh_mocks "$case_dir" 7777777777777777777777777777777777777777
+  : >"$case_dir/gh-axi.log"
+
+  FM_TEST_HOME="$case_dir/home" run_pr_merge "$case_dir" task-x1 "$url" \
+    >"$case_dir/stdout" 2>"$case_dir/stderr" || fail "secondmate-merge-closes: merge failed"
+
+  open=$(bash -c '. "$1/bin/fm-classify-lib.sh"; status_open_decisions "$2"' _ "$ROOT" "$parent_status" | cut -f1 | tr '\n' ' ')
+  [ "$open" = "pr640-ready other " ] \
+    || fail "secondmate-merge-closes: expected only pr640-ready and other open, got: $open"
+  pass "a secondmate merge closes the parent's open decisions about that PR and no other"
+}
+
 test_failed_merge_reports_nothing() {
   local case_dir rc
   case_dir=$(make_home_case failed-merge-silent remote)
@@ -5513,6 +5538,7 @@ test_large_required_check_producers
 test_gitlab_head_override_args_refuse_before_recording
 test_secondmate_merge_reports_upward_once
 test_secondmate_merge_reports_on_the_local_route
+test_secondmate_merge_closes_decisions_about_the_pr
 test_gitlab_merge_reports_upward
 test_queued_gitlab_merge_leaves_the_poll_armed
 test_failed_merge_reports_nothing

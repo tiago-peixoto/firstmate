@@ -9,7 +9,8 @@
 #
 # The destination is the home's role, never the caller's choice:
 #   - a secondmate home reports upward on its parent channel, resolved and
-#     appended through bin/fm-parent-channel-lib.sh under its channel contract;
+#     appended through bin/fm-parent-channel-lib.sh under its channel contract,
+#     and closes there each open decision whose note names the merged PR;
 #   - a main home reports to the captain through the durable wake queue.
 # A poll observed in a secondmate home also receives a local durable wake after
 # the upward write, so the mate can handle its own poll observation.
@@ -33,6 +34,26 @@ _FM_MERGE_OUTCOME_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck disable=SC2034 # Public result consumed by sourcing callers.
 FM_MERGE_OUTCOME_ALREADY_RECORDED=false
+
+# A decision the mate raised on its channel about this PR, such as a
+# ready-to-merge question, is moot once the PR merges. Left open, the parent
+# keeps asking for a merge that already happened, so close it on the same
+# channel. A note that only names a longer number (/pull/10 for /pull/1) is a
+# different PR. Holds and supervisor-owned keys are left to their owners.
+_fm_merge_outcome_resolve_pr_decisions() {  # <channel> <pr-url>
+  local channel=$1 url=$2 key verb note rest
+  while IFS=$'\t' read -r key verb note; do
+    [ -n "$key" ] || continue
+    rest=$note
+    while :; do
+      case "$rest" in *"$url"*) ;; *) continue 2 ;; esac
+      rest=${rest#*"$url"}
+      case "$rest" in [0-9]*) ;; *) break ;; esac
+    done
+    fm_parent_channel_append_once "$channel" "$(status_stamp_line \
+      "${FM_CLASSIFY_RESOLVE_VERB:-$FM_CLASSIFY_RESOLVE_VERB_DEFAULT} [key=$key]: merged $url")" || return 1
+  done < <(status_own_open_decisions "$channel")
+}
 
 # fm_merge_outcome_report <home> <state> <task-id> <pr-url> <origin> [authority]
 #
@@ -99,6 +120,8 @@ fm_merge_outcome_report() {  # <home> <state> <task-id> <pr-url> <origin> [autho
 
   if [ -n "$destination" ]; then
     fm_parent_channel_append_once "$destination" "$(status_stamp_line "$line")" || status=1
+    [ "$status" -ne 0 ] \
+      || _fm_merge_outcome_resolve_pr_decisions "$destination" "$FM_PR_URL" || status=1
   fi
   if [ "$status" -eq 0 ] && { [ "$origin" = poll ] || [ -z "$destination" ]; }; then
     fm_wake_append check "merged-$id-$FM_PR_URL" \
