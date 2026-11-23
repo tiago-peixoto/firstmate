@@ -37,6 +37,10 @@ install_runner() {  # <case-dir>
   cp "$ROOT/bin/fm-tasks-axi-lib.sh" "$dir/bin/"
   cp "$ROOT/bin/fm-hold-reason-lib.sh" "$dir/bin/"
   cp "$ROOT/bin/fm-backlog-transition-lib.sh" "$dir/bin/"
+  # The hold owner that turns each away-time captain outcome into a held task.
+  cp "$ROOT/bin/fm-captain-hold.sh" "$dir/bin/"
+  cp "$ROOT/bin/fm-parent-channel-lib.sh" "$dir/bin/"
+  cp "$ROOT/bin/fm-secondmate-parent-lib.sh" "$dir/bin/"
   # The merge-notification marker reader behind the brief's landed section.
   cp "$ROOT/bin/fm-pr-lib.sh" "$dir/bin/"
   fm_test_tasks_toml "$dir/home/.tasks.toml"
@@ -506,7 +510,8 @@ test_return_brief_points_at_the_drain_on_a_host_home_only() {
       assert_contains "$out" "  1 captain outcome(s) escalated by the away session, presented in the drain's BRANCH OUTCOMES section" \
         "a host home's brief must point at the drain for its captain outcomes"
       assert_contains "$out" "the drain's BRANCH OUTCOMES section presents the visible outcomes" "a host home's brief must point at the visible outcomes in the drain"
-      assert_not_contains "$out" 'PR ready for review' "a host home's brief must leave the captain outcome to the drain"
+      # The held listing carries the summary as the hold reason; only the outcome row is the drain's.
+      assert_not_contains "$out" '- demo: PR ready for review' "a host home's brief must leave the captain outcome to the drain"
       assert_not_contains "$out" 'routine 6' "a host home's brief must leave the routine outcomes to the drain"
     else
       assert_contains "$out" '    - demo: PR ready for review' "a Pi home's brief must still list the captain outcome"
@@ -1353,7 +1358,43 @@ test_missing_final_archive_keeps_retained_contract_gated() {
   pass "the retained contract epoch requires its final archive on every check"
 }
 
+# Upstream issue 8699: a captain outcome recorded while away was the only record
+# of the call, so it left every list once main marked the row processed.
+test_return_holds_each_away_captain_outcome_for_the_captain() {
+  local dir out held seq
+  dir="$TMP_ROOT/away-captain-hold"
+  install_runner "$dir"
+  contract_in "$dir" enter --words 'keep the fleet moving' >/dev/null 2>&1 || fail "could not confirm the away-posture record"
+  printf 'window=synthetic:fm-widget\nbackend=tmux\nkind=ship\nproject=/srv/projects/widget\n' > "$dir/home/state/widget-fix.meta"
+  printf 'working: building\n' > "$dir/home/state/widget-fix.status"
+  outcome_in "$dir" append --task widget-fix --verdict routine \
+    --summary 'resent the steer; worker resumed' >/dev/null || fail "could not seed the routine outcome row"
+  seq=$(outcome_in "$dir" append --task widget-fix --verdict captain \
+    --summary 'ask-user: choose whether the widget keeps the legacy API') || fail "could not seed the captain outcome row"
+  touch "$dir/home/state/.last-watcher-beat"
+
+  out=$(run_return "$dir" begin) || fail "the return did not clear: $out"
+  assert_contains "$out" "away-outcome-$seq,queued,captain,widget,Away-time captain outcome $seq for widget-fix,captain" \
+    "the away-time captain outcome was not listed as a held task under waiting on you"
+  outcome_in "$dir" mark-read --through "$seq" >/dev/null || fail "could not mark the outcome rows read"
+  outcome_in "$dir" mark-processed --through "$seq" >/dev/null || fail "could not mark the captain row processed"
+  held=$(cd "$dir/home" && tasks-axi list --state held --fields hold_kind --file data/backlog.md)
+  assert_contains "$held" 'count: 1' "the processed captain outcome was not still held, or the routine outcome was held too"
+  assert_contains "$held" "away-outcome-$seq,queued,captain,widget" "the processed captain outcome left the held set"
+  FM_HOME="$dir/home" FM_STATE_OVERRIDE="$dir/home/state" "$dir/bin/fm-captain-hold.sh" open "away-outcome-$seq" \
+    || fail "the captain-hold owner does not report the away-time call as open"
+
+  printf 'keep the legacy API\n' > "$dir/decision.txt"
+  FM_HOME="$dir/home" FM_STATE_OVERRIDE="$dir/home/state" "$dir/bin/fm-captain-hold.sh" answer "away-outcome-$seq" \
+    --decision-file "$dir/decision.txt" >/dev/null || fail "could not answer the away-time call"
+  out=$(run_return "$dir" check) || fail "a repeated check failed once the call was answered: $out"
+  held=$(cd "$dir/home" && tasks-axi list --state held --file data/backlog.md)
+  assert_contains "$held" 'count: 0' "a repeated check re-held a call the captain already answered"
+  pass "each away-time captain outcome becomes a task held for the captain once, and it outlives the processed outcome row"
+}
+
 test_return_gate_owns_remediation_and_reports_catchup_to_bearings
+test_return_holds_each_away_captain_outcome_for_the_captain
 test_explicit_reclassification_requires_durable_reason
 test_captain_decision_does_not_masquerade_as_firstmate_blocker
 test_evidence_publication_failure_preserves_wake_for_redrain
