@@ -11,7 +11,9 @@
 # the relaunch alone therefore leaves this file naming the runtime the mate
 # used to run, not the one it runs now.
 #
-# This wrapper is the missing other half. It runs the host-local relaunch
+# This wrapper is the missing other half. It first pushes this parent's current
+# inherited local material, refusing the relaunch when that push fails. It then
+# runs the host-local relaunch
 # through bin/fm-on.sh exactly as secondmate-provisioning documents, then reads
 # the confirmed harness, model, and effort back out of the endpoint's own
 # route report - the same read-back-from-the-endpoint shape bin/fm-spawn.sh
@@ -29,6 +31,8 @@ STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 . "$SCRIPT_DIR/fm-backend.sh"
 # shellcheck source=bin/fm-wake-lib.sh
 . "$SCRIPT_DIR/fm-wake-lib.sh"
+# shellcheck source=bin/fm-secondmate-nudge-lib.sh
+. "$SCRIPT_DIR/fm-secondmate-nudge-lib.sh"
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 usage() { sed -n '2,4p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
@@ -45,6 +49,28 @@ META="$STATE/$ID.meta"
 REMOTE_HOST=$(fm_meta_get "$META" remote_host)
 [ -n "$REMOTE_HOST" ] \
   || die "task $ID is not a remotely placed secondmate; use bin/fm-control.sh $ID relaunch instead"
+
+# The host-local relaunch skips inheritance because this parent owns that leg,
+# exactly as at launch, so push the current inherited material first or the new
+# agent starts on whatever was last pushed. The push is not live: a fresh agent
+# reads session-scoped items too, as bin/fm-spawn.sh's remote launch does.
+INHERIT_LOCK=$(fm_remote_inherit_transaction_lock_path "$STATE" "$ID") \
+  || die "inheritance transaction lock path is invalid for $ID"
+fm_lock_acquire_wait "$INHERIT_LOCK" || die "remote secondmate $ID inheritance transaction could not be locked"
+INHERIT_GENERATION=$(fm_remote_inherit_generation_next "$STATE" "$ID" 2>/dev/null) || {
+  fm_lock_release "$INHERIT_LOCK" || true
+  die "remote secondmate $ID inheritance generation could not be published"
+}
+INHERIT_RC=0
+"$SCRIPT_DIR/fm-remote-inherit-push.sh" "$ID" "$INHERIT_GENERATION" >/dev/null || INHERIT_RC=$?
+fm_lock_release "$INHERIT_LOCK" || true
+if [ "$INHERIT_RC" -eq 255 ]; then
+  printf 'error: remote secondmate %s inheritance completion is unknown; relaunch refused\n' "$ID" >&2
+  exit 255
+elif [ "$INHERIT_RC" -ne 0 ]; then
+  printf 'error: remote secondmate %s inheritance failed; relaunch refused\n' "$ID" >&2
+  exit "$INHERIT_RC"
+fi
 
 RELAUNCH_OUT=$("$SCRIPT_DIR/fm-on.sh" "$ID" fm-remote-secondmate-control.sh \
   relaunch "$ID" "$HARNESS" "$MODEL" "$EFFORT" </dev/null 2>&1) || {
