@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Append one validated, timestamped status event.
+# A paused event must name when its wait clears with `until <YYYY-MM-DDTHH:MMZ>`
+# (UTC) in its body, read by fm-classify-lib.sh's status_paused_until: an
+# undated wait was rechecked only every four hours, which hid a stalled CI wait.
 # Usage: fm-status-write.sh <status-file> <verb> [--key <slug>] [--corr <16-hex>] [--until <YYYY-MM-DD>] -- <body>
 set -eu
 
@@ -32,6 +35,12 @@ if [ -n "$corr" ]; then
 fi
 if [ -n "$until" ]; then
   case "$until" in [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;; *) echo 'error: until must be YYYY-MM-DD' >&2; exit 2 ;; esac
+fi
+if [ "$verb" = "${FM_CLASSIFY_PAUSED_VERB:-paused}" ]; then
+  # shellcheck source=bin/fm-classify-lib.sh
+  . "$(dirname "$0")/fm-classify-lib.sh"
+  status_paused_until "$verb: ${body//[[:space:]]/ }" >/dev/null \
+    || { echo "error: every $verb event must name when its wait clears: until <YYYY-MM-DDTHH:MMZ> (UTC)" >&2; exit 2; }
 fi
 case "$status_file" in '') usage ;; esac
 if [ -e "$status_file" ] || [ -L "$status_file" ]; then
