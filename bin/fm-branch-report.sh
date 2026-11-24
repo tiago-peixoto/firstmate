@@ -16,10 +16,16 @@
 #
 # Usage:
 #   fm-branch-report.sh --task <id|fleet> --verdict routine|captain \
-#       --summary <text> [--silent true|false] [--wake <text>]
+#       --summary <text> [--silent true|false] [--main-action <text>] \
+#       [--wake <text>]
 #
 # The verdict criteria are owned by bin/fm-branch-prompt.sh ("Verdict: routine
 # or captain"); --silent true is legal only for a routine outcome.
+# --main-action names a step the branch leaves for MAIN (dispatch a check,
+# dispatch queued work a cleanup freed room for, land or merge): the outcome
+# is recorded as captain with the step appended to its summary, whatever
+# --verdict says, so it reaches MAIN through the captain hand-back instead of
+# resting in the routine store; it cannot be silent.
 # --wake defaults to the wake reason the host recorded for the turn.
 #
 # Only the branch actor of a live host turn may report: FM_SUPERVISION_ACTOR
@@ -63,7 +69,7 @@ refuse() {
   exit 3
 }
 
-TASK='' VERDICT='' SUMMARY='' SILENT=false WAKE='' WAKE_SET=0
+TASK='' VERDICT='' SUMMARY='' SILENT=false WAKE='' WAKE_SET=0 MAIN_ACTION=''
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --task) TASK=${2:-}; shift 2 || usage ;;
@@ -71,6 +77,7 @@ while [ "$#" -gt 0 ]; do
     --summary) SUMMARY=${2:-}; shift 2 || usage ;;
     --silent) SILENT=${2:-}; shift 2 || usage ;;
     --wake) WAKE=${2:-}; WAKE_SET=1; shift 2 || usage ;;
+    --main-action) MAIN_ACTION=${2:-}; shift 2 || usage ;;
     -h|--help) usage ;;
     *) usage ;;
   esac
@@ -78,6 +85,7 @@ done
 
 TASK=$(printf '%s' "$TASK" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 SUMMARY=$(printf '%s' "$SUMMARY" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+MAIN_ACTION=$(printf '%s' "$MAIN_ACTION" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 case "$VERDICT" in routine|captain) ;; *) VERDICT= ;; esac
 case "$SILENT" in true|false) ;; *) usage ;; esac
 if [ -z "$TASK" ] || [ -z "$SUMMARY" ] || [ -z "$VERDICT" ]; then
@@ -87,6 +95,14 @@ fi
 if [ "$SILENT" = true ] && [ "$VERDICT" != routine ]; then
   echo "invalid report: --silent true requires the routine verdict" >&2
   exit 2
+fi
+if [ -n "$MAIN_ACTION" ]; then
+  if [ "$SILENT" = true ]; then
+    echo "invalid report: an outcome with --main-action cannot be silent" >&2
+    exit 2
+  fi
+  VERDICT=captain
+  SUMMARY="$SUMMARY Main action: $MAIN_ACTION"
 fi
 
 [ "${FM_SUPERVISION_ACTOR:-}" = branch ] \

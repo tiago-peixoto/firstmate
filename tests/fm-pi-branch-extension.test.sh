@@ -1953,6 +1953,36 @@ if (!sentToMain.some((sent) => sent.message.customType === "fm-branch-process" &
   throw new Error("a captain-worthy heartbeat finding did not open its keyed processing turn");
 }
 
+// A step left for main opens main's processing turn even under a routine
+// verdict, and can never be a silent receipt.
+const beforeSilentMainAction = outcomeScript(["list", "--recent", "100"]).trim();
+const silentMainAction = await heartbeatReport.execute(
+  "main-action-silent-refused",
+  { task: "task-9", verdict: "routine", summary: "the worker asked for a recheck", mainAction: "dispatch that check", silent: true },
+  undefined,
+  undefined,
+  {},
+);
+if (!silentMainAction.isError || outcomeScript(["list", "--recent", "100"]).trim() !== beforeSilentMainAction) {
+  throw new Error("a silent outcome with a main action was not refused before the store");
+}
+const mainActionSummary = "the worker asked for a recheck Main action: dispatch that check";
+await heartbeatReport.execute(
+  "main-action",
+  { task: "task-9", verdict: "routine", summary: "the worker asked for a recheck", mainAction: "dispatch that check" },
+  undefined,
+  undefined,
+  {},
+);
+const storedMainAction = outcomeScript(["list", "--recent", "100"]).split("\n").filter(Boolean)
+  .map((line) => JSON.parse(line)).find((row) => row.summary === mainActionSummary);
+if (!storedMainAction || storedMainAction.verdict !== "captain" || storedMainAction.silent !== false) {
+  throw new Error(`a routine report naming a main action was not stored as captain: ${JSON.stringify(storedMainAction)}`);
+}
+if (!mainEntries.some((entry) => entry.customType === "fm-branch-visible-outcome" && entry.data.summary === mainActionSummary)) {
+  throw new Error("a routine report naming a main action was not persisted as a visible captain entry for main");
+}
+
 // Every other fleet-wide or unresolvable wake (empty projects, not a
 // heartbeat) still keeps the wake-to-main path.
 if (dispatch("check: unresolved fleet event", []).accepted) {

@@ -108,6 +108,51 @@ test_report_after_the_return_is_queued_for_main() {
 }
 
 
+# An outcome that leaves a step for main is a hand-back, whatever verdict the
+# branch gave: a routine row opens no main turn, so a recheck or a freed place
+# recorded as routine waited unread for hours. An unchanged wait stays quiet.
+test_report_with_a_main_action_is_handed_back_never_routine() {
+  local home state out rc drained
+  home="$TMP_ROOT/report-main-action"
+  state="$home/state"
+  mkdir -p "$state" "$home/config"
+  : > "$home/config/supervision-host"
+  printf 'turn=t1\nrows=4 5\ntasks=alpha beta\nunscoped=0\nwake=signal: alpha.status\nposture=attended\n' > "$state/.supervision-host-turn"
+  report() { FM_HOME="$home" FM_SUPERVISION_ACTOR=branch FM_BRANCH_REPORT_TURN=t1 "$REPORT" "$@" 2>&1; }
+
+  out=$(report --task alpha --verdict routine --summary 'The author fixed case 3 and asked for another independent check.' \
+    --main-action 'dispatch an independent check of the PR' --silent true); rc=$?
+  expect_code 2 "$rc" "an outcome with a main action must not be accepted as silent"
+  [ ! -e "$state/branch-outcomes.jsonl" ] || fail "a refused silent main action touched the outcome store"
+
+  out=$(report --task alpha --verdict routine --summary 'The author fixed case 3 and asked for another independent check; MAIN needs to dispatch that check.' \
+    --main-action 'dispatch an independent check of the PR'); rc=$?
+  expect_code 0 "$rc" "a routine verdict with a main action must be recorded"
+  assert_contains "$out" "recorded seq 1 [captain]; MAIN processes it from its next drain" "a main action must be handed back as captain"
+  assert_re '"seq":1,.*"verdict":"captain","summary":"The author fixed case 3 and asked for another independent check; MAIN needs to dispatch that check. Main action: dispatch an independent check of the PR","silent":false' \
+    "$state/branch-outcomes.jsonl" "the recheck must be stored as an actionable outcome naming the step"
+
+  out=$(report --task beta --verdict routine --summary 'Cleanup done after the PR merged; one worker place is free and a queued item is ready.' \
+    --main-action 'dispatch the next queued item'); rc=$?
+  expect_code 0 "$rc" "the capacity-freed outcome must be recorded"
+  assert_re '"seq":2,.*"verdict":"captain",.*Main action: dispatch the next queued item' \
+    "$state/branch-outcomes.jsonl" "the freed place must be stored as an actionable outcome"
+  [ "$(cut -f3 "$state/.supervision-host-receipts" | tr '\n' ' ')" = 'captain captain ' ] \
+    || fail "the host receipts must carry the captain verdict that wakes main: $(cat "$state/.supervision-host-receipts")"
+
+  out=$(report --task alpha --verdict routine --summary 'still waiting on the external review; nothing new; no action taken' --silent true); rc=$?
+  expect_code 0 "$rc" "an unchanged external wait must still be accepted as silent"
+  assert_re '"seq":3,.*"verdict":"routine",.*"silent":true' "$state/branch-outcomes.jsonl" "an unchanged external wait must stay routine and silent"
+
+  drained=$(FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" 2>&1' "$ROOT/bin/fm-wake-drain.sh")
+  assert_contains "$drained" "alpha: The author fixed case 3" "main's drain must present the recheck for action"
+  assert_contains "$drained" "beta: Cleanup done after the PR merged; one worker place is free and a queued item is ready. Main action: dispatch the next queued item" "main's drain must present the freed place for action"
+  assert_contains "$drained" "run bin/fm-branch-outcome.sh mark-processed --through 2" "the hand-back must wait for main's acknowledgement"
+  assert_not_contains "$drained" "still waiting on the external review" "the unchanged wait must stay quiet"
+  pass "report surface: a declared main action is handed back to main, never stored as routine, while an unchanged wait stays quiet"
+}
+
+
 # --- dispatch entry -----------------------------------------------------------
 
 test_dispatch_entry_scopes_rows_and_renders_the_away_tail() {
@@ -623,6 +668,7 @@ test_branch_outcomes_keep_a_drain_presented_outcome_across_an_index_repair() {
 fm_test_run \
   test_report_surface_enforces_actor_turn_and_scope \
   test_report_after_the_return_is_queued_for_main \
+  test_report_with_a_main_action_is_handed_back_never_routine \
   test_dispatch_entry_scopes_rows_and_renders_the_away_tail \
   test_branch_outcomes_only_on_a_host_home_off_pi \
   test_branch_outcomes_put_captain_first_and_collapse_routine_overflow \
