@@ -209,7 +209,9 @@
 #      to reattach, not by escalating.
 #   4. No current run for this crew (pre-validation, uninitialized repository,
 #      proven historical head, or kind=scout): fall back to the recorded
-#      backend's pane busy state, then the resolved status declaration
+#      backend's pane busy state (an untouched fm-spawn busy seed at least
+#      FM_BUSY_TURN_MAX_SECS old reads unknown, launch never confirmed), then
+#      the resolved status declaration
 #      (an open keyed decision, else a standing declared wait, else the current
 #      line) when its verb maps to a recognized run-state. Decision-only events such as
 #      `resolved` never become current state or detail.
@@ -465,6 +467,19 @@ crew_busy_verdict() {  # <target>
   local tail40
   tail40=$(fm_backend_capture "$TASK_BACKEND" "$1" 40 "$EXPECTED_LABEL" 2>/dev/null) || tail40=''
   fm_busy_classify "$TASK_BACKEND" "$1" "$HARNESS" "$ID" "$STATE" "$tail40"
+}
+
+# launch_seed_expired: 0 when the busy record is still the fm-spawn seed and
+# its ts is at least the watcher's busy-turn bound old. A launch cut off after
+# the seed was written leaves it untouched forever, so without this bound a
+# worker that never started reads working indefinitely.
+launch_seed_expired() {
+  local line ts
+  line=$(cat "$(fm_busy_record_path "$STATE" "$ID")" 2>/dev/null) || return 1
+  ts=${line##* ts=}
+  ts=${ts%% *}
+  case "$ts" in ''|*[!0-9]*) return 1 ;; esac
+  [ $(( $(date +%s) - ts )) -ge "${FM_BUSY_TURN_MAX_SECS:-3600}" ]
 }
 
 # --- no-mistakes run lookup (authoritative when a run matches this branch) --
@@ -1626,7 +1641,12 @@ fi
 if [ "$KIND" != secondmate ]; then
   BUSY_VERDICT=$(crew_busy_verdict "$BACKEND_TARGET")
   case "${BUSY_VERDICT%% *}" in
-    busy) emit working pane "harness busy (${BUSY_VERDICT#* })" ;;
+    busy)
+      if [ "$BUSY_VERDICT" = "busy fm-spawn" ] && launch_seed_expired; then
+        emit unknown pane "launch never confirmed (fm-spawn busy seed older than ${FM_BUSY_TURN_MAX_SECS:-3600}s)"
+      fi
+      emit working pane "harness busy (${BUSY_VERDICT#* })"
+      ;;
     idle) ;;
     *) emit unknown pane "harness state unavailable ($BUSY_VERDICT)" ;;
   esac
