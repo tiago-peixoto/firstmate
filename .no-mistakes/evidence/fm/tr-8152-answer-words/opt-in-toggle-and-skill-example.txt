@@ -1,0 +1,72 @@
+++ touch HOME/config/hold-answer-words
+++ cap hold sample-start-state --title 'Choose the start state' --reason 'Should the feature start enabled? A: Off until checks pass. B: On now.'
+++ env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_PROJECTS_OVERRIDE WORKTREE/bin/fm-captain-hold.sh hold sample-start-state --title 'Choose the start state' --reason 'Should the feature start enabled? A: Off until checks pass. B: On now.'
+sample-start-state
+++ echo exit=0
+exit=0
+++ printf 'sample-start-state\tA\tOff until checks pass.\n'
+++ cap answers --source 'captain interview'
+++ env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_PROJECTS_OVERRIDE WORKTREE/bin/fm-captain-hold.sh answers --source 'captain interview'
+closed: sample-start-state
+answers: closed=1 skipped=0
+++ echo exit=0
+exit=0
+++ cd HOME
+++ tasks-axi show sample-start-state --full
+task:
+  id: sample-start-state
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: firstmate
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 804ec32f370bc98799c5df3c08c8984ac2f436379e2f7b7bf4b431974ea837af\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through captain interview.\nTask: sample-start-state\nAnswer: A\nAnswer as shown to the captain: Off until checks pass.\nSelected answer: Off until checks pass."
+++ cap hold toggle-1 --title Choose --reason 'A: Off. B: On.' --repo sample
+++ env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_PROJECTS_OVERRIDE WORKTREE/bin/fm-captain-hold.sh hold toggle-1 --title Choose --reason 'A: Off. B: On.' --repo sample
+toggle-1
+++ printf 'A\n'
+++ cap answer toggle-1 --decision-file HOME/d.txt
+++ env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_PROJECTS_OVERRIDE WORKTREE/bin/fm-captain-hold.sh answer toggle-1 --decision-file HOME/d.txt
+fm-captain-hold: decision file contains only option A; include the displayed option words
+++ echo exit=1
+exit=1
+++ rm HOME/config/hold-answer-words
+++ cap answer toggle-1 --decision-file HOME/d.txt
+++ env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_PROJECTS_OVERRIDE WORKTREE/bin/fm-captain-hold.sh answer toggle-1 --decision-file HOME/d.txt
+answered: toggle-1
+++ echo exit=0
+exit=0
+++ cd HOME
+++ tasks-axi show toggle-1 --full
+task:
+  id: toggle-1
+  title: Choose
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:QTogT2ZmLiBCOiBPbi4="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd\nResolution mode: answered\n\nCaptain decision:\nA"
+++ cd HOME
+++ tasks-axi show sample-start-state --full
+++ grep -c 'Selected answer: Off until checks pass.'
+1

@@ -1,0 +1,375 @@
+### config flags: hold-answer-words 
+$ answer d-bare --decision-file <A\\n> 
+fm-captain-hold: decision file contains only option A; include the displayed option words
+exit=1
+--- record d-bare
+task:
+  id: d-bare
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-24
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: TS"
+$ answer d-paren --decision-file <\(b\)\\n> 
+fm-captain-hold: decision file contains only option (b); include the displayed option words
+exit=1
+--- record d-paren
+task:
+  id: d-paren
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-24
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: TS"
+$ answer d-padded --decision-file <\ \ C.\ \ \\n> 
+fm-captain-hold: decision file contains only option   C.  ; include the displayed option words
+exit=1
+--- record d-padded
+task:
+  id: d-padded
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-24
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: TS"
+$ answer d-words --decision-file <A\ -\ Off\ until\ checks\ pass.\\n> 
+answered: d-words
+exit=0
+--- record d-words
+task:
+  id: d-words
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 94f915ada221db58807207af964b0b347414b06d7fa8ff29d6cf9b2cd0835bb1\nResolution mode: answered\n\nCaptain decision:\nA - Off until checks pass.\nSelected answer: A - Off until checks pass."
+$ answer d-multi --decision-file <From\ chat:\\nAnswer:\ Off\ until\ checks\ pass.\\nBecause\ the\ gate\ is\ flaky.\\n> 
+answered: d-multi
+exit=0
+--- record d-multi
+task:
+  id: d-multi
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 862307d587bd8b75a0858c7edeb47465c82f6c2c5ba574265b616174e7b80552\nResolution mode: answered\n\nCaptain decision:\nFrom chat:\nAnswer: Off until checks pass.\nBecause the gate is flaky.\nSelected answer: Off until checks pass."
+$ answer d-multi-plain --decision-file <First\ line.\\nSecond\ line.\\n> 
+answered: d-multi-plain
+exit=0
+--- record d-multi-plain
+task:
+  id: d-multi-plain
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 45ef917d50bfa79c1fcccd398cc9388d33b94fd5b40c7e53445cb310d21eb47f\nResolution mode: answered\n\nCaptain decision:\nFirst line.\nSecond line."
+$ answer d-release --decision-file <A\\n> --release
+fm-captain-hold: decision file contains only option A; include the displayed option words
+exit=1
+--- record d-release
+task:
+  id: d-release
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-24
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: TS"
+$ printf 'k-bare\tA\t\n' | answers --source fixture
+skipped: k-bare (option A requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+--- record k-bare
+task:
+  id: k-bare
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-24
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: TS"
+$ printf 'k-digit\t7\t\n' | answers --source fixture
+skipped: k-digit (option 7 requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+--- record k-digit
+task:
+  id: k-digit
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-24
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: TS"
+$ printf 'k-blank\tA\t \n' | answers --source fixture
+skipped: k-blank (option A requires its displayed meaning)
+answers: closed=0 skipped=1
+exit=1
+--- record k-blank
+task:
+  id: k-blank
+  title: Choose the start state
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: 2026-11-24
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: TS"
+$ printf 'k-labelled\tA\tOff until checks pass.\n' | answers --source fixture
+closed: k-labelled
+answers: closed=1 skipped=0
+exit=0
+--- record k-labelled
+task:
+  id: k-labelled
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: cde54101cd59ddee60e8aa4d2a8a3e92b387c3e48a911dfde1325f060ba8bac1\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through fixture.\nTask: k-labelled\nAnswer: A\nAnswer as shown to the captain: Off until checks pass.\nSelected answer: Off until checks pass."
+$ printf 'k-free\tKeep it off for now\t\n' | answers --source fixture
+closed: k-free
+answers: closed=1 skipped=0
+exit=0
+--- record k-free
+task:
+  id: k-free
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 1ee4b26227037c7b8ffc05874a5275a2c6cbf6b99a0eb8a9e59f3373f256dba7\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through fixture.\nTask: k-free\nAnswer: Keep it off for now\nSelected answer: Keep it off for now"
+$ printf 'k-free-blank\tKeep it off for now\t \n' | answers --source fixture
+closed: k-free-blank
+answers: closed=1 skipped=0
+exit=0
+--- record k-free-blank
+task:
+  id: k-free-blank
+  title: Choose the start state
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: captain
+  repo: sample
+  priority: "-"
+  created: "-"
+  closed: 2026-11-24
+  deps: none
+  links: none
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: c92c5c91db84c873916130c8e564e1ac3df050c059502dcb30697a9014b38a38\nResolution mode: answered\n\nCaptain decision:\nCaptain answered this call through fixture.\nTask: k-free-blank\nAnswer: Keep it off for now\nSelected answer: Keep it off for now"
+### backlog
+## In flight
+
+## Queued
+- [ ] d-bare - Choose the start state (repo: sample) (kind: captain) (since 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Captain hold set: TS
+- [ ] d-paren - Choose the start state (repo: sample) (kind: captain) (since 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Captain hold set: TS
+- [ ] d-padded - Choose the start state (repo: sample) (kind: captain) (since 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Captain hold set: TS
+- [ ] d-release - Choose the start state (repo: sample) (kind: captain) (since 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Captain hold set: TS
+- [ ] k-bare - Choose the start state (repo: sample) (kind: captain) (since 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Captain hold set: TS
+- [ ] k-digit - Choose the start state (repo: sample) (kind: captain) (since 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Captain hold set: TS
+- [ ] k-blank - Choose the start state (repo: sample) (kind: captain) (since 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Captain hold set: TS
+## Done
+- [x] k-free-blank - Choose the start state (repo: sample) (kind: captain) (done 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: c92c5c91db84c873916130c8e564e1ac3df050c059502dcb30697a9014b38a38
+  Resolution mode: answered
+
+  Captain decision:
+  Captain answered this call through fixture.
+  Task: k-free-blank
+  Answer: Keep it off for now
+  Selected answer: Keep it off for now
+
+- [x] k-free - Choose the start state (repo: sample) (kind: captain) (done 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 1ee4b26227037c7b8ffc05874a5275a2c6cbf6b99a0eb8a9e59f3373f256dba7
+  Resolution mode: answered
+
+  Captain decision:
+  Captain answered this call through fixture.
+  Task: k-free
+  Answer: Keep it off for now
+  Selected answer: Keep it off for now
+
+- [x] k-labelled - Choose the start state (repo: sample) (kind: captain) (done 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: cde54101cd59ddee60e8aa4d2a8a3e92b387c3e48a911dfde1325f060ba8bac1
+  Resolution mode: answered
+
+  Captain decision:
+  Captain answered this call through fixture.
+  Task: k-labelled
+  Answer: A
+  Answer as shown to the captain: Off until checks pass.
+  Selected answer: Off until checks pass.
+
+- [x] d-multi-plain - Choose the start state (repo: sample) (kind: captain) (done 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 45ef917d50bfa79c1fcccd398cc9388d33b94fd5b40c7e53445cb310d21eb47f
+  Resolution mode: answered
+
+  Captain decision:
+  First line.
+  Second line.
+
+- [x] d-multi - Choose the start state (repo: sample) (kind: captain) (done 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 862307d587bd8b75a0858c7edeb47465c82f6c2c5ba574265b616174e7b80552
+  Resolution mode: answered
+
+  Captain decision:
+  From chat:
+  Answer: Off until checks pass.
+  Because the gate is flaky.
+  Selected answer: Off until checks pass.
+
+- [x] d-words - Choose the start state (repo: sample) (kind: captain) (done 2026-11-24) (hold: fm-hold-v1:U2hvdWxkIHRoZSBmZWF0dXJlIHN0YXJ0IGVuYWJsZWQ/IEE6IE9mZiB1bnRpbCBjaGVja3MgcGFzcy4gQjogT24gbm93Lg==) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: 94f915ada221db58807207af964b0b347414b06d7fa8ff29d6cf9b2cd0835bb1
+  Resolution mode: answered
+
+  Captain decision:
+  A - Off until checks pass.
+  Selected answer: A - Off until checks pass.
+
