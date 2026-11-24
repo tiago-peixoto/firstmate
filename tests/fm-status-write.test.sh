@@ -26,6 +26,17 @@ case "$last" in 'needs-decision [key=captain-hold-t-1] [until=2026-12-01] [at='*
 "$WRITER" "$f" note --until 2026-1-1 -- 'bad date' >/dev/null 2>&1 && fail "writer accepted a malformed until date"
 pass "status writer carries a validated until date"
 
+undated="$TMP_ROOT/undated.status"
+"$WRITER" "$undated" paused -- 'Draft PR pushed. Waiting on CI.' >/dev/null 2>&1 && fail "writer accepted a pause with no until"
+[ ! -s "$undated" ] || fail "a refused pause still reached the status log"
+FM_CLASSIFY_PAUSED_VERB=awaiting "$WRITER" "$undated" awaiting -- 'Waiting on CI.' >/dev/null 2>&1 && fail "writer accepted a custom-verb pause with no until"
+"$WRITER" "$undated" paused -- 'Waiting until 2026-13-40T25:00Z' >/dev/null 2>&1 && fail "writer accepted a pause with an impossible until"
+due=$(( $(date +%s) / 60 * 60 + 3600 ))
+due_iso=$(date -u -r "$due" +%Y-%m-%dT%H:%MZ 2>/dev/null || date -u -d "@$due" +%Y-%m-%dT%H:%MZ)
+"$WRITER" "$undated" paused -- $'Waiting on CI\nuntil '"$due_iso" || fail "writer refused a dated pause"
+[ "$(status_paused_until "$(tail -n 1 "$undated")")" = "$due" ] || fail "dated pause is not rechecked at its until: $(tail -n 1 "$undated")"
+pass "status writer requires until on a pause and keeps its recheck time"
+
 "$WRITER" "$f" definitely-not-a-verb -- 'invalid' >/dev/null 2>&1 && fail "writer accepted an invalid verb"
 pass "status writer rejects invalid verbs"
 

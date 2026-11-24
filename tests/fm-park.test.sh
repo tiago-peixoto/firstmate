@@ -387,6 +387,9 @@ test_park_stops_agent_records_lane_and_leases_slot() {
   [ "$mode" = 600 ] || fail "park: record is not private (mode=$mode)"
   tail -1 "$w/state/lane.status" | grep -q "^paused \[at=[0-9]*\]: parked on review: PR $GH_URL clean at ${head:0:12}" \
     || fail "park: no declared wait in the status log: $(tail -1 "$w/state/lane.status")"
+  # The status writer refuses an undated pause, so the parent-channel relay of this line needs its until.
+  bash "$ROOT/bin/fm-status-write.sh" "$w/relay.status" paused -- "$(tail -1 "$w/state/lane.status" | sed 's/^[^:]*: //')" \
+    || fail "park: the status writer refuses the declared wait, so its relay would be lost"
   [ "$(cat "$w/gh.count")" = 2 ] || fail "park: expected a fresh gate read and a re-check before the stop, got $(cat "$w/gh.count") reads"
   out=$(run_park "$w" list)
   case "$out" in "lane	PR $GH_URL	head ${head:0:12}	parked "*) ;; *) fail "park: list output $out" ;; esac
