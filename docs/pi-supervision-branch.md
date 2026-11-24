@@ -392,6 +392,8 @@ Stage two is the branch's verdict on each handled event, reported through its `f
 | `routine` | A non-silent outcome uses the custom-message path; a silent outcome is stored without a rendered note. Neither opens a follow-up turn. |
 | `captain` | Appends a versioned `fm-branch-visible-outcome` custom session entry. |
 
+A report that names a `mainAction` is recorded as `captain` whatever verdict it carries, with the step appended to its summary, and cannot be silent (`bin/fm-branch-prompt.sh` "Verdict: routine or captain").
+
 ### The visible captain entry
 
 The captain entry contains the store sequence, task, verdict, exact summary, and silent flag.

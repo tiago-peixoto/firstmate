@@ -157,6 +157,25 @@ test_attended_captain_outcome_reaches_main_through_branch_outcomes() {
   pass "host: an attended captain outcome wakes main once and stays in its drain until main acknowledges it"
 }
 
+# A worker's request for a recheck needs a dispatch only main may make, so the
+# branch's routine verdict with a main action still wakes main.
+test_attended_main_action_wakes_main() {
+  local home drained
+  home=$(make_home attended-defer attended)
+  echo defer > "$home/stub-mode"
+  start_host "$home"
+  wait_until 150 watcher_live "$home" || fail "defer: the host never started a watcher cycle"
+  append_status "$home" 'fixed; please run another independent check'
+  wait_until_deadline 60 host_exited "$home" || fail "defer: the main action did not wake main: $(cat "$home/state/.supervision-host.log")"
+  assert_re '^supervision-host: branch-outcome: .*\(store rows 1\); run bin/fm-wake-drain.sh' "$home/host.out" \
+    "the exit must hand the deferred action's store row to main"
+  drained=$(FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" 2>&1' "$ROOT/bin/fm-wake-drain.sh")
+  assert_contains "$drained" " ago] demo: the worker fixed its finding and asked for another independent check Main action: dispatch that check" \
+    "main's drain must present the deferred action"
+  assert_contains "$drained" "run bin/fm-branch-outcome.sh mark-processed --through 1" "the deferred action must wait for main's acknowledgement"
+  pass "host: a routine report that names a main action wakes main and waits in its drain"
+}
+
 test_captain_leaving_mid_turn_keeps_its_captain_outcome_for_the_return() {
   local home drained
   home=$(make_home attended-go-away attended)
@@ -922,6 +941,7 @@ fm_test_run \
   test_host_stopped_right_after_a_handled_wake_exits_and_frees_the_queue \
   test_engine_in_another_time_zone_handles_its_granted_rows \
   test_attended_captain_outcome_reaches_main_through_branch_outcomes \
+  test_attended_main_action_wakes_main \
   test_captain_leaving_mid_turn_keeps_its_captain_outcome_for_the_return \
   test_quiet_record_without_its_daemon_is_a_present_captain \
   test_attended_main_only_close_passes_straight_to_main \
