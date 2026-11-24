@@ -18,7 +18,7 @@
 # stored atomically at mode 0600 BEFORE any event referencing it is published,
 # and a captured result with no durable handled acknowledgement remains eligible
 # for bounded re-announcement - including across a restart between publication
-# and handling - until `fm-procevent.sh handled` records it. It proves nothing
+# and handling - until its handling path records that acknowledgement. It proves nothing
 # about the source side of the handoff. In particular the currently published
 # `lavish-axi poll` destructively clears feedback before returning it, so a
 # result lost between that clearing and this runner reading the process output

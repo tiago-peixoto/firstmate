@@ -97,7 +97,9 @@
 #            Extension invocation cleanup refusals count as `uncertain`;
 #            docs/configuration.md owns their failure-wake and recovery policy.
 # handled    Durably and idempotently record that a captured result has been
-#            fully handled: <source-id> <sequence>. Prints "handled: id seq"
+#            fully handled: <source-id> <sequence>. Refuses an open task-owned
+#            nonterminal round; register-task owns its reply and acknowledgement.
+#            Prints "handled: id seq"
 #            the first time for that exact source-and-sequence generation and
 #            "already-handled: id seq" on every repeat call, atomically
 #            deduplicated so a paired external effect is never authorized
@@ -2125,6 +2127,9 @@ cmd_handled() {
       && result_adapter=$(fm_procevent_result_adapter "$result" 2>/dev/null) \
       && adapter_result_is_terminal "$result_adapter" "$result"; then
       conclude=1
+    elif [ -n "$result" ]; then
+      fm_procevent_source_lock_release "$id"
+      die "cannot acknowledge open nonterminal task-owned round $id $seq; register-task owns its reply-and-rearm acknowledgement"
     fi
   fi
   if [ "$conclude" -eq 1 ]; then
@@ -2193,7 +2198,7 @@ cmd_retire() {
   if source_retirement_blocked_locked "$id"; then
     round_owner=$(source_owner_task "$id")
     fm_procevent_source_lock_release "$id"
-    die "cannot retire task-owned source $id while a captured round for task $round_owner is unacknowledged; acknowledge it with bin/fm-procevent.sh handled $id <sequence>"
+    die "cannot retire task-owned source $id while a captured round for task $round_owner is unacknowledged; use register-task to re-arm a nonterminal round or handled to conclude a terminal round"
   fi
   if [ -e "$(source_file "$id")" ] || [ -L "$(source_file "$id")" ]; then
     if [ -z "$condition" ]; then
