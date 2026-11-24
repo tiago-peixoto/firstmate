@@ -1012,7 +1012,7 @@ test_herdr_lab_contract_applies_to_scouts_but_not_secondmates() {
 }
 
 test_pause_verb_override_renders_all_brief_scaffolds() {
-  local home kind id brief append epoch templates template line signals minimum_signals
+  local home kind id brief append epoch templates template line signals minimum_signals pauses
   home="$TMP_ROOT/pause-verb-home"
   mkdir -p "$home/data"
 
@@ -1057,7 +1057,7 @@ test_pause_verb_override_renders_all_brief_scaffolds() {
     templates=$(grep -o -e "append \`[^\`]*: [^\`]*\`" \
       -e "\`[^\`]*\[at=<epoch>\][^\`]*\`" "$brief" \
       | sed 's/^append //' | tr -d '`' | sort -u)
-    signals=0
+    signals=0 pauses=0
     while IFS= read -r template; do
       [ -n "$template" ] || continue
       case "$template" in
@@ -1069,11 +1069,19 @@ test_pause_verb_override_renders_all_brief_scaffolds() {
       now=$(date +%s)
       line=${template//\{state\}/done}
       line=${line//<epoch>/$now}
+      line=${line//<YYYY-MM-DDTHH:MMZ>/2030-01-01T00:00Z}
       line=$(printf '%s' "$line" \
         | sed -e 's/{[^}]*}/one short line/g' -e 's/<[^>]*>/slug/g')
       epoch=$(bash -c '. "$1"; status_line_at_epoch "$2"' _ \
         "$ROOT/bin/fm-classify-lib.sh" "$line")
       [ "$epoch" = "$now" ] || fail "$kind signal carries no worker-written stamp: $template"
+      case "$line" in
+        'awaiting '*|'awaiting:'*)
+          FM_CLASSIFY_PAUSED_VERB=awaiting "$ROOT/bin/fm-status-write.sh" "$home/state/$id.pauses" awaiting -- "${line#*: }" \
+            || fail "$kind wait template is refused by the status writer: $template"
+          pauses=$((pauses + 1))
+          ;;
+      esac
       signals=$((signals + 1))
     done <<SIGNALS
 $templates
@@ -1082,13 +1090,14 @@ SIGNALS
     [ "$kind" != secondmate ] || minimum_signals=2
     [ "$signals" -ge "$minimum_signals" ] \
       || fail "$kind brief instructed only $signals stamped status signals"
+    [ "$kind" = secondmate ] || [ "$pauses" -ge 1 ] || fail "$kind brief gave no stamped wait template to check against the status writer"
     assert_grep "States: working, needs-decision, blocked, awaiting, done, failed." "$brief" \
       "$kind brief did not render the configured pause verb in its states list"
     # shellcheck disable=SC2016 # Literal backticks and braces must remain unexpanded.
-    assert_grep 'Use `awaiting: {why}`' "$brief" \
+    assert_grep 'Use `awaiting: {why}' "$brief" \
       "$kind brief did not instruct the configured pause status"
     # shellcheck disable=SC2016 # Literal backticks and braces must remain unexpanded.
-    assert_no_grep '`paused: {why}`' "$brief" \
+    assert_no_grep '`paused: {why}' "$brief" \
       "$kind brief still instructs the default paused status"
     assert_grep 'a blocker or wait clears' "$brief" \
       "$kind brief did not require durable resolution when a blocker clears"

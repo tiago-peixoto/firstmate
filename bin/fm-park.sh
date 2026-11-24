@@ -607,7 +607,7 @@ slot_lease() {  # <id>
 }
 
 cmd_park() {
-  local id=${1-} why result head local_head pr lease parked_at out rc=0 line inbox_lock
+  local id=${1-} why result head local_head pr lease parked_at out rc=0 line horizon inbox_lock
   task_id_ok "$id" || die "usage: fm-park.sh park <task-id>" 2
   lock_try "$(lane_lock "$id")" || die "another park action holds $id"
   why=$(park_preflight "$id") || die "refusing to park $id: $why"
@@ -645,7 +645,12 @@ cmd_park() {
   fi
   record_write "$id" "pr=$pr" "head=$head" "parked_at=$parked_at" "slot_leased=$lease" \
     || die "$id: the agent was stopped but its park record could not be marked parked; the next tick settles it"
-  line="paused [at=$(date +%s)]: parked on review: PR $pr clean at ${head:0:12}; agent stopped, relaunches on review activity"
+  # The park tick watches this wait, so its until is only the status writer's
+  # required horizon (the parent-channel relay goes through it), set to the
+  # undated-pause ceiling so supervision timing stays what it was.
+  horizon=$(( $(date +%s) + FM_PAUSE_UNDATED_MAX_SECS_DEFAULT ))
+  horizon=$(date -u -r "$horizon" +%Y-%m-%dT%H:%MZ 2>/dev/null || date -u -d "@$horizon" +%Y-%m-%dT%H:%MZ)
+  line="paused [at=$(date +%s)]: parked on review: PR $pr clean at ${head:0:12}; agent stopped, relaunches on review activity; declared until $horizon"
   status_append "$id" "$line"
   fm_parent_channel_report "$FM_HOME" "$STATE" "$line" >/dev/null 2>&1 || true
   printf 'parked %s: PR %s clean at %s; agent stopped\n' "$id" "$pr" "${head:0:12}"
