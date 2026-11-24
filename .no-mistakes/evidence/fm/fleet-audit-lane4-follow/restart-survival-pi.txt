@@ -1,0 +1,47 @@
+## start real pi 1.5.2, enroll one PR
+$ fm-pr-follow.sh add https://github.com/example/project/pull/41 --requested tell me if review asks for changes or it merges
+Following https://github.com/example/project/pull/41
+[exit=0]
+$ fm-pr-follow.sh list
+https://github.com/example/project/pull/41	tell me if review asks for changes or it merges
+[exit=0]
+## stop pi (restart begins); forge changes to CHANGES_REQUESTED while it is down
+$ fm-pr-follow.sh poll
+PR following paused: no active model-free outcome surface; use Pi or Claude with the Calm mod.
+[exit=0]
+$ fm-pr-follow.sh poll
+[exit=0]
+wake queue:
+(empty)
+durable record after stop:
+{"surface_missing":true,"follows":[{"url":"https://github.com/example/project/pull/41","requested":"tell me if review asks for changes or it merges","review":"APPROVED"}]}
+## start a new pi process on the same home
+$ fm-pr-follow.sh list
+https://github.com/example/project/pull/41	tell me if review asks for changes or it merges
+[exit=0]
+$ fm-pr-follow.sh poll
+[exit=0]
+$ fm-pr-follow.sh poll
+[exit=0]
+$ fm-pr-follow.sh poll
+[exit=0]
+## pi screen after restart (no prompt was typed)
+ ▀▀█  v1.5.2
+ █▀ █ escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more
+ Press ctrl+o to show full startup help and loaded resources.
+ Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.
+[Extensions]
+  fixture.ts, fm-branch-supervision.ts
+ Warning: fd not found. Offline mode enabled, skipping download.
+ Warning: ripgrep not found. Offline mode enabled, skipping download.
+ Warning: No models available. Use /login to log into a provider via OAuth or API key. See:
+   ~/.pi/agent/install/releases/1.5.2/node_modules/@earendil-works/pi-coding-agent/docs/providers.md
+   ~/.pi/agent/install/releases/1.5.2/node_modules/@earendil-works/pi-coding-agent/docs/models.md
+ Warning: tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.
+ ⚓ Review CHANGES_REQUESTED: https://github.com/example/project/pull/41
+ ⚓ MERGED: https://github.com/example/project/pull/41
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/tmp/fm-follow-restart.3sVV2B/pi/project
+0.0%/0 (auto)                                                                                                                                                                                    unknown
+## model turns: 0; wake queue: 0 bytes

@@ -1,0 +1,77 @@
+
+tests/branch-notes.test.ts:
+(pass) supervision notes > direct notices use their own receipt across drains and session restarts [183.13ms]
+(pass) supervision notes > direct notices recover from full history after leaving the bounded display tail [83.93ms]
+(fail) supervision notes > a resumed session does not replay an unprocessed outcome that a newer notice follows [77.58ms]
+  AssertionError: expect(received).toEqual()
+  
+  Expected: [
+    "⚓ [seq 5] fm-b: decision waiting",
+    "⚓ MERGED: https://github.com/example/project/pull/1"
+  ]
+  Received: [
+    "⚓ [seq 5] fm-b: decision waiting",
+    "⚓ MERGED: https://github.com/example/project/pull/1",
+    "⚓ [seq 5] fm-b: decision waiting"
+  ]
+(pass) supervision notes > another session cannot display notices or advertise readiness [51.79ms]
+(pass) supervision notes > session start replays unprocessed captain rows and unread visible routine rows with Calm off [65.93ms]
+(pass) supervision notes > each new row becomes one line on the next slow tick, a silent row none, and none twice [69.95ms]
+(pass) supervision notes > a tail copy that first appears after session start replays against the session-start markers, even within the same second [66.41ms]
+(pass) supervision notes > rows that arrive faster than the tail copy holds are counted in one line, not dropped silently [49.80ms]
+(pass) supervision notes > a same-size replacement within one timestamp tick is still read and shown [96.37ms]
+(pass) supervision notes > a latch trip and its recovery each write Pi's health note, and a new session key alone writes none [80.78ms]
+(pass) supervision notes > a resumed session replays only outcomes it has not shown, and a new session replays every due one [80.33ms]
+
+tests/calm.test.ts:
+(pass) activation > is fully inert when the function-hooks opt-in is absent [99.40ms]
+(pass) activation > is fully inert when the function-hooks opt-in is not exactly one [98.92ms]
+(pass) activation > registers /calm at session start and stays a pass-through while off [75.89ms]
+(pass) activation > reads a persisted on before session start, so restored rows never draw with a stale off [55.55ms]
+(pass) activation > reads the legacy max value as on [54.46ms]
+(pass) activation > reads an unrecognized value as off [64.65ms]
+(pass) /calm > toggles on: persists on, toasts, redraws every hooked drawing, and leaves no output row [46.79ms]
+(pass) /calm > toggles off: persists off and restores the engine's drawings [52.94ms]
+(pass) /calm > keeps the current choice when the preference cannot be written [39.83ms]
+(pass) /calm > writes under FM_CONFIG_OVERRIDE when that override names the config directory [47.93ms]
+(pass) /calm > falls back to FM_ROOT_OVERRIDE, then the tracked code root above the plugin, when FM_HOME is unset [44.43ms]
+(pass) /calm > derives the home from the plugin folder when nothing names it [48.47ms]
+(pass) operational user rows > hides every canonically classified operational input while on [50.65ms]
+(pass) operational user rows > keeps every near miss and genuine prompt visible while on [40.87ms]
+(pass) operational user rows > leaves every user row to the engine while off [59.95ms]
+(pass) operational user rows > hides a doorbell only when the record it names holds a current envelope [35.46ms]
+(pass) operational user rows > shows a hidden doorbell again once a toggle redraws it after its record is pruned [35.87ms]
+(pass) operational user rows > leaves a backed doorbell to the engine while off, without reading its record [31.21ms]
+(pass) mid-turn working notes > hides brief narration but preserves substantive text before tool calls, and forwards the stream untouched [45.26ms]
+(pass) mid-turn working notes > keeps a final reply visible when its text matches an earlier working note [30.25ms]
+(pass) mid-turn working notes > keeps an earlier final reply visible when a later working note reuses its text [36.71ms]
+(pass) mid-turn working notes > resets final-reply classifications when a new session starts [41.68ms]
+(pass) mid-turn working notes > treats a response cut off while calling tools as a working note, but not a plain cut-off [35.60ms]
+(pass) mid-turn working notes > ignores subagent steps, which never draw in the main transcript [35.97ms]
+(pass) mid-turn working notes > records notes while off and hides them retroactively when toggled on [26.48ms]
+(pass) mid-turn working notes > preserves substantive mid-turn text restored from the transcript [41.83ms]
+(pass) mid-turn working notes > seeds notes from a restored transcript without hiding a colliding final reply [26.98ms]
+
+tests/working-ship.test.ts:
+(pass) the working ship > replaces the spinner with a two-row raster sized to the row inside the transcript margin [99.60ms]
+(pass) the working ship > leaves one blank row above the boat so its sail stays off the highlighted prompt [77.92ms]
+(pass) the working ship > animates the water every tick and moves the hull one column every fourth, through blits of the mounted size [92.00ms]
+(pass) the working ship > stops blitting a site the surface denies and resumes when the spinner is drawn again [65.13ms]
+(pass) the working ship > never blits while off, and drops every site when toggled off [71.03ms]
+(pass) the working ship > sizes to the raster limits: an unmeasured viewport reads as 80 columns, a wide one clips at 512, a narrow one falls back to one row [78.44ms]
+(pass) the working ship > reflows to a new width on the redraw a resize causes, and blits at that width from then on [89.23ms]
+(pass) the working ship > leaves a non-terminal surface to the engine [38.70ms]
+(pass) the working ship > paints the light theme family's spinner blue for the water and the same Claude orange boat [42.48ms]
+(pass) the working ship > paints the dark family for the theme value "dark-ansi" [52.27ms]
+(pass) the working ship > paints the dark family for the theme value "dark-daltonized" [43.16ms]
+(pass) the working ship > paints the light family for the theme value "light" [36.22ms]
+(pass) the working ship > paints the light family for the theme value "light-daltonized" [44.67ms]
+(pass) the working ship > paints the light family for the theme value "light-ansi" [55.17ms]
+(pass) the working ship > paints the light family for the theme value "auto" [35.95ms]
+(pass) the working ship > paints the light family for the theme value "custom:rose-pine" [35.50ms]
+(pass) the working ship > re-paints in the new family after the theme changes, through the next drawing and every later blit [47.90ms]
+(pass) the working ship > leaves a theme change to the engine while Calm is off, and paints the new family once Calm turns on [43.44ms]
+
+ 55 pass
+ 1 fail
+Ran 56 tests across 3 files. [1.50s]

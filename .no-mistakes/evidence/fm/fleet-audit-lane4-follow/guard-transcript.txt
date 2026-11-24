@@ -1,0 +1,33 @@
+## 1. home without config/pr-follow (default)
+$ fm-pr-follow.sh add https://github.com/example/project/pull/9 --requested tell me when it merges
+fm-pr-follow: config/pr-follow is absent; following is off
+[exit=1]
+$ fm-pr-follow.sh poll
+[exit=0]
+$ fm-pr-follow.sh list
+[exit=0]
+$ fm-pr-follow.sh arm
+fm-pr-follow: config/pr-follow is absent; following is off
+[exit=1]
+state/data after:
+/tmp/fm-follow-manual.zJMROs/h/data:
+
+/tmp/fm-follow-manual.zJMROs/h/state:
+## 2. opted in, but no live model-free surface (no heartbeat)
+$ fm-pr-follow.sh add https://github.com/example/project/pull/9 --requested tell me when it merges
+fm-pr-follow: no active model-free outcome surface; enrollment requires Pi or Claude with the Calm mod
+[exit=1]
+$ fm-pr-follow.sh list
+[exit=0]
+## 3. opted in, stale heartbeat (epoch 60s old, owner = dead pid)
+$ fm-pr-follow.sh add https://github.com/example/project/pull/9 --requested tell me when it merges
+fm-pr-follow: no active model-free outcome surface; enrollment requires Pi or Claude with the Calm mod
+[exit=1]
+## 4. forged surface value that nothing publishes (pi-signed), fresh epoch
+$ fm-pr-follow.sh add https://github.com/example/project/pull/9 --requested tell me when it merges
+fm-pr-follow: no active model-free outcome surface; enrollment requires Pi or Claude with the Calm mod
+[exit=1]
+store:
+(no pr-follows.json)
+.lock
+.pr-follow-surface
