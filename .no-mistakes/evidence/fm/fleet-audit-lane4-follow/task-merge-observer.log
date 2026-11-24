@@ -1,0 +1,5 @@
+$ fm-pr-poll.sh --validated github <url> github.com example/project 13   (home WITHOUT config/pr-follow, fake gh says MERGED)
+merged
+[exit 0]
+$ fm-pr-poll.sh --snapshot ... (same home, following off)
+[exit 3]
