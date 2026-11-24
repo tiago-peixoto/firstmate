@@ -1231,6 +1231,10 @@ export default function (pi: ExtensionAPI) {
         silent: Type.Optional(Type.Boolean({
           description: "True only for an eligible routine no-change outcome; captain outcomes are never silent, and actions, state changes, or new results stay rendered",
         })),
+             mainAction: Type.Optional(Type.String({
+          description:
+            "The step this outcome leaves for main to take, as the \"Verdict: routine or captain\" section of your system prompt defines it; a non-empty value records the outcome as captain with the step appended to its summary, and cannot be silent",
+        })),
       }),
       execute: async (_toolCallId, params) => {
         const task = String((params as { task: unknown }).task || "").trim();
@@ -1238,6 +1242,7 @@ export default function (pi: ExtensionAPI) {
         const summary = String((params as { summary: unknown }).summary || "").trim();
         const wake = String((params as { wake?: unknown }).wake ?? "").trim();
         const silent = (params as { silent?: unknown }).silent === true;
+        const mainAction = String((params as { mainAction?: unknown }).mainAction ?? "").trim();
         if (!task || !summary || (verdictRaw !== "routine" && verdictRaw !== "captain")) {
           return {
             content: [{ type: "text", text: "invalid report: task, verdict (routine|captain), and summary are required" }],
@@ -1252,12 +1257,21 @@ export default function (pi: ExtensionAPI) {
             isError: true,
           };
         }
-        const verdict = verdictRaw as Verdict;
+        if (mainAction && silent) {
+          return {
+            content: [{ type: "text", text: "invalid report: an outcome with mainAction cannot be silent" }],
+            details: undefined,
+            isError: true,
+          };
+        }
+        // bin/fm-branch-report.sh owns this promotion for the host; both surfaces must agree.
+        const verdict: Verdict = mainAction ? "captain" : (verdictRaw as Verdict);
+        const reported = mainAction ? `${summary} Main action: ${mainAction}` : summary;
         const scopeRefusal = wakeScopeRefusal(task);
         if (scopeRefusal) {
           return { content: [{ type: "text", text: scopeRefusal }], details: undefined, isError: true };
         }
-        const appendArgs = ["append", "--task", task, "--verdict", verdict, "--summary", summary, "--silent", String(silent)];
+        const appendArgs = ["append", "--task", task, "--verdict", verdict, "--summary", reported, "--silent", String(silent)];
         if (wake) appendArgs.push("--wake", wake);
         // Ownership, the durable append, and the delivery it authorizes are
         // ONE unit of the delivery queue: store-before-visible-delivery and
