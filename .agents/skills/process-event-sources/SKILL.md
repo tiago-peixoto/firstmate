@@ -96,12 +96,16 @@ Two rules the commands cannot enforce for you:
   The runner normally applies the result on capture, but this call is the required idempotent confirmation when the wake remains unacknowledged.
   Never acknowledge a `remote-reply` wake through the generic command, because only the adapter ingests the delta, acknowledges it, and re-arms its source.
   Use the generic path below only after fully handling a result whose adapter has no applying command.
+  For a task-owned nonterminal round, use the worker re-arm path in the [crew-hosted board contract](../../../docs/configuration.md#crew-hosted-lavish-review-boards) instead.
   [`docs/configuration.md`](../../../docs/configuration.md#process-to-event-sources-stateprocevent) owns the automatic-application contract and its failure boundary.
-: A captured result with no durable handled acknowledgement stays eligible for bounded re-announcement on the existing wake queue - across any number of drains and firstmate restarts, not only the crash window right after capture - until it is explicitly acknowledged. Once you have fully handled a result, durably record it:
+: A captured result with no durable handled acknowledgement stays eligible for bounded re-announcement on the existing wake queue - across any number of drains and firstmate restarts, not only the crash window right after capture - until it is explicitly acknowledged.
+  Once you have fully handled a result eligible for the generic path, durably record it:
   ```sh
   bin/fm-procevent.sh handled <source-id> <sequence>
   ```
-  This call is atomically deduplicated by the exact source and sequence: it prints `handled: <id> <seq>` only the first time and `already-handled: <id> <seq>` on every repeat, so a paired effect gated on that distinction is never authorized twice. Reading the event line or the result file is not handling - only this call durably retires the wake, so call it every time, including on a repeat wake for a sequence you already acted on.
+  This call is atomically deduplicated by the exact source and sequence: it prints `handled: <id> <seq>` only the first time and `already-handled: <id> <seq>` on every repeat, so a paired effect gated on that distinction is never authorized twice.
+  Reading the event line or the result file is not handling.
+  For the generic path, call it every time, including on a repeat wake for a sequence you already acted on.
 : Ask the adapter what the result means rather than parsing it yourself.
   `bin/fm-procevent.sh classify <result-file>` routes through the immutable built-in or extension identity captured with that result; for Lavish, its existing direct command returns `feedback`, `ended`, `waiting`, `disconnected`, `missing`, or `unknown`.
   Consume a Lavish capture with `bin/fm-procevent-lavish.sh read <result-file>` rather than grepping the raw file: that command reports declared and presented item counts plus a completeness verdict, enumerates every captured queued item while retaining supplied element identity, and surfaces a `tag=message` freeform message as its own field, labeling it as session-ending only when the session ended.
@@ -122,7 +126,7 @@ The crew-hosted recovery ordering and arm-and-acknowledge rule are owned by the 
 : A source whose adapter returns a terminal verdict for the captured result has already retired itself, except a worker-owned board, which stays registered and keeps its stop-and-conclude note with its owner until that owner acknowledges the terminal round as described above.
   An ordinary ended review needs no cleanup from you and produces no further wake.
   Retire any other finished source with the adapter's `retire`, which stays safe and idempotent even for one that already retired.
-  Retirement stops future completions; it is independent of acknowledging a result already captured, which only `handled` does.
+  Retirement stops future completions and does not substitute for the acknowledgement required by the result's handling path.
 
 `process-event source stranded` or `process-event source failed to start` (queue keys `procevent:<source-id>:stranded:<claim-token>` and `procevent:<source-id>:launch-failed:<registration-identity>-<episode-nonce>`)
 : Nothing was captured: the source named in the payload is registered but nothing is confirmed to be collecting from it. There is no result file to read and no `handled` call to make; the ordinary drain acknowledgement consumes the row.

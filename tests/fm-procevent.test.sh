@@ -972,9 +972,25 @@ assert_contains "$(cat "$MULTI_ROOT/open-firstmate.err")" "owned by task worker-
 [ ! -e "$HMULTI/state/worker-2.inbox" ] \
   || fail "a refused sibling registration took delivery of the owner's feedback"
 
+cp "$HMULTI/state/procevent/$multi_id.source" "$MULTI_ROOT/before-handled.source"
+cp "$HMULTI/state/procevent-inbox/$multi_id.1.result" "$MULTI_ROOT/before-handled.result"
+open_handled_status=0
+open_handled_out=$(PATH="$MULTI_BIN:$PATH" pe "$HMULTI" handled "$multi_id" 1 2>&1) \
+  || open_handled_status=$?
+[ "$open_handled_status" -ne 0 ] \
+  || fail "generic handled consumed the worker's open nonterminal round"
+assert_contains "$open_handled_out" "register-task" \
+  "the refusal did not name the worker re-arm operation"
+assert_absent "$HMULTI/state/procevent-inbox/$multi_id.1.handled" \
+  "refused generic handling still acknowledged the worker's round"
+cmp -s "$MULTI_ROOT/before-handled.source" "$HMULTI/state/procevent/$multi_id.source" \
+  || fail "refused generic handling changed the worker's registration"
+cmp -s "$MULTI_ROOT/before-handled.result" "$HMULTI/state/procevent-inbox/$multi_id.1.result" \
+  || fail "refused generic handling changed the worker's captured feedback"
 PATH="$MULTI_BIN:$PATH" FM_HOME="$HMULTI" \
   "$ROOT/bin/fm-procevent-lavish.sh" arm "$MULTI_ART" --for worker-1 \
-  --agent-reply-file "$MULTI_ROOT/reply2" >/dev/null
+  --agent-reply-file "$MULTI_ROOT/reply2" >/dev/null \
+  || fail "refused generic handling prevented the worker's reply-and-rearm"
 wait "$MULTI_RUN" || true
 for _ in $(seq 1 100); do
   PATH="$MULTI_BIN:$PATH" pe "$HMULTI" reconcile >/dev/null 2>&1 || true
@@ -1005,6 +1021,9 @@ assert_contains "$(cat "$HMULTI/state/worker-1.inbox/003.msg" 2>/dev/null || tru
   || fail "worker replies were not posted once per round"
 assert_contains "$(cat "$MULTI_ROOT/replies")" "poll1 reply: reply one" \
   "the reply staged with the arm was not the one the board received"
+assert_contains "$(cat "$MULTI_ROOT/replies")" "poll2 reply: reply two" \
+  "the worker's reply was lost after generic handled was refused"
+pass "generic handled refuses an open worker round without breaking reply-and-rearm"
 printf '%s\n' '127.0.0.1:14387' '127.0.0.1:14387' '127.0.0.1:14387' > "$MULTI_ROOT/expected-routes"
 cmp -s "$MULTI_ROOT/expected-routes" "$MULTI_ROOT/routes" \
   || fail "worker replies/polls did not use the opened session server across start and reconcile"
@@ -1057,6 +1076,9 @@ PATH="$MULTI_BIN:$PATH" pe "$HMULTI" handled "$multi_id" 3 >/dev/null
   || fail "the owner's acknowledgement of the terminal round was not recorded"
 [ ! -e "$HMULTI/state/procevent/$multi_id.source" ] \
   || fail "acknowledging the terminal round did not retire the worker-owned board"
+repeat_terminal_out=$(PATH="$MULTI_BIN:$PATH" pe "$HMULTI" handled "$multi_id" 3)
+assert_contains "$repeat_terminal_out" "already-handled: $multi_id 3" \
+  "duplicate terminal acknowledgement did not remain idempotent"
 PATH="$MULTI_BIN:$PATH" pe "$HMULTI" reconcile >/dev/null 2>&1 || true
 [ "$(cat "$MULTI_ROOT/count")" = 3 ] \
   || fail "the concluded board was polled again: $(cat "$MULTI_ROOT/count") polls"
