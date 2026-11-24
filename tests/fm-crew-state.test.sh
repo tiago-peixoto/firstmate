@@ -2800,6 +2800,54 @@ Enter to confirm . Esc to cancel'
   pass "a launch parked on a recognized interactive prompt never reads working, closing the absorb path a stale watcher poll depends on"
 }
 
+# Rewrite the busy record's ts so it reads <secs> old, as if written then.
+age_busy_record() {  # <state-dir> <id> <secs>
+  local rec="$1/$2.busy-state" ts
+  ts=$(( $(date +%s) - $3 ))
+  sed "s/ ts=[0-9]*/ ts=$ts/" "$rec" > "$rec.tmp" && mv "$rec.tmp" "$rec"
+}
+
+# A launch cut off after fm-spawn wrote its busy seed leaves that seed in place
+# forever, so past the one-hour busy bound it is no proof of a running turn.
+test_no_run_aged_launch_seed_is_not_working() {
+  reset_fakes
+  local d; d=$(new_case aged-seed)
+  make_repo_on_branch "$d/wt" fm/feat-seed
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-seed.meta" "window=fm:fm-feat-seed" "worktree=$d/wt" "kind=scout" "harness=claude"
+  FM_FAKE_AXI_STATUS=""
+  FM_FAKE_RUNS_LIST=""
+  FM_FAKE_BUSY=1
+  "$ROOT/bin/fm-busy-event.sh" arm "$d/state" feat-seed >/dev/null
+  age_busy_record "$d/state" feat-seed 3601
+  local out; out=$(run_crew_state "$d" feat-seed)
+  assert_not_contains "$out" "state: working" "a seed one hour and one second old must not read working"
+  assert_contains "$out" "state: unknown" "an aged untouched seed reads unknown"
+  assert_contains "$out" "launch never confirmed" "the unknown verdict names the unconfirmed launch"
+  pass "an untouched fm-spawn seed past the busy bound reads unknown, launch never confirmed"
+}
+
+# The bound applies only to the untouched seed: once any hook has posted, the
+# launch is confirmed and a long busy turn still reads working here.
+test_no_run_aged_hook_busy_record_still_working() {
+  reset_fakes
+  local d gen; d=$(new_case aged-hook-busy)
+  make_repo_on_branch "$d/wt" fm/feat-hook
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/feat-hook.meta" "window=fm:fm-feat-hook" "worktree=$d/wt" "kind=scout" "harness=claude"
+  FM_FAKE_AXI_STATUS=""
+  FM_FAKE_RUNS_LIST=""
+  FM_FAKE_BUSY=1
+  gen=$("$ROOT/bin/fm-busy-event.sh" arm "$d/state" feat-hook)
+  "$ROOT/bin/fm-busy-event.sh" apply "$d/state" feat-hook busy --gen "$gen" \
+    --source claude-hook --event user-prompt-submit >/dev/null
+  age_busy_record "$d/state" feat-hook 3601
+  local out; out=$(run_crew_state "$d" feat-hook)
+  assert_contains "$out" "state: working" "a hook-advanced busy record keeps reading working"
+  assert_contains "$out" "harness busy (claude-hook)" "the working verdict names the hook source"
+  pass "a busy record advanced by a hook still reads working past the busy bound"
+}
+
 # A converted adapter must NOT read working from rendered footer text: the
 # redesign removed that dependency, so a pane painting "esc to interrupt" with
 # no semantic record is unknown, never working and never silently idle.
@@ -7004,6 +7052,8 @@ test_external_review_done_reads_ready
 test_no_run_busy_pane
 test_no_run_overview_zero_branch_falls_through
 test_no_run_launch_prompt_parked_is_not_working
+test_no_run_aged_launch_seed_is_not_working
+test_no_run_aged_hook_busy_record_still_working
 test_no_run_footer_text_alone_is_not_working
 test_no_run_grok_uses_isolated_fallback
 test_no_run_herdr_unknown_uses_backend_capture
