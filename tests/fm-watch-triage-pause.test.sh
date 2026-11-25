@@ -1784,9 +1784,7 @@ test_afk_one_shot_never_hands_off_captain_held_under_away_record() {
 }
 
 # --- declared waits are condition-aware: `until <UTC ISO 8601>` --------------
-# A paused: line naming when the wait clears is rechecked at that time when it
-# falls within the flat cadence, but a distant or mistyped time cannot extend
-# the cadence, and a time that has passed is rechecked at once.
+# A dated pause waits until its declared time; undated pauses keep the cadence.
 paused_until_fixture() {  # <name> <until-epoch> <status-age-secs>
   local name=$1 until=$2 age=$3 dir state statusf window key back
   dir=$(make_case "$name"); state="$dir/state"
@@ -1834,19 +1832,16 @@ test_paused_until_near_future_is_quiet_before_the_cadence() {
   pass "a declared wait naming a near-future until time stays quiet until that time"
 }
 
-test_paused_until_wrong_year_is_bounded_by_the_cadence() {
+test_paused_until_distant_future_waits_beyond_the_cadence() {
   local dir state
-  dir=$(paused_until_fixture until-wrong-year "$(( $(date +%s) + 31536000 ))" 300); state="$dir/state"
+  dir=$(paused_until_fixture until-distant "$(( $(date +%s) + 259200 ))" 300); state="$dir/state"
   until_watch "$dir" 240
-  wait_for_exit "$UNTIL_PID" 100 \
-    || { reap "$UNTIL_PID"; fail "a wrong-year declared time silenced the wait beyond the recheck cadence"; }
-  grep -F 'stale: test:fm-until' "$dir/watch.out" >/dev/null \
-    || fail "the bounded wrong-year recheck did not print a stale wake: $(cat "$dir/watch.out")"
-  grep -F 'declared time is beyond the recheck cadence' "$dir/watch.out" >/dev/null \
-    || fail "the bounded recheck gave the wrong reason: $(cat "$dir/watch.out")"
-  grep -F 'declared clearing time has passed' "$dir/watch.out" >/dev/null \
-    && fail "the bounded recheck falsely claimed the future declared time passed"
-  pass "a wrong-year declared time cannot silence the watcher beyond the recheck cadence"
+  if ! wait_poll_cycle "$state" "$UNTIL_PID" || ! wait_poll_cycle "$state" "$UNTIL_PID"; then
+    reap "$UNTIL_PID"; fail "a three-day declared wait was rechecked before its date: $(cat "$dir/watch.out")"
+  fi
+  [ ! -s "$state/.wake-queue" ] || fail "a future dated wait queued a recheck"
+  reap "$UNTIL_PID"
+  pass "a distant declared time extends only that wait's recheck cadence"
 }
 
 test_paused_until_that_passed_is_rechecked_before_the_cadence() {
@@ -2179,7 +2174,7 @@ silent_recheck_case() {  # <name> <flag:on|off> <status-body> -> dir; leaves the
 
 test_silent_recheck_flag_on_absorbs_unchanged_pause() {
   local dir state key before
-  dir=$(silent_recheck_case silent-on on 'paused: rate limit resets, until 2999-01-01T00:00Z, then resuming'); state="$dir/state"
+  dir=$(silent_recheck_case silent-on on 'paused: waiting on the vendor reply'); state="$dir/state"
   key=$(watch_window_key test:fm-until)
   before=$(cat "$state/.paused-resurfaced-$key")
   until_watch "$dir" 240
@@ -2195,7 +2190,7 @@ test_silent_recheck_flag_on_absorbs_unchanged_pause() {
 
 test_silent_recheck_flag_off_still_wakes() {
   local dir state
-  dir=$(silent_recheck_case silent-off off 'paused: rate limit resets, until 2999-01-01T00:00Z, then resuming'); state="$dir/state"
+  dir=$(silent_recheck_case silent-off off 'paused: waiting on the vendor reply'); state="$dir/state"
   until_watch "$dir" 240
   wait_for_exit "$UNTIL_PID" 100 || { reap "$UNTIL_PID"; fail "an unchanged paused recheck did not wake with the flag off"; }
   grep -F 'stale: test:fm-until' "$dir/watch.out" >/dev/null || fail "the recheck wake was not printed with the flag off: $(cat "$dir/watch.out")"
@@ -2204,7 +2199,7 @@ test_silent_recheck_flag_off_still_wakes() {
 
 test_silent_recheck_flag_on_wakes_for_an_open_decision() {
   local dir state body
-  body=$(printf 'needs-decision [at=%s] [key=open-q]: which option\npaused: rate limit resets, until 2999-01-01T00:00Z, then resuming' "$(date +%s)")
+  body=$(printf 'needs-decision [at=%s] [key=open-q]: which option\npaused: waiting on the vendor reply' "$(date +%s)")
   dir=$(silent_recheck_case silent-open-decision on "$body"); state="$dir/state"
   until_watch "$dir" 240
   wait_for_exit "$UNTIL_PID" 100 || { reap "$UNTIL_PID"; fail "an open decision did not wake an unchanged pause with the flag on"; }
@@ -2213,8 +2208,8 @@ test_silent_recheck_flag_on_wakes_for_an_open_decision() {
 
 test_silent_recheck_flag_on_wakes_for_a_changed_declaration() {
   local dir state
-  dir=$(silent_recheck_case silent-changed on 'paused: rate limit resets, until 2999-01-01T00:00Z, then resuming'); state="$dir/state"
-  printf 'paused: a different wait, until 2999-01-01T00:00Z\n' > "$state/until.status"
+  dir=$(silent_recheck_case silent-changed on 'paused: waiting on the vendor reply'); state="$dir/state"
+  printf 'paused: a different wait\n' > "$state/until.status"
   set_mtime "$(( $(date +%s) - 500 ))" "$state/until.status"
   printf '%s' "$(seen_sig "$state/until.status")" > "$state/.seen-until_status"
   until_watch "$dir" 240
@@ -2224,7 +2219,7 @@ test_silent_recheck_flag_on_wakes_for_a_changed_declaration() {
 
 test_silent_recheck_flag_on_absorbs_unchanged_pause_for_a_live_ship_agent() {
   local dir state
-  dir=$(silent_recheck_case silent-live-ship on 'paused: rate limit resets, until 2999-01-01T00:00Z, then resuming'); state="$dir/state"
+  dir=$(silent_recheck_case silent-live-ship on 'paused: waiting on the vendor reply'); state="$dir/state"
   printf 'window=test:fm-until\nkind=ship\nharness=grok\nbackend=tmux\n' > "$state/until.meta"
   FM_FAKE_TMUX_CURRENT_COMMAND=grok until_watch "$dir" 240
   if ! wait_poll_cycle "$state" "$UNTIL_PID" || ! wait_poll_cycle "$state" "$UNTIL_PID"; then
@@ -2250,7 +2245,7 @@ test_silent_recheck_flag_on_absorbs_a_ticking_pane_for_a_live_ship_agent() {
 
 test_silent_recheck_flag_on_wakes_when_the_agent_exited() {
   local dir state
-  dir=$(silent_recheck_case silent-dead on 'paused: rate limit resets, until 2999-01-01T00:00Z, then resuming'); state="$dir/state"
+  dir=$(silent_recheck_case silent-dead on 'paused: waiting on the vendor reply'); state="$dir/state"
   printf 'window=test:fm-until\nkind=ship\nharness=grok\nbackend=tmux\n' > "$state/until.meta"
   FM_FAKE_TMUX_CURRENT_COMMAND=zsh until_watch "$dir" 240
   wait_for_exit "$UNTIL_PID" 100 || { reap "$UNTIL_PID"; fail "a paused recheck for an exited agent did not wake with the flag on"; }
@@ -2580,7 +2575,7 @@ fm_test_run \
   test_afk_one_shot_never_hands_off_captain_held_under_away_record \
   test_captain_held_rechecked_under_a_quiet_record \
   test_paused_until_near_future_is_quiet_before_the_cadence \
-  test_paused_until_wrong_year_is_bounded_by_the_cadence \
+  test_paused_until_distant_future_waits_beyond_the_cadence \
   test_paused_until_that_passed_is_rechecked_before_the_cadence \
   test_pause_ceiling_dated_overdue_pause_opens_one_decision \
   test_pause_ceiling_absent_keeps_old_pauses_on_the_recheck \

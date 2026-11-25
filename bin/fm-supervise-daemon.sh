@@ -1420,7 +1420,7 @@ overdue_delivered_key() {  # <state> <task>
 }
 
 housekeeping() {  # <state>
-  local state=$1 now due f key task win marker age standing max_defer oldest pause_secs marker_epoch until bounded_until pause_reason dialog_name persisted append_rc size seen_identity overdue_marker overdue_task pause_identity pause_size record
+  local state=$1 now due f key task win marker age standing max_defer oldest pause_secs marker_epoch until pause_reason dialog_name persisted append_rc size seen_identity overdue_marker overdue_task pause_identity pause_size record
   now=$(_now)
   for overdue_marker in "$state"/.paused-overdue-*; do
     [ -f "$overdue_marker" ] || continue
@@ -1547,7 +1547,6 @@ housekeeping() {  # <state>
     age=$(( now - marker_epoch ))
     due="$state/.subsuper-pause-until-due-$key"
     until=
-    bounded_until=0
     if status_is_captain_held "$standing" && fm_afk_contract_away_present "$state"; then
       continue
     fi
@@ -1580,10 +1579,8 @@ housekeeping() {  # <state>
       continue
     fi
     if until=$(status_paused_until "$standing"); then
-      if [ "$now" -lt "$until" ] && [ "$age" -lt "$pause_secs" ]; then
+      if [ "$now" -lt "$until" ]; then
         continue
-      elif [ "$now" -lt "$until" ]; then
-        bounded_until=1
       elif [ "$(cat "$due" 2>/dev/null || true)" = "$until" ]; then
         [ "$age" -ge "$pause_secs" ] || continue
       fi
@@ -1606,11 +1603,7 @@ housekeeping() {  # <state>
             _now > "$marker"
           fi
         elif [ -n "$standing" ] && status_is_paused "$standing"; then
-          if [ "$bounded_until" -eq 1 ]; then
-            pause_reason="paused ${age}s (awaiting external, the declared time is beyond the recheck cadence; confirm the wait still holds): $win"
-          else
-            pause_reason="paused ${age}s (awaiting external, recheck whether the wait still holds): $win"
-          fi
+          pause_reason="paused ${age}s (awaiting external, recheck whether the wait still holds): $win"
           if escalate_add "$state" "$pause_reason"; then
             _now > "$marker"
             if [ -n "$until" ] && [ "$now" -ge "$until" ]; then
