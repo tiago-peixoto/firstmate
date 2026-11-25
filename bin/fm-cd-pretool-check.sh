@@ -162,6 +162,7 @@ FM_ROOT=${FM_ROOT_OVERRIDE:-$(CDPATH='' cd -- "$SCRIPT_DIR/.." 2>/dev/null && pw
 # the turn-end guard's separate marker-aware scope. Any failure to confirm the
 # checkout is inert (exit 0), never a block, so a broken environment never
 # denies a shell command.
+[ -z "${FM_TASK_ID:-}" ] || exit 0
 [ -f "$FM_ROOT/AGENTS.md" ] || exit 0
 [ -d "$FM_ROOT/bin" ] || exit 0
 command -v git >/dev/null 2>&1 || exit 0

@@ -61,6 +61,8 @@ The mid-turn pull warning in `bin/fm-guard.sh` judges watcher health differently
 ### Primary scope
 
 The guard first calls the shared primary scope.
+A process marked with `FM_TASK_ID` is a ship or scout worker and stays outside primary scope, even with inherited supervisor paths.
+Pi's primary extensions also stop before registering hooks or supervision tools for those workers.
 A secondmate home runs its own primary Firstmate session, so a genuine `.fm-secondmate-home` marker includes it whether the home is a linked worktree or plain clone.
 The marker must meet both of these conditions:
 
