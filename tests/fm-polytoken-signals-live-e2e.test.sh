@@ -224,7 +224,7 @@ wait_record "idle polytoken-hook " "the relaunched worker's turn never closed th
 pass "$VERSION: fm-control exit stops the real worker and the backend reads it dead"
 
 printf '# Polytoken guard report\nNo unresolved decisions.\n' > "$H/data/$ID/report.md"
-"$ROOT/bin/fm-captain-hold.sh" complete "$ID" --none >/dev/null || fail "could not complete the lab report inventory"
+"$ROOT/bin/fm-captain-hold.sh" complete "$ID" --none --no-work >/dev/null || fail "could not complete the lab report inventory"
 "$ROOT/bin/fm-teardown.sh" "$ID" > "$LAB/teardown.log" 2>&1 \
   || fail "fm-teardown failed: $(cat "$LAB/teardown.log")"
 [ ! -e "$META" ] || fail "teardown retained the lab task metadata"

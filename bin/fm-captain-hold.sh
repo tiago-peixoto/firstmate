@@ -31,7 +31,7 @@
 #   fm-captain-hold.sh bind <source-id> [<legacy-origin> | --any-origin]
 #   fm-captain-hold.sh unbind <source-id>
 #   fm-captain-hold.sh binding <source-id>
-#   fm-captain-hold.sh complete <origin-id> (--none | <task-id>...)
+#   fm-captain-hold.sh complete <origin-id> (--none | <task-id>...) (--work <task-id>... | --no-work)
 #   fm-captain-hold.sh verify <origin-id>
 #   fm-captain-hold.sh open <task-id> [--identity] [--distinguish-absent]
 #   fm-captain-hold.sh diverged
@@ -151,7 +151,13 @@
 # stores. `binding` prints the stored value verbatim and `answers` accepts it,
 # so the process-event runner's feed seam is unchanged.
 #
-# `complete` is the shared investigation and visual-review completion gate.
+# `complete` is the shared scout, investigation and visual-review completion gate.
+# Every invocation also requires --work with existing backlog task ids, or
+# --no-work attesting that this review has no recommended work to file.
+# Question ids precede the work option. Work ids are not captain-held calls.
+# The reviewed work inventory is unioned into data/<origin>/recommended-work
+# atomically, including after teardown; --no-work never erases earlier ids.
+# This records the agent's account, not an inferred inventory of report prose.
 # It attests, in the origin task's metadata, the reviewed inventory of
 # captain-held tasks that carry the origin's unresolved captain calls.
 # `--none` is an explicit semantic attestation that the just-reviewed surface
@@ -2159,29 +2165,52 @@ reconcile_note() {
 command_complete() {
   local origin=${1:-} meta previous='' supplied='' keys='' entry key status_file open has_meta=0 transfer_rc transfers=() resolved
   local resolved_how attested_by_prefix='' origin_state unrecorded_origin='' tmp
+  local work_mode='' work_ids='' work_record none=0
   [ "$#" -ge 2 ] || { usage >&2; exit 2; }
   validate_slug origin-id "$origin"
   shift
   meta="$STATE/$origin.meta"
   [ -f "$meta" ] && has_meta=1
+  # Ended reviews still share this lock so concurrent work inventories cannot overwrite each other.
+  mkdir -p -- "$STATE" || fail "cannot create the completion lock directory"
+  CAPTAIN_META_LOCK=$(fm_meta_lock_path "$meta") || fail "could not resolve task metadata lock"
+  fm_lock_acquire_wait "$CAPTAIN_META_LOCK"
+  CAPTAIN_META_LOCK_HELD=1
   if [ "$has_meta" = 1 ]; then
-    CAPTAIN_META_LOCK=$(fm_meta_lock_path "$meta") || fail "could not resolve task metadata lock"
-    fm_lock_acquire_wait "$CAPTAIN_META_LOCK"
-    CAPTAIN_META_LOCK_HELD=1
     [ -f "$meta" ] || fail "task metadata disappeared while recording completion"
   fi
   require_tasks_axi
   origin_exists_here "$origin" || fail "origin $origin is not owned by the active home $FM_HOME"
-  if [ "$#" -eq 1 ] && [ "$1" = --none ]; then
-    supplied=''
-  else
-    while [ "$#" -gt 0 ]; do
-      [ "$1" != --none ] || fail "--none cannot be combined with task ids"
-      validate_slug task-id "$1"
-      supplied="${supplied}${supplied:+ }$1"
-      shift
-    done
-  fi
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --none)
+        [ -z "$supplied$work_mode" ] && [ "$none" = 0 ] || fail "--none cannot be combined with task ids"
+        none=1
+        ;;
+      --work|--no-work)
+        [ -z "$work_mode" ] || fail "choose either --work or --no-work once"
+        work_mode=$1
+        ;;
+      *)
+        validate_slug task-id "$1"
+        case "$work_mode" in
+          --work)
+            task_show "$1" || fail "recommended work task $1 does not exist in this home's backlog"
+            work_ids="${work_ids}${work_ids:+ }$1"
+            ;;
+          --no-work) fail "--no-work cannot be combined with task ids" ;;
+          *)
+            [ "$none" = 0 ] || fail "--none cannot be combined with task ids"
+            supplied="${supplied}${supplied:+ }$1"
+            ;;
+        esac
+        ;;
+    esac
+    shift
+  done
+  [ "$none" = 1 ] || [ -n "$supplied" ] || fail "account for captain calls with --none or task ids"
+  [ -n "$work_mode" ] || fail "account for recommended work with --work <task-id>... or --no-work"
+  [ "$work_mode" != --work ] || [ -n "$work_ids" ] || fail "--work requires existing backlog task ids"
   if [ "$has_meta" = 1 ]; then
     previous=$(meta_value "$meta" decision_keys)
   fi
@@ -2209,6 +2238,16 @@ EOF
   open=$(status_open_decisions "$status_file")
   if [ -n "$open" ] && [ -z "$keys" ]; then
     fail "origin $origin still has open captain decisions in its status stream; hold a captain task for what remains, or answer them, before attesting --none"
+  fi
+
+  work_record="$DATA/$origin/recommended-work"
+  mkdir -p -- "$DATA/$origin" || fail "cannot create the work inventory directory"
+  work_ids=$(sorted_key_union "$(meta_value "$work_record" work_ids)" "$work_ids")
+  tmp=$(mktemp "$DATA/$origin/.recommended-work.XXXXXX") || fail "cannot stage the work inventory"
+  if ! printf 'work_reviewed=1\nwork_account=%s\nwork_ids=%s\n' "${work_mode#--}" "$work_ids" > "$tmp" \
+      || ! mv -f -- "$tmp" "$work_record"; then
+    rm -f -- "$tmp"
+    fail "cannot record recommended work for $origin"
   fi
 
   if [ "$has_meta" = 1 ]; then

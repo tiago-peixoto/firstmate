@@ -80,7 +80,17 @@ tasks_in() {  # <home> <tasks-axi args...>
   (cd "$home" && tasks-axi "$@")
 }
 
+# Existing question-only fixtures have no recommended work; work-account tests
+# call the raw entry point so an omitted account still reaches production.
 run_captain() {  # <home> <command args...>
+  if [ "${2:-}" = complete ]; then
+    run_captain_raw "$@" --no-work
+  else
+    run_captain_raw "$@"
+  fi
+}
+
+run_captain_raw() {  # <home> <command args...>
   local home=$1
   shift
   PATH="$home/fakebin:$PATH" REAL_TASKS_AXI="$TASKS_AXI_BIN" \
@@ -1344,6 +1354,48 @@ test_out_of_band_close_is_recordable() {
 
 # A post-teardown visual review completes against the surviving report and
 # durable tasks, with no volatile task metadata and no second decision database.
+test_completion_requires_recommended_work_account() {
+  local home id=review-work option first second
+  home=$(make_home recommended-work)
+  mkdir -p "$home/data/$id"
+  write_origin_meta "$home" "$id"
+  printf '# Review\n\nFix the export.\nFix validation.\nNo questions.\n' > "$home/data/$id/report.md"
+  if run_captain_raw "$home" complete "$id" --none > "$home/out" 2> "$home/err"; then
+    fail "completion accepted two unfiled recommendations without a work account"
+  fi
+  assert_grep 'work' "$home/err" "missing work account diagnostic"
+  [ ! -e "$home/data/$id/recommended-work" ] || fail "refusal recorded work"
+  for option in '--work' '--work missing' '--no-work --work missing' '--work --no-work'; do
+    # shellcheck disable=SC2086
+    if run_captain_raw "$home" complete "$id" --none $option > "$home/out" 2> "$home/err"; then
+      fail "completion accepted invalid work account: $option"
+    fi
+  done
+  tasks_in "$home" add export-fix "Fix export" --kind ship --repo sample >/dev/null
+  tasks_in "$home" add validation-fix "Fix validation" --kind ship --repo sample >/dev/null
+  run_captain_raw "$home" complete "$id" --none --work export-fix validation-fix >/dev/null \
+    || fail "filed recommended work was refused"
+  assert_grep 'work_ids=export-fix,validation-fix' "$home/data/$id/recommended-work" "filed work not recorded"
+  run_captain_raw "$home" complete "$id" --none --no-work >/dev/null || fail "no-work was refused"
+  assert_grep 'work_ids=export-fix,validation-fix' "$home/data/$id/recommended-work" "later review lost filed work"
+  rm "$home/state/$id.meta" "$home/data/$id/recommended-work"
+  run_captain_raw "$home" complete "$id" --none --no-work >/dev/null || fail "post-teardown no-work was refused"
+  assert_grep 'work_reviewed=1' "$home/data/$id/recommended-work" "no-work not recorded"
+  assert_grep 'work_ids=' "$home/data/$id/recommended-work" "empty work inventory not recorded"
+  [ ! -e "$home/state/$id.meta" ] || fail "post-teardown completion recreated metadata"
+  run_captain_raw "$home" complete "$id" --none --work export-fix > "$home/first.out" &
+  first=$!
+  run_captain_raw "$home" complete "$id" --none --work validation-fix > "$home/second.out" &
+  second=$!
+  wait "$first" || fail "first concurrent completion failed"
+  wait "$second" || fail "second concurrent completion failed"
+  assert_grep 'work_ids=export-fix,validation-fix' "$home/data/$id/recommended-work" "concurrent review lost work"
+  FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" FM_DATA_OVERRIDE="$home/data" \
+    FM_CONFIG_OVERRIDE="$home/config" "$ROOT/bin/fm-decision-hold.sh" complete "$id" --none --work export-fix >/dev/null \
+    || fail "legacy completion mapped a work id as a decision key"
+  pass "completion requires and records a recommended-work account"
+}
+
 test_visual_review_uses_shared_completion_owner() {
   local home id json
   home=$(make_home visual-review)
@@ -3564,7 +3616,7 @@ EOF
     || fail "could not hold the sibling captain call"
   PATH="$home/fakebin:$PATH" FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" \
     FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$home/config" \
-    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" >/dev/null \
+    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" --no-work >/dev/null \
     || fail "completion gate failed for the relocated answer-before-replay fixture"
   cat > "$home/fakebin/treehouse" <<'SH'
 #!/usr/bin/env bash
@@ -3646,7 +3698,7 @@ EOF
     || fail "could not hold the sibling captain call"
   PATH="$home/fakebin:$PATH" FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" \
     FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$home/config" \
-    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" >/dev/null \
+    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" --no-work >/dev/null \
     || fail "completion gate failed for the relocated captain hold"
 
   PATH="$home/fakebin:$PATH" FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" \
@@ -5359,6 +5411,7 @@ test_hold_stamp_precedes_hold_visibility
 test_interrupted_answer_preserves_hold_age
 test_deferral_leaves_captains_call_until_due
 test_out_of_band_close_is_recordable
+test_completion_requires_recommended_work_account
 test_visual_review_uses_shared_completion_owner
 test_none_inventory_and_resolved_prose_do_not_create_holds
 test_completion_keeps_an_armed_pr_identity_last
