@@ -14,7 +14,7 @@
 # so that line is published on the parent channel at once through
 # bin/fm-parent-channel-lib.sh from this unstamped payload:
 #   <state> [key=child-outcome-<child>-<state>-<fp8>]: child <child> <state>: <note> [pr=<url>] [mode=<mode>] [yolo=<posture>] [report=data/<child>/report.md]
-# carrying the child's recorded PR, delivery mode, merge posture, and scout
+# carrying the terminal event's PR, delivery mode, merge posture, and scout
 # report pointer, without consulting fm-crew-state.sh. A ship `done:` is
 # published only when bin/fm-dod-lib.sh accepts the named head, so an
 # unpushed copy is not reported upstream as ready. The cadence path uses
@@ -428,31 +428,13 @@ terminal_outcome_corroborated() { # <state> <last-status-line> <state-line>
   [ "$declared" = "$state" ]
 }
 
-# The task's delivered PR. Recorded meta pr= is authoritative; without one,
-# the fallback scrape accepts only a terminal line in a mode's ready-signal
-# shape (`done: PR <url>` or `done: PR <url> checks green`, optionally carrying
-# an emission-time tag this scrape steps over without reading), so a PR a
-# worker merely mentioned in prose is never claimed as the delivery.
-# With the home's config/pr-register-scan opt-in present, the terminal line
-# instead counts when its note is a ready report accepted by
-# fm_dod_ready_note_url, naming a GitHub-shaped or fm_pr_url_parse forge URL,
-# and it also replaces a recorded PR the status log named
-# (fm_dod_status_names_pr); a recorded PR the log never named stays.
-# A scout never delivers a PR, so it never carries one.
-pr_for_task() { # <meta> <terminal-line> <status-file>
-  local meta=$1 terminal=$2 status=$3 value ready=
+# A relay describes this terminal event, not the last PR registered for a task
+# that may deliver several. Registration policy still owns metadata updates.
+pr_for_task() { # <meta> <terminal-line>
+  local meta=$1 terminal=$2 value ready=
   local github_shape='^https?://[^[:space:])"]+/pull/[0-9]+$'
   [ "$(meta_field "$meta" kind)" != scout ] || return 0
   value=$(meta_field "$meta" pr)
-  if [ ! -e "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}/pr-register-scan" ]; then
-    if [ -z "$value" ] && [ -n "$terminal" ]; then
-      value=$(printf '%s\n' "$terminal" \
-        | sed -nE 's|^done( \[at=[^]]*\])?: PR (https?://[^[:space:])"]+/pull/[0-9]+)( checks green)?$|\2|p' \
-        | head -1 || true)
-    fi
-    clean_field "$value"
-    return 0
-  fi
   if [ "$(status_line_verb "$terminal")" = "done" ]; then
     ready=$(fm_dod_ready_note_url "$(status_line_note "$terminal")") || ready=
     if [ -n "$ready" ] && ! fm_pr_url_parse "$ready" \
@@ -460,7 +442,7 @@ pr_for_task() { # <meta> <terminal-line> <status-file>
       ready=
     fi
   fi
-  if [ -n "$ready" ] && { [ -z "$value" ] || fm_dod_status_names_pr "$status" "$value"; }; then
+  if [ -n "$ready" ]; then
     value=$ready
   fi
   clean_field "$value"
@@ -543,7 +525,7 @@ report_child_ledger_locked() { # <id> <meta>
   status="$STATE/$id.status"
   last=$(child_terminal_ledger_line "$status") || return 0
   state=$(status_line_verb "$last")
-  pr=$(pr_for_task "$meta" "$last" "$status")
+  pr=$(pr_for_task "$meta" "$last")
   incarnation=$(meta_incarnation "$meta")
   fingerprint=$(sha256_text "$incarnation|$id|$state|ledger|$last")
   ! fm_dod_ship_done_is_validation_handoff "$(meta_field "$meta" kind)" "$(meta_field "$meta" mode)" "$last" \
