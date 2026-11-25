@@ -37,7 +37,9 @@
 # deliberately long-blocking poll would still serialize that home's short
 # interactive commands behind its wait window.
 # fm_remote_job_command_preemptible names the read-only long-poll class
-# (fm-remote-delta-read.sh, the reply-log delta read). The worker preempts a
+# (fm-remote-delta-read.sh, the reply-log delta read). The worker exempts its
+# zero-wait snapshots so channel freshness cannot starve behind other jobs.
+# The worker preempts a
 # running preemptible job on its next queue pass after a non-preemptible job is
 # queued for the same home and publishes exit 76 with emptied stdout and
 # stderr, distinct from the poll's exit 75 elapsed-window-with-no-data result. The delta read is

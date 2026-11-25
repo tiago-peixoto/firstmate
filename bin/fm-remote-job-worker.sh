@@ -892,7 +892,8 @@ worker_run_job() { # <account-home> <job-dir>
   command=${argv[0]}
   case "$command" in fm-*.sh) ;; *) worker_publish_result "$job" 126; return ;; esac
   case "$command" in */*|*..*) worker_publish_result "$job" 126; return ;; esac
-  if fm_remote_job_command_preemptible "$command"; then preemptible=1; fi
+  # A zero-wait reply snapshot must finish even on a home with a busy job queue.
+  if fm_remote_job_command_preemptible "$command" && [ "${argv[4]-}" != 0 ]; then preemptible=1; fi
   command_path="$root/bin/$command"
   [ -f "$command_path" ] && [ ! -L "$command_path" ] && [ -x "$command_path" ] || {
     worker_publish_result "$job" 126
