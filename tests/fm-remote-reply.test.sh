@@ -1087,9 +1087,9 @@ preempted_rc=$?
 set -e
 [ "$preempted_rc" -eq 75 ] \
   || fail "a preempted reply poll did not report a closed window: $preempted_rc"
-assert_absent "$PARENT/state/remote-replies/ios.caught-up" \
-  "a preempted reply poll published a caught-up watermark"
-pass "a preempted reply poll reports a closed window without publishing channel freshness"
+[ -s "$PARENT/state/remote-replies/ios.caught-up" ] \
+  || fail "a preempted reply poll never completed a nonwaiting freshness read"
+pass "a preempted reply poll establishes freshness through a nonwaiting read"
 
 # The per-cycle liveness probe is a non-preemptible job for the same remote home,
 # so the job worker preempts the listener's long-poll on every watcher cycle.

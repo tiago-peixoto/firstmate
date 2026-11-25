@@ -310,7 +310,7 @@ cmd_arm() {
 }
 
 # The reader's exit when its wait window closed with no complete new line. That
-# is the one moment this channel can prove it is not behind: the window opened
+# proves this channel is not behind: the window opened
 # with the remote log matching the committed cursor exactly (any pending bytes
 # would have returned a delta at once), so the parent had read that log through
 # its end at window START. The window start, not its close, is therefore the
@@ -322,8 +322,9 @@ WINDOW_CLOSED_EMPTY=75
 # per-cycle liveness probe. The read is cursor-anchored and non-destructive, so a
 # preempted window loses nothing: it is a window that closed early, and the
 # runner relistens exactly as after WINDOW_CLOSED_EMPTY instead of reading it as
-# a failed read that releases the listener's claim. It proves nothing about the
-# channel being caught up, so it records no watermark.
+# a failed read that releases the listener's claim. Preemption itself proves
+# no freshness, so a nonwaiting read follows it. That read cannot be preempted
+# by other queued jobs and publishes either a delta or a truthful watermark.
 JOB_PREEMPTED=76
 
 cmd_source() {
@@ -337,6 +338,13 @@ cmd_source() {
   "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-delta-read.sh \
     "$REMOTE_LOG" "$CURSOR_OFFSET" "$CURSOR_HASH" "$WAIT_SECONDS" \
     < /dev/null > "$output" || rc=$?
+  if [ "$rc" -eq "$JOB_PREEMPTED" ]; then
+    started=$(fm_pending_reply_now)
+    rc=0
+    "$SCRIPT_DIR/fm-on.sh" "$id" fm-remote-delta-read.sh \
+      "$REMOTE_LOG" "$CURSOR_OFFSET" "$CURSOR_HASH" 0 \
+      < /dev/null > "$output" || rc=$?
+  fi
   if [ "$rc" -eq "$WINDOW_CLOSED_EMPTY" ]; then
     rm -f -- "$output"
     fm_pending_reply_note_remote_channel_caught_up "$STATE" "$id" "$started" || true
