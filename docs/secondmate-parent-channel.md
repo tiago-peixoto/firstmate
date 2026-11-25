@@ -33,6 +33,9 @@ Every captain-facing outcome that leaves durable evidence in the mate home is pu
 | Answer to a marked request | a correlated line guarded by the pending-reply record | `bin/fm-secondmate-report.sh`, which resolves the parent channel from the mate home; the pending-reply guard repairs a line stranded in the local mate's same-basename status file before recovery or escalation; `--task <child>` adds the child's `bin/fm-crew-state.sh` verdict, which the parent records beside the answer |
 | An outcome that exists only in the mate's reasoning | none | the charter and the `AGENTS.md` carve-outs only |
 
+A relayed ready report's `pr=` names the PR in that event, even when task metadata records a different PR.
+This does not change registration policy or metadata.
+Other terminal reports may fall back to the recorded PR, and scouts never carry a PR field.
 The ledger delivery reads files, plus a local git reachability check on a ship `done:` with no delivery record yet (`bin/fm-dod-lib.sh`): it calls no harness, no forge, and no current-state reader, so it is identical for every harness and runtime backend.
 A no-mistakes child's validation handoff line is the one `done:` it never delivers: that line asks the mate to start the validation run, so the parent hears about the child only at its ready report (`bin/fm-dod-lib.sh` owns the line's wording).
 Each delivery is keyed with the first eight hexadecimal characters of its receipt fingerprint and uses the shared append contract above, and the ledger path reuses the inactive scan's per-fingerprint receipts, so a replayed poll or restart cannot deliver an event twice while a genuinely new terminal event is delivered again.

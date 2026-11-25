@@ -553,10 +553,8 @@ test_secondmate_ledger_delivery_carries_report_and_failure() {
   pass "ledger delivery carries the report pointer, the failed verb, and each new terminal line"
 }
 
-# Children whose ready lines differ only in what config/pr-register-scan opts
-# into: a ready line after one naming the recorded PR, a ready line beside a
-# recorded PR the log never named, a GitLab ready line after one naming the
-# recorded PR, and a GitLab ready line with no PR recorded.
+# Exercise both previously reported and unreported replacements without
+# confusing the last registered PR with the one this event delivers.
 write_replacement_children() {
   write_child "$MATE" replaced $'done: PR https://example.test/owner/repo/pull/1 checks green\nworking: reopening\ndone: PR https://example.test/owner/repo/pull/22 checks green'
   write_child "$MATE" kept 'done: PR https://example.test/owner/repo/pull/23 checks green'
@@ -574,10 +572,7 @@ assert_child_report() { # <child> <expected line after the key> <failure>
     || fail "$3: $(cat "$MAIN/state/mate.status")"
 }
 
-# With config/pr-register-scan, the child's report names the PR its newest
-# ready line delivered once the log shows that line replacing the recorded PR,
-# including a GitLab ready line; a recorded PR the log never named is the
-# supervisor's own choice and stays.
+# Registration policy must not change the identity of a relayed event.
 test_ledger_report_names_a_replacement_pr() {
   make_world ledger-replacement; bind_secondmate local
   : > "$MATE/config/pr-register-scan"
@@ -585,31 +580,29 @@ test_ledger_report_names_a_replacement_pr() {
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
   assert_child_report replaced "child replaced done: PR https://example.test/owner/repo/pull/22 checks green pr=https://example.test/owner/repo/pull/22 mode=no-mistakes yolo=off" \
     "the report kept the replaced PR"
-  assert_child_report kept "child kept done: PR https://example.test/owner/repo/pull/23 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
-    "the report overrode a PR the log never named"
+  assert_child_report kept "child kept done: PR https://example.test/owner/repo/pull/23 checks green pr=https://example.test/owner/repo/pull/23 mode=no-mistakes yolo=off" \
+    "the report used metadata instead of the delivered PR"
   assert_child_report gitlab "child gitlab done: PR https://gitlab.example/group/sub/project/-/merge_requests/8 checks green pr=https://gitlab.example/group/sub/project/-/merge_requests/8 mode=no-mistakes yolo=off" \
     "the report kept the recorded PR instead of the GitLab replacement"
   assert_child_report unrecorded "child unrecorded done: PR https://gitlab.example/group/sub/project/-/merge_requests/9 checks green pr=https://gitlab.example/group/sub/project/-/merge_requests/9 mode=no-mistakes yolo=off" \
     "the report dropped an unrecorded GitLab ready PR"
-  pass "with the scan opt-in, a child report names a replacement or forge PR and keeps a recorded PR the log never named"
+  pass "with the scan opt-in, a child report names the PR its terminal event delivered"
 }
 
-# Without config/pr-register-scan, the same children report exactly what main
-# reports: a recorded PR always stands, and only a GitHub-shaped ready line
-# fills in a missing one.
-test_ledger_report_without_scan_opt_in_keeps_recorded_pr() {
+# The default home must also relay the terminal event's own PR.
+test_ledger_report_without_scan_opt_in_names_terminal_pr() {
   make_world ledger-no-replacement; bind_secondmate local
   write_replacement_children
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
-  assert_child_report replaced "child replaced done: PR https://example.test/owner/repo/pull/22 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
-    "a newer ready line replaced the recorded PR without the opt-in"
-  assert_child_report kept "child kept done: PR https://example.test/owner/repo/pull/23 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
-    "the report overrode the recorded PR without the opt-in"
-  assert_child_report gitlab "child gitlab done: PR https://gitlab.example/group/sub/project/-/merge_requests/8 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
-    "a GitLab ready line replaced the recorded PR without the opt-in"
-  assert_child_report unrecorded "child unrecorded done: PR https://gitlab.example/group/sub/project/-/merge_requests/9 checks green mode=no-mistakes yolo=off" \
-    "a GitLab ready line carried a PR without the opt-in"
-  pass "without the scan opt-in, a child report keeps the recorded PR and accepts only a GitHub-shaped ready line"
+  assert_child_report replaced "child replaced done: PR https://example.test/owner/repo/pull/22 checks green pr=https://example.test/owner/repo/pull/22 mode=no-mistakes yolo=off" \
+    "the newer ready line carried the previously registered PR"
+  assert_child_report kept "child kept done: PR https://example.test/owner/repo/pull/23 checks green pr=https://example.test/owner/repo/pull/23 mode=no-mistakes yolo=off" \
+    "the report used metadata instead of the delivered PR"
+  assert_child_report gitlab "child gitlab done: PR https://gitlab.example/group/sub/project/-/merge_requests/8 checks green pr=https://gitlab.example/group/sub/project/-/merge_requests/8 mode=no-mistakes yolo=off" \
+    "the GitLab ready line carried the previously registered PR"
+  assert_child_report unrecorded "child unrecorded done: PR https://gitlab.example/group/sub/project/-/merge_requests/9 checks green pr=https://gitlab.example/group/sub/project/-/merge_requests/9 mode=no-mistakes yolo=off" \
+    "the GitLab ready line lost its PR without the opt-in"
+  pass "without the scan opt-in, a child report names the PR its terminal event delivered"
 }
 
 # A PR URL a worker only ever mentioned in prose is never claimed as the
@@ -1549,7 +1542,7 @@ test_reconciliation_sets_no_forge_mode_for_state_read
 test_terminal_outcome_never_names_a_pr_the_run_did_not_open
 test_terminal_outcome_takes_the_pr_its_run_opened
 test_ledger_report_names_a_replacement_pr
-test_ledger_report_without_scan_opt_in_keeps_recorded_pr
+test_ledger_report_without_scan_opt_in_names_terminal_pr
 test_status_log_sourced_outcome_keeps_its_own_pr
 test_status_log_outcome_keeps_gitlab_and_gerrit_reviews
 test_status_log_outcome_never_borrows_an_earlier_pr
