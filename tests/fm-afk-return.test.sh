@@ -442,7 +442,7 @@ test_return_brief_composes_from_record_store_and_held_set() {
   [ "$health_line" -lt "$words_line" ] && [ "$words_line" -lt "$waiting_line" ] && [ "$waiting_line" -lt "$failed_line" ] \
     || fail "the brief sections are out of order (health $health_line, instructions $words_line, waiting $waiting_line, failed $failed_line)"
   assert_contains "$out" $'  your words at entry:\n    merge the windows fix when green, then cut a prerelease\n    if the install deadlocks abort the competing run\n' "the captain's verbatim words were not carried into the brief"
-  assert_contains "$out" $'  the away session acted on them:\n    - fix-windows: per your away instructions: merged the windows fix PR once checks went green\n    - prerelease: per your away instructions: filed and dispatched the prerelease cut; it needs your review\nWaiting on you:\n' "the session's account listed something other than exactly the two actions taken under the words"
+  assert_contains "$out" $'  actions recorded under them:\n    - fix-windows: per your away instructions: merged the windows fix PR once checks went green\n    - prerelease: per your away instructions: filed and dispatched the prerelease cut; it needs your review\nWaiting on you:\n' "the session's account listed something other than exactly the two actions taken under the words"
   assert_not_contains "$out" $'acted on them:\n    - other:' "an outcome that did not cite the words was listed as an action under them"
   assert_not_contains "$out" $'acted on them:\n    - held-note:' "a summary opening with the marker's words but no colon was listed as an action under them"
   assert_not_contains "$out" 'still building' "the return brief rendered a silent routine outcome"
@@ -655,24 +655,25 @@ test_return_brief_lists_landed_work_awaiting_cleanup() {
 }
 
 test_return_brief_keeps_refresh_history() {
-  local dir out first_epoch
+  local dir out first_epoch replaced_at
   dir="$TMP_ROOT/brief-refresh"
   install_runner "$dir"
   contract_in "$dir" enter --words 'first mandate: merge task first PR when green' >/dev/null 2>&1 || fail "could not confirm the first mandate"
   first_epoch=$(contract_in "$dir" field entered_epoch)
   outcome_in "$dir" append --task first --verdict routine \
-    --summary 'completed before the mandate refresh' --wake 'signal: first.status' >/dev/null \
+    --summary 'per your away instructions: main dispatched the requested fix before the mandate refresh' --wake 'signal: first.status' >/dev/null \
     || fail "could not seed the pre-refresh outcome"
   contract_in "$dir" enter --words $'replacement mandate\n\n' >/dev/null 2>&1 || fail "could not confirm the replacement mandate"
+  replaced_at=$(contract_in "$dir" field confirmed)
   [ "$(contract_in "$dir" field entered_epoch)" = "$first_epoch" ] || fail "refresh changed the away-window boundary"
   touch "$dir/home/state/.last-watcher-beat"
   : > "$dir/home/state/.fake-drain"
   out=$(run_return "$dir" begin) || fail "refreshed posture return did not clear: $out"
-  assert_contains "$out" $'  your words superseded at ' "the superseded words were omitted"
+  assert_contains "$out" "  your words superseded at $replaced_at:" "the replacement time must match the recorded time"
   assert_contains "$out" '    first mandate: merge task first PR when green' "the superseded words were not rendered verbatim"
   assert_contains "$out" $'  your words at entry:\n    replacement mandate' "the final words were omitted"
-  assert_contains "$out" 'first: completed before the mandate refresh' "the pre-refresh outcome was omitted"
-  assert_contains "$out" $'    replacement mandate\n    \n  the away session took no action under them.\nWaiting on you:' "the return brief dropped a trailing blank line from the final words or lost the empty account"
+  assert_contains "$out" 'first: per your away instructions: main dispatched the requested fix before the mandate refresh' "main's pre-refresh action was omitted"
+  assert_contains "$out" $'    replacement mandate\n    \n  actions recorded under them:\n' "the return brief dropped a trailing blank line or attributed main's action only to the away session"
   [ -f "$dir/home/state/afk-contracts/$first_epoch.afk-contract" ] || fail "return did not archive the final session record at the canonical path"
   pass "a refreshed posture keeps its original window, superseded mandate, and earlier outcomes"
 }
