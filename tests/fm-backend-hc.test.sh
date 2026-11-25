@@ -381,7 +381,7 @@ test_pi_composer_requires_native_idle_identity_and_empty_rows() {
   tag=$(hometag_of)
   write_terminal "$D" t1 live fm-a1 "$tag" pi pi
   for app in pi other ''; do
-    for state in idle done working blocked error ''; do
+    for state in idle 'done' working blocked error ''; do
       jq --arg app "$app" --arg state "$state" '.status = {app:$app,state:$state}' \
         "$D/t1.json" > "$D/next.json"
       mv "$D/next.json" "$D/t1.json"
@@ -390,7 +390,7 @@ test_pi_composer_requires_native_idle_identity_and_empty_rows() {
         expected=unknown
         if [ "$app" = pi ]; then
           if [ -n "$text" ]; then expected=pending
-          elif [ "$state" = idle ] || [ "$state" = done ]; then expected=empty; fi
+          elif [ "$state" = idle ] || [ "$state" = 'done' ]; then expected=empty; fi
         fi
         out=$(hc_shell 'fm_backend_composer_state hc fmtest:t1 fm-a1')
         assert_equals "$out" "$expected" "Pi composer app=$app state=$state text=$text"
