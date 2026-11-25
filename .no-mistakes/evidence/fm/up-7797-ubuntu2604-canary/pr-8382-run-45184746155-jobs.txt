@@ -1,0 +1,13 @@
+# gh run view 45184746155 -R kunchenguid/firstmate (pull_request, head 2fe88db2, PR 8382 unlabelled, cross-repository)
+success	Test coverage guard
+success	Repo invariants
+skipped	Behavior tests (herdr-core)
+skipped	Ubuntu 26.04 canary
+skipped	Stock macOS Bash snapshot compatibility
+skipped	Behavior timing aggregate
+skipped	
+skipped	
+skipped	Behavior tests (Herdr)
+skipped	Behavior portable parallel 1
+skipped	Behavior portable parallel 2
+failure	Full suite
