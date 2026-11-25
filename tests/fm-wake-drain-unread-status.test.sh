@@ -33,6 +33,28 @@ prime_cursor() {  # <state> <status-file>
     || fail "bootstrap drain failed while priming the unread cursor"
 }
 
+test_unhandled_steering_surfaces_without_a_doorbell() {
+  local dir state inbox out
+  dir=$(make_case steering-without-doorbell); state="$dir/state"
+  inbox="$dir/parent route/mate.inbox"
+  mkdir -p "$inbox/handled" "$state/unrelated.inbox"
+  printf 'read me' > "$inbox/002.msg"
+  printf 'read me first' > "$inbox/001.msg"
+  printf 'already handled' > "$inbox/handled/000.msg"
+  printf 'another worker' > "$state/unrelated.inbox/003.msg"
+  out=$(FM_TASK_INBOX="$inbox" FM_STATE_OVERRIDE="$state" "$DRAIN") || fail "steering drain failed"
+  assert_contains "$out" "UNREAD STEERING" "an empty wake queue must still surface steering"
+  assert_contains "$out" "$inbox/001.msg" "the oldest unhandled instruction must be named"
+  assert_contains "$out" "$inbox/002.msg" "all unhandled instructions must be named"
+  assert_not_contains "$out" '000.msg' "handled instructions must stay absent"
+  assert_not_contains "$out" '003.msg' "another worker's inbox must stay private"
+  [ -f "$inbox/001.msg" ] || fail "presentation must not acknowledge steering"
+  mv "$inbox/"*.msg "$inbox/handled/"
+  out=$(FM_TASK_INBOX="$inbox" FM_STATE_OVERRIDE="$state" "$DRAIN") || fail "empty inbox drain failed"
+  assert_not_contains "$out" 'UNREAD STEERING' "an empty inbox must stay silent"
+  pass "the drain surfaces only its own unread steering without acknowledging it"
+}
+
 test_incident_note_answer_buried_under_routine_note_surfaces_both() {
   local dir state out status
   dir=$(make_case incident-buried-note)
@@ -449,6 +471,7 @@ test_routine_working_and_covered_done_stay_silent_on_the_empty_queue() {
   pass "routine working and branch-covered done lines print nothing on an empty-queue drain"
 }
 
+test_unhandled_steering_surfaces_without_a_doorbell
 test_incident_note_answer_buried_under_routine_note_surfaces_both
 test_already_presented_notes_are_not_replayed
 test_brand_new_note_after_presentation_is_surfaced
