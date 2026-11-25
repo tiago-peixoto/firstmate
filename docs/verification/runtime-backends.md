@@ -3735,7 +3735,7 @@ A scout ran end to end in a scratch home with `HOME` and `TREEHOUSE_ROOT` in the
 FM_SPAWN_NO_GUARD=1 bin/fm-spawn.sh e2e1 "$R/home/projects/demo" --scout --backend hc --harness "$R/agents/claude/claude --fake"
 bin/fm-peek.sh e2e1
 bin/fm-send.sh e2e1 'Please also report the second line.'
-bin/fm-captain-hold.sh complete e2e1 --none
+bin/fm-captain-hold.sh complete e2e1 --none --no-work
 bin/fm-teardown.sh e2e1
 ```
 

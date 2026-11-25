@@ -856,7 +856,7 @@ $SCOUT_KEPT
 
 # Rules
 1. Never push to any remote and never open a PR.
-2. Stay inside this worktree; outside it, write only $SCOUT_OUTSIDE_WRITES, except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none\`, exactly as specified under Definition of done.
+2. Stay inside this worktree; outside it, write only $SCOUT_OUTSIDE_WRITES, except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none --no-work\`, exactly as specified under Definition of done.
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`$STATUS_APPEND\`
@@ -886,9 +886,9 @@ Write your findings to \`$DATA/$ID/report.md\`.
 The report must stand alone: what you did, what you found, the evidence (commands run, output, file:line references), and what you recommend.
 $LAVISH_LINE
 Before reporting done, read and follow \`$FM_ROOT/.agents/skills/captain-hold-lifecycle/SKILL.md\` and pass its shared completion gate for the report and any visual review.
-Only when the reviewed inventory is empty, run \`FM_HOME=$(shell_quote "$FM_HOME") bash $(shell_quote "$FM_ROOT/bin/fm-captain-hold.sh") complete $(shell_quote "$ID") --none\`.
+Only when there are no captain calls and no recommended work to file, run \`FM_HOME=$(shell_quote "$FM_HOME") bash $(shell_quote "$FM_ROOT/bin/fm-captain-hold.sh") complete $(shell_quote "$ID") --none --no-work\`.
 This exception permits only that command, not direct metadata edits, another task, or any backlog write.
-If any captain call remains, ask firstmate to register the inventory and attest completion before you report done.
+If any captain call or recommended work remains, ask firstmate to register the inventory and attest completion before you report done.
 If the command refuses, report the refusal to firstmate and stop rather than bypassing the completion gate.
 When the report is complete, append \`done [at=<epoch>]: {one-line conclusion}\` to the status file and stop.
 If your findings reveal work that should ship (e.g. you reproduced a bug and the fix is clear), say so in the report; firstmate may promote this task in place, and you would then receive mode-specific ship instructions as a follow-up message.

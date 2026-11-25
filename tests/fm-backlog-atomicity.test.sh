@@ -1616,7 +1616,7 @@ test_completion_closes_a_scout_with_its_report() {
   printf 'findings\n' > "$(home_of "$case_dir")/data/$id/report.md"
   FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$(home_of "$case_dir")" \
     PATH="$case_dir/fakebin:$PATH" \
-    "$ROOT/bin/fm-captain-hold.sh" complete "$id" --none >/dev/null \
+    "$ROOT/bin/fm-captain-hold.sh" complete "$id" --none --no-work >/dev/null \
     || fail "could not record the scout's completed captain-call inventory"
 
   out=$(run_teardown "$case_dir" "$id") || fail "teardown failed: $out"
@@ -1712,7 +1712,7 @@ test_completion_records_a_relative_report_for_relocated_data() {
   printf 'findings\n' > "$relocated/$id/report.md"
   FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$(home_of "$case_dir")" \
     FM_DATA_OVERRIDE="$relocated////" PATH="$case_dir/fakebin:$PATH" \
-    "$ROOT/bin/fm-captain-hold.sh" complete "$id" --none >/dev/null \
+    "$ROOT/bin/fm-captain-hold.sh" complete "$id" --none --no-work >/dev/null \
     || fail "could not record the relocated scout's captain-call inventory"
 
   out=$(FM_DATA_OVERRIDE="$relocated////" run_teardown "$case_dir" "$id") \
@@ -1740,7 +1740,7 @@ test_space_containing_scout_report_marker_replays() {
   printf 'findings\n' > "$data/$id/report.md"
   FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$(home_of "$case_dir")" \
     FM_DATA_OVERRIDE="$data" PATH="$case_dir/fakebin:$PATH" \
-    "$ROOT/bin/fm-captain-hold.sh" complete "$id" --none >/dev/null \
+    "$ROOT/bin/fm-captain-hold.sh" complete "$id" --none --no-work >/dev/null \
     || fail "could not record the space-path scout's captain-call inventory"
   break_verb "$case_dir" "done"
   marker="$(home_of "$case_dir")/state/$id.backlog-close"

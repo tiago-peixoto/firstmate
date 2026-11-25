@@ -11,7 +11,8 @@
 #   id <origin> <key>                      -> prints the legacy <origin>-decision-<key> identity
 #   hold <origin> <key> --title --reason [--repo]
 #                                          -> hold <origin>-decision-<key> --origin <origin> ...
-#   complete <origin> (--none | <key>...)  -> complete <origin> (--none | <origin>-decision-<key>...)
+#   complete <origin> (--none | <key>...) (--work <task-id>... | --no-work)
+#     Maps question keys to <origin>-decision-<key>; forwards the work account unchanged.
 #   verify <origin>                        -> verify <origin>
 #   resolve <origin> <key> --decision-file <f> --routed-to <id>...
 #                                          -> answer <origin>-decision-<key> with the routed ids
@@ -177,19 +178,20 @@ command_resolve() {
 }
 
 command_complete() {
-  local origin=${1:-} mapped=''
+  local origin=${1:-} key mapped=()
   [ "$#" -ge 2 ] || { usage >&2; exit 2; }
   validate_slug origin-id "$origin"
   shift
-  if [ "$#" -eq 1 ] && [ "$1" = --none ]; then
-    exec "$CAPTAIN_HOLD" complete "$origin" --none
-  fi
-  for key in "$@"; do
-    [ "$key" != --none ] || fail "--none cannot be combined with decision keys"
-    mapped="${mapped}${mapped:+ }$(compose "$origin" "$key")"
+  while [ "$#" -gt 0 ]; do
+    key=$1
+    case "$key" in
+      --work|--no-work) break ;;
+      --none) mapped+=("$key") ;;
+      *) mapped+=("$(compose "$origin" "$key")") ;;
+    esac
+    shift
   done
-  # shellcheck disable=SC2086  # mapped is a validated space-separated slug list.
-  exec "$CAPTAIN_HOLD" complete "$origin" $mapped
+  exec "$CAPTAIN_HOLD" complete "$origin" "${mapped[@]}" "$@"
 }
 
 command_close() {  # <origin> <key> <flag-args...>

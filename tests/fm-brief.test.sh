@@ -1170,14 +1170,14 @@ test_scout_completion_write_exception_is_task_scoped() {
     FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" sample --scout >/dev/null \
       || fail "scout completion scaffold failed"
     brief="$home/data/$id/brief.md"
-    command="FM_HOME='$home' bash '$ROOT/bin/fm-captain-hold.sh' complete '$id' --none"
-    assert_grep "except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none\`, exactly as specified under Definition of done." "$brief" \
+    command="FM_HOME='$home' bash '$ROOT/bin/fm-captain-hold.sh' complete '$id' --none --no-work"
+    assert_grep "except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none --no-work\`, exactly as specified under Definition of done." "$brief" \
       "scout outside-write rule did not name its exact completion gate"
-    assert_grep "Only when the reviewed inventory is empty, run \`$command\`." "$brief" \
+    assert_grep "Only when there are no captain calls and no recommended work to file, run \`$command\`." "$brief" \
       "scout did not receive the empty-inventory command for its own task and home"
     assert_grep 'This exception permits only that command, not direct metadata edits, another task, or any backlog write.' "$brief" \
       "scout completion exception granted broader write authority"
-    assert_grep 'If any captain call remains, ask firstmate to register the inventory and attest completion before you report done.' "$brief" \
+    assert_grep 'If any captain call or recommended work remains, ask firstmate to register the inventory and attest completion before you report done.' "$brief" \
       "scout was instructed to write a non-empty inventory itself"
     assert_grep 'If the command refuses, report the refusal to firstmate and stop rather than bypassing the completion gate.' "$brief" \
       "scout was allowed to bypass a refused completion"
