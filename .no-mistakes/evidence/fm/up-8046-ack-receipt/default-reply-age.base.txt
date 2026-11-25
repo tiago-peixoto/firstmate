@@ -1,0 +1,47 @@
+config/:  env FM_CONTRIBUTIONS_REPLY_AGE=86400
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+[exit 0]
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review-comment:31:2026-09-16T08:00:00Z:",
+    "type": "review-comment",
+    "source": "https://github.com/o/r/pull/8#discussion_r31",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "Why is this retried?",
+    "at": "2026-09-16T08:00:00Z",
+    "unanswered": true,
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z:
+[exit 0]
+--- saved record: pending tokens, receipts, event previews
+{"pending":[],"has_receipts":false,"receipts":null,"previews":[{"type":"review-comment","body":"Why is this retried?"}]}
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+[exit 0]
+$ fm-contributions.sh pending
+[
+  {
+    "token": "unanswered:review-comment:31:2026-09-17T09:00:00Z",
+    "type": "unanswered",
+    "thread": "review-comment:31",
+    "source": "https://github.com/o/r/pull/8#discussion_r31",
+    "head": null,
+    "author": "maintainer",
+    "age": "25h",
+    "body": "no reply from the contribution author for 25h",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 unanswered:review-comment:31:2026-09-17T09:00:00Z
+[exit 0]
+--- saved record: pending tokens, receipts, event previews
+{"pending":[],"has_receipts":false,"receipts":null,"previews":[{"type":"review-comment","body":"Why is this retried?"}]}

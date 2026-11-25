@@ -1,0 +1,26 @@
+config/contribution-ack-receipts contains: false
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 2da199b6c6038582f869ae1d949b2b9439b6d087f51a937352d0275bb84f7bcb
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+/tmp/fm-drive.sNseDA/home/state/delivery.inbox/001.msg$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED handoff
+[exit 0]
+--- saved record: pending tokens, receipts, event previews
+{"pending":[],"has_receipts":true,"receipts":[{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"}],"previews":[{"type":"review","body":"The retry loop drops errors"}]}
+# a second review arrives; the flag file is removed
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 31a8a289ed3f8a3569af9f3204b0b945ff024f4ccbb675b928b37a9f8155b135
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:13:2026-09-16T08:02:00Z:COMMENTED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+config/: 
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:13:2026-09-16T08:02:00Z:COMMENTED
+[exit 0]
+--- saved record: pending tokens, receipts, event previews
+{"pending":[],"has_receipts":true,"receipts":[{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"}],"previews":[{"type":"review","body":"The retry loop drops errors"},{"type":"review","body":"The cache never expires"}]}
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:13:2026-09-16T08:02:00Z:COMMENTED handoff
+fm-contributions: ack needs one exact event token
+[exit 1]

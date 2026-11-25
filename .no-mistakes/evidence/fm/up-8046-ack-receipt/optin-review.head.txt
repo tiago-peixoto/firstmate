@@ -1,0 +1,58 @@
+config/: contribution-ack-receipts 
+$ fm-contributions.sh poll
+contribution-wake: check: contributions delivery 3ba0b67a1ee2dc2c377e37a4b31e4ed4e560e74b74c1cd740759bf1e77b28f10
+[exit 0]
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+    "type": "review",
+    "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "The retry loop drops errors",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+# token-only ack of an approved review that carries findings
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+--- saved record: pending tokens, receipts, event previews
+{"pending":["review:12:2026-09-16T08:01:00Z:APPROVED"],"has_receipts":false,"receipts":null,"previews":[{"type":"review","body":"The retry loop drops errors"}]}
+# handoff before any steer reached the owning worker
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit 1]
+# the review cited as evidence for its own disposition
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/8#pullrequestreview-12 approved\,\ non-blocking
+fm-contributions: the signal itself cannot be the evidence for its own disposition while the owning task record exists
+[exit 1]
+# evidence from another contribution, then a blank summary, then an unknown receipt kind
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/99#issuecomment-40 fixed
+fm-contributions: disposition evidence must be a comment or review on this contribution
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/8#issuecomment-40 \ \ \ 
+fm-contributions: disposition needs a non-empty summary
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED waved
+fm-contributions: unknown receipt 'waved'; expected handoff or disposition
+[exit 1]
+# steers that must not count: another task, and a review whose id only shares a prefix
+/tmp/fm-drive.sNseDA/home/state/other.inbox/001.msg/tmp/fm-drive.sNseDA/home/state/delivery.inbox/001.msg$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit 1]
+--- saved record: pending tokens, receipts, event previews
+{"pending":["review:12:2026-09-16T08:01:00Z:APPROVED"],"has_receipts":false,"receipts":null,"previews":[{"type":"review","body":"The retry loop drops errors"}]}
+# a steer to the owning task that names the review
+/tmp/fm-drive.sNseDA/home/state/delivery.inbox/002.msg$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+[exit 0]
+--- saved record: pending tokens, receipts, event previews
+{"pending":[],"has_receipts":true,"receipts":[{"token":"review:12:2026-09-16T08:01:00Z:APPROVED","task":"delivery","kind":"handoff","ref":"002.msg","at":"2026-09-16T08:00:00Z"}],"previews":[{"type":"review","body":"The retry loop drops errors"}]}
+# a later poll keeps the receipt and does not raise the review again
+$ fm-contributions.sh poll
+[exit 0]
+--- saved record: pending tokens, receipts, event previews
+{"pending":[],"has_receipts":true,"receipts":[{"token":"review:12:2026-09-16T08:01:00Z:APPROVED","task":"delivery","kind":"handoff","ref":"002.msg","at":"2026-09-16T08:00:00Z"}],"previews":[{"type":"review","body":"The retry loop drops errors"}]}
