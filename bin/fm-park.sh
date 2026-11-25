@@ -17,7 +17,8 @@
 # all pages of its discussions), never a cached verdict. It prints "clean head=<sha>" and
 # exits 0, or prints one "unclean: <reason>" line per failing condition and
 # exits 3; an unreadable forge, an unsupported provider, or a missing pr= exits 1
-# and is never clean. Clean means ready to merge except for a human approval:
+# and is never clean. Clean means waiting only on human review or the narrowly
+# proven maintainer-label wait below, not permission to merge:
 #   - open and not a draft;
 #   - no conflict, not behind its base, mergeability computed (GitHub mergeable
 #     MERGEABLE with mergeStateStatus CLEAN, BLOCKED or HAS_HOOKS; GitLab
@@ -28,7 +29,12 @@
 #     base branch requires has also reported on the head, read with
 #     bin/fm-pr-merge.sh's required-check reading (bin/fm-pr-lib.sh), because
 #     the rollup holds only checks that reported; an unreadable requirement
-#     is unclean;
+#     is unclean. The sole exception is a non-required GitHub Actions Full suite
+#     failure with exactly its full-ci waiting annotation and exit-code-1
+#     annotation, while full-ci is absent, every other check passed or skipped,
+#     and every non-quick job in that same suite skipped. Complete check and
+#     label reads are required; a name or missing label alone proves nothing.
+#     This is label-wait, not success, and never waives a merge check;
 #   - no changes requested (GitHub reviewDecision; GitLab requested_changes);
 #   - zero unresolved review threads, all of them read (a failed GitLab
 #     discussions read counts as not all read);
@@ -295,13 +301,36 @@ review_bots_json() {
 
 GITHUB_QUERY='query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){
   state isDraft headRefOid baseRefName mergeable mergeStateStatus reviewDecision
-  commits(last:1){nodes{commit{oid committedDate checkSuites(first:100){nodes{createdAt}} statusCheckRollup{state contexts(first:100){nodes{__typename ... on CheckRun{name completedAt} ... on StatusContext{context createdAt}}}}}}}
+  labels(first:100){totalCount nodes{name}}
+  commits(last:1){nodes{commit{oid committedDate checkSuites(first:100){nodes{createdAt}} statusCheckRollup{state contexts(first:100){totalCount nodes{__typename ... on CheckRun{name completedAt status conclusion checkSuite{id app{slug}} annotations(first:3){totalCount nodes{message annotationLevel}}} ... on StatusContext{context createdAt state}}}}}}}
   reviewThreads(first:100){totalCount nodes{isResolved comments(last:100){totalCount nodes{author{login __typename} createdAt updatedAt}}}}
   reviews(last:100){totalCount nodes{author{login __typename} state body submittedAt updatedAt commit{oid}}}
   comments(first:100,after:$endCursor){totalCount nodes{author{login __typename} createdAt updatedAt} pageInfo{hasNextPage endCursor}}
 }}}'
 
 GITHUB_NORMALIZE='
+  def passed:
+    if .__typename == "CheckRun" then .status == "COMPLETED" and (.conclusion | IN("SUCCESS","NEUTRAL","SKIPPED"))
+    elif .__typename == "StatusContext" then .state == "SUCCESS" else false end;
+  def full_ci_wait($p; $r):
+    $r.contexts.nodes as $checks
+    | [$checks[] | select(.__typename == "CheckRun" and .name == "Full suite"
+        and .status == "COMPLETED" and .conclusion == "FAILURE"
+        and .checkSuite.app.slug == "github-actions" and .checkSuite.id != null
+        and .annotations.totalCount == 2 and (.annotations.nodes | length) == 2
+        and all(.annotations.nodes[]; .annotationLevel == "FAILURE")
+        and ([.annotations.nodes[].message] | sort) == ([
+          "The full suite runs on outside pull requests only after a maintainer adds the full-ci label; see CONTRIBUTING.md.",
+          "Process completed with exit code 1."] | sort))] as $waiting
+    | ($waiting | length) == 1
+      and $r.contexts.totalCount == ($checks | length)
+      and $p.labels.totalCount == ($p.labels.nodes | length)
+      and ($p.labels.totalCount != null)
+      and all($p.labels.nodes[]; .name != "full-ci")
+      and all($checks[]; passed or . == $waiting[0])
+      and ([$checks[] | select(.checkSuite.id == $waiting[0].checkSuite.id
+        and (.name | IN("Full suite","Test coverage guard","Repo invariants") | not))]
+        | length > 0 and all(.[]; .status == "COMPLETED" and .conclusion == "SKIPPED"));
   .data.repository.pullRequest as $p
   | if ($p | type) != "object" then error("no pull request") else . end
   | ($p.commits.nodes[0].commit) as $c
@@ -320,6 +349,7 @@ GITHUB_NORMALIZE='
       blocked_other: (if ($p.mergeStateStatus // "UNKNOWN") | IN("CLEAN","BLOCKED","HAS_HOOKS","DIRTY","BEHIND","UNKNOWN","DRAFT","UNSTABLE")
                       then null else $p.mergeStateStatus end),
       ci: (if $r == null then "none" elif $r.state == "SUCCESS" then "success"
+           elif $r.state == "FAILURE" and full_ci_wait($p; $r) then "label-wait"
            elif ($r.state | IN("FAILURE","ERROR")) then "failure" else "pending" end),
       ci_done_at: ([$r.contexts.nodes[]? | (.completedAt // .createdAt)] | map(select(. != null)) | max),
       pushed_at: ([$c.checkSuites.nodes[]?.createdAt | select(. != null)] | min // $c.committedDate),
@@ -376,30 +406,30 @@ GITLAB_NORMALIZE='
            touched: (.updated_at // .created_at), on_head: false, approval_only: false}]
     }'
 
-# The required checks of the PR's base branch that have not reported on its
-# head, as a JSON array, read with the same required-check reading
-# bin/fm-pr-merge.sh does; fails when any requirement cannot be read.
-github_required_unreported() {  # <graphql-json>
-  local raw=$1 base head rollup secs missing
+# Required-check presence and whether Full suite is required, using the same
+# required-check reading as bin/fm-pr-merge.sh. Unreadable requirements refuse.
+github_required_status() {  # <graphql-json>
+  local raw=$1 base head rollup secs
   base=$(printf '%s' "$raw" | jq -er '.data.repository.pullRequest.baseRefName | select(type == "string" and length > 0)') || return 1
   head=$(printf '%s' "$raw" | jq -r '.data.repository.pullRequest.headRefOid')
   rollup=$(printf '%s' "$raw" | jq -c '{statusCheckRollup: (.data.repository.pullRequest.commits.nodes[0].commit.statusCheckRollup.contexts.nodes // [])}') || return 1
   secs=$(step_secs "$READ_SECS") || return 1
   # shellcheck disable=SC2016
-  missing=$(fm_run_timed "$secs" bash -c '
+  fm_run_timed "$secs" bash -c '
     . "$1/fm-pr-lib.sh"
     PR_OWNER=$2 PR_REPO=$3
-    github_read_required_contexts "$4" && github_read_required_producers "$5" \
-      && github_required_checks_missing "$6" "$FM_PR_GITHUB_REQUIRED" "$FM_PR_GITHUB_PRODUCERS"' \
-    _ "$SCRIPT_DIR" "$FM_PR_OWNER" "$FM_PR_REPO" "$base" "$head" "$rollup" 2>/dev/null) || return 1
-  printf '%s' "$missing" | jq -Rsc 'split("\n") | map(select(length > 0))'
+    github_read_required_contexts "$4" && github_read_required_producers "$5" || exit 1
+    missing=$(github_required_checks_missing "$6" "$FM_PR_GITHUB_REQUIRED" "$FM_PR_GITHUB_PRODUCERS") || exit 1
+    printf "%s" "$missing" | jq -Rsc --argjson required "$FM_PR_GITHUB_REQUIRED" '\''{
+      required_missing: (split("\n") | map(select(length > 0))),
+      label_wait_required: any($required[]; .context == "Full suite")}'\''' \
+    _ "$SCRIPT_DIR" "$FM_PR_OWNER" "$FM_PR_REPO" "$base" "$head" "$rollup" 2>/dev/null
 }
 
-# snapshot <pr-url> [--required]: --required adds required_missing, the GitHub
-# required checks not yet reported on the head (null when unreadable), which
-# only the gate reads.
+# snapshot <pr-url> [--required]: --required adds the gate-only required-check
+# verdict (required_missing is null when requirements cannot be read).
 snapshot() {  # <pr-url> [--required]
-  local url=$1 raw mr discussions enc secs snap missing complete
+  local url=$1 raw mr discussions enc secs snap required complete
   fm_pr_url_parse "$url" || return 1
   case "$FM_PR_PROVIDER" in
     github)
@@ -419,8 +449,8 @@ snapshot() {  # <pr-url> [--required]
             nodes:[$pages[] | .comments.nodes[]?]})})}}}' 2>/dev/null) || return 1
       snap=$(printf '%s' "$raw" | jq -c "$GITHUB_NORMALIZE" 2>/dev/null) || return 1
       [ "${2-}" = --required ] || { printf '%s\n' "$snap"; return 0; }
-      missing=$(github_required_unreported "$raw") || missing=null
-      printf '%s' "$snap" | jq -c --argjson m "$missing" '. + {required_missing: $m}'
+      required=$(github_required_status "$raw") || required='{"required_missing":null}'
+      printf '%s' "$snap" | jq -c --argjson r "$required" '. + $r'
       ;;
     gitlab)
       command -v glab >/dev/null 2>&1 || return 1
@@ -468,7 +498,8 @@ GATE_PROGRAM="$JQ_TIME"'
        elif $s.conflict == "behind" then "the branch is behind its base"
        elif $s.conflict == "unknown" then "mergeability is not computed yet (\($s.merge_status))" else empty end),
       (if $s.blocked_other != null then "the forge reports merge status \($s.blocked_other)" else empty end),
-      (if $s.ci != "success" then "CI is \($s.ci) on head \($s.head[0:12])" else empty end),
+      (if ($s.ci | IN("success","label-wait") | not) then "CI is \($s.ci) on head \($s.head[0:12])" else empty end),
+      (if $s.ci == "label-wait" and $s.label_wait_required then "Full suite is required by the base branch and has not passed" else empty end),
       (if ($s | has("required_missing") | not) then empty
        elif $s.required_missing == null then "the required checks of the base branch could not be read"
        elif ($s.required_missing | length) > 0 then "required check(s) \($s.required_missing | join(", ")) have not reported on head \($s.head[0:12])"
@@ -477,7 +508,7 @@ GATE_PROGRAM="$JQ_TIME"'
       (if $s.threads_unresolved > 0 then "\($s.threads_unresolved) review thread(s) unresolved" else empty end),
       (if ($s.threads_complete | not) then "review threads could not all be read" else empty end),
       (if ($s.comments_complete | not) then "review comments could not all be read" else empty end),
-      (if $settled or $s.ci != "success" then empty
+      (if $settled or ($s.ci | IN("success","label-wait") | not) then empty
        elif ($seen | length) > 0 then "automated reviewers (\($seen | join(", "))) have not submitted a review of this head; quiet window \($left)s left"
        else "no automated reviewer has submitted a review of this head; quiet window \($left)s left" end)
     ]
