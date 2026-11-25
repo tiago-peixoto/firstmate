@@ -353,14 +353,20 @@ fm_backend_hc_current_path() {  # <target> [expected-label]
 }
 
 fm_backend_hc_composer_caps() {
-  printf 'styled=0\ncursor=0\nidentity=0\nrows=%s\n' "$FM_COMPOSER_CAPTURE_LINES"
+  printf 'styled=0\ncursor=0\nidentity=1\nrows=%s\n' "$FM_COMPOSER_CAPTURE_LINES"
 }
 
 fm_backend_hc_composer_state() {  # <target> [expected-label] -> empty|pending|pending-unproven|unknown
-  local cap verdict
+  local cap verdict identity
   cap=$(fm_backend_hc_visible_capture "$1" "${2:-}") || { printf 'unknown'; return 0; }
   verdict=$(fm_composer_classify_screen "$(fm_backend_hc_composer_caps)" "$cap")
-  [ "$verdict" != need-identity ] || verdict=unknown
+  if [ "$verdict" = need-identity ]; then
+    identity=$(fm_backend_hc_get "$1" | jq -er '
+      select(.state == "live" and .status.app == "pi")
+      | [.status.app, .status.state] | @tsv' 2>/dev/null) || identity=probe-absent
+    verdict=$(fm_composer_classify_screen "$(fm_backend_hc_composer_caps)" "$cap" '' "$identity")
+    [ "$verdict" != need-identity ] || verdict=unknown
+  fi
   printf '%s' "$verdict"
 }
 
