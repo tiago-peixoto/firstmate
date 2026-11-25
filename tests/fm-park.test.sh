@@ -277,6 +277,57 @@ test_github_gate_refuses_until_every_required_check_reports() {
   pass "github gate refuses while a required check of the base branch has not reported on the head, or the requirement cannot be read"
 }
 
+test_github_label_wait_requires_positive_proof() {
+  local w patch out
+  w=$(make_world gh-label-wait "$GH_URL")
+  gh_fixture "$w/gh.1.json" 'rollup="FAILURE"'
+  jq '.data.repository.pullRequest |= (
+    .labels = {totalCount:0,nodes:[]}
+    | .commits.nodes[0].commit.statusCheckRollup.contexts = {totalCount:4,nodes:[
+        {__typename:"CheckRun",name:"Full suite",status:"COMPLETED",conclusion:"FAILURE",
+         completedAt:"2026-01-01T00:00:00Z",checkSuite:{id:"suite",app:{slug:"github-actions"}},
+         annotations:{totalCount:2,nodes:[
+           {annotationLevel:"FAILURE",message:"Process completed with exit code 1."},
+           {annotationLevel:"FAILURE",message:"The full suite runs on outside pull requests only after a maintainer adds the full-ci label; see CONTRIBUTING.md."}]}},
+        {__typename:"CheckRun",name:"Behavior portable serial",status:"COMPLETED",conclusion:"SKIPPED",checkSuite:{id:"suite"}},
+        {__typename:"CheckRun",name:"Test coverage guard",status:"COMPLETED",conclusion:"SUCCESS",checkSuite:{id:"suite"}},
+        {__typename:"StatusContext",context:"external",state:"SUCCESS"}]})' "$w/gh.1.json" > "$w/wait.json"
+  cp "$w/wait.json" "$w/gh.1.json"
+  expect_clean "$w" "only a proven label wait"
+  for patch in \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[0].annotations.nodes[1].message = "A full-suite job failed or was cancelled; see the failed jobs in this run."' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[0].annotations.totalCount = 3' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[0].annotations.nodes = []' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[0].checkSuite.app.slug = "other-app"' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[0].checkSuite.id = null' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[1].conclusion = "SUCCESS"' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[1].conclusion = "FAILURE"' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[2].conclusion = "FAILURE"' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[3].state = "FAILURE"' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[3].state = "PENDING"' \
+    '.commits.nodes[0].commit.statusCheckRollup.contexts.totalCount = 101' \
+    '.labels = {totalCount:1,nodes:[{name:"full-ci"}]}' \
+    '.labels.totalCount = 101' \
+    'del(.labels)'; do
+    jq ".data.repository.pullRequest |= ($patch)" "$w/wait.json" > "$w/gh.1.json"
+    expect_unclean "$w" "$patch" "CI is failure"
+  done
+  cp "$w/wait.json" "$w/gh.1.json"
+  printf '{"protected":true,"protection":{"required_status_checks":{"contexts":["Full suite"]}}}\n' > "$w/gh.branch.json"
+  expect_unclean "$w" "a required label wait" "Full suite is required by the base branch and has not passed"
+  rm "$w/gh.branch.json"
+  : > "$w/gh.branch.fail"
+  expect_unclean "$w" "unreadable required checks" "required checks of the base branch could not be read"
+  rm "$w/gh.branch.fail"
+  park_world "$w"
+  out=$(run_park "$w" tick 2>&1) || fail "label-wait tick failed: $out"
+  [ -z "$out" ] && [ ! -s "$w/control.log" ] || fail "a label wait relaunched the worker: $out"
+  jq '.data.repository.pullRequest.commits.nodes[0].commit.statusCheckRollup.contexts.nodes[0].annotations.nodes[1].message = "Tests failed"' \
+    "$w/wait.json" > "$w/gh.1.json"
+  expect_relaunch "$w" "label wait became a real failure" "checks are failing"
+  pass "only a proven, non-required label wait parks; real failures still refuse or relaunch"
+}
+
 test_github_gate_waits_for_review_bots_or_quiet_window() {
   local w
   w=$(make_world gh-bots "$GH_URL")
@@ -1209,6 +1260,7 @@ test_land_waits_for_an_action_under_way() {
 fm_test_run \
   test_github_gate_clean_and_each_unclean_condition \
   test_github_gate_refuses_until_every_required_check_reports \
+  test_github_label_wait_requires_positive_proof \
   test_github_gate_waits_for_review_bots_or_quiet_window \
   test_gitlab_gate_clean_and_unclean_conditions \
   test_park_stops_agent_records_lane_and_leases_slot \
