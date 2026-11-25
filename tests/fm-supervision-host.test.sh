@@ -648,7 +648,7 @@ test_away_wake_is_handled_on_the_engine_and_never_reaches_main() {
   local home lock_pid session first second pid watcher
   home=$(make_home away-handled away)
   echo hold-lease > "$home/stub-mode"
-  # Dialog in the mirror that an away wake must neither carry nor mark read.
+  # Main's dialog remains relevant after authority moves to the away session.
   printf '{"hook_event_name":"UserPromptSubmit","prompt_id":"p1","prompt":"keep the export worker on low effort"}' > "$home/mirror-seed.1"
   start_host "$home"
   wait_until 150 watcher_live "$home" || fail "away: the host never started a watcher cycle: $(cat "$home/host.out")"
@@ -667,8 +667,9 @@ test_away_wake_is_handled_on_the_engine_and_never_reaches_main() {
   assert_re '^arg=--session-id$' "$first" "the first turn must open a new conversation"
   assert_re '^POSTURE: AWAY\.' "$first" "the wake must carry the away tail"
   assert_grep 'keep the export worker on low effort' "$home/state/.host-mirror.jsonl" "fixture: the captain's dialog was not mirrored"
-  assert_no_re 'MAIN DIALOG MIRROR|low effort' "$first" "an away wake must carry no dialog mirror"
-  assert_absent "$home/state/.host-mirror-cursor" "a handled away wake must leave the mirror cursor where it was"
+  assert_re 'MAIN DIALOG MIRROR' "$first" "an away wake must carry main's dialog"
+  assert_re 'keep the export worker on low effort' "$first" "away must see main's instructions"
+  [ -s "$home/state/.host-mirror-cursor" ] || fail "a handled away wake must commit its mirror cursor"
   assert_absent "$home/state/.host-mirror-cursor.next" "an away wake must stage no mirror cursor"
   assert_grep '"task":"demo"' "$home/state/branch-outcomes.jsonl" "the engine's report did not reach the outcome store"
   assert_no_grep 'demo.status' "$home/state/.wake-queue" "the engine's acknowledgement did not consume the wake"
@@ -690,6 +691,11 @@ test_away_wake_is_handled_on_the_engine_and_never_reaches_main() {
   [ "$(grep -c '"task":"demo"' "$home/state/branch-outcomes.jsonl")" -eq 2 ] || fail "the second outcome was not recorded"
   assert_re '	handled	turn=[^	]*\.2	.* cost=0\.25 conversation_cost=0\.5 ' "$home/state/.supervision-host.log" \
     "a resumed turn must log its own cost, not the conversation's running total"
+
+  rm -f "$home/state/.supervision-host-engine"
+  append_status "$home" 'step three after rotation'
+  wait_until 250 handled_at_least "$home" 3 || fail "away: the rotated wake was not handled"
+  assert_re 'stub handled demo' "$home/engine-call.3" "a new away conversation must see previous outcomes"
 
   pid=$(awk -F '\t' '$1 == "host" { print $2 }' "$home/state/.supervision-host")
   watcher=$(cat "$home/state/.watch.lock/pid")

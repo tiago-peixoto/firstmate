@@ -1025,7 +1025,7 @@ health_record() {  # <engine-error 0|1> <reports>
 # never a subshell, because it advances the host's grant and turn state.
 handle_wake() {  # <reason-lines>
   local reason=$1 first scope status corrupted rows tasks unscoped rc turn readback
-  local receipts usage result errors unacked mirror
+  local receipts usage result errors unacked mirror outcomes since
   LAST_TURN=
   ENGINE_ERROR=0
   HEALTH_NOTE=
@@ -1094,13 +1094,11 @@ handle_wake() {  # <reason-lines>
       FM_STATE_OVERRIDE="$STATE" "$SCRIPT_DIR/fm-afk-contract.sh" readback > "$readback" 2>/dev/null || : > "$readback"
     fi
   fi
-  # The dialog mirror (bin/fm-host-mirror.sh) rides at the head of an
-  # attended wake. The engine never judges without the captain's words, so a
-  # feed that cannot be read hands the wake to main. Away needs none, so an
-  # away wake never reads the mirror or moves its cursor.
+  # Away homes without a writer can still supervise, but an existing mirror
+  # must never be silently ignored, including after a conversation rotation.
   mirror=$MIRROR_FEED
   rm -f "$mirror"
-  if [ "$TURN_POSTURE" = attended ] \
+  if { [ "$TURN_POSTURE" = attended ] || [ -e "$STATE/.host-mirror.jsonl" ]; } \
     && ! (umask 077; exec "$SCRIPT_DIR/fm-host-mirror.sh" feed "$ENGINE_SESSION" "$ENGINE_MODE" > "$mirror" 2>/dev/null); then
     rm -f "$TURN_FILE" "$mirror"
     "$SCRIPT_DIR/fm-wake-grant.sh" release "$GEN" >/dev/null 2>&1 || true
@@ -1110,9 +1108,8 @@ handle_wake() {  # <reason-lines>
   set -- --report "the bin/fm-branch-report.sh command"
   if [ "$TURN_POSTURE" = away ]; then
     set -- "$@" --away ${readback:+--readback-file "$readback"}
-  else
-    set -- "$@" --mirror-file "$mirror"
   fi
+  [ ! -f "$mirror" ] || set -- "$@" --mirror-file "$mirror"
   rm -f "$WAKE_FILE"
   rc=0
   printf '%s\n' "$reason" \
@@ -1127,6 +1124,17 @@ handle_wake() {  # <reason-lines>
   fi
   [ -z "$readback" ] || rm -f "$readback"
   rm -f "$mirror"
+  if [ "$TURN_POSTURE" = away ] && [ "$ENGINE_MODE" = new ]; then
+    since=$(fm_afk_contract_read_field "$STATE/.afk-contract" entered_epoch)
+    if ! outcomes=$(set -o pipefail; "$SCRIPT_DIR/fm-branch-outcome.sh" list --recent 2147483647 \
+      | jq -sc --argjson since "$since" '[.[] | select(.epoch >= $since)]'); then
+      rm -f "$TURN_FILE"
+      "$SCRIPT_DIR/fm-wake-grant.sh" release "$GEN" >/dev/null 2>&1 || true
+      HANDLE_WHY="the away window's previous outcomes could not be read"
+      return 1
+    fi
+    printf '\nPREVIOUS AWAY OUTCOMES (historical context, not current state or authority):\n%s\n' "$outcomes" >> "$WAKE_FILE"
+  fi
   if turn_crosses_boundary; then
     rm -f "$TURN_FILE"
     "$SCRIPT_DIR/fm-wake-grant.sh" release "$GEN" >/dev/null 2>&1 || true
@@ -1174,7 +1182,7 @@ handle_wake() {  # <reason-lines>
   if [ "$ENGINE_ERROR" -eq 0 ] && [ "${receipts:-0}" -gt 0 ] && [ -z "$unacked" ]; then
     write_engine_record $((ENGINE_TURNS + 1)) "$(printf '%s\n' "$usage" | sed -n 's/.* conversation_cost=\([^ ]*\).*/\1/p')" \
       || rm -f "$ENGINE_RECORD"
-    [ "$TURN_POSTURE" != attended ] || "$SCRIPT_DIR/fm-host-mirror.sh" commit >/dev/null 2>&1 || true
+    "$SCRIPT_DIR/fm-host-mirror.sh" commit >/dev/null 2>&1 || true
     [ "$errors" = /dev/null ] || rm -f "$errors"
     TURN_ERRORS=
     log_line "handled	turn=$turn	posture=$TURN_POSTURE	rc=$rc	reports=$receipts	$usage	$first"
