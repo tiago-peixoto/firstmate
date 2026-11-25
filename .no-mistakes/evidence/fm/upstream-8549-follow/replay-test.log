@@ -1,0 +1,11 @@
+ok - an unacknowledged completed result repeats with config/result-replay and stays one-shot without it
+ok - results the byte cap omits keep repeating after the acknowledgement of the printed ones
+ok - the matching acknowledgement retires the result and the next drain is silent
+ok - an empty-queue completion repeats with its own acknowledgement and then stays silent
+ok - ordinary notes keep their one-shot presentation with the gate on
+ok - an acknowledgement retires only results presented before it, never a later append
+ok - a replaced status log neither loses the pending result nor lets its receipt acknowledge new bytes
+ok - the branch reader neither creates nor retires main's pending results
+ok - an acknowledgement from an earlier episode cannot retire a newer result
+ok - an acknowledgement that stops below a presented row leaves that row's result repeating
+ok - replay keeps the four newest results per task and names the dropped count

@@ -1,0 +1,42 @@
+=== gate on: worker writes a done: line, main drains twice ===
+$ fm-wake-drain.sh  [config=cfg-on]
+exit=0
+  stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+  stdout| task-a done: shipped PR 42
+  stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2968268.1795613840.uq2OvM
+$ fm-wake-drain.sh  [config=cfg-on]
+exit=0
+  stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+  stdout| task-a done: shipped PR 42
+  stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2968268.1795613840.uq2OvM
+=== adversarial: a newer result lands, then the OLD acknowledgement is replayed ===
+$ fm-wake-drain.sh --ack-through 0 --recovery-generation 2968268.1795613840.uq2OvM [config=cfg-on]
+exit=0
+$ fm-wake-drain.sh  [config=cfg-on]
+exit=0
+$ fm-wake-drain.sh  [config=cfg-on]
+exit=0
+  stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+  stdout| task-a done: second result after ack
+  stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2983846.1795613853.GHJ4DV
+--- stale ack (from the first episode) ---
+$ fm-wake-drain.sh --ack-through 0 --recovery-generation 2968268.1795613840.uq2OvM [config=cfg-on]
+exit=0
+  stderr| wake drain: acknowledged wakes through 0 (0 row(s) consumed), but a newer recovery episode is pending; re-run bin/fm-wake-drain.sh and use the new WAKE_ACK_REQUIRED command
+$ fm-wake-drain.sh  [config=cfg-on]
+exit=0
+  stdout| UNHANDLED RESULTS (presented earlier, repeated until the WAKE_ACK_REQUIRED acknowledgement):
+  stdout| task-a done: second result after ack
+  stderr| WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 0 --recovery-generation 2983846.1795613853.GHJ4DV
+=== matching acknowledgement, then a silent drain ===
+$ fm-wake-drain.sh --ack-through 0 --recovery-generation 2983846.1795613853.GHJ4DV [config=cfg-on]
+exit=0
+$ fm-wake-drain.sh  [config=cfg-on]
+exit=0
+=== gate off: worker writes a done: line, main drains twice ===
+$ fm-wake-drain.sh  [config=cfg-off]
+exit=0
+  stdout| STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+  stdout| task-a done: shipped PR 42
+$ fm-wake-drain.sh  [config=cfg-off]
+exit=0
