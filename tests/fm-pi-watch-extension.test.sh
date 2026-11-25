@@ -146,7 +146,7 @@ test_worker_loads_no_primary_extensions() {
   mkdir -p "$repo/state"
   install_pi_watch_extension_fixture "$repo"
   cp "$ROOT/.pi/extensions/fm-primary-turnend-guard.ts" "$repo/.pi/extensions/"
-  FM_TASK_ID=scout FM_HOME="$repo" FM_ROOT_OVERRIDE="$repo" REPO="$repo" node --input-type=module <<'JS'
+  FM_TASK_ID=scout FM_HOME="$repo" FM_ROOT_OVERRIDE="$repo" REPO="$repo" node --input-type=module <<'JS' || fail "worker loaded primary hooks or tools"
 import { pathToFileURL } from 'node:url';
 const pi = new Proxy({}, { get(_target, name) { throw new Error(`worker registered primary surface: ${String(name)}`); } });
 for (const file of ['fm-primary-turnend-guard.ts', 'fm-primary-pi-watch.ts']) {
@@ -154,7 +154,6 @@ for (const file of ['fm-primary-turnend-guard.ts', 'fm-primary-pi-watch.ts']) {
   extension.default(pi);
 }
 JS
-  [ "$?" -eq 0 ] || fail "worker loaded primary hooks or tools"
   [ ! -e "$repo/state/.pi-turnend-extension-loaded" ] || fail "worker wrote the primary marker"
   pass "Pi worker identity disables primary guards and supervision registration"
 }
