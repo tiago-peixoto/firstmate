@@ -45,7 +45,7 @@ case "$cmd" in
     cat "$D/$last.json"
     ;;
   rm) [ -e "$D/rm-sticks" ] || rm -f "$D/$last.json"; printf '{}\n' ;;
-  read) printf 'screen of %s\n' "$last" ;;
+  read) cat "$D/$last.screen" 2>/dev/null || printf 'screen of %s\n' "$last" ;;
   send)
     if [ -f "$D/send.exit" ]; then
       printf '{"error":{"kind":"%s"}}\n' "$(cat "$D/send.kind" 2>/dev/null || echo blocked)" >&2
@@ -375,6 +375,39 @@ test_send_text_submit_confirms_through_send_wait() {
   pass "hc: send_text_submit proves the turn through send --wait and never forces a blocked terminal"
 }
 
+test_pi_composer_requires_native_idle_identity_and_empty_rows() {
+  local tag out state app text expected
+  setup_case pi-composer
+  tag=$(hometag_of)
+  write_terminal "$D" t1 live fm-a1 "$tag" pi pi
+  for app in pi other ''; do
+    for state in idle done working blocked error ''; do
+      jq --arg app "$app" --arg state "$state" '.status = {app:$app,state:$state}' \
+        "$D/t1.json" > "$D/next.json"
+      mv "$D/next.json" "$D/t1.json"
+      for text in '' 'do not submit this'; do
+        printf '────────────────────────────────────────\n%s\n────────────────────────────────────────\n/project\n' "$text" > "$D/t1.screen"
+        expected=unknown
+        if [ "$app" = pi ]; then
+          if [ -n "$text" ]; then expected=pending
+          elif [ "$state" = idle ] || [ "$state" = done ]; then expected=empty; fi
+        fi
+        out=$(hc_shell 'fm_backend_composer_state hc fmtest:t1 fm-a1')
+        assert_equals "$out" "$expected" "Pi composer app=$app state=$state text=$text"
+      done
+    done
+  done
+  printf 'not a composer\n' > "$D/t1.screen"
+  jq '.status = {app:"pi",state:"idle"}' "$D/t1.json" > "$D/next.json"
+  mv "$D/next.json" "$D/t1.json"
+  out=$(hc_shell 'fm_backend_composer_state hc fmtest:t1 fm-a1')
+  assert_equals "$out" unknown "native identity alone cannot prove an empty composer"
+  out=$(hc_shell 'fm_backend_composer_state hc fmtest:t1 fm-foreign')
+  assert_equals "$out" unknown "a foreign task cannot prove its composer empty"
+  assert_not_contains "$(cat "$D/log")" $'\x1fsend\x1f' "classification never types"
+  pass "hc: only an idle Pi with empty separated rows proves empty; text stays pending"
+}
+
 test_send_delimiters_and_binary_socket_pins() {
   local tag out
   setup_case pins
@@ -432,4 +465,5 @@ fm_test_run \
   test_endpoint_validation_binds_hc_meta \
   test_container_ensure_gates_binary_version_and_generation \
   test_send_text_submit_confirms_through_send_wait \
+  test_pi_composer_requires_native_idle_identity_and_empty_rows \
   test_send_delimiters_and_binary_socket_pins
