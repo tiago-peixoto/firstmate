@@ -363,7 +363,7 @@ fm_backend_hc_composer_state() {  # <target> [expected-label] -> empty|pending|p
   if [ "$verdict" = need-identity ]; then
     identity=$(fm_backend_hc_get "$1" | jq -er '
       select(.state == "live" and .status.app == "pi")
-      | [.status.app, .status.state] | @tsv' 2>/dev/null) || identity=probe-absent
+      | [.status.app, .status.state] | @tsv' 2>/dev/null) || identity='probe-absent'
     verdict=$(fm_composer_classify_screen "$(fm_backend_hc_composer_caps)" "$cap" '' "$identity")
     [ "$verdict" != need-identity ] || verdict=unknown
   fi
