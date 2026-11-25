@@ -1,0 +1,14 @@
+ ▐▛███▛█   Claude Code v2.1.332
+▝▜██████▀  Fable 5.2 · Claude Ultra
+ ▝▝   ▝▝   /tmp/fm-pr-follow-live.w7apNd/claude/project
+
+▎ Debug mode enabled · logging to /tmp/fm-pr-follow-live.w7apNd/claude/debug.log
+
+● fm: ⚓ MERGED: https://github.com/example/project/pull/1
+
+● fm: ⚓ CLOSED: https://github.com/example/project/pull/2
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents                                                                                                                                                   ◐ medium · /effort

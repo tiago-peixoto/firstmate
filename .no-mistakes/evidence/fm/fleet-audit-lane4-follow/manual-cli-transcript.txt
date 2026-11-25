@@ -1,0 +1,109 @@
+== 1. unconfigured home (no config/pr-follow) ==
+# forge now: state=OPEN head=aaaaaaa test=SUCCESS review=APPROVED
+# pi surface heartbeat, age 0s
+$ fm-pr-follow.sh add https://github.com/example/project/pull/1 --requested tell me when this merges
+fm-pr-follow: config/pr-follow is absent; following is off
+[exit 1]
+$ fm-pr-follow.sh arm
+fm-pr-follow: config/pr-follow is absent; following is off
+[exit 1]
+$ fm-pr-follow.sh poll
+[exit 0]
+<lab>/drive.sh: line 13: <lab>/forge.json.reads: No such file or directory
+forge reads: 0; store: 
+== 2. opt in, enroll a taskless PR ==
+$ fm-pr-follow.sh add https://github.com/example/project/pull/1 --requested tell me when this merges
+Following https://github.com/example/project/pull/1
+[exit 0]
+$ fm-pr-follow.sh list
+https://github.com/example/project/pull/1	tell me when this merges
+[exit 0]
+tasks (state/*.meta): 0; outcomes: 0
+== 3. restart: new process, stale surface, then fresh surface ==
+# pi surface heartbeat, age 120s
+# forge now: state=MERGED head=aaaaaaa test=SUCCESS review=APPROVED
+$ fm-pr-follow.sh poll
+PR following paused: no active model-free outcome surface; use Pi or Claude with the Calm mod.
+[exit 0]
+$ fm-pr-follow.sh poll
+[exit 0]
+$ fm-pr-follow.sh add https://github.com/example/project/pull/2 --requested follow this too
+fm-pr-follow: no active model-free outcome surface; enrollment requires Pi or Claude with the Calm mod
+[exit 1]
+outcomes while surface stale: 0
+# pi surface heartbeat, age 0s
+$ fm-pr-follow.sh poll
+[exit 0]
+$ fm-pr-follow.sh poll
+[exit 0]
+outcome store:
+{"seq":1,"task":"fleet","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/1"}
+wake queue: 0 lines
+$ fm-branch-outcome.sh unprocessed (model-facing)
+[exit 0]
+$ fm-branch-outcome.sh notices (direct surface)
+{"seq":1,"epoch":1795575512,"task":"fleet","wake":"pr-follow:1795575511-.pr-follow.vEcvyY:1:1:{\"state\":\"MERGED\",\"head\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"review\":\"APPROVED\",\"checks\":[]}","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/1","silent":false,"statusEndpoint":0,"statusIdent":"-"}
+[exit 0]
+== 4. closed, red checks, requested changes ==
+# forge now: state=OPEN head=aaaaaaa test=SUCCESS review=APPROVED
+$ fm-pr-follow.sh add https://github.com/example/project/pull/2 --requested follow this too
+Following https://github.com/example/project/pull/2
+[exit 0]
+# forge now: state=OPEN head=bbbbbbb test=FAILURE review=APPROVED
+# pi surface heartbeat, age 0s
+$ fm-pr-follow.sh poll
+[exit 0]
+# forge now: state=OPEN head=bbbbbbb test=FAILURE review=CHANGES_REQUESTED
+$ fm-pr-follow.sh poll
+[exit 0]
+$ fm-pr-follow.sh poll
+[exit 0]
+# forge now: state=CLOSED head=bbbbbbb test=FAILURE review=CHANGES_REQUESTED
+$ fm-pr-follow.sh poll
+[exit 0]
+{"seq":1,"verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/1"}
+{"seq":2,"verdict":"notice","summary":"Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/2"}
+{"seq":3,"verdict":"notice","summary":"Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/1"}
+{"seq":4,"verdict":"notice","summary":"Review CHANGES_REQUESTED: https://github.com/example/project/pull/2"}
+{"seq":5,"verdict":"notice","summary":"Review CHANGES_REQUESTED: https://github.com/example/project/pull/1"}
+{"seq":6,"verdict":"notice","summary":"CLOSED: https://github.com/example/project/pull/2"}
+{"seq":7,"verdict":"notice","summary":"CLOSED: https://github.com/example/project/pull/1"}
+wake queue: 0 lines
+== 5. task-owned PR: red check wakes the model, merge stays on task path ==
+# forge now: state=OPEN head=aaaaaaa test=SUCCESS review=APPROVED
+$ fm-pr-follow.sh add https://github.com/example/project/pull/3 --requested follow my ship PR
+Following https://github.com/example/project/pull/3
+[exit 0]
+# forge now: state=OPEN head=bbbbbbb test=FAILURE review=APPROVED
+# pi surface heartbeat, age 0s
+$ fm-pr-follow.sh poll
+[exit 0]
+wake queue:
+1795575516	1	check	pr-follow:ship	check: followed PR needs action for ship: Checks test: FAILURE on bbbbbbb: https://github.com/example/project/pull/3
+# forge now: state=MERGED head=bbbbbbb test=SUCCESS review=APPROVED
+$ fm-pr-follow.sh poll
+[exit 0]
+$ fm-pr-poll.sh --validated github https://github.com/example/project/pull/3 ...
+merged
+[exit 0]
+ship.meta still present: <lab>~/ship.meta
+{"seq":9,"task":"fleet","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/2"}
+{"seq":10,"task":"fleet","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/3"}
+{"seq":11,"task":"fleet","verdict":"notice","summary":"MERGED: https://github.com/example/project/pull/1"}
+== 6. arm registers one watcher check; remove ==
+$ fm-pr-follow.sh arm
+registered: state/pr-follow.check.sh
+[exit 0]
+pr-follow.check-trust
+pr-follow.check.sh
+$ fm-pr-follow.sh remove https://github.com/example/project/pull/1
+Stopped following https://github.com/example/project/pull/1
+[exit 0]
+$ fm-pr-follow.sh remove https://github.com/example/project/pull/2
+Stopped following https://github.com/example/project/pull/2
+[exit 0]
+$ fm-pr-follow.sh remove https://github.com/example/project/pull/3
+Stopped following https://github.com/example/project/pull/3
+[exit 0]
+$ fm-pr-follow.sh list
+[exit 0]
