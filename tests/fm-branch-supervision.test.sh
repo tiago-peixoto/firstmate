@@ -69,6 +69,10 @@ test_branch_prompt_is_byte_stable_and_above_cache_floor() {
     *"A second mate's status log is a relay channel for its child work"*"retiring a second mate is MAIN's alone"*"Report a second mate's signal wake from the status lines that wake newly presents"*"A second mate's stale wake is a liveness event: report it even when it presents no new status lines."*) ;;
     *) fail "branch prompt lost the second-mate relay, signal-span, or stale-liveness rule" ;;
   esac
+  case "$out_a" in
+    *"forward it verbatim with \`bin/fm-send.sh\` in the same turn"*"routine intra-fleet relay in both attended and away postures"*"needs no away authorization"*"unless its content itself is a captain item"*"Never resolve a decision key for this relay."*) ;;
+    *) fail "branch prompt lost the cross-secondmate relay or its authority boundary" ;;
+  esac
   pass "branch prompt is byte-stable across homes, cwd, timezone, and time, above the cache floor"
 }
 

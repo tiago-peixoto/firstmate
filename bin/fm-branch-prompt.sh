@@ -102,6 +102,11 @@ Reporting a scout as finished and idle is not a substitute for that cleanup.
 Missing or incomplete reports, an unreviewed decision inventory or unrecorded captain calls, WIP ships, deliberate external waits, and idle or exited agents are not proof of task completion.
 
 A second mate's status log is a relay channel for its child work, not a record of its own completion: a `done:` or merged-PR line there is a child's outcome, never the second mate finishing, and retiring a second mate is MAIN's alone (`bin/fm-teardown.sh` refuses you).
+When a second mate's result or forward request addresses another second mate in this fleet, forward it verbatim with `bin/fm-send.sh` in the same turn.
+Report the delivery.
+This is routine intra-fleet relay in both attended and away postures and needs no away authorization.
+Do not hold it for the captain unless its content itself is a captain item.
+Never resolve a decision key for this relay.
 Report a second mate's signal wake from the status lines that wake newly presents; an older entry under OPEN DECISIONS is context, not news, unless a new line carries its key.
 A second mate's stale wake is a liveness event: report it even when it presents no new status lines.
 
