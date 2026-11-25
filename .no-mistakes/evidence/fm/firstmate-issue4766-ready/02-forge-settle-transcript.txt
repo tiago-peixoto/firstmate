@@ -1,0 +1,34 @@
+
+=== setup: lane-c delivered a PR, home opts in to forge settlement (config/hold-pr-settle) ===
+lane-c
+hold rc=0
+pr-policy: lane-c https://github.com/kunchenguid/firstmate/pull/8718 merged release
+pr-policy rc=0
+done: PR ready https://github.com/kunchenguid/firstmate/pull/8718
+captain-held [key=captain-hold-lane-c-1] [at=1795625584]: Merge this PR?
+
+=== real observer: enroll + poll against github.com (real gh, read-only) ===
+enroll rc=0
+poll rc=0
+{"url":"https://github.com/kunchenguid/firstmate/pull/8718","checked_at":"2026-11-25T16:53:05Z","error":null,"state":"merged"}
+
+=== after poll: hold settled by forge evidence, declaration retracted ===
+open rc=1 (nonzero = no longer held)
+done: PR ready https://github.com/kunchenguid/firstmate/pull/8718
+captain-held [key=captain-hold-lane-c-1] [at=1795625584]: Merge this PR?
+resolved [key=captain-hold-lane-c-1] [at=1795625588]: captain call PR merged: https://github.com/kunchenguid/firstmate/pull/8718 (release) by fm-captain-hold
+plain(upstream) last_status_line : resolved [key=captain-hold-lane-c-1] [at=1795625588]: captain call PR merged: https://github.com/kunchenguid/firstmate/pull/8718 (release) by fm-captain-hold
+hold-aware last_status_line      : done: PR ready https://github.com/kunchenguid/firstmate/pull/8718
+hold-aware status_declared_wait_line: 
+hold-aware status_current_line   : done: PR ready https://github.com/kunchenguid/firstmate/pull/8718
+hold-aware last_worker_status_line: done: PR ready https://github.com/kunchenguid/firstmate/pull/8718
+status_hold_settled: yes
+contributions.json
+
+=== replay settle-pr appends nothing ===
+rc=0 lines before=3 after=3
+=== opt-in guard: forge settlement flag removed ===
+lane-d
+fm-captain-hold: config/hold-pr-settle is required
+pr-policy rc=1 (refused without the flag)
+open rc=0 (still held)

@@ -1,0 +1,56 @@
+
+=== 1. standing hold (state after: hold lane-a, repeated once) ===
+working: building
+done: PR ready https://github.com/o/r/pull/8
+captain-held [key=captain-hold-lane-a-1] [at=1795625531]: Merge PR 8 (yes/no)? second line
+plain(upstream) last_status_line : captain-held [key=captain-hold-lane-a-1] [at=1795625531]: Merge PR 8 (yes/no)? second line
+hold-aware last_status_line      : captain-held [key=captain-hold-lane-a-1] [at=1795625531]: Merge PR 8 (yes/no)? second line
+hold-aware status_declared_wait_line: captain-held [key=captain-hold-lane-a-1] [at=1795625531]: Merge PR 8 (yes/no)? second line
+hold-aware status_current_line   : done: PR ready https://github.com/o/r/pull/8
+hold-aware last_worker_status_line: done: PR ready https://github.com/o/r/pull/8
+status_hold_settled: no
+fm-osc7501 watch emitted: state=blocked:kind=question:app=firstmate-opencode:title=Zm0tbGFuZS1h:msg=TmVlZHMgeW91ciBkZWNpc2lvbjogTWVyZ2UgUFIgOCAoeWVzL25vKT8gc2Vjb25kIGxpbmU= \ ]7501;state=idle:app=firstmate-opencode:title=Zm0tb
+open rc=0
+
+=== 2. worker reports after the declaration ===
+working: building
+done: PR ready https://github.com/o/r/pull/8
+captain-held [key=captain-hold-lane-a-1] [at=1795625531]: Merge PR 8 (yes/no)? second line
+working: addressing review feedback
+plain(upstream) last_status_line : working: addressing review feedback
+hold-aware last_status_line      : working: addressing review feedback
+hold-aware status_declared_wait_line: 
+hold-aware status_current_line   : working: addressing review feedback
+hold-aware last_worker_status_line: working: addressing review feedback
+status_hold_settled: no
+
+=== 3. captain answers with --release ===
+released: lane-a
+answer rc=0
+working: building
+done: PR ready https://github.com/o/r/pull/8
+captain-held [key=captain-hold-lane-a-1] [at=1795625531]: Merge PR 8 (yes/no)? second line
+working: addressing review feedback
+done: PR ready https://github.com/o/r/pull/8 (feedback addressed)
+resolved [key=captain-hold-lane-a-1] [at=1795625562]: captain call released by fm-captain-hold
+plain(upstream) last_status_line : resolved [key=captain-hold-lane-a-1] [at=1795625562]: captain call released by fm-captain-hold
+hold-aware last_status_line      : done: PR ready https://github.com/o/r/pull/8 (feedback addressed)
+hold-aware status_declared_wait_line: 
+hold-aware status_current_line   : done: PR ready https://github.com/o/r/pull/8 (feedback addressed)
+hold-aware last_worker_status_line: done: PR ready https://github.com/o/r/pull/8 (feedback addressed)
+status_hold_settled: no
+fm-osc7501 watch emitted: state=done:app=firstmate-opencode:title=Zm0tbGFuZS1h:msg=UFIgcmVhZHk6IFBSIHJlYWR5IGh0dHBzOi8vZ2l0aHViLmNvbS9vL3IvcHVsbC84IChmZWVkYmFjayBhZGRyZXNzZWQp \ ]7501;state=done:app=firstmate-opencode:title=Zm
+open rc=1 (nonzero = no longer held)
+
+=== 4. replayed settlement appends nothing ===
+released: lane-a
+replay rc=0
+lines before=6 after=6
+
+=== 5. decision-only hold (no lane meta) leaves no status log ===
+open call-b rc=0
+lane-a.busy-gen
+lane-a.busy-state
+lane-a.meta
+lane-a.status
+ls: cannot access '/tmp/fm-lab.GQg98N/state/call-b.status': No such file or directory
