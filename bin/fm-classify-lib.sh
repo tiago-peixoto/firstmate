@@ -116,7 +116,7 @@ FM_CLASSIFY_PAUSED_VERB_DEFAULT='paused'
 # recheck is a backstop, not progress, and an hourly one only produced nagging
 # (the 2026-09-07 away-window audit). A worker that knows when its wait clears
 # names it with `until` (status_paused_until below) and is rechecked at that
-# time or this cadence bound, whichever comes first. Both consumers read
+# time, even beyond this cadence. Undated waits use this bound. Both consumers read
 # FM_PAUSE_RESURFACE_SECS with this default so
 # the cadence has one owner. An item held for the captain is not rechecked at all
 # while the away-posture record exists (bin/fm-watch.sh owns that rule).

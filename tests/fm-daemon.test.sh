@@ -1846,23 +1846,18 @@ test_housekeeping_declared_time_controls_pause_recheck() {
   echo $((now - 300)) > "$state/.subsuper-paused-$key"
   PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$win" FM_FAKE_TMUX_CAPTURE="$pane" \
     FM_STATE_OVERRIDE="$state" FM_PAUSE_RESURFACE_SECS=240 housekeeping "$state"
-  escalations=$(wc -l < "$state/.subsuper-escalations" | tr -d ' ')
-  [ "$escalations" -eq 1 ] || fail "a wrong-year declared time silenced daemon housekeeping beyond the cadence"
-  grep -F 'declared time is beyond the recheck cadence' "$state/.subsuper-escalations" >/dev/null \
-    || fail "the bounded daemon recheck gave the wrong reason: $(cat "$state/.subsuper-escalations")"
-  grep -F 'declared clearing time has passed' "$state/.subsuper-escalations" >/dev/null \
-    && fail "the bounded daemon recheck falsely claimed the future declared time passed"
+  [ ! -s "$state/.subsuper-escalations" ] || fail "a distant declared wait was rechecked before its date"
 
   printf 'paused: waiting for release until %s\n' "$past" > "$state/$task.status"
   date +%s > "$state/.subsuper-paused-$key"
   PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$win" FM_FAKE_TMUX_CAPTURE="$pane" \
     FM_STATE_OVERRIDE="$state" FM_PAUSE_RESURFACE_SECS=240 housekeeping "$state"
   escalations=$(wc -l < "$state/.subsuper-escalations" | tr -d ' ')
-  [ "$escalations" -eq 2 ] || fail "a reached declared time did not trigger an immediate recheck"
+  [ "$escalations" -eq 1 ] || fail "a reached declared time did not trigger an immediate recheck"
   PATH="$fakebin:$PATH" FM_FAKE_TMUX_WINDOW="$win" FM_FAKE_TMUX_CAPTURE="$pane" \
     FM_STATE_OVERRIDE="$state" FM_PAUSE_RESURFACE_SECS=240 housekeeping "$state"
   escalations=$(wc -l < "$state/.subsuper-escalations" | tr -d ' ')
-  [ "$escalations" -eq 2 ] || fail "a reached declared time bypassed the reset pause cadence"
+  [ "$escalations" -eq 1 ] || fail "a reached declared time bypassed the reset pause cadence"
   pass "housekeeping bounds a distant declared time, defers to a near one, and rechecks a passed one at once"
 }
 
