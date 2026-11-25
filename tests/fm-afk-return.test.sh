@@ -902,6 +902,7 @@ test_return_brief_health_leads_with_a_gap() {
   local dir out gap_line clean_line
   dir="$TMP_ROOT/brief-gap"
   install_runner "$dir"
+  printf 'blocked [key=claude-turn-failure]: Claude cannot complete turns (authentication_failed).\n' > "$dir/home/state/supervisor-health.status"
   contract_in "$dir" enter >/dev/null 2>&1 || fail "could not write the away-posture record"
   : > "$dir/home/state/.watcher-down"
   # A beacon older than the grace, on either date flavor.
@@ -913,6 +914,7 @@ test_return_brief_health_leads_with_a_gap() {
   assert_contains "$out" 'GAP: watcher downtime was detected during the away window' "the downtime marker was not reported as a gap"
   assert_contains "$out" 'GAP: the watcher beat was ' "the stale beacon was not reported as a gap"
   assert_not_contains "$out" 'no detected gap' "a gap window was reported as clean"
+  assert_contains "$out" 'Claude cannot complete turns (authentication_failed)' "health must include the failed primary turns"
   gap_line=$(line_of "$out" 'GAP: watcher downtime')
   clean_line=$(line_of "$out" 'Your instructions:')
   [ "$gap_line" -lt "$clean_line" ] || fail "the gap was not reported before the instructions"

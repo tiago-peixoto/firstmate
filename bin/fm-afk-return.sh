@@ -591,6 +591,12 @@ render_return_brief() {  # <evidence-file> <blockers-file> <since-epoch> <drain-
   printf 'Supervisor health:\n'
   awk -F '\t' '$1 == "evidence" && ($2 == "health" || ($2 == "lifecycle" && ($3 ~ /^outcome store unreadable/ || $3 ~ /^status file unreadable:/ || $3 ~ /^away-posture record (unreadable|missing):/ || $3 ~ /^archived away-posture record/ || $3 ~ /^superseded away-posture record/))) { print "  - " $3 }' "$evidence"
 
+  for status in "$STATE"/*.status; do
+    [ -f "$status" ] || continue
+    status_open_decisions "$status" | awk -F '\t' -v home="${status##*/}" '
+      $1 == "claude-turn-failure" && $2 == "blocked" { printf "  - %s: %s\n", home, $3 }'
+  done
+
   # 2. the captain's instructions, verbatim, then the session's account.
   printf 'Your instructions:\n'
   record=""

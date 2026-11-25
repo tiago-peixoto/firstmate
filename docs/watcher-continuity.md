@@ -92,7 +92,11 @@ On either event, an eligible primary with supervision need admits one home-scope
 If a session exits mid-cycle and leaves an orphaned auto-arm hook, the replacement session's first eligible Stop or StopFailure supersedes its claim, attaches to the running watcher through `bin/fm-watch-arm.sh`, and delivers the cycle's close.
 [`turnend-guard.md`](turnend-guard.md#auto-arm-generation-claim) owns the open-claim definition.
 While supervision is still needed and away mode remains inactive, an actionable close wakes the idle session through exit 2.
-StopFailure-driven continuations are paced rather than dropped during persistent API errors; after waiting, the hook stands down silently if away mode appeared or supervision is no longer needed.
+StopFailure-driven continuations retain the cooldown for transient errors.
+The circuit breaker in `bin/fm-claude-stop-autoarm.sh` stops persistent errors and publishes a keyed blocker locally and to the secondmate's parent.
+A successful Stop resolves the blocker and resets the circuit breaker.
+The hook uses the documented [StopFailure error field](https://code.claude.com/docs/en/hooks#stopfailure), not rendered error text.
+After waiting, the hook stands down silently if away mode appeared or supervision is no longer needed.
 The script header owns the storm-bound mechanics, [configuration](configuration.md#environment-variables) lists the cooldown override, and [StopFailure verification](verification/supervision.md#stopfailure-auto-arm) records the Herdr-hosted evidence and deterministic regression entry point.
 
 ### Claude session-lock ownership

@@ -28,6 +28,7 @@ install_autoarm_scripts() {
   mkdir -p "$dir/bin"
   cp "$ROOT/bin/fm-claude-stop-autoarm.sh" "$dir/bin/fm-claude-stop-autoarm.sh"
   cp "$ROOT/bin/fm-primary-scope-lib.sh" "$dir/bin/fm-primary-scope-lib.sh"
+  cp "$ROOT/bin/fm-parent-channel-lib.sh" "$ROOT/bin/fm-secondmate-parent-lib.sh" "$ROOT/bin/fm-status-write.sh" "$dir/bin/"
   cp "$ROOT/bin/fm-supervision-lib.sh" "$dir/bin/fm-supervision-lib.sh"
   cp "$ROOT/bin/fm-wake-lib.sh" "$dir/bin/fm-wake-lib.sh"
   cp "$ROOT/bin/fm-path-lib.sh" "$dir/bin/fm-path-lib.sh"
@@ -585,9 +586,41 @@ test_stopfailure_close_rewakes_paced_per_cooldown() {
 # exit-2 continuations too, so the same pace must bound the notice and every
 # suppressed retry after it, or error -> failure rewake -> error runs at full
 # speed with no Stop phase to charge the guard's budget.
+test_repeated_transient_failures_stop_after_three_turns() {
+  local dir payload out rc i
+  dir=$(make_primary_dir "$TMP_ROOT/stopfailure-repeated")
+  printf 'window=fixture-win\n' > "$dir/state/task.meta"
+  write_arm_fixture "$dir" actionable
+  payload='{"session_id":"sess-autoarm","hook_event_name":"StopFailure","error":"server_error"}'
+  for i in 1 2; do
+    out=$(FM_CLAUDE_STOPFAILURE_REWAKE_COOLDOWN=0 run_autoarm "$dir" "$payload"); rc=$?
+    expect_code 2 "$rc" "a transient error must retain bounded recovery"
+  done
+  out=$(FM_CLAUDE_STOPFAILURE_REWAKE_COOLDOWN=0 run_autoarm "$dir" "$payload"); rc=$?
+  expect_code 0 "$rc" "three consecutive failures must stop automatic retries"
+  assert_grep 'blocked' "$dir/state/supervisor-health.status" "persistent transient errors must be visible"
+  pass "transient failures get two continuations, then stop and report"
+}
+
+test_stopfailure_authentication_reports_once_and_stops() {
+  local dir out rc payload
+  dir=$(make_secondmate_dir "$TMP_ROOT/stopfailure-auth")
+  printf 'schema=fm-secondmate-parent.v1\nroute=remote\nparent_host=parent\n' > "$dir/.fm-secondmate-parent"
+  payload='{"session_id":"sess-autoarm","hook_event_name":"StopFailure","error":"authentication_failed"}'
+  out=$(run_autoarm "$dir" "$payload"); rc=$?
+  expect_code 0 "$rc" "an authentication failure must not schedule another turn"
+  assert_grep 'authentication_failed' "$dir/state/parent-replies.status" "the parent must learn why its mate cannot answer"
+  assert_grep 'blocked' "$dir/state/supervisor-health.status" "the local return must see the failure"
+  run_autoarm "$dir" "$payload" >/dev/null 2>&1 || fail "a repeated failure must stay stopped"
+  [ "$(wc -l < "$dir/state/parent-replies.status")" -eq 1 ] || fail "the same failure must reach the parent only once"
+  run_autoarm "$dir" >/dev/null 2>&1 || fail "a successful idle turn must clear the failure"
+  assert_grep 'resolved' "$dir/state/parent-replies.status" "a successful turn must tell the parent recovery occurred"
+  pass "authentication failure reports once without continuations, then a successful turn resolves it"
+}
+
 test_stopfailure_failure_continuations_are_paced() {
   local dir out status fail_payload marker t0 elapsed
-  fail_payload='{"session_id":"sess-autoarm","hook_event_name":"StopFailure","error":"authentication_failed","transcript_path":"/tmp/sess.jsonl"}'
+  fail_payload='{"session_id":"sess-autoarm","hook_event_name":"StopFailure","error":"server_error","transcript_path":"/tmp/sess.jsonl"}'
 
   dir=$(make_primary_dir "$TMP_ROOT/stopfailure-failed")
   marker="$dir/state/.claude-autoarm-stopfailure-rewake"
@@ -2399,6 +2432,8 @@ test_resolves_outermost_claude_pid_in_nested_bgspare_chain
 test_inert_when_fleet_idle
 test_actionable_close_rewakes_with_reason
 test_actionable_close_with_live_successor_rewakes_once
+test_repeated_transient_failures_stop_after_three_turns
+test_stopfailure_authentication_reports_once_and_stops
 test_stopfailure_close_rewakes_paced_per_cooldown
 test_stopfailure_failure_continuations_are_paced
 test_stopfailure_paced_rewake_honors_afk_and_need_after_wait

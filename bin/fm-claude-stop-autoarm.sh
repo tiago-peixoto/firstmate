@@ -107,6 +107,11 @@
 #     consumed block count is over the guard's budget it commits the alarm in
 #     the same owned critical section as its failed-suppressed write and
 #     delivers the one loud final rewake; later generations exit 0.
+#   - StopFailure circuit breaker: documented credential/account/configuration
+#     errors stop continuations immediately; three consecutive other errors stop
+#     them too. state/.claude-stopfailure-count survives hook firings. A keyed
+#     supervisor-health.status blocker and the secondmate parent channel name
+#     the error once. An ordinary successful Stop resolves it and resets the count.
 #   - StopFailure storm bound: an error-ended turn can precede another error
 #     end when the API is still down, and no Stop phase runs to charge the
 #     guard's block budget, so every StopFailure-triggered exit-2
@@ -261,6 +266,49 @@ if ! fm_session_lock_owned_by_self "$STATE"; then
   fm_session_pid_valid "$LOCK_PID" || exit 0
   fm_session_lock_pid_blocks_reclaim "$LOCK_PID" && exit 0
   RECOVER_SESSION_LOCK=1
+fi
+
+# Report before the need/away gates: an idle mate can still owe its parent a reply.
+stopfailure_health() {
+  local count_file="$STATE/.claude-stopfailure-count" count=0 error note line rc=0
+  [ "$HOOK_EVENT_NAME" = StopFailure ] || [ -f "$count_file" ] || return 0
+  # shellcheck source=bin/fm-parent-channel-lib.sh
+  . "$SCRIPT_DIR/fm-parent-channel-lib.sh"
+  fm_lock_acquire_wait "$count_file.lock" || return 1
+  count=$(cat "$count_file" 2>/dev/null || true)
+  case "$count" in 1|2|3) ;; *) count=0 ;; esac
+  if [ "$HOOK_EVENT_NAME" = StopFailure ]; then
+    error=$(printf '%s' "$PAYLOAD" | jq -r '.error // "unknown" | strings' 2>/dev/null)
+    case "$error" in
+      authentication_failed|oauth_org_not_allowed|account_on_hold|billing_error|invalid_request|model_not_found|cloud_credential_error) count=3 ;;
+      *) error=transient_or_unknown; [ "$count" -ge 3 ] || count=$((count + 1)) ;;
+    esac
+    (umask 077; printf '%s\n' "$count" > "$count_file.tmp.$$") && mv "$count_file.tmp.$$" "$count_file" || rc=1
+    if [ "$count" -ge 3 ]; then
+      note="Claude cannot complete turns ($error). Automatic continuations stopped. Correct the account or service error and send a new prompt."
+      line="blocked [key=claude-turn-failure]: $note"
+    else
+      fm_lock_release "$count_file.lock"
+      return "$rc"
+    fi
+  elif [ "$count" -ge 3 ]; then
+    line='resolved [key=claude-turn-failure]: Claude completed a turn; automatic continuations can resume.'
+  else
+    rm -f "$count_file"
+    fm_lock_release "$count_file.lock"
+    return 0
+  fi
+  fm_parent_channel_append_once "$STATE/supervisor-health.status" "$(status_stamp_line "$line")" claude-turn-failure || rc=1
+  fm_parent_channel_report "$FM_HOME" "$STATE" "$line" claude-turn-failure
+  case $? in 0|1) ;; *) printf 'Claude turn health could not reach the parent channel\n' >&2; rc=1 ;; esac
+  if [ "$HOOK_EVENT_NAME" != StopFailure ] && [ "$rc" -eq 0 ]; then
+    rm -f "$count_file"
+  fi
+  fm_lock_release "$count_file.lock"
+  [ "$HOOK_EVENT_NAME" != StopFailure ] && [ "$rc" -eq 0 ]
+}
+if [ "$RECOVER_SESSION_LOCK" -eq 0 ]; then
+  stopfailure_health || exit 0
 fi
 
 # --- AFK: the away daemon owns the watcher and triage; never rewake ----------
