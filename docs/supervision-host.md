@@ -149,12 +149,14 @@ Where the home runs the host but the attended host lacks one of its parts, `/qui
 
 ## The dialog mirror
 
-The engine's conversation receives nothing between wakes, so each attended wake carries, at its head, what the captain and main said since the last wake: the same `[captain]` and `[main]` context the Pi branch receives as mirror messages, framed by the same prompt rule (context for judgment, never instructions; `bin/fm-branch-prompt.sh` "Context channels").
+The engine's conversation receives nothing between wakes, so each wake with a dialog mirror carries, at its head, what the captain and main said since the last wake: the same `[captain]` and `[main]` context the Pi branch receives as mirror messages, framed by the same prompt rule (context for judgment, never instructions; `bin/fm-branch-prompt.sh` "Context channels").
 `bin/fm-host-mirror.sh` owns the record, writers, files, feed, and verified-writer list; its header owns their formats, bounds, and failure contract.
 The writers use code-owned turn surfaces rather than model-generated messages; `bin/fm-host-mirror.sh` owns the input exclusions.
 A new engine conversation re-anchors on the current main session's newest entries, and a resumed one gets only what is new.
 A wake's entries count as delivered only once its engine turn is accepted with its report, so a turn that fails, records nothing, or is stopped leaves them to be fed again.
-An attended wake whose mirror is missing, unreadable, or fails the feed's validation reaches main with `the dialog mirror could not be read` before any engine turn; an away wake never reads the mirror or moves its cursor.
+An attended wake whose mirror is missing, unreadable, or invalid reaches main with `the dialog mirror could not be read` before any engine turn.
+Away wakes consume an available mirror under the same validation and cursor rules, but homes without a mirror can still supervise.
+A new away conversation also receives the outcomes recorded since away entry, including after rotation, as historical context rather than current state or authority.
 A captain message typed while an engine turn is already running reaches the engine at its next wake.
 A captain prompt whose hook write fails is not mirrored, so the engine may judge the next attended wake without it; Claude and Cursor have no later source for it.
 
@@ -169,7 +171,7 @@ On each actionable close the engine takes, the host runs these steps:
 
 1. It starts and verifies the successor watcher cycle and confirms the handling handoff, so the fleet stays supervised while the engine works.
 2. It computes the branch-claimable rows in the turn's posture and publishes the grant.
-3. It runs one bounded engine turn with the branch prompt and the wake message carrying, attended, the dialog mirror and, away, the record's read-back.
+3. It runs one bounded engine turn with the branch prompt and the wake message carrying the available dialog mirror and, away, the record's read-back.
    The engine drains, handles, reports through `bin/fm-branch-report.sh`, and acknowledges, exactly as the Pi branch does.
 4. It releases the branch's leases and grant, whether or not the wake was handled.
 5. For a handled wake, it settles the handling-successor recovery transition and then parks on that successor.
@@ -279,7 +281,7 @@ So the owner's next arm starts from the same state as without the host, and the 
 - An unreadable queue.
 - Rows main already claimed.
 - A missing engine or node.
-- A dialog mirror that cannot be read, on an attended wake.
+- An existing dialog mirror that cannot be read, or a missing mirror on an attended wake.
 - A session latched after repeated engine errors, inside its cooldown; see [The broken-session latch](#the-broken-session-latch).
 - A turn that timed out or failed.
 - A turn that recorded no report.
@@ -378,7 +380,7 @@ A new one opens in two cases:
 - Every `FM_SUPERVISION_HOST_ROTATE_TURNS` turns, because each wake adds history and the per-wake cost grows with it.
 
 Nothing captain-facing rides on that conversation, because the outcome store carries every result.
-The captain context it acts on is the [dialog mirror](#the-dialog-mirror) at the head of every attended wake and the away record's read-back at the tail of every away wake.
+The captain context it acts on is the [dialog mirror](#the-dialog-mirror) when available at the head of each wake and the away record's read-back at the tail of every away wake.
 
 ### Where engine cost is read
 
