@@ -308,6 +308,22 @@ test_e2e_cwd_leak_regression() {
 
 # --- fail-open transport behavior ------------------------------------------
 
+test_worker_marker_overrides_inherited_primary_home() {
+  local out rc command
+  mkdir -p "$PRIMARY/state"
+  for command in 'fm-cd-pretool-check.sh --command cd' 'fm-subagent-pretool-check.sh --tool Agent' 'fm-turnend-guard.sh'; do
+    rc=0
+    # shellcheck disable=SC2086 # The fixed command list supplies script arguments.
+    out=$(FM_TASK_ID=scout FM_HOME="$PRIMARY" FM_ROOT_OVERRIDE="$PRIMARY" bash "$ROOT/bin/${command%% *}" ${command#"${command%% *}"} 2>&1) || rc=$?
+    [ "$rc" -eq 0 ] && [ -z "$out" ] || fail "worker primary guard was not inert: $command: $rc $out"
+  done
+  rc=0
+  out=$(FM_TASK_ID=scout FM_HOME="$PRIMARY" FM_ROOT_OVERRIDE="$PRIMARY" bash "$ROOT/bin/fm-sessionstart-run.sh" --source resume --pi-prerequisite 2>&1) || rc=$?
+  expect_code 3 "$rc" "Pi worker startup must be explicitly ineligible"
+  [ -z "$out" ] || fail "worker startup printed primary instructions: $out"
+  pass "worker identity disables primary guards despite inherited supervisor paths"
+}
+
 test_fail_open_empty_stdin() {
   local out rc
   out=$("$CHECK" < /dev/null 2>&1); rc=$?
@@ -413,6 +429,7 @@ test_scripts_are_shellcheck_clean() {
   pass "bin/fm-cd-pretool-check.sh is clean under bin/fm-lint.sh"
 }
 
+test_worker_marker_overrides_inherited_primary_home
 test_full_acceptance_matrix
 test_fires_in_secondmate_home
 test_inert_in_child_worktree

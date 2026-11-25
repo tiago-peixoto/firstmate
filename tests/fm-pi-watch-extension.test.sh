@@ -140,6 +140,25 @@ export const Type = {
 JS
 }
 
+test_worker_loads_no_primary_extensions() {
+  local repo
+  repo="$TMP_ROOT/pi-worker-scope"
+  mkdir -p "$repo/state"
+  install_pi_watch_extension_fixture "$repo"
+  cp "$ROOT/.pi/extensions/fm-primary-turnend-guard.ts" "$repo/.pi/extensions/"
+  FM_TASK_ID=scout FM_HOME="$repo" FM_ROOT_OVERRIDE="$repo" REPO="$repo" node --input-type=module <<'JS'
+import { pathToFileURL } from 'node:url';
+const pi = new Proxy({}, { get(_target, name) { throw new Error(`worker registered primary surface: ${String(name)}`); } });
+for (const file of ['fm-primary-turnend-guard.ts', 'fm-primary-pi-watch.ts']) {
+  const extension = await import(pathToFileURL(`${process.env.REPO}/.pi/extensions/${file}`));
+  extension.default(pi);
+}
+JS
+  [ "$?" -eq 0 ] || fail "worker loaded primary hooks or tools"
+  [ ! -e "$repo/state/.pi-turnend-extension-loaded" ] || fail "worker wrote the primary marker"
+  pass "Pi worker identity disables primary guards and supervision registration"
+}
+
 test_pi_extension_reports_external_healthy_watcher() {
   local repo home plugin out status
   repo="$TMP_ROOT/pi-external-healthy-root"
@@ -6306,6 +6325,7 @@ EOF
   pass "OpenCode turn-end guard survives an encoder that never reads stdin"
 }
 
+test_worker_loads_no_primary_extensions
 test_pi_extension_reports_external_healthy_watcher
 test_pi_tool_returns_agent_tool_result
 test_pi_redundant_tool_call_is_owned_noop

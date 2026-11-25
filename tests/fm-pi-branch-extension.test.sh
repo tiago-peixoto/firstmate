@@ -657,6 +657,19 @@ mod.default(pi);
 JS
 DRIVER_PRELUDE=$(cat "$DRIVER_PRELUDE_FILE")
 
+test_worker_registers_no_supervision_branch() {
+  local repo
+  repo="$TMP_ROOT/branch-worker"
+  install_pi_branch_extension_fixture "$repo"
+  FM_TASK_ID=scout FM_HOME="$repo" REPO="$repo" node --input-type=module <<'JS'
+import { pathToFileURL } from 'node:url';
+const extension = await import(pathToFileURL(`${process.env.REPO}/.pi/extensions/fm-branch-supervision.ts`));
+extension.default(new Proxy({}, { get(_target, name) { throw new Error(`worker registered branch surface: ${String(name)}`); } }));
+JS
+  [ "$?" -eq 0 ] || fail "worker registered a supervision branch"
+  pass "Pi workers register no supervision branch"
+}
+
 test_branch_dispatch_two_stage_filter_and_prefix_contract() {
   local repo home out status
   repo="$TMP_ROOT/dispatch-root"
@@ -6265,6 +6278,7 @@ EOF
 test_outcomes_tool_call_headers_follow_the_loaded_pi_version
 test_outcomes_tool_uses_stock_execution_and_export_consumers
 test_real_pi_picker_primitives_stay_bounded_and_searchable
+test_worker_registers_no_supervision_branch
 test_branch_dispatch_two_stage_filter_and_prefix_contract
 test_requested_healthy_outcome_and_unsolicited_routine_outcome_delivery
 test_captain_outcome_is_exactly_once_across_crash_reload_and_unrelated_response
