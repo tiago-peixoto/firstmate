@@ -74,7 +74,17 @@ tasks_in() {  # <home> <tasks-axi args...>
   (cd "$home" && tasks-axi "$@")
 }
 
+# Existing question-only fixtures have no recommended work; work-account tests
+# call the raw entry point so an omitted account still reaches production.
 run_captain() {  # <home> <command args...>
+  if [ "${2:-}" = complete ]; then
+    run_captain_raw "$@" --no-work
+  else
+    run_captain_raw "$@"
+  fi
+}
+
+run_captain_raw() {  # <home> <command args...>
   local home=$1
   shift
   PATH="$home/fakebin:$PATH" REAL_TASKS_AXI="$TASKS_AXI_BIN" \

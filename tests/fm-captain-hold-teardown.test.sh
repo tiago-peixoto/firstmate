@@ -629,7 +629,7 @@ EOF
     || fail "could not hold the sibling captain call"
   PATH="$home/fakebin:$PATH" FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" \
     FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$home/config" \
-    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" >/dev/null \
+    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" --no-work >/dev/null \
     || fail "completion gate failed for the relocated answer-before-replay fixture"
   cat > "$home/fakebin/treehouse" <<'SH'
 #!/usr/bin/env bash
@@ -711,7 +711,7 @@ EOF
     || fail "could not hold the sibling captain call"
   PATH="$home/fakebin:$PATH" FM_HOME="$home" FM_STATE_OVERRIDE="$home/state" \
     FM_DATA_OVERRIDE="$data" FM_CONFIG_OVERRIDE="$home/config" \
-    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" >/dev/null \
+    "$ROOT/bin/fm-captain-hold.sh" complete "$id" "$id-call" --no-work >/dev/null \
     || fail "completion gate failed for the relocated captain hold"
 
   PATH="$home/fakebin:$PATH" FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" \
