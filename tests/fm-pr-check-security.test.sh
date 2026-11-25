@@ -939,6 +939,42 @@ test_scan_records_a_pr_reported_in_a_done_line() {
   pass "the scan records the PR a done line reports and leaves prose, scouts and recorded PRs alone"
 }
 
+test_scan_records_ready_pr_through_its_review_wait() {
+  local dir state id out delay
+  dir=$(make_case scan-review-wait)
+  state="$dir/home/state"
+  for delay in 0 91; do
+    id="task-wait-$delay"
+    write_task_meta "$dir" "$id"
+    printf 'done [at=100]: PR https://github.com/o/r/pull/7 checks green\npaused [at=%s]: Waiting for review of https://github.com/o/r/pull/7 until 2027-01-01T00:00Z\n' \
+      "$((100 + delay))" > "$state/$id.status"
+  done
+  for id in task-other-pr task-work task-failure task-blocked task-decision; do
+    write_task_meta "$dir" "$id"
+    printf 'done [at=100]: PR https://github.com/o/r/pull/7 checks green\n' > "$state/$id.status"
+  done
+  printf 'paused [at=101]: Waiting for review of https://github.com/o/r/pull/8 until 2027-01-01T00:00Z\n' >> "$state/task-other-pr.status"
+  printf 'working [at=101]: Fixing review findings\n' >> "$state/task-work.status"
+  printf 'failed [at=101]: Validation failed\n' >> "$state/task-failure.status"
+  printf 'blocked [at=101]: Rebase needed\n' >> "$state/task-blocked.status"
+  printf 'needs-decision [at=101]: Design choice needed\n' >> "$state/task-decision.status"
+  for id in task-work task-failure task-blocked task-decision; do
+    printf 'paused [at=102]: Waiting for review of https://github.com/o/r/pull/7 until 2027-01-01T00:00Z\n' >> "$state/$id.status"
+  done
+  out=$(run_check_entry "$dir" scan 2> "$dir/stderr") || fail "the scan failed: $(cat "$dir/stderr")"
+  [ -z "$out" ] || fail "the review-wait scan printed: $out"
+  for delay in 0 91; do
+    id="task-wait-$delay"
+    grep -qxF 'pr=https://github.com/o/r/pull/7' "$state/$id.meta" || fail "review wait hid the ready PR ($delay seconds)"
+    fm_pr_poll_artifacts_valid "$state" "$id" "$POLL" || fail "review wait left the PR without a merge poll"
+  done
+  for id in task-other-pr task-work task-failure task-blocked task-decision; do
+    ! grep -q '^pr=' "$state/$id.meta" || fail "the scan ignored a superseding event for $id"
+    [ ! -e "$state/$id.check.sh" ] || fail "the scan armed a superseded PR for $id"
+  done
+  pass "the scan records readiness through a wait on that PR, but never through a withdrawn ready report"
+}
+
 # A refused registration is reported once per task and PR, and later scans keep
 # retrying silently, so a draft marked ready afterwards is recorded unaided.
 test_scan_reports_a_refusal_once_and_retries() {
@@ -5736,6 +5772,7 @@ test_unpushed_named_head_refuses_registration
 test_direct_pr_unpushed_commit_refuses_registration
 test_merge_rerecord_refreshes_before_refusing
 test_scan_records_a_pr_reported_in_a_done_line
+test_scan_records_ready_pr_through_its_review_wait
 test_scan_reports_a_refusal_once_and_retries
 test_scan_retries_refused_task_behind_a_hanging_registration
 test_scan_rotates_past_a_hanging_registration

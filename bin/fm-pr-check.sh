@@ -40,11 +40,11 @@
 # scan records every task whose status reports a PR that nobody recorded, so
 # merge monitoring never depends on the supervisor remembering this command.
 # bin/fm-watch.sh runs it at the start of each check sweep. A task reports a PR
-# only when its newest crew-declared status line (last_crew_status_line in
-# bin/fm-classify-lib.sh) is a done: line in a ready shape
-# (fm_dod_ready_note_url in bin/fm-dod-lib.sh) naming a supported PR URL, so
-# prose around the URL, a line saying the PR is not ready, and any later crew
-# line each leave nothing to record. A candidate is a task record that is not a
+# through a done: line in a ready shape (fm_dod_ready_note_url in
+# bin/fm-dod-lib.sh) naming a supported PR URL. Later paused: declarations
+# preserve it only when their sole URL is that same PR. Supervisor annotations
+# also preserve it; every other later crew event withdraws it. Prose around the
+# ready URL or a line saying the PR is not ready leaves nothing to record. A candidate is a task record that is not a
 # secondmate or scout and has no pr= line, has the reported pr= but no valid
 # published poll, or has a pr= that its status log named and the reported PR now
 # replaces; a pr= the log never named is the supervisor's own choice and stays,
@@ -91,13 +91,28 @@ DEGRADED_WATCH_ENABLED=0
 . "$SCRIPT_DIR/fm-timeout-lib.sh"
 
 pr_check_reported_url() {  # <status-file>
-  local line url
+  local line verb url='' urls legacy_re
   [ -f "$1" ] && [ ! -L "$1" ] || return 1
-  line=$(last_crew_status_line "$1")
-  [ "$(status_line_verb "$line")" = "done" ] || return 1
-  url=$(fm_dod_ready_note_url "$(status_line_note "$line")") || return 1
-  fm_pr_url_parse "$url" || return 1
-  printf '%s\n' "$FM_PR_URL"
+  legacy_re="^[[:space:]]*(${FM_CAPTAIN_RE:-$FM_CLASSIFY_CAPTAIN_RE_DEFAULT})"
+  while IFS= read -r line || [ -n "$line" ]; do
+    _fm_status_line_is_event "$line" "$legacy_re" || continue
+    status_line_verb "$line" verb
+    case "$verb" in
+      "${FM_CLASSIFY_RESOLVE_VERB:-$FM_CLASSIFY_RESOLVE_VERB_DEFAULT}"|"${FM_CLASSIFY_CAPTAIN_HELD_VERB:-$FM_CLASSIFY_CAPTAIN_HELD_VERB_DEFAULT}") ;;
+      done)
+        url=$(fm_dod_ready_note_url "$(status_line_note "$line")") || url=''
+        if fm_pr_url_parse "$url"; then url=$FM_PR_URL; else url=''; fi
+        ;;
+      "${FM_CLASSIFY_PAUSED_VERB:-$FM_CLASSIFY_PAUSED_VERB_DEFAULT}")
+        [ -n "$url" ] || continue
+        urls=$(status_line_note "$line" | tr -s '[:space:]' '\n' | grep -E '^https?://' | sort -u) || urls=''
+        [ "$urls" = "$url" ] || url=''
+        ;;
+      *) url='' ;;
+    esac
+  done < "$1"
+  [ -n "$url" ] || return 1
+  printf '%s\n' "$url"
 }
 
 pr_check_rotate() {  # <last-id>: start the lines on stdin just after the line for last-id, wrapping
