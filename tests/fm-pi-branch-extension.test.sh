@@ -661,12 +661,11 @@ test_worker_registers_no_supervision_branch() {
   local repo
   repo="$TMP_ROOT/branch-worker"
   install_pi_branch_extension_fixture "$repo"
-  FM_TASK_ID=scout FM_HOME="$repo" REPO="$repo" node --input-type=module <<'JS'
+  FM_TASK_ID=scout FM_HOME="$repo" REPO="$repo" node --input-type=module <<'JS' || fail "worker registered a supervision branch"
 import { pathToFileURL } from 'node:url';
 const extension = await import(pathToFileURL(`${process.env.REPO}/.pi/extensions/fm-branch-supervision.ts`));
 extension.default(new Proxy({}, { get(_target, name) { throw new Error(`worker registered branch surface: ${String(name)}`); } }));
 JS
-  [ "$?" -eq 0 ] || fail "worker registered a supervision branch"
   pass "Pi workers register no supervision branch"
 }
 
