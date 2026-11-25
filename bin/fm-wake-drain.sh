@@ -6,6 +6,8 @@
 # newer branch outcome, OPEN DECISIONS, captain-call record divergence, and on
 # a supervision-host home the supervision session's new and unprocessed
 # outcomes (BRANCH OUTCOMES), then assert liveness.
+# Main also lists unread *.msg records from its explicit FM_TASK_INBOX, even
+# with no queued wake. Presentation never moves or acknowledges those records.
 #
 # Keep sequence-bound row consumption independent from generation-bound episode
 # retirement; docs/watcher-continuity.md owns the recovery contract.
@@ -813,7 +815,17 @@ print_status_sections() {
 
 print_status_presentation() {  # [<deduped-raw-rows>]
   local rows=${1:-} lock="$STATE/.status-presentation-lock" snapshot annotation_manifest fully_presented='' rc=0
-  local lock_rc holder_pid snapshot_skipped=false
+  local lock_rc holder_pid snapshot_skipped=false instruction steering_header=false
+  if [ "$ACTOR" = main ] && [ -n "${FM_TASK_INBOX:-}" ]; then
+    for instruction in "$FM_TASK_INBOX"/*.msg; do
+      [ -f "$instruction" ] || continue
+      if [ "$steering_header" = false ]; then
+        printf 'UNREAD STEERING: read these instructions in numeric order, act on each, then move it into the inbox handled/ directory:\n'
+        steering_header=true
+      fi
+      printf '  %s\n' "$instruction"
+    done
+  fi
   if fm_lock_acquire_wait_bounded "$lock" "$PRESENTATION_LOCK_TIMEOUT"; then
     :
   else
