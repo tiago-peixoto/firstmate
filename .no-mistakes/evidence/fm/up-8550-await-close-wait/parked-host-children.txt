@@ -1,0 +1,23 @@
+### PR head (1946f60c)
+host script: {run-worktree}/bin/fm-supervision-host.sh
+parked 6s: reaped-child page faults before=56772 after=56772 delta=0
+host exit code after the close: 0
+--- host output delivered to main ---
+watcher: started pid=2030133 (beacon fresh)
+signal: /tmp/fm-supervision-host.NVkl40/kernel-count/state/demo.status
+--- ledger ---
+1795613321	start	gen=host-2029052-1795613320	primary=claude
+1795613336	pass-through	attended	main-only	signal: /tmp/fm-supervision-host.NVkl40/kernel-count/state/demo.status
+rc=0
+
+### upstream main base (2f000eb4) full tree, base host script and base fixtures
+host script: /tmp/fm-base.EZegYh/bin/fm-supervision-host.sh
+parked 6s: reaped-child page faults before=60006 after=84518 delta=24512
+host exit code after the close: 0
+--- host output delivered to main ---
+watcher: started pid=2093716 (beacon fresh)
+signal: /tmp/fm-supervision-host.Xh3TNy/kernel-count/state/demo.status
+--- ledger ---
+1795613364	start	gen=host-2092518-1795613364	primary=claude
+1795613377	pass-through	attended	main-only	signal: /tmp/fm-supervision-host.Xh3TNy/kernel-count/state/demo.status
+rc=0
