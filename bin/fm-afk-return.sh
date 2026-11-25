@@ -16,8 +16,8 @@
 # (bin/fm-branch-outcome.sh), the held set in the backlog (tasks-axi), and the
 # status logs. Its order is fixed: supervisor health across the away window
 # first, then the captain's away instructions - their words verbatim, including
-# superseded in-session mandates - followed by the away session's account of
-# every visible action it took under them (each non-silent outcome-store row
+# superseded in-session mandates - followed by the recorded account of
+# every visible action main or the away session took under them (each non-silent outcome-store row
 # from the window whose summary opens with the "per your away instructions:"
 # marker the branch prompt in bin/fm-branch-prompt.sh requires), then what is
 # waiting on the captain,
@@ -29,6 +29,13 @@
 # is fleet work and so waits for the gate rather than holding it), then what
 # the away session handled, then cost. The health snapshot is taken BEFORE the
 # daemon shutdown so the shutdown itself cannot read as a gap.
+#
+# Action accounting: main records each action it takes under the words, in the
+# entry turn or a handed-back wake, with fm-branch-outcome.sh append --task <id>
+# --verdict routine|captain --summary <summary>. Use the branch prompt's exact
+# away-action opener and name the sentence acted on; never mark an action silent.
+# The branch uses its ordinary report surface. No recorded action is not proof
+# that nothing happened, so the empty account makes no such claim.
 #
 # THE GATE. `blocked:` is the crewmate protocol's firstmate-actionable verb. A
 # live task's open blocked event must be remediated and closed with
@@ -531,14 +538,14 @@ render_words_record() {  # <record> [superseded-time]
   case "$words" in *$'\n') ;; *) printf '\n' ;; esac
 }
 
-render_words_account() {  # the away session's account of what it did under the words
+render_words_account() {  # recorded actions under the words, from either actor
   local rows
   rows=$(printf '%s\n' "$STORE_ROWS" | awk -F '\t' -v marker="$AWAY_ACTION_MARKER" '
     $6 != "true" && substr($5, 1, length(marker)) == marker { printf "    - %s: %s\n", $2, $5 }')
   if [ -n "$rows" ]; then
-    printf '  the away session acted on them:\n%s\n' "$rows"
+    printf '  actions recorded under them:\n%s\n' "$rows"
   else
-    printf '  the away session took no action under them.\n'
+    printf '  no actions were recorded under them.\n'
   fi
 }
 
@@ -607,8 +614,8 @@ render_return_brief() {  # <evidence-file> <blockers-file> <since-epoch> <drain-
     for superseded in "$archive_dir/$since-superseded-"*.afk-contract; do
       [ -f "$superseded" ] || continue
       stamp=${superseded##*/"$since"-superseded-}
-      stamp=${stamp%%-*}
       stamp=${stamp%.afk-contract}
+      stamp=${stamp%%-*}
       case "$stamp" in ''|*[!0-9]*) superseded_at=unknown ;; *) superseded_at=$(epoch_to_iso "$stamp") ;; esac
       render_words_record "$superseded" "$superseded_at"
     done
