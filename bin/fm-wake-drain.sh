@@ -21,7 +21,10 @@
 # note, without row or content limits. It neither claims nor acknowledges wakes
 # or status presentations. Normal drains retain their bounded preview and put
 # its full count (or unknown when any status log could not be read) before the
-# acknowledgement command.
+# acknowledgement command. Where this drain presents BRANCH OUTCOMES, that line
+# also counts the outcomes the section presents, read before the section marks
+# them read (unknown when the store cannot be read), so an output filter that
+# keeps only the acknowledgement line still shows that outcomes are waiting.
 # After truncation or recovery, reconcile the full reader before acknowledging.
 # FM_STATUS_PRESENTATION_LOCK_TIMEOUT sets the positive whole-second wait for
 # presentation-path locks (default 10); queue mutation locks remain blocking.
@@ -866,9 +869,27 @@ print_status_presentation() {  # [<deduped-raw-rows>]
   return "$rc"
 }
 
+# The rows BRANCH OUTCOMES presents: unread visible rows and every captain row
+# main has not acknowledged. Prints nothing where this drain presents none.
+branch_outcome_count() {
+  local rows
+  [ "$ACTOR" = main ] || return 0
+  fm_supervision_host_outcomes_drained "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}" || return 0
+  ! fm_afk_contract_away_present "$STATE" || return 0
+  if [ ! -s "$STATE/branch-outcomes.jsonl" ]; then
+    printf ' branch-outcomes=0'
+  elif rows=$("$SCRIPT_DIR/fm-branch-outcome.sh" present 2>/dev/null) \
+    && rows=$(printf '%s\n' "$rows" | jq -s 'map(select(.verdict == "captain" or (.unread and .silent != true))) | length' 2>/dev/null); then
+    printf ' branch-outcomes=%s' "$rows"
+    [ "$rows" = 0 ] || printf ' (listed under BRANCH OUTCOMES)'
+  else
+    printf ' branch-outcomes=unknown (the outcome store could not be read)'
+  fi
+}
+
 print_wake_ack_required() { # <sequence>
-  printf 'WAKE_ACK_REQUIRED: open-decisions=%s (full reader: bin/fm-wake-drain.sh --open-decisions). After full-set reconciliation and handling completes run bin/fm-wake-drain.sh --ack-through %s --recovery-generation %s\n' \
-    "$OPEN_DECISION_COUNT" "$1" "${RECOVERY_MARKER_TOKEN##*:}" >&2
+  printf 'WAKE_ACK_REQUIRED: open-decisions=%s (full reader: bin/fm-wake-drain.sh --open-decisions)%s. After full-set reconciliation and handling completes run bin/fm-wake-drain.sh --ack-through %s --recovery-generation %s\n' \
+    "$OPEN_DECISION_COUNT" "$(branch_outcome_count)" "$1" "${RECOVERY_MARKER_TOKEN##*:}" >&2
 }
 
 print_full_open_decisions() {
