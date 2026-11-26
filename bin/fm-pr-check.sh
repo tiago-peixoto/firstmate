@@ -43,8 +43,9 @@
 # through a done: line in a ready shape (fm_dod_ready_note_url in
 # bin/fm-dod-lib.sh) naming a supported PR URL. Later paused: declarations
 # preserve it only when their sole URL is that same PR. Supervisor annotations
-# also preserve it; every other later crew event withdraws it. Prose around the
-# ready URL or a line saying the PR is not ready leaves nothing to record. A candidate is a task record that is not a
+# also preserve it; every other later crew event withdraws it. Prose may follow
+# the complete ready phrase, but prose before the URL or in place of the phrase
+# leaves nothing to record. A candidate is a task record that is not a
 # secondmate or scout and has no pr= line, has the reported pr= but no valid
 # published poll, or has a pr= that its status log named and the reported PR now
 # replaces; a pr= the log never named is the supervisor's own choice and stays,

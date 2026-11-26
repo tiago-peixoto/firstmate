@@ -878,7 +878,8 @@ The full behavior contract and command details are owned by [`bin/fm-park.sh`](.
 
 The optional local, gitignored `config/pr-register-scan` presence flag opts this home into recording, without the supervisor, each PR a task reports.
 With the flag present, the watcher's check sweep runs `bin/fm-pr-check.sh scan` before the merge polls.
-The scan reads a ship task's PR only from a ready report: the task's newest crew-declared status line must be a `done:` line that is exactly `PR <url>`, `PR <url> checks green`, or `PR <url> published for review`, so prose around the URL and any later crew line report nothing.
+The scan reads a ship task's PR only from a ready report: the task's newest crew-declared status line must be a `done:` line that opens with `PR <url> checks green` or `PR <url> published for review`, or is exactly `PR <url>`.
+Prose may follow the complete ready phrase, but prose before the URL, after a bare URL, or in place of the phrase reports nothing, and so does any later crew line.
 Later `resolved:` and `captain-held:` lines are supervisor bookkeeping and do not withdraw a ready report.
 It records that PR through the ordinary registration path when the task has no `pr=`, or has that same `pr=` but no published merge poll.
 When the status log named the recorded `pr=` and the ready report names a different PR, that PR replaces the recorded one, so a lane that closes a PR and opens another moves its merge poll.
