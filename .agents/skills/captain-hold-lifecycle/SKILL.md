@@ -1,7 +1,7 @@
 ---
 name: captain-hold-lifecycle
 description: >-
-  Load before treating an investigation, scout report, structured review, or Lavish review as complete, before ending a visual review that exposed a captain decision, when recording or routing the captain's answer, after compaction or decision recovery, when the wake drain truncates decisions, and on any RECORD DIVERGENCE line the wake drain prints.
+  Load before treating an investigation, scout report, structured review, or Lavish review as complete, before ending a visual review that exposed a captain decision, when recording or routing the captain's answer, after compaction or decision recovery, when the wake drain truncates decisions, before putting an open captain call to the captain again, and on any RECORD DIVERGENCE line the wake drain prints.
 user-invocable: false
 metadata:
   internal: true
@@ -40,6 +40,8 @@ A structured PR link alone never authorizes settlement.
 The contribution observer records the event as evidence, not as a captain answer, and settles matching holds without a model turn.
 An unmatched unmerged closure remains an open question and arrives as a contribution notification.
 Read that fact before presenting the remaining choice, rather than asking whether to merge the closed PR.
+Before putting any open captain call to the captain again, read `bin/fm-captain-hold.sh present <task>`: it shows the recorded question verbatim beside its subjects' current forge state and the captain's words since it opened, and refuses a call already answered.
+Ask again only when that context leaves the call open, with its recorded options unchanged, and name any source it reports unavailable.
 The script's help owns policy registration, supported events, and retry mechanics.
 
 When recording a captain answer, preserve what he actually said: `bin/fm-captain-hold.sh answer` writes his exact words into the task and closes a question-shaped call, while `--release` frees a captain-gated work item to proceed.

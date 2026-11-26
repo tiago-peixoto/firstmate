@@ -34,6 +34,7 @@
 #   fm-captain-hold.sh complete <origin-id> (--none | <task-id>...) (--work <task-id>... | --no-work)
 #   fm-captain-hold.sh verify <origin-id>
 #   fm-captain-hold.sh open <task-id> [--identity] [--distinguish-absent]
+#   fm-captain-hold.sh present <task-id>
 #   fm-captain-hold.sh diverged
 #   fm-captain-hold.sh reconcile list
 #   fm-captain-hold.sh reconcile close <task-id> --evidence-file <path>
@@ -218,6 +219,16 @@
 # crew task reaches a due stale alarm - its open backlog hold need not appear in
 # the task's last status line - and on a 0 bounds repeated alarms from new pane
 # hashes for the decision.
+#
+# `present` is the read-only view a supervisor reads before it puts an open
+# captain call to the captain again: the recorded title, question and task
+# notes verbatim, the current forge state of every pull request or issue they
+# link (bin/fm-forge-state.sh), and the captain's messages from the dialog
+# mirror (bin/fm-host-mirror.sh) since the hold-set stamp. A source that cannot
+# be read is named unavailable rather than shown as unchanged, and nothing is
+# summarized or rewritten. It refuses (exit 1) a task that is closed, released,
+# or not held for the captain, naming an already-recorded answer, so an
+# answered call is never asked again.
 #
 # `diverged` is the read-only guard over the seam between the two records of
 # one captain call. See "record divergence" beside command_diverged below.
@@ -2514,8 +2525,66 @@ command_open() {  # <task-id> [--identity] [--distinguish-absent]
   exit 2
 }
 
+# The current context a supervisor reads before putting an open captain call to
+# the captain again (see the header). Exit 1 refuses a call that is answered or
+# not open; a read failure stops through fail or task_show.
+command_present() {  # <task-id>
+  local id=${1:-} show body title reason opened since urls mirror="$STATE/.host-mirror.jsonl" oldest messages
+  [ "$#" -eq 1 ] || { usage >&2; exit 2; }
+  case "$id" in
+    ''|*[!A-Za-z0-9._-]*) fail "task id must be a non-empty privacy-safe slug: $id" ;;
+  esac
+  task_show_or_fail "$id" "no task $id in this home's backlog"
+  show=$(printf '%s\n' "$show" | fm_hold_reason_decode_stream toon) || fail "the hold reason of $id could not be decoded"
+  body=$(show_field_value "$show" body)
+  if [ "$(show_field "$show" state)" = "done" ] || [ "$(show_field_value "$show" hold_kind)" != captain ]; then
+    if [ "$(resolution_record_count "$(show_field "$show" body)")" -gt 0 ]; then
+      printf 'fm-captain-hold: %s is already answered; read its recorded answer with tasks-axi show %s --full instead of asking again\n' "$id" "$id" >&2
+    else
+      printf 'fm-captain-hold: %s is not an open captain call\n' "$id" >&2
+    fi
+    return 1
+  fi
+  title=$(show_field_value "$show" title)
+  reason=$(show_field_value "$show" hold_reason)
+  opened=$(body_hold_set_timestamp "$body")
+  printf 'CAPTAIN CALL %s: %s\n' "$id" "$title"
+  printf 'Opened: %s\n' "${opened:-unknown (no hold-set stamp)}"
+  printf 'Question as recorded (present its options unchanged):\n%s\n' "$reason"
+  printf 'Task notes:\n%s\n' "$body"
+  printf 'Subjects, current forge state (read now):\n'
+  urls=$(printf '%s\n%s\n%s\n%s\n' "$title" "$reason" "$body" "$(show_field_value "$show" links)" \
+    | grep -oE 'https?://[^] )>"'"'"',;]+/(pull|issues|-/merge_requests)/[0-9]+' | awk '!seen[$0]++' || true)
+  if [ -z "$urls" ]; then
+    printf '  none named\n'
+  else
+    # shellcheck disable=SC2086 # one argument per URL; the pattern admits no spaces or globs
+    (set -f; "$SCRIPT_DIR/fm-forge-state.sh" $urls) | sed 's/^/  /'
+  fi
+  printf 'Captain messages since it opened:\n'
+  case "$opened" in
+    ????-??-??) opened="${opened}T00:00:00Z" ;;
+  esac
+  if [ -z "$opened" ]; then
+    printf '  unavailable: the call has no hold-set stamp to read from\n'
+  elif [ ! -e "$mirror" ]; then
+    printf '  unavailable: this home keeps no captain dialog record (%s)\n' "$mirror"
+  elif ! since=$(jq -rn --arg t "$opened" '$t | fromdateiso8601' 2>/dev/null); then
+    printf '  unavailable: the hold-set stamp %s could not be read as a time\n' "$opened"
+  elif ! messages=$(jq -r --argjson since "$since" \
+      'select(.tag == "captain" and .epoch >= $since) | "  [\(.epoch | todateiso8601)] \(.text)"' "$mirror" 2>/dev/null) \
+    || ! oldest=$(jq -rs 'map(.epoch) | min // 0' "$mirror" 2>/dev/null); then
+    printf '  unavailable: the captain dialog record %s could not be read\n' "$mirror"
+  else
+    printf '%s\n' "${messages:-  none recorded}"
+    [ "$oldest" -le "$since" ] \
+      || printf '  (the dialog record starts after the call opened, so earlier captain messages are not shown)\n'
+  fi
+}
+
 case "${1:-}" in
   hold) shift; command_hold "$@" ;;
+  present) shift; command_present "$@" ;;
   answer) shift; command_answer "$@" ;;
   answers) shift; command_answers "$@" ;;
   reconcile-requests) shift; command_reconcile_requests "$@" ;;
