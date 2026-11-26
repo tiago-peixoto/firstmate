@@ -635,6 +635,9 @@ EOF
 #     check the task's current state first and reply to the captain only
 #     about outcomes still open, as if settled ones had never been listed,
 #     then acknowledge every presented outcome, settled and open alike.
+#   - Every PR URL a presented line names is followed by the forge's current
+#     state (print_outcome_pr_states), so main can tell a recorded claim from a
+#     current fact.
 #   - Visible routine outcomes are listed once, for awareness, the way the Pi
 #     branch's routine notes reach main's transcript without a turn; silent
 #     routine outcomes never appear. The newest visible rows that fit a byte
@@ -650,7 +653,7 @@ EOF
 # (bin/fm-afk-return.sh) keeps its catch-up gated instead of clearing over
 # outcomes a later drain would present again.
 print_branch_outcomes_section() {
-  local config rows through captain routine line seq key key_line target i
+  local config rows through captain routine line seq key key_line target i pr_states
   local text='' used=0 shown=0 held=0 bytes item_bytes=600 captain_bytes=4000 routine_bytes=2000
   local routine_lines='' routine_count=0 routine_shown=0
   local -a captain_keys=() captain_lines=() captain_line_bytes=()
@@ -750,6 +753,12 @@ ROWS
     text="$text$routine_lines"
   fi
   if [ -n "$text" ]; then
+    pr_states=$(print_outcome_pr_states "${captain_lines[*]-}
+$routine_lines")
+    [ -z "$pr_states" ] || text="$text$pr_states
+"
+  fi
+  if [ -n "$text" ]; then
     printf '%s' "$text" || return 1
   fi
   [ "$through" -gt 0 ] || return 0
@@ -757,6 +766,26 @@ ROWS
     printf 'BRANCH OUTCOMES: the store could not record this presentation, so these outcomes are presented again on the next drain and an acknowledgement above is refused until then.\n' >&2
     return 1
   fi
+}
+
+# A summary's PR claims are history, so each PR URL the presented lines name
+# gets the forge's current state beside it (bin/fm-forge-state.sh); URLs past
+# the per-drain limit say unknown rather than leaving the summary to stand as
+# current.
+print_outcome_pr_states() {  # <presented-lines>
+  local urls url limit=6
+  local -a read_now=()
+  urls=$(printf '%s\n' "$1" | grep -oE 'https?://[^ ]+/(pull|-/merge_requests)/[0-9]+' | awk '!seen[$0]++') || return 0
+  while IFS= read -r url; do
+    [ "${#read_now[@]}" -ge "$limit" ] || read_now+=("$url")
+  done <<URLS
+$urls
+URLS
+  printf 'BRANCH OUTCOMES, CURRENT PR STATE (read from the forge during this drain; the outcome lines above say what was true when recorded):\n'
+  "$SCRIPT_DIR/fm-forge-state.sh" "${read_now[@]}"
+  printf '%s\n' "$urls" | tail -n +$((limit + 1)) | while IFS= read -r url; do
+    printf '%s: unknown (not read, over this drain'"'"'s limit of %s PRs)\n' "$url" "$limit"
+  done
 }
 
 # BRANCH OUTCOMES' per-item cut: the shared digest marker in place of the
