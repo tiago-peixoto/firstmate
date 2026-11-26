@@ -892,7 +892,8 @@ leave_successor_for_main() {
 }
 
 # The engine conversation for this turn: the recorded one while it belongs to
-# this main session and has turns left, otherwise a new one. Sets ENGINE_SESSION
+# this main session, has turns left, and was started on the prompt the installed
+# code generates now, otherwise a new one. Sets ENGINE_SESSION
 # and ENGINE_MODE (new|resume).
 # Succeed, setting RECORD_KEY, RECORD_SESSION and RECORD_TURNS, when the
 # recorded conversation is one the next turn resumes.
@@ -912,7 +913,16 @@ engine_record_resumable() {
 }
 
 choose_conversation() {
-  if engine_record_resumable; then
+  local tmp
+  tmp=$(mktemp "$PROMPT_FILE.tmp.XXXXXX") || return 1
+  if ! "$SCRIPT_DIR/fm-branch-prompt.sh" > "$tmp" 2>/dev/null \
+    || [ "$(wc -c < "$tmp" | tr -d ' ')" -lt 1024 ]; then
+    rm -f "$tmp"
+    return 1
+  fi
+  # A conversation started on other instructions would keep them, so resume only an unchanged prompt.
+  if engine_record_resumable && cmp -s "$tmp" "$PROMPT_FILE"; then
+    rm -f "$tmp"
     ENGINE_SESSION=$RECORD_SESSION
     ENGINE_MODE=resume
     ENGINE_TURNS=$RECORD_TURNS
@@ -923,20 +933,13 @@ choose_conversation() {
   ENGINE_SESSION=$(uuidgen 2>/dev/null | tr '[:upper:]' '[:lower:]')
   case "$ENGINE_SESSION" in
     ????????-????-????-????-????????????) ;;
-    *) ENGINE_SESSION=$(node -e 'process.stdout.write(require("node:crypto").randomUUID())' 2>/dev/null) || return 1 ;;
+    *) ENGINE_SESSION=$(node -e 'process.stdout.write(require("node:crypto").randomUUID())' 2>/dev/null) || { rm -f "$tmp"; return 1; } ;;
   esac
   ENGINE_MODE=new
   ENGINE_TURNS=0
   ENGINE_COST=0
   ENGINE_KEY=$RECORD_KEY
-  local tmp
-  tmp=$(mktemp "$PROMPT_FILE.tmp.XXXXXX") || return 1
-  if ! "$SCRIPT_DIR/fm-branch-prompt.sh" > "$tmp" 2>/dev/null \
-    || [ "$(wc -c < "$tmp" | tr -d ' ')" -lt 1024 ]; then
-    rm -f "$tmp"
-    return 1
-  fi
-  mv -f "$tmp" "$PROMPT_FILE" || return 1
+  mv -f "$tmp" "$PROMPT_FILE" || { rm -f "$tmp"; return 1; }
   return 0
 }
 
