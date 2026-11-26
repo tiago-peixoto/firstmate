@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Steer a task by durable record: write the message into the task's steering
 # inbox and ring a constant doorbell through its backend endpoint, best-effort.
-# Usage: fm-send.sh <target> [--resolve-key <key>]... [--fire-and-forget <delivery-id>] <text...>
+# Usage: fm-send.sh <target> [--resolve-key <key>... | --no-captain-answer] [--fire-and-forget <delivery-id>] <text...>
 #   <target> may be an exact task id, a legacy fm-<id> task label resolved
 #   through this home's state/<id>.meta, or an explicit well-formed backend
 #   target. fm-send refuses unresolved guesses rather than falling back to a
@@ -223,6 +223,15 @@
 # working:, or done: event still cannot clear a captain decision. The flag is
 # refused with --key, with an explicit backend target (no task ledger in this
 # home), and with an empty message.
+#
+# Relay declaration: a text steer to a second mate, sent by main while this
+# home's backlog holds any open captain call, must say whether it answers one -
+# --resolve-key <task> for each call it answers, or --no-captain-answer when it
+# answers none - or it is refused before anything is sent, with both resend
+# commands printed. A backlog that exists but cannot be read refuses the same
+# way. The flag is never inferred from the message text. A fire-and-forget
+# notice, a pending-reply recovery resend, --key, and the supervision branch are
+# exempt, because none of them can carry a captain's answer.
 #
 # After a successful TYPED-plane submit fm-send pauses FM_SEND_SETTLE seconds
 # (default 1, 0 disables) before returning: submit confirmation only proves the
@@ -517,6 +526,7 @@ fi
 # message exactly as before, so ordinary sends are byte-identical.
 RESOLVE_KEYS=
 FIRE_AND_FORGET_ID=
+NO_CAPTAIN_ANSWER=0
 fm_send_add_resolve_key() { # <key>
   local k=$1
   case "$k" in
@@ -545,6 +555,10 @@ while :; do
     ;;
   --resolve-key=*)
     fm_send_add_resolve_key "${1#--resolve-key=}" || exit 1
+    shift
+    ;;
+  --no-captain-answer)
+    NO_CAPTAIN_ANSWER=1
     shift
     ;;
   --fire-and-forget)
@@ -707,6 +721,50 @@ if [ -n "$FIRE_AND_FORGET_ID" ]; then
       echo "error: --fire-and-forget cannot accompany --resolve-key" >&2
       exit 1
     }
+fi
+
+if [ "$NO_CAPTAIN_ANSWER" = 1 ] && [ -n "$RESOLVE_KEYS" ]; then
+  echo "error: --no-captain-answer cannot accompany --resolve-key" >&2
+  exit 1
+fi
+
+# This home's still-open captain-held task ids, one per line. Exit 1 when the
+# backlog exists but cannot be read, which must never read as "none open".
+fm_send_open_captain_holds() {
+  local out
+  command -v tasks-axi >/dev/null 2>&1 || return 0
+  if ! out=$(FM_HOME="$FM_HOME" FM_DATA_OVERRIDE='' "$SCRIPT_DIR/fm-tasks-axi.sh" list --state held --fields hold_kind 2>/dev/null); then
+    [ -d "$FM_HOME/data" ] || return 0
+    return 1
+  fi
+  printf '%s\n' "$out" | awk -F, '/^  [A-Za-z0-9._-]+,/ && $NF == "captain" { id = $1; sub(/^ +/, "", id); print id }'
+}
+
+# A relay to a second mate while this home holds captain calls must declare
+# whether it answers one: --resolve-key <task> records the answer against the
+# call, --no-captain-answer says it answers none. Without the declaration a
+# relayed answer reached the mate while its call stayed open and was asked
+# again days later. The branch never answers a call (its --resolve-key is
+# refused above); a fire-and-forget notice cannot carry --resolve-key; and a
+# pending-reply recovery resend repeats a request already declared.
+if [ "$MARK_FROM_FIRSTMATE" = 1 ] && [ "$NO_CAPTAIN_ANSWER" = 0 ] && [ -z "$RESOLVE_KEYS" ] \
+  && [ -z "$FIRE_AND_FORGET_ID" ] && [ -z "${FM_PENDING_REPLY_EXISTING_CORR:-}" ] \
+  && [ "${1:-}" != "--key" ] && [ "${FM_SUPERVISION_ACTOR:-main}" != branch ]; then
+  if ! open_holds=$(fm_send_open_captain_holds); then
+    open_holds_problem="this home's captain calls could not be read, so this send cannot tell whether it answers one"
+  elif [ -n "$open_holds" ]; then
+    open_holds_problem="this home holds open captain calls: $(printf '%s' "$open_holds" | tr '\n' ' ')"
+  else
+    open_holds_problem=
+  fi
+  if [ -n "$open_holds_problem" ]; then
+    {
+      echo "error: $open_holds_problem; declare whether this message answers one. Nothing was sent."
+      echo "  If it answers a call:  $(fm_send_resend_env)$(fm_send_resend_exe) $(printf '%q' "$TARGET_SELECTOR") --resolve-key '<task>' $(fm_send_quoted_message "$@")"
+      echo "  If it answers none:    $(fm_send_resend_env)$(fm_send_resend_exe) $(printf '%q' "$TARGET_SELECTOR") --no-captain-answer $(fm_send_quoted_message "$@")"
+    } >&2
+    exit 1
+  fi
 fi
 
 if [ -n "$RESOLVE_KEYS" ]; then
