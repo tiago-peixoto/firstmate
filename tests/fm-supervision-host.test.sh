@@ -692,10 +692,17 @@ test_away_wake_is_handled_on_the_engine_and_never_reaches_main() {
   assert_re '	handled	turn=[^	]*\.2	.* cost=0\.25 conversation_cost=0\.5 ' "$home/state/.supervision-host.log" \
     "a resumed turn must log its own cost, not the conversation's running total"
 
+  printf 'Refresh marker for the changed prompt.\n' > "$home/config/branch-prompt-include.md"
+  append_status "$home" 'step three after a prompt change'
+  wait_until 250 handled_at_least "$home" 3 || fail "away: the wake after a prompt change was not handled"
+  assert_re '^arg=--session-id$' "$home/engine-call.3" "a changed prompt must open a new conversation"
+  assert_grep 'Refresh marker for the changed prompt.' "$home/state/.supervision-host-prompt" \
+    "a new conversation must run the prompt the installed code generates now"
+
   rm -f "$home/state/.supervision-host-engine"
-  append_status "$home" 'step three after rotation'
-  wait_until 250 handled_at_least "$home" 3 || fail "away: the rotated wake was not handled"
-  assert_re 'stub handled demo' "$home/engine-call.3" "a new away conversation must see previous outcomes"
+  append_status "$home" 'step four after rotation'
+  wait_until 250 handled_at_least "$home" 4 || fail "away: the rotated wake was not handled"
+  assert_re 'stub handled demo' "$home/engine-call.4" "a new away conversation must see previous outcomes"
 
   pid=$(awk -F '\t' '$1 == "host" { print $2 }' "$home/state/.supervision-host")
   watcher=$(cat "$home/state/.watch.lock/pid")
