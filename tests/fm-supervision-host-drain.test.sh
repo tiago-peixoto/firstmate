@@ -696,6 +696,38 @@ test_ack_line_counts_the_outcomes_a_filter_would_hide() {
   pass "drain: the acknowledgement line counts the outcomes BRANCH OUTCOMES holds, and an unreadable store reads as unknown"
 }
 
+# An outcome's PR claims are what was true when it was recorded, so every PR
+# it names gets the forge's current state beside it, and a failed read says
+# unknown instead of letting the old claim stand as current.
+test_branch_outcomes_show_the_current_state_of_each_named_pr() {
+  local home drained
+  home="$TMP_ROOT/drain-pr-state"
+  mkdir -p "$home/state" "$home/config" "$home/bin"
+  : > "$home/config/supervision-host"
+  cat > "$home/bin/gh" <<'GH'
+#!/usr/bin/env bash
+case "$*" in
+  *'/o/r/pull/41 '*) printf '{"state":"OPEN","mergedAt":null,"statusCheckRollup":[{"conclusion":"SUCCESS"},{"conclusion":"FAILURE"},{"status":"IN_PROGRESS","conclusion":""}]}\n' ;;
+  *'/o/r/pull/42 '*) printf '{"state":"MERGED","mergedAt":"2026-11-25T10:00:00Z","statusCheckRollup":[{"state":"SUCCESS"}]}\n' ;;
+  *) echo 'HTTP 502' >&2; exit 1 ;;
+esac
+GH
+  chmod +x "$home/bin/gh"
+  FM_HOME="$home" "$ROOT/bin/fm-branch-outcome.sh" append --task alpha --verdict captain \
+    --summary 'PR https://github.com/o/r/pull/41 ready, all checks passed; follow-up https://github.com/o/r/pull/42 merged' >/dev/null \
+    || fail "fixture: could not record the captain outcome"
+  FM_HOME="$home" "$ROOT/bin/fm-branch-outcome.sh" append --task beta --verdict routine \
+    --summary 'https://github.com/o/r/pull/43 checks green' >/dev/null || fail "fixture: could not record the routine outcome"
+  drained=$(PATH="$home/bin:$PATH" FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" 2>&1' "$ROOT/bin/fm-wake-drain.sh")
+  assert_contains "$drained" 'alpha: PR https://github.com/o/r/pull/41 ready, all checks passed' "the recorded summary must still be presented"
+  assert_contains "$drained" 'BRANCH OUTCOMES, CURRENT PR STATE (read from the forge during this drain' "the current state must be marked as a live read"
+  assert_contains "$drained" 'https://github.com/o/r/pull/41: open; checks: 1 passed, 1 failing, 1 pending' "an open PR must show its current checks"
+  assert_contains "$drained" 'https://github.com/o/r/pull/42: merged at 2026-11-25T10:00:00Z; checks: 1 passed' "a merged PR must show its merge time"
+  assert_contains "$drained" 'https://github.com/o/r/pull/43: unknown (the forge read failed)' "a failed read must say the state is unknown"
+  assert_contains "$drained" 'beta: https://github.com/o/r/pull/43 checks green' "an outcome whose forge read failed must stay visible"
+  pass "drain: each PR an outcome names is shown with its current forge state, and a failed read is unknown"
+}
+
 fm_test_run \
   test_report_surface_enforces_actor_turn_and_scope \
   test_report_after_the_return_is_queued_for_main \
@@ -716,4 +748,5 @@ fm_test_run \
   test_branch_outcomes_keep_an_unshown_outcome_until_acknowledged \
   test_branch_outcomes_keep_a_drain_presented_outcome_across_a_switch_to_pi \
   test_branch_outcomes_keep_a_drain_presented_outcome_across_an_index_repair \
-  test_ack_line_counts_the_outcomes_a_filter_would_hide
+  test_ack_line_counts_the_outcomes_a_filter_would_hide \
+  test_branch_outcomes_show_the_current_state_of_each_named_pr
