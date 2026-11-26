@@ -825,19 +825,26 @@ The flag is a home-local preference and is not inherited by secondmate homes.
 ## PR health monitor (config/pr-health-monitor)
 
 The optional local, gitignored `config/pr-health-monitor` presence flag opts this home into a mechanical monitor of the pull requests it owns.
-With the flag present, session start arms `state/pr-health.check.sh`, and the watcher's check sweep then prints one wake line for each new conflict, failing check, or change the author must make on an owned PR.
+With the flag present, session start arms `state/pr-health.check.sh`, and the watcher's check sweep then reports each new conflict, failing check, change the author must make, stale change request, approval with every check green, merge, and close on an owned PR.
+A conflict, failing check, author action, or stale change request goes to the steering inbox of each owning task whose agent is not proven dead or missing, and rings it, so the worker hears it without a supervisor turn; the inbox's re-ring ladder escalates an unacknowledged record.
+With no such task, the line wakes this home instead.
+An approval with every check green, a merge, and a close each wake this home, and in a secondmate home the approval and the merge are also published on the parent channel as a `note` line keyed `pr-health-<owner>-<repo>-<number>`.
 Maintainer-gated CI and missing required reviews are recorded in `state/pr-health.json` for fleet review, but are not printed, so they never wake the owning task.
 CI waits on the maintainer when a check suite on the latest commit concluded `ACTION_REQUIRED`, which is how GitHub holds an outside contributor's workflows for approval; nothing has run, so such a PR is never read as green even when its check rollup is.
 A non-draft PR needs human approval when GitHub reports `REVIEW_REQUIRED` or has outstanding review requests (`reviewRequests`); the state is recorded without waking the task.
 The author must act only on an explicit signal: a `CHANGES_REQUESTED` review decision, or a maintainer label naming the wait, such as `pending-contributor-action` or `waiting-on-author` with or without a `namespace:` prefix.
-Only author-actionable states, conflicts, and failing checks print; the maintainer and approval states remain recorded without waking the owning task.
+When every change-requesting review predates the latest commit, the line instead names those reviewers and says to reply and re-request their review.
+Approved and green means GitHub's `reviewDecision` is `APPROVED`, so a bot approval counts when GitHub counts it, the PR is not a draft, `mergeStateStatus` is `CLEAN`, at least one check reported, and no check is failing, pending, or held for the maintainer.
+A merge line names the account that merged, and a close line names the account that closed without merging.
+The maintainer and approval-needed states remain recorded without waking the owning task.
 Reads are driven by the GitHub notifications feed: each pass makes one conditional read of it, which GitHub answers with an uncounted 304 while nothing changed, and reads only the owned PRs with new notification activity, PRs not yet read, and PRs whose last read did not settle.
 Every owned PR is still read when the feed is unavailable or returns a full page of notifications newer than the saved position, and at least every 15 minutes as the fallback sweep, because some conditions, such as a base branch moving into conflict or a check from another app failing, raise no notification.
 GitLab merge requests are not monitored yet.
-When no reported check is marked required, a failing reported check still counts, matching `bin/fm-pr-state.sh` for unprotected stacked bases.
-When a required check has reported, optional failures do not notify.
-A conflict and an author action each wake once per latest commit, and a missing approval is recorded once per latest commit.
-A failing check wakes once per latest commit and check name, so a check that newly fails at an already reported commit wakes once more while an already reported check never repeats.
+Every failing check counts, required or not, and the line marks each required one.
+A failure is reported only when the next pass still sees the same check failing at the same commit, so a check that fails and passes again within one pass stays silent and a real failure waits one pass.
+A conflict, an author action, a stale change request, and an approval with every check green each report once per latest commit, and a missing approval is recorded once per latest commit.
+A failing check reports once per latest commit and check name, so a check that newly fails at an already reported commit reports once more while an already reported check never repeats.
+A merge or close reports once, when the monitor first reads the PR as final.
 A maintainer-gated suite is recorded once per latest commit and workflow name.
 A home owns a PR it recorded, linked, or observed before, and the open PR on a live task copy's current branch, drafts and adopted branches included, until the PR merges or closes.
 When that branch PR belongs to a direct-PR ship task with no recorded PR, or with that PR recorded but no valid merge poll, the monitor records it through `bin/fm-pr-check.sh` and so arms its merge poll, whatever the worker's ready report says.

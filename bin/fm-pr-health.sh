@@ -29,7 +29,8 @@
 # Per owned open PR it reads, poll reads the REST single-PR endpoint, which
 # GitHub documents as starting the mergeability computation, and one GraphQL
 # read for the head's complete, paginated check rollup with each context's
-# isRequired, the review decision, and the head commit's check suites.
+# isRequired, the review decision, merge state, latest reviews and closing
+# actor, and the head commit's check suites.
 # Which PRs a pass reads is event-driven: each pass first makes one conditional
 # read of the GitHub notifications feed (If-Modified-Since its saved
 # Last-Modified; GitHub answers an unchanged feed with a 304 that costs no rate
@@ -40,15 +41,25 @@
 # the fallback sweep every FALLBACK_SECONDS, because a base moving into
 # conflict or another app's failing check raises no notification. A
 # notification on a PR this home does not own is ignored without a read.
-# It prints one line per new author action, conflict, or failing check, so one
-# wake. Maintainer-gated CI and missing required reviews are recorded in
-# state/pr-health.json for fleet review, but never printed to the wake channel.
+# It reports one line per new author action, stale change request, conflict,
+# failing check, approval with green checks, merge, or close. A line for a
+# conflict, failing check, author action, or stale change request goes to the
+# steering inbox of each owning task whose agent is not proven dead or missing
+# (fm-task-inbox-lib.sh) and rings it; with no such task it is printed, so one
+# wake. Approved-and-green, merge, and close lines are printed, and in a
+# secondmate home the approved-and-green and merge lines are also published on
+# the parent channel (fm-parent-channel-lib.sh) as a note keyed
+# pr-health-<owner>-<repo>-<number>. Maintainer-gated CI and missing required
+# reviews are recorded in state/pr-health.json for fleet review, but never
+# printed to the wake channel.
 #   - conflict: REST mergeable is false. Null (UNKNOWN) is neither clean nor
 #     conflicting and never clears an already reported condition.
-#   - failing checks: a required context failed (a check run concluded other
-#     than SUCCESS, NEUTRAL or SKIPPED, or a status is FAILURE or ERROR). When
-#     no reported context is required, any failing reported context counts,
-#     matching fm-pr-state.sh for unprotected stacked bases. Each name is judged
+#   - failing checks: any context failed (a check run concluded other than
+#     SUCCESS, NEUTRAL or SKIPPED, or a status is FAILURE or ERROR); the line
+#     marks required ones and lists them first. A failure counts only when the
+#     next pass still sees it at the same commit: the first sighting is kept as
+#     a suspect and the PR is read again next pass, so a check that fails and
+#     passes again within one pass never wakes. Each name is judged
 #     by its newest run (latest_checks in fm-contributions.jq), because GitHub
 #     keeps a cancelled run beside the passing rerun that replaced it.
 #   - maintainer must approve CI: a check suite on the head concluded
@@ -59,14 +70,25 @@
 #   - author must act: reviewDecision CHANGES_REQUESTED, or an explicit
 #     maintainer label pending-contributor-action, waiting-on-author,
 #     waiting-for-author or awaiting-author, with any "namespace:" prefix.
-# A conflict and an author action each wake once per latest commit, and a
-# missing approval is recorded once per latest commit. A failing check wakes
+#   - stale change request: CHANGES_REQUESTED where every change-requesting
+#     latest review is on an older commit; the line names those reviewers and
+#     says to reply and re-request their review instead of "changes requested".
+#   - approved and green: reviewDecision APPROVED (so a bot approval counts
+#     when GitHub counts it), not a draft, mergeStateStatus CLEAN, at least one
+#     context reported, and none failing, pending, or held for the maintainer.
+#   - merged or closed: the account that merged (REST merged_by) or closed
+#     without merging (the last ClosedEvent's actor).
+# A conflict, an author action or stale change request, and an approval with
+# green checks each report once per latest commit, and a missing approval is
+# recorded once per latest commit. A failing check reports
 # once per latest commit and check name, and a maintainer-gated suite is
 # recorded once per latest commit and workflow name: a check that newly fails
-# at an already reported commit wakes once more, a name already reported there
+# at an already reported commit reports once more, a name already reported there
 # never repeats, and the line names only the new ones. The conditions have
 # independent histories.
-# A merged or closed PR is final and never read again. A failed or timed-out
+# A merged or closed PR reports once and is then final and never read again;
+# one that the contribution observer marked final first is read once more when
+# this monitor has read it before. A failed or timed-out
 # read, or a latest commit that differs between the two reads, leaves the PR's
 # fingerprint untouched and prints nothing; fm-contributions.sh reports forge
 # outages for the same URLs. Forge reads stop FM_CHECK_TIMEOUT (default 30)
@@ -77,8 +99,9 @@
 # updated_at, unsettled PRs, last full sweep) are fm-pr-health.v1 in
 # state/pr-health.json, written by rename
 # under state/.pr-health.lock; a pass that finds the lock held exits silently.
-# A line is printed before its fingerprint is saved, so a pass killed between
-# the two repeats one wake rather than losing it. An unreadable fingerprint
+# A line is printed or delivered before its fingerprint is saved, so a pass
+# killed between the two repeats one wake rather than losing it; the inbox and
+# parent-channel writes deduplicate that repeat. An unreadable fingerprint
 # file is reported once and replaced.
 #
 # arm writes state/pr-health.check.sh, binds it through fm-check-register.sh,
@@ -153,6 +176,9 @@ gh_read() { # deadline args... : one bounded forge read
 PR_QUERY='query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){
 headRefOid
 reviewDecision
+mergeStateStatus
+latestReviews(first:100){nodes{state author{login} commit{oid}}}
+timelineItems(last:1,itemTypes:[CLOSED_EVENT]){nodes{... on ClosedEvent{actor{login}}}}
 reviewRequests(first:100){nodes{requestedReviewer{__typename}}}
 statusCheckRollup{contexts(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{__typename
 ... on CheckRun{name status conclusion startedAt isRequired(pullRequestNumber:$number)}
@@ -167,25 +193,31 @@ commits(last:1){nodes{commit{oid checkSuites(first:100,after:$suiteCursor){pageI
 SUITE_PAGES=10 # ponytail: 1000 suites per head; a longer list leaves the read unsettled, raise the bound if one appears
 
 # The fingerprint step: previous fingerprint plus one REST and one GraphQL
-# read -> {fp, lines}. A null result means the reads disagree and nothing moves.
+# read -> {fp, lines, retry}. Each line is {route, text}: owner lines go to the
+# owning task's inbox, up lines also reach a secondmate home's parent channel.
+# retry asks for a read on the next pass. A null result means the reads
+# disagree and nothing moves.
 STEP='
   $rest[0] as $r | ($gql[0].data.repository.pullRequest // null) as $g
   | ($prev[0] // {}) as $p
-  | if $r.merged_at != null or $r.state == "closed" then {fp:($p + {final:true}),lines:[]}
+  | ($tasks | join(", ")) as $owners
+  | if $r.merged_at != null or $r.state == "closed" then
+      {fp:($p + {final:true}),retry:false,lines:[
+        if $r.merged_at != null
+        then {route:"up",text:"pr-health: \($url) merged by \($r.merged_by.login // "an unknown account") (task \($owners))"}
+        else {route:"home",text:"pr-health: \($url) closed without merging by \($g.timelineItems.nodes[0].actor.login // "an unknown account") (task \($owners))"} end]}
     elif $g == null or $g.headRefOid != $r.head.sha
       or (($g.commits.nodes[0].commit.oid // $r.head.sha) != $r.head.sha) then null
     else
       $r.head.sha as $head
-      | ($tasks | join(", ")) as $owners
       | ($g.statusCheckRollup // null) as $roll
       | [$roll.contexts.nodes[]? | if .__typename == "CheckRun"
-          then {name, started_at:.startedAt, required:(.isRequired == true),
+          then {name, started_at:.startedAt, required:(.isRequired == true), pending:(.status != "COMPLETED"),
                 failing:(.status == "COMPLETED" and .conclusion != null and (.conclusion | IN("SUCCESS","NEUTRAL","SKIPPED") | not))}
-          else {name:.context, started_at:.createdAt, required:(.isRequired == true),
+          else {name:.context, started_at:.createdAt, required:(.isRequired == true), pending:(.state | IN("PENDING","EXPECTED")),
                 failing:(.state | IN("FAILURE","ERROR"))} end]
         | latest_checks as $ctx
-      | any($ctx[]; .required) as $has_required
-      | ([$ctx[] | select(.failing and (.required or ($has_required | not))) | .name] | unique) as $failing
+      | ([$ctx[] | select(.failing) | .name] | unique) as $failing
       | ($p.conflicts // []) as $conflicts | ($p.checks // []) as $checks
       | ($p.maintainer_gated // []) as $gated
       | ([$g.commits.nodes[0].commit.checkSuites.nodes[]? | select(.conclusion == "ACTION_REQUIRED")
@@ -193,28 +225,50 @@ STEP='
       | [$gated_now[] | select(. as $name | any($gated[]; .head == $head and .name == $name) | not)] as $new_gated
       | ([($r.labels // [])[] | .name | select(ascii_downcase | sub("^[^:]*:"; "")
           | IN("pending-contributor-action","waiting-on-author","waiting-for-author","awaiting-author"))]) as $author_labels
-      | ([if $g.reviewDecision == "CHANGES_REQUESTED" then "changes requested" else empty end]
+      # A change request whose every review predates the latest commit waits on its reviewers.
+      | [($g.latestReviews.nodes // [])[] | select(.state == "CHANGES_REQUESTED")] as $requests
+      | ($g.reviewDecision == "CHANGES_REQUESTED" and ($requests | length) > 0
+          and all($requests[]; (.commit.oid // $head) != $head)) as $request_stale
+      | ([$requests[] | .author.login // "a reviewer"] | unique | join(", ")) as $reviewers
+      | ([if $g.reviewDecision == "CHANGES_REQUESTED" and ($request_stale | not) then "changes requested" else empty end]
           + [$author_labels[] | "maintainer marked it \(.)"]) as $author_reasons
-      | (($author_reasons | length) > 0 and (($p.author_action // []) | index($head) | not)) as $author_new
+      | ((($author_reasons | length) > 0 or $request_stale) and (($p.author_action // []) | index($head) | not)) as $author_new
       # Only whether any review request is pending matters, so the first page decides it.
       | (($g.reviewDecision == "REVIEW_REQUIRED" or (($g.reviewRequests.nodes // []) | length) > 0)
           and $r.draft != true and (($p.needs_approval // []) | index($head) | not)) as $approval_new
       | ($r.mergeable == false and ($conflicts | index($head) | not)) as $conflict_new
-      | [$failing[] | select(. as $name | any($checks[]; .head == $head and .name == $name) | not)] as $new_failing
+      # A failure wakes only when the next read still sees it at this commit,
+      # so a check that fails and passes again within one pass stays silent.
+      | [$failing[] | select(. as $name | any($checks[]; .head == $head and .name == $name) | not)] as $unreported
+      | [$unreported[] | select(. as $name | any(($p.suspect // [])[]; .head == $head and .name == $name))] as $new_failing
+      | [$unreported[] | select(IN($new_failing[]) | not)] as $first_seen
       | (($new_failing | length) > 0) as $checks_new
+      | [$new_failing[] | . as $name | {name:., required:any($ctx[]; .name == $name and .required)}]
+        | sort_by(.required | not) | map(if .required then "\(.name) (required)" else .name end) as $named
+      # mergeStateStatus does not say how a missing required check reads, so nothing may fail or wait either.
+      | ($g.reviewDecision == "APPROVED" and $r.draft != true and $g.mergeStateStatus == "CLEAN"
+          and ($ctx | length) > 0 and ($failing | length) == 0 and (any($ctx[]; .pending) | not)
+          and ($gated_now | length) == 0 and (($p.approved_green // []) | index($head) | not)) as $green_new
       | ("at latest commit " + $head[:7]) as $where
       | {fp:{conflicts:($conflicts + if $conflict_new then [$head] else [] end),
              checks:($checks + [$new_failing[] | {head:$head,name:.}]),
+             suspect:[$first_seen[] | {head:$head,name:.}],
              maintainer_gated:($gated + [$new_gated[] | {head:$head,name:.}]),
              needs_approval:(($p.needs_approval // []) + if $approval_new then [$head] else [] end),
-             author_action:(($p.author_action // []) + if $author_new then [$head] else [] end)},
-         lines:([
-           (select($author_new)
+             author_action:(($p.author_action // []) + if $author_new then [$head] else [] end),
+             approved_green:(($p.approved_green // []) + if $green_new then [$head] else [] end)},
+         retry:(($first_seen | length) > 0),
+         lines:(([
+           (select($author_new and ($author_reasons | length) > 0)
             | "pr-health: \($url) author must act \($where): \($author_reasons | join("; ")) (task \($owners))"),
+           (select($author_new and $request_stale)
+            | "pr-health: \($url) change request from \($reviewers) predates latest commit \($head[:7]): reply and re-request review from \($reviewers) (task \($owners))"),
            (select($conflict_new)
             | "pr-health: \($url) conflicts with its base \($where) (task \($owners))"),
            (select($checks_new)
-            | "pr-health: \($url) has failing \(if $has_required then "required " else "" end)checks \($where): \($new_failing[:3] | join(", "))\(if ($new_failing | length) > 3 then " and \(($new_failing | length) - 3) more" else "" end) (task \($owners))")])}
+            | "pr-health: \($url) has failing checks \($where): \($named[:3] | join(", "))\(if ($named | length) > 3 then " and \(($named | length) - 3) more" else "" end) (task \($owners))")]
+           | map({route:"owner",text:.}))
+           + [select($green_new) | {route:"up",text:"pr-health: \($url) approved, checks green \($where) (task \($owners))"}])}
     end'
 
 read_pr() { # url deadline output-directory -> rest.json gql.json
@@ -379,6 +433,44 @@ read_notifications() { # deadline
     || NOTIFY_OK=1
 }
 
+# An owner line goes to the steering inbox of each owning task whose agent is
+# not proven dead or missing, and rings it; the inbox's re-ring ladder then
+# escalates an unacknowledged record. With no such task it wakes this home.
+deliver_to_owners() { # url text
+  local id meta backend target record delivered=1
+  while IFS= read -r id; do
+    meta="$STATE/$id.meta"
+    [ -f "$meta" ] && [ ! -L "$meta" ] && [ "$(meta_value "$meta" kind)" != secondmate ] || continue
+    backend=$(fm_backend_of_meta "$meta" 2>/dev/null) || continue
+    target=$(fm_backend_target_of_meta "$meta" 2>/dev/null) || continue
+    [ -n "$target" ] || continue
+    case "$(fm_backend_agent_state "$backend" "$target" 2>/dev/null)" in dead|missing) continue ;; esac
+    # The idempotent write lets a pass killed before its fingerprint save repeat without a duplicate.
+    record=$(fm_task_inbox_write_idempotent "$STATE" "$id" "$2" 2>/dev/null) && [ -n "$record" ] || continue
+    delivered=0
+    FM_COMPOSER_HARNESS=$(meta_value "$meta" harness) fm_task_inbox_ring "$backend" "$target" "$record" "fm-$id" >/dev/null 2>&1 || true
+  done < <(jq -r --arg url "$1" '[.[] | select(.url == $url) | .tasks[]] | unique[]' "$TMP/owned.json")
+  return "$delivered"
+}
+
+deliver_lines() { # url : the lines of $TMP/step.json
+  local route text key rc
+  while IFS=$'\t' read -r route text; do
+    case "$route" in
+      owner) deliver_to_owners "$1" "$text" || printf '%s\n' "$text" ;;
+      up)
+        printf '%s\n' "$text"
+        fm_pr_url_parse "$1" || continue
+        key="pr-health-${FM_PR_PATH//\//-}-$FM_PR_NUMBER"
+        rc=0
+        fm_parent_channel_report "$FM_HOME" "$STATE" "note [key=$key]: ${text#pr-health: }" "$key" || rc=$?
+        case "$rc" in 0|1) ;; *) printf 'fm-pr-health: %s did not reach the parent channel (rc=%s)\n' "$1" "$rc" >&2 ;; esac
+        ;;
+      *) printf '%s\n' "$text" ;;
+    esac
+  done < <(jq -r '.lines[] | [.route, .text] | @tsv' "$TMP/step.json")
+}
+
 poll() {
   local deadline timeout url step pid index=0 read_dir now full
   local pids=()
@@ -391,6 +483,10 @@ poll() {
   FM_WAKE_QUEUE_LOCK="$STATE/.wake-queue.lock"
   # shellcheck source=bin/fm-wake-lib.sh
   . "$SCRIPT_DIR/fm-wake-lib.sh"
+  # shellcheck source=bin/fm-task-inbox-lib.sh
+  . "$SCRIPT_DIR/fm-task-inbox-lib.sh"
+  # shellcheck source=bin/fm-parent-channel-lib.sh
+  . "$SCRIPT_DIR/fm-parent-channel-lib.sh"
   fm_lock_try_acquire "$STATE/.pr-health.lock" || exit 0
   LOCK_HELD=1
   TMP=$(mktemp -d "${TMPDIR:-/tmp}/fm-pr-health.XXXXXX")
@@ -421,8 +517,11 @@ poll() {
     | .branches |= with_entries(select(.key | IN($ids[])))' "$TMP/health.json" > "$TMP/next.json"
   save_health "$TMP/next.json"
   cp "$TMP/next.json" "$TMP/health.json"
+  # A PR the contribution observer already saw merge or close is read once more
+  # when this monitor has read it before, so its final line is not lost.
   jq -r --slurpfile health "$TMP/health.json" '
-    .[] | select(.final | not) | select(($health[0].prs[.url].final // false) | not) | .url' "$TMP/owned.json" > "$TMP/owned-urls"
+    .[] | select(($health[0].prs[.url].final // false) | not)
+    | select((.final | not) or $health[0].prs[.url] != null) | .url' "$TMP/owned.json" > "$TMP/owned-urls"
   # Event-driven reads: a notification, a PR never read, or one whose last read
   # did not settle. Every owned PR is read when the feed is unavailable or the
   # fallback sweep is due.
@@ -462,8 +561,9 @@ poll() {
       || { printf '%s\n' "$url" >> "$TMP/unsettled"; continue; }
     step=$(cat "$TMP/step.json")
     [ "$step" != null ] || { printf '%s\n' "$url" >> "$TMP/unsettled"; continue; }
-    jq -r '.lines[]' "$TMP/step.json"
-    [ "$(jq -r '.mergeable == null' "$read_dir/rest.json")" != true ] || printf '%s\n' "$url" >> "$TMP/unsettled"
+    deliver_lines "$url"
+    [ "$(jq -r '.mergeable == null' "$read_dir/rest.json")" != true ] && [ "$(jq -r '.retry' "$TMP/step.json")" != true ] \
+      || printf '%s\n' "$url" >> "$TMP/unsettled"
     jq --arg url "$url" --slurpfile step "$TMP/step.json" '.prs[$url] = $step[0].fp' "$TMP/health.json" > "$TMP/next.json"
     if ! cmp -s "$TMP/next.json" "$TMP/health.json"; then
       save_health "$TMP/next.json"
