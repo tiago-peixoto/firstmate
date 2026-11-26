@@ -62,7 +62,9 @@ case "$1 $2" in
       headRefOid:(.graphql_head // .head),isDraft:.draft,baseRef:{target:{oid:.base}},reviewDecision:(if has("reviewDecision") then .reviewDecision else "APPROVED" end),
       reviewRequests:{pageInfo:{hasNextPage:(.requests > 100)},
         nodes:[range([.requests, 100] | min) | {requestedReviewer:{__typename:"User"}}]},
-      latestReviews:{nodes:[range(.reviews) | {author:{__typename:"User",login:"reviewer"}}]},
+      mergeStateStatus:(.merge_state // null),
+      latestReviews:{nodes:(.latest_reviews // [range(.reviews) | {author:{__typename:"User",login:"reviewer"}}])},
+      timelineItems:{nodes:[{actor:{login:(.closed_by // "maintainer")}}]},
       statusCheckRollup:(if (.checks | length) == 0 then null else {
         contexts:{pageInfo:{hasNextPage:false},nodes:[.checks[] | {__typename:"CheckRun",name,
           status:(if .conclusion == null then "IN_PROGRESS" else "COMPLETED" end),
@@ -94,6 +96,7 @@ case "$1 $2" in
       *[!0-9]*) printf '[[]]\n' ;;
       *) model "$rest" | jq '{state:(if .state == "open" then "open" else "closed" end),
            merged_at:(if .state == "merged" then "2026-10-21T00:00:00Z" else null end),
+           merged_by:(if .state == "merged" then {login:(.merged_by // "maintainer")} else null end),
            user:{login:"author"},draft,mergeable,head:{sha:.head},
            base:{sha:"0000000000000000000000000000000000000000"},labels:[(.labels // [])[] | {name:.}]}' ;;
     esac ;;
@@ -187,6 +190,11 @@ expect_one() { # home pattern why
   fi
 }
 
+expect_confirmed() { # home pattern why : a failing check waits for a second read, then wakes once
+  expect_silent "$1" "$3, but not before a second read"
+  expect_one "$1" "$2" "$3"
+}
+
 test_unknown_then_dirty_wakes_once() {
   local home
   home=$(new_home unknown-dirty)
@@ -251,16 +259,16 @@ test_adopted_draft_red_required_check_after_pause_wakes_once() {
   printf 'paused [at=1792500000]: Checks are still running on the draft.\n' > "$home/state/slot9999.status"
   expect_silent "$home" 'running checks on a draft must not wake'
   set_pr "$home" 5 '.checks[2].conclusion = "FAILURE" | .checks[1].conclusion = "FAILURE"'
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/5 has failing required checks at latest commit aaaaaaa: Backend \(task slot9999\)$' \
-    'a failing required check on an adopted draft must wake once'
+  expect_confirmed "$home" '^pr-health: https://github.com/o/r/pull/5 has failing checks at latest commit aaaaaaa: Backend \(required\), E2E Tests \(independent\) \(task slot9999\)$' \
+    'failing checks on an adopted draft must wake once'
   expect_silent "$home" 'the same failing required check at the same commit must not wake again'
   # The worker reruns Backend, it passes, and the slow required check then fails at the same commit.
   set_pr "$home" 5 '.checks[1].conclusion = "SUCCESS" | .checks[0].conclusion = "FAILURE"'
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/5 has failing required checks at latest commit aaaaaaa: CI Status \(task slot9999\)$' \
+  expect_confirmed "$home" '^pr-health: https://github.com/o/r/pull/5 has failing checks at latest commit aaaaaaa: CI Status \(required\) \(task slot9999\)$' \
     'a required check that newly fails at an already reported commit must wake once'
   set_pr "$home" 5 '.checks[1].conclusion = "FAILURE"'
   expect_silent "$home" 'a check already reported at this commit must not repeat when it fails again'
-  pass 'each required check that fails on an adopted draft wakes once per latest commit'
+  pass 'each check that fails on an adopted draft wakes once per latest commit'
 }
 
 test_reported_failure_does_not_hide_a_later_required_failure() {
@@ -270,16 +278,17 @@ test_reported_failure_does_not_hide_a_later_required_failure() {
   pr "$home" 8 "$HEAD_A" "$BASE_1" true false
   set_pr "$home" 8 '.checks = [{name:"E2E Tests (independent)",conclusion:"FAILURE",required:false}]'
   arm "$home"
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 has failing checks at latest commit aaaaaaa: E2E Tests \(independent\) \(task ship1\)$' \
+  expect_confirmed "$home" '^pr-health: https://github.com/o/r/pull/8 has failing checks at latest commit aaaaaaa: E2E Tests \(independent\) \(task ship1\)$' \
     'a reported failure must wake when no check is required'
   expect_silent "$home" 'the reported failure must not repeat at the same commit'
   set_pr "$home" 8 '.checks += [{name:"Backend",conclusion:"FAILURE",required:true}]'
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 has failing required checks at latest commit aaaaaaa: Backend \(task ship1\)$' \
+  expect_confirmed "$home" '^pr-health: https://github.com/o/r/pull/8 has failing checks at latest commit aaaaaaa: Backend \(required\) \(task ship1\)$' \
     'a required check that appears and fails at the same commit must wake'
   expect_silent "$home" 'the reported required failure must not repeat'
   set_pr "$home" 8 '.checks += [{name:"optional-later",conclusion:"FAILURE",required:false}]'
-  expect_silent "$home" 'a newly failing optional check must not wake once a required check has reported'
-  pass 'a fallback notification does not hide a later required failure at the same commit'
+  expect_confirmed "$home" '^pr-health: https://github.com/o/r/pull/8 has failing checks at latest commit aaaaaaa: optional-later \(task ship1\)$' \
+    'a failing check that is not required must wake beside a required one'
+  pass 'a reported failure hides no later failure at the same commit, required or not'
 }
 
 test_replaced_cancelled_run_is_not_failing() {
@@ -293,7 +302,7 @@ test_replaced_cancelled_run_is_not_failing() {
   arm "$home"
   expect_silent "$home" 'a cancelled run that a passing rerun replaced must not read as failing'
   set_pr "$home" 9 '.checks += [{name:"CI Status",conclusion:"FAILURE",required:true,at:"2026-10-21T01:10:00Z"}]'
-  expect_one "$home" 'pull/9 has failing required checks at latest commit aaaaaaa: CI Status' \
+  expect_confirmed "$home" 'pull/9 has failing checks at latest commit aaaaaaa: CI Status \(required\)' \
     'a newer failing run of the same check must wake'
   pass 'each check is judged by its newest run'
 }
@@ -330,8 +339,9 @@ test_other_homes_red_check_is_silent() {
   printf '20\n' > "$home/forge/branch-mate-branch"
   arm "$home"
   arm "$other"
+  pass_once "$other" >/dev/null
   out=$(pass_once "$other")
-  printf '%s\n' "$out" | grep -F 'https://github.com/o/r/pull/20 has failing required checks' >/dev/null \
+  printf '%s\n' "$out" | grep -F 'https://github.com/o/r/pull/20 has failing checks' >/dev/null \
     || fail "the owning home must wake for its own red PR: $out"
   expect_silent "$home" "another home's red PR must wake nothing in this home"
   if grep -E 'pulls/20$|number=20( |$)|--head mate-branch' "$home/forge/calls.log" >/dev/null; then
@@ -357,7 +367,7 @@ test_enrolled_before_ready_and_after_cleanup_still_wake() {
   arm "$home"
   expect_silent "$home" 'running checks must not wake'
   set_pr "$home" 12 '.checks[0].conclusion = "FAILURE"'
-  expect_one "$home" 'pull/12 has failing required checks' 'a PR enrolled before its ready report must wake'
+  expect_confirmed "$home" 'pull/12 has failing checks' 'a PR enrolled before its ready report must wake'
   # Worker cleanup removes the task record and its copy.
   rm -f "$home/state/early.meta"
   rm -rf "$wt"
@@ -383,8 +393,9 @@ test_open_pr_replacing_a_closed_one_on_the_same_branch_is_discovered() {
   printf '13\n' > "$home/forge/branch-feature-12"
   pr "$home" 13 "$HEAD_B" "$BASE_1" true false
   set_pr "$home" 13 '.checks = [{name:"CI Status",conclusion:"FAILURE",required:true}]'
-  expect_silent "$home" 'closing the cached PR must not wake'
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/13 has failing required checks at latest commit bbbbbbb: CI Status \(task early\)$' \
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/12 closed without merging by maintainer \(task early\)$' \
+    'closing the cached PR must say who closed it'
+  expect_confirmed "$home" '^pr-health: https://github.com/o/r/pull/13 has failing checks at latest commit bbbbbbb: CI Status \(required\) \(task early\)$' \
     'the open PR on the unchanged branch must replace the closed one'
   expect_silent "$home" 'the replacement PR must dedupe like any other'
   pass 'an open PR that replaces a closed one on the same task branch is discovered'
@@ -495,7 +506,7 @@ test_green_without_reviewer_is_silent() {
 }
 
 test_base_without_required_checks_counts_any_failing_check() {
-  local home
+  local home out
   home=$(new_home no-required)
   task "$home" a pr=https://github.com/o/r/pull/30
   task "$home" b pr=https://github.com/o/r/pull/31
@@ -504,11 +515,15 @@ test_base_without_required_checks_counts_any_failing_check() {
   set_pr "$home" 30 '.checks = [{name:"lint",conclusion:"SUCCESS",required:false},{name:"test",conclusion:"FAILURE",required:false}]'
   set_pr "$home" 31 '.checks = [{name:"CI Status",conclusion:"SUCCESS",required:true},{name:"test",conclusion:"FAILURE",required:false}]'
   arm "$home"
-  expect_one "$home" '^pr-health: https://github.com/o/r/pull/30 has failing checks at latest commit aaaaaaa: test \(task a\)$' \
-    'only the base with no required checks must notify for its reported failure'
-  [ "$(grep -c 'pulls/3[01]$' "$home/forge/calls.log")" = 2 ] || fail "both owned PRs must still be read: $(cat "$home/forge/calls.log")"
+  expect_silent "$home" 'a first failure sighting must wait for a second read'
+  out=$(pass_once "$home")
+  { [ "$(printf '%s\n' "$out" | grep -c .)" = 2 ] \
+    && printf '%s\n' "$out" | grep -qx 'pr-health: https://github.com/o/r/pull/30 has failing checks at latest commit aaaaaaa: test (task a)' \
+    && printf '%s\n' "$out" | grep -qx 'pr-health: https://github.com/o/r/pull/31 has failing checks at latest commit aaaaaaa: test (task b)'; } \
+    || fail "both bases must notify a failing check that is not required: $out"
+  [ "$(grep -c 'pulls/3[01]$' "$home/forge/calls.log")" = 4 ] || fail "both owned PRs must be read on both passes: $(cat "$home/forge/calls.log")"
   expect_silent "$home" 'the fallback must retain once-per-check deduplication'
-  pass 'a base with no required checks counts a failing reported check'
+  pass 'a failing check counts whether or not its base requires checks'
 }
 
 test_retired_contribution_is_not_reclaimed_from_the_cached_branch() {
@@ -603,11 +618,11 @@ test_merged_pr_is_not_read_again() {
   pr "$home" 60 "$HEAD_A" "$BASE_1" false false
   set_pr "$home" 60 '.state = "merged"'
   arm "$home"
-  expect_silent "$home" 'a merged PR must not wake'
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/60 merged by maintainer \(task done1\)$' 'a merged PR must wake once, naming who merged it'
   before=$(grep -c 'pulls/60$' "$home/forge/calls.log")
   expect_silent "$home" 'a merged PR must stay silent'
   [ "$(grep -c 'pulls/60$' "$home/forge/calls.log")" = "$before" ] || fail 'a merged PR was read again'
-  pass 'a merged PR leaves the monitor'
+  pass 'a merged PR wakes once, naming who merged it, then leaves the monitor'
 }
 
 test_absent_flag_changes_nothing() {
@@ -656,7 +671,7 @@ test_failure_once_per_latest_commit_after_cleanup() {
   pr "$home" 8 "$HEAD_A" "$BASE_1" true false
   set_pr "$home" 8 '.checks = [{name:"test",conclusion:"FAILURE",required:true}]'
   arm "$home"
-  expect_one "$home" 'has failing required checks' 'the first failure must notify'
+  expect_confirmed "$home" 'has failing checks' 'the first failure must notify'
   rm -f "$home/state/ship1.meta" "$home/state/ship1.status"
   expect_silent "$home" 'worker cleanup must not erase dedupe'
   set_pr "$home" 8 '.checks[0].conclusion = "SUCCESS"'
@@ -664,7 +679,7 @@ test_failure_once_per_latest_commit_after_cleanup() {
   set_pr "$home" 8 ".checks[0].conclusion = \"FAILURE\" | .base = \"$BASE_2\""
   expect_silent "$home" 'a failure returning at the same latest commit must not repeat'
   set_pr "$home" 8 ".head = \"$HEAD_B\""
-  expect_one "$home" 'has failing required checks at latest commit bbbbbbb' 'a later latest commit must notify'
+  expect_confirmed "$home" 'has failing checks at latest commit bbbbbbb' 'a later latest commit must notify'
   pass 'check notifications survive cleanup and repeat only at a new latest commit'
 }
 
@@ -685,13 +700,12 @@ test_checks_on_later_pages() {
   home=$(new_home paged)
   task "$home" ship1 pr=https://github.com/o/r/pull/8
   pr "$home" 8 "$HEAD_A" "$BASE_1" true false
-  set_pr "$home" 8 '.checks = ([range(100) | {name:("optional-" + tostring),conclusion:"FAILURE",required:false}]
-    + [{name:"required-later",conclusion:"SUCCESS",required:true}])'
+  set_pr "$home" 8 '.checks = ([range(100) | {name:("optional-" + tostring),conclusion:"SUCCESS",required:false}]
+    + [{name:"required-later",conclusion:"FAILURE",required:true}])'
   arm "$home"
-  expect_silent "$home" 'optional failures must not notify while the required check on a later page passes'
-  set_pr "$home" 8 '.checks[100].conclusion = "FAILURE"'
-  expect_one "$home" 'has failing required checks.*required-later' 'a required failure after page one must notify'
-  pass 'all check pages contribute to required-check classification'
+  expect_confirmed "$home" 'has failing checks at latest commit aaaaaaa: required-later \(required\) \(task ship1\)$' \
+    'a required failure after page one must notify'
+  pass 'all check pages contribute to failing-check classification'
 }
 
 test_all_owned_pr_reads_start_in_one_wave() {
@@ -1012,6 +1026,176 @@ SH
   pass 'final contributions are not enrolled on a poll'
 }
 
+mate_home() { # name -> a secondmate home whose parent channel is <home>-parent/state/<name>.status
+  local home
+  home=$(new_home "$1")
+  mkdir -p "$home-parent/state"
+  printf '%s\n' "$1" > "$home/.fm-secondmate-home"
+  printf 'schema=fm-secondmate-parent.v1\nroute=local\nparent_home=%s\n' "$home-parent" > "$home/.fm-secondmate-parent"
+  printf '%s\n' "$home"
+}
+
+live_owner() { # home id state(alive|missing) : a task whose tmux endpoint is alive or gone; doorbells land in forge/doorbell.log
+  task "$1" "$2" pr=https://github.com/o/r/pull/8 "window=fmtest:fm-$2"
+  cat > "$1/fakebin/tmux" <<SH
+#!/usr/bin/env bash
+[ "$3" = alive ] || { echo "can't find session: fmtest" >&2; exit 1; }
+case "\$1" in
+  list-windows) printf 'fm-$2\n' ;;
+  display-message)
+    case "\$*" in *pane_current_command*) printf 'claude\n' ;; *pane_tty*) ;; *cursor_y*) printf '1\n' ;; *) printf 'fakepane\n' ;; esac ;;
+  capture-pane) printf '╭────╮\n│    │\n╰────╯\n' ;;
+  send-keys) case "\$*" in *' -l '*) printf '%s\n' "\${@: -1}" >> "\$FORGE/doorbell.log" ;; esac ;;
+esac
+exit 0
+SH
+  chmod +x "$1/fakebin/tmux"
+}
+
+inbox_count() { # home id -> unacknowledged inbox records
+  find "$1/state/$2.inbox" -maxdepth 1 -name '*.msg' 2>/dev/null | wc -l | tr -d ' '
+}
+
+test_failing_check_that_is_not_required_wakes_once() {
+  local home
+  home=$(new_home optional-red)
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 '.checks = [{name:"CI Status",conclusion:"SUCCESS",required:true},
+    {name:"Browser Tests",conclusion:"FAILURE",required:false}]'
+  arm "$home"
+  expect_confirmed "$home" '^pr-health: https://github.com/o/r/pull/8 has failing checks at latest commit aaaaaaa: Browser Tests \(task ship1\)$' \
+    'a failing check that is not required, beside a passing required one, must wake'
+  expect_silent "$home" 'the same failing check must not wake again at the same commit'
+  pass 'a failing check that is not required wakes once beside a required one'
+}
+
+test_failure_must_survive_a_second_read() {
+  local home
+  home=$(new_home flap)
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 '.checks = [{name:"codecov/patch",conclusion:"FAILURE",required:true}]'
+  arm "$home"
+  expect_silent "$home" 'a first failing read must wait'
+  set_pr "$home" 8 '.checks[0].conclusion = "SUCCESS"'
+  expect_silent "$home" 'a failure that passes on the next read must stay silent'
+  set_pr "$home" 8 '.checks[0].conclusion = "FAILURE"'
+  expect_confirmed "$home" 'pull/8 has failing checks at latest commit aaaaaaa: codecov/patch \(required\)' \
+    'a failure that still fails on the next read must wake'
+  expect_silent "$home" 'a confirmed failure must not repeat'
+  pass 'a failure wakes only when the next read still sees it'
+}
+
+test_approved_and_green_reaches_the_parent_once() {
+  local home channel out
+  home=$(mate_home green-mate)
+  channel="$home-parent/state/green-mate.status"
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 '.requests = 0 | .reviewDecision = "APPROVED" | .merge_state = "BLOCKED"
+    | .checks = [{name:"CI Status",conclusion:"SUCCESS",required:true},{name:"Browser Tests",conclusion:null,required:false}]'
+  arm "$home"
+  expect_silent "$home" 'an approval while a check is pending must not wake'
+  [ ! -s "$channel" ] || fail "a pending check reached the parent: $(cat "$channel")"
+  set_pr "$home" 8 '.merge_state = "CLEAN" | .checks[1].conclusion = "SUCCESS"'
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 approved, checks green at latest commit aaaaaaa \(task ship1\)$' \
+    'approved and green must wake once'
+  out=$(grep -c . "$channel")
+  { [ "$out" = 1 ] && grep -Eq '^note \[key=pr-health-o-r-8\] \[at=[0-9]+\]: https://github.com/o/r/pull/8 approved, checks green at latest commit aaaaaaa \(task ship1\)\.?$' "$channel"; } \
+    || fail "approved and green must reach the parent channel once: $(cat "$channel")"
+  expect_silent "$home" 'approved and green must not repeat at the same commit'
+  [ "$(grep -c . "$channel")" = 1 ] || fail "approved and green reached the parent twice: $(cat "$channel")"
+  pass 'approved and green wakes once and reaches the parent channel once'
+}
+
+test_merge_names_who_merged_and_reaches_the_parent() {
+  local home channel
+  home=$(mate_home merged-mate)
+  channel="$home-parent/state/merged-mate.status"
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  arm "$home"
+  expect_silent "$home" 'an open PR with nothing actionable must not wake'
+  set_pr "$home" 8 '.state = "merged" | .merged_by = "captain-login"'
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 merged by captain-login \(task ship1\)$' 'a merge must wake once'
+  grep -Eq '^note \[key=pr-health-o-r-8\] \[at=[0-9]+\]: https://github.com/o/r/pull/8 merged by captain-login \(task ship1\)\.?$' "$channel" \
+    || fail "the merge must reach the parent channel: $(cat "$channel" 2>/dev/null)"
+  expect_silent "$home" 'a merged PR must stay silent'
+  [ "$(grep -c . "$channel")" = 1 ] || fail "the merge reached the parent twice: $(cat "$channel")"
+  pass 'a merge names who merged it, reaches the parent once, then stays silent'
+}
+
+test_stale_change_request_names_the_reviewer() {
+  local home
+  home=$(new_home stale-review)
+  task "$home" ship1 pr=https://github.com/o/r/pull/8
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 ".reviewDecision = \"CHANGES_REQUESTED\"
+    | .latest_reviews = [{state:\"CHANGES_REQUESTED\",author:{login:\"alice\"},commit:{oid:\"$HEAD_A\"}}]"
+  arm "$home"
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 author must act at latest commit aaaaaaa: changes requested \(task ship1\)$' \
+    'a change request on the latest commit is an author action'
+  set_pr "$home" 8 ".head = \"$HEAD_B\""
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 change request from alice predates latest commit bbbbbbb: reply and re-request review from alice \(task ship1\)$' \
+    'a change request older than the latest commit must name the re-request and the reviewer'
+  expect_silent "$home" 'the stale change request must not repeat at the same commit'
+  pass 'a change request older than the latest commit names the re-request and the reviewer'
+}
+
+test_owner_lines_go_to_a_live_owner_inbox() {
+  local home out
+  home=$(new_home live-owner)
+  live_owner "$home" ship1 alive
+  pr "$home" 8 "$HEAD_A" "$BASE_1" false false
+  arm "$home"
+  out=$(pass_once "$home")
+  [ -z "$out" ] || fail "a live owner's line must not wake the home: $out"
+  [ "$(inbox_count "$home" ship1)" = 1 ] || fail "the line must land in the owner's inbox: $(ls -R "$home/state/ship1.inbox" 2>&1)"
+  grep -Fq 'pr-health: https://github.com/o/r/pull/8 conflicts with its base at latest commit aaaaaaa (task ship1)' "$home/state/ship1.inbox/"*.msg \
+    || fail "the inbox record must carry the line: $(cat "$home/state/ship1.inbox/"*.msg)"
+  [ -s "$home/forge/doorbell.log" ] || fail 'the owner doorbell must ring'
+  [ ! -s "$home/state/.wake-queue" ] || fail "the wake queue must stay empty: $(cat "$home/state/.wake-queue")"
+  home=$(new_home gone-owner)
+  live_owner "$home" ship1 missing
+  pr "$home" 8 "$HEAD_A" "$BASE_1" false false
+  arm "$home"
+  expect_one "$home" '^pr-health: https://github.com/o/r/pull/8 conflicts with its base' 'with no live owner the line must wake the home'
+  [ "$(inbox_count "$home" ship1)" = 0 ] || fail 'a gone owner must get no inbox record'
+  pass 'owner lines go to a live owner inbox and ring it, and wake the home only without one'
+}
+
+test_ready_approved_red_fixed_green_replay() {
+  local home channel out
+  home=$(mate_home replay-mate)
+  channel="$home-parent/state/replay-mate.status"
+  live_owner "$home" ship1 alive
+  pr "$home" 8 "$HEAD_A" "$BASE_1" true false
+  set_pr "$home" 8 '.requests = 0 | .merge_state = "BLOCKED" | .reviewDecision = "REVIEW_REQUIRED"
+    | .checks = [{name:"CI Status",conclusion:"SUCCESS",required:true},{name:"Browser Tests",conclusion:null,required:false}]'
+  arm "$home"
+  : > "$home/out.log"
+  pass_once "$home" >> "$home/out.log"
+  set_pr "$home" 8 '.reviewDecision = "APPROVED"'
+  pass_once "$home" >> "$home/out.log"
+  set_pr "$home" 8 '.checks[1].conclusion = "FAILURE"'
+  pass_once "$home" >> "$home/out.log"
+  pass_once "$home" >> "$home/out.log"
+  set_pr "$home" 8 ".head = \"$HEAD_B\" | .checks[1].conclusion = null"
+  pass_once "$home" >> "$home/out.log"
+  set_pr "$home" 8 '.checks[1].conclusion = "SUCCESS" | .merge_state = "CLEAN"'
+  pass_once "$home" >> "$home/out.log"
+  pass_once "$home" >> "$home/out.log"
+  { [ "$(inbox_count "$home" ship1)" = 1 ] && grep -Fq 'has failing checks at latest commit aaaaaaa: Browser Tests' "$home/state/ship1.inbox/"*.msg; } \
+    || fail "the replay must give the worker exactly one red line: $(cat "$home/state/ship1.inbox/"*.msg 2>/dev/null)"
+  out=$(cat "$home/out.log")
+  [ "$out" = 'pr-health: https://github.com/o/r/pull/8 approved, checks green at latest commit bbbbbbb (task ship1)' ] \
+    || fail "the replay must wake the home only for the merge call: $out"
+  { [ "$(grep -c . "$channel")" = 1 ] && grep -Fq 'approved, checks green at latest commit bbbbbbb' "$channel"; } \
+    || fail "the replay must give the parent exactly one merge call: $(cat "$channel" 2>/dev/null)"
+  pass 'ready, approved, red, fixed and green gives one worker red line and one merge call'
+}
+
 failures=0
 for test_name in test_maintainer_author_and_approval_states_are_distinct \
   test_pending_reviewer_without_review_decision_is_recorded test_more_than_a_page_of_review_requests_is_recorded test_check_suites_beyond_the_first_page_are_read test_endless_check_suite_pages_stay_unsettled test_notifications_drive_reads_with_the_poll_as_fallback test_notifications_keep_events_at_the_saved_timestamp \
@@ -1030,7 +1214,11 @@ for test_name in test_maintainer_author_and_approval_states_are_distinct \
   test_watcher_surfaces_one_wake test_failure_once_per_latest_commit_after_cleanup \
   test_all_owned_pr_reads_start_in_one_wave test_checks_on_later_pages \
   test_unsupported_provider_has_no_github_reads test_final_contributions_are_not_enrolled_again \
-  test_many_recorded_contributions_do_not_starve_a_new_branch_pr test_direct_pr_branch_pr_is_recorded_once_ready test_merged_direct_pr_branch_pr_is_not_armed_again; do
+  test_many_recorded_contributions_do_not_starve_a_new_branch_pr test_direct_pr_branch_pr_is_recorded_once_ready test_merged_direct_pr_branch_pr_is_not_armed_again \
+  test_failing_check_that_is_not_required_wakes_once test_failure_must_survive_a_second_read \
+  test_approved_and_green_reaches_the_parent_once test_merge_names_who_merged_and_reaches_the_parent \
+  test_stale_change_request_names_the_reviewer test_owner_lines_go_to_a_live_owner_inbox \
+  test_ready_approved_red_fixed_green_replay; do
   ( "$test_name" ) || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures PR health regressions"
