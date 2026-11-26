@@ -665,6 +665,37 @@ test_branch_outcomes_keep_a_drain_presented_outcome_across_an_index_repair() {
   pass "drain: an outcome the host drain presented but main never acknowledged survives an outcome index repair"
 }
 
+# A caller that filters the drain down to its acknowledgement line still sees
+# how many outcomes BRANCH OUTCOMES holds, counted before the section marks them
+# read, and an unreadable store is never counted as none.
+test_ack_line_counts_the_outcomes_a_filter_would_hide() {
+  local home ack
+  home="$TMP_ROOT/drain-ack-count"
+  mkdir -p "$home/state" "$home/config"
+  : > "$home/config/supervision-host"
+  FM_HOME="$home" "$ROOT/bin/fm-branch-outcome.sh" append --task alpha --verdict routine --summary 'rebased, checks running' >/dev/null \
+    || fail "fixture: could not record the routine outcome"
+  FM_HOME="$home" "$ROOT/bin/fm-branch-outcome.sh" append --task alpha --verdict routine --summary 'still running, no change' --silent true >/dev/null \
+    || fail "fixture: could not record the silent outcome"
+  FM_HOME="$home" "$ROOT/bin/fm-branch-outcome.sh" append --task beta --verdict captain --summary 'beta needs a merge call' >/dev/null \
+    || fail "fixture: could not record the captain outcome"
+  ack_line() {
+    FM_HOME="$home" bash -c '. "$1"; fm_recovery_marker_publish "$STATE/.watcher-down" downtime' _ "$ROOT/bin/fm-wake-lib.sh" \
+      || fail "fixture: could not publish a recovery episode"
+    FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" 2>&1' "$ROOT/bin/fm-wake-drain.sh" | grep '^WAKE_ACK_REQUIRED:'
+  }
+  ack=$(ack_line)
+  assert_contains "$ack" ' branch-outcomes=2 ' "the acknowledgement line must count the visible routine and captain outcomes before they are marked read"
+  ack=$(ack_line)
+  assert_contains "$ack" ' branch-outcomes=1 ' "an unacknowledged captain outcome must stay counted after its routine neighbour was read"
+  [ "$(cat "$home/state/.branch-outcomes-processed" 2>/dev/null || echo 0)" = 0 ] || fail "counting outcomes acknowledged one"
+  chmod 000 "$home/state/branch-outcomes.jsonl"
+  ack=$(ack_line)
+  chmod 600 "$home/state/branch-outcomes.jsonl"
+  assert_contains "$ack" ' branch-outcomes=unknown ' "an unreadable outcome store must not be counted as zero"
+  pass "drain: the acknowledgement line counts the outcomes BRANCH OUTCOMES holds, and an unreadable store reads as unknown"
+}
+
 fm_test_run \
   test_report_surface_enforces_actor_turn_and_scope \
   test_report_after_the_return_is_queued_for_main \
@@ -684,4 +715,5 @@ fm_test_run \
   test_branch_outcomes_date_an_outcome_carried_across_a_switch_off_pi \
   test_branch_outcomes_keep_an_unshown_outcome_until_acknowledged \
   test_branch_outcomes_keep_a_drain_presented_outcome_across_a_switch_to_pi \
-  test_branch_outcomes_keep_a_drain_presented_outcome_across_an_index_repair
+  test_branch_outcomes_keep_a_drain_presented_outcome_across_an_index_repair \
+  test_ack_line_counts_the_outcomes_a_filter_would_hide

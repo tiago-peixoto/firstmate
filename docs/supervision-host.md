@@ -221,6 +221,7 @@ The drain's header owns the section's bounds; these rules keep it bounded and in
 - Routine outcomes never open a main turn: the next drain lists the newest visible one once, for awareness and with nothing to acknowledge, and collapses older visible routine notes into a count; silent routine outcomes never appear.
 
 The section runs only for main on a home that runs the host and whose primary is not Pi, and never while the away record exists.
+Wherever it runs, the drain's acknowledgement line also counts the outcomes the section presents, so a caller that keeps only that line still sees that outcomes are waiting.
 The drain is the only presenter of these outcomes and the only owner of their read cursor, the away window's included: the return brief counts the window's outcomes and points at the section instead of listing them.
 On a Claude Code primary the Calm mod separately shows bounded, display-only supervision notes to the captain ([`calm.md`](calm.md#supervision-notes-on-claude-code)); it moves no outcome marker and adds nothing to main's context.
 A long away window no longer requires a drain per outcome: each task's captain outcomes collapse to one line, subject to the captain byte cap, and visible routine notes past the section's limit collapse into a count; after main acknowledges all captain outcomes no later drain shows anything from the window again.
