@@ -1169,6 +1169,59 @@ test_refusal_keyed_resend_keeps_the_accepted_keys() {
   pass "fm-send --resolve-key: a refused key's keyed resend keeps every accepted key in order"
 }
 
+# A relay to a second mate while this home holds a captain call must declare
+# whether it answers that call: an undeclared relay is refused with both
+# resends, a keyed one closes the call, an explicitly unrelated one leaves it
+# open, and an unreadable backlog is never read as no open calls.
+test_relay_to_a_secondmate_declares_whether_it_answers_a_captain_call() {
+  local dir fb log home err
+  if ! command -v tasks-axi >/dev/null 2>&1; then
+    pass "fm-send relay declaration: skipped, tasks-axi is not installed"
+    return 0
+  fi
+  dir="$TMP_ROOT/relay-declare"; mkdir -p "$dir"
+  fb=$(make_stubs "$dir"); log="$dir/send.log"; err="$dir/send.err"
+  home=$(setup_home relay-declare)
+  mkdir -p "$home/data"
+  fm_test_tasks_toml "$home/.tasks.toml"
+  printf '## In flight\n\n## Queued\n- [ ] pick-region - which region, east or west (since 2026-11-20) (hold: east or west) (hold-kind: captain)\n\n## Done\n' \
+    > "$home/data/backlog.md"
+  fm_write_secondmate_meta "$home/state/domain.meta" "$home" "sess:fm-domain"
+  fm_write_meta "$home/state/t1.meta" "window=sess:fm-t1" "kind=ship"
+
+  : > "$log"
+  env PATH="$fb:$PATH" FM_ROOT_OVERRIDE="$home" FM_HOME="$home" FM_SEND_LOG="$log" FM_SEND_SETTLE=0 \
+    "$SEND" fm-domain "use the east region" >/dev/null 2>"$err" \
+    && fail "an undeclared relay must be refused while a captain call is open"
+  [ ! -d "$home/state/domain.inbox" ] || fail "a refused relay still enqueued a record"
+  assert_contains "$(cat "$err")" "pick-region" "the refusal must name the open captain call"
+  assert_contains "$(cat "$err")" "--resolve-key '<task>' use\\ the\\ east\\ region" "the refusal must offer the keyed resend with the message"
+  assert_contains "$(cat "$err")" "--no-captain-answer use\\ the\\ east\\ region" "the refusal must offer the unrelated resend with the message"
+
+  run_send "$fb" "$home" "$log" t1 "rebase onto main" || fail "a steer to a crewmate must not need the declaration"
+
+  run_send "$fb" "$home" "$log" fm-domain --no-captain-answer "refresh your clone" \
+    || fail "an explicitly unrelated relay must be delivered"
+  [ "$(cd "$home" && tasks-axi show pick-region | sed -n 's/^  state: //p')" != "done" ] \
+    || fail "an unrelated relay closed the captain call"
+
+  run_send "$fb" "$home" "$log" fm-domain --resolve-key pick-region "use the east region" \
+    || fail "a keyed relay of the captain's answer must be delivered"
+  [ "$(cd "$home" && tasks-axi show pick-region | sed -n 's/^  state: //p')" = "done" ] \
+    || fail "a keyed relay did not close the captain call it answers: $(cat "$home/data/backlog.md")"
+
+  printf -- '- [ ] pick-size - small or large (since 2026-11-20) (hold: small or large) (hold-kind: captain)\n' >> "$home/data/backlog.md"
+  chmod 000 "$home/data/backlog.md"
+  if env PATH="$fb:$PATH" FM_ROOT_OVERRIDE="$home" FM_HOME="$home" FM_SEND_LOG="$log" FM_SEND_SETTLE=0 \
+    "$SEND" fm-domain "status please" >/dev/null 2>"$err"; then
+    chmod 600 "$home/data/backlog.md"
+    fail "an unreadable backlog must not read as no open calls"
+  fi
+  chmod 600 "$home/data/backlog.md"
+  assert_contains "$(cat "$err")" "captain calls could not be read" "the refusal must say the calls could not be read"
+  pass "fm-send: a relay to a second mate declares whether it answers an open captain call"
+}
+
 test_answer_send_closes_open_decision
 test_answer_close_is_self_announced
 test_separate_resolve_key_answers_do_not_rewake
@@ -1198,3 +1251,4 @@ test_stamped_close_line_stays_within_the_status_line_cap
 test_failed_close_recovery_command_is_shell_safe
 test_remote_reserved_pending_reply_key_closes_locally
 test_decision_answer_partition_relocates_under_the_record
+test_relay_to_a_secondmate_declares_whether_it_answers_a_captain_call
