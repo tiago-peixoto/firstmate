@@ -1745,6 +1745,25 @@ test_worker_role_scope
 # Rule 2 governs file edits rather than pool administration, so every crewmate
 # scaffold must prohibit the administrative act itself. The rule is emitted from
 # one shared string so the ship and scout copies cannot drift apart.
+# A scout that stops on its first blocker leaves the others for later rounds,
+# so its brief asks it to check every other read-only prerequisite first and
+# report the whole set at once, without widening its authority to do so.
+test_scout_brief_reports_every_blocker_at_once() {
+  local home brief
+  home="$TMP_ROOT/scout-blockers-home"
+  mkdir -p "$home/data"
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" brief-scout-blockers alpha --scout >/dev/null 2>&1 \
+    || fail "fm-brief.sh --scout exited non-zero"
+  brief="$home/data/brief-scout-blockers/brief.md"
+  assert_grep 'check every other prerequisite of the investigation that you can check read-only' "$brief" \
+    "scout brief did not ask for the remaining read-only checks before escalating"
+  assert_grep 'answer a permission prompt, or read a credential to check one' "$brief" \
+    "scout brief widened its authority for the prerequisite checks"
+  assert_grep 'each prerequisite you could not check safely' "$brief" \
+    "scout brief did not ask for unchecked prerequisites to be named"
+  pass "fm-brief.sh: a scout checks every read-only prerequisite and reports all blockers at once"
+}
+
 test_crewmate_scaffolds_forbid_pool_administration() {
   local home id brief mode ship_rule scout_rule
   home="$TMP_ROOT/pool-admin-home"
@@ -2001,6 +2020,7 @@ test_branch_prefix_is_refused_where_it_does_not_apply
 test_branch_prefix_value_is_validated
 test_branch_prefix_command_is_shell_safe
 test_crewmate_scaffolds_forbid_pool_administration
+test_scout_brief_reports_every_blocker_at_once
 test_capacity_rule_reaches_every_crewmate_brief
 test_capacity_rule_follows_home_config
 test_capacity_config_is_validated_before_writing
