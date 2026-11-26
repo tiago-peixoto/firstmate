@@ -1,0 +1,38 @@
+== S1a unconfigured home, this change (bbb97b4a)
+  baseline poll                                  wakes=0 pending=[]
+  head A -> B                                    wakes=0 pending=[]
+  converted to draft                             wakes=0 pending=[]
+  left draft                                     wakes=0 pending=[]
+  reviewer requested                             wakes=0 pending=[]
+  team requested                                 wakes=0 pending=[]
+  unchanged re-poll                              wakes=0 pending=[]
+  maintainer comment                             wakes=1 pending=[{"type":"comment","body":"Please clarify the contract"}]
+== S1b unconfigured home, base commit scripts (427056c4)
+  baseline poll                                  wakes=0 pending=[]
+  head A -> B                                    wakes=0 pending=[]
+  converted to draft                             wakes=0 pending=[]
+  left draft                                     wakes=0 pending=[]
+  reviewer requested                             wakes=0 pending=[]
+  team requested                                 wakes=0 pending=[]
+  unchanged re-poll                              wakes=0 pending=[]
+  maintainer comment                             wakes=1 pending=[{"type":"comment","body":"Please clarify the contract"}]
+== S1 RESULT: identical to base
+== S2 opted-in home (config/contribution-pr-movement present)
+  baseline poll                                  wakes=0 pending=[]
+  head A -> B                                    wakes=1 pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}]
+  converted to draft                             wakes=1 pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}]
+  left draft                                     wakes=2 pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},{"type":"ready-for-review","body":"pull request left draft"}]
+  reviewer requested                             wakes=3 pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},{"type":"ready-for-review","body":"pull request left draft"},{"type":"review-requested","body":"review requested from reviewer"}]
+  team requested                                 wakes=4 pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},{"type":"ready-for-review","body":"pull request left draft"},{"type":"review-requested","body":"review requested from reviewer"},{"type":"review-requested","body":"review requested from team:core"}]
+  unchanged re-poll                              wakes=4 pending=[{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},{"type":"ready-for-review","body":"pull request left draft"},{"type":"review-requested","body":"review requested from reviewer"},{"type":"review-requested","body":"review requested from team:core"}]
+  maintainer comment                             wakes=5 pending=[{"type":"comment","body":"Please clarify the contract"},{"type":"head","body":"head moved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa to bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},{"type":"ready-for-review","body":"pull request left draft"},{"type":"review-requested","body":"review requested from reviewer"},{"type":"review-requested","body":"review requested from team:core"}]
+== S3 enable after the movement was already observed, then remove
+  head A -> B while disabled                     wakes=0 pending=[]
+  flag created, re-poll                          wakes=0 pending=[]
+  head B -> A while enabled                      wakes=1 pending=[{"type":"head","body":"head moved from bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]
+  flag removed, head A -> B                      wakes=1 pending=[{"type":"head","body":"head moved from bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]
+== S4 adversarial: flag path is a directory, not a regular file
+  head moved + reviewer requested                wakes=0 pending=[]
+== S5 adversarial: opted in, PR merges with a different head
+  merged on head B                               wakes=0 pending=[]
+   stored state=merged

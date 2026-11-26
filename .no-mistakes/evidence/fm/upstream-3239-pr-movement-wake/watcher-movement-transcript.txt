@@ -1,0 +1,5 @@
+ok - watcher stays quiet on an unchanged pull request and surfaces its movement once
+--- watcher stdout after the head moved:
+check: contributions delivery ea92d2fdcd819936c05a18447eca992d9aff76db615713b3dcfb7659bfc68755
+
+--- exit=0
