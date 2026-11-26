@@ -1,0 +1,194 @@
+
+### 1. flag present: approved review with findings (text after 600 spaces)
+config: contribution-ack-receipts 
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+    "type": "review",
+    "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "Approved, but the retry loop drops errors",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+pending after refusal: 1
+
+### 2. handoff needs a steering-inbox record naming this exact review
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit 1]
+(steered the worker about review 123, a different review)
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: no steering-inbox record for task delivery names https://github.com/o/r/pull/8#pullrequestreview-12; steer the owning worker with the findings first, or use disposition
+[exit 1]
+pending: 1
+
+### 3. disposition guards
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/8#pullrequestreview-12 approved, non-blocking
+fm-contributions: the signal itself cannot be the evidence for its own disposition while the owning task record exists
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/9#issuecomment-5 answered elsewhere
+fm-contributions: disposition evidence must be a comment or review on this contribution
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/8#issuecomment-99    
+fm-contributions: disposition needs a non-empty summary
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/8#issuecomment-99
+fm-contributions: disposition needs an evidence URL and a summary
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED waived
+fm-contributions: unknown receipt 'waived'; expected handoff or disposition
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff extra
+fm-contributions: handoff takes no further arguments
+[exit 1]
+pending after every refusal: 1
+$ jq .records[0] | has("receipts") data/delivery/contributions.json
+false
+
+### 4. handoff accepted once the owning worker is steered with the review
+inbox: 001.msg
+inbox: 002.msg
+inbox: handled
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+[exit 0]
+pending: 0
+$ jq .records[0].receipts data/delivery/contributions.json
+[{"token":"review:12:2026-09-16T08:01:00Z:APPROVED","task":"delivery","kind":"handoff","ref":"002.msg","at":"2026-09-16T08:00:00Z"}]
+
+### 5. handoff follows a steer the worker already handled (moved to handled/)
+inbox: ./handled/001.msg
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED handoff
+[exit 0]
+pending: 0
+$ jq .records[0].receipts data/delivery/contributions.json
+[{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"}]
+
+### 6. disposition accepted with a different comment on this contribution as evidence
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:COMMENTED disposition https://github.com/o/r/pull/8#issuecomment-99 maintainer withdrew the suggestion in the cited comment
+[exit 0]
+pending: 0
+$ jq .records[0].receipts data/delivery/contributions.json
+[{"token":"review:12:2026-09-16T08:01:00Z:COMMENTED","task":"delivery","kind":"disposition","ref":"https://github.com/o/r/pull/8#issuecomment-99","summary":"maintainer withdrew the suggestion in the cited comment","at":"2026-09-16T08:00:00Z"}]
+
+### 7. signals without findings still acknowledge with the token alone
+$ fm-contributions.sh pending
+[
+  {
+    "token": "comment:77:2026-09-16T08:01:00Z:",
+    "type": "comment",
+    "source": "https://github.com/o/r/pull/8#issuecomment-77",
+    "head": null,
+    "author": "maintainer",
+    "body": "Thanks, looking",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  },
+  {
+    "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+    "type": "review",
+    "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 comment:77:2026-09-16T08:01:00Z:
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+[exit 0]
+pending: 0
+$ jq .records[0] | has("receipts") data/delivery/contributions.json
+false
+
+### 8. inline comment and its re-raise one day later both need a receipt
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z:
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z: handoff
+[exit 0]
+$ fm-contributions.sh pending
+[
+  {
+    "token": "unanswered:review-comment:31:2026-09-17T09:00:00Z",
+    "type": "unanswered",
+    "thread": "review-comment:31",
+    "source": "https://github.com/o/r/pull/8#discussion_r31",
+    "head": null,
+    "author": "maintainer",
+    "age": "25h",
+    "body": "no reply from the contribution author for 25h",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 unanswered:review-comment:31:2026-09-17T09:00:00Z
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+pending: 1
+
+### 9. malformed saved receipt: unreadable with the flag, ignored without it; hold settlement
+$ fm-captain-hold.sh hold delivery --reason Merge this PR?
+delivery
+[exit 0]
+$ fm-captain-hold.sh pr-policy delivery https://github.com/o/r/pull/8 terminal close
+pr-policy: delivery https://github.com/o/r/pull/8 terminal close
+[exit 0]
+(saved a disposition receipt with no summary)
+$ fm-contributions.sh pending
+fm-contributions: 1 unreadable contribution record(s); pending signals are unverified
+[exit 1]
+$ fm-captain-hold.sh settle-pr delivery https://github.com/o/r/pull/8
+fm-captain-hold: invalid forge evidence for delivery
+[exit 1]
+$ fm-captain-hold.sh open delivery
+[exit 0]
+(repaired the receipt)
+$ fm-contributions.sh pending
+[]
+[exit 0]
+$ fm-captain-hold.sh settle-pr delivery https://github.com/o/r/pull/8
+pr-settled: delivery https://github.com/o/r/pull/8 merged close
+[exit 0]
+$ fm-captain-hold.sh open delivery
+[exit 1]
+
+### 10. late owner of a merged PR gets no receipt, also when the flag is removed and returns
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED handoff
+[exit 0]
+(removed the flag; PR merges; task latecomer links the same PR)
+(flag created again)
+$ fm-contributions.sh pending
+[]
+[exit 0]
+$ jq .records[0].receipts data/delivery/contributions.json
+[{"token":"review:12:2026-09-16T08:01:00Z:CHANGES_REQUESTED","task":"delivery","kind":"handoff","ref":"001.msg","at":"2026-09-16T08:00:00Z"}]
+$ jq .records[0] | {state:.observation.state, has_receipts:has("receipts")} data/latecomer/contributions.json
+{"state":"merged","has_receipts":false}
+
+### 11. only the one new file turns enforcement on
+config: contribution-ack-receipt contribution-ack-receipts.bak contribution-review-bots hold-pr-settle supervision-host 
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: ack needs one exact event token
+[exit 1]
+(created config/contribution-ack-receipts containing the word false)
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+fm-contributions: this signal carries review findings; acknowledge it with handoff (after steering the owning worker) or disposition <evidence-url> <summary>
+[exit 1]
+(removed config/contribution-ack-receipts)
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+[exit 0]
+pending: 0
+$ jq .records[0] | has("receipts") data/delivery/contributions.json
+false

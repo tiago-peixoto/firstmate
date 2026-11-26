@@ -1,143 +1,191 @@
 #!/usr/bin/env bash
-# Live drive of bin/fm-contributions.sh in a disposable home.
-# The only stand-in is `gh` (a local emulator of the GitHub API with synthetic PR o/r#8).
-# usage: drive.sh <scenario> <bin-root> <home>
+# Drives bin/fm-contributions.sh and bin/fm-captain-hold.sh in disposable homes with the
+# test suite's fake `gh` forge. usage: drive.sh <worktree> <root-under-test> <tmp-root> parity|optin
 set -u
-SCEN=$1 ROOT=$2 HOME_DIR=$3
+WT=$1; ROOT=$2; TMP_ROOT=$3; PART=$4
 NOW=2026-09-16T08:00:00Z
 HEAD_A=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-URL=https://github.com/o/r/pull/8
-C="$ROOT/bin/fm-contributions.sh"
-h=$HOME_DIR
-rm -rf "$h"
-mkdir -p "$h/data/delivery" "$h/state" "$h/config" "$h/projects" "$h/fakebin" "$h/forge" "$h/root/bin" "$h/wt"
-printf '# Backlog\n\n## Queued\n- [ ] delivery - Contribution delivery %s (repo: sample) (kind: ship) \n' "$URL" > "$h/data/backlog.md"
-printf '#!/bin/sh\nexit 1\n' > "$h/fakebin/tmux"
-printf '#!/bin/sh\nexit 0\n' > "$h/fakebin/no-mistakes"
-printf '#!/bin/sh\nexit 0\n' > "$h/root/bin/fm-guard.sh"
-printf 'worktree=%s/wt\nkind=ship\n' "$h" > "$h/state/delivery.meta"; chmod 600 "$h/state/delivery.meta"
-jq -n --arg url "$URL" --arg head "$HEAD_A" --arg at "$NOW" '
-  {schema:"fm-contributions.v1",task:"delivery",records:[{url:$url,kind:"pr",checked_at:$at,error:null,pending:[],seen:[],verdict:null,
-   observation:{head:$head,state:"open",draft:false,mergeable:"mergeable",review_decision:"APPROVED",can_merge:false,
-   checks:[{name:"test",id:1,status:"completed",conclusion:"success",started_at:$at}],reviews:[],events:[]}}]}' > "$h/data/delivery/contributions.json"
-printf '%s\n' "$HEAD_A" > "$h/forge/head"
-for f in comments reviews inline threads; do printf '[]\n' > "$h/forge/$f.json"; done
-cat > "$h/fakebin/gh" <<'SH'
-#!/usr/bin/env bash
-set -eu
-case "$*" in
-  'pr view '*headRefOid,reviewDecision*) jq -n --arg head "$(cat "$FORGE/head")" '{headRefOid:$head,reviewDecision:"APPROVED"}' ;;
-  'pr view '*headRefOid*) cat "$FORGE/head" ;;
-  'pr view '*state*) printf 'OPEN\n' ;;
-  'api repos/o/r/pulls/8')
-    jq -n --arg head "$(cat "$FORGE/head")" '{state:"open",user:{login:"author"},head:{sha:$head},draft:false,mergeable:true,merged_at:null}' ;;
-  'api repos/o/r/issues/'*'/events?'*) printf '[]\n' ;;
-  'api repos/o/r/issues/'*'/comments?'*) jq -s . "$FORGE/comments.json" ;;
-  'api repos/o/r/pulls/'*'/reviews?'*) jq -s . "$FORGE/reviews.json" ;;
-  'api repos/o/r/pulls/'*'/comments?'*) jq -s . "$FORGE/inline.json" ;;
-  'api graphql '*) jq '[{data:{repository:{pullRequest:{reviewThreads:{nodes:.,pageInfo:{hasNextPage:false,endCursor:null}}}}}}]' "$FORGE/threads.json" ;;
-  'api repos/o/r/commits/'*'/check-runs?'*) printf '[{"check_runs":[{"name":"test","id":1,"status":"completed","conclusion":"success","started_at":"2026-09-16T08:00:00Z"}]}]\n' ;;
-  'api repos/o/r/commits/'*'/statuses?'*) printf '[[]]\n' ;;
-  'api repos/o/r') printf '{"permissions":{"push":false}}\n' ;;
-  *) printf 'unexpected gh fixture call: %s\n' "$*" >&2; exit 1 ;;
-esac
-SH
-chmod +x "$h/fakebin/"* "$h/root/bin/fm-guard.sh"
-
-fm() { # run the real script inside the disposable home
-  env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS PATH="$h/fakebin:$PATH" FORGE="$h/forge" FM_HOME="$h" FM_ROOT_OVERRIDE="$h/root" \
-    FM_STATE_OVERRIDE="$h/state" FM_DATA_OVERRIDE="$h/data" FM_CONFIG_OVERRIDE="$h/config" \
-    FM_CONTRIBUTIONS_NOW="${AT:-$NOW}" ${REPLY_AGE:+FM_CONTRIBUTIONS_REPLY_AGE=$REPLY_AGE} "$@"
+fail() { printf 'DRIVER SETUP FAILED - %s\n' "$1"; exit 1; }
+# fixture helpers only (homes, fake gh, steering-inbox writer); every product call goes to $ROOT/bin
+source <(sed -n '11,19p;27,45p;107,172p;1845,1857p;2100,2102p' "$WT/tests/fm-contributions.test.sh")
+PR=https://github.com/o/r/pull/8
+norm() { sed -e "s#$TMP_ROOT#<HOME-ROOT>#g" -e "s#$ROOT#<ROOT>#g"; }
+say() { printf '\n### %s\n' "$*"; }
+run() { # home label cmd...: transcript line, output, exit code
+  local home=$1 label=$2 rc; shift 2
+  printf '$ %s\n' "$label"
+  with_home "$home" "$@" 2>&1 | norm; rc=${PIPESTATUS[0]}
+  printf '[exit %s]\n' "$rc"
 }
-run() { # print the command, its combined output and its exit status
-  local rc; printf '$ fm-contributions.sh'; printf ' %q' "$@"; printf '\n'
-  fm "$C" "$@" 2>&1; rc=$?; printf '[exit %s]\n' "$rc"; return 0
+c() { run "$1" "fm-contributions.sh ${*:2}" "$ROOT/bin/fm-contributions.sh" "${@:2}"; }
+h() { run "$1" "fm-captain-hold.sh ${*:2}" "$ROOT/bin/fm-captain-hold.sh" "${@:2}"; }
+rec() { printf '$ jq %s data/%s/contributions.json\n' "$3" "$2"; jq -c "$3" "$1/data/$2/contributions.json" | norm; }
+tok() { with_home "$1" "$ROOT/bin/fm-contributions.sh" pending | jq -er "${2:-first} | .token"; }
+review() { # home state body [id]
+  jq -n --arg head "$HEAD_A" --arg state "$2" --arg body "$3" --argjson id "${4:-12}" '[{id:$id,user:{login:"maintainer"},author_association:"OWNER",
+    body:$body,html_url:"https://github.com/o/r/pull/8#pullrequestreview-\($id)",
+    submitted_at:"2026-09-16T08:01:00Z",commit_id:$head,state:$state}]' > "$1/forge/reviews.json"
 }
-token() { fm "$C" pending | jq -er "${1:-first} | .token"; }
-saved() { printf -- '--- saved record: pending tokens, receipts, event previews\n'
-  jq -c '.records[0] | {pending:[.pending[].token],has_receipts:has("receipts"),receipts:(.receipts // null),
-    previews:[.observation.events[]? | {type,body}]}' "$h/data/delivery/contributions.json"; }
-steer() { ( . "$ROOT/bin/fm-task-inbox-lib.sh" && fm_task_inbox_write "$h/state" "$1" "$2" ) ; }
-review() { # state body
-  jq -n --arg head "$HEAD_A" --arg state "$1" --arg body "$2" '[{id:12,user:{login:"maintainer"},author_association:"OWNER",
-    body:$body,html_url:"https://github.com/o/r/pull/8#pullrequestreview-12",
-    submitted_at:"2026-09-16T08:01:00Z",commit_id:$head,state:$state}]' > "$h/forge/reviews.json"; }
-inline() { jq -n --arg head "$HEAD_A" '[{id:31,user:{login:"maintainer"},author_association:"OWNER",
-    body:"Why is this retried?",html_url:"https://github.com/o/r/pull/8#discussion_r31",
-    created_at:"2026-09-16T08:00:00Z",updated_at:"2026-09-16T08:00:00Z",commit_id:$head}]' > "$h/forge/inline.json"; }
-PADDED="$(printf '%600s' '')The retry loop drops errors"
-
-default_flow() { # token-only ack of a finding-carrying approved review, then receipt arguments
-  review APPROVED "$PADDED"
-  run poll; run pending
-  t=$(token) || { echo 'NO PENDING SIGNAL'; return; }
-  run ack delivery "$URL" "$t"; saved
-  run ack delivery "$URL" "$t" handoff
-  run ack delivery "$URL" "$t" disposition "$URL#issuecomment-40" 'reason'
-  saved
+start() { # name [flag]: registered delivery home
+  local home; home=$(new_home "$1"); forge_home "$home"
+  [ -z "${2:-}" ] || touch "$home/config/contribution-ack-receipts"
+  with_home "$home" "$ROOT/bin/fm-pr-check.sh" delivery $PR >/dev/null || fail 'register'
+  registered_checks "$home" >/dev/null; printf '%s\n' "$home"
 }
+PREVIEW='.records[0] | {pending:[.pending[]|{token,type}], has_receipts:has("receipts"), receipts:(.receipts // null), event_bodies:[.observation.events[]|.body]}'
 
-case "$SCEN" in
-  default-unconfigured) echo "config/: $(ls "$h/config" | tr '\n' ' ')"; default_flow ;;
-  default-review-bots)
-    printf 'maintainer\n' > "$h/config/contribution-review-bots"; echo "config/: $(ls "$h/config" | tr '\n' ' ')"; default_flow ;;
-  default-reply-age) # existing opt-in setting: inline comment, then its re-raise 25 hours later
-    REPLY_AGE=86400; echo "config/: $(ls "$h/config" | tr '\n' ' ') env FM_CONTRIBUTIONS_REPLY_AGE=86400"
-    inline; AT=2026-09-16T08:01:00Z run poll; run pending
-    t=$(token); run ack delivery "$URL" "$t"; saved
-    AT=2026-09-17T09:00:00Z run poll; run pending
-    t=$(token '.[] | select(.type == "unanswered")'); run ack delivery "$URL" "$t"; saved ;;
-  optin-review)
-    touch "$h/config/contribution-ack-receipts"; echo "config/: $(ls "$h/config" | tr '\n' ' ')"
-    review APPROVED "$PADDED"; run poll; run pending; t=$(token)
-    echo '# token-only ack of an approved review that carries findings'
-    run ack delivery "$URL" "$t"; saved
-    echo '# handoff before any steer reached the owning worker'
-    run ack delivery "$URL" "$t" handoff
-    echo '# the review cited as evidence for its own disposition'
-    run ack delivery "$URL" "$t" disposition "$URL#pullrequestreview-12" 'approved, non-blocking'
-    echo '# evidence from another contribution, then a blank summary, then an unknown receipt kind'
-    run ack delivery "$URL" "$t" disposition https://github.com/o/r/pull/99#issuecomment-40 fixed
-    run ack delivery "$URL" "$t" disposition "$URL#issuecomment-40" '   '
-    run ack delivery "$URL" "$t" waved
-    echo '# steers that must not count: another task, and a review whose id only shares a prefix'
-    steer other "Read $URL#pullrequestreview-12 and fix it"
-    steer delivery "Read $URL#pullrequestreview-123 and fix it"
-    run ack delivery "$URL" "$t" handoff; saved
-    echo '# a steer to the owning task that names the review'
-    steer delivery "Read $URL#pullrequestreview-12 and fix it"
-    run ack delivery "$URL" "$t" handoff; saved
-    echo '# a later poll keeps the receipt and does not raise the review again'
-    run poll; saved ;;
-  optin-disposition-and-inline)
-    touch "$h/config/contribution-ack-receipts"; REPLY_AGE=86400; echo "config/: $(ls "$h/config" | tr '\n' ' ') env FM_CONTRIBUTIONS_REPLY_AGE=86400"
-    inline; AT=2026-09-16T08:01:00Z run poll; run pending; t=$(token)
-    run ack delivery "$URL" "$t"
-    run ack delivery "$URL" "$t" disposition "$URL#issuecomment-40" 'author replied that the loop is bounded by the caller'; saved
-    AT=2026-09-17T09:00:00Z run poll; run pending
-    t=$(token '.[] | select(.type == "unanswered")')
-    echo '# the re-raised unanswered thread'
-    run ack delivery "$URL" "$t"; saved ;;
-  optin-no-findings) # flag on: an approved review with no text and a plain PR comment
-    touch "$h/config/contribution-ack-receipts"; echo "config/: $(ls "$h/config" | tr '\n' ' ')"
-    review APPROVED ''
-    jq -n '[{id:40,user:{login:"maintainer"},author_association:"OWNER",body:"Thanks, looks good",
-      html_url:"https://github.com/o/r/pull/8#issuecomment-40",updated_at:"2026-09-16T08:01:00Z"}]' > "$h/forge/comments.json"
-    run poll; run pending
-    for t in $(fm "$C" pending | jq -r '.[].token'); do run ack delivery "$URL" "$t"; done; saved ;;
-  flag-toggle) # contents ignored; removing the file restores token-only ack and keeps saved receipts
-    printf 'false\n' > "$h/config/contribution-ack-receipts"; echo "config/contribution-ack-receipts contains: false"
-    review CHANGES_REQUESTED 'The retry loop drops errors'; run poll; t=$(token)
-    run ack delivery "$URL" "$t"
-    steer delivery "Read $URL#pullrequestreview-12 and fix it"
-    run ack delivery "$URL" "$t" handoff; saved
-    echo '# a second review arrives; the flag file is removed'
-    jq --arg head "$HEAD_A" '. + [{id:13,user:{login:"maintainer"},author_association:"OWNER",body:"The cache never expires",
-      html_url:"https://github.com/o/r/pull/8#pullrequestreview-13",submitted_at:"2026-09-16T08:02:00Z",commit_id:$head,state:"COMMENTED"}]' \
-      "$h/forge/reviews.json" > "$h/forge/r.json" && mv "$h/forge/r.json" "$h/forge/reviews.json"
-    run poll; t=$(token)
-    run ack delivery "$URL" "$t"
-    rm "$h/config/contribution-ack-receipts"; echo "config/: $(ls "$h/config" | tr '\n' ' ')"
-    run ack delivery "$URL" "$t"; saved
-    run ack delivery "$URL" "$t" handoff ;;
-esac
+if [ "$PART" = parity ]; then
+  for mode in unconfigured existing-settings; do
+    say "PARITY $mode home (no config/contribution-ack-receipts)"
+    home=$(new_home "parity-$mode"); forge_home "$home"
+    if [ "$mode" = existing-settings ]; then
+      printf 'maintainer\n' > "$home/config/contribution-review-bots"; touch "$home/config/hold-pr-settle"
+      sed -i '/ delivery /s/$/ (hold: wait for the scope decision) (hold-kind: captain)/' "$home/data/backlog.md"
+      poll() { with_home "$home" env FM_CONTRIBUTIONS_REPLY_AGE=86400 FM_CONTRIBUTIONS_NOW="$1" "$ROOT/bin/fm-contributions.sh" poll 2>&1 | norm; printf '[poll exit %s]\n' "${PIPESTATUS[0]}"; }
+    else
+      poll() { with_home "$home" env FM_CONTRIBUTIONS_NOW="$1" "$ROOT/bin/fm-contributions.sh" poll 2>&1 | norm; printf '[poll exit %s]\n' "${PIPESTATUS[0]}"; }
+    fi
+    echo "config: $(ls "$home/config" | tr '\n' ' ')"
+    with_home "$home" "$ROOT/bin/fm-pr-check.sh" delivery $PR >/dev/null || fail register
+    registered_checks "$home" >/dev/null
+    review "$home" APPROVED "$(printf '%600s' '')Approved, but the retry loop drops errors"
+    jq -n --arg head "$HEAD_A" '[{id:31,user:{login:"maintainer"},author_association:"OWNER",body:"Why is this retried?",
+      html_url:"https://github.com/o/r/pull/8#discussion_r31",created_at:"2026-09-16T08:00:00Z",updated_at:"2026-09-16T08:00:00Z",commit_id:$head}]' > "$home/forge/inline.json"
+    poll 2026-09-16T08:02:00Z
+    c "$home" pending
+    rt=$(tok "$home" '.[] | select(.type=="review")') || fail 'no review'
+    it=$(tok "$home" '.[] | select(.type=="review-comment")') || fail 'no inline'
+    say "receipt arguments are not part of the interface"
+    c "$home" ack delivery $PR "$rt" handoff
+    c "$home" ack delivery $PR "$rt" disposition "$PR#issuecomment-99" 'not actionable'
+    say "token-only ack of a review with findings and of an inline comment"
+    c "$home" ack delivery $PR "$rt"
+    c "$home" ack delivery $PR "$it"
+    rec "$home" delivery "$PREVIEW"
+    say "one day later"
+    poll 2026-09-17T09:00:00Z
+    c "$home" pending
+    if ut=$(tok "$home" '.[] | select(.type=="unanswered")'); then
+      c "$home" ack delivery $PR "$ut"
+      rec "$home" delivery "$PREVIEW"
+    fi
+    say "saved record with an unknown receipts field, then hold settlement on merge"
+    mutate_record "$home" delivery '.records[0].receipts=[{}]'
+    c "$home" pending
+    if [ "$mode" = existing-settings ]; then
+      h "$home" hold delivery --reason 'Merge this PR?'
+      h "$home" pr-policy delivery $PR terminal close
+      mutate_record "$home" delivery '.records[0].observation.state="merged"'
+      h "$home" settle-pr delivery $PR
+      h "$home" open delivery
+    fi
+  done
+  exit 0
+fi
+
+say "1. flag present: approved review with findings (text after 600 spaces)"
+home=$(start refuse flag); echo "config: $(ls "$home/config" | tr '\n' ' ')"
+review "$home" APPROVED "$(printf '%600s' '')Approved, but the retry loop drops errors"; registered_checks "$home" >/dev/null
+c "$home" pending
+t=$(tok "$home") || fail 'no review'
+c "$home" ack delivery $PR "$t"
+echo "pending after refusal: $(pending_count "$home")"
+say "2. handoff needs a steering-inbox record naming this exact review"
+c "$home" ack delivery $PR "$t" handoff
+steer "$home" delivery "Read $PR#pullrequestreview-123 and fix it"
+echo "(steered the worker about review 123, a different review)"
+c "$home" ack delivery $PR "$t" handoff
+echo "pending: $(pending_count "$home")"
+say "3. disposition guards"
+c "$home" ack delivery $PR "$t" disposition "$PR#pullrequestreview-12" 'approved, non-blocking'
+c "$home" ack delivery $PR "$t" disposition "https://github.com/o/r/pull/9#issuecomment-5" 'answered elsewhere'
+c "$home" ack delivery $PR "$t" disposition "$PR#issuecomment-99" '   '
+c "$home" ack delivery $PR "$t" disposition "$PR#issuecomment-99"
+c "$home" ack delivery $PR "$t" waived
+c "$home" ack delivery $PR "$t" handoff extra
+echo "pending after every refusal: $(pending_count "$home")"; rec "$home" delivery '.records[0] | has("receipts")'
+say "4. handoff accepted once the owning worker is steered with the review"
+steer "$home" delivery "Read $PR#pullrequestreview-12 and fix it"
+ls "$home/state/delivery.inbox" | sed 's/^/inbox: /'
+c "$home" ack delivery $PR "$t" handoff
+echo "pending: $(pending_count "$home")"; rec "$home" delivery '.records[0].receipts'
+
+say "5. handoff follows a steer the worker already handled (moved to handled/)"
+home=$(start handled flag); review "$home" CHANGES_REQUESTED 'The retry loop drops errors'; registered_checks "$home" >/dev/null
+t=$(tok "$home") || fail 'no review'
+steer "$home" delivery "Read $PR#pullrequestreview-12 and fix it"
+mv "$home/state/delivery.inbox/001.msg" "$home/state/delivery.inbox/handled/001.msg" || fail mv
+(cd "$home/state/delivery.inbox" && find . -name '*.msg' | sort | sed 's/^/inbox: /')
+c "$home" ack delivery $PR "$t" handoff
+echo "pending: $(pending_count "$home")"; rec "$home" delivery '.records[0].receipts'
+
+say "6. disposition accepted with a different comment on this contribution as evidence"
+home=$(start dispose flag); review "$home" COMMENTED 'Consider renaming the helper'; registered_checks "$home" >/dev/null
+t=$(tok "$home") || fail 'no review'
+c "$home" ack delivery $PR "$t" disposition "$PR#issuecomment-99" 'maintainer withdrew the suggestion in the cited comment'
+echo "pending: $(pending_count "$home")"; rec "$home" delivery '.records[0].receipts'
+
+say "7. signals without findings still acknowledge with the token alone"
+home=$(start nofinding flag); review "$home" APPROVED ''
+printf '{"id":77,"user":{"login":"maintainer"},"author_association":"OWNER","body":"Thanks, looking","html_url":"%s#issuecomment-77","created_at":"2026-09-16T08:01:00Z","updated_at":"2026-09-16T08:01:00Z"}\n' "$PR" > "$home/forge/comments.json"
+printf '[%s]\n' "$(cat "$home/forge/comments.json")" > "$home/forge/comments.json"
+registered_checks "$home" >/dev/null
+c "$home" pending
+for t in $(with_home "$home" "$ROOT/bin/fm-contributions.sh" pending | jq -r '.[].token'); do c "$home" ack delivery $PR "$t"; done
+echo "pending: $(pending_count "$home")"; rec "$home" delivery '.records[0] | has("receipts")'
+
+say "8. inline comment and its re-raise one day later both need a receipt"
+home=$(unanswered_home inline); touch "$home/config/contribution-ack-receipts"
+poll_at "$home" 2026-09-16T08:01:00Z >/dev/null || fail poll
+t=$(tok "$home") || fail 'no inline'
+c "$home" ack delivery $PR "$t"
+steer "$home" delivery "Answer $PR#discussion_r31"
+c "$home" ack delivery $PR "$t" handoff
+poll_at "$home" 2026-09-17T09:00:00Z >/dev/null || fail poll
+c "$home" pending
+t=$(tok "$home" '.[] | select(.type=="unanswered")') || fail 'no reraise'
+c "$home" ack delivery $PR "$t"
+echo "pending: $(pending_count "$home")"
+
+say "9. malformed saved receipt: unreadable with the flag, ignored without it; hold settlement"
+home=$(new_home malformed); forge_home "$home"; touch "$home/config/hold-pr-settle" "$home/config/contribution-ack-receipts"
+h "$home" hold delivery --reason 'Merge this PR?'
+h "$home" pr-policy delivery $PR terminal close
+mutate_record "$home" delivery '.records[0].observation.state="merged" | .records[0].receipts=[{"token":"review:12","task":"delivery","kind":"disposition","ref":"x","at":"2026-09-16T08:00:00Z"}]'
+echo "(saved a disposition receipt with no summary)"
+c "$home" pending
+h "$home" settle-pr delivery $PR
+h "$home" open delivery
+mutate_record "$home" delivery '.records[0].receipts[0].summary="withdrawn by the maintainer"'
+echo "(repaired the receipt)"
+c "$home" pending
+h "$home" settle-pr delivery $PR
+h "$home" open delivery
+
+say "10. late owner of a merged PR gets no receipt, also when the flag is removed and returns"
+home=$(start late flag); review "$home" CHANGES_REQUESTED 'The retry loop drops errors'; registered_checks "$home" >/dev/null
+t=$(tok "$home") || fail 'no review'
+steer "$home" delivery "Read $PR#pullrequestreview-12"
+c "$home" ack delivery $PR "$t" handoff
+rm "$home/config/contribution-ack-receipts"; echo "(removed the flag; PR merges; task latecomer links the same PR)"
+printf 'merged\n' > "$home/forge/state"; registered_checks "$home" >/dev/null
+printf -- '- [ ] latecomer - Filed %s (repo: sample) (kind: ship)\n' "$PR" >> "$home/data/backlog.md"
+registered_checks "$home" >/dev/null
+touch "$home/config/contribution-ack-receipts"; echo "(flag created again)"
+c "$home" pending
+rec "$home" delivery '.records[0].receipts'
+rec "$home" latecomer '.records[0] | {state:.observation.state, has_receipts:has("receipts")}'
+
+say "11. only the one new file turns enforcement on"
+home=$(start gate); review "$home" APPROVED 'The retry loop drops errors'
+printf 'maintainer\ncontribution-ack-receipts\n' > "$home/config/contribution-review-bots"
+touch "$home/config/hold-pr-settle" "$home/config/supervision-host" "$home/config/contribution-ack-receipt" "$home/config/contribution-ack-receipts.bak"
+echo "config: $(ls "$home/config" | tr '\n' ' ')"
+with_home "$home" env FM_CONTRIBUTIONS_REPLY_AGE=86400 "$ROOT/bin/fm-contributions.sh" poll >/dev/null || fail poll
+t=$(tok "$home") || fail 'no review'
+c "$home" ack delivery $PR "$t" handoff
+printf 'false\n' > "$home/config/contribution-ack-receipts"; echo "(created config/contribution-ack-receipts containing the word false)"
+c "$home" ack delivery $PR "$t"
+rm "$home/config/contribution-ack-receipts"; echo "(removed config/contribution-ack-receipts)"
+c "$home" ack delivery $PR "$t"
+echo "pending: $(pending_count "$home")"; rec "$home" delivery '.records[0] | has("receipts")'

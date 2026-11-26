@@ -1,0 +1,150 @@
+
+### PARITY unconfigured home (no config/contribution-ack-receipts)
+config: 
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+contribution-wake: check: contributions delivery 3ba0b67a1ee2dc2c377e37a4b31e4ed4e560e74b74c1cd740759bf1e77b28f10
+[poll exit 0]
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review-comment:31:2026-09-16T08:00:00Z:",
+    "type": "review-comment",
+    "source": "https://github.com/o/r/pull/8#discussion_r31",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "Why is this retried?",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  },
+  {
+    "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+    "type": "review",
+    "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ",
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+
+### receipt arguments are not part of the interface
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: ack needs one exact event token
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/8#issuecomment-99 not actionable
+fm-contributions: ack needs one exact event token
+[exit 1]
+
+### token-only ack of a review with findings and of an inline comment
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z:
+[exit 0]
+$ jq .records[0] | {pending:[.pending[]|{token,type}], has_receipts:has("receipts"), receipts:(.receipts // null), event_bodies:[.observation.events[]|.body]} data/delivery/contributions.json
+{"pending":[],"has_receipts":false,"receipts":null,"event_bodies":["                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ","Why is this retried?"]}
+
+### one day later
+[poll exit 0]
+$ fm-contributions.sh pending
+[]
+[exit 0]
+
+### saved record with an unknown receipts field, then hold settlement on merge
+$ fm-contributions.sh pending
+[]
+[exit 0]
+
+### PARITY existing-settings home (no config/contribution-ack-receipts)
+config: contribution-review-bots hold-pr-settle 
+contribution-wake: check: contributions delivery 683480b3af54e240c41318964562a608e1c979940db69f736fb9325d97726ac8
+contribution-wake: check: contributions delivery 3ba0b67a1ee2dc2c377e37a4b31e4ed4e560e74b74c1cd740759bf1e77b28f10
+[poll exit 0]
+$ fm-contributions.sh pending
+[
+  {
+    "token": "review-comment:31:2026-09-16T08:00:00Z:",
+    "type": "review-comment",
+    "source": "https://github.com/o/r/pull/8#discussion_r31",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "Why is this retried?",
+    "review_bot": true,
+    "at": "2026-09-16T08:00:00Z",
+    "unanswered": true,
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  },
+  {
+    "token": "review:12:2026-09-16T08:01:00Z:APPROVED",
+    "type": "review",
+    "source": "https://github.com/o/r/pull/8#pullrequestreview-12",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "author": "maintainer",
+    "body": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ",
+    "review_bot": true,
+    "at": "2026-09-16T08:01:00Z",
+    "unanswered": false,
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+
+### receipt arguments are not part of the interface
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED handoff
+fm-contributions: ack needs one exact event token
+[exit 1]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED disposition https://github.com/o/r/pull/8#issuecomment-99 not actionable
+fm-contributions: ack needs one exact event token
+[exit 1]
+
+### token-only ack of a review with findings and of an inline comment
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review:12:2026-09-16T08:01:00Z:APPROVED
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 review-comment:31:2026-09-16T08:00:00Z:
+[exit 0]
+$ jq .records[0] | {pending:[.pending[]|{token,type}], has_receipts:has("receipts"), receipts:(.receipts // null), event_bodies:[.observation.events[]|.body]} data/delivery/contributions.json
+{"pending":[],"has_receipts":false,"receipts":null,"event_bodies":["                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ","Why is this retried?"]}
+
+### one day later
+contribution-wake: check: contributions delivery 1232f28f9a8c8bd80f610bc4d2206d21cecefda3d2950db083ec59f9b0e3d550 unanswered https://github.com/o/r/pull/8#discussion_r31 25h
+[poll exit 0]
+$ fm-contributions.sh pending
+[
+  {
+    "token": "unanswered:review-comment:31:2026-09-17T09:00:00Z",
+    "type": "unanswered",
+    "thread": "review-comment:31",
+    "source": "https://github.com/o/r/pull/8#discussion_r31",
+    "head": null,
+    "author": "maintainer",
+    "age": "25h",
+    "body": "no reply from the contribution author for 25h",
+    "review_bot": true,
+    "task": "delivery",
+    "url": "https://github.com/o/r/pull/8"
+  }
+]
+[exit 0]
+$ fm-contributions.sh ack delivery https://github.com/o/r/pull/8 unanswered:review-comment:31:2026-09-17T09:00:00Z
+[exit 0]
+$ jq .records[0] | {pending:[.pending[]|{token,type}], has_receipts:has("receipts"), receipts:(.receipts // null), event_bodies:[.observation.events[]|.body]} data/delivery/contributions.json
+{"pending":[],"has_receipts":false,"receipts":null,"event_bodies":["                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ","Why is this retried?"]}
+
+### saved record with an unknown receipts field, then hold settlement on merge
+$ fm-contributions.sh pending
+[]
+[exit 0]
+$ fm-captain-hold.sh hold delivery --reason Merge this PR?
+delivery
+[exit 0]
+$ fm-captain-hold.sh pr-policy delivery https://github.com/o/r/pull/8 terminal close
+pr-policy: delivery https://github.com/o/r/pull/8 terminal close
+[exit 0]
+$ fm-captain-hold.sh settle-pr delivery https://github.com/o/r/pull/8
+pr-settled: delivery https://github.com/o/r/pull/8 merged close
+[exit 0]
+$ fm-captain-hold.sh open delivery
+[exit 1]
