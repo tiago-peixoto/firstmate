@@ -2902,6 +2902,51 @@ test_chat_channel_feeds_the_same_keyed_answer_intake
 test_origin_slug_validation_precedes_path_construction
 test_status_resolution_over_an_open_hold_is_signalled
 test_legitimate_holds_produce_no_divergence_signal
+# Before a captain call is put to the captain again, present shows it verbatim
+# beside what has changed since it opened: the subject's current forge state
+# and the captain's words since then. An unreadable source is named unavailable,
+# and a call already answered is refused rather than presented as open.
+test_present_shows_a_call_beside_its_current_context() {
+  local home out now
+  home=$(make_home present-context)
+  run_captain "$home" hold region-call --title "Which region for the launch" --repo sample \
+    --reason $'Ship east or west?\nOptions: (a) east, (b) west.\nSubject: https://github.com/o/r/pull/7' >/dev/null \
+    || fail "fixture: could not hold the captain call"
+  cat > "$home/fakebin/gh" <<'GH'
+#!/usr/bin/env bash
+case "$*" in
+  *'/o/r/pull/7 '*) printf '{"state":"MERGED","mergedAt":"2026-11-25T10:00:00Z","statusCheckRollup":[]}\n' ;;
+  *) exit 1 ;;
+esac
+GH
+  chmod +x "$home/fakebin/gh"
+
+  out=$(run_captain "$home" present region-call) || fail "present refused an open call: $out"
+  assert_contains "$out" $'Ship east or west?\nOptions: (a) east, (b) west.' "present must show the recorded question and options verbatim"
+  assert_contains "$out" 'https://github.com/o/r/pull/7: merged at 2026-11-25T10:00:00Z' "present must show the subject's current forge state"
+  assert_contains "$out" 'unavailable: this home keeps no captain dialog record' "a missing dialog record must be unavailable, not empty"
+
+  now=$(date +%s)
+  printf '{"seq":1,"epoch":%s,"key":"k","id":"a","tag":"captain","text":"go east"}\n{"seq":2,"epoch":%s,"key":"k","id":"b","tag":"main","text":"noted"}\n' \
+    "$now" "$now" > "$home/state/.host-mirror.jsonl"
+  out=$(run_captain "$home" present region-call) || fail "present refused an open call"
+  assert_contains "$out" '] go east' "present must show the captain's words since the call opened"
+  assert_not_contains "$out" 'noted' "present must show only the captain's words"
+
+  chmod 000 "$home/state/.host-mirror.jsonl"
+  out=$(run_captain "$home" present region-call)
+  chmod 600 "$home/state/.host-mirror.jsonl"
+  assert_contains "$out" 'could not be read' "an unreadable dialog record must be unavailable, not empty"
+
+  printf 'go east\n' > "$home/decision.txt"
+  run_captain "$home" answer region-call --decision-file "$home/decision.txt" >/dev/null || fail "fixture: could not record the answer"
+  if out=$(run_captain "$home" present region-call 2>&1); then
+    fail "present must refuse an answered call: $out"
+  fi
+  assert_contains "$out" 'region-call is already answered' "the refusal must say the call is answered"
+  pass "present shows a captain call verbatim beside its current forge state and the captain's words, and refuses an answered call"
+}
+
 test_verify_resolves_a_hold_migrated_to_beads_notes
 test_verify_resolves_a_hold_migrated_under_the_configured_prefix
 test_marker_noted_row_wins_over_a_prefix_namesake
@@ -2910,3 +2955,4 @@ test_verify_names_the_unresolvable_legacy_id_once
 test_verify_resolves_a_pre_collapse_key_through_its_derived_marker
 test_captain_hold_mutations_address_the_beads_backend
 test_hold_creates_a_captain_row_when_beads_requires_due_without_custom_type
+test_present_shows_a_call_beside_its_current_context
