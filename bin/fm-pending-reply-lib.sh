@@ -637,6 +637,21 @@ fm_pending_reply_find_resolve_line() {  # <status-file> <corr_id>
   return 0
 }
 
+# The corr ids a second mate still owes its parent, one per line: each
+# reply-bearing order in <inbox>/handled delivered within the last day whose
+# token has no correlated line on <channel>. A remote mate's channel is its own
+# outbound copy, so a reply recorded there counts before the parent mirrors it.
+# A fire-and-forget notice carries no corr and owes nothing.
+fm_pending_reply_owed_by_mate() {  # <inbox-dir> <channel-status-file>
+  local record corr
+  find "$1/handled" -maxdepth 1 -type f -name '*.msg' -mmin -1440 2>/dev/null | LC_ALL=C sort | while IFS= read -r record; do
+    corr=$(awk 'body { print } $0 == "--" { body = 1 }' "$record" 2>/dev/null \
+      | grep -oE "$FM_PENDING_REPLY_CORR_RE" | head -1 | cut -d= -f2 | tr 'A-F' 'a-f')
+    [ -n "$corr" ] || continue
+    [ -n "$(fm_pending_reply_find_resolve_line "$2" "$corr")" ] || printf '%s\n' "$corr"
+  done
+}
+
 fm_pending_reply_file_signature() {  # <path>
   local path=$1
   [ -f "$path" ] || { printf 'missing'; return 0; }

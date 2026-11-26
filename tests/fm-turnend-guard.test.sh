@@ -530,6 +530,51 @@ test_hook_loop_guard_allows_retry() {
   pass "fm-turnend-guard: stop_hook_active=true always allows the stop (never blocks twice in one turn)"
 }
 
+# A second mate that moved a reply-bearing order into handled/ owes its parent a
+# correlated report: the turn end is held back once per owed order, a report
+# with the order's corr (or a remote mate's local copy of one) lets it end, a
+# different corr does not count, and a fire-and-forget notice owes nothing.
+test_hook_holds_a_secondmate_turn_that_owes_its_parent_a_reply() {
+  local dir parent inbox out status
+  dir=$(make_secondmate_dir "$TMP_ROOT/hook-owed-reply")
+  cp -R "$ROOT/bin/." "$dir/bin/"
+  parent="$TMP_ROOT/hook-owed-reply-parent"
+  mkdir -p "$parent/state"
+  printf 'schema=fm-secondmate-parent.v1\nroute=local\nparent_home=%s\n' "$parent" > "$dir/.fm-secondmate-parent"
+  inbox="$TMP_ROOT/hook-owed-reply-inbox"
+  mkdir -p "$inbox/handled"
+  owed_order() {  # <name> <body>
+    printf 'schema=fm-task-inbox.v1\nbody-terminator=1\n--\n%s\n' "$2" > "$inbox/handled/$1.msg"
+  }
+  owed_order 001 'corr=aaaaaaaaaaaaaaaa please audit the panels'
+  owed_order 002 'delivery=0123456789abcdef refresh your clone'
+  out=$(FM_TASK_INBOX="$inbox" run_hook "$dir" false); status=$?
+  expect_code 2 "$status" "a turn end that owes the parent a reply must be held back"
+  assert_contains "$out" "REPLY OWED TO THE PARENT: you handled order(s) corr=aaaaaaaaaaaaaaaa," "the hold must name the owed order"
+  assert_not_contains "$out" "0123456789abcdef" "a fire-and-forget notice must owe nothing"
+  out=$(FM_TASK_INBOX="$inbox" run_hook "$dir" false); status=$?
+  expect_code 0 "$status" "an owed order must hold back only one turn end"
+
+  owed_order 003 'corr=bbbbbbbbbbbbbbbb ship the fix'
+  printf 'done: shipped corr=cccccccccccccccc\n' >> "$parent/state/sm-test-1.status"
+  out=$(FM_TASK_INBOX="$inbox" run_hook "$dir" false); status=$?
+  expect_code 2 "$status" "a report under a different corr must not satisfy the order"
+  assert_contains "$out" "corr=bbbbbbbbbbbbbbbb" "the hold must name the order the other corr did not answer"
+
+  owed_order 004 'corr=dddddddddddddddd check the build'
+  printf 'working: build still running corr=dddddddddddddddd\n' >> "$parent/state/sm-test-1.status"
+  out=$(FM_TASK_INBOX="$inbox" run_hook "$dir" false); status=$?
+  expect_code 0 "$status" "a correlated report must let the turn end"
+
+  printf 'schema=fm-secondmate-parent.v1\nroute=remote\nparent_host=parent\n' > "$dir/.fm-secondmate-parent"
+  rm -f "$inbox"/handled/*.msg
+  owed_order 005 'corr=eeeeeeeeeeeeeeee rerun the audit'
+  printf 'done: audit clean corr=eeeeeeeeeeeeeeee\n' >> "$dir/state/parent-replies.status"
+  out=$(FM_TASK_INBOX="$inbox" run_hook "$dir" false); status=$?
+  expect_code 0 "$status" "a remote mate's locally recorded reply must count before the parent mirrors it"
+  pass "fm-turnend-guard: a second mate's turn end is held once per handled order that still owes a correlated reply"
+}
+
 # A secondmate's OWN home runs a primary firstmate session and must be guarded
 # exactly like the main primary. This was the guard's proven blind spot: the
 # .fm-secondmate-home marker used to early-exit here, so an overnight secondmate
@@ -2691,6 +2736,7 @@ test_hook_ignores_repo_state_when_fm_home_set
 test_hook_uses_state_override
 test_hook_loop_guard_allows_retry
 test_hook_blocks_in_secondmate_own_home
+test_hook_holds_a_secondmate_turn_that_owes_its_parent_a_reply
 test_hook_silent_in_idle_secondmate_home
 test_hook_secondmate_loop_guard_allows_retry
 test_hook_secondmate_reinvoke_recovery_loop
