@@ -917,6 +917,9 @@ test_scan_records_a_pr_reported_in_a_done_line() {
   printf '%s\n' \
     'working [at=1]: rebasing the PR branch' \
     'done [at=2]: PR https://github.com/o/r/pull/7 checks green' > "$state/task-a.status"
+  write_task_meta "$dir" task-trailing
+  printf '%s\n' 'done [at=2]: PR https://github.com/o/r/pull/9 checks green at 0123abcd, non-draft and mergeable. Review passed.' \
+    > "$state/task-trailing.status"
   write_task_meta "$dir" task-prose
   printf '%s\n' 'done [at=2]: opened https://github.com/o/r/pull/8' > "$state/task-prose.status"
   fm_write_meta "$state/task-scout.meta" 'window=firstmate:fm-task-scout' 'endpoint_task_id=task-scout' \
@@ -931,12 +934,15 @@ test_scan_records_a_pr_reported_in_a_done_line() {
   grep -qxF 'pr=https://github.com/o/r/pull/7' "$state/task-a.meta" \
     || fail "the PR named in a done line was not recorded"
   fm_pr_poll_artifacts_valid "$state" task-a "$POLL" || fail "the reported PR's merge poll was not armed"
+  grep -qxF 'pr=https://github.com/o/r/pull/9' "$state/task-trailing.meta" \
+    || fail "prose after the ready phrase hid the reported PR"
+  fm_pr_poll_artifacts_valid "$state" task-trailing "$POLL" || fail "prose after the ready phrase left no merge poll"
   ! grep -q '^pr=' "$state/task-prose.meta" || fail "a URL without the PR prefix was recorded"
   [ ! -e "$state/task-prose.check.sh" ] || fail "a URL without the PR prefix armed a poll"
   ! grep -q '^pr=' "$state/task-scout.meta" || fail "a scout's PR mention was recorded"
   [ ! -e "$state/task-scout.check.sh" ] || fail "a scout's PR mention armed a poll"
   cmp -s "$dir/held.before" "$state/task-held.meta" || fail "a task with a recorded PR was recorded again"
-  pass "the scan records the PR a done line reports and leaves prose, scouts and recorded PRs alone"
+  pass "the scan records the PR a done line reports, prose after its ready phrase included, and leaves prose, scouts and recorded PRs alone"
 }
 
 test_scan_records_ready_pr_through_its_review_wait() {

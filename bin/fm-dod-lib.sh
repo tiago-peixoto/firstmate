@@ -914,17 +914,21 @@ fm_dod_pr_url_from_done_note() {  # <note>
   printf '%s\n' "$url"
 }
 
-# The URL of a note that is exactly a ready report (`PR <url>`, `PR <url> checks
-# green`, or Gerrit's `PR <url> published for review`), or empty. Anything else
-# around the URL is prose, so the caller claims no delivered PR from it.
+# The URL of a note that is a ready report (`PR <url>`, `PR <url> checks green`,
+# or Gerrit's `PR <url> published for review`), or empty. Prose may follow a
+# complete `checks green` or `published for review` phrase, because workers
+# append the head and evidence there; prose before the URL, after a bare URL, or
+# in place of the phrase means the caller claims no delivered PR from it.
 fm_dod_ready_note_url() {  # <note>
-  local url=$1
+  local url=$1 rest=
   case "$url" in 'PR '*) url=${url#PR } ;; *) return 1 ;; esac
-  case "$url" in
-    *' checks green') url=${url% checks green} ;;
-    *' published for review') url=${url% published for review} ;;
+  case "$url" in *[[:space:]]*) rest=${url#*[[:space:]]} url=${url%%[[:space:]]*} ;; esac
+  case "$rest" in
+    ''|'checks green'|'published for review') ;;
+    'checks green'[[:space:],.\;:]*|'published for review'[[:space:],.\;:]*) ;;
+    *) return 1 ;;
   esac
-  case "$url" in ''|*[[:space:]]*) return 1 ;; esac
+  [ -n "$url" ] || return 1
   printf '%s\n' "$url"
 }
 
