@@ -55,7 +55,7 @@ The guard remains a backstop.
 
 ## Guard predicates
 
-The turn-end guard checks primary scope first, then supervision need, then watcher health.
+The turn-end guard checks primary scope first, then a second mate's owed replies, then supervision need, then watcher health.
 The mid-turn pull warning in `bin/fm-guard.sh` judges watcher health differently, as described under [pull-warning verdict by supervision model](#pull-warning-verdict-by-supervision-model).
 
 ### Primary scope
@@ -72,6 +72,13 @@ The marker must meet both of these conditions:
 An unmarked checkout or invalid marker falls through to the git-dir check.
 That check keeps crewmate and scout linked worktrees inert because their git dir differs from their git common dir.
 It also requires `AGENTS.md`, `bin/`, and the effective state directory.
+
+### Owed replies in a second mate's home
+
+A second mate whose `FM_TASK_INBOX` holds a reply-bearing order in `handled/`, delivered within the last day, owes its parent a line carrying that order's `corr=` token on the parent channel (`fm_pending_reply_owed_by_mate` in `bin/fm-pending-reply-lib.sh`).
+When such an order has no correlated line yet, the guard holds back the turn end with a message naming each owed order and the `bin/fm-secondmate-report.sh` command that answers it.
+A remote mate's channel is its own `state/parent-replies.status`, so a reply recorded there counts before the parent mirrors it, and a fire-and-forget notice carries no token and owes nothing.
+Each owed order holds back at most one turn end (`state/.owed-reply-nagged/<corr>`), so a mate that cannot report is never wedged and the parent's own recovery and escalation still apply.
 
 ### Supervision need
 

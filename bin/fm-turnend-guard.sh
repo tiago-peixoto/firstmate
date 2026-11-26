@@ -202,6 +202,40 @@ fi
 # so this exempts them while guarding every real secondmate home.
 fm_primary_scope_matches "$FM_ROOT" "$STATE" || allow_exit
 
+# A second mate that handled a reply-bearing order owes its parent a correlated
+# report, and a turn that ends without it costs the parent a recovery round
+# later. Each owed order holds back at most one turn end, so a mate that cannot
+# report is never wedged. The record scan runs first so a home with no recent
+# order pays nothing.
+if [ -e "$FM_HOME/.fm-secondmate-home" ] && [ -n "${FM_TASK_INBOX:-}" ] \
+  && [ -n "$(find "$FM_TASK_INBOX/handled" -maxdepth 1 -type f -name '*.msg' -mmin -1440 2>/dev/null | head -1)" ]; then
+  # shellcheck source=bin/fm-pending-reply-lib.sh
+  . "$SCRIPT_DIR/fm-pending-reply-lib.sh"
+  # shellcheck source=bin/fm-parent-channel-lib.sh
+  . "$SCRIPT_DIR/fm-parent-channel-lib.sh"
+  if owed_channel=$(fm_parent_channel_destination "$FM_HOME" "$STATE"); then
+    owed_nagged="$STATE/.owed-reply-nagged"
+    find "$owed_nagged" -type f -mmin +2880 -exec rm -f {} + 2>/dev/null || true
+    owed=
+    for owed_corr in $(fm_pending_reply_owed_by_mate "$FM_TASK_INBOX" "$owed_channel"); do
+      [ ! -e "$owed_nagged/$owed_corr" ] || continue
+      if ! { mkdir -p "$owed_nagged" && : > "$owed_nagged/$owed_corr"; } 2>/dev/null; then
+        continue
+      fi
+      owed="$owed corr=$owed_corr"
+    done
+    if [ -n "$owed" ]; then
+      owed_msg="REPLY OWED TO THE PARENT: you handled order(s)$owed, but $owed_channel has no report for them. Before ending this turn, report each with bin/fm-secondmate-report.sh <verb> <corr_id> <note>: the result, or working: with the phase still under way."
+      if [ "$AGY_MODE" -eq 1 ]; then
+        jq -cn --arg r "$owed_msg" '{decision:"continue",reason:$r}'
+        exit 0
+      fi
+      printf '%s\n' "$owed_msg" >&2
+      exit 2
+    fi
+  fi
+fi
+
 # --- the actual predicate ----------------------------------------------------
 # shellcheck source=bin/fm-wake-lib.sh
 . "$SCRIPT_DIR/fm-wake-lib.sh"
