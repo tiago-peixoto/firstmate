@@ -35,7 +35,11 @@
 # in fleet-roots.txt (recorded once, so a caller that repoints XDG for its own
 # children cannot shift what the tripwire watches). The snapshot is file
 # metadata only (never an `hc` call: hc auto-starts a stopped core on
-# contact, which would itself disturb the state being verified). Teardown
+# contact, which would itself disturb the state being verified). It covers
+# only the real-state entries lab work could write: the `default` session
+# (where a call that lost its session pin lands) and anything named for this
+# lab session. Other real sessions rewrite their own state at any time, so
+# their entries are not compared. Teardown
 # stops the lab server and sweeps session processes, then requires a complete,
 # byte-identical snapshot before removing the session directory and sockets.
 # Failed reads or changed real-core metadata refuse verification and retain
@@ -147,7 +151,8 @@ fm_hclab_real_state_roots() {
 }
 
 # fm_hclab_fleet_state: a sorted metadata inventory of the real core state:
-# path, inode, mtime, size for every file under the roots passed as arguments.
+# path, inode, mtime, size for every file under the `default` and <session>
+# entries (directory, socket, or <name>.* sibling) of each root passed.
 # This is a pure filesystem read - deliberately NOT an `hc` call, because
 # contacting a stopped core auto-starts it and would itself dirty the
 # tripwire. The root list is resolved once at provision and recorded in
@@ -160,12 +165,18 @@ else
   fm_hclab_file_meta() { stat -c '%n %i %Y %s' "$1" 2>/dev/null; }
 fi
 
-fm_hclab_fleet_state() ( # <root>...
+fm_hclab_fleet_state() ( # <session> <root>...
   set -o pipefail
-  local root files f
+  shopt -s nullglob
+  local name=$1 root files f entries
+  shift
   for root in "$@"; do
     [ -d "$root" ] || continue
-    files=$(find "$root" \( -type f -o -type s \) -print | LC_ALL=C sort) || return 1
+    entries=("$root/default" "$root"/default.* "$root/$name" "$root/$name".*)
+    files=$(for f in "${entries[@]}"; do
+      [ -e "$f" ] || [ -L "$f" ] || continue
+      find "$f" \( -type f -o -type s \) -print || exit 1
+    done | LC_ALL=C sort) || return 1
     [ -n "$files" ] || continue
     printf '%s\n' "$files" | while IFS= read -r f; do
       fm_hclab_file_meta "$f" || return 1
@@ -173,10 +184,10 @@ fm_hclab_fleet_state() ( # <root>...
   done | LC_ALL=C sort
 )
 
-fm_hclab_fleet_state_recorded() ( # <roots-file>
+fm_hclab_fleet_state_recorded() ( # <roots-file> <session>
   set -o pipefail
   cat "$1" | while IFS= read -r root; do
-    fm_hclab_fleet_state "$root" || return 1
+    fm_hclab_fleet_state "$2" "$root" || return 1
   done | LC_ALL=C sort
 )
 
@@ -192,7 +203,7 @@ fm_hclab_check_tripwire() { # <session>
     fm_hclab_error "missing fleet-state roots record for '$name'; refusing unverified teardown"
     return 1
   }
-  if ! before=$(cat "$tripwire") || ! after=$(fm_hclab_fleet_state_recorded "$roots_file"); then
+  if ! before=$(cat "$tripwire") || ! after=$(fm_hclab_fleet_state_recorded "$roots_file" "$name"); then
     fm_hclab_error "could not read complete fleet-state snapshot; refusing unverified teardown"
     return 1
   fi
@@ -220,7 +231,7 @@ fm_hclab_provision() { # <session>
     fm_hclab_error "could not record the fleet-state roots"
     return 1
   }
-  fm_hclab_fleet_state_recorded "$(fm_hclab_roots_path "$name")" > "$(fm_hclab_tripwire_path "$name")" || {
+  fm_hclab_fleet_state_recorded "$(fm_hclab_roots_path "$name")" "$name" > "$(fm_hclab_tripwire_path "$name")" || {
     rm -rf "$dir"
     fm_hclab_error "could not record the fleet-state tripwire"
     return 1
