@@ -1970,7 +1970,7 @@ test_historical_self_inventory_has_workable_repair() {
     || fail "could not create the historical origin"
   write_origin_meta "$home" "$origin"
   for out in "$keep" "$replacement"; do
-    run_captain "$home" hold "$out" --title "Call $out" --reason "Choose" --origin "$origin" >/dev/null \
+    run_captain "$home" hold "$out" --title "Call $out" --reason "Choose" --origin "$origin" --separate-gate >/dev/null \
       || fail "could not create $out"
   done
   meta="$home/state/$origin.meta"
@@ -2133,7 +2133,7 @@ test_archived_answered_hold_still_satisfies_the_gate() {
   write_origin_meta "$home" "$id"
   printf 'done: report complete\n' > "$home/state/$id.status"
   run_captain "$home" hold sample-archived-unanswered-call --title "Choose the unanswered option" \
-    --reason "captain unanswered choice pending" --repo sample --origin "$id" >/dev/null \
+    --reason "captain unanswered choice pending" --repo sample --origin "$id" --separate-gate >/dev/null \
     || fail "could not register the unanswered captain-held task"
   run_captain "$home" complete "$id" sample-archived-unanswered-call >/dev/null \
     || fail "completion failed for the unanswered hold"

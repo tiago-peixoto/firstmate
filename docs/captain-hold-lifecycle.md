@@ -68,6 +68,8 @@ Repeat and edge cases:
 - `--origin` resolves the backend origin identity before writing the hold-set stamp.
   The association lives on its own `Captain hold origin:` body line; [completion inventory checks](#recording-a-reviewed-inventory-complete) own how it is verified.
   The ordering above prevents an interrupted or refused backend hold from publishing the new association, even when an old captain hold is still active or date-expired.
+- A second open captain hold for the same `--origin` on a different task is refused, naming the existing hold, because one origin's questions belong on one held task.
+  `--separate-gate` declares the new task a genuinely separate captain gate and allows it; re-holding the same task and holding for a different origin are unaffected.
 - `--key <slug>` holds a call the secondmate already raised as `needs-decision [key=<slug>]`.
   The hold and its answer then reopen and close that one parent decision, so the answer leaves no second record open.
   Nothing links a held task to an existing status key unless `--key` names it, so no other path infers the link.

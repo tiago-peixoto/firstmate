@@ -1177,7 +1177,7 @@ test_completion_replaces_a_pair_recorded_after_pr() {
   tasks_in "$home" add "$id" "Review a legacy sample change" --kind scout --repo sample --start >/dev/null
   write_origin_meta "$home" "$id"
   for out in old-call new-call; do
-    run_captain "$home" hold "$out" --title "Call $out" --reason "Choose" --origin "$id" >/dev/null \
+    run_captain "$home" hold "$out" --title "Call $out" --reason "Choose" --origin "$id" --separate-gate >/dev/null \
       || fail "could not create $out"
   done
   meta="$home/state/$id.meta"
@@ -1533,21 +1533,21 @@ test_bound_channel_answers_close_at_answer_time() {
   run_captain "$home" hold sample-membership-call --title "Captain call: membership" \
     --reason "captain membership choice pending" --repo sample --origin "$id" >/dev/null
   run_captain "$home" hold sample-headline-call --title "Captain call: headline" \
-    --reason "captain headline choice pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain headline choice pending" --repo sample --origin "$id" --separate-gate >/dev/null
   run_captain "$home" hold sample-forged-call --title "Captain call: forged" \
-    --reason "captain forged choice pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain forged choice pending" --repo sample --origin "$id" --separate-gate >/dev/null
   run_captain "$home" hold sample-invalid-close-call --title "Captain call: invalid close" \
-    --reason "captain close mode validation pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain close mode validation pending" --repo sample --origin "$id" --separate-gate >/dev/null
   run_captain "$home" hold sample-source-reconcile --title "Captain call: reconcile" \
-    --reason "captain re-check pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain re-check pending" --repo sample --origin "$id" --separate-gate >/dev/null
   run_captain "$home" hold sample-bare-reconcile --title "Captain call: bare reconcile" \
-    --reason "captain bare re-check pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain bare re-check pending" --repo sample --origin "$id" --separate-gate >/dev/null
   run_captain "$home" hold sample-old-shape --title "Captain call: old board shape" \
-    --reason "captain old board pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain old board pending" --repo sample --origin "$id" --separate-gate >/dev/null
   run_captain "$home" hold sample-old-reconcile --title "Captain call: old bare reconcile" \
-    --reason "captain old bare reconcile pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain old bare reconcile pending" --repo sample --origin "$id" --separate-gate >/dev/null
   run_captain "$home" hold sample-old-reconcile-note --title "Captain call: old annotated reconcile" \
-    --reason "captain old annotated reconcile pending" --repo sample --origin "$id" >/dev/null
+    --reason "captain old annotated reconcile pending" --repo sample --origin "$id" --separate-gate >/dev/null
   tasks_in "$home" add sample-gated-work "Gated sample work" --kind ship --repo sample \
     --body 'Gated work plan.' >/dev/null
   run_captain "$home" hold sample-gated-work --reason "captain go needed" >/dev/null
@@ -2283,10 +2283,10 @@ test_scout_board_answers_reach_only_its_own_held_calls() {
     --reason "captain round one pending" --repo sample --origin sample-scout >/dev/null \
     || fail "could not hold the round-one call"
   run_captain "$home" hold scout-call-2 --title "Round two call" \
-    --reason "captain round two pending" --repo sample --origin sample-scout >/dev/null \
+    --reason "captain round two pending" --repo sample --origin sample-scout --separate-gate >/dev/null \
     || fail "could not hold the round-two call"
   run_captain "$home" hold scout-call-closed --title "Already answered call" \
-    --reason "captain answered already" --repo sample --origin sample-scout >/dev/null \
+    --reason "captain answered already" --repo sample --origin sample-scout --separate-gate >/dev/null \
     || fail "could not hold the answered call"
   printf 'Captain chose the first option.\n' > "$home/closed-decision.txt"
   run_captain "$home" answer scout-call-closed --decision-file "$home/closed-decision.txt" >/dev/null \
@@ -2310,7 +2310,7 @@ prompts[5]{tag,text,prompt}:
   "choice","Reconcile","Context data: {\"schema\":\"fm-bearings-answer.v1\",\"question\":\"other-origin-call\",\"selection\":\"reconcile\",\"note\":\"\"}"
 EOF
   run_captain "$home" hold scout-call-late-recheck --title "Call to re-check before bind" \
-    --reason "captain late re-check pending" --repo sample --origin sample-scout >/dev/null \
+    --reason "captain late re-check pending" --repo sample --origin sample-scout --separate-gate >/dev/null \
     || fail "could not hold the scout's call to re-check before bind"
   run_procevent "$home" register-task lavish "$sid" sample-scout -- "$stub" >/dev/null \
     || fail "could not arm the board for the scout"
@@ -2369,7 +2369,7 @@ EOF
   # A later round is keyed by a fresh held task id and recorded at capture time
   # through the binding, still scoped to the scout the board was armed for.
   run_captain "$home" hold scout-call-recheck --title "Call to re-check" \
-    --reason "captain re-check pending" --repo sample --origin sample-scout >/dev/null \
+    --reason "captain re-check pending" --repo sample --origin sample-scout --separate-gate >/dev/null \
     || fail "could not hold the scout's call to re-check"
   cat > "$home/round.txt" <<'EOF'
 session:
@@ -2410,7 +2410,7 @@ EOF
   # A capture left by an install that never marked results pending may already
   # have been fed, so a later bind must not replay it onto a call held again.
   run_captain "$home" hold scout-call-3 --title "Re-held call" \
-    --reason "captain re-held call pending" --repo sample --origin sample-scout >/dev/null \
+    --reason "captain re-held call pending" --repo sample --origin sample-scout --separate-gate >/dev/null \
     || fail "could not hold the re-held call"
   sed 's/scout-call-2/scout-call-3/' "$home/state/procevent-inbox/$sid.2.result" \
     > "$home/state/procevent-inbox/$sid.3.result"
@@ -2605,7 +2605,7 @@ test_status_resolution_over_an_open_hold_is_signalled() {
     || fail "could not register the collapsed-identity captain call"
   run_captain "$home" hold "$id-decision-access" \
     --title "Open or restricted sample access" --reason "captain access choice pending" \
-    --repo sample --origin "$id" >/dev/null \
+    --repo sample --origin "$id" --separate-gate >/dev/null \
     || fail "could not register the legacy-identity captain call"
   cat > "$home/state/$id.status" <<'EOF'
 working: report drafted
@@ -2947,6 +2947,40 @@ GH
   pass "present shows a captain call verbatim beside its current forge state and the captain's words, and refuses an answered call"
 }
 
+# One origin's questions belong on one held task, so a second open hold for the
+# same origin is refused unless it is declared a separate gate. Different
+# origins, re-holding the same task, and one task completed for its origin
+# (the shared call of upstream issue 7367) stay allowed.
+test_hold_refuses_a_second_open_hold_for_one_origin() {
+  local home out
+  home=$(make_home one-hold-per-origin)
+  mkdir -p "$home/data/review-a" "$home/data/review-b"
+  printf 'report\n' > "$home/data/review-a/report.md"
+  printf 'report\n' > "$home/data/review-b/report.md"
+  write_origin_meta "$home" review-a
+  run_captain "$home" hold shared-call --title "Choose shared behavior" \
+    --reason "the same captain choice was found by both reviews" --repo sample --origin review-a >/dev/null \
+    || fail "the first hold for an origin must succeed"
+  if out=$(run_captain "$home" hold dup-call --title "Choose shared behavior again" \
+    --reason "duplicate of the shared choice" --repo sample --origin review-a 2>&1); then
+    fail "a second open hold for one origin must be refused: $out"
+  fi
+  assert_contains "$out" 'shared-call is already an open captain hold for origin review-a' "the refusal must name the existing hold"
+  tasks_in "$home" show dup-call >/dev/null 2>&1 && fail "a refused hold must not create its task"
+  run_captain "$home" hold shared-call --reason "the shared choice, restated" --origin review-a >/dev/null \
+    || fail "re-holding the same task for its origin must stay allowed"
+  run_captain "$home" hold gate-two --title "Choose the rollout window" \
+    --reason "a separate captain gate" --repo sample --origin review-a --separate-gate >/dev/null \
+    || fail "a hold declared a separate gate must be allowed"
+  run_captain "$home" hold review-b-call --title "Review B's own call" \
+    --reason "review B's own choice" --repo sample --origin review-b >/dev/null \
+    || fail "a hold for a different origin must be allowed"
+  run_captain "$home" complete review-a shared-call gate-two >/dev/null \
+    || fail "the origin must still complete against its shared call"
+  run_captain "$home" verify review-a >/dev/null || fail "the shared call must still verify for its origin"
+  pass "hold: a second open hold for one origin is refused unless declared a separate gate; other origins and re-holds are unaffected"
+}
+
 test_verify_resolves_a_hold_migrated_to_beads_notes
 test_verify_resolves_a_hold_migrated_under_the_configured_prefix
 test_marker_noted_row_wins_over_a_prefix_namesake
@@ -2956,3 +2990,4 @@ test_verify_resolves_a_pre_collapse_key_through_its_derived_marker
 test_captain_hold_mutations_address_the_beads_backend
 test_hold_creates_a_captain_row_when_beads_requires_due_without_custom_type
 test_present_shows_a_call_beside_its_current_context
+test_hold_refuses_a_second_open_hold_for_one_origin

@@ -21,8 +21,8 @@
 #
 # Usage:
 #   fm-captain-hold.sh hold <task-id> --reason <reason> \
-#     [--title <title>] [--repo <repo>] [--origin <origin-id>] [--until YYYY-MM-DD] \
-#     [--key <decision-key>]
+#     [--title <title>] [--repo <repo>] [--origin <origin-id> [--separate-gate]] \
+#     [--until YYYY-MM-DD] [--key <decision-key>]
 #   fm-captain-hold.sh answer <task-id> --decision-file <path> [--release]
 #   fm-captain-hold.sh pr-policy <task-id> <PR-url> <merged|closed|terminal> <close|release>
 #   fm-captain-hold.sh settle-pr <task-id> <PR-url>
@@ -54,7 +54,10 @@
 # hold preserves the existing timestamp, while re-holding released work starts
 # a new lifecycle. A task already closed is refused rather than reopened.
 # `--origin` also records the origin on a `Captain hold origin:` body line, which
-# `complete` and `verify` check. The reason may hold parentheses and line breaks:
+# `complete` and `verify` check. A second open captain hold for the same origin
+# on a different task is refused, because one origin's questions belong on one
+# held task; `--separate-gate` declares the new task a genuinely separate gate
+# and allows it. Re-holding the same task is unaffected. The reason may hold parentheses and line breaks:
 # tasks-axi refuses them, so `hold` escapes them where it writes the reason and
 # readers decode them (bin/fm-hold-reason-lib.sh owns the encoding).
 # `--until` records the captain's own deferral date through `tasks-axi hold
@@ -1170,9 +1173,28 @@ verify_entry_durable() {  # <origin-or-empty> <entry>; prints "<id> <how> <origi
   printf '%s %s %s\n' "$id" "$how" "$origin_state"
 }
 
+# The first other task still held for the captain whose recorded hold origin is
+# <origin>, or nothing.
+open_hold_for_origin() {  # <origin-identity> <task-identity>
+  local origin=$1 self=$2 ids other
+  ids=$(open_task_ids) || fail "could not list open tasks to check origin $origin for an existing hold"
+  while IFS= read -r other; do
+    [ -n "$other" ] && [ "$other" != "$self" ] || continue
+    task_show "$other" || continue
+    [ "$(show_field_value "$TASK_SHOW_OUTPUT" hold_kind)" = captain ] || continue
+    [ "$(show_field_value "$TASK_SHOW_OUTPUT" held)" = yes ] || continue
+    [ "$(body_hold_origin "$(decode_shown_value "$(show_field "$TASK_SHOW_OUTPUT" body)")")" = "$origin" ] || continue
+    printf '%s\n' "$other"
+    return 0
+  done <<EOF
+$ids
+EOF
+}
+
 command_hold() {
   local id=${1:-} title='' reason='' repo='' origin='' until='' key='' show state existing_title body='' hold_kind hold_set occurrence
   local existing_hold_kind='' existing_held='' preserve_hold_set=0 stored_reason original_body='' hold_status=0
+  local separate_gate=0 duplicate
   [ "$#" -ge 1 ] || { usage >&2; exit 2; }
   shift
   while [ "$#" -gt 0 ]; do
@@ -1183,11 +1205,13 @@ command_hold() {
       --origin) shift; origin=${1:-} ;;
       --until) shift; until=${1:-} ;;
       --key) shift; key=${1:-}; validate_slug key "$key" ;;
+      --separate-gate) separate_gate=1 ;;
       *) usage >&2; exit 2 ;;
     esac
     shift
   done
   validate_slug task-id "$id"
+  [ "$separate_gate" -eq 0 ] || [ -n "$origin" ] || fail "--separate-gate needs --origin"
   [ -n "$reason" ] || fail "reason must not be empty"
   # bin/fm-hold-reason-lib.sh owns the storage constraint and reversible encoding.
   stored_reason=$(fm_hold_reason_encode "$reason") || fail "could not encode the hold reason"
@@ -1207,6 +1231,11 @@ command_hold() {
   esac
   acquire_task_control_lock "$id"
   require_tasks_axi
+  if [ -n "$origin" ] && [ "$separate_gate" -eq 0 ]; then
+    duplicate=$(open_hold_for_origin "$(task_identity "$origin")" "$(task_identity "$id")") || exit $?
+    [ -z "$duplicate" ] \
+      || fail "task $duplicate is already an open captain hold for origin $origin; add this question to $duplicate, or pass --separate-gate if it is a genuinely separate captain gate"
+  fi
   if task_show "$id"; then
     show=$TASK_SHOW_OUTPUT
     state=$(show_field "$show" state)
