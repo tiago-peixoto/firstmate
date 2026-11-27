@@ -1,0 +1,99 @@
+
+===== S1 teardown, parent state mode 775, parent FM_STATE_OVERRIDE exported =====
+--- parent state before
+./domain.meta
+./procevent/source.source
+--- child home before
+./.fm-secondmate-home
+./state/procevent/.owner-lease
+./state/procevent/source.source
+$ FM_HOME=<parent> FM_STATE_OVERRIDE=<parent>/state/parent-route bin/fm-teardown.sh domain  -> rc=1
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | ●  WATCHER DOWN - SUPERVISION IS OFF
+  | ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+  | ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+  | ●  This is a supervision warning only; the guarded operation WILL still run.
+  | ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | error: process-event state root is not a private directory
+  | REFUSED: process-event cleanup cannot safely proceed for secondmate home <tmp>/s1-775-child; preserving the home, lease, and retirement records for retry
+--- parent state after
+./domain.meta
+./.guard-watcher-stale-banner
+./procevent/source.source
+--- child home after
+./.fm-secondmate-home
+./state/procevent/.owner-lease
+./state/procevent/source.source
+FAIL teardown exits 0
+FAIL sweep reports the child registration (attempted=1)
+FAIL child home removed
+OK   parent source.source byte-identical
+OK   parent state dir mode still 775 (now 775)
+
+===== S1 teardown, parent state mode 700, parent FM_STATE_OVERRIDE exported =====
+--- parent state before
+./domain.meta
+./procevent/source.source
+--- child home before
+./.fm-secondmate-home
+./state/procevent/.owner-lease
+./state/procevent/source.source
+$ FM_HOME=<parent> FM_STATE_OVERRIDE=<parent>/state/parent-route bin/fm-teardown.sh domain  -> rc=1
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | ●  WATCHER DOWN - SUPERVISION IS OFF
+  | ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+  | ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+  | ●  This is a supervision warning only; the guarded operation WILL still run.
+  | ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | retired: source
+  | swept: attempted=1
+  | REFUSED: process-event state remains for secondmate home <tmp>/s1-700-child after its bounded sweep; preserving the home, lease, and retirement records for retry
+--- parent state after
+./domain.meta
+./.guard-watcher-stale-banner
+./procevent/.owner-lease
+--- child home after
+./.fm-secondmate-home
+./state/procevent/.owner-lease
+./state/procevent/source.source
+FAIL teardown exits 0
+OK   sweep reports the child registration (attempted=1)
+FAIL child home removed
+FAIL parent source.source byte-identical
+OK   parent state dir mode still 700 (now 700)
+
+===== S2 failed home return -> restore + reconcile, parent FM_STATE_OVERRIDE exported =====
+--- parent state before
+./domain.meta
+./procevent/source.source
+--- child state before
+./procevent/.owner-lease
+./procevent/source.source
+$ ... FM_FAKE_TREEHOUSE_RETURN_FAIL=1 bin/fm-teardown.sh domain  -> rc=1
+  | error: process-event state root is not a private directory
+  | REFUSED: process-event cleanup cannot safely proceed for secondmate home <tmp>/s2-child; preserving the home, lease, and retirement records for retry
+--- parent state after
+./domain.meta
+./procevent/source.source
+--- child state after
+./procevent/.owner-lease
+./procevent/source.source
+OK   teardown refuses (rc != 0)
+FAIL refusal is the failed home return
+OK   child home retained
+OK   child registration restored
+OK   parent procevent dir holds only its original source
+OK   parent source.source byte-identical
+OK   parent state dir mode still 775 (now 775)
+
+===== S3 documented manual recovery command, run from a shell that exports the parent FM_STATE_OVERRIDE =====
+$ FM_HOME=<home> FM_STATE_OVERRIDE=<home>/state <home>/bin/fm-procevent.sh sweep-home  -> rc=0
+  | retired: source
+  | swept: attempted=1
+OK   sweep exits 0 and retires the child registration
+OK   parent source.source byte-identical
+OK   parent state dir mode still 775
+
+RESULT: HAS-FAILURES

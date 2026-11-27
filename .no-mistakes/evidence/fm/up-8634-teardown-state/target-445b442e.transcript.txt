@@ -1,0 +1,105 @@
+
+===== S1 teardown, parent state mode 775, parent FM_STATE_OVERRIDE exported =====
+--- parent state before
+./domain.meta
+./procevent/source.source
+--- child home before
+./.fm-secondmate-home
+./state/procevent/.owner-lease
+./state/procevent/source.source
+$ FM_HOME=<parent> FM_STATE_OVERRIDE=<parent>/state/parent-route bin/fm-teardown.sh domain  -> rc=0
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | ●  WATCHER DOWN - SUPERVISION IS OFF
+  | ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+  | ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+  | ●  This is a supervision warning only; the guarded operation WILL still run.
+  | ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | retired: source
+  | swept: attempted=1
+  | teardown domain complete (window firstmate:fm-domain, worktree <tmp>/s1-775-child)
+--- parent state after
+./.guard-watcher-stale-banner
+./home-summary.json
+./procevent/source.source
+--- child home after
+(gone)
+OK   teardown exits 0
+OK   sweep reports the child registration (attempted=1)
+OK   child home removed
+OK   parent source.source byte-identical
+OK   parent state dir mode still 775 (now 775)
+
+===== S1 teardown, parent state mode 700, parent FM_STATE_OVERRIDE exported =====
+--- parent state before
+./domain.meta
+./procevent/source.source
+--- child home before
+./.fm-secondmate-home
+./state/procevent/.owner-lease
+./state/procevent/source.source
+$ FM_HOME=<parent> FM_STATE_OVERRIDE=<parent>/state/parent-route bin/fm-teardown.sh domain  -> rc=0
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | ●  WATCHER DOWN - SUPERVISION IS OFF
+  | ●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+  | ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+  | ●  This is a supervision warning only; the guarded operation WILL still run.
+  | ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | retired: source
+  | swept: attempted=1
+  | teardown domain complete (window firstmate:fm-domain, worktree <tmp>/s1-700-child)
+--- parent state after
+./.guard-watcher-stale-banner
+./home-summary.json
+./procevent/source.source
+--- child home after
+(gone)
+OK   teardown exits 0
+OK   sweep reports the child registration (attempted=1)
+OK   child home removed
+OK   parent source.source byte-identical
+OK   parent state dir mode still 700 (now 700)
+
+===== S2 failed home return -> restore + reconcile, parent FM_STATE_OVERRIDE exported =====
+--- parent state before
+./domain.meta
+./procevent/source.source
+--- child state before
+./procevent/.owner-lease
+./procevent/source.source
+$ ... FM_FAKE_TREEHOUSE_RETURN_FAIL=1 bin/fm-teardown.sh domain  -> rc=1
+  | retired: source
+  | swept: attempted=1
+  | error: treehouse return failed for secondmate home <tmp>/s2-child; lease may still be held
+--- parent state after
+./domain.meta
+./procevent/source.source
+--- child state after
+./procevent-inbox/source.1.adapter
+./procevent-inbox/source.1.result
+./procevent/.owner-lease
+./procevent/source.44-132144030.last-launch
+./procevent/source.source
+./.wake-queue
+./.wake-queue.seq
+./.watcher-down
+OK   teardown refuses (rc != 0)
+OK   refusal is the failed home return
+OK   child home retained
+OK   child registration restored
+OK   parent procevent dir holds only its original source
+OK   parent source.source byte-identical
+OK   parent state dir mode still 775 (now 775)
+
+===== S3 documented manual recovery command, run from a shell that exports the parent FM_STATE_OVERRIDE =====
+$ FM_HOME=<home> FM_STATE_OVERRIDE=<home>/state <home>/bin/fm-procevent.sh sweep-home  -> rc=0
+  | retired: source
+  | swept: attempted=1
+OK   sweep exits 0 and retires the child registration
+OK   parent source.source byte-identical
+OK   parent state dir mode still 775
+247224 bash /tmp/fm-8634-live.JgHuzq/s2-child/bin/fm-procevent.sh _owner-watchdog source 246659 linux-starttime=553089428 cmdline-hex=62617368002f746d702f666d2d383633342d6c6976652e4a6748757a712f73322d6368696c642f62696e2f666d2d70726f636576656e742e7368005f737461727400736f7572636500 /tmp/fm-8634-live.JgHuzq/s2-child/state/procevent/.owner-guard-ready.RVUnR3 44 132143663
+WARN: leftover processes
+
+RESULT: ALL-OK
