@@ -67,6 +67,12 @@ Consistent with the agent-mistake threat model, the guard deliberately does not 
 - A `cd` reconstructed by a command substitution (`$(echo c)d x`) or hidden inside a brace group (`{ cd x; }`) is not blocked. Brace-group recursion is avoided because this classifier cannot reliably tell a brace group `{ cd; }` from brace expansion `{cd,foo}`, and a false block there is worse than the missed exotic bypass.
 - Malformed or untokenizable syntax fails open (allow). Unlike the watcher-arm seatbelt, which fails closed on unclassifiable protected commands, the cd-guard prioritizes zero false blocks over catching a malformed bypass, because a blocked backlog write is a correctness hazard while a missed exotic `cd` is only the pre-existing status quo.
 
+### One-shot presenters piped into a filter
+
+The same policy and scope also deny `bin/fm-wake-drain.sh` or `bin/fm-afk-return.sh` in a pipeline stage whose output feeds another command, such as `bin/fm-wake-drain.sh | head -40`.
+Each of those scripts presents some records only once, so a filter such as `head`, `tail`, or `grep` hides a wake, decision, or status line that no later run shows again.
+The rule matches only those two scripts as the executed command word of a stage followed by `|` or `|&`; a wrapper such as `bash <script>`, a redirection to a file, and a pipeline that feeds either script stay allowed.
+
 If a genuinely ambiguous command shape is found that risks a false block, the guard is not extended by guesswork; the ambiguity is escalated and the guard stays precise rather than over-eager.
 
 ## Stable reason code
@@ -76,6 +82,7 @@ Every deny carries one stable code in square brackets before its prose reason.
 | Code | Meaning |
 | --- | --- |
 | `persistent-cd` | A top-level `cd`/`pushd`/`popd` would persistently change the primary shell's own working directory. |
+| `one-shot-output-piped` | `bin/fm-wake-drain.sh` or `bin/fm-afk-return.sh` is piped into another command. |
 
 The reason directs the caller to reach the target without moving the shell by using `git -C <dir>`, placing an absolute path on the intended command itself, or scoping the `cd` to a subshell.
 It does not permit `cd /home/project`, because an absolute-path `cd` to anything but the home itself remains a persistent directory change and is denied.
@@ -92,7 +99,7 @@ It does not permit `cd /home/project`, because an absolute-path `cd` to anything
 - Cursor sends stdin JSON at `.tool_input.command` and adds `--cursor`, which renders the deny as Cursor's own returned decision object.
 
 Processing order is cheapest-first: a strict-superset prefilter, then the primary-checkout scope, then the Node policy owner.
-The prefilter removes ordinary single quotes, double quotes, backslashes, carriage returns, and newlines before fast-allowing any command that carries no `cd`, `pushd`, or `popd` substring and no quoting-decoder marker (`$'` ANSI-C or `$"` locale), so quoted or escaped command-word fragments delegate to the policy while most commands never pay for the git scoping calls or the Node process.
+The prefilter removes ordinary single quotes, double quotes, backslashes, carriage returns, and newlines before fast-allowing any command that carries no `cd`, `pushd`, `popd`, `fm-wake-drain`, or `fm-afk-return` substring and no quoting-decoder marker (`$'` ANSI-C or `$"` locale), so quoted or escaped command-word fragments delegate to the policy while most commands never pay for the git scoping calls or the Node process.
 The quoting-decoder marker set is coupled to the classifier's decoder set in `bin/fm-arm-command-policy.mjs`: adding any new quote or expansion form the classifier decodes requires extending the prefilter marker set in the same change, or it stops being a strict superset.
 
 Empty stdin, unparseable JSON, missing `jq` on the stdin path, missing Node, a missing policy owner, or an invalid policy response all fail open with exit 0 and no output.
