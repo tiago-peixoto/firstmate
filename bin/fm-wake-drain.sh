@@ -978,6 +978,7 @@ refuse_unhandled_decisions() {  # <newline-separated signal sources>
       FM_HOME=$FM_HOME "$SCRIPT_DIR/fm-captain-hold.sh" open "$task" >/dev/null 2>&1 || held_rc=$?
       [ "$held_rc" -ne 0 ] || continue
       if [ "$held_rc" -eq 1 ] && [ "$key" != "$task" ]; then
+        held_rc=0
         FM_HOME=$FM_HOME "$SCRIPT_DIR/fm-captain-hold.sh" open "$key" >/dev/null 2>&1 || held_rc=$?
         [ "$held_rc" -ne 0 ] || continue
       fi
