@@ -449,9 +449,11 @@ EOF
 # cursor-backed unread span as the annotation path, and runs on every drain -
 # including the empty-queue fast path - so a buried answer cannot be swallowed
 # when the fold later advances the cursor. Prints nothing when nothing is
-# unread, which is the common case.
+# unread, which is the common case. With config/unread-pr-state present, each
+# PR URL a printed line names is followed by its current forge state
+# (print_pr_states).
 print_unread_status_section() {
-  local snapshot=${1:-} unread task line shown=0
+  local snapshot=${1:-} unread task line shown=0 lines=''
 
   if [ -n "$snapshot" ]; then
     unread=$(scan_unread_surface_snapshot "$STATE" "$snapshot") || return 1
@@ -468,12 +470,16 @@ print_unread_status_section() {
       printf 'UNREAD STATUS (new since last drain, not re-printed after this presentation):\n' || return 1
     fi
     printf '%s\n' "$line" || return 1
+    lines="$lines$line
+"
     shown=$((shown + 1))
   done <<EOF
 $unread
 EOF
 
   [ "$shown" -gt 0 ] || return 0
+  [ -e "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}/unread-pr-state" ] || return 0
+  print_pr_states 'UNREAD STATUS' "$lines"
 }
 
 # Print the consolidated OPEN DECISIONS section: every still-open
@@ -636,7 +642,7 @@ EOF
 #     about outcomes still open, as if settled ones had never been listed,
 #     then acknowledge every presented outcome, settled and open alike.
 #   - Every PR URL a presented line names is followed by the forge's current
-#     state (print_outcome_pr_states), so main can tell a recorded claim from a
+#     state (print_pr_states), so main can tell a recorded claim from a
 #     current fact.
 #   - Visible routine outcomes are listed once, for awareness, the way the Pi
 #     branch's routine notes reach main's transcript without a turn; silent
@@ -753,7 +759,7 @@ ROWS
     text="$text$routine_lines"
   fi
   if [ -n "$text" ]; then
-    pr_states=$(print_outcome_pr_states "${captain_lines[*]-}
+    pr_states=$(print_pr_states 'BRANCH OUTCOMES' "${captain_lines[*]-}
 $routine_lines")
     [ -z "$pr_states" ] || text="$text$pr_states
 "
@@ -768,20 +774,20 @@ $routine_lines")
   fi
 }
 
-# A summary's PR claims are history, so each PR URL the presented lines name
-# gets the forge's current state beside it (bin/fm-forge-state.sh); URLs past
-# the per-drain limit say unknown rather than leaving the summary to stand as
+# A presented line's PR claims are history, so each PR URL it names gets the
+# forge's current state beside it (bin/fm-forge-state.sh); URLs past the
+# per-section limit say unknown rather than leaving the line to stand as
 # current.
-print_outcome_pr_states() {  # <presented-lines>
-  local urls url limit=6
+print_pr_states() {  # <section-name> <presented-lines>
+  local section=$1 urls url limit=6
   local -a read_now=()
-  urls=$(printf '%s\n' "$1" | grep -oE 'https?://[^ ]+/(pull|-/merge_requests)/[0-9]+' | awk '!seen[$0]++') || return 0
+  urls=$(printf '%s\n' "$2" | grep -oE 'https?://[^ ]+/(pull|-/merge_requests)/[0-9]+' | awk '!seen[$0]++') || return 0
   while IFS= read -r url; do
     [ "${#read_now[@]}" -ge "$limit" ] || read_now+=("$url")
   done <<URLS
 $urls
 URLS
-  printf 'BRANCH OUTCOMES, CURRENT PR STATE (read from the forge during this drain; the outcome lines above say what was true when recorded):\n'
+  printf '%s, CURRENT PR STATE (read from the forge during this drain; the lines above say what was true when recorded):\n' "$section"
   "$SCRIPT_DIR/fm-forge-state.sh" "${read_now[@]}"
   printf '%s\n' "$urls" | tail -n +$((limit + 1)) | while IFS= read -r url; do
     printf '%s: unknown (not read, over this drain'"'"'s limit of %s PRs)\n' "$url" "$limit"
