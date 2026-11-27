@@ -418,6 +418,29 @@ test_ack_accepts_a_needs_decision_held_for_the_captain() {
   pass "drain: a needs-decision whose task is held for the captain can be acknowledged"
 }
 
+# The task-id lookup fails first, so the key lookup must decide on its own.
+test_ack_accepts_a_needs_decision_held_under_its_key() {
+  local dir state ack args
+  command -v tasks-axi >/dev/null 2>&1 || { echo "skip: tasks-axi not found"; return 0; }
+  dir=$(make_case ack-key-held-decision)
+  state="$dir/state"
+  mkdir -p "$dir/data" "$dir/config"
+  fm_test_tasks_toml "$dir/.tasks.toml"
+  printf '## In flight\n\n## Queued\n\n## Done\n' > "$dir/data/backlog.md"
+  printf 'needs-decision [key=api-shape]: pick REST or RPC\n' > "$state/task3.status"
+  append_wake "$state" signal task3.status 'needs-decision [key=api-shape]: pick REST or RPC' \
+    || fail "queueing the decision wake failed"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/out" 2> "$dir/err" || fail "drain failed"
+  ack=$(ack_command_from "$dir/err")
+  read -r -a args <<<"${ack#bin/fm-wake-drain.sh }"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" FM_DATA_OVERRIDE="$dir/data" FM_CONFIG_OVERRIDE="$dir/config" \
+    "$ROOT/bin/fm-captain-hold.sh" hold api-shape --title "Pick the API shape" --reason "REST or RPC" --repo sample >/dev/null \
+    || fail "could not hold the decision's key for the captain"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" "$DRAIN" "${args[@]}" > "$dir/ack.out" 2> "$dir/ack.err" \
+    || fail "a decision held under its key must be acknowledgeable: $(cat "$dir/ack.err")"
+  pass "drain: a needs-decision held under its key but not its task can be acknowledged"
+}
+
 test_full_reader_preserves_all_decisions_without_consuming_wakes
 test_full_reader_refuses_an_unreadable_status_log
 test_unreadable_status_log_leaves_the_count_unknown
@@ -435,3 +458,4 @@ test_buried_decision_surfaces_on_the_empty_queue_fast_path
 test_status_symlink_is_not_followed
 test_ack_refuses_an_unhandled_needs_decision
 test_ack_accepts_a_needs_decision_held_for_the_captain
+test_ack_accepts_a_needs_decision_held_under_its_key
