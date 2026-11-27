@@ -1011,6 +1011,16 @@ The `direct-PR` and `local-only` modes and Gerrit changes are unaffected.
 The child's own `done` line still reaches the parent through `bin/fm-inactive-reconcile.sh`.
 The flag is a home-local preference and is not inherited by secondmate homes; [`bin/fm-pr-check.sh`](../bin/fm-pr-check.sh) owns the mechanics.
 
+## Live PR state in unread status (config/unread-pr-state)
+
+The optional local, gitignored `config/unread-pr-state` presence flag opts this home into a live forge read beside the wake drain's UNREAD STATUS section.
+Create it with `touch "$FM_HOME/config/unread-pr-state"`; remove it to restore the default.
+With the flag present, each pull request URL a presented status line names is followed by its current state and checks, so a recorded claim such as "checks green" is not mistaken for a current fact.
+The read is bounded: at most six pull requests per drain, each read limited to 10 seconds, and any other URL is listed as not read.
+A failed or timed-out read prints unknown and never fails or holds back the drain.
+It is off by default: without the flag, the section prints only the recorded lines and makes no forge call.
+The flag is a home-local preference and is not inherited by secondmate homes; [`bin/fm-wake-drain.sh`](../bin/fm-wake-drain.sh) and [`bin/fm-forge-state.sh`](../bin/fm-forge-state.sh) own the mechanics.
+
 ## Task status archive (config/status-archive)
 
 The optional local, gitignored `config/status-archive` presence flag opts this home into retaining task status history during teardown.

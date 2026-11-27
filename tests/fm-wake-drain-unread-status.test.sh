@@ -77,6 +77,45 @@ test_incident_note_answer_buried_under_routine_note_surfaces_both() {
   pass "a note: answer buried under a later routine note: is surfaced with both lines"
 }
 
+# A status line's PR claim is what was true when it was written, so each PR it
+# names gets the forge's current state beside it, and a failed read says
+# unknown instead of letting the old claim stand as current.
+test_unread_status_shows_the_current_state_of_each_named_pr() {
+  local dir state out status fakebin rc
+  dir=$(make_case unread-pr-state)
+  state="$dir/state"
+  status="$state/task1.status"
+  fakebin="$dir/bin"
+  mkdir -p "$fakebin"
+  cat > "$fakebin/gh" <<'GH'
+#!/usr/bin/env bash
+case "$*" in
+  *'/o/r/pull/51 '*) printf '{"state":"MERGED","mergedAt":"2026-11-26T09:00:00Z","statusCheckRollup":[{"conclusion":"SUCCESS"}]}\n' ;;
+  *) echo 'HTTP 502' >&2; exit 1 ;;
+esac
+GH
+  chmod +x "$fakebin/gh"
+  prime_cursor "$state" "$status"
+  printf 'note: PR https://github.com/o/r/pull/51 ready, checks green\n' >> "$status"
+  printf 'note: follow-up https://github.com/o/r/pull/52 opened\n' >> "$status"
+
+  out=$(PATH="$fakebin:$PATH" FM_STATE_OVERRIDE="$state" "$DRAIN") || fail "drain failed with PR URLs in unread status"
+  assert_contains "$out" 'task1 note: PR https://github.com/o/r/pull/51 ready, checks green' "the recorded line must be presented without the opt-in"
+  assert_not_contains "$out" 'CURRENT PR STATE' "the live read must stay off without config/unread-pr-state"
+
+  printf 'note: PR https://github.com/o/r/pull/51 ready, checks green\n' >> "$status"
+  printf 'note: follow-up https://github.com/o/r/pull/52 opened\n' >> "$status"
+  : > "$TMP_ROOT/config/unread-pr-state"
+  out=$(PATH="$fakebin:$PATH" FM_STATE_OVERRIDE="$state" "$DRAIN"); rc=$?
+  rm -f "$TMP_ROOT/config/unread-pr-state"
+  [ "$rc" -eq 0 ] || fail "drain failed with the live read opted in"
+  assert_contains "$out" 'task1 note: PR https://github.com/o/r/pull/51 ready, checks green' "the recorded line must still be presented"
+  assert_contains "$out" 'UNREAD STATUS, CURRENT PR STATE (read from the forge during this drain' "the current state must be marked as a live read"
+  assert_contains "$out" 'https://github.com/o/r/pull/51: merged at 2026-11-26T09:00:00Z; checks: 1 passed' "a named PR must show its current state"
+  assert_contains "$out" 'https://github.com/o/r/pull/52: unknown (the forge read failed)' "a failed read must say the state is unknown"
+  pass "UNREAD STATUS: opted in, each PR a line names is shown with its current forge state, and a failed read is unknown"
+}
+
 test_already_presented_notes_are_not_replayed() {
   local dir state out status
   dir=$(make_case no-replay)
@@ -473,6 +512,7 @@ test_routine_working_and_covered_done_stay_silent_on_the_empty_queue() {
 
 test_unhandled_steering_surfaces_without_a_doorbell
 test_incident_note_answer_buried_under_routine_note_surfaces_both
+test_unread_status_shows_the_current_state_of_each_named_pr
 test_already_presented_notes_are_not_replayed
 test_brand_new_note_after_presentation_is_surfaced
 test_signal_annotation_surfaces_every_unread_note_not_only_the_newest
