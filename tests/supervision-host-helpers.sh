@@ -398,6 +398,14 @@ append_status() {  # <home> <text>
   printf '%s [at=%s]: %s\n' "${3:-working}" "$(date +%s)" "$2" >> "$1/state/demo.status"
 }
 
+# Main answers demo's open decision the way bin/fm-send.sh --resolve-key does,
+# as a self-announced close that wakes nothing, because the drain refuses to
+# acknowledge a decision wake that is neither resolved nor held.
+answer_demo_decision() {  # <home>
+  FM_STATE_OVERRIDE="$1/state" bash -c '. "$1"; fm_wake_status_append_self_announced "$2" "$3" "resolved [key=default]: answered by main"' \
+    _ "$ROOT/bin/fm-wake-lib.sh" "$1/state" "$1/state/demo.status"
+}
+
 # One store row exactly as bin/fm-branch-outcome.sh append writes it, at a
 # chosen epoch, so a case can hold outcomes recorded days before the drain.
 outcome_row() {  # <seq> <epoch> <task> <verdict> <summary>
@@ -736,6 +744,7 @@ leave_a_cycle_for_main_and_restart() {  # <home>
   LEFT_ARM=$(parent_of "$LEFT_WATCHER")
   [ -n "$LEFT_ARM" ] && [ "$LEFT_ARM" != 1 ] || fail "fixture: the successor watcher has no arm of its own"
   main_drain "$home" >/dev/null
+  answer_demo_decision "$home"
   # shellcheck disable=SC2086 # the printed acknowledgement arguments
   [ -z "$MAIN_ACK" ] || FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" "$@" >/dev/null 2>&1' "$ROOT/bin/fm-wake-drain.sh" $MAIN_ACK \
     || fail "takeover: main's acknowledgement failed: $MAIN_ACK"
@@ -1001,6 +1010,9 @@ assert_lost_handoff_keeps_watching() {  # <boundary|pass-through>
     --ack-through 0 --recovery-generation "${MAIN_ACK##* }" > "$home/stale-ack.out" 2>&1 \
     || fail "$mode: the stale acknowledgement could not be checked"
   [ -f "$home/state/.supervision-handoff-pending" ] || fail "$mode: a stale acknowledgement confirmed unseen work"
+  # Main answers the raised decision before acknowledging its wake, because
+  # the drain refuses to acknowledge an unhandled one.
+  [ "$mode" = boundary ] || answer_demo_decision "$home"
   # shellcheck disable=SC2086 # The drain's printed arguments.
   FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" "$@"' "$ROOT/bin/fm-wake-drain.sh" $MAIN_ACK \
     || fail "$mode: main could not acknowledge"

@@ -356,6 +356,10 @@ An acknowledgement can remove none of the actor's rows while a presented row abo
 Such an acknowledgement is reported as having acknowledged nothing, together with the exact `--ack-through` and `--recovery-generation` command for that presented row.
 The presented set is read before any re-claim, so a row that arrived after presentation is never named for unseen acknowledgement.
 
+A main acknowledgement is refused, consuming nothing, while a status wake it would remove belongs to a task whose `needs-decision` is still open and neither that task nor the decision key is held for the captain.
+The refusal names each such task and key with its ways out: answer it with `bin/fm-send.sh --resolve-key`, hold it with `bin/fm-captain-hold.sh hold`, or record its resolution.
+Without this refusal the acknowledged decision survives only in chat once its wake is gone.
+
 If a branch offer loses the claim race to main, it rejects its settlement so the watcher retains the actionable close until Pi accepts its main follow-up.
 
 ### Branch eligibility and check rows
