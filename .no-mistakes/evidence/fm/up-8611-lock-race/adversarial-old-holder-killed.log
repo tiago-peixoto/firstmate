@@ -1,0 +1,5 @@
+=== target commit, old holder SIGKILLed by the driver once its successor is running ===
+tests/wake-helpers.sh: line 390: 3858334 Killed                     PATH="$fakebin:$PATH" FM_TEST_REAL_SLEEP="${real_sleep:-}" FM_TEST_WATCH_PAUSED="$dir/old.paused" FM_PROC_ROOT_OVERRIDE="$no_proc" TZ=America/Los_Angeles FM_HOME="$dir" FM_STATE_OVERRIDE="$state" FM_GUARD_GRACE=1 FM_POLL="$old_poll" FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$old_out" 2>&1
+not ok - the replaced watcher did not stand down on its own (exit 137): 
+exit=1
+driver killed old holder: yes pid=3858334

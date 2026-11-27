@@ -1,0 +1,9 @@
+ok - disposable watcher refuses inherited state outside its marked lab
+holder pid=3877843 lock pid=3877843 holder alive=yes
+successor exit=0
+--- holder output ---
+--- successor output ---
+watcher: already running pid 3877843
+--- end ---
+RESULT: no ^check: line in the stood-down successor's output, so the changed assertion rejects a real stand-down
+lock pid after=3877843 holder alive=yes

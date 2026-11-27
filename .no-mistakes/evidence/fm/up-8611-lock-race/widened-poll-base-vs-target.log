@@ -1,0 +1,18 @@
+=== base-tmp (file tests/fm-watcher-lock.base-tmp.test.sh) run 1, test-shell poll widened to 3s ===
+not ok - a fresh watcher stood down beside a live holder whose legacy identity no longer recomputes: check: rearm-resurface
+exit=1
+=== base-tmp (file tests/fm-watcher-lock.base-tmp.test.sh) run 2, test-shell poll widened to 3s ===
+not ok - a fresh watcher stood down beside a live holder whose legacy identity no longer recomputes: check: rearm-resurface
+exit=1
+=== base-tmp (file tests/fm-watcher-lock.base-tmp.test.sh) run 3, test-shell poll widened to 3s ===
+not ok - a fresh watcher stood down beside a live holder whose legacy identity no longer recomputes: check: rearm-resurface
+exit=1
+=== target (file tests/fm-watcher-lock.test.sh) run 1, test-shell poll widened to 3s ===
+ok - a fresh watcher replaces a live holder whose pre-UTC-pin identity no longer recomputes, and the old holder stands down unsignalled
+exit=0
+=== target (file tests/fm-watcher-lock.test.sh) run 2, test-shell poll widened to 3s ===
+ok - a fresh watcher replaces a live holder whose pre-UTC-pin identity no longer recomputes, and the old holder stands down unsignalled
+exit=0
+=== target (file tests/fm-watcher-lock.test.sh) run 3, test-shell poll widened to 3s ===
+ok - a fresh watcher replaces a live holder whose pre-UTC-pin identity no longer recomputes, and the old holder stands down unsignalled
+exit=0
