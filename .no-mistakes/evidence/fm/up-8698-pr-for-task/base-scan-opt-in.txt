@@ -1,0 +1,10 @@
+done: child a-registered-b-reported done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+done: child a-then-b-in-log done: PR https://github.com/acme/widgets/pull/202 pr=https://github.com/acme/widgets/pull/202 mode=no-mistakes yolo=off
+done: child b-reported-stamped done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+done: child no-recorded-pr done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/202 mode=no-mistakes yolo=off
+done: child one-pr done: PR https://github.com/acme/widgets/pull/101 checks green pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+done: child one-pr-plain-done done: cleanup finished pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+done: child prose-mentions-b done: fixed, context in https://github.com/acme/widgets/pull/202 pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+done: child ready-shape-with-tail done: PR https://github.com/acme/widgets/pull/202 checks green and more words pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+done: child scout-names-b done: PR https://github.com/acme/widgets/pull/202 checks green mode=no-mistakes yolo=off
+failed: child failed-names-b failed: PR https://github.com/acme/widgets/pull/202 checks red pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off

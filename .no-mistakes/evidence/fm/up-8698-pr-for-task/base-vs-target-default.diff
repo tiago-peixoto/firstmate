@@ -1,0 +1,12 @@
+--- ~/.no-mistakes/evidence/01M8DJMMFG8QSKP22P3B57A1S4/base-default.txt	2026-11-27 05:07:07.120543622 +0100
++++ ~/.no-mistakes/evidence/01M8DJMMFG8QSKP22P3B57A1S4/target-default.txt	2026-11-27 05:07:11.667404140 +0100
+@@ -1,6 +1,6 @@
+-done: child a-registered-b-reported done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+-done: child a-then-b-in-log done: PR https://github.com/acme/widgets/pull/202 pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+-done: child b-reported-stamped done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
++done: child a-registered-b-reported done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/202 mode=no-mistakes yolo=off
++done: child a-then-b-in-log done: PR https://github.com/acme/widgets/pull/202 pr=https://github.com/acme/widgets/pull/202 mode=no-mistakes yolo=off
++done: child b-reported-stamped done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/202 mode=no-mistakes yolo=off
+ done: child no-recorded-pr done: PR https://github.com/acme/widgets/pull/202 checks green pr=https://github.com/acme/widgets/pull/202 mode=no-mistakes yolo=off
+ done: child one-pr done: PR https://github.com/acme/widgets/pull/101 checks green pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
+ done: child one-pr-plain-done done: cleanup finished pr=https://github.com/acme/widgets/pull/101 mode=no-mistakes yolo=off
