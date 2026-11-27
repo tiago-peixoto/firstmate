@@ -1,0 +1,5 @@
+ok - the scan reads the ready line past a wait on the same PR, and only that wait
+ok - the scan reads the ready line past supervisor annotations, on each ready shape
+ok - the scan registers nothing from a non-canonical or superseded done line
+ok - the scan reports a refused registration once and records the PR on a later retry
+ok - a replacement PR on a newer ready line takes over pr= and the merge poll

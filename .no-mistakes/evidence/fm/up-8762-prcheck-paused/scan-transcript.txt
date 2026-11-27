@@ -1,0 +1,156 @@
+fm-pr-check.sh under test: {run-worktree}/bin/fm-pr-check.sh
+
+### S1 done then paused on the same PR
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    paused [at=3]: waiting for review on PR https://github.com/o/r/pull/7 until 2026-12-01T00:00Z
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta pr=https://github.com/o/r/pull/7 | merge poll: valid, watching https://github.com/o/r/pull/7
+  RESULT: as expected (7)
+
+### S1b done then two paused lines on the same PR
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    paused [at=3]: waiting for review on PR https://github.com/o/r/pull/7 until 2026-12-01T00:00Z
+    paused [at=93]: still waiting on https://github.com/o/r/pull/7 until 2026-12-02T00:00Z
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta pr=https://github.com/o/r/pull/7 | merge poll: valid, watching https://github.com/o/r/pull/7
+  RESULT: as expected (7)
+
+### S2 done then paused on another PR
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/8 checks green
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/9 until 2026-12-01T00:00Z
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S2b paused line names the same PR and another PR
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/10 checks green
+    paused [at=3]: https://github.com/o/r/pull/10 waits on https://github.com/o/r/pull/11 until 2026-12-01T00:00Z
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S3 done then working
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/12 checks green
+    working [at=3]: fixing review notes on https://github.com/o/r/pull/12
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S3b done, paused on the same PR, then working
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/12 checks green
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/12 until 2026-12-01T00:00Z
+    working [at=4]: fixing review notes on https://github.com/o/r/pull/12
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S4 paused line with no PR
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    paused [at=3]: waiting for the captain until 2026-12-01T00:00Z
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S4b done then blocked
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    blocked [at=3]: review on https://github.com/o/r/pull/7 needs a decision
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S4c done then failed
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    failed [at=3]: checks on https://github.com/o/r/pull/7 went red
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S4d done, paused on the same PR, then blocked
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/7
+    blocked [at=4]: https://github.com/o/r/pull/7 needs a decision
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S4e paused on the same PR with no ready done line before it
+  state/task-a.status:
+    working [at=2]: opened https://github.com/o/r/pull/7
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/7
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S4f the done line before the wait says the PR is not ready
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 is not ready yet
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/7
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S5 punctuation and a #fragment around the same PR (review round 1 decision)
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/13 checks green
+    paused [at=3]: run starting for https://github.com/o/r/pull/13, waiting on drive call
+    paused [at=4]: waiting for review (https://github.com/o/r/pull/13#issuecomment-1) on "https://github.com/o/r/pull/13".
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta pr=https://github.com/o/r/pull/13 | merge poll: valid, watching https://github.com/o/r/pull/13
+  RESULT: as expected (13)
+
+### S5b another PR followed by a comma (review round 1 decision)
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/14 checks green
+    paused [at=3]: https://github.com/o/r/pull/14 waits on https://github.com/o/r/pull/15, until 2026-12-01T00:00Z
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+
+### S6 draft refusal: the forge reports the PR behind the wait as a draft
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/9 checks green
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/9
+  $ FM_TEST_GH_DRAFT=true fm-pr-check.sh scan -> exit 0
+    stdout: task-a reported https://github.com/o/r/pull/9 in a done line, but it was not recorded: https://github.com/o/r/pull/9 is a draft pull request; a draft cannot be merged, so merge monitoring would wait for an event that cannot occur - mark it ready for review and arm again, or declare a wait instead of done if the draft is deliberate
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: as expected (none)
+  then the forge reports it ready, same home, next scan:
+  $ fm-pr-check.sh scan -> exit 0 
+    task-a: meta pr=https://github.com/o/r/pull/9 | merge poll: valid, watching https://github.com/o/r/pull/9
+
+### S7 replacement: first PR recorded from its ready line
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/7
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta pr=https://github.com/o/r/pull/7 | merge poll: valid, watching https://github.com/o/r/pull/7
+  RESULT: as expected (7)
+  the lane then appends:
+    working [at=4]: PR 7 closed, reopening
+    done [at=5]: PR https://github.com/o/r/pull/8 checks green
+    paused [at=6]: waiting for review on https://github.com/o/r/pull/8
+  $ fm-pr-check.sh scan -> exit 0 
+    task-a: meta pr=https://github.com/o/r/pull/8 | merge poll: valid, watching https://github.com/o/r/pull/8
+
+### S8 the real watcher sweep (bin/fm-watch.sh, config/pr-register-scan present)
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/7
+  state/task-b.status:
+    done [at=2]: PR https://github.com/o/r/pull/8 checks green
+    paused [at=3]: waiting for review on https://github.com/o/r/pull/9
+  $ fm-watch.sh -> exit 0
+    task-a: meta pr=https://github.com/o/r/pull/7 | merge poll: valid, watching https://github.com/o/r/pull/7
+    task-b: meta has no pr= line | merge poll: no
+
+DRIVER EXIT 0

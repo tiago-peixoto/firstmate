@@ -1,0 +1,11 @@
+fm-pr-check.sh under test: <base b119e422>/bin/fm-pr-check.sh
+
+### S1 done then paused on the same PR
+  state/task-a.status:
+    done [at=2]: PR https://github.com/o/r/pull/7 checks green
+    paused [at=3]: waiting for review on PR https://github.com/o/r/pull/7 until 2026-12-01T00:00Z
+  $ fm-pr-check.sh scan -> exit 0
+    task-a: meta has no pr= line | merge poll: no
+  RESULT: UNEXPECTED - wanted 7, got none
+
+(base revision only runs S1, the reported failure)
