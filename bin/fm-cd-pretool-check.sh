@@ -10,6 +10,8 @@
 # wrapper only scopes the guard to the real primary checkout, acquires the
 # harness payload, invokes that policy, and renders the established harness
 # responses. It never executes, sources, evaluates, or expands the command.
+# The same policy also denies piping a one-shot presenter (fm-wake-drain.sh,
+# fm-afk-return.sh) into a filter, which would hide records shown only once.
 # See docs/cd-guard.md for the complete contract and validation record.
 #
 # Usage:
@@ -56,7 +58,8 @@ toolInput.command, Antigravity toolCall.args.CommandLine/command, or
 Claude/Codex tool_input.command).
 Fires only in the real primary firstmate checkout; it is a silent no-op in a
 crewmate/scout task worktree or any non-firstmate repo.
-Exits 0 to allow and 2 to deny a persistent top-level cwd change.
+Exits 0 to allow and 2 to deny a persistent top-level cwd change, or
+bin/fm-wake-drain.sh or bin/fm-afk-return.sh piped into another command.
 A cd whose single literal absolute target resolves to this checkout itself is
 allowed, because it cannot move the shell out of the home.
 The deny reason is written to stderr, with a Grok decision object on stdout
@@ -144,7 +147,7 @@ case "$CMD" in
   *"\$'"*|*'$"'*) ;;
   *)
     case "$PREFILTER" in
-      *cd*|*pushd*|*popd*) ;;
+      *cd*|*pushd*|*popd*|*fm-wake-drain*|*fm-afk-return*) ;;
       *) exit 0 ;;
     esac
     ;;

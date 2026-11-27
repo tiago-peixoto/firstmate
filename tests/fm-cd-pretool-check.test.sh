@@ -143,6 +143,17 @@ matrix_case A34 allow 'command -V cd'
 matrix_case A35 allow 'command -pv cd'
 matrix_case A36 allow 'command -vp cd'
 
+# ONE-SHOT: a presenter whose records show only once, piped into a filter.
+matrix_case P01 deny:one-shot-output-piped 'bin/fm-wake-drain.sh | head -40'
+matrix_case P02 deny:one-shot-output-piped '/home/x/bin/fm-wake-drain.sh 2>&1 | grep UNREAD'
+matrix_case P03 deny:one-shot-output-piped 'bin/fm-afk-return.sh check |& tail -5'
+matrix_case P04 deny:one-shot-output-piped 'true && bin/fm-wake-drain.sh --open-decisions | cat'
+matrix_case P05 allow 'bin/fm-wake-drain.sh'
+matrix_case P06 allow 'bin/fm-afk-return.sh check'
+matrix_case P07 allow 'bin/fm-wake-drain.sh > /tmp/drain.out'
+matrix_case P08 allow 'echo x | bin/fm-wake-drain.sh'
+matrix_case P09 allow 'grep fm-wake-drain.sh docs/x.md | head'
+
 # HOME: the one allowed cd target is a single literal absolute path that
 # resolves, symlinks included, to the primary checkout itself; a child, sibling,
 # parent, pushd, option-bearing, unexpanded, or glob target stays denied.
@@ -207,9 +218,11 @@ run_matrix_entry() {
     return
   fi
 
+  local code=${expected#deny:}
+  [ "$code" != deny ] || code=persistent-cd
   [ "$rc" -eq 2 ] || fail "$id via $entry must deny, got exit $rc"
-  jq -e '.hookSpecificOutput.permissionDecision == "deny" and (.systemMessage | test("\\[persistent-cd\\]"))' "$err_file" >/dev/null 2>&1 \
-    || fail "$id via $entry deny must carry the persistent-cd reason code on stderr: $(cat "$err_file")"
+  jq -e --arg code "[$code]" '.hookSpecificOutput.permissionDecision == "deny" and (.systemMessage | contains($code))' "$err_file" >/dev/null 2>&1 \
+    || fail "$id via $entry deny must carry the $code reason code on stderr: $(cat "$err_file")"
   if [ "$entry" = claude ]; then
     [ ! -s "$out_file" ] || fail "$id via claude deny must leave stdout empty: $(cat "$out_file")"
   elif [ "$entry" = grok ]; then

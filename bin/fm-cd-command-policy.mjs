@@ -23,6 +23,10 @@
 // never evaluates, expands, sources, or runs any byte of the submitted command;
 // it inspects lexical command positions only, and resolves the one literal
 // absolute path it compares against the home.
+//
+// It also denies piping a one-shot presenter (bin/fm-wake-drain.sh,
+// bin/fm-afk-return.sh) into another command, because a filter there hides
+// records that are never shown again; it reuses this transport's primary scope.
 
 import { Lexer, splitProgram, commandPosition } from "./fm-arm-command-policy.mjs";
 import { realpathSync } from "node:fs";
@@ -31,7 +35,12 @@ import { fileURLToPath } from "node:url";
 const REASONS = {
   "persistent-cd":
     "a persistent top-level directory change in the primary firstmate checkout is blocked; it would move the shell out of the home so a later firstmate-owned command runs inside a project clone. Reach the target without moving the shell - use git -C <dir> or an absolute path on the command itself - or scope the cd to a subshell like (cd <dir> && ...).",
+  "one-shot-output-piped":
+    "piping bin/fm-wake-drain.sh or bin/fm-afk-return.sh into another command is blocked; each presents some records only once, so a filter such as head, tail, or grep can hide a wake, decision, or status line that is never shown again. Run it on its own and read its complete output.",
 };
+
+// Presenters whose output shows some records only once.
+const ONE_SHOT_PRESENTERS = new Set(["fm-wake-drain.sh", "fm-afk-return.sh"]);
 
 // Directory-changing builtins that mutate the calling shell's own cwd.
 const CD_BUILTINS = new Set(["cd", "pushd", "popd"]);
@@ -112,6 +121,9 @@ function decision(command, { home = "" } = {}) {
 
   const { nodes, separators } = splitProgram(lexed.tokens);
   for (let index = 0; index < nodes.length; index += 1) {
+    if (isPipe(separators[index]) && ONE_SHOT_PRESENTERS.has(commandPosition(nodes[index]).command?.value.split("/").at(-1))) {
+      return deny("one-shot-output-piped");
+    }
     if (!nodePersists(separators, index)) continue;
     // commandPosition ignores subshell/brace groups, quoted data, comments, and
     // substitutions (they contribute no top-level command word), and skips
