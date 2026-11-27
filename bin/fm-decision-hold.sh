@@ -10,7 +10,9 @@
 # Mapping (old -> new):
 #   id <origin> <key>                      -> prints the legacy <origin>-decision-<key> identity
 #   hold <origin> <key> --title --reason [--repo]
-#                                          -> hold <origin>-decision-<key> --origin <origin> ...
+#                                          -> hold <origin>-decision-<key> --origin <origin> --separate-gate ...
+#     Each legacy key names its own gate, so it is never refused as a second
+#     hold for its origin.
 #   complete <origin> (--none | <key>...) (--work <task-id>... | --no-work)
 #     Maps question keys to <origin>-decision-<key>; forwards the work account unchanged.
 #   verify <origin>                        -> verify <origin>
@@ -215,7 +217,7 @@ command_hold() {
   [ "$#" -ge 2 ] || { usage >&2; exit 2; }
   id=$(compose "$origin" "$key")
   shift 2
-  exec "$CAPTAIN_HOLD" hold "$id" --origin "$origin" "$@"
+  exec "$CAPTAIN_HOLD" hold "$id" --origin "$origin" --separate-gate "$@"
 }
 
 case "${1:-}" in
