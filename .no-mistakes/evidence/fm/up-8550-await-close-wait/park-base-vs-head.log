@@ -1,0 +1,42 @@
+1..1
+base: bash=5.3.9(1)-release window=7.1s reaped-child-minor-faults before=59724 after=88374 delta=28650 samples-with-live-sleep-child=58/60 host-open-fifo=0
+base: close delivered in 2.5s host-exit-code=0
+base: host output:
+    watcher: started pid=627934 (beacon fresh)
+    signal: <home>/state/demo.status
+base: ledger:
+    gen=host-627389-1795751163	primary=claude
+    attended	main-only	signal: /tmp/fm-supervision-host.UQOrFg/drv-base/state/demo.status
+base: leftover probe dirs: 0
+ok - base driven
+FM_TEST_COMPLETE
+driver rc=0
+
+1..1
+head: bash=5.3.9(1)-release window=6.8s reaped-child-minor-faults before=51829 after=51829 delta=0 samples-with-live-sleep-child=0/60 host-open-fifo=1
+head: close delivered in 3.1s host-exit-code=0
+head: host output:
+    watcher: started pid=649221 (beacon fresh)
+    signal: <home>/state/demo.status
+head: ledger:
+    gen=host-648091-1795751178	primary=claude
+    attended	main-only	signal: /tmp/fm-supervision-host.tFSZvO/drv-head/state/demo.status
+head: leftover probe dirs: 0
+ok - head driven
+FM_TEST_COMPLETE
+driver rc=0
+
+1..1
+head-mkfifo-broken: bash=5.3.9(1)-release window=6.9s reaped-child-minor-faults before=55091 after=61406 delta=6315 samples-with-live-sleep-child=60/60 host-open-fifo=0
+head-mkfifo-broken: close delivered in 3.4s host-exit-code=0
+head-mkfifo-broken: host output:
+    watcher: started pid=676547 (beacon fresh)
+    signal: <home>/state/demo.status
+head-mkfifo-broken: ledger:
+    gen=host-675751-1795751194	primary=claude
+    attended	main-only	signal: /tmp/fm-supervision-host.hgTrIU/drv-head-mkfifo-broken/state/demo.status
+head-mkfifo-broken: leftover probe dirs: 0
+ok - head-mkfifo-broken driven
+FM_TEST_COMPLETE
+driver rc=0
+

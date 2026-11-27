@@ -1,0 +1,12 @@
+1..1
+head-bash32: bash=3.2.57(2)-release window=6.9s reaped-child-minor-faults before=51295 after=57558 delta=6263 samples-with-live-sleep-child=58/60 host-open-fifo=0
+head-bash32: close delivered in 3.6s host-exit-code=0
+head-bash32: host output:
+    watcher: started pid=875548 (beacon fresh)
+    signal: <home>/state/demo.status
+head-bash32: ledger:
+    gen=host-874832-1795751348	primary=claude
+    attended	main-only	signal: /tmp/fm-supervision-host.xxgscV/drv-head-bash32/state/demo.status
+head-bash32: leftover probe dirs: 0
+ok - head-bash32 driven
+FM_TEST_COMPLETE
