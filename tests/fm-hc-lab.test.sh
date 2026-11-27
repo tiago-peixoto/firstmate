@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Public lab CLI regressions. Oracle: roots must exclude untrusted writers,
-# sessions must never be adopted, and incomplete inventories cannot verify.
+# sessions must never be adopted, incomplete inventories cannot verify, and
+# only state lab work could write is compared.
 # Command stubs inject filesystem failures, not expected inventory contents.
 set -eu
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -10,8 +11,10 @@ TMP_ROOT=$(fm_test_tmproot fm-hc-lab-tests)
 LAB=${1:-$ROOT/bin/fm-hc-lab.sh}
 export FM_HC_LAB_DIR="$TMP_ROOT/lab" FM_HC_LAB_SOCK_DIR="$TMP_ROOT/sockets"
 export XDG_STATE_HOME="$TMP_ROOT/state" XDG_RUNTIME_DIR="$TMP_ROOT/runtime"
-mkdir -p "$TMP_ROOT/fakebin" "$XDG_STATE_HOME/herdr-core"
-printf 'real state\n' > "$XDG_STATE_HOME/herdr-core/state"
+mkdir -p "$TMP_ROOT/fakebin" "$XDG_STATE_HOME/herdr-core/default" "$XDG_STATE_HOME/herdr-core/live" \
+  "$XDG_RUNTIME_DIR/herdr-core"
+printf 'real state\n' > "$XDG_STATE_HOME/herdr-core/default/terminals.json"
+printf 'other session\n' > "$XDG_STATE_HOME/herdr-core/live/terminals.json"
 export REAL_FIND REAL_CAT
 REAL_FIND=$(command -v find)
 REAL_CAT=$(command -v cat)
@@ -87,3 +90,20 @@ refuse 'could not record the fleet-state tripwire' env FAIL_READ=find bash "$LAB
 bash "$LAB" teardown fm-hclab-good
 [ ! -e "$FM_HC_LAB_DIR/fm-hclab-good" ] || fail 'successful teardown retained session'
 printf 'ok - private roots, exclusive sessions, and fail-closed tripwire\n'
+
+# Another real session rewriting its own state is not lab work, so it cannot
+# fail teardown; a write to the default session or to anything named for the
+# lab session still does.
+bash "$LAB" provision fm-hclab-other
+printf 'other session, rewritten\n' > "$XDG_STATE_HOME/herdr-core/live/terminals.json.tmp"
+mv "$XDG_STATE_HOME/herdr-core/live/terminals.json.tmp" "$XDG_STATE_HOME/herdr-core/live/terminals.json"
+bash "$LAB" teardown fm-hclab-other || fail "another session's own write failed teardown"
+bash "$LAB" provision fm-hclab-dflt
+printf 'real state, changed by lab work\n' > "$XDG_STATE_HOME/herdr-core/default/terminals.json"
+refuse 'FLEET-STATE TRIPWIRE FAILED' bash "$LAB" teardown fm-hclab-dflt
+[ -d "$FM_HC_LAB_DIR/fm-hclab-dflt" ] || fail 'a default-session write removed evidence'
+bash "$LAB" provision fm-hclab-leak
+: > "$XDG_RUNTIME_DIR/herdr-core/fm-hclab-leak.sock"
+refuse 'FLEET-STATE TRIPWIRE FAILED' bash "$LAB" teardown fm-hclab-leak
+[ -d "$FM_HC_LAB_DIR/fm-hclab-leak" ] || fail 'a lab-named real entry removed evidence'
+printf 'ok - the tripwire ignores other sessions and still catches default-session and lab-named writes\n'
