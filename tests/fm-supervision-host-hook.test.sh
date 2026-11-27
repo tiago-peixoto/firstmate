@@ -557,6 +557,7 @@ test_successor_close_during_main_turn_is_delivered_at_the_next_turn_end() {
   wait_until 250 bash -c '! kill -0 "$1" 2>/dev/null' _ "$successor" || fail "fixture: the successor did not close on the later decision"
   watcher_live "$home" && fail "the absent opt-in changed the default one-shot successor"
   [ ! -e "$home/state/.supervision-handoff-pending" ] || fail "the absent opt-in queued a hand-back receipt"
+  answer_demo_decision "$home"
   # shellcheck disable=SC2086 # the printed acknowledgement arguments
   [ -z "$MAIN_ACK" ] || FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" "$@" >/dev/null 2>&1' "$ROOT/bin/fm-wake-drain.sh" $MAIN_ACK \
     || fail "successor close: main's acknowledgement failed: $MAIN_ACK"
@@ -678,6 +679,7 @@ test_unrecorded_successor_is_stopped_rather_than_left_for_main() {
   rmdir "$home/state/.supervision-host-left" \
     || fail "unrecorded successor: the record left inside the directory was not removed: $(ls -A "$home/state/.supervision-host-left")"
   main_drain "$home" >/dev/null
+  answer_demo_decision "$home"
   # shellcheck disable=SC2086 # the printed acknowledgement arguments
   [ -z "$MAIN_ACK" ] || FM_HOME="$home" "$FAKE_CLAUDE" -c '"$0" "$@" >/dev/null 2>&1' "$ROOT/bin/fm-wake-drain.sh" $MAIN_ACK \
     || fail "unrecorded successor: main's acknowledgement failed: $MAIN_ACK"

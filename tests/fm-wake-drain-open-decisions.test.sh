@@ -360,6 +360,64 @@ test_unreadable_status_log_leaves_the_count_unknown() {
   pass "a status log the drain cannot read leaves the acknowledgement count unknown while the other logs still list"
 }
 
+# The printed acknowledgement command from a drain's stderr.
+ack_command_from() {  # <drain-stderr-file>
+  sed -n 's/.* run \(bin\/fm-wake-drain.sh --ack-through [0-9]* --recovery-generation [^ ]*\)$/\1/p' "$1" | tail -1
+}
+
+# Acknowledging a needs-decision wake whose key is neither resolved nor held
+# would leave the decision only in chat, so the drain refuses and consumes
+# nothing; a resolution or a captain hold on the task then lets it through.
+test_ack_refuses_an_unhandled_needs_decision() {
+  local dir state ack args rc
+  dir=$(make_case ack-unhandled-decision)
+  state="$dir/state"
+  mkdir -p "$dir/data"
+  printf 'needs-decision [key=api-shape]: pick REST or RPC\n' > "$state/task1.status"
+  append_wake "$state" signal task1.status 'needs-decision [key=api-shape]: pick REST or RPC' \
+    || fail "queueing the decision wake failed"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/out" 2> "$dir/err" || fail "drain failed"
+  ack=$(ack_command_from "$dir/err")
+  [ -n "$ack" ] || fail "the drain printed no acknowledgement command: $(cat "$dir/err")"
+  read -r -a args <<<"${ack#bin/fm-wake-drain.sh }"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" "$DRAIN" "${args[@]}" > "$dir/ack.out" 2> "$dir/ack.err"; rc=$?
+  [ "$rc" -ne 0 ] || fail "the acknowledgement of an unhandled decision must be refused: $(cat "$dir/ack.err")"
+  assert_contains "$(cat "$dir/ack.err")" 'task1 [key=api-shape] needs a decision that is not resolved or held' "the refusal must name the task and key"
+  assert_contains "$(cat "$dir/ack.err")" 'bin/fm-send.sh task1 --resolve-key api-shape' "the refusal must name the answer path"
+  grep -F "$(printf '\tsignal\ttask1.status\t')" "$state/.wake-queue" >/dev/null \
+    || fail "a refused acknowledgement must leave the wake row queued"
+
+  printf 'resolved [key=api-shape]: went with REST\n' >> "$state/task1.status"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" "$DRAIN" "${args[@]}" > "$dir/ack.out" 2> "$dir/ack.err" \
+    || fail "a resolved decision must be acknowledgeable: $(cat "$dir/ack.err")"
+  if grep -F "$(printf '\tsignal\ttask1.status\t')" "$state/.wake-queue" >/dev/null 2>&1; then
+    fail "the acknowledged wake row was not consumed"
+  fi
+  pass "drain: acknowledging an unresolved, unheld needs-decision wake is refused, and a resolution lets it through"
+}
+
+test_ack_accepts_a_needs_decision_held_for_the_captain() {
+  local dir state ack args
+  command -v tasks-axi >/dev/null 2>&1 || { echo "skip: tasks-axi not found"; return 0; }
+  dir=$(make_case ack-held-decision)
+  state="$dir/state"
+  mkdir -p "$dir/data" "$dir/config"
+  fm_test_tasks_toml "$dir/.tasks.toml"
+  printf '## In flight\n\n## Queued\n\n## Done\n' > "$dir/data/backlog.md"
+  printf 'needs-decision [key=api-shape]: pick REST or RPC\n' > "$state/task2.status"
+  append_wake "$state" signal task2.status 'needs-decision [key=api-shape]: pick REST or RPC' \
+    || fail "queueing the decision wake failed"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" "$DRAIN" > "$dir/out" 2> "$dir/err" || fail "drain failed"
+  ack=$(ack_command_from "$dir/err")
+  read -r -a args <<<"${ack#bin/fm-wake-drain.sh }"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" FM_DATA_OVERRIDE="$dir/data" FM_CONFIG_OVERRIDE="$dir/config" \
+    "$ROOT/bin/fm-captain-hold.sh" hold task2 --title "Pick the API shape" --reason "REST or RPC" --repo sample >/dev/null \
+    || fail "could not hold the decision's task for the captain"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$state" "$DRAIN" "${args[@]}" > "$dir/ack.out" 2> "$dir/ack.err" \
+    || fail "a decision held for the captain must be acknowledgeable: $(cat "$dir/ack.err")"
+  pass "drain: a needs-decision whose task is held for the captain can be acknowledged"
+}
+
 test_full_reader_preserves_all_decisions_without_consuming_wakes
 test_full_reader_refuses_an_unreadable_status_log
 test_unreadable_status_log_leaves_the_count_unknown
@@ -375,3 +433,5 @@ test_no_open_decisions_prints_nothing
 test_open_decision_surfaces_even_with_an_unrelated_queued_wake
 test_buried_decision_surfaces_on_the_empty_queue_fast_path
 test_status_symlink_is_not_followed
+test_ack_refuses_an_unhandled_needs_decision
+test_ack_accepts_a_needs_decision_held_for_the_captain

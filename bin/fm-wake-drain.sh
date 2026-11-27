@@ -26,6 +26,9 @@
 # them read (unknown when the store cannot be read), so an output filter that
 # keeps only the acknowledgement line still shows that outcomes are waiting.
 # After truncation or recovery, reconcile the full reader before acknowledging.
+# Main's --ack-through refuses, consuming nothing, while an acknowledged status
+# wake's task still has a needs-decision whose key is neither resolved nor held
+# for the captain (refuse_unhandled_decisions).
 # FM_STATUS_PRESENTATION_LOCK_TIMEOUT sets the positive whole-second wait for
 # presentation-path locks (default 10); queue mutation locks remain blocking.
 set -u
@@ -60,6 +63,7 @@ ACK_REMOVED=0
 PRESENTED_MAX=0
 ACK_FINGERPRINTS=
 ACK_NOTICE_FINGERPRINTS=
+ACK_SIGNAL_SOURCES=
 PRESENTATION_LOCK_TIMEOUT=${FM_STATUS_PRESENTATION_LOCK_TIMEOUT:-10}
 BRANCH_OUTCOMES_RC=0
 FULL_OPEN_DECISIONS=false
@@ -955,6 +959,45 @@ if [ "$FULL_OPEN_DECISIONS" = true ]; then
   exit "$?"
 fi
 
+# A needs-decision is handled once its key is resolved (including an answer
+# relayed with bin/fm-send.sh --resolve-key, or a verified captain-held
+# transfer), or once its task or key is held for the captain. Acknowledging the
+# wake of one that is none of these leaves the decision only in chat, so main's
+# acknowledgement is refused, naming each such key, and nothing is consumed.
+refuse_unhandled_decisions() {  # <newline-separated signal sources>
+  local source task key verb note open refused=0 held_rc
+  while IFS= read -r source; do
+    [ -n "$source" ] || continue
+    case "$source" in /*) ;; *) source="$STATE/$source" ;; esac
+    task=${source##*/}
+    task=${task%.status}
+    open=$(status_open_decisions "$source") || return 1
+    while IFS=$(printf '\t') read -r key verb note; do
+      [ "$verb" = needs-decision ] || continue
+      held_rc=0
+      FM_HOME=$FM_HOME "$SCRIPT_DIR/fm-captain-hold.sh" open "$task" >/dev/null 2>&1 || held_rc=$?
+      [ "$held_rc" -ne 0 ] || continue
+      if [ "$held_rc" -eq 1 ] && [ "$key" != "$task" ]; then
+        FM_HOME=$FM_HOME "$SCRIPT_DIR/fm-captain-hold.sh" open "$key" >/dev/null 2>&1 || held_rc=$?
+        [ "$held_rc" -ne 0 ] || continue
+      fi
+      if [ "$held_rc" -eq 1 ]; then
+        printf 'wake drain: refusing to acknowledge through %s: %s [key=%s] needs a decision that is not resolved or held (%s); answer it with bin/fm-send.sh %s --resolve-key %s, hold it for the captain with bin/fm-captain-hold.sh hold, or record its resolution, then run the same acknowledgement again\n' \
+          "$ACK_THROUGH" "$task" "$key" "$note" "$task" "$key" >&2
+      else
+        printf 'wake drain: refusing to acknowledge through %s: could not read whether %s [key=%s] is held for the captain\n' \
+          "$ACK_THROUGH" "$task" "$key" >&2
+      fi
+      refused=1
+    done <<OPEN
+$open
+OPEN
+  done <<SOURCES
+$1
+SOURCES
+  [ "$refused" -eq 0 ]
+}
+
 # shellcheck disable=SC2317,SC2329 # Invoked by trap handlers below.
 cleanup() {
   local status=$?
@@ -1026,8 +1069,15 @@ if [ -n "$ACK_THROUGH" ]; then
     ACK_FINGERPRINTS=$(inactive_outcome_fingerprints "$ACK_THROUGH" 'inactive-outcome:' "$MAIN_ROWS_FILE") || exit 1
     ACK_NOTICE_FINGERPRINTS=$(inactive_outcome_fingerprints "$ACK_THROUGH" 'inactive-reconcile:' "$MAIN_ROWS_FILE") || exit 1
   fi
+  if [ "$ACTOR" = main ]; then
+    ACK_SIGNAL_SOURCES=$(awk -F '\t' -v cutoff="$ACK_THROUGH" -v seqs="$MAIN_ROWS_FILE" '
+      BEGIN { while ((getline line < seqs) > 0) owned[line]=1 }
+      NF >= 5 && $2 ~ /^[0-9]+$/ && $2 <= cutoff && ($2 in owned) && $3 == "signal" && $4 ~ /\.status$/ { print $4 }
+    ' "$FM_WAKE_QUEUE" | awk '!seen[$0]++') || exit 1
+  fi
   fm_lock_release "$FM_WAKE_QUEUE_LOCK"
   DRAIN_LOCK_HELD=false
+  [ "$ACTOR" != main ] || refuse_unhandled_decisions "$ACK_SIGNAL_SOURCES" || exit 1
   if ! acknowledge_inactive_outcomes acknowledge "$ACK_FINGERPRINTS" \
     || ! acknowledge_inactive_outcomes acknowledge-notice "$ACK_NOTICE_FINGERPRINTS"; then
     echo "wake drain: inactive outcome receipt could not be recorded safely" >&2

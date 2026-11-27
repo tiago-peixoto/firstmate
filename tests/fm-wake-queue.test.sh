@@ -3159,6 +3159,9 @@ test_live_presentation_holder_is_deadlined_without_weakening_ack() {
     || fail "drain after the interrupted acknowledgement failed"
   grep "$(printf '\tsignal\t')" "$replay_out" >/dev/null \
     || fail "the held acknowledgement lock allowed a partial consume"
+  # An acknowledgement is refused while its decision is unhandled, so the
+  # fixture's decision is resolved before the wake is acknowledged.
+  printf 'resolved [key=fixture]: handled before acknowledgement\n' >> "$status"
   ack_drain_err "$state" "$replay_err" \
     || fail "the intact wake could not be acknowledged after contention cleared"
   [ ! -s "$state/.wake-queue" ] || fail "acknowledged presentation fixture remained queued"
