@@ -10,7 +10,7 @@ Start with the directory layout, then use the setting reference for the behavior
 | Firstmate's code, private files, or project location | [FM_HOME](#fm_home) and [operational home layout](#operational-home-layout-and-state) |
 | Task windows and worker tools | [Runtime backend](#runtime-backend-configbackend--fm_backend) and [harness support](#harness-support) |
 | Worker permissions, accounts, or environment | [Codex approval review](#codex-automatic-approval-review), [Claude permission mode](#claude-permission-mode-configclaude-permission-mode), [Codex permission mode](#codex-permission-mode-configcodex-permission-mode), [persistent managed-policy failover](#persistent-managed-policy-failover), [worker account pin](#worker-account-pin-configclaude-account-configpi-account), [several Claude accounts](#several-claude-accounts-configclaude-accounts), [worker tool exclusions](#worker-tool-exclusions-configcrew-exclude-tools), [worker launch environment](#worker-launch-environment-configlaunch-env-allowlist), and its [Orca environment source](#orca-environment-source-configlaunch-env-tmux-session) |
-| Backlog, preferences, and memory | [Backlog backend](#backlog-backend-taskstoml--configbacklog-backend), [captain preferences](#captain-preferences-datacaptainmd--datacaptain-sharedmd), [external memory tiers](#external-memory-tiers-memory-layering-section), [record export](#record-export-configrecord-export-root), [startup memory budget](#startup-memory-budget-configstartup-memory-budget), [stow guard](#stow-guard-configstow-guard), and [memory answer guard](#memory-answer-guard-configmemory-answer-guard) |
+| Backlog, preferences, and memory | [Backlog backend](#backlog-backend-taskstoml--configbacklog-backend), [captain preferences](#captain-preferences-datacaptainmd--datacaptain-sharedmd), [external memory tiers](#external-memory-tiers-memory-layering-section), [record export](#record-export-configrecord-export-root), [startup memory budget](#startup-memory-budget-configstartup-memory-budget), and [stow guard](#stow-guard-configstow-guard) |
 | Supervision and presentation | [Pi supervision branch](#pi-supervision-branch), [supervision host](#supervision-host-configsupervision-host), [Codex native Stop park](#codex-native-stop-park-configcodex-stop-park), [warm-cache compaction](#warm-cache-compaction-configwarm-compact), and [Calm preference](#calm-preference-configcalm) |
 | Persistent secondmates | [Secondmate routes](#secondmate-routes-datasecondmatesmd) |
 | Heavy test runs shared by every home on one machine | [Heavy-run slots](#heavy-run-slots-configheavy-suite-slots-configheavy-suite-load) |
@@ -1379,17 +1379,6 @@ Optional lines are `tokens=<n>` and `hours=<n>`.
 An unusable value keeps its default.
 Remove the file to turn the ask off.
 The script header owns the transcript read, the state file, and the block message.
-
-## Memory answer guard (config/memory-answer-guard)
-
-`config/memory-answer-guard` is an optional local, gitignored file that sends a Claude primary back for a live read when its reply admits answering from memory.
-Without the file the session is unchanged.
-
-With the file present, the Claude Stop hook `bin/fm-memory-answer-guard.sh` blocks a turn end once when the final reply says it answers from memory or without checking, such as "from memory", "if I recall", or "not re-checked".
-The block asks the session to read the current source live and answer from that read, or to say plainly that the live read failed.
-The reply written after that block always ends the turn, and a hook error never blocks it.
-It runs for a plain Claude primary checkout of this home and stays silent in a crew worktree and in a marked secondmate home.
-The flag is a home-local preference and is not inherited by secondmate homes; the script header owns the phrases it matches.
 
 ## Self-update source (config/self-update-source)
 
